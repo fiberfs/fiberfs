@@ -1,0 +1,10 @@
+chttp_test "Multiple DNS test"
+
+dns_lookup 127.0.0.1
+dns_lookup 127.0.0.2
+dns_lookup 127.0.0.3
+
+dns_debug
+
+equal $dns_lookups 3
+equal $dns_insertions 3

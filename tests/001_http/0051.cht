@@ -1,0 +1,17 @@
+chttp_test "TLS bad stream"
+
+tls_or_skip
+
+server_init 127.0.0.1 1
+server_accept
+server_read_request
+server_send_raw "HTTP/1.1 200 TLS_OK\r\n"
+server_send_raw "Content-Length: 10\r\n"
+server_send_raw_sock "bad TLS bytes here"
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port $server_tls
+chttp_timeout_connect_ms 0
+chttp_send
+chttp_take_error

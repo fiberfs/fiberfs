@@ -1,0 +1,14 @@
+chttp_test "Transfer timeout"
+
+server_init
+server_accept
+server_read_request
+server_sleep_ms 1500
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_timeout_transfer_ms 1000
+chttp_send_only
+chttp_receive
+chttp_take_error

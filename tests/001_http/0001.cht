@@ -1,0 +1,24 @@
+chttp_test "Simple h1 server test"
+
+# Server is asynchronous
+server_init
+server_accept
+server_read_request
+server_method_match GET
+server_url_match /
+server_version_match HTTP/1.1
+server_header_match host $server_host
+server_header_submatch user-agent chttp
+server_send_response
+
+# chttp is synchronous
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_reason_match OK
+chttp_version_match 11
+chttp_header_submatch server chttp
+chttp_header_exists date
+chttp_header_match content-length 0

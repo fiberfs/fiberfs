@@ -1,0 +1,14 @@
+chttp_test "Host override with early connect"
+
+server_init
+server_accept
+server_read_request
+server_header_match host chttp.org
+server_send_response
+
+chttp_init
+chttp_connect $server_host $server_port
+chttp_url /
+chttp_add_header Host chttp.org
+chttp_send
+chttp_status_match 200

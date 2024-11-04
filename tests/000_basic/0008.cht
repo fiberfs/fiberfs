@@ -1,0 +1,22 @@
+chttp_test "DNS TTL test"
+
+dns_ttl 1
+
+dns_lookup 127.0.0.1
+dns_lookup 127.0.0.1
+
+equal $dns_lookups 2
+equal $dns_insertions 1
+equal $dns_cache_hits 1
+equal $dns_expired 0
+
+sleep_ms 1100
+
+dns_lookup 127.0.0.1
+
+equal $dns_lookups 3
+equal $dns_insertions 2
+equal $dns_cache_hits 1
+equal $dns_expired 1
+
+dns_debug

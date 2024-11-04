@@ -1,0 +1,22 @@
+chttp_test "H1 PUT gzipped"
+
+gzip_or_skip
+
+server_init
+server_accept
+server_read_request
+server_method_match PUT
+server_url_match /object
+server_body_match "This is gzipped."
+server_send_response
+
+chttp_init
+chttp_method PUT
+chttp_url /object
+chttp_add_header "Transfer-Encoding" "chunked"
+chttp_add_header "Content-Encoding" "gzip"
+chttp_connect $server_host $server_port
+chttp_send_only
+chttp_send_body_chunkgzip "This is gzipped."
+chttp_receive
+chttp_status_match 200

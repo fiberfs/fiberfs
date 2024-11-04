@@ -1,0 +1,34 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"editor.tabSize": 8,
+		"editor.insertSpaces": false,
+		"editor.detectIndentation": false,
+		"editor.stickyScroll.enabled": false,
+		"editor.rulers": [100],
+		"files.insertFinalNewline": true,
+		"C_Cpp.default.cStandard": "gnu17",
+		"C_Cpp.default.intelliSenseMode": "gcc-x64",
+		"C_Cpp.codeAnalysis.clangTidy.enabled": true,
+		"C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
+			"*.DeprecatedOrUnsafeBufferHandling"
+		],
+		"C_Cpp.default.includePath": [
+			"src"
+		],
+		"C_Cpp.default.compilerArgs": [
+			"-DCHTTP_OPENSSL",
+			"-DCHTTP_ZLIB"
+		],
+		"files.exclude": {
+			"**/*.o": true
+		},
+		"files.associations": {
+			"*.h": "c"
+		}
+	}
+}

@@ -1,0 +1,38 @@
+chttp_test "H1.1 partial and chunked with random dpage"
+
+server_init
+server_accept
+server_read_request
+server_send_response_partial 200
+server_start_chunked
+server_send_chunked 0123
+server_send_chunked 456
+server_send_chunked 789
+server_send_chunked 0
+server_send_chunked 12
+server_send_chunked 345678
+server_send_chunked 90
+server_send_chunked 1234
+server_send_chunked 5
+server_send_chunked 6
+server_send_chunked 7
+server_send_chunked 8
+server_send_chunked 9
+server_send_chunked 0123
+server_send_chunked 456
+server_send_chunked 7
+server_send_chunked 8
+server_send_chunked 9
+server_end_chunked
+
+random_range 4 32
+
+chttp_init_dynamic $random
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+
+random_range 0 20
+
+chttp_body_match 0123456789012345678901234567890123456789 $random

@@ -1,0 +1,14 @@
+chttp_test "H1 server test with body"
+
+server_init
+server_accept
+server_read_request
+server_send_response 200 TEST "body here!"
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_reason_match TEST
+chttp_body_match "body here!"

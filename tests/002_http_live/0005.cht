@@ -1,0 +1,58 @@
+chttp_test "RR DNS test"
+
+dns_lookup_or_skip dns01.nulltech.systems
+
+dns_lookup dns02.nulltech.systems
+
+equal $dns_value 127.0.0.1
+equal $dns_insertions 3
+
+dns_lookup dns02.nulltech.systems
+equal $dns_value 127.0.0.2
+
+dns_lookup dns02.nulltech.systems
+
+equal $dns_value 127.0.0.1
+equal $dns_lookups 4
+equal $dns_insertions 3
+equal $dns_cache_hits 2
+
+dns_lookup dns04.nulltech.systems
+
+equal $dns_value 127.0.0.1
+equal $dns_insertions 7
+
+dns_lookup dns04.nulltech.systems
+not_equal $dns_value 127.0.0.1
+
+dns_lookup dns04.nulltech.systems
+not_equal $dns_value 127.0.0.1
+
+dns_lookup dns04.nulltech.systems
+not_equal $dns_value 127.0.0.1
+
+dns_lookup dns04.nulltech.systems
+equal $dns_value 127.0.0.1
+
+dns_lookup dns04.nulltech.systems
+not_equal $dns_value 127.0.0.1
+
+dns_lookup dns04.nulltech.systems
+not_equal $dns_value 127.0.0.1
+
+dns_lookup dns04.nulltech.systems
+not_equal $dns_value 127.0.0.1
+
+dns_lookup dns04.nulltech.systems
+
+equal $dns_value 127.0.0.1
+equal $dns_lookups 13
+equal $dns_insertions 7
+equal $dns_cache_hits 10
+equal $dns_lru 0
+
+dns_lookup dns02.nulltech.systems
+
+equal $dns_lru 1
+
+dns_debug

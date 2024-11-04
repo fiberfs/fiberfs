@@ -1,0 +1,13 @@
+chttp_test "Early connect"
+
+server_init
+server_accept
+server_read_request
+server_header_match host $server_host
+server_send_response
+
+chttp_init
+chttp_connect $server_host $server_port
+chttp_url /
+chttp_send
+chttp_status_match 200

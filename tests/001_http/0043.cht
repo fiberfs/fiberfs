@@ -1,0 +1,17 @@
+chttp_test "304 response"
+
+server_init
+server_accept
+server_read_request
+server_header_match if-none-match \"1234\"
+server_send_response_partial 304
+server_send_header "ETag: \"1234\""
+server_send_header_done
+
+chttp_init
+chttp_url /
+chttp_add_header If-None-Match "\"1234\""
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 304
+chttp_header_match etag \"1234\"

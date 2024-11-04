@@ -1,0 +1,8 @@
+chttp_test "Connection timeout"
+
+chttp_init
+chttp_url /
+chttp_connect nulltech.systems 9976
+chttp_timeout_connect_ms 500
+chttp_send_only
+chttp_take_error

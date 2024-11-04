@@ -1,0 +1,13 @@
+chttp_test "Test ec2.rezsoft.org H1 gzip"
+
+gzip_or_skip
+connect_or_skip ec2.rezsoft.org 80
+
+chttp_init
+chttp_url /
+chttp_enable_gzip
+chttp_connect ec2.rezsoft.org 80
+chttp_send
+chttp_status_match 200
+equal $chttp_is_gzip 1
+chttp_body_submatch "(c) rezsoft"

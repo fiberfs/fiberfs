@@ -1,0 +1,13 @@
+chttp_test "DNS cache error"
+
+dns_cache_size 2
+
+dns_lookup_or_skip dns02.nulltech.systems
+
+equal $dns_insertions 2
+
+dns_lookup dns04.nulltech.systems
+
+equal $dns_err_alloc 1
+
+dns_debug

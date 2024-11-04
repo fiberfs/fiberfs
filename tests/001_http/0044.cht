@@ -1,0 +1,27 @@
+chttp_test "H1 100-continue"
+
+server_init
+server_accept
+server_read_request
+server_method_match PUT
+server_url_match /object
+server_header_match expect 100-continue
+server_body_match body!
+server_send_response 200 OK continued
+
+chttp_init
+chttp_method PUT
+chttp_url /object
+chttp_add_header "Expect" "100-continue"
+chttp_add_header "Content-Length" "5"
+chttp_connect $server_host $server_port
+chttp_send_only
+
+# 100
+chttp_receive
+chttp_status_match 100
+
+chttp_send_body "body!"
+chttp_receive
+chttp_status_match 200
+chttp_body_match "continued"

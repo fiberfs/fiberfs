@@ -1,0 +1,16 @@
+chttp_test "H1.1 partial and raw"
+
+server_init
+server_accept
+server_read_request
+server_send_response_partial 200
+server_send_raw "Content-Length: 5\r\n\r\n"
+server_send_raw "mixed"
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_reason_match OK
+chttp_body_match "mixed"

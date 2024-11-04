@@ -1,0 +1,12 @@
+chttp_test "Invalid response"
+
+server_init
+server_accept
+server_read_request
+server_send_raw "HTTP garbage\nsomething\r\n\r\n"
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_take_error

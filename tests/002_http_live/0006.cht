@@ -1,0 +1,10 @@
+chttp_test "Live DNS test"
+
+dns_lookup_or_skip dns03.nulltech.systems
+dns_lookup dns03.nulltech.systems 1
+
+equal $dns_insertions 6
+equal $dns_lookups 1
+equal $dns_dups 1
+
+dns_debug

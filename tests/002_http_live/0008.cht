@@ -1,0 +1,20 @@
+chttp_test "Disable DNS RR"
+
+dns_lookup_or_skip dns01.nulltech.systems
+
+dns_lookup dns04.nulltech.systems 2
+equal $dns_value 127.0.0.1
+
+dns_lookup dns04.nulltech.systems 2
+equal $dns_value 127.0.0.1
+
+dns_lookup dns04.nulltech.systems 2
+equal $dns_value 127.0.0.1
+
+dns_lookup dns04.nulltech.systems
+not_equal $dns_value 127.0.0.1
+
+equal $dns_insertions 5
+equal $dns_cache_hits 3
+
+dns_debug

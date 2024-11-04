@@ -1,0 +1,35 @@
+chttp_test "Reuse and gzip"
+
+gzip_or_skip
+
+server_init
+server_accept
+server_read_request
+server_method_match GET
+server_url_match /
+server_send_response 200 OK gzip 1
+
+chttp_init
+chttp_url /
+chttp_enable_gzip
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+equal $chttp_reused 0
+equal $chttp_is_gzip 1
+chttp_body_match gzip
+
+chttp_reset
+
+server_read_request
+server_method_match GET
+server_url_match /
+server_send_response 200 OK gzip2
+
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+equal $chttp_reused 1
+equal $chttp_is_gzip 0
+chttp_body_match gzip2

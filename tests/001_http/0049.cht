@@ -1,0 +1,13 @@
+chttp_test "TLS connection timeout"
+
+tls_or_skip
+
+server_init
+server_accept
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port 1
+chttp_timeout_connect_ms 500
+chttp_send_only
+chttp_take_error

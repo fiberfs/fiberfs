@@ -1,0 +1,16 @@
+chttp_test "H1.1 raw"
+
+server_init
+server_accept
+server_read_request
+server_send_raw "HTTP/1.1 222 ABC\r\n"
+server_send_raw "Content-Length: 3\r\n\r\n"
+server_send_raw "raw"
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 222
+chttp_reason_match ABC
+chttp_body_match "raw"

@@ -1,0 +1,4 @@
+chttp_test "Cleanup an unused context"
+
+chttp_init
+chttp_url /

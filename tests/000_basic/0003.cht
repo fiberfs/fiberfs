@@ -1,0 +1,6 @@
+chttp_test "Server flush async"
+
+server_init
+server_sleep_ms 100
+server_sleep_ms 10
+server_flush_async

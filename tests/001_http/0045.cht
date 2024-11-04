@@ -1,0 +1,17 @@
+chttp_test "TLS server"
+
+tls_or_skip
+
+server_init 127.0.0.1 1
+server_accept
+server_read_request
+server_url_match /tls
+server_send_response 200 TLS "tls body here"
+
+chttp_init
+chttp_url /tls
+chttp_connect $server_host $server_port 1
+chttp_send
+chttp_status_match 200
+chttp_reason_match TLS
+chttp_body_match "tls body here"

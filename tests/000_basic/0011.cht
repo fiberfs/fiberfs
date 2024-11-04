@@ -1,0 +1,97 @@
+chttp_test "TCP pool tests 2"
+
+tcp_pool_size 5
+tcp_pool_age_ms 100
+
+dns_lookup_or_skip dns02.nulltech.systems
+
+chttp_init
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+tcp_pool_debug
+
+sleep_ms 200
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+tcp_pool_debug
+
+chttp_url /
+chttp_connect dns02.nulltech.systems 2
+chttp_send_only
+chttp_take_error
+chttp_reset
+
+chttp_url /
+chttp_connect dns02.nulltech.systems 2
+chttp_send_only
+chttp_take_error
+chttp_reset
+
+chttp_url /
+chttp_connect dns02.nulltech.systems 2
+chttp_send_only
+chttp_take_error
+chttp_reset
+
+chttp_url /
+chttp_connect dns02.nulltech.systems 2
+chttp_send_only
+chttp_take_error
+chttp_reset
+
+tcp_pool_debug
+
+equal $tcp_pool_lookups 4
+equal $tcp_pool_cache_hits 2
+equal $tcp_pool_cache_misses 2
+equal $tcp_pool_lookups 4
+equal $tcp_pool_insertions 12
+equal $tcp_pool_expired 4
+equal $tcp_pool_deleted 12
+equal $tcp_pool_nuked 6

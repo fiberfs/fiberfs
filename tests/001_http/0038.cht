@@ -1,0 +1,25 @@
+chttp_test "Bad gzip at end"
+
+gzip_or_skip
+
+server_init
+server_accept
+server_read_request
+server_send_response_partial 200
+server_enable_gzip
+server_start_chunked
+server_send_chunked_gzip 0123
+server_send_chunked_gzip 456
+server_send_chunked_gzip 789.gzip
+server_send_chunked_gzip ""
+server_send_chunked bad
+server_end_chunked
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+equal $chttp_is_gzip 1
+chttp_body_read
+chttp_take_error

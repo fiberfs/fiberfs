@@ -1,0 +1,13 @@
+chttp_test "Blocking connect"
+
+server_init
+server_accept
+server_read_request
+server_send_response
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_timeout_connect_ms 0
+chttp_send
+chttp_status_match 200

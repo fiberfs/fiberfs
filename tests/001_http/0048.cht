@@ -1,0 +1,51 @@
+chttp_test "H1 PUT gzipped over TLS with 100-continue and reuse"
+
+gzip_or_skip
+tls_or_skip
+
+server_init 127.0.0.1 1
+server_accept
+server_read_request
+server_method_match PUT
+server_url_match /everything
+server_header_match expect 100-continue
+server_body_match "This is gzipped with TLS"
+server_send_response 200 ALL "all done"
+
+chttp_init
+chttp_method PUT
+chttp_url /everything
+chttp_add_header "Transfer-Encoding" "chunked"
+chttp_add_header "Content-Encoding" "gzip"
+chttp_add_header "Expect" "100-continue"
+chttp_connect $server_host $server_port $server_tls
+equal $chttp_is_tls 1
+equal $chttp_reused 0
+chttp_send_only
+# 100
+chttp_receive
+chttp_status_match 100
+# body
+chttp_send_body_chunkgzip "This is gzipped with TLS"
+# response
+chttp_receive
+chttp_status_match 200
+chttp_reason_match ALL
+chttp_body_match "all done"
+
+chttp_reset
+
+server_read_request
+server_method_match GET
+server_url_match /again
+server_send_response 200 OK done_tls 1
+
+chttp_url /again
+chttp_enable_gzip
+chttp_connect $server_host $server_port $server_tls
+chttp_send
+equal $chttp_is_tls 1
+equal $chttp_reused 1
+equal $chttp_is_gzip 1
+chttp_status_match 200
+chttp_body_match done_tls

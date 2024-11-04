@@ -1,0 +1,33 @@
+chttp_test "Valid partial chunks"
+
+server_init
+server_accept
+server_read_request
+server_send_response_partial 200
+server_start_chunked
+server_send_chunked ZZZ
+server_send_raw "1\r"
+server_sleep_ms 100
+server_send_raw "\n1\r"
+server_sleep_ms 100
+server_send_raw "\n2\r\n"
+server_sleep_ms 100
+server_send_raw "2"
+server_sleep_ms 100
+server_send_raw "2\r"
+server_sleep_ms 100
+server_send_raw "\n3"
+server_sleep_ms 100
+server_send_raw "\r\n3"
+server_sleep_ms 100
+server_send_raw "33\r\n0\r"
+server_sleep_ms 100
+server_send_raw "\n\r"
+server_sleep_ms 100
+server_send_raw "\n"
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_body_match ZZZ122333

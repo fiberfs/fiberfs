@@ -1,0 +1,16 @@
+chttp_test "Test naghibi.com H1 TLS and gzip"
+
+tls_or_skip
+gzip_or_skip
+connect_or_skip reza.naghibi.com 443
+
+random_range 4 1000
+
+chttp_init
+chttp_url /
+chttp_enable_gzip
+chttp_connect reza.naghibi.com 443 1
+chttp_send
+chttp_status_match 200
+equal $chttp_is_gzip 1
+chttp_body_submatch "(c) rezsoft" $random

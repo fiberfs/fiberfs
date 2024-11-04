@@ -1,0 +1,20 @@
+chttp_test "http 1.0 test"
+
+server_init
+server_accept
+server_read_request
+server_method_match GET
+server_url_match /
+server_version_match HTTP/1.0
+server_header_not_exists host
+server_header_submatch user-agent chttp
+server_send_response_H1_0
+
+chttp_init
+chttp_version 10
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_reason_match OK
+chttp_version_match 10

@@ -1,0 +1,14 @@
+chttp_test "Change method"
+
+server_init
+server_accept
+server_read_request
+server_method_match TEST
+server_send_response
+
+chttp_init
+chttp_method TEST
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200

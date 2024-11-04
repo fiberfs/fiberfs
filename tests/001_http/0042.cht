@@ -1,0 +1,18 @@
+chttp_test "Range response"
+
+server_init
+server_accept
+server_read_request
+server_send_response_partial 206
+server_send_header "Content-Range: bytes 0-9/20"
+server_send_header "Content-Length: 10"
+server_send_header_done
+server_send_raw "1234567890"
+
+chttp_init
+chttp_url /
+chttp_add_header Range "bytes=0-9"
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 206
+chttp_body_match 1234567890

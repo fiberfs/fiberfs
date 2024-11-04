@@ -1,0 +1,13 @@
+chttp_test "204 response"
+
+server_init
+server_accept
+server_read_request
+server_send_response_partial 204
+server_send_header_done
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 204

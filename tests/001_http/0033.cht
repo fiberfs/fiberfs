@@ -1,0 +1,18 @@
+chttp_test "H1 server test with gzip body"
+
+gzip_or_skip
+
+server_init
+server_accept
+server_read_request
+server_header_match accept-encoding gzip
+server_send_response 200 TEST "body here!" 1
+
+chttp_init
+chttp_url /
+chttp_enable_gzip
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+equal $chttp_is_gzip 1
+chttp_body_match "body here!"

@@ -1,0 +1,12 @@
+chttp_test "ipv6 test"
+
+server_init ::1
+server_accept
+server_read_request
+server_send_response
+
+chttp_init
+chttp_url /
+chttp_connect ::1 $server_port
+chttp_send
+chttp_status_match 200

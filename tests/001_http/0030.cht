@@ -1,0 +1,44 @@
+chttp_test "Multiple requests with a single context"
+
+server_init
+
+server_accept
+server_read_request
+server_method_match GET
+server_url_match /
+server_send_response
+
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+equal $chttp_reused 0
+chttp_status_match 200
+
+equal $tcp_pool_cache_misses 1
+
+chttp_reset
+
+tcp_pool_debug
+
+equal $tcp_pool_insertions 1
+
+server_read_request
+server_method_match GET
+server_url_match /
+server_send_response
+
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+equal $chttp_reused 1
+chttp_status_match 200
+
+tcp_pool_debug
+
+chttp_reset
+
+tcp_pool_debug
+
+equal $tcp_pool_cache_hits 1
+equal $tcp_pool_insertions 2

@@ -1,0 +1,15 @@
+chttp_test "User-agent override"
+
+server_init
+server_accept
+server_read_request
+server_header_match user-agent custom
+server_send_response
+
+chttp_init
+chttp_url /
+chttp_delete_header user-agent
+chttp_add_header User-agent custom
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200

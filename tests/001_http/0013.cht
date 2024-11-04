@@ -1,0 +1,25 @@
+chttp_test "Delete multiple headers"
+
+server_init
+server_accept
+server_read_request
+server_header_not_exists "x1"
+server_header_exists "x2"
+server_header_not_exists "x3"
+server_send_response
+
+chttp_init
+chttp_url /
+chttp_add_header x1 "x1 value"
+chttp_add_header x1 222
+chttp_add_header x2 something
+chttp_add_header x3 "x 333 3"
+chttp_add_header x3 "x 333 3"
+chttp_add_header x1 "another one"
+chttp_add_header x3 final
+chttp_delete_header x3
+chttp_add_header x1 again
+chttp_delete_header x1
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
