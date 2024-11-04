@@ -18,7 +18,8 @@
 			"*.DeprecatedOrUnsafeBufferHandling"
 		],
 		"C_Cpp.default.includePath": [
-			"src"
+			"src",
+			"src/chttp"
 		],
 		"C_Cpp.default.compilerArgs": [
 			"-DCHTTP_OPENSSL",
