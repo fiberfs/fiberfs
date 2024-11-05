@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 chttp
+ * Copyright (c) 2024 FiberFS
  *
  */
 
@@ -8,13 +8,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int chttp_test_entry_cmp(const struct fbr_test_cmdentry *k1,
+static int fbr_test_entry_cmp(const struct fbr_test_cmdentry *k1,
     const struct fbr_test_cmdentry *k2);
 
-RB_GENERATE_STATIC(fbr_test_tree, fbr_test_cmdentry, entry, chttp_test_entry_cmp)
+RB_GENERATE_STATIC(fbr_test_tree, fbr_test_cmdentry, entry, fbr_test_entry_cmp)
 
 static int
-chttp_test_entry_cmp(const struct fbr_test_cmdentry *k1,
+fbr_test_entry_cmp(const struct fbr_test_cmdentry *k1,
     const struct fbr_test_cmdentry *k2)
 {
 	assert(k1);
@@ -24,11 +24,11 @@ chttp_test_entry_cmp(const struct fbr_test_cmdentry *k1,
 }
 
 static void
-_test_cmd_register(struct fbr_test *test, const char *name, chttp_test_cmd_f *func)
+_test_cmd_register(struct fbr_test *test, const char *name, fbr_test_cmd_f *func)
 {
 	struct fbr_test_cmdentry *entry, *ret;
 
-	chttp_test_ok(test);
+	fbr_test_ok(test);
 
 	entry = malloc(sizeof(*entry));
 	assert(entry);
@@ -45,11 +45,11 @@ _test_cmd_register(struct fbr_test *test, const char *name, chttp_test_cmd_f *fu
 }
 
 static void
-_test_var_register(struct fbr_test *test, const char *name, chttp_test_var_f *func)
+_test_var_register(struct fbr_test *test, const char *name, fbr_test_var_f *func)
 {
 	struct fbr_test_cmdentry *entry, *ret;
 
-	chttp_test_ok(test);
+	fbr_test_ok(test);
 
 	entry = malloc(sizeof(*entry));
 	assert(entry);
@@ -66,13 +66,13 @@ _test_var_register(struct fbr_test *test, const char *name, chttp_test_var_f *fu
 }
 
 static void
-_test_cmds_free(struct chttp_test_context *ctx)
+_test_cmds_free(struct fbr_test_context *ctx)
 {
 	struct fbr_test *test;
 	struct fbr_test_cmdentry *entry, *next;
 
-	test = chttp_test_convert(ctx);
-	chttp_test_ok(test);
+	test = fbr_test_convert(ctx);
+	fbr_test_ok(test);
 
 	RB_FOREACH_SAFE(entry, fbr_test_tree, &test->cmd_tree, next) {
 		assert(entry->magic == FBR_TEST_ENTRY_MAGIC);
@@ -87,9 +87,9 @@ _test_cmds_free(struct chttp_test_context *ctx)
 }
 
 void
-chttp_test_cmds_init(struct fbr_test *test)
+fbr_test_cmds_init(struct fbr_test *test)
 {
-	chttp_test_ok(test);
+	fbr_test_ok(test);
 	assert(RB_EMPTY(&test->cmd_tree));
 
 #define CHTTP_TEST_CMD(cmd)					\
@@ -102,11 +102,11 @@ chttp_test_cmds_init(struct fbr_test *test)
 }
 
 struct fbr_test_cmdentry *
-chttp_test_cmds_get(struct fbr_test *test, const char *name)
+fbr_test_cmds_get(struct fbr_test *test, const char *name)
 {
 	struct fbr_test_cmdentry *result, find;
 
-	chttp_test_ok(test);
+	fbr_test_ok(test);
 	assert(name);
 
 	find.name = name;

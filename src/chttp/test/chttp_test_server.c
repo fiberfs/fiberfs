@@ -22,14 +22,14 @@ struct _server_cmdentry {
 
 	TAILQ_ENTRY(_server_cmdentry)		entry;
 
-	struct chttp_test_cmd			cmd;
+	struct fbr_test_cmd			cmd;
 };
 
 struct chttp_test_server {
 	unsigned int				magic;
 #define _SERVER_MAGIC				0xF3969B6A
 
-	struct chttp_test_context		*ctx;
+	struct fbr_test_context			*ctx;
 
 	pthread_t				thread;
 
@@ -64,10 +64,10 @@ extern const char *_CHTTP_HEADER_FIRST;
 static void *_server_thread(void *arg);
 
 static inline struct chttp_test_server *
-_server_context_ok(struct chttp_test_context *ctx)
+_server_context_ok(struct fbr_test_context *ctx)
 {
 	assert(ctx);
-	chttp_test_ERROR(!ctx->server, "server context does not exist");
+	fbr_test_ERROR(!ctx->server, "server context does not exist");
 	_server_ok(ctx->server);
 	return ctx->server;
 }
@@ -134,7 +134,7 @@ _server_cmdentry_alloc(void)
 }
 
 static void
-_server_cmd_async(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
+_server_cmd_async(struct chttp_test_server *server, struct fbr_test_cmd *cmd)
 {
 	struct _server_cmdentry *cmdentry;
 	size_t i;
@@ -166,7 +166,7 @@ _server_cmd_async(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 }
 
 static void
-_server_finish(struct chttp_test_context *ctx)
+_server_finish(struct fbr_test_context *ctx)
 {
 	struct chttp_test_server *server;
 	struct _server_cmdentry *cmdentry, *temp;
@@ -185,10 +185,10 @@ _server_finish(struct chttp_test_context *ctx)
 	_server_SIGNAL(server);
 	_server_UNLOCK(server);
 
-	ret = chttp_test_join_thread(server->thread, &server->stopped, _SERVER_JOIN_TIMEOUT_MS);
-	chttp_test_ERROR(ret, "server thread is blocked");
+	ret = fbr_test_join_thread(server->thread, &server->stopped, _SERVER_JOIN_TIMEOUT_MS);
+	fbr_test_ERROR(ret, "server thread is blocked");
 
-	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread joined");
+	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread joined");
 
 	assert_zero(pthread_mutex_destroy(&server->cmd_lock));
 	assert_zero(pthread_mutex_destroy(&server->flush_lock));
@@ -200,7 +200,7 @@ _server_finish(struct chttp_test_context *ctx)
 
 		TAILQ_REMOVE(&server->cmd_list, cmdentry, entry);
 
-		chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* unfinished cmd found %s",
+		fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* unfinished cmd found %s",
 			cmdentry->cmd.name);
 
 		_server_cmdentry_free(cmdentry);
@@ -209,10 +209,10 @@ _server_finish(struct chttp_test_context *ctx)
 	}
 
 	assert(TAILQ_EMPTY(&server->cmd_list));
-	chttp_test_ERROR(finished, "all commands must be finished");
+	fbr_test_ERROR(finished, "all commands must be finished");
 
 	if (server->chttp) {
-		chttp_test_ERROR(server->chttp->error, "server error detected (%s)",
+		fbr_test_ERROR(server->chttp->error, "server error detected (%s)",
 			chttp_error_msg(server->chttp));
 
 		chttp_finish(server->chttp);
@@ -241,7 +241,7 @@ _server_finish(struct chttp_test_context *ctx)
 }
 
 static void
-_gzip_finish(struct chttp_test_context *ctx)
+_gzip_finish(struct fbr_test_context *ctx)
 {
 	assert(ctx);
 	assert(ctx->gzip);
@@ -260,7 +260,7 @@ _server_init_socket(struct chttp_test_server *server)
 	assert(server->saddr.sock == -1);
 
 	val = chttp_tcp_listen(&server->saddr, server->ip_str, 0, 0);
-	chttp_test_ERROR(val || server->saddr.error, "*SERVER* server listen");
+	fbr_test_ERROR(val || server->saddr.error, "*SERVER* server listen");
 
 	if (server->tls) {
 		server->saddr.tls = 1;
@@ -269,18 +269,18 @@ _server_init_socket(struct chttp_test_server *server)
 	val = snprintf(server->port_str, sizeof(server->port_str), "%d", server->saddr.listen_port);
 	assert((size_t)val < sizeof(server->port_str));
 
-	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* socket port: %d",
+	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* socket port: %d",
 		server->saddr.listen_port);
 }
 
 void
-chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	assert(ctx);
-	chttp_test_ERROR(cmd->param_count > 2, "too many parameters");
-	chttp_test_ERROR(ctx->server != NULL, "server context exists");
+	fbr_test_ERROR(cmd->param_count > 2, "too many parameters");
+	fbr_test_ERROR(ctx->server != NULL, "server context exists");
 
 	server = malloc(sizeof(*server));
 	assert(server);
@@ -298,18 +298,18 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 	assert_zero(pthread_cond_init(&server->flush_signal, NULL));
 
 	if (cmd->param_count >= 1) {
-		chttp_test_ERROR_string(cmd->params[0].value);
+		fbr_test_ERROR_string(cmd->params[0].value);
 		snprintf(server->ip_str, sizeof(server->ip_str), "%s", cmd->params[0].value);
 	} else {
 		snprintf(server->ip_str, sizeof(server->ip_str), "%s", _SERVER_IP_DEFAULT);
 	}
-	chttp_test_ERROR_string(server->ip_str);
+	fbr_test_ERROR_string(server->ip_str);
 
 	if (cmd->param_count >= 2) {
-		chttp_test_ERROR_string(cmd->params[1].value);
+		fbr_test_ERROR_string(cmd->params[1].value);
 		if (!strcmp(cmd->params[1].value, "1")) {
 			server->tls = 1;
-			chttp_test_ERROR(!chttp_tls_enabled(), "TLS not enabled");
+			fbr_test_ERROR(!chttp_tls_enabled(), "TLS not enabled");
 		}
 	}
 
@@ -331,18 +331,18 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 
 	fbr_test_register_finish(ctx, "server", _server_finish);
 
-	chttp_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* init completed");
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* init completed");
 }
 
 void
-chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_accept(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	char remote[128] = {0};
 	int ret, remote_port = -1;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
+	fbr_test_ERROR_param_count(cmd, 0);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -356,28 +356,28 @@ chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_c
 
 	ret = chttp_tcp_accept(&server->addr, &server->saddr);
 
-	chttp_test_ERROR(ret || server->addr.error, "*SERVER* accept error %d",
+	fbr_test_ERROR(ret || server->addr.error, "*SERVER* accept error %d",
 		server->addr.error);
 
 	if (server->addr.tls) {
-		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* TLS established");
+		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* TLS established");
 	}
 
 	chttp_addr_connected(&server->addr);
 
 	chttp_sa_string(&server->addr.sa, remote, sizeof(remote), &remote_port);
 
-	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* remote client %s:%d",
+	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* remote client %s:%d",
 		remote, remote_port);
 }
 
 void
-chttp_test_cmd_server_close(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_close(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
+	fbr_test_ERROR_param_count(cmd, 0);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -393,31 +393,31 @@ chttp_test_cmd_server_close(struct chttp_test_context *ctx, struct chttp_test_cm
 }
 
 char *
-chttp_test_var_server_host(struct chttp_test_context *ctx)
+chttp_test_var_server_host(struct fbr_test_context *ctx)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
 	chttp_addr_connected(&server->saddr);
-	chttp_test_ERROR_string(server->ip_str);
+	fbr_test_ERROR_string(server->ip_str);
 
 	return server->ip_str;
 }
 
 char *
-chttp_test_var_server_port(struct chttp_test_context *ctx)
+chttp_test_var_server_port(struct fbr_test_context *ctx)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
 	chttp_addr_connected(&server->saddr);
-	chttp_test_ERROR_string(server->port_str);
+	fbr_test_ERROR_string(server->port_str);
 
 	return server->port_str;
 }
 
 char *
-chttp_test_var_server_tls(struct chttp_test_context *ctx)
+chttp_test_var_server_tls(struct fbr_test_context *ctx)
 {
 	struct chttp_test_server *server;
 
@@ -432,15 +432,15 @@ chttp_test_var_server_tls(struct chttp_test_context *ctx)
 }
 
 void
-chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	struct fbr_test *test;
 	const char *expect;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
-	test = chttp_test_convert(server->ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+	test = fbr_test_convert(server->ctx);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -450,7 +450,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	chttp_addr_connected(&server->addr);
 
 	if (server->chttp) {
-		chttp_test_ERROR(server->chttp->error, "server error detected (%s)",
+		fbr_test_ERROR(server->chttp->error, "server error detected (%s)",
 			chttp_error_msg(server->chttp));
 
 		chttp_context_free(server->chttp);
@@ -469,34 +469,34 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 
 	do {
 		chttp_tcp_read(server->chttp);
-		chttp_test_ERROR(server->chttp->state >= CHTTP_STATE_CLOSED,
+		fbr_test_ERROR(server->chttp->state >= CHTTP_STATE_CLOSED,
 			"server read network error");
 
 		chttp_header_parse_request(server->chttp);
-		chttp_test_ERROR(server->chttp->error, "*SERVER* error: %s",
+		fbr_test_ERROR(server->chttp->error, "*SERVER* error: %s",
 			chttp_error_msg(server->chttp));
 
-		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* got headers");
+		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* got headers");
 	} while (server->chttp->state == CHTTP_STATE_HEADERS);
 
 	assert_zero(server->chttp->error);
 	assert(server->chttp->state == CHTTP_STATE_BODY);
 
-	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* headers ready");
+	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* headers ready");
 
 	expect = chttp_header_get(server->chttp, "expect");
 
 	if (expect && !strcasecmp(expect, "100-continue")) {
 		chttp_tcp_send(&server->chttp->addr, "HTTP/1.1 100 Continue\r\n\r\n", 25);
-		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* 100 acked");
+		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* 100 acked");
 	}
 
 	chttp_body_init(server->chttp, CHTTP_BODY_REQUEST);
 
-	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* body ready");
+	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* body ready");
 
 	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
-		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
+		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
 		chttp_dpage_debug(server->chttp->dpage);
 	}
 
@@ -509,7 +509,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 }
 
 static void
-_server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+_server_match_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	const char *header, *header_value, *expected, *dup;
@@ -558,7 +558,7 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 	} else if (!strcmp(cmd->name, "server_header_match")) {
 		assert(cmd->param_count == 2);
 
-		chttp_test_unescape(&cmd->params[1]);
+		fbr_test_unescape(&cmd->params[1]);
 
 		header = cmd->params[0].value;
 		expected = cmd->params[1].value;
@@ -567,7 +567,7 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 	} else if (!strcmp(cmd->name, "server_header_submatch")) {
 		assert(cmd->param_count == 2);
 
-		chttp_test_unescape(&cmd->params[1]);
+		fbr_test_unescape(&cmd->params[1]);
 
 		header = cmd->params[0].value;
 		expected = cmd->params[1].value;
@@ -587,9 +587,9 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 		header = cmd->params[0].value;
 		header_value = chttp_header_get(server->chttp, header);
 
-		chttp_test_ERROR(header_value != NULL, "header %s exists", header);
+		fbr_test_ERROR(header_value != NULL, "header %s exists", header);
 
-		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* header not exists %s",
+		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* header not exists %s",
 			header);
 
 		return;
@@ -597,35 +597,34 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 		assert_zero("INVALID SERVER MATCH");
 	}
 
-	chttp_test_ERROR(!header_value, "header %s not found", header);
-	chttp_test_ERROR(dup != NULL, "duplicate %s header found", header);
+	fbr_test_ERROR(!header_value, "header %s not found", header);
+	fbr_test_ERROR(dup != NULL, "duplicate %s header found", header);
 
 	if (!expected) {
-		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* header exists %s",
+		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* header exists %s",
 			header);
 		return;
 	}
 
 	if (sub) {
-		chttp_test_ERROR(!strstr(header_value, expected), "value %s not found in header "
+		fbr_test_ERROR(!strstr(header_value, expected), "value %s not found in header "
 			"%s:%s", expected, header, header_value);
 	} else {
-		chttp_test_ERROR(strcmp(header_value, expected), "headers dont match, found %s:%s, "
+		fbr_test_ERROR(strcmp(header_value, expected), "headers dont match, found %s:%s, "
 			"expected %s", header, header_value, expected);
 	}
 
-	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* headers match %s:%s%s%s%s",
+	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* headers match %s:%s%s%s%s",
 		header, header_value, sub ? " (" : "", sub ? expected : "", sub ? ")" : "");
 }
 
 void
-chttp_test_cmd_server_method_match(struct chttp_test_context *ctx,
-    struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_method_match(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
 	cmd->func = &_server_match_header;
 
@@ -633,13 +632,12 @@ chttp_test_cmd_server_method_match(struct chttp_test_context *ctx,
 }
 
 void
-chttp_test_cmd_server_url_match(struct chttp_test_context *ctx,
-    struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_url_match(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
 	cmd->func = &_server_match_header;
 
@@ -647,13 +645,12 @@ chttp_test_cmd_server_url_match(struct chttp_test_context *ctx,
 }
 
 void
-chttp_test_cmd_server_version_match(struct chttp_test_context *ctx,
-    struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_version_match(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
 	cmd->func = &_server_match_header;
 
@@ -661,13 +658,12 @@ chttp_test_cmd_server_version_match(struct chttp_test_context *ctx,
 }
 
 void
-chttp_test_cmd_server_header_match(struct chttp_test_context *ctx,
-    struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_header_match(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 2);
+	fbr_test_ERROR_param_count(cmd, 2);
 
 	cmd->func = &_server_match_header;
 
@@ -675,13 +671,12 @@ chttp_test_cmd_server_header_match(struct chttp_test_context *ctx,
 }
 
 void
-chttp_test_cmd_server_header_submatch(struct chttp_test_context *ctx,
-    struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_header_submatch(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 2);
+	fbr_test_ERROR_param_count(cmd, 2);
 
 	cmd->func = &_server_match_header;
 
@@ -689,13 +684,12 @@ chttp_test_cmd_server_header_submatch(struct chttp_test_context *ctx,
 }
 
 void
-chttp_test_cmd_server_header_exists(struct chttp_test_context *ctx,
-    struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_header_exists(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
 	cmd->func = &_server_match_header;
 
@@ -703,13 +697,13 @@ chttp_test_cmd_server_header_exists(struct chttp_test_context *ctx,
 }
 
 void
-chttp_test_cmd_server_header_not_exists(struct chttp_test_context *ctx,
-    struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_header_not_exists(struct fbr_test_context *ctx,
+    struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
 	cmd->func = &_server_match_header;
 
@@ -717,7 +711,7 @@ chttp_test_cmd_server_header_not_exists(struct chttp_test_context *ctx,
 }
 
 void
-chttp_test_cmd_server_body_match(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_body_match(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	char body[1024], gzip_buf[1024];
@@ -725,7 +719,7 @@ chttp_test_cmd_server_body_match(struct chttp_test_context *ctx, struct chttp_te
 	struct chttp_gzip *gzip;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -750,7 +744,7 @@ chttp_test_cmd_server_body_match(struct chttp_test_context *ctx, struct chttp_te
 
 	body[body_len] = '\0';
 
-	chttp_test_ERROR(strcmp(body, cmd->params[0].value), "bodies dont match");
+	fbr_test_ERROR(strcmp(body, cmd->params[0].value), "bodies dont match");
 
 	assert(server->chttp->state == CHTTP_STATE_IDLE);
 
@@ -765,7 +759,7 @@ _server_send_buf(struct chttp_test_server *server, const void *buf, size_t len)
 	chttp_addr_connected(&server->addr);
 
 	chttp_tcp_send(&server->addr, buf, len);
-	chttp_test_ERROR(server->addr.error, "server send error %d", server->addr.error);
+	fbr_test_ERROR(server->addr.error, "server send error %d", server->addr.error);
 }
 
 static void __chttp_attr_printf
@@ -788,7 +782,7 @@ _server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
 }
 
 static void
-_server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *cmd,
+_server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd,
     int H1_1, int partial)
 {
 	long status;
@@ -811,11 +805,11 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 	body_len = 0;
 
 	if (cmd->param_count >= 1) {
-		status = chttp_test_parse_long(cmd->params[0].value);
+		status = fbr_test_parse_long(cmd->params[0].value);
 		assert(status > 0 && status < 1000);
 	}
 	if (cmd->param_count >= 2) {
-		chttp_test_ERROR_string(cmd->params[1].value);
+		fbr_test_ERROR_string(cmd->params[1].value);
 		reason = cmd->params[1].value;
 	}
 	if (cmd->param_count >= 3) {
@@ -824,7 +818,7 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 		body_len = cmd->params[2].len;
 	}
 	if (cmd->param_count >= 4) {
-		chttp_test_ERROR_string(cmd->params[3].value);
+		fbr_test_ERROR_string(cmd->params[3].value);
 		if (!strcmp(cmd->params[3].value, "1")) {
 			assert(body_len < sizeof(gzip_buf));
 
@@ -872,14 +866,14 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 }
 
 void
-chttp_test_cmd_server_send_response(struct chttp_test_context *ctx,
-    struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_response(struct fbr_test_context *ctx,
+    struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
 	assert(cmd);
-	chttp_test_ERROR(cmd->param_count > 4, "too many parameters");
+	fbr_test_ERROR(cmd->param_count > 4, "too many parameters");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -890,14 +884,14 @@ chttp_test_cmd_server_send_response(struct chttp_test_context *ctx,
 }
 
 void
-chttp_test_cmd_server_send_response_H1_0(struct chttp_test_context *ctx,
-    struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_response_H1_0(struct fbr_test_context *ctx,
+    struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
 	assert(cmd);
-	chttp_test_ERROR(cmd->param_count > 4, "too many parameters");
+	fbr_test_ERROR(cmd->param_count > 4, "too many parameters");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -908,14 +902,14 @@ chttp_test_cmd_server_send_response_H1_0(struct chttp_test_context *ctx,
 }
 
 void
-chttp_test_cmd_server_send_response_partial(struct chttp_test_context *ctx,
-    struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_response_partial(struct fbr_test_context *ctx,
+    struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
 	assert(cmd);
-	chttp_test_ERROR(cmd->param_count > 2, "too many parameters");
+	fbr_test_ERROR(cmd->param_count > 2, "too many parameters");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -926,30 +920,30 @@ chttp_test_cmd_server_send_response_partial(struct chttp_test_context *ctx,
 }
 
 void
-chttp_test_cmd_server_send_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
 		return;
 	}
 
-	chttp_test_unescape(&cmd->params[0]);
+	fbr_test_unescape(&cmd->params[0]);
 
 	_server_send_printf(server, "%s\r\n", cmd->params[0].value);
 }
 
 void
-chttp_test_cmd_server_send_header_done(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_header_done(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
+	fbr_test_ERROR_param_count(cmd, 0);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -960,13 +954,13 @@ chttp_test_cmd_server_send_header_done(struct chttp_test_context *ctx, struct ch
 }
 
 void
-chttp_test_cmd_server_enable_gzip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_enable_gzip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
-	chttp_test_ERROR(ctx->gzip != NULL, "gzip already initialized");
+	fbr_test_ERROR_param_count(cmd, 0);
+	fbr_test_ERROR(ctx->gzip != NULL, "gzip already initialized");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -984,12 +978,12 @@ chttp_test_cmd_server_enable_gzip(struct chttp_test_context *ctx, struct chttp_t
 }
 
 void
-chttp_test_cmd_server_start_chunked(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_start_chunked(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
+	fbr_test_ERROR_param_count(cmd, 0);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -1000,32 +994,32 @@ chttp_test_cmd_server_start_chunked(struct chttp_test_context *ctx, struct chttp
 }
 
 void
-chttp_test_cmd_server_send_chunked(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_chunked(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
 		return;
 	}
 
-	chttp_test_unescape(&cmd->params[0]);
+	fbr_test_unescape(&cmd->params[0]);
 
 	_server_send_printf(server, "%x\r\n%s\r\n", (unsigned int)cmd->params[0].len,
 		cmd->params[0].value);
 }
 
 void
-chttp_test_cmd_server_send_chunked_gzip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_chunked_gzip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
 	assert(cmd);
-	chttp_test_ERROR(cmd->param_count != 1, "bad parameters");
+	fbr_test_ERROR(cmd->param_count != 1, "bad parameters");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -1034,7 +1028,7 @@ chttp_test_cmd_server_send_chunked_gzip(struct chttp_test_context *ctx, struct c
 
 	assert(ctx->gzip);
 
-	chttp_test_unescape(&cmd->params[0]);
+	fbr_test_unescape(&cmd->params[0]);
 
 	if (cmd->params[0].len == 0) {
 		chttp_gzip_send_chunk(ctx->gzip, &server->addr, NULL, 0);
@@ -1044,12 +1038,12 @@ chttp_test_cmd_server_send_chunked_gzip(struct chttp_test_context *ctx, struct c
 }
 
 void
-chttp_test_cmd_server_end_chunked(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_end_chunked(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
+	fbr_test_ERROR_param_count(cmd, 0);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -1064,31 +1058,31 @@ chttp_test_cmd_server_end_chunked(struct chttp_test_context *ctx, struct chttp_t
 }
 
 void
-chttp_test_cmd_server_send_raw(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_raw(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
 		return;
 	}
 
-	chttp_test_unescape(&cmd->params[0]);
+	fbr_test_unescape(&cmd->params[0]);
 
 	_server_send_buf(server, cmd->params[0].value, cmd->params[0].len);
 }
 
 void
-chttp_test_cmd_server_send_raw_sock(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_raw_sock(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	ssize_t ret;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -1097,14 +1091,14 @@ chttp_test_cmd_server_send_raw_sock(struct chttp_test_context *ctx, struct chttp
 
 	chttp_addr_connected(&server->addr);
 
-	chttp_test_unescape(&cmd->params[0]);
+	fbr_test_unescape(&cmd->params[0]);
 
 	ret = send(server->addr.sock, cmd->params[0].value, cmd->params[0].len, MSG_NOSIGNAL);
 	assert(ret >= 0 && (size_t)ret == cmd->params[0].len);
 }
 
 void
-chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_random_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	struct chttp_test_md5 md5;
@@ -1116,34 +1110,34 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 	int do_gzip;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR(cmd->param_count > 3, "Too many params");
+	fbr_test_ERROR(cmd->param_count > 3, "Too many params");
 
 	bodylen = -1;
 	chunklen = -1;
 	do_gzip = 0;
 
 	if (cmd->param_count > 0) {
-		bodylen = chttp_test_parse_long(cmd->params[0].value);
+		bodylen = fbr_test_parse_long(cmd->params[0].value);
 	}
 	if (cmd->param_count > 1) {
-		chunklen = chttp_test_parse_long(cmd->params[1].value);
+		chunklen = fbr_test_parse_long(cmd->params[1].value);
 	}
 	if (cmd->param_count > 2) {
-		do_gzip = chttp_test_parse_long(cmd->params[2].value) > 0 ? 1 : 0;
+		do_gzip = fbr_test_parse_long(cmd->params[2].value) > 0 ? 1 : 0;
 	}
 
-	chttp_test_ERROR(do_gzip && !chunklen, "gzip requires a valid chunklen");
+	fbr_test_ERROR(do_gzip && !chunklen, "gzip requires a valid chunklen");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
 		return;
 	}
 
-	chttp_test_random_seed();
+	fbr_test_random_seed();
 	chttp_test_md5_init(&md5);
 
 	if (bodylen < 0) {
-		bodylen = chttp_test_random(0, _SERVER_MAX_RANDOM_BODYLEN);
+		bodylen = fbr_test_gen_random(0, _SERVER_MAX_RANDOM_BODYLEN);
 	}
 
 	if (do_gzip) {
@@ -1165,7 +1159,7 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 
 	while (sent < (size_t)bodylen) {
 		if (chunklen < 0) {
-			send_size = chttp_test_random(1, _SERVER_MAX_RANDOM_CHUNKLEN);
+			send_size = fbr_test_gen_random(1, _SERVER_MAX_RANDOM_CHUNKLEN);
 		} else if (chunklen == 0) {
 			send_size = bodylen;
 		} else {
@@ -1188,7 +1182,7 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 				len = sizeof(buf);
 			}
 
-			chttp_test_fill_random(buf, len);
+			fbr_test_fill_random(buf, len);
 
 			if (do_gzip) {
 				assert(chunklen);
@@ -1225,50 +1219,50 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 		_server_send_printf(server, "0\r\n\r\n");
 	}
 
-	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* sent random body bytes %zu "
+	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* sent random body bytes %zu "
 		"(%zu %zu)", sent, chunks, subchunks);
 
 	chttp_test_md5_final(&md5);
 	chttp_test_md5_store_server(ctx, &md5);
 
-	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* body md5 %s", ctx->md5_server);
+	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* body md5 %s", ctx->md5_server);
 }
 
 void
-chttp_test_cmd_server_sleep_ms(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_sleep_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	long ms;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
-	ms = chttp_test_parse_long(cmd->params[0].value);
-	chttp_test_ERROR(ms < 0, "invalid sleep time");
+	ms = fbr_test_parse_long(cmd->params[0].value);
+	fbr_test_ERROR(ms < 0, "invalid sleep time");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
 		return;
 	}
 
-	chttp_test_sleep_ms(ms);
+	fbr_test_sleep_ms(ms);
 
-	chttp_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* slept %ldms", ms);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* slept %ldms", ms);
 }
 
 void
-chttp_test_cmd_server_flush_async(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_flush_async(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
+	fbr_test_ERROR_param_count(cmd, 0);
 
 	if (cmd->async) {
 		assert_zero(pthread_mutex_lock(&server->flush_lock));
 
 		assert_zero(pthread_cond_signal(&server->flush_signal));
-		chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* flush signal sent");
+		fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* flush signal sent");
 
 		assert_zero(pthread_mutex_unlock(&server->flush_lock));
 
@@ -1279,13 +1273,13 @@ chttp_test_cmd_server_flush_async(struct chttp_test_context *ctx, struct chttp_t
 
 	_server_cmd_async(server, cmd);
 
-	chttp_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* waiting for flush...");
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* waiting for flush...");
 
 	assert_zero(pthread_cond_wait(&server->flush_signal, &server->flush_lock));
 
 	assert_zero(pthread_mutex_unlock(&server->flush_lock));
 
-	chttp_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* flushed");
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* flushed");
 }
 
 static void
@@ -1299,7 +1293,7 @@ _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 
 	cmdentry->cmd.func(server->ctx, &cmdentry->cmd);
 
-	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread cmd %s completed",
+	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread cmd %s completed",
 		cmdentry->cmd.name);
 }
 
@@ -1317,7 +1311,7 @@ _server_thread(void *arg)
 	server->started = 1;
 	_server_SIGNAL(server);
 
-	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread started");
+	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread started");
 
 	while (!server->stop) {
 		if (TAILQ_EMPTY(&server->cmd_list)) {
@@ -1345,7 +1339,7 @@ _server_thread(void *arg)
 
 	_server_UNLOCK(server);
 
-	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread finished");
+	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread finished");
 
 	return NULL;
 }

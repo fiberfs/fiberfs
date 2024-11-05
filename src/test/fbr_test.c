@@ -8,15 +8,15 @@
 #include <stdlib.h>
 
 static void
-_finish_test(struct chttp_test_context *ctx)
+_finish_test(struct fbr_test_context *ctx)
 {
 	struct fbr_test *test;
 
-	test = chttp_test_convert(ctx);
+	test = fbr_test_convert(ctx);
 
-	chttp_test_ok(test);
-	chttp_test_ERROR(test->context.chttp != NULL, "chttp context detected");
-	chttp_test_ERROR(test->context.server != NULL, "chttp server detected");
+	fbr_test_ok(test);
+	fbr_test_ERROR(test->context.chttp != NULL, "chttp context detected");
+	fbr_test_ERROR(test->context.server != NULL, "chttp server detected");
 
 	if (test->ft_file) {
 		fclose(test->ft_file);
@@ -43,8 +43,8 @@ _init_test(struct fbr_test *test)
 	RB_INIT(&test->cmd_tree);
 	TAILQ_INIT(&test->finish_list);
 
-	chttp_test_ok(test);
-	chttp_test_ok(chttp_test_convert(&test->context));
+	fbr_test_ok(test);
+	fbr_test_ok(fbr_test_convert(&test->context));
 
 	fbr_test_register_finish(&test->context, "context", _finish_test);
 }
@@ -63,23 +63,23 @@ _test_run_test_file(void *arg)
 	struct fbr_test_cmdentry *cmd_entry;
 
 	test = (struct fbr_test*)arg;
-	chttp_test_ok(test);
+	fbr_test_ok(test);
 	assert_zero(test->stopped);
 
 	test->ft_file = fopen(test->test_file, "r");
-	chttp_test_ERROR(!test->ft_file, "invalid file %s", test->test_file);
+	fbr_test_ERROR(!test->ft_file, "invalid file %s", test->test_file);
 
-	while (chttp_test_readline(test, 0)) {
-		chttp_test_parse_cmd(test);
+	while (fbr_test_readline(test, 0)) {
+		fbr_test_parse_cmd(test);
 
-		chttp_test_ERROR(!test->cmds && strcmp(test->cmd.name, "chttp_test"),
+		fbr_test_ERROR(!test->cmds && strcmp(test->cmd.name, "chttp_test"),
 			"test file must begin with chttp_test");
 
 		test->cmds++;
 
-		cmd_entry = chttp_test_cmds_get(test, test->cmd.name);
-		chttp_test_ERROR(!cmd_entry || !cmd_entry->is_cmd,
-			"command %s not found (line %zu)", test->cmd.name, chttp_test_line_pos(test));
+		cmd_entry = fbr_test_cmds_get(test, test->cmd.name);
+		fbr_test_ERROR(!cmd_entry || !cmd_entry->is_cmd,
+			"command %s not found (line %zu)", test->cmd.name, fbr_test_line_pos(test));
 		assert(cmd_entry->cmd_func);
 
 		test->cmd.func = cmd_entry->cmd_func;
@@ -104,7 +104,7 @@ main(int argc, char **argv)
 	int i, ret;
 
 	_init_test(&test);
-	chttp_test_cmds_init(&test);
+	fbr_test_cmds_init(&test);
 
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-q")) {
@@ -114,7 +114,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[i], "-vv")) {
 			test.verbocity = FBR_LOG_VERY_VERBOSE;
 		} else if (!strcmp(argv[i], "-V")) {
-			chttp_test_log(&test.context, FBR_LOG_FORCE, "chttp_test %s",
+			fbr_test_log(&test.context, FBR_LOG_FORCE, "chttp_test %s",
 				CHTTP_VERSION);
 			return 0;
 		} else if (!strcmp(argv[i], "-h")) {
@@ -135,40 +135,40 @@ main(int argc, char **argv)
 
 	assert_zero(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
 
-	ret = chttp_test_join_thread(test.thread, &test.stopped, CHTTP_TEST_TIMEOUT_SEC * 1000);
-	chttp_test_ERROR(ret, "test timed out after %ds", CHTTP_TEST_TIMEOUT_SEC);
+	ret = fbr_test_join_thread(test.thread, &test.stopped, FBR_TEST_TIMEOUT_SEC * 1000);
+	fbr_test_ERROR(ret, "test timed out after %ds", FBR_TEST_TIMEOUT_SEC);
 
 	if (test.error) {
-		chttp_test_log(&test.context, FBR_LOG_FORCE, "FAILED");
+		fbr_test_log(&test.context, FBR_LOG_FORCE, "FAILED");
 		return 1;
 	} else if (test.skip) {
 		fbr_test_run_all_finish(&test);
-		chttp_test_log(NULL, FBR_LOG_FORCE, "SKIPPED");
+		fbr_test_log(NULL, FBR_LOG_FORCE, "SKIPPED");
 		return 0;
 	}
 
 	fbr_test_run_all_finish(&test);
 
-	chttp_test_log(NULL, FBR_LOG_FORCE, "PASSED");
+	fbr_test_log(NULL, FBR_LOG_FORCE, "PASSED");
 
 	return 0;
 }
 
 void
-fbr_test_register_finish(struct chttp_test_context *ctx, const char *name,
+fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
     fbr_test_finish_f *func)
 {
 	struct fbr_test *test;
 	struct fbr_test_finish *finish;
 
-	test = chttp_test_convert(ctx);
+	test = fbr_test_convert(ctx);
 	assert(name && *name);
 
 	TAILQ_FOREACH(finish, &test->finish_list, entry) {
 		assert(finish->magic == FBR_TEST_FINISH_MAGIC);
-		chttp_test_ERROR(!strcmp(finish->name, name),
+		fbr_test_ERROR(!strcmp(finish->name, name),
 			"cannot register the same finish name twice");
-		chttp_test_ERROR(finish->func == func,
+		fbr_test_ERROR(finish->func == func,
 			"cannot register the same finish function twice");
 	}
 
@@ -185,12 +185,12 @@ fbr_test_register_finish(struct chttp_test_context *ctx, const char *name,
 }
 
 void
-fbr_test_run_finish(struct chttp_test_context *ctx, const char *name)
+fbr_test_run_finish(struct fbr_test_context *ctx, const char *name)
 {
 	struct fbr_test *test;
 	struct fbr_test_finish *finish, *temp;
 
-	test = chttp_test_convert(ctx);
+	test = fbr_test_convert(ctx);
 	assert(name && *name);
 
 	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
@@ -210,7 +210,7 @@ fbr_test_run_finish(struct chttp_test_context *ctx, const char *name)
 		return;
 	}
 
-	chttp_test_ERROR(1, "finish task %s not found", name);
+	fbr_test_ERROR(1, "finish task %s not found", name);
 }
 
 void
@@ -218,10 +218,10 @@ fbr_test_run_all_finish(struct fbr_test *test)
 {
 	struct fbr_test_finish *finish, *temp;
 
-	chttp_test_ok(test);
+	fbr_test_ok(test);
 
 	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
-		chttp_test_log(&test->context, FBR_LOG_NONE, "shutdown");
+		fbr_test_log(&test->context, FBR_LOG_NONE, "shutdown");
 	}
 
 	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {

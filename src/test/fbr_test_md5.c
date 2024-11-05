@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 chttp
+ * Copyright (c) 2024 FiberFS
  *
  * Derived from the RSA Data Security, Inc. MD5 Message Digest Algorithm
  *
@@ -266,19 +266,19 @@ _md5_store(struct chttp_test_md5 *md5, char *md5_buf)
 }
 
 void
-chttp_test_md5_store_server(struct chttp_test_context *ctx, struct chttp_test_md5 *md5)
+chttp_test_md5_store_server(struct fbr_test_context *ctx, struct chttp_test_md5 *md5)
 {
 	_md5_store(md5, ctx->md5_server);
 }
 
 void
-chttp_test_md5_store_client(struct chttp_test_context *ctx, struct chttp_test_md5 *md5)
+chttp_test_md5_store_client(struct fbr_test_context *ctx, struct chttp_test_md5 *md5)
 {
 	_md5_store(md5, ctx->md5_client);
 }
 
 char *
-chttp_test_var_md5_server(struct chttp_test_context *ctx)
+chttp_test_var_md5_server(struct fbr_test_context *ctx)
 {
 	assert(strlen(ctx->md5_server) == 32);
 
@@ -286,7 +286,7 @@ chttp_test_var_md5_server(struct chttp_test_context *ctx)
 }
 
 char *
-chttp_test_var_md5_client(struct chttp_test_context *ctx)
+chttp_test_var_md5_client(struct fbr_test_context *ctx)
 {
 	assert(strlen(ctx->md5_client) == 32);
 

@@ -26,7 +26,7 @@
 	} while (0)
 
 void
-chttp_test_unescape(struct chttp_test_param *param)
+fbr_test_unescape(struct fbr_test_param *param)
 {
 	size_t offset, i;
 
@@ -90,12 +90,12 @@ chttp_test_unescape(struct chttp_test_param *param)
 }
 
 int
-chttp_test_readline(struct fbr_test *test, size_t append_len)
+fbr_test_readline(struct fbr_test *test, size_t append_len)
 {
 	char *ret;
 	size_t oldlen, i;
 
-	chttp_test_ok(test);
+	fbr_test_ok(test);
 	assert(test->line_raw);
 	assert(test->line_raw_len > 1);
 	assert(append_len < test->line_raw_len);
@@ -146,7 +146,7 @@ chttp_test_readline(struct fbr_test *test, size_t append_len)
 	_TRIM_STR(test->line_buf, test->line_buf_len);
 
 	if (test->line_buf_len == 0 || *test->line_buf == '#') {
-		return chttp_test_readline(test, 0);
+		return fbr_test_readline(test, 0);
 	}
 
 	if (test->line_buf[test->line_buf_len - 1] == '\\') {
@@ -167,9 +167,9 @@ chttp_test_readline(struct fbr_test *test, size_t append_len)
 				i = test->line_buf - test->line_raw + test->line_buf_len;
 				assert(i < test->line_raw_len);
 
-				return chttp_test_readline(test, i);
+				return fbr_test_readline(test, i);
 			} else {
-				return chttp_test_readline(test, 0);
+				return fbr_test_readline(test, 0);
 			}
 		}
 	}
@@ -180,14 +180,14 @@ chttp_test_readline(struct fbr_test *test, size_t append_len)
 }
 
 void
-chttp_test_parse_cmd(struct fbr_test *test)
+fbr_test_parse_cmd(struct fbr_test *test)
 {
 	struct fbr_test_cmdentry *cmd_entry;
 	char *buf, *var;
 	size_t i, len, count, start;
 	int quote;
 
-	chttp_test_ok(test);
+	fbr_test_ok(test);
 	assert(test->line_buf);
 	assert(test->line_buf_len);
 
@@ -236,7 +236,7 @@ chttp_test_parse_cmd(struct fbr_test *test)
 				break;
 			}
 
-			chttp_test_ERROR(test->cmd.param_count >= CHTTP_TEST_MAX_PARAMS,
+			fbr_test_ERROR(test->cmd.param_count >= CHTTP_TEST_MAX_PARAMS,
 				"too many parameters");
 
 			test->cmd.params[test->cmd.param_count].value = &buf[i];
@@ -250,17 +250,17 @@ chttp_test_parse_cmd(struct fbr_test *test)
 		}
 	}
 
-	chttp_test_ERROR(quote, "ending quote not found");
+	fbr_test_ERROR(quote, "ending quote not found");
 
 	if (i == len && test->cmd.param_count) {
 		test->cmd.params[test->cmd.param_count - 1].len = i - start;
 	}
 
 	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
-		chttp_test_log(&test->context, FBR_LOG_NONE, "%s (line %zu)",
-			test->cmd.name, chttp_test_line_pos(test));
+		fbr_test_log(&test->context, FBR_LOG_NONE, "%s (line %zu)",
+			test->cmd.name, fbr_test_line_pos(test));
 	} else {
-		chttp_test_log(&test->context, FBR_LOG_NONE, "%s", test->cmd.name);
+		fbr_test_log(&test->context, FBR_LOG_NONE, "%s", test->cmd.name);
 	}
 
 	for (i = 0; i < test->cmd.param_count; i++) {
@@ -272,11 +272,11 @@ chttp_test_parse_cmd(struct fbr_test *test)
 		} else if (test->cmd.params[i].value[0] == '$') {
 			var = test->cmd.params[i].value;
 
-			chttp_test_log(&test->context, FBR_LOG_VERY_VERBOSE, "Var: %s", var);
+			fbr_test_log(&test->context, FBR_LOG_VERY_VERBOSE, "Var: %s", var);
 
-			cmd_entry = chttp_test_cmds_get(test, var);
-			chttp_test_ERROR(!cmd_entry || !cmd_entry->is_var,
-				"variable %s not found (line %zu)", var, chttp_test_line_pos(test));
+			cmd_entry = fbr_test_cmds_get(test, var);
+			fbr_test_ERROR(!cmd_entry || !cmd_entry->is_var,
+				"variable %s not found (line %zu)", var, fbr_test_line_pos(test));
 			assert(cmd_entry->var_func);
 
 			buf = cmd_entry->var_func(&test->context);
@@ -286,7 +286,7 @@ chttp_test_parse_cmd(struct fbr_test *test)
 			test->cmd.params[i].v_const = 1;
 		}
 
-		chttp_test_log(&test->context, FBR_LOG_VERY_VERBOSE, "Arg: %s",
+		fbr_test_log(&test->context, FBR_LOG_VERY_VERBOSE, "Arg: %s",
 			test->cmd.params[i].value);
 	}
 }

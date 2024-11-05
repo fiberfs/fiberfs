@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 chttp
+ * Copyright (c) 2024 FiberFS
  *
  */
 
@@ -7,6 +7,9 @@
 
 #ifndef _CHTTP_TEST_CMDS_H_INCLUDED_
 #define _CHTTP_TEST_CMDS_H_INCLUDED_
+
+#include "chttp.h"
+#include <stddef.h>
 
 #define CHTTP_TEST_MAX_PARAMS		16
 #define CHTTP_TEST_MD5_BUFLEN		33
@@ -18,7 +21,7 @@ struct chttp_test_dns;
 struct chttp_test_tcp_pool;
 struct chttp_gzip;
 
-struct chttp_test_context {
+struct fbr_test_context {
 	struct chttp_context		chttp_static;
 	struct chttp_context		*chttp;
 
@@ -33,30 +36,30 @@ struct chttp_test_context {
 	char				md5_client[CHTTP_TEST_MD5_BUFLEN];
 };
 
-struct chttp_test_cmd;
-typedef void (chttp_test_cmd_f)(struct chttp_test_context *, struct chttp_test_cmd *);
-typedef char *(chttp_test_var_f)(struct chttp_test_context *);
+struct fbr_test_cmd;
+typedef void (fbr_test_cmd_f)(struct fbr_test_context *, struct fbr_test_cmd *);
+typedef char *(fbr_test_var_f)(struct fbr_test_context *);
 
-struct chttp_test_param {
+struct fbr_test_param {
 	char				*value;
 	size_t				len;
 
 	unsigned int			v_const:1;
 };
 
-struct chttp_test_cmd {
+struct fbr_test_cmd {
 	const char			*name;
 
 	size_t				param_count;
-	struct chttp_test_param		params[CHTTP_TEST_MAX_PARAMS];
+	struct fbr_test_param		params[CHTTP_TEST_MAX_PARAMS];
 
-	chttp_test_cmd_f		*func;
+	fbr_test_cmd_f		*func;
 
 	unsigned int			async:1;
 };
 
-#define CHTTP_TEST_CMD(cmd)		chttp_test_cmd_f chttp_test_cmd_##cmd;
-#define CHTTP_TEST_VAR(var)		chttp_test_var_f chttp_test_var_##var;
+#define CHTTP_TEST_CMD(cmd)		fbr_test_cmd_f chttp_test_cmd_##cmd;
+#define CHTTP_TEST_VAR(var)		fbr_test_var_f chttp_test_var_##var;
 
 #endif /* _CHTTP_TEST_CMDS_H_INCLUDED_ */
 

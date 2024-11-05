@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 chttp
+ * Copyright (c) 2024 FiberFS
  *
  */
 
@@ -12,27 +12,27 @@
 #include <time.h>
 
 struct fbr_test *
-chttp_test_convert(struct chttp_test_context *ctx)
+fbr_test_convert(struct fbr_test_context *ctx)
 {
 	struct fbr_test *test;
 
 	assert(ctx);
 
 	test = (struct fbr_test*)((uint8_t*)ctx - offsetof(struct fbr_test, context));
-	chttp_test_ok(test);
+	fbr_test_ok(test);
 
 	return test;
 }
 
 void __chttp_attr_printf_p(3)
-chttp_test_log(struct chttp_test_context *ctx, enum fbr_test_verbocity level,
+fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
     const char *fmt, ...)
 {
 	struct fbr_test *test;
 	va_list ap;
 
 	if (ctx) {
-		test = chttp_test_convert(ctx);
+		test = fbr_test_convert(ctx);
 
 		if (level != FBR_LOG_FORCE && (test->verbocity == FBR_LOG_NONE ||
 		    test->verbocity < level)) {
@@ -58,17 +58,17 @@ chttp_test_log(struct chttp_test_context *ctx, enum fbr_test_verbocity level,
 }
 
 void
-chttp_test_skip(struct chttp_test_context *ctx)
+fbr_test_skip(struct fbr_test_context *ctx)
 {
 	struct fbr_test *test;
 
-	test = chttp_test_convert(ctx);
+	test = fbr_test_convert(ctx);
 
 	test->skip = 1;
 }
 
 void __chttp_attr_printf
-chttp_test_warn(int condition, const char *fmt, ...)
+fbr_test_warn(int condition, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -86,7 +86,7 @@ chttp_test_warn(int condition, const char *fmt, ...)
 }
 
 void __chttp_attr_printf
-chttp_test_ERROR(int condition, const char *fmt, ...)
+fbr_test_ERROR(int condition, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -106,7 +106,7 @@ chttp_test_ERROR(int condition, const char *fmt, ...)
 }
 
 long
-chttp_test_parse_long(const char *str)
+fbr_test_parse_long(const char *str)
 {
 	long ret;
 	char *end;
@@ -118,37 +118,37 @@ chttp_test_parse_long(const char *str)
 	ret = strtol(str, &end, 10);
 
 	if (ret == LONG_MAX || ret == LONG_MIN || errno || end == str || *end != '\0') {
-		chttp_test_ERROR(1, "invalid number '%s'", str);
+		fbr_test_ERROR(1, "invalid number '%s'", str);
 	}
 
 	return ret;
 }
 
 void
-chttp_test_ERROR_param_count(struct chttp_test_cmd *cmd, size_t count)
+fbr_test_ERROR_param_count(struct fbr_test_cmd *cmd, size_t count)
 {
 	size_t i;
 
 	assert(cmd);
-	chttp_test_ERROR_string(cmd->name);
-	chttp_test_ERROR(cmd->param_count != count,
+	fbr_test_ERROR_string(cmd->name);
+	fbr_test_ERROR(cmd->param_count != count,
 		"invalid parameter count, found %zu, expected %zu", cmd->param_count, count);
 
 	for (i = 0; i < cmd->param_count; i++) {
-		chttp_test_ERROR(cmd->params[i].len == 0, "empty parameter found");
+		fbr_test_ERROR(cmd->params[i].len == 0, "empty parameter found");
 		// TODO remove
 		assert(cmd->params[i].len == strlen(cmd->params[i].value));
 	}
 }
 
 void
-chttp_test_ERROR_string(const char *str)
+fbr_test_ERROR_string(const char *str)
 {
-	chttp_test_ERROR(!str || !*str, "invalid string");
+	fbr_test_ERROR(!str || !*str, "invalid string");
 }
 
 void
-chttp_test_sleep_ms(long ms)
+fbr_test_sleep_ms(long ms)
 {
 	struct timespec tspec, rem;
 
@@ -166,19 +166,19 @@ chttp_test_sleep_ms(long ms)
 }
 
 int
-chttp_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long timeout_ms)
+fbr_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long timeout_ms)
 {
 	unsigned long time;
 
 	assert(stopped);
-	assert(timeout_ms + CHTTP_TEST_JOIN_INTERVAL_MS > timeout_ms);
+	assert(timeout_ms + FBR_TEST_JOIN_INTERVAL_MS > timeout_ms);
 
 	time = 0;
 
 	while (!*stopped) {
-		chttp_test_sleep_ms(CHTTP_TEST_JOIN_INTERVAL_MS);
+		fbr_test_sleep_ms(FBR_TEST_JOIN_INTERVAL_MS);
 
-		time += CHTTP_TEST_JOIN_INTERVAL_MS;
+		time += FBR_TEST_JOIN_INTERVAL_MS;
 
 		if (time > timeout_ms) {
 			return 1;
@@ -191,15 +191,15 @@ chttp_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long ti
 }
 
 size_t
-chttp_test_line_pos(struct fbr_test *test)
+fbr_test_line_pos(struct fbr_test *test)
 {
-	chttp_test_ok(test);
+	fbr_test_ok(test);
 
 	return (test->lines - test->lines_multi);
 }
 
 void
-chttp_test_random_seed(void)
+fbr_test_random_seed(void)
 {
 	struct timespec now;
 
@@ -209,7 +209,7 @@ chttp_test_random_seed(void)
 
 // Inclusive
 long
-chttp_test_random(long low, long high)
+fbr_test_gen_random(long low, long high)
 {
 	long rval;
 
@@ -224,12 +224,12 @@ chttp_test_random(long low, long high)
 }
 
 void
-chttp_test_fill_random(uint8_t *buf, size_t len)
+fbr_test_fill_random(uint8_t *buf, size_t len)
 {
 	size_t i;
 
 	for (i = 0; i < len; i++) {
 		// TODO write a wider char if possible
-		buf[i] = chttp_test_random(0, UINT8_MAX);
+		buf[i] = fbr_test_gen_random(0, UINT8_MAX);
 	}
 }

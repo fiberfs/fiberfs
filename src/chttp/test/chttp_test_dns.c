@@ -21,7 +21,7 @@ struct chttp_test_dns {
 };
 
 static void
-_dns_finish(struct chttp_test_context *ctx)
+_dns_finish(struct fbr_test_context *ctx)
 {
 	assert(ctx);
 	assert(ctx->dns);
@@ -34,7 +34,7 @@ _dns_finish(struct chttp_test_context *ctx)
 }
 
 static void
-_dns_init(struct chttp_test_context *ctx)
+_dns_init(struct fbr_test_context *ctx)
 {
 	assert(ctx);
 
@@ -53,50 +53,50 @@ _dns_init(struct chttp_test_context *ctx)
 }
 
 void
-chttp_test_cmd_dns_ttl(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_dns_ttl(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	long ttl;
 
 	assert(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
-	ttl = chttp_test_parse_long(cmd->params[0].value);
+	ttl = fbr_test_parse_long(cmd->params[0].value);
 
 	_DNS_CACHE_TTL = ttl;
 
-	chttp_test_log(ctx, FBR_LOG_VERBOSE, "DNS ttl %ld", _DNS_CACHE_SIZE);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "DNS ttl %ld", _DNS_CACHE_SIZE);
 }
 
 void
-chttp_test_cmd_dns_cache_size(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_dns_cache_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	long size;
 
 	assert(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 1);
 
-	size = chttp_test_parse_long(cmd->params[0].value);
+	size = fbr_test_parse_long(cmd->params[0].value);
 	assert(size > 0);
 
 	_DNS_CACHE_SIZE = size;
 
-	chttp_test_log(ctx, FBR_LOG_VERBOSE, "DNS cache size %zu", _DNS_CACHE_SIZE);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "DNS cache size %zu", _DNS_CACHE_SIZE);
 }
 
 void
-chttp_test_cmd_dns_lookup_or_skip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_dns_lookup_or_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_addr addr, *paddr;
 	long flags = 0;
 	int  ret;
 
 	_dns_init(ctx);
-	chttp_test_ERROR(cmd->param_count < 1 || cmd->param_count > 2,
+	fbr_test_ERROR(cmd->param_count < 1 || cmd->param_count > 2,
 		"invalid parameter count");
 
 	if (cmd->param_count == 2) {
-		flags = chttp_test_parse_long(cmd->params[1].value);
-		chttp_test_ERROR(flags < 0, "flags needs to be a positive number");
+		flags = fbr_test_parse_long(cmd->params[1].value);
+		fbr_test_ERROR(flags < 0, "flags needs to be a positive number");
 	}
 
 	paddr = &addr;
@@ -104,8 +104,8 @@ chttp_test_cmd_dns_lookup_or_skip(struct chttp_test_context *ctx, struct chttp_t
 	ret = chttp_dns_resolve(&addr, cmd->params[0].value, cmd->params[0].len, 1, flags);
 
 	if (ret) {
-		chttp_test_skip(ctx);
-		chttp_test_log(ctx, FBR_LOG_VERBOSE, "cannot resolve address %s",
+		fbr_test_skip(ctx);
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "cannot resolve address %s",
 			cmd->params[0].value);
 		return;
 	}
@@ -115,19 +115,19 @@ chttp_test_cmd_dns_lookup_or_skip(struct chttp_test_context *ctx, struct chttp_t
 	chttp_sa_string(&addr.sa, ctx->dns->value, sizeof(ctx->dns->value), &ret);
 	assert(ret == 1);
 
-	chttp_test_log(ctx, FBR_LOG_VERBOSE, "DNS result %s", ctx->dns->value);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "DNS result %s", ctx->dns->value);
 }
 
 void
-chttp_test_cmd_dns_lookup(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_dns_lookup(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct fbr_test *test;
 
-	test = chttp_test_convert(ctx);
+	test = fbr_test_convert(ctx);
 
 	chttp_test_cmd_dns_lookup_or_skip(ctx, cmd);
 
-	chttp_test_ERROR(test->skip, "dns lookup failed");
+	fbr_test_ERROR(test->skip, "dns lookup failed");
 }
 
 void
@@ -213,13 +213,13 @@ chttp_dns_cache_debug(void)
 }
 
 void
-chttp_test_cmd_dns_debug(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_dns_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct fbr_test *test;
 
 	_dns_init(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
-	test = chttp_test_convert(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+	test = fbr_test_convert(ctx);
 
 	if (test->verbocity >= FBR_LOG_VERBOSE) {
 		chttp_dns_cache_debug();
@@ -227,7 +227,7 @@ chttp_test_cmd_dns_debug(struct chttp_test_context *ctx, struct chttp_test_cmd *
 }
 
 char *
-chttp_test_var_dns_value(struct chttp_test_context *ctx)
+chttp_test_var_dns_value(struct fbr_test_context *ctx)
 {
 	_dns_init(ctx);
 
@@ -236,7 +236,7 @@ chttp_test_var_dns_value(struct chttp_test_context *ctx)
 
 #define _DNS_STATS_NAME(name)							\
 char *										\
-chttp_test_var_dns_##name(struct chttp_test_context *ctx)			\
+chttp_test_var_dns_##name(struct fbr_test_context *ctx)				\
 {										\
 	_dns_init(ctx);								\
 	chttp_dns_cache_ok();							\
