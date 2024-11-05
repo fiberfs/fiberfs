@@ -3,7 +3,7 @@
  *
  */
 
-#include "test/chttp_test.h"
+#include "test/fbr_test.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -98,7 +98,7 @@ chttp_test_cmds_init(struct fbr_test *test)
 	_test_var_register(test, "$" #var, &chttp_test_var_##var);
 #include "test/chttp_test_cmds.h"
 
-	chttp_test_register_finish(&test->context, "cmd", _test_cmds_free);
+	fbr_test_register_finish(&test->context, "cmd", _test_cmds_free);
 }
 
 struct fbr_test_cmdentry *

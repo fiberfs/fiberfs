@@ -4,7 +4,7 @@
  */
 
 #include "compress/chttp_gzip.h"
-#include "test/chttp_test.h"
+#include "test/fbr_test.h"
 #include "tls/chttp_tls.h"
 
 #include <stdarg.h>
@@ -329,7 +329,7 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 
 	ctx->server = server;
 
-	chttp_test_register_finish(ctx, "server", _server_finish);
+	fbr_test_register_finish(ctx, "server", _server_finish);
 
 	chttp_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* init completed");
 }
@@ -978,7 +978,7 @@ chttp_test_cmd_server_enable_gzip(struct chttp_test_context *ctx, struct chttp_t
 
 	chttp_gzip_register(NULL, ctx->gzip, ctx->gzip_buf, sizeof(ctx->gzip_buf));
 
-	chttp_test_register_finish(ctx, "gzip", _gzip_finish);
+	fbr_test_register_finish(ctx, "gzip", _gzip_finish);
 
 	_server_send_printf(server, "Content-Encoding: gzip\r\n");
 }

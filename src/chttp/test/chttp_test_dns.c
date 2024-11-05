@@ -5,7 +5,7 @@
 
 #include "dns/chttp_dns.h"
 #include "dns/chttp_dns_cache.h"
-#include "test/chttp_test.h"
+#include "test/fbr_test.h"
 
 #include <stdlib.h>
 
@@ -46,7 +46,7 @@ _dns_init(struct chttp_test_context *ctx)
 
 		ctx->dns->magic = _DNS_MAGIC;
 
-		chttp_test_register_finish(ctx, "dns", _dns_finish);
+		fbr_test_register_finish(ctx, "dns", _dns_finish);
 	}
 
 	assert(ctx->dns->magic == _DNS_MAGIC);

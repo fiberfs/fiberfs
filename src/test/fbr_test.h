@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 chttp
+ * Copyright (c) 2024 FiberFS
  *
  */
 
@@ -64,8 +64,8 @@ struct fbr_test {
 	struct fbr_test_tree			cmd_tree;
 	TAILQ_HEAD(, fbr_test_finish)		finish_list;
 
-	char					*cht_file;
-	FILE					*fcht;
+	char					*test_file;
+	FILE					*ft_file;
 
 	char					*line_raw;
 	char					*line_buf;
@@ -97,10 +97,10 @@ struct chttp_test_md5 {
 #define CHTTP_TEST_TIMEOUT_SEC			10
 #define CHTTP_TEST_JOIN_INTERVAL_MS		25
 
-void chttp_test_register_finish(struct chttp_test_context *ctx, const char *name,
+void fbr_test_register_finish(struct chttp_test_context *ctx, const char *name,
 	fbr_test_finish_f *func);
-void chttp_test_run_finish(struct chttp_test_context *ctx, const char *name);
-void chttp_test_run_all_finish(struct fbr_test *test);
+void fbr_test_run_finish(struct chttp_test_context *ctx, const char *name);
+void fbr_test_run_all_finish(struct fbr_test *test);
 
 void chttp_test_cmds_init(struct fbr_test *test);
 struct fbr_test_cmdentry *chttp_test_cmds_get(struct fbr_test *test, const char *name);

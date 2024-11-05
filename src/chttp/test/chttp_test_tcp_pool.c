@@ -3,7 +3,7 @@
  *
  */
 
-#include "test/chttp_test.h"
+#include "test/fbr_test.h"
 #include "network/chttp_tcp_pool.h"
 
 #include <stdlib.h>
@@ -48,7 +48,7 @@ _tcp_pool_init(struct chttp_test_context *ctx)
 
 		ctx->tcp_pool->magic = _TCP_POOL_MAGIC;
 
-		chttp_test_register_finish(ctx, "tcp_pool", _tcp_pool_finish);
+		fbr_test_register_finish(ctx, "tcp_pool", _tcp_pool_finish);
 
 		chttp_test_log(ctx, FBR_LOG_VERBOSE, "tcp pool initialized");
 	}

@@ -3,7 +3,7 @@
  *
  */
 
-#include "test/chttp_test.h"
+#include "test/fbr_test.h"
 
 #include <errno.h>
 #include <limits.h>

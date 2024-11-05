@@ -5,7 +5,7 @@
  *
  */
 
-#include "test/chttp_test.h"
+#include "test/fbr_test.h"
 
 #include <stdlib.h>
 

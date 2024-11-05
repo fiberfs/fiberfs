@@ -3,7 +3,7 @@
  *
  */
 
-#include "test/chttp_test.h"
+#include "test/fbr_test.h"
 
 #include <stdlib.h>
 
@@ -49,7 +49,7 @@ _random_init(struct chttp_test_context *ctx)
 
 		ctx->random = random;
 
-		chttp_test_register_finish(ctx, "random", _random_finish);
+		fbr_test_register_finish(ctx, "random", _random_finish);
 
 		chttp_test_random_seed();
 	}

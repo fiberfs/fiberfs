@@ -3,7 +3,7 @@
  *
  */
 
-#include "test/chttp_test.h"
+#include "test/fbr_test.h"
 
 #include <stdlib.h>
 
@@ -99,7 +99,7 @@ chttp_test_readline(struct fbr_test *test, size_t append_len)
 	assert(test->line_raw);
 	assert(test->line_raw_len > 1);
 	assert(append_len < test->line_raw_len);
-	assert(test->fcht);
+	assert(test->ft_file);
 
 	test->line_buf_len = 0;
 	test->line_buf = NULL;
@@ -114,7 +114,7 @@ chttp_test_readline(struct fbr_test *test, size_t append_len)
 		test->line_raw[test->line_raw_len - 2] = '\n';
 
 		ret = fgets(test->line_raw + append_len, test->line_raw_len - append_len,
-			test->fcht);
+			test->ft_file);
 
 		if (!ret && !append_len) {
 			return 0;
@@ -134,7 +134,7 @@ chttp_test_readline(struct fbr_test *test, size_t append_len)
 		test->line_raw[test->line_raw_len - 2] = '\n';
 
 		if (!fgets(test->line_raw + oldlen - 1, (test->line_raw_len - oldlen) + 1,
-		    test->fcht)) {
+		    test->ft_file)) {
 			break;
 		}
 	}

@@ -3,7 +3,7 @@
  *
  */
 
-#include "test/chttp_test.h"
+#include "test/fbr_test.h"
 #include "compress/chttp_gzip.h"
 #include "network/chttp_tcp_pool.h"
 #include "tls/chttp_tls.h"
@@ -70,7 +70,7 @@ chttp_test_cmd_chttp_init(struct chttp_test_context *ctx, struct chttp_test_cmd 
 	chttp_context_init(ctx->chttp);
 	chttp_context_ok(ctx->chttp);
 
-	chttp_test_register_finish(ctx, "chttp_client", _test_client_finish);
+	fbr_test_register_finish(ctx, "chttp_client", _test_client_finish);
 
 	chttp_test_log(ctx, FBR_LOG_VERBOSE, "context initialized");
 }
@@ -95,7 +95,7 @@ chttp_test_cmd_chttp_init_dynamic(struct chttp_test_context *ctx, struct chttp_t
 	ctx->chttp = chttp_context_alloc();
 	chttp_context_ok(ctx->chttp);
 
-	chttp_test_register_finish(ctx, "chttp_client", _test_client_finish);
+	fbr_test_register_finish(ctx, "chttp_client", _test_client_finish);
 
 	chttp_test_log(ctx, FBR_LOG_VERBOSE, "context initialized");
 }

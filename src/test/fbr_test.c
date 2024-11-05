@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2021 chttp
+ * Copyright (c) 2024 FiberFS
  *
  */
 
-#include "test/chttp_test.h"
+#include "test/fbr_test.h"
 
 #include <stdlib.h>
 
@@ -18,9 +18,9 @@ _finish_test(struct chttp_test_context *ctx)
 	chttp_test_ERROR(test->context.chttp != NULL, "chttp context detected");
 	chttp_test_ERROR(test->context.server != NULL, "chttp server detected");
 
-	if (test->fcht) {
-		fclose(test->fcht);
-		test->fcht = NULL;
+	if (test->ft_file) {
+		fclose(test->ft_file);
+		test->ft_file = NULL;
 	}
 
 	free(test->line_raw);
@@ -46,18 +46,18 @@ _init_test(struct fbr_test *test)
 	chttp_test_ok(test);
 	chttp_test_ok(chttp_test_convert(&test->context));
 
-	chttp_test_register_finish(&test->context, "context", _finish_test);
+	fbr_test_register_finish(&test->context, "context", _finish_test);
 }
 
 static void
 _usage(int error)
 {
-	printf("%ssage: chttp_test [-q] [-v] [-vv] [-h] [-V] CHT_FILE\n",
+	printf("%ssage: chttp_test [-q] [-v] [-vv] [-h] [-V] TEST_FILE\n",
 		(error ? "ERROR u" : "U"));
 }
 
 static void *
-_test_run_cht_file(void *arg)
+_test_run_test_file(void *arg)
 {
 	struct fbr_test *test;
 	struct fbr_test_cmdentry *cmd_entry;
@@ -66,8 +66,8 @@ _test_run_cht_file(void *arg)
 	chttp_test_ok(test);
 	assert_zero(test->stopped);
 
-	test->fcht = fopen(test->cht_file, "r");
-	chttp_test_ERROR(!test->fcht, "invalid file %s", test->cht_file);
+	test->ft_file = fopen(test->test_file, "r");
+	chttp_test_ERROR(!test->ft_file, "invalid file %s", test->test_file);
 
 	while (chttp_test_readline(test, 0)) {
 		chttp_test_parse_cmd(test);
@@ -120,20 +120,20 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[i], "-h")) {
 			_usage(0);
 			return 0;
-		} else if (test.cht_file == NULL) {
-			test.cht_file = argv[i];
+		} else if (test.test_file == NULL) {
+			test.test_file = argv[i];
 		} else {
 			_usage(1);
 			return 1;
 		}
 	}
 
-	if (!test.cht_file) {
+	if (!test.test_file) {
 		_usage(1);
 		return 1;
 	}
 
-	assert_zero(pthread_create(&test.thread, NULL, _test_run_cht_file, &test));
+	assert_zero(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
 
 	ret = chttp_test_join_thread(test.thread, &test.stopped, CHTTP_TEST_TIMEOUT_SEC * 1000);
 	chttp_test_ERROR(ret, "test timed out after %ds", CHTTP_TEST_TIMEOUT_SEC);
@@ -142,12 +142,12 @@ main(int argc, char **argv)
 		chttp_test_log(&test.context, FBR_LOG_FORCE, "FAILED");
 		return 1;
 	} else if (test.skip) {
-		chttp_test_run_all_finish(&test);
+		fbr_test_run_all_finish(&test);
 		chttp_test_log(NULL, FBR_LOG_FORCE, "SKIPPED");
 		return 0;
 	}
 
-	chttp_test_run_all_finish(&test);
+	fbr_test_run_all_finish(&test);
 
 	chttp_test_log(NULL, FBR_LOG_FORCE, "PASSED");
 
@@ -155,7 +155,7 @@ main(int argc, char **argv)
 }
 
 void
-chttp_test_register_finish(struct chttp_test_context *ctx, const char *name,
+fbr_test_register_finish(struct chttp_test_context *ctx, const char *name,
     fbr_test_finish_f *func)
 {
 	struct fbr_test *test;
@@ -185,7 +185,7 @@ chttp_test_register_finish(struct chttp_test_context *ctx, const char *name,
 }
 
 void
-chttp_test_run_finish(struct chttp_test_context *ctx, const char *name)
+fbr_test_run_finish(struct chttp_test_context *ctx, const char *name)
 {
 	struct fbr_test *test;
 	struct fbr_test_finish *finish, *temp;
@@ -214,7 +214,7 @@ chttp_test_run_finish(struct chttp_test_context *ctx, const char *name)
 }
 
 void
-chttp_test_run_all_finish(struct fbr_test *test)
+fbr_test_run_all_finish(struct fbr_test *test)
 {
 	struct fbr_test_finish *finish, *temp;
 
