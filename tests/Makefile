@@ -2,7 +2,7 @@
 
 CHTTP_TEST=../src/chttp_test
 V=vv
-CHTS=$(sort $(wildcard */*.cht))
+CHTS=$(sort $(wildcard */*.cht */*.tst))
 VALGRIND=
 GDB=gdb --args
 
@@ -26,5 +26,8 @@ check:		$(CHTS)
 verbose:	$(CHTS)
 
 %.cht:		chttp_test FORCE
+		$(VALGRIND) $(CHTTP_TEST) -$(V) $@
+
+%.tst:		chttp_test FORCE
 		$(VALGRIND) $(CHTTP_TEST) -$(V) $@
 

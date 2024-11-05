@@ -3,12 +3,31 @@
  *
  */
 
-#ifndef _CHTTP_TEST_CMDS_H_INCLUDED_
-#define _CHTTP_TEST_CMDS_H_INCLUDED_
+#ifndef CHTTP_TEST_CMDS_H_INCLUDED
+#define CHTTP_TEST_CMDS_H_INCLUDED
 
 #ifndef CHTTP_TEST_CMD
 
 #include "test/fbr_test_cmds.h"
+
+// TODO move into its own header
+struct chttp_test_md5 {
+	unsigned int				magic;
+#define CHTTP_TEST_MD5_MAGIC			0x4E4330A7
+
+	int					ready;
+
+	uint32_t				i[2];
+	uint32_t				buf[4];
+	unsigned char				in[64];
+	unsigned char				digest[16];
+};
+
+void chttp_test_md5_init(struct chttp_test_md5 *md5);
+void chttp_test_md5_update(struct chttp_test_md5 *md5, uint8_t *input, size_t len);
+void chttp_test_md5_final(struct chttp_test_md5 *md5);
+void chttp_test_md5_store_server(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
+void chttp_test_md5_store_client(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
 
 #define CHTTP_TEST_CMD(cmd)		fbr_test_cmd_f chttp_test_cmd_##cmd;
 #define CHTTP_TEST_VAR(var)		fbr_test_var_f chttp_test_var_##var;
@@ -127,4 +146,4 @@ CHTTP_TEST_VAR(tcp_pool_err_alloc)
 #undef CHTTP_TEST_CMD
 #undef CHTTP_TEST_VAR
 
-#endif /* _CHTTP_TEST_CMDS_H_INCLUDED_ */
+#endif /* CHTTP_TEST_CMDS_H_INCLUDED */

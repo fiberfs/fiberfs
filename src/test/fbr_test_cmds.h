@@ -3,15 +3,17 @@
  *
  */
 
-#ifndef _FBR_TEST_CMDS_H_INCLUDED_
-#define _FBR_TEST_CMDS_H_INCLUDED_
+#ifndef FBR_TEST_CMDS_H_INCLUDED
+#define FBR_TEST_CMDS_H_INCLUDED
 
 #ifndef FBR_TEST_CMD
 
 #include "chttp.h"
 #include <stddef.h>
 
-#define CHTTP_TEST_MAX_PARAMS		16
+#define FBR_TEST_MAX_PARAMS		16
+
+// TODO move these out
 #define CHTTP_TEST_MD5_BUFLEN		33
 #define CHTTP_TEST_GZIP_BUFLEN		4096
 
@@ -26,7 +28,7 @@ struct fbr_test_context {
 	struct chttp_context		*chttp;
 
 	struct chttp_test_server	*server;
-	struct fbr_test_random	*random;
+	struct fbr_test_random		*random;
 	struct chttp_test_dns		*dns;
 	struct chttp_test_tcp_pool	*tcp_pool;
 	struct chttp_gzip		*gzip;
@@ -51,9 +53,9 @@ struct fbr_test_cmd {
 	const char			*name;
 
 	size_t				param_count;
-	struct fbr_test_param		params[CHTTP_TEST_MAX_PARAMS];
+	struct fbr_test_param		params[FBR_TEST_MAX_PARAMS];
 
-	fbr_test_cmd_f		*func;
+	fbr_test_cmd_f			*func;
 
 	unsigned int			async:1;
 };
@@ -82,4 +84,4 @@ FBR_TEST_VAR(random)
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR
 
-#endif /* _FBR_TEST_CMDS_H_INCLUDED_ */
+#endif /* FBR_TEST_CMDS_H_INCLUDED */

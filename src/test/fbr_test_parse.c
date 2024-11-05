@@ -236,7 +236,7 @@ fbr_test_parse_cmd(struct fbr_test *test)
 				break;
 			}
 
-			fbr_test_ERROR(test->cmd.param_count >= CHTTP_TEST_MAX_PARAMS,
+			fbr_test_ERROR(test->cmd.param_count >= FBR_TEST_MAX_PARAMS,
 				"too many parameters");
 
 			test->cmd.params[test->cmd.param_count].value = &buf[i];

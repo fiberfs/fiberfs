@@ -30,8 +30,8 @@ struct fbr_test_cmdentry {
 	RB_ENTRY(fbr_test_cmdentry)		entry;
 
 	const char				*name;
-	fbr_test_cmd_f			*cmd_func;
-	fbr_test_var_f			*var_func;
+	fbr_test_cmd_f				*cmd_func;
+	fbr_test_var_f				*var_func;
 
 	unsigned int				is_cmd:1;
 	unsigned int				is_var:1;
@@ -55,7 +55,7 @@ struct fbr_test {
 	unsigned int				magic;
 #define FBR_TEST_MAGIC				0xD1C4671E
 
-	struct fbr_test_context		context;
+	struct fbr_test_context			context;
 
 	pthread_t				thread;
 	volatile int				stopped;
@@ -80,19 +80,6 @@ struct fbr_test {
 
 	int					error;
 	int					skip;
-};
-
-// TODO move this out
-struct chttp_test_md5 {
-	unsigned int				magic;
-#define CHTTP_TEST_MD5_MAGIC			0x4E4330A7
-
-	int					ready;
-
-	uint32_t				i[2];
-	uint32_t				buf[4];
-	unsigned char				in[64];
-	unsigned char				digest[16];
 };
 
 #define FBR_TEST_TIMEOUT_SEC			10
@@ -120,18 +107,11 @@ long fbr_test_parse_long(const char *str);
 void fbr_test_ERROR_param_count(struct fbr_test_cmd *cmd, size_t count);
 void fbr_test_ERROR_string(const char *str);
 void fbr_test_sleep_ms(long ms);
-int fbr_test_join_thread(pthread_t thread, volatile int *stopped,
-	unsigned long timeout_ms);
+int fbr_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long timeout_ms);
 size_t fbr_test_line_pos(struct fbr_test *test);
 void fbr_test_random_seed(void);
 long fbr_test_gen_random(long low, long high);
 void fbr_test_fill_random(uint8_t *buf, size_t len);
-
-void chttp_test_md5_init(struct chttp_test_md5 *md5);
-void chttp_test_md5_update(struct chttp_test_md5 *md5, uint8_t *input, size_t len);
-void chttp_test_md5_final(struct chttp_test_md5 *md5);
-void chttp_test_md5_store_server(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
-void chttp_test_md5_store_client(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
 
 #define fbr_test_ok(test)						\
 	do {								\

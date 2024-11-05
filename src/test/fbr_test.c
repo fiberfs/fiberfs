@@ -72,8 +72,9 @@ _test_run_test_file(void *arg)
 	while (fbr_test_readline(test, 0)) {
 		fbr_test_parse_cmd(test);
 
-		fbr_test_ERROR(!test->cmds && strcmp(test->cmd.name, "chttp_test"),
-			"test file must begin with chttp_test");
+		fbr_test_ERROR(!test->cmds && strcmp(test->cmd.name, "chttp_test") &&
+				strcmp(test->cmd.name, "fiber_test"),
+			"test file must begin with chttp_test or fiber_test");
 
 		test->cmds++;
 
