@@ -257,10 +257,10 @@ fbr_test_parse_cmd(struct fbr_test *test)
 	}
 
 	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
-		fbr_test_log(&test->context, FBR_LOG_NONE, "%s (line %zu)",
+		fbr_test_log(test->context, FBR_LOG_NONE, "%s (line %zu)",
 			test->cmd.name, fbr_test_line_pos(test));
 	} else {
-		fbr_test_log(&test->context, FBR_LOG_NONE, "%s", test->cmd.name);
+		fbr_test_log(test->context, FBR_LOG_NONE, "%s", test->cmd.name);
 	}
 
 	for (i = 0; i < test->cmd.param_count; i++) {
@@ -272,21 +272,21 @@ fbr_test_parse_cmd(struct fbr_test *test)
 		} else if (test->cmd.params[i].value[0] == '$') {
 			var = test->cmd.params[i].value;
 
-			fbr_test_log(&test->context, FBR_LOG_VERY_VERBOSE, "Var: %s", var);
+			fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "Var: %s", var);
 
 			cmd_entry = fbr_test_cmds_get(test, var);
 			fbr_test_ERROR(!cmd_entry || !cmd_entry->is_var,
 				"variable %s not found (line %zu)", var, fbr_test_line_pos(test));
 			assert(cmd_entry->var_func);
 
-			buf = cmd_entry->var_func(&test->context);
+			buf = cmd_entry->var_func(test->context);
 
 			test->cmd.params[i].value = buf;
 			test->cmd.params[i].len = strlen(buf);
 			test->cmd.params[i].v_const = 1;
 		}
 
-		fbr_test_log(&test->context, FBR_LOG_VERY_VERBOSE, "Arg: %s",
+		fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "Arg: %s",
 			test->cmd.params[i].value);
 	}
 }

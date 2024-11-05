@@ -24,6 +24,11 @@ struct chttp_test_tcp_pool;
 struct chttp_gzip;
 
 struct fbr_test_context {
+	unsigned int			magic;
+#define FBR_TEST_CONTEXT_MAGIC		0xAD98A6FF
+
+	struct fbr_test			*test;
+
 	struct chttp_context		chttp_static;
 	struct chttp_context		*chttp;
 
@@ -39,6 +44,7 @@ struct fbr_test_context {
 };
 
 struct fbr_test_cmd;
+
 typedef void (fbr_test_cmd_f)(struct fbr_test_context *, struct fbr_test_cmd *);
 typedef char *(fbr_test_var_f)(struct fbr_test_context *);
 
@@ -59,6 +65,12 @@ struct fbr_test_cmd {
 
 	unsigned int			async:1;
 };
+
+#define fbr_test_context_ok(context)					\
+	do {								\
+		assert(context);					\
+		assert((context)->magic == FBR_TEST_CONTEXT_MAGIC);	\
+	} while (0)
 
 #define FBR_TEST_CMD(cmd)		fbr_test_cmd_f fbr_test_cmd_##cmd;
 #define FBR_TEST_VAR(var)		fbr_test_var_f fbr_test_var_##var;

@@ -55,7 +55,7 @@ struct fbr_test {
 	unsigned int				magic;
 #define FBR_TEST_MAGIC				0xD1C4671E
 
-	struct fbr_test_context			context;
+	struct fbr_test_context			*context;
 
 	pthread_t				thread;
 	volatile int				stopped;

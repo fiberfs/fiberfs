@@ -16,9 +16,9 @@ fbr_test_convert(struct fbr_test_context *ctx)
 {
 	struct fbr_test *test;
 
-	assert(ctx);
+	fbr_test_context_ok(ctx);
 
-	test = (struct fbr_test*)((uint8_t*)ctx - offsetof(struct fbr_test, context));
+	test = ctx->test;
 	fbr_test_ok(test);
 
 	return test;
@@ -32,6 +32,7 @@ fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
 	va_list ap;
 
 	if (ctx) {
+		fbr_test_context_ok(ctx);
 		test = fbr_test_convert(ctx);
 
 		if (level != FBR_LOG_FORCE && (test->verbocity == FBR_LOG_NONE ||
@@ -62,6 +63,7 @@ fbr_test_skip(struct fbr_test_context *ctx)
 {
 	struct fbr_test *test;
 
+	fbr_test_context_ok(ctx);
 	test = fbr_test_convert(ctx);
 
 	test->skip = 1;

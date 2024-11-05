@@ -12,18 +12,25 @@ _finish_test(struct fbr_test_context *ctx)
 {
 	struct fbr_test *test;
 
+	fbr_test_context_ok(ctx);
 	test = fbr_test_convert(ctx);
+	assert(test->context == ctx);
 
 	fbr_test_ok(test);
-	fbr_test_ERROR(test->context.chttp != NULL, "chttp context detected");
-	fbr_test_ERROR(test->context.server != NULL, "chttp server detected");
+	fbr_test_ERROR(test->context->chttp != NULL, "chttp context detected");
+	fbr_test_ERROR(test->context->server != NULL, "chttp server detected");
 
 	if (test->ft_file) {
 		fclose(test->ft_file);
 		test->ft_file = NULL;
 	}
 
+	chttp_ZERO(test->context);
+	ctx = NULL;
+
+	free(test->context);
 	free(test->line_raw);
+
 	chttp_ZERO(test);
 }
 
@@ -40,13 +47,18 @@ _init_test(struct fbr_test *test)
 	test->line_raw = malloc(test->line_raw_len);
 	assert(test->line_raw);
 
+	test->context = calloc(1, sizeof(*test->context));
+	assert(test->context);
+	test->context->magic = FBR_TEST_CONTEXT_MAGIC;
+	test->context->test = test;
+
 	RB_INIT(&test->cmd_tree);
 	TAILQ_INIT(&test->finish_list);
 
 	fbr_test_ok(test);
-	fbr_test_ok(fbr_test_convert(&test->context));
+	fbr_test_ok(fbr_test_convert(test->context));
 
-	fbr_test_register_finish(&test->context, "context", _finish_test);
+	fbr_test_register_finish(test->context, "context", _finish_test);
 }
 
 static void
@@ -86,7 +98,10 @@ _test_run_test_file(void *arg)
 		test->cmd.func = cmd_entry->cmd_func;
 		assert_zero(test->cmd.async);
 
-		cmd_entry->cmd_func(&test->context, &test->cmd);
+		fbr_test_ok(test);
+		fbr_test_context_ok(test->context);
+
+		cmd_entry->cmd_func(test->context, &test->cmd);
 
 		if (test->error || test->skip) {
 			break;
@@ -115,8 +130,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[i], "-vv")) {
 			test.verbocity = FBR_LOG_VERY_VERBOSE;
 		} else if (!strcmp(argv[i], "-V")) {
-			fbr_test_log(&test.context, FBR_LOG_FORCE, "chttp_test %s",
-				CHTTP_VERSION);
+			fbr_test_log(test.context, FBR_LOG_FORCE, "chttp_test %s", CHTTP_VERSION);
 			return 0;
 		} else if (!strcmp(argv[i], "-h")) {
 			_usage(0);
@@ -140,7 +154,7 @@ main(int argc, char **argv)
 	fbr_test_ERROR(ret, "test timed out after %ds", FBR_TEST_TIMEOUT_SEC);
 
 	if (test.error) {
-		fbr_test_log(&test.context, FBR_LOG_FORCE, "FAILED");
+		fbr_test_log(test.context, FBR_LOG_FORCE, "FAILED");
 		return 1;
 	} else if (test.skip) {
 		fbr_test_run_all_finish(&test);
@@ -162,6 +176,7 @@ fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 	struct fbr_test *test;
 	struct fbr_test_finish *finish;
 
+	fbr_test_context_ok(ctx);
 	test = fbr_test_convert(ctx);
 	assert(name && *name);
 
@@ -191,6 +206,7 @@ fbr_test_run_finish(struct fbr_test_context *ctx, const char *name)
 	struct fbr_test *test;
 	struct fbr_test_finish *finish, *temp;
 
+	fbr_test_context_ok(ctx);
 	test = fbr_test_convert(ctx);
 	assert(name && *name);
 
@@ -203,7 +219,7 @@ fbr_test_run_finish(struct fbr_test_context *ctx, const char *name)
 
 		TAILQ_REMOVE(&test->finish_list, finish, entry);
 
-		finish->func(&test->context);
+		finish->func(test->context);
 
 		chttp_ZERO(finish);
 		free(finish);
@@ -222,7 +238,7 @@ fbr_test_run_all_finish(struct fbr_test *test)
 	fbr_test_ok(test);
 
 	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
-		fbr_test_log(&test->context, FBR_LOG_NONE, "shutdown");
+		fbr_test_log(test->context, FBR_LOG_NONE, "shutdown");
 	}
 
 	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
@@ -230,7 +246,9 @@ fbr_test_run_all_finish(struct fbr_test *test)
 
 		TAILQ_REMOVE(&test->finish_list, finish, entry);
 
-		finish->func(&test->context);
+		fbr_test_context_ok(test->context);
+
+		finish->func(test->context);
 
 		chttp_ZERO(finish);
 		free(finish);
