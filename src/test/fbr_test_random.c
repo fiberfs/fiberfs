@@ -7,7 +7,7 @@
 
 #include <stdlib.h>
 
-struct chttp_test_random {
+struct fbr_test_random {
 	unsigned int				magic;
 #define _RANDOM_MAGIC				0x2E0D1FD1
 
@@ -33,7 +33,7 @@ _random_finish(struct fbr_test_context *ctx)
 static void
 _random_init(struct fbr_test_context *ctx)
 {
-	struct chttp_test_random *random;
+	struct fbr_test_random *random;
 
 	assert(ctx);
 
@@ -58,7 +58,7 @@ _random_init(struct fbr_test_context *ctx)
 }
 
 void
-chttp_test_cmd_random_range(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_test_cmd_random_range(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	long val;
 
@@ -81,7 +81,7 @@ chttp_test_cmd_random_range(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 }
 
 char *
-chttp_test_var_random(struct fbr_test_context *ctx)
+fbr_test_var_random(struct fbr_test_context *ctx)
 {
 	long rval;
 	int ret;

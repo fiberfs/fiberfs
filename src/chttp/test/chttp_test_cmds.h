@@ -1,67 +1,17 @@
 /*
- * Copyright (c) 2024 FiberFS
+ * Copyright (c) 2024 chttp
  *
  */
-
-#ifndef CHTTP_TEST_CMD
 
 #ifndef _CHTTP_TEST_CMDS_H_INCLUDED_
 #define _CHTTP_TEST_CMDS_H_INCLUDED_
 
-#include "chttp.h"
-#include <stddef.h>
+#ifndef CHTTP_TEST_CMD
 
-#define CHTTP_TEST_MAX_PARAMS		16
-#define CHTTP_TEST_MD5_BUFLEN		33
-#define CHTTP_TEST_GZIP_BUFLEN		4096
-
-struct chttp_test_server;
-struct chttp_test_random;
-struct chttp_test_dns;
-struct chttp_test_tcp_pool;
-struct chttp_gzip;
-
-struct fbr_test_context {
-	struct chttp_context		chttp_static;
-	struct chttp_context		*chttp;
-
-	struct chttp_test_server	*server;
-	struct chttp_test_random	*random;
-	struct chttp_test_dns		*dns;
-	struct chttp_test_tcp_pool	*tcp_pool;
-	struct chttp_gzip		*gzip;
-	char				gzip_buf[CHTTP_TEST_GZIP_BUFLEN];
-
-	char				md5_server[CHTTP_TEST_MD5_BUFLEN];
-	char				md5_client[CHTTP_TEST_MD5_BUFLEN];
-};
-
-struct fbr_test_cmd;
-typedef void (fbr_test_cmd_f)(struct fbr_test_context *, struct fbr_test_cmd *);
-typedef char *(fbr_test_var_f)(struct fbr_test_context *);
-
-struct fbr_test_param {
-	char				*value;
-	size_t				len;
-
-	unsigned int			v_const:1;
-};
-
-struct fbr_test_cmd {
-	const char			*name;
-
-	size_t				param_count;
-	struct fbr_test_param		params[CHTTP_TEST_MAX_PARAMS];
-
-	fbr_test_cmd_f		*func;
-
-	unsigned int			async:1;
-};
+#include "test/fbr_test_cmds.h"
 
 #define CHTTP_TEST_CMD(cmd)		fbr_test_cmd_f chttp_test_cmd_##cmd;
 #define CHTTP_TEST_VAR(var)		fbr_test_var_f chttp_test_var_##var;
-
-#endif /* _CHTTP_TEST_CMDS_H_INCLUDED_ */
 
 #endif /* CHTTP_TEST_CMD */
 
@@ -73,10 +23,6 @@ struct fbr_test_cmd {
 #endif
 
 CHTTP_TEST_CMD(chttp_test)
-CHTTP_TEST_CMD(skip)
-CHTTP_TEST_CMD(sleep_ms)
-CHTTP_TEST_CMD(equal)
-CHTTP_TEST_CMD(not_equal)
 CHTTP_TEST_CMD(connect_or_skip)
 CHTTP_TEST_CMD(tls_or_skip)
 CHTTP_TEST_CMD(gzip_or_skip)
@@ -145,9 +91,6 @@ CHTTP_TEST_VAR(server_host)
 CHTTP_TEST_VAR(server_port)
 CHTTP_TEST_VAR(server_tls)
 
-CHTTP_TEST_CMD(random_range)
-CHTTP_TEST_VAR(random)
-
 CHTTP_TEST_VAR(md5_server)
 CHTTP_TEST_VAR(md5_client)
 
@@ -183,3 +126,5 @@ CHTTP_TEST_VAR(tcp_pool_err_alloc)
 
 #undef CHTTP_TEST_CMD
 #undef CHTTP_TEST_VAR
+
+#endif /* _CHTTP_TEST_CMDS_H_INCLUDED_ */

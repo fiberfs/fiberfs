@@ -92,6 +92,14 @@ fbr_test_cmds_init(struct fbr_test *test)
 	fbr_test_ok(test);
 	assert(RB_EMPTY(&test->cmd_tree));
 
+#undef _FBR_TEST_CMDS_H_INCLUDED_
+#define FBR_TEST_CMD(cmd)					\
+	_test_cmd_register(test, #cmd, &fbr_test_cmd_##cmd);
+#define FBR_TEST_VAR(var)					\
+	_test_var_register(test, "$" #var, &fbr_test_var_##var);
+#include "test/fbr_test_cmds.h"
+
+#undef _CHTTP_TEST_CMDS_H_INCLUDED_
 #define CHTTP_TEST_CMD(cmd)					\
 	_test_cmd_register(test, #cmd, &chttp_test_cmd_##cmd);
 #define CHTTP_TEST_VAR(var)					\

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 FiberFS
+ * Copyright (c) 2021 chttp
  *
  * Derived from the RSA Data Security, Inc. MD5 Message Digest Algorithm
  *
