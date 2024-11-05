@@ -64,7 +64,7 @@ chttp_test_cmd_dns_ttl(struct chttp_test_context *ctx, struct chttp_test_cmd *cm
 
 	_DNS_CACHE_TTL = ttl;
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "DNS ttl %ld", _DNS_CACHE_SIZE);
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "DNS ttl %ld", _DNS_CACHE_SIZE);
 }
 
 void
@@ -80,7 +80,7 @@ chttp_test_cmd_dns_cache_size(struct chttp_test_context *ctx, struct chttp_test_
 
 	_DNS_CACHE_SIZE = size;
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "DNS cache size %zu", _DNS_CACHE_SIZE);
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "DNS cache size %zu", _DNS_CACHE_SIZE);
 }
 
 void
@@ -105,7 +105,7 @@ chttp_test_cmd_dns_lookup_or_skip(struct chttp_test_context *ctx, struct chttp_t
 
 	if (ret) {
 		chttp_test_skip(ctx);
-		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "cannot resolve address %s",
+		chttp_test_log(ctx, FBR_LOG_VERBOSE, "cannot resolve address %s",
 			cmd->params[0].value);
 		return;
 	}
@@ -115,13 +115,13 @@ chttp_test_cmd_dns_lookup_or_skip(struct chttp_test_context *ctx, struct chttp_t
 	chttp_sa_string(&addr.sa, ctx->dns->value, sizeof(ctx->dns->value), &ret);
 	assert(ret == 1);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "DNS result %s", ctx->dns->value);
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "DNS result %s", ctx->dns->value);
 }
 
 void
 chttp_test_cmd_dns_lookup(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
-	struct chttp_test *test;
+	struct fbr_test *test;
 
 	test = chttp_test_convert(ctx);
 
@@ -215,13 +215,13 @@ chttp_dns_cache_debug(void)
 void
 chttp_test_cmd_dns_debug(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
-	struct chttp_test *test;
+	struct fbr_test *test;
 
 	_dns_init(ctx);
 	chttp_test_ERROR_param_count(cmd, 0);
 	test = chttp_test_convert(ctx);
 
-	if (test->verbocity >= CHTTP_LOG_VERBOSE) {
+	if (test->verbocity >= FBR_LOG_VERBOSE) {
 		chttp_dns_cache_debug();
 	}
 }

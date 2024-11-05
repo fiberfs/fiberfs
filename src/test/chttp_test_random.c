@@ -76,7 +76,7 @@ chttp_test_cmd_random_range(struct chttp_test_context *ctx, struct chttp_test_cm
 
 	ctx->random->high = val;
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "random range %ld to %ld", ctx->random->low,
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "random range %ld to %ld", ctx->random->low,
 		ctx->random->high);
 }
 

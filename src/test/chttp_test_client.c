@@ -46,15 +46,15 @@ _test_client_finish(struct chttp_test_context *ctx)
 	chttp_context_free(ctx->chttp);
 	ctx->chttp = NULL;
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "context contained %zu allocations", allocs);
+	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "context contained %zu allocations", allocs);
 
 	chttp_tcp_pool_close();
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "tcp pool cleanup");
+	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "tcp pool cleanup");
 
 	chttp_tls_free();
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "TLS shutdown");
+	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "TLS shutdown");
 }
 
 void
@@ -72,7 +72,7 @@ chttp_test_cmd_chttp_init(struct chttp_test_context *ctx, struct chttp_test_cmd 
 
 	chttp_test_register_finish(ctx, "chttp_client", _test_client_finish);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "context initialized");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "context initialized");
 }
 
 void
@@ -97,7 +97,7 @@ chttp_test_cmd_chttp_init_dynamic(struct chttp_test_context *ctx, struct chttp_t
 
 	chttp_test_register_finish(ctx, "chttp_client", _test_client_finish);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "context initialized");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "context initialized");
 }
 
 void
@@ -221,7 +221,7 @@ chttp_test_cmd_chttp_connect(struct chttp_test_context *ctx, struct chttp_test_c
 
 	chttp_sa_string(&ctx->chttp->addr.sa, name, sizeof(name), &outport);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "lookup made to %s:%ld => %s:%d",
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "lookup made to %s:%ld => %s:%d",
 		cmd->params[0].value, port, name, outport);
 }
 
@@ -246,7 +246,7 @@ chttp_test_cmd_chttp_new_connection(struct chttp_test_context *ctx, struct chttp
 
 	ctx->chttp->new_conn = 1;
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "new connection set");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "new connection set");
 }
 
 void
@@ -257,7 +257,7 @@ chttp_test_cmd_chttp_enable_gzip(struct chttp_test_context *ctx, struct chttp_te
 
 	ctx->chttp->gzip = 1;
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "gzip enabled");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "gzip enabled");
 }
 
 void
@@ -268,7 +268,7 @@ chttp_test_cmd_chttp_send_only(struct chttp_test_context *ctx, struct chttp_test
 
 	chttp_send(ctx->chttp);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request sent");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "request sent");
 }
 
 void
@@ -279,7 +279,7 @@ chttp_test_cmd_chttp_send_body(struct chttp_test_context *ctx, struct chttp_test
 
 	chttp_body_send(ctx->chttp, cmd->params[0].value, cmd->params[0].len);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request body sent");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "request body sent");
 }
 
 void
@@ -304,13 +304,13 @@ chttp_test_cmd_chttp_send_body_chunkgzip(struct chttp_test_context *ctx, struct 
 
 	chttp_gzip_free(&gzip);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request body sent chunked gzip");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "request body sent chunked gzip");
 }
 
 void
 chttp_test_cmd_chttp_receive(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
-	struct chttp_test *test;
+	struct fbr_test *test;
 
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 0);
@@ -318,9 +318,9 @@ chttp_test_cmd_chttp_receive(struct chttp_test_context *ctx, struct chttp_test_c
 
 	chttp_receive(ctx->chttp);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request received");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "request received");
 
-	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
+	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
 		printf("--- ");
 		chttp_context_debug(ctx->chttp);
 	}
@@ -352,7 +352,7 @@ chttp_test_cmd_chttp_status_match(struct chttp_test_context *ctx, struct chttp_t
 	chttp_test_ERROR(ctx->chttp->status != status,
 		"invalid status (wanted %ld, found %d)", status, ctx->chttp->status);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "status OK (%ld)", status);
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "status OK (%ld)", status);
 }
 
 static void
@@ -372,7 +372,7 @@ _test_header_match(struct chttp_test_context *ctx, const char *header, const cha
 	chttp_test_warn(dup != NULL, "duplicate %s header found", header);
 
 	if (!expected) {
-		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "header exists %s", header);
+		chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "header exists %s", header);
 		return;
 	}
 
@@ -384,7 +384,7 @@ _test_header_match(struct chttp_test_context *ctx, const char *header, const cha
 			"expected %s", header, header_value, expected);
 	}
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "headers match %s:%s%s%s%s",
+	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "headers match %s:%s%s%s%s",
 		header, header_value, sub ? " (" : "", sub ? expected : "", sub ? ")" : "");
 }
 
@@ -502,7 +502,7 @@ _test_body_match(struct chttp_test_context *ctx, const char *expected, int sub, 
 
 	assert(ctx->chttp->state > CHTTP_STATE_BODY);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
+	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
 		body_len, calls);
 
 	if (!expected) {
@@ -520,7 +520,7 @@ _test_body_match(struct chttp_test_context *ctx, const char *expected, int sub, 
 		chttp_test_ERROR(strcmp(body, expected), "bodies dont match");
 	}
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "bodies match");
+	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "bodies match");
 
 	free(body);
 }
@@ -604,13 +604,13 @@ chttp_test_cmd_chttp_body_md5(struct chttp_test_context *ctx, struct chttp_test_
 	assert(ctx->chttp->state > CHTTP_STATE_BODY);
 	chttp_test_ERROR(ctx->chttp->error, "chttp error %s", chttp_error_msg(ctx->chttp));
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
+	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
 		body_len, calls);
 
 	chttp_test_md5_final(&md5);
 	chttp_test_md5_store_client(ctx, &md5);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "body md5 %s", ctx->md5_client);
+	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "body md5 %s", ctx->md5_client);
 }
 
 void
@@ -623,7 +623,7 @@ chttp_test_cmd_chttp_take_error(struct chttp_test_context *ctx, struct chttp_tes
 
 	chttp_test_ERROR(!ctx->chttp->error, "chttp error not found");
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "chttp error %s",
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "chttp error %s",
 		chttp_error_msg(ctx->chttp));
 
 	chttp_finish(ctx->chttp);
@@ -639,7 +639,7 @@ chttp_test_cmd_chttp_reset(struct chttp_test_context *ctx, struct chttp_test_cmd
 
 	chttp_context_reset(ctx->chttp);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "context reset");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "context reset");
 }
 
 #define _CHTTP_FLAG_NAME(name, var)						\

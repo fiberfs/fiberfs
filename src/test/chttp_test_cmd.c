@@ -8,14 +8,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int chttp_test_entry_cmp(const struct chttp_test_cmdentry *k1,
-    const struct chttp_test_cmdentry *k2);
+static int chttp_test_entry_cmp(const struct fbr_test_cmdentry *k1,
+    const struct fbr_test_cmdentry *k2);
 
-RB_GENERATE_STATIC(chttp_test_tree, chttp_test_cmdentry, entry, chttp_test_entry_cmp)
+RB_GENERATE_STATIC(fbr_test_tree, fbr_test_cmdentry, entry, chttp_test_entry_cmp)
 
 static int
-chttp_test_entry_cmp(const struct chttp_test_cmdentry *k1,
-    const struct chttp_test_cmdentry *k2)
+chttp_test_entry_cmp(const struct fbr_test_cmdentry *k1,
+    const struct fbr_test_cmdentry *k2)
 {
 	assert(k1);
 	assert(k2);
@@ -24,9 +24,9 @@ chttp_test_entry_cmp(const struct chttp_test_cmdentry *k1,
 }
 
 static void
-_test_cmd_register(struct chttp_test *test, const char *name, chttp_test_cmd_f *func)
+_test_cmd_register(struct fbr_test *test, const char *name, chttp_test_cmd_f *func)
 {
-	struct chttp_test_cmdentry *entry, *ret;
+	struct fbr_test_cmdentry *entry, *ret;
 
 	chttp_test_ok(test);
 
@@ -35,19 +35,19 @@ _test_cmd_register(struct chttp_test *test, const char *name, chttp_test_cmd_f *
 
 	chttp_ZERO(entry);
 
-	entry->magic = CHTTP_TEST_ENTRY_MAGIC;
+	entry->magic = FBR_TEST_ENTRY_MAGIC;
 	entry->name = name;
 	entry->cmd_func = func;
 	entry->is_cmd = 1;
 
-	ret = RB_INSERT(chttp_test_tree, &test->cmd_tree, entry);
+	ret = RB_INSERT(fbr_test_tree, &test->cmd_tree, entry);
 	assert_zero(ret);
 }
 
 static void
-_test_var_register(struct chttp_test *test, const char *name, chttp_test_var_f *func)
+_test_var_register(struct fbr_test *test, const char *name, chttp_test_var_f *func)
 {
-	struct chttp_test_cmdentry *entry, *ret;
+	struct fbr_test_cmdentry *entry, *ret;
 
 	chttp_test_ok(test);
 
@@ -56,28 +56,28 @@ _test_var_register(struct chttp_test *test, const char *name, chttp_test_var_f *
 
 	chttp_ZERO(entry);
 
-	entry->magic = CHTTP_TEST_ENTRY_MAGIC;
+	entry->magic = FBR_TEST_ENTRY_MAGIC;
 	entry->name = name;
 	entry->var_func = func;
 	entry->is_var = 1;
 
-	ret = RB_INSERT(chttp_test_tree, &test->cmd_tree, entry);
+	ret = RB_INSERT(fbr_test_tree, &test->cmd_tree, entry);
 	assert_zero(ret);
 }
 
 static void
 _test_cmds_free(struct chttp_test_context *ctx)
 {
-	struct chttp_test *test;
-	struct chttp_test_cmdentry *entry, *next;
+	struct fbr_test *test;
+	struct fbr_test_cmdentry *entry, *next;
 
 	test = chttp_test_convert(ctx);
 	chttp_test_ok(test);
 
-	RB_FOREACH_SAFE(entry, chttp_test_tree, &test->cmd_tree, next) {
-		assert(entry->magic == CHTTP_TEST_ENTRY_MAGIC);
+	RB_FOREACH_SAFE(entry, fbr_test_tree, &test->cmd_tree, next) {
+		assert(entry->magic == FBR_TEST_ENTRY_MAGIC);
 
-		RB_REMOVE(chttp_test_tree, &test->cmd_tree, entry);
+		RB_REMOVE(fbr_test_tree, &test->cmd_tree, entry);
 
 		chttp_ZERO(entry);
 		free(entry);
@@ -87,7 +87,7 @@ _test_cmds_free(struct chttp_test_context *ctx)
 }
 
 void
-chttp_test_cmds_init(struct chttp_test *test)
+chttp_test_cmds_init(struct fbr_test *test)
 {
 	chttp_test_ok(test);
 	assert(RB_EMPTY(&test->cmd_tree));
@@ -101,23 +101,23 @@ chttp_test_cmds_init(struct chttp_test *test)
 	chttp_test_register_finish(&test->context, "cmd", _test_cmds_free);
 }
 
-struct chttp_test_cmdentry *
-chttp_test_cmds_get(struct chttp_test *test, const char *name)
+struct fbr_test_cmdentry *
+chttp_test_cmds_get(struct fbr_test *test, const char *name)
 {
-	struct chttp_test_cmdentry *result, find;
+	struct fbr_test_cmdentry *result, find;
 
 	chttp_test_ok(test);
 	assert(name);
 
 	find.name = name;
 
-	result = RB_FIND(chttp_test_tree, &test->cmd_tree, &find);
+	result = RB_FIND(fbr_test_tree, &test->cmd_tree, &find);
 
 	if (!result) {
 		return NULL;
 	}
 
-	assert(result->magic == CHTTP_TEST_ENTRY_MAGIC);
+	assert(result->magic == FBR_TEST_ENTRY_MAGIC);
 
 	return result;
 }

@@ -10,7 +10,7 @@
 static void
 _finish_test(struct chttp_test_context *ctx)
 {
-	struct chttp_test *test;
+	struct fbr_test *test;
 
 	test = chttp_test_convert(ctx);
 
@@ -28,14 +28,14 @@ _finish_test(struct chttp_test_context *ctx)
 }
 
 static void
-_init_test(struct chttp_test *test)
+_init_test(struct fbr_test *test)
 {
 	assert(test);
 
 	chttp_ZERO(test);
 
-	test->magic = CHTTP_TEST_MAGIC;
-	test->verbocity = CHTTP_LOG_VERBOSE;
+	test->magic = FBR_TEST_MAGIC;
+	test->verbocity = FBR_LOG_VERBOSE;
 	test->line_raw_len = 1024;
 	test->line_raw = malloc(test->line_raw_len);
 	assert(test->line_raw);
@@ -59,10 +59,10 @@ _usage(int error)
 static void *
 _test_run_cht_file(void *arg)
 {
-	struct chttp_test *test;
-	struct chttp_test_cmdentry *cmd_entry;
+	struct fbr_test *test;
+	struct fbr_test_cmdentry *cmd_entry;
 
-	test = (struct chttp_test*)arg;
+	test = (struct fbr_test*)arg;
 	chttp_test_ok(test);
 	assert_zero(test->stopped);
 
@@ -100,7 +100,7 @@ _test_run_cht_file(void *arg)
 int
 main(int argc, char **argv)
 {
-	struct chttp_test test;
+	struct fbr_test test;
 	int i, ret;
 
 	_init_test(&test);
@@ -108,13 +108,13 @@ main(int argc, char **argv)
 
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-q")) {
-			test.verbocity = CHTTP_LOG_NONE;
+			test.verbocity = FBR_LOG_NONE;
 		} else if (!strcmp(argv[i], "-v")) {
-			test.verbocity = CHTTP_LOG_VERBOSE;
+			test.verbocity = FBR_LOG_VERBOSE;
 		} else if (!strcmp(argv[i], "-vv")) {
-			test.verbocity = CHTTP_LOG_VERY_VERBOSE;
+			test.verbocity = FBR_LOG_VERY_VERBOSE;
 		} else if (!strcmp(argv[i], "-V")) {
-			chttp_test_log(&test.context, CHTTP_LOG_FORCE, "chttp_test %s",
+			chttp_test_log(&test.context, FBR_LOG_FORCE, "chttp_test %s",
 				CHTTP_VERSION);
 			return 0;
 		} else if (!strcmp(argv[i], "-h")) {
@@ -139,33 +139,33 @@ main(int argc, char **argv)
 	chttp_test_ERROR(ret, "test timed out after %ds", CHTTP_TEST_TIMEOUT_SEC);
 
 	if (test.error) {
-		chttp_test_log(&test.context, CHTTP_LOG_FORCE, "FAILED");
+		chttp_test_log(&test.context, FBR_LOG_FORCE, "FAILED");
 		return 1;
 	} else if (test.skip) {
 		chttp_test_run_all_finish(&test);
-		chttp_test_log(NULL, CHTTP_LOG_FORCE, "SKIPPED");
+		chttp_test_log(NULL, FBR_LOG_FORCE, "SKIPPED");
 		return 0;
 	}
 
 	chttp_test_run_all_finish(&test);
 
-	chttp_test_log(NULL, CHTTP_LOG_FORCE, "PASSED");
+	chttp_test_log(NULL, FBR_LOG_FORCE, "PASSED");
 
 	return 0;
 }
 
 void
 chttp_test_register_finish(struct chttp_test_context *ctx, const char *name,
-    chttp_test_finish_f *func)
+    fbr_test_finish_f *func)
 {
-	struct chttp_test *test;
-	struct chttp_test_finish *finish;
+	struct fbr_test *test;
+	struct fbr_test_finish *finish;
 
 	test = chttp_test_convert(ctx);
 	assert(name && *name);
 
 	TAILQ_FOREACH(finish, &test->finish_list, entry) {
-		assert(finish->magic == CHTTP_TEST_FINISH_MAGIC);
+		assert(finish->magic == FBR_TEST_FINISH_MAGIC);
 		chttp_test_ERROR(!strcmp(finish->name, name),
 			"cannot register the same finish name twice");
 		chttp_test_ERROR(finish->func == func,
@@ -177,7 +177,7 @@ chttp_test_register_finish(struct chttp_test_context *ctx, const char *name,
 
 	chttp_ZERO(finish);
 
-	finish->magic = CHTTP_TEST_FINISH_MAGIC;
+	finish->magic = FBR_TEST_FINISH_MAGIC;
 	finish->name = name;
 	finish->func = func;
 
@@ -187,14 +187,14 @@ chttp_test_register_finish(struct chttp_test_context *ctx, const char *name,
 void
 chttp_test_run_finish(struct chttp_test_context *ctx, const char *name)
 {
-	struct chttp_test *test;
-	struct chttp_test_finish *finish, *temp;
+	struct fbr_test *test;
+	struct fbr_test_finish *finish, *temp;
 
 	test = chttp_test_convert(ctx);
 	assert(name && *name);
 
 	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
-		assert(finish->magic == CHTTP_TEST_FINISH_MAGIC);
+		assert(finish->magic == FBR_TEST_FINISH_MAGIC);
 
 		if (strcmp(finish->name, name)) {
 			continue;
@@ -214,18 +214,18 @@ chttp_test_run_finish(struct chttp_test_context *ctx, const char *name)
 }
 
 void
-chttp_test_run_all_finish(struct chttp_test *test)
+chttp_test_run_all_finish(struct fbr_test *test)
 {
-	struct chttp_test_finish *finish, *temp;
+	struct fbr_test_finish *finish, *temp;
 
 	chttp_test_ok(test);
 
-	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
-		chttp_test_log(&test->context, CHTTP_LOG_NONE, "shutdown");
+	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
+		chttp_test_log(&test->context, FBR_LOG_NONE, "shutdown");
 	}
 
 	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
-		assert(finish->magic == CHTTP_TEST_FINISH_MAGIC);
+		assert(finish->magic == FBR_TEST_FINISH_MAGIC);
 
 		TAILQ_REMOVE(&test->finish_list, finish, entry);
 

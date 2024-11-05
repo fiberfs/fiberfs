@@ -50,7 +50,7 @@ _tcp_pool_init(struct chttp_test_context *ctx)
 
 		chttp_test_register_finish(ctx, "tcp_pool", _tcp_pool_finish);
 
-		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "tcp pool initialized");
+		chttp_test_log(ctx, FBR_LOG_VERBOSE, "tcp pool initialized");
 	}
 
 	assert(ctx->tcp_pool->magic == _TCP_POOL_MAGIC);
@@ -68,7 +68,7 @@ chttp_test_cmd_tcp_pool_age_ms(struct chttp_test_context *ctx, struct chttp_test
 
 	_TCP_POOL_AGE_SEC = ((double)ttl) / 1000;
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "tcp pool age %lf", _TCP_POOL_AGE_SEC);
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "tcp pool age %lf", _TCP_POOL_AGE_SEC);
 }
 
 void
@@ -84,7 +84,7 @@ chttp_test_cmd_tcp_pool_size(struct chttp_test_context *ctx, struct chttp_test_c
 
 	_TCP_POOL_SIZE = size;
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "tcp pool size %zu", _TCP_POOL_SIZE);
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "tcp pool size %zu", _TCP_POOL_SIZE);
 }
 
 void
@@ -103,7 +103,7 @@ chttp_test_cmd_tcp_pool_fake_connect(struct chttp_test_context *ctx, struct chtt
 	ctx->chttp->addr.state = CHTTP_ADDR_CONNECTED;
 	ctx->chttp->state = CHTTP_STATE_IDLE;
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "tcp pool faked connection");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "tcp pool faked connection");
 }
 
 static void
@@ -176,14 +176,14 @@ void
 chttp_test_cmd_tcp_pool_debug(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	struct chttp_test *test;
+	struct fbr_test *test;
 
 	chttp_test_ERROR_param_count(cmd, 0);
 	test = chttp_test_convert(ctx);
 
 	_tcp_pool_init(ctx);
 
-	if (test->verbocity >= CHTTP_LOG_VERBOSE) {
+	if (test->verbocity >= FBR_LOG_VERBOSE) {
 		_tcp_pool_debug();
 	}
 }

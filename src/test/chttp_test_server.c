@@ -188,7 +188,7 @@ _server_finish(struct chttp_test_context *ctx)
 	ret = chttp_test_join_thread(server->thread, &server->stopped, _SERVER_JOIN_TIMEOUT_MS);
 	chttp_test_ERROR(ret, "server thread is blocked");
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* thread joined");
+	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread joined");
 
 	assert_zero(pthread_mutex_destroy(&server->cmd_lock));
 	assert_zero(pthread_mutex_destroy(&server->flush_lock));
@@ -200,7 +200,7 @@ _server_finish(struct chttp_test_context *ctx)
 
 		TAILQ_REMOVE(&server->cmd_list, cmdentry, entry);
 
-		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* unfinished cmd found %s",
+		chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* unfinished cmd found %s",
 			cmdentry->cmd.name);
 
 		_server_cmdentry_free(cmdentry);
@@ -269,7 +269,7 @@ _server_init_socket(struct chttp_test_server *server)
 	val = snprintf(server->port_str, sizeof(server->port_str), "%d", server->saddr.listen_port);
 	assert((size_t)val < sizeof(server->port_str));
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* socket port: %d",
+	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* socket port: %d",
 		server->saddr.listen_port);
 }
 
@@ -331,7 +331,7 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 
 	chttp_test_register_finish(ctx, "server", _server_finish);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "*SERVER* init completed");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* init completed");
 }
 
 void
@@ -360,14 +360,14 @@ chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_c
 		server->addr.error);
 
 	if (server->addr.tls) {
-		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* TLS established");
+		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* TLS established");
 	}
 
 	chttp_addr_connected(&server->addr);
 
 	chttp_sa_string(&server->addr.sa, remote, sizeof(remote), &remote_port);
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* remote client %s:%d",
+	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* remote client %s:%d",
 		remote, remote_port);
 }
 
@@ -435,7 +435,7 @@ void
 chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
-	struct chttp_test *test;
+	struct fbr_test *test;
 	const char *expect;
 
 	server = _server_context_ok(ctx);
@@ -476,27 +476,27 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 		chttp_test_ERROR(server->chttp->error, "*SERVER* error: %s",
 			chttp_error_msg(server->chttp));
 
-		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* got headers");
+		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* got headers");
 	} while (server->chttp->state == CHTTP_STATE_HEADERS);
 
 	assert_zero(server->chttp->error);
 	assert(server->chttp->state == CHTTP_STATE_BODY);
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* headers ready");
+	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* headers ready");
 
 	expect = chttp_header_get(server->chttp, "expect");
 
 	if (expect && !strcasecmp(expect, "100-continue")) {
 		chttp_tcp_send(&server->chttp->addr, "HTTP/1.1 100 Continue\r\n\r\n", 25);
-		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* 100 acked");
+		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* 100 acked");
 	}
 
 	chttp_body_init(server->chttp, CHTTP_BODY_REQUEST);
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* body ready");
+	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* body ready");
 
-	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
-		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
+	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
+		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
 		chttp_dpage_debug(server->chttp->dpage);
 	}
 
@@ -589,7 +589,7 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 
 		chttp_test_ERROR(header_value != NULL, "header %s exists", header);
 
-		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* header not exists %s",
+		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* header not exists %s",
 			header);
 
 		return;
@@ -601,7 +601,7 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 	chttp_test_ERROR(dup != NULL, "duplicate %s header found", header);
 
 	if (!expected) {
-		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* header exists %s",
+		chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* header exists %s",
 			header);
 		return;
 	}
@@ -614,7 +614,7 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 			"expected %s", header, header_value, expected);
 	}
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* headers match %s:%s%s%s%s",
+	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* headers match %s:%s%s%s%s",
 		header, header_value, sub ? " (" : "", sub ? expected : "", sub ? ")" : "");
 }
 
@@ -1225,13 +1225,13 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 		_server_send_printf(server, "0\r\n\r\n");
 	}
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* sent random body bytes %zu "
+	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* sent random body bytes %zu "
 		"(%zu %zu)", sent, chunks, subchunks);
 
 	chttp_test_md5_final(&md5);
 	chttp_test_md5_store_server(ctx, &md5);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* body md5 %s", ctx->md5_server);
+	chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* body md5 %s", ctx->md5_server);
 }
 
 void
@@ -1253,7 +1253,7 @@ chttp_test_cmd_server_sleep_ms(struct chttp_test_context *ctx, struct chttp_test
 
 	chttp_test_sleep_ms(ms);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "*SERVER* slept %ldms", ms);
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* slept %ldms", ms);
 }
 
 void
@@ -1268,7 +1268,7 @@ chttp_test_cmd_server_flush_async(struct chttp_test_context *ctx, struct chttp_t
 		assert_zero(pthread_mutex_lock(&server->flush_lock));
 
 		assert_zero(pthread_cond_signal(&server->flush_signal));
-		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* flush signal sent");
+		chttp_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* flush signal sent");
 
 		assert_zero(pthread_mutex_unlock(&server->flush_lock));
 
@@ -1279,13 +1279,13 @@ chttp_test_cmd_server_flush_async(struct chttp_test_context *ctx, struct chttp_t
 
 	_server_cmd_async(server, cmd);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "*SERVER* waiting for flush...");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* waiting for flush...");
 
 	assert_zero(pthread_cond_wait(&server->flush_signal, &server->flush_lock));
 
 	assert_zero(pthread_mutex_unlock(&server->flush_lock));
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "*SERVER* flushed");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "*SERVER* flushed");
 }
 
 static void
@@ -1299,7 +1299,7 @@ _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 
 	cmdentry->cmd.func(server->ctx, &cmdentry->cmd);
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* thread cmd %s completed",
+	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread cmd %s completed",
 		cmdentry->cmd.name);
 }
 
@@ -1317,7 +1317,7 @@ _server_thread(void *arg)
 	server->started = 1;
 	_server_SIGNAL(server);
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* thread started");
+	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread started");
 
 	while (!server->stop) {
 		if (TAILQ_EMPTY(&server->cmd_list)) {
@@ -1345,7 +1345,7 @@ _server_thread(void *arg)
 
 	_server_UNLOCK(server);
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* thread finished");
+	chttp_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread finished");
 
 	return NULL;
 }

@@ -11,42 +11,42 @@
 #include <stdlib.h>
 #include <time.h>
 
-struct chttp_test *
+struct fbr_test *
 chttp_test_convert(struct chttp_test_context *ctx)
 {
-	struct chttp_test *test;
+	struct fbr_test *test;
 
 	assert(ctx);
 
-	test = (struct chttp_test*)((uint8_t*)ctx - offsetof(struct chttp_test, context));
+	test = (struct fbr_test*)((uint8_t*)ctx - offsetof(struct fbr_test, context));
 	chttp_test_ok(test);
 
 	return test;
 }
 
 void __chttp_attr_printf_p(3)
-chttp_test_log(struct chttp_test_context *ctx, enum chttp_test_verbocity level,
+chttp_test_log(struct chttp_test_context *ctx, enum fbr_test_verbocity level,
     const char *fmt, ...)
 {
-	struct chttp_test *test;
+	struct fbr_test *test;
 	va_list ap;
 
 	if (ctx) {
 		test = chttp_test_convert(ctx);
 
-		if (level != CHTTP_LOG_FORCE && (test->verbocity == CHTTP_LOG_NONE ||
+		if (level != FBR_LOG_FORCE && (test->verbocity == FBR_LOG_NONE ||
 		    test->verbocity < level)) {
 			return;
 		}
 	} else {
-		assert(level == CHTTP_LOG_FORCE);
+		assert(level == FBR_LOG_FORCE);
 	}
 
-	if (level == CHTTP_LOG_NONE) {
+	if (level == FBR_LOG_NONE) {
 		printf("- ");
-	} else if (level == CHTTP_LOG_VERBOSE) {
+	} else if (level == FBR_LOG_VERBOSE) {
 		printf("-- ");
-	} else if (level == CHTTP_LOG_VERY_VERBOSE) {
+	} else if (level == FBR_LOG_VERY_VERBOSE) {
 		printf("--- ");
 	}
 
@@ -60,7 +60,7 @@ chttp_test_log(struct chttp_test_context *ctx, enum chttp_test_verbocity level,
 void
 chttp_test_skip(struct chttp_test_context *ctx)
 {
-	struct chttp_test *test;
+	struct fbr_test *test;
 
 	test = chttp_test_convert(ctx);
 
@@ -191,7 +191,7 @@ chttp_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long ti
 }
 
 size_t
-chttp_test_line_pos(struct chttp_test *test)
+chttp_test_line_pos(struct fbr_test *test)
 {
 	chttp_test_ok(test);
 

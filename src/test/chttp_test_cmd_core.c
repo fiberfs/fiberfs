@@ -16,7 +16,7 @@
 void
 chttp_test_cmd_chttp_test(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
-	struct chttp_test *test;
+	struct fbr_test *test;
 
 	test = chttp_test_convert(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
@@ -24,7 +24,7 @@ chttp_test_cmd_chttp_test(struct chttp_test_context *ctx, struct chttp_test_cmd 
 
 	chttp_test_unescape(&cmd->params[0]);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "%s", cmd->params[0].value);
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "%s", cmd->params[0].value);
 }
 
 void
@@ -40,7 +40,7 @@ chttp_test_cmd_sleep_ms(struct chttp_test_context *ctx, struct chttp_test_cmd *c
 
 	chttp_test_sleep_ms(ms);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "slept %ldms", ms);
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "slept %ldms", ms);
 }
 
 void
@@ -62,7 +62,7 @@ chttp_test_cmd_connect_or_skip(struct chttp_test_context *ctx, struct chttp_test
 
 	if (ret) {
 		chttp_test_skip(ctx);
-		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "cannot connect to %s:%ld", host, port);
+		chttp_test_log(ctx, FBR_LOG_VERBOSE, "cannot connect to %s:%ld", host, port);
 		return;
 	}
 
@@ -70,11 +70,11 @@ chttp_test_cmd_connect_or_skip(struct chttp_test_context *ctx, struct chttp_test
 
 	if (ret) {
 		chttp_test_skip(ctx);
-		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "cannot connect to %s:%ld", host, port);
+		chttp_test_log(ctx, FBR_LOG_VERBOSE, "cannot connect to %s:%ld", host, port);
 		return;
 	}
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "valid address found %s:%ld", host, port);
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "valid address found %s:%ld", host, port);
 
 	chttp_tcp_close(&addr);
 
@@ -93,7 +93,7 @@ chttp_test_cmd_equal(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 
 	chttp_test_ERROR(ret, "not equal '%s' != '%s'", cmd->params[0].value, cmd->params[1].value);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "equal '%s'", cmd->params[0].value);
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "equal '%s'", cmd->params[0].value);
 }
 
 void
@@ -108,7 +108,7 @@ chttp_test_cmd_not_equal(struct chttp_test_context *ctx, struct chttp_test_cmd *
 
 	chttp_test_ERROR(!ret, "equal '%s' == '%s'", cmd->params[0].value, cmd->params[1].value);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "not equal '%s' != '%s'", cmd->params[0].value,
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "not equal '%s' != '%s'", cmd->params[0].value,
 		cmd->params[1].value);
 }
 
@@ -119,11 +119,11 @@ chttp_test_cmd_tls_or_skip(struct chttp_test_context *ctx, struct chttp_test_cmd
 	chttp_test_ERROR_param_count(cmd, 0);
 
 	if (chttp_tls_enabled()) {
-		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "TLS is supported");
+		chttp_test_log(ctx, FBR_LOG_VERBOSE, "TLS is supported");
 		return;
 	} else {
 		chttp_test_skip(ctx);
-		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "TLS not configured");
+		chttp_test_log(ctx, FBR_LOG_VERBOSE, "TLS not configured");
 		return;
 	}
 }
@@ -135,11 +135,11 @@ chttp_test_cmd_gzip_or_skip(struct chttp_test_context *ctx, struct chttp_test_cm
 	chttp_test_ERROR_param_count(cmd, 0);
 
 	if (chttp_gzip_enabled()) {
-		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "gzip is supported");
+		chttp_test_log(ctx, FBR_LOG_VERBOSE, "gzip is supported");
 		return;
 	} else {
 		chttp_test_skip(ctx);
-		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "gzip not configured");
+		chttp_test_log(ctx, FBR_LOG_VERBOSE, "gzip not configured");
 		return;
 	}
 }
@@ -152,5 +152,5 @@ chttp_test_cmd_skip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 
 	chttp_test_skip(ctx);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "Skipping");
+	chttp_test_log(ctx, FBR_LOG_VERBOSE, "Skipping");
 }

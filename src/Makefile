@@ -6,6 +6,7 @@ LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 
+# TODO break this up so we dont share headers as much
 CHTTP_CLIENT:=$(wildcard chttp/client/*.c)
 CHTTP_CLIENT_OBJS:=$(CHTTP_CLIENT:.c=.o)
 TEST:=$(wildcard test/*.c chttp/test/*.c )
