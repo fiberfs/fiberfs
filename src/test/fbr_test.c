@@ -199,10 +199,8 @@ fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 			"cannot register the same finish function twice");
 	}
 
-	finish = malloc(sizeof(*finish));
+	finish = calloc(1, sizeof(*finish));
 	assert(finish);
-
-	chttp_ZERO(finish);
 
 	finish->magic = FBR_TEST_FINISH_MAGIC;
 	finish->name = name;

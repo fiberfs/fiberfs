@@ -42,10 +42,8 @@ _dns_init(struct fbr_test_context *ctx)
 	chttp_test_context_ok(ctx->chttp_test);
 
 	if (!ctx->chttp_test->dns) {
-		ctx->chttp_test->dns = malloc(sizeof(*ctx->chttp_test->dns));
+		ctx->chttp_test->dns = calloc(1, sizeof(*ctx->chttp_test->dns));
 		assert(ctx->chttp_test->dns);
-
-		chttp_ZERO(ctx->chttp_test->dns);
 
 		ctx->chttp_test->dns->magic = _DNS_MAGIC;
 

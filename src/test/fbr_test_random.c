@@ -38,10 +38,8 @@ _random_init(struct fbr_test_context *ctx)
 	assert(ctx);
 
 	if (!ctx->random) {
-		random = malloc(sizeof(*random));
+		random = calloc(1, sizeof(*random));
 		assert(random);
-
-		chttp_ZERO(random);
 
 		random->magic = _RANDOM_MAGIC;
 		random->low = 0;

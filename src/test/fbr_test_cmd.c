@@ -32,10 +32,8 @@ _test_cmd_register(struct fbr_test *test, const char *name, fbr_test_cmd_f *func
 
 	fbr_test_ok(test);
 
-	entry = malloc(sizeof(*entry));
+	entry = calloc(1, sizeof(*entry));
 	assert(entry);
-
-	chttp_ZERO(entry);
 
 	entry->magic = FBR_TEST_ENTRY_MAGIC;
 	entry->name = name;
@@ -53,10 +51,8 @@ _test_var_register(struct fbr_test *test, const char *name, fbr_test_var_f *func
 
 	fbr_test_ok(test);
 
-	entry = malloc(sizeof(*entry));
+	entry = calloc(1, sizeof(*entry));
 	assert(entry);
-
-	chttp_ZERO(entry);
 
 	entry->magic = FBR_TEST_ENTRY_MAGIC;
 	entry->name = name;

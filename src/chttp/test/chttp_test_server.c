@@ -126,10 +126,8 @@ _server_cmdentry_alloc(void)
 {
 	struct _server_cmdentry *cmdentry;
 
-	cmdentry = malloc(sizeof(*cmdentry));
+	cmdentry = calloc(1, sizeof(*cmdentry));
 	assert(cmdentry);
-
-	chttp_ZERO(cmdentry);
 
 	cmdentry->magic = _SERVER_CMDENTRY;
 
@@ -287,10 +285,8 @@ chttp_test_cmd_server_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_ERROR(cmd->param_count > 2, "too many parameters");
 	fbr_test_ERROR(ctx->chttp_test->server != NULL, "server context exists");
 
-	server = malloc(sizeof(*server));
+	server = calloc(1, sizeof(*server));
 	assert(server);
-
-	chttp_ZERO(server);
 
 	server->magic = _SERVER_MAGIC;
 	server->ctx = ctx;
