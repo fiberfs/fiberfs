@@ -75,6 +75,9 @@ libchttp.a:	$(OBJS)
 test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
+chttp/test/%.o:	chttp/test/%.c $(INCLUDES) $(TEST_INCLUDES)
+		$(CC) $(CFLAGS) -c $< -o $@
+
 clean:
 		$(RM) *.o */*.o */*/*.o *.so *.a
 		$(RM) chttp_client chttp_test

@@ -75,7 +75,7 @@ struct fbr_test {
 	size_t					lines;
 	size_t					lines_multi;
 
-	struct fbr_test_cmd			cmd;
+	struct fbr_test_cmd			*cmd;
 	size_t					cmds;
 
 	int					error;

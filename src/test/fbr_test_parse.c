@@ -183,16 +183,20 @@ void
 fbr_test_parse_cmd(struct fbr_test *test)
 {
 	struct fbr_test_cmdentry *cmd_entry;
+	struct fbr_test_cmd *cmd;
 	char *buf, *var;
 	size_t i, len, count, start;
 	int quote;
 
 	fbr_test_ok(test);
+	fbr_test_cmd_ok(test->cmd);
 	assert(test->line_buf);
 	assert(test->line_buf_len);
 
-	chttp_ZERO(&test->cmd);
-	test->cmd.name = test->line_buf;
+	cmd = test->cmd;
+	chttp_ZERO(cmd);
+	cmd->magic = FBR_TEST_CMD_MAGIC;
+	cmd->name = test->line_buf;
 
 	buf = test->line_buf;
 	len = test->line_buf_len;
@@ -209,20 +213,20 @@ fbr_test_parse_cmd(struct fbr_test *test)
 			if (count % 2 != 1) {
 				continue;
 			} else {
-				assert(test->cmd.param_count);
-				assert(test->cmd.params[test->cmd.param_count - 1].value[0] == '\"');
+				assert(cmd->param_count);
+				assert(cmd->params[cmd->param_count - 1].value[0] == '\"');
 
 				quote = 0;
 				buf[i] = ' ';
-				test->cmd.params[test->cmd.param_count - 1].value += 1;
+				cmd->params[cmd->param_count - 1].value += 1;
 				start++;
 			}
 		}
 		if (!quote && buf[i] <= ' ' ) {
 			buf[i] = '\0';
 
-			if (test->cmd.param_count) {
-				test->cmd.params[test->cmd.param_count - 1].len = i - start;
+			if (cmd->param_count) {
+				cmd->params[cmd->param_count - 1].len = i - start;
 			}
 
 			i++;
@@ -236,11 +240,11 @@ fbr_test_parse_cmd(struct fbr_test *test)
 				break;
 			}
 
-			fbr_test_ERROR(test->cmd.param_count >= FBR_TEST_MAX_PARAMS,
+			fbr_test_ERROR(cmd->param_count >= FBR_TEST_MAX_PARAMS,
 				"too many parameters");
 
-			test->cmd.params[test->cmd.param_count].value = &buf[i];
-			test->cmd.param_count++;
+			cmd->params[cmd->param_count].value = &buf[i];
+			cmd->param_count++;
 
 			start = i;
 
@@ -252,25 +256,25 @@ fbr_test_parse_cmd(struct fbr_test *test)
 
 	fbr_test_ERROR(quote, "ending quote not found");
 
-	if (i == len && test->cmd.param_count) {
-		test->cmd.params[test->cmd.param_count - 1].len = i - start;
+	if (i == len && cmd->param_count) {
+		cmd->params[cmd->param_count - 1].len = i - start;
 	}
 
 	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
 		fbr_test_log(test->context, FBR_LOG_NONE, "%s (line %zu)",
-			test->cmd.name, fbr_test_line_pos(test));
+			cmd->name, fbr_test_line_pos(test));
 	} else {
-		fbr_test_log(test->context, FBR_LOG_NONE, "%s", test->cmd.name);
+		fbr_test_log(test->context, FBR_LOG_NONE, "%s", cmd->name);
 	}
 
-	for (i = 0; i < test->cmd.param_count; i++) {
+	for (i = 0; i < cmd->param_count; i++) {
 		// TODO remove
-		assert(test->cmd.params[i].len == strlen(test->cmd.params[i].value));
+		assert(cmd->params[i].len == strlen(cmd->params[i].value));
 
-		if (test->cmd.params[i].value[0] == '$' && test->cmd.params[i].value[1] == '$') {
-			test->cmd.params[i].value += 1;
-		} else if (test->cmd.params[i].value[0] == '$') {
-			var = test->cmd.params[i].value;
+		if (cmd->params[i].value[0] == '$' && cmd->params[i].value[1] == '$') {
+			cmd->params[i].value += 1;
+		} else if (cmd->params[i].value[0] == '$') {
+			var = cmd->params[i].value;
 
 			fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "Var: %s", var);
 
@@ -281,12 +285,12 @@ fbr_test_parse_cmd(struct fbr_test *test)
 
 			buf = cmd_entry->var_func(test->context);
 
-			test->cmd.params[i].value = buf;
-			test->cmd.params[i].len = strlen(buf);
-			test->cmd.params[i].v_const = 1;
+			cmd->params[i].value = buf;
+			cmd->params[i].len = strlen(buf);
+			cmd->params[i].v_const = 1;
 		}
 
 		fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "Arg: %s",
-			test->cmd.params[i].value);
+			cmd->params[i].value);
 	}
 }

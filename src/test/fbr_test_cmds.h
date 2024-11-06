@@ -56,6 +56,9 @@ struct fbr_test_param {
 };
 
 struct fbr_test_cmd {
+	unsigned int			magic;
+#define FBR_TEST_CMD_MAGIC		0x8F923F2E
+
 	const char			*name;
 
 	size_t				param_count;
@@ -70,6 +73,11 @@ struct fbr_test_cmd {
 	do {								\
 		assert(context);					\
 		assert((context)->magic == FBR_TEST_CONTEXT_MAGIC);	\
+	} while (0)
+#define fbr_test_cmd_ok(cmd)						\
+	do {								\
+		assert(cmd);						\
+		assert((cmd)->magic == FBR_TEST_CMD_MAGIC);		\
 	} while (0)
 
 #define FBR_TEST_CMD(cmd)		fbr_test_cmd_f fbr_test_cmd_##cmd;

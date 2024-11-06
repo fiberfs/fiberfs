@@ -25,9 +25,11 @@ _finish_test(struct fbr_test_context *ctx)
 		test->ft_file = NULL;
 	}
 
+	chttp_ZERO(test->cmd);
 	chttp_ZERO(test->context);
 	ctx = NULL;
 
+	free(test->cmd);
 	free(test->context);
 	free(test->line_raw);
 
@@ -52,11 +54,16 @@ _init_test(struct fbr_test *test)
 	test->context->magic = FBR_TEST_CONTEXT_MAGIC;
 	test->context->test = test;
 
+	test->cmd = calloc(1, sizeof(*test->cmd));
+	assert(test->cmd);
+	test->cmd->magic = FBR_TEST_CMD_MAGIC;
+
 	RB_INIT(&test->cmd_tree);
 	TAILQ_INIT(&test->finish_list);
 
 	fbr_test_ok(test);
 	fbr_test_ok(fbr_test_convert(test->context));
+	fbr_test_cmd_ok(test->cmd);
 
 	fbr_test_register_finish(test->context, "context", _finish_test);
 }
@@ -84,24 +91,28 @@ _test_run_test_file(void *arg)
 	while (fbr_test_readline(test, 0)) {
 		fbr_test_parse_cmd(test);
 
-		fbr_test_ERROR(!test->cmds && strcmp(test->cmd.name, "chttp_test") &&
-				strcmp(test->cmd.name, "fiber_test"),
-			"test file must begin with chttp_test or fiber_test");
+		fbr_test_cmd_ok(test->cmd);
+
+		fbr_test_ERROR(!test->cmds && strcmp(test->cmd->name, "chttp_test") &&
+			strcmp(test->cmd->name, "fiber_test"),
+			"test file must begin with chttp_test or fiber_test (found: %s)",
+			test->cmd->name);
 
 		test->cmds++;
 
-		cmd_entry = fbr_test_cmds_get(test, test->cmd.name);
+		cmd_entry = fbr_test_cmds_get(test, test->cmd->name);
 		fbr_test_ERROR(!cmd_entry || !cmd_entry->is_cmd,
-			"command %s not found (line %zu)", test->cmd.name, fbr_test_line_pos(test));
+			"command %s not found (line %zu)", test->cmd->name,
+			fbr_test_line_pos(test));
 		assert(cmd_entry->cmd_func);
 
-		test->cmd.func = cmd_entry->cmd_func;
-		assert_zero(test->cmd.async);
+		test->cmd->func = cmd_entry->cmd_func;
+		assert_zero(test->cmd->async);
 
 		fbr_test_ok(test);
 		fbr_test_context_ok(test->context);
 
-		cmd_entry->cmd_func(test->context, &test->cmd);
+		cmd_entry->cmd_func(test->context, test->cmd);
 
 		if (test->error || test->skip) {
 			break;
