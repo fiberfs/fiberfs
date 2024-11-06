@@ -6,12 +6,45 @@
 #include "compress/chttp_gzip.h"
 #include "dns/chttp_dns.h"
 #include "test/fbr_test.h"
+#include "test/chttp_test_cmds.h"
 #include "tls/chttp_tls.h"
 
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
+
+static void
+_finish_test(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+	chttp_test_context_ok(ctx->chttp_test);
+
+	fbr_test_ERROR(ctx->chttp_test->chttp != NULL, "chttp context detected");
+	fbr_test_ERROR(ctx->chttp_test->server != NULL, "chttp server detected");
+	fbr_test_ERROR(ctx->chttp_test->dns != NULL, "dns detected");
+	fbr_test_ERROR(ctx->chttp_test->tcp_pool != NULL, "tcp_pool detected");
+	fbr_test_ERROR(ctx->chttp_test->gzip != NULL, "gzip detected");
+
+	chttp_ZERO(ctx->chttp_test);
+	free(ctx->chttp_test);
+	ctx->chttp_test = NULL;
+}
+
+void
+chttp_test_init(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+	assert_zero(ctx->chttp_test);
+
+	ctx->chttp_test = calloc(1, sizeof(*ctx->chttp_test));
+	assert(ctx->chttp_test);
+
+	ctx->chttp_test->magic = CHTTP_TEST_CONTEXT_MAGIC;
+
+	fbr_test_register_finish(ctx, "chttp_context", _finish_test);
+}
 
 void
 chttp_test_cmd_chttp_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)

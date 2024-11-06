@@ -6,6 +6,7 @@
 #include "dns/chttp_dns.h"
 #include "dns/chttp_dns_cache.h"
 #include "test/fbr_test.h"
+#include "test/chttp_test_cmds.h"
 
 #include <stdlib.h>
 
@@ -23,33 +24,35 @@ struct chttp_test_dns {
 static void
 _dns_finish(struct fbr_test_context *ctx)
 {
-	assert(ctx);
-	assert(ctx->dns);
-	assert(ctx->dns->magic == _DNS_MAGIC);
+	fbr_test_context_ok(ctx);
+	chttp_test_context_ok(ctx->chttp_test);
+	assert(ctx->chttp_test->dns);
+	assert(ctx->chttp_test->dns->magic == _DNS_MAGIC);
 
-	chttp_ZERO(ctx->dns);
-	free(ctx->dns);
+	chttp_ZERO(ctx->chttp_test->dns);
+	free(ctx->chttp_test->dns);
 
-	ctx->dns = NULL;
+	ctx->chttp_test->dns = NULL;
 }
 
 static void
 _dns_init(struct fbr_test_context *ctx)
 {
-	assert(ctx);
+	fbr_test_context_ok(ctx);
+	chttp_test_context_ok(ctx->chttp_test);
 
-	if (!ctx->dns) {
-		ctx->dns = malloc(sizeof(*ctx->dns));
-		assert(ctx->dns);
+	if (!ctx->chttp_test->dns) {
+		ctx->chttp_test->dns = malloc(sizeof(*ctx->chttp_test->dns));
+		assert(ctx->chttp_test->dns);
 
-		chttp_ZERO(ctx->dns);
+		chttp_ZERO(ctx->chttp_test->dns);
 
-		ctx->dns->magic = _DNS_MAGIC;
+		ctx->chttp_test->dns->magic = _DNS_MAGIC;
 
 		fbr_test_register_finish(ctx, "dns", _dns_finish);
 	}
 
-	assert(ctx->dns->magic == _DNS_MAGIC);
+	assert(ctx->chttp_test->dns->magic == _DNS_MAGIC);
 }
 
 void
@@ -112,10 +115,11 @@ chttp_test_cmd_dns_lookup_or_skip(struct fbr_test_context *ctx, struct fbr_test_
 
 	chttp_addr_resolved(paddr);
 
-	chttp_sa_string(&addr.sa, ctx->dns->value, sizeof(ctx->dns->value), &ret);
+	chttp_sa_string(&addr.sa, ctx->chttp_test->dns->value,
+		sizeof(ctx->chttp_test->dns->value), &ret);
 	assert(ret == 1);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "DNS result %s", ctx->dns->value);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "DNS result %s", ctx->chttp_test->dns->value);
 }
 
 void
@@ -231,7 +235,7 @@ chttp_test_var_dns_value(struct fbr_test_context *ctx)
 {
 	_dns_init(ctx);
 
-	return ctx->dns->value;
+	return ctx->chttp_test->dns->value;
 }
 
 #define _DNS_STATS_NAME(name)							\
@@ -241,10 +245,11 @@ chttp_test_var_dns_##name(struct fbr_test_context *ctx)				\
 	_dns_init(ctx);								\
 	chttp_dns_cache_ok();							\
 										\
-	snprintf(ctx->dns->stat_str, sizeof(ctx->dns->stat_str), "%zu",		\
+	snprintf(ctx->chttp_test->dns->stat_str,				\
+		sizeof(ctx->chttp_test->dns->stat_str), "%zu",			\
 		_DNS_CACHE.stats.name);						\
 										\
-	return ctx->dns->stat_str;						\
+	return ctx->chttp_test->dns->stat_str;					\
 }
 
 _DNS_STATS_NAME(lookups)

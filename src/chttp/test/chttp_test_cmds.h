@@ -10,23 +10,51 @@
 
 #include "test/fbr_test.h"
 
-struct chttp_test_md5 {
-	unsigned int				magic;
-#define CHTTP_TEST_MD5_MAGIC			0x4E4330A7
+#define CHTTP_TEST_MD5_BUFLEN		33
+#define CHTTP_TEST_GZIP_BUFLEN		4096
 
-	int					ready;
+struct chttp_test_context {
+	unsigned int			magic;
+#define CHTTP_TEST_CONTEXT_MAGIC	0xD8B41328
 
-	uint32_t				i[2];
-	uint32_t				buf[4];
-	unsigned char				in[64];
-	unsigned char				digest[16];
+	struct chttp_context		chttp_static;
+	struct chttp_context		*chttp;
+
+	struct chttp_test_server	*server;
+	struct chttp_test_dns		*dns;
+	struct chttp_test_tcp_pool	*tcp_pool;
+	struct chttp_gzip		*gzip;
+	char				gzip_buf[CHTTP_TEST_GZIP_BUFLEN];
+
+	char				md5_server[CHTTP_TEST_MD5_BUFLEN];
+	char				md5_client[CHTTP_TEST_MD5_BUFLEN];
 };
+
+struct chttp_test_md5 {
+	unsigned int			magic;
+#define CHTTP_TEST_MD5_MAGIC		0x4E4330A7
+
+	int				ready;
+
+	uint32_t			i[2];
+	uint32_t			buf[4];
+	unsigned char			in[64];
+	unsigned char			digest[16];
+};
+
+void chttp_test_init(struct fbr_test_context *test);
 
 void chttp_test_md5_init(struct chttp_test_md5 *md5);
 void chttp_test_md5_update(struct chttp_test_md5 *md5, uint8_t *input, size_t len);
 void chttp_test_md5_final(struct chttp_test_md5 *md5);
 void chttp_test_md5_store_server(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
 void chttp_test_md5_store_client(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
+
+#define chttp_test_context_ok(context)					\
+	do {								\
+		assert(context);					\
+		assert((context)->magic == CHTTP_TEST_CONTEXT_MAGIC);	\
+	} while (0)
 
 #define CHTTP_TEST_CMD(cmd)		fbr_test_cmd_f chttp_test_cmd_##cmd;
 #define CHTTP_TEST_VAR(var)		fbr_test_var_f chttp_test_var_##var;

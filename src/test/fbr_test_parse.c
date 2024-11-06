@@ -189,11 +189,11 @@ fbr_test_parse_cmd(struct fbr_test *test)
 	int quote;
 
 	fbr_test_ok(test);
-	fbr_test_cmd_ok(test->cmd);
+	fbr_test_cmd_ok(&test->cmd);
 	assert(test->line_buf);
 	assert(test->line_buf_len);
 
-	cmd = test->cmd;
+	cmd = &test->cmd;
 	chttp_ZERO(cmd);
 	cmd->magic = FBR_TEST_CMD_MAGIC;
 	cmd->name = test->line_buf;

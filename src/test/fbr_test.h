@@ -23,34 +23,15 @@ enum fbr_test_verbocity {
 
 #define FBR_TEST_MAX_PARAMS		16
 
-// TODO move these out
-#define CHTTP_TEST_MD5_BUFLEN		33
-#define CHTTP_TEST_GZIP_BUFLEN		4096
-
-struct chttp_test_server;
-struct fbr_test_random;
-struct chttp_test_dns;
-struct chttp_test_tcp_pool;
-struct chttp_gzip;
+struct chttp_test_context;
 
 struct fbr_test_context {
 	unsigned int			magic;
 #define FBR_TEST_CONTEXT_MAGIC		0xAD98A6FF
 
 	struct fbr_test			*test;
-
-	struct chttp_context		chttp_static;
-	struct chttp_context		*chttp;
-
-	struct chttp_test_server	*server;
 	struct fbr_test_random		*random;
-	struct chttp_test_dns		*dns;
-	struct chttp_test_tcp_pool	*tcp_pool;
-	struct chttp_gzip		*gzip;
-	char				gzip_buf[CHTTP_TEST_GZIP_BUFLEN];
-
-	char				md5_server[CHTTP_TEST_MD5_BUFLEN];
-	char				md5_client[CHTTP_TEST_MD5_BUFLEN];
+	struct chttp_test_context	*chttp_test;
 };
 
 struct fbr_test_param {
@@ -131,7 +112,7 @@ struct fbr_test {
 	size_t					lines;
 	size_t					lines_multi;
 
-	struct fbr_test_cmd			*cmd;
+	struct fbr_test_cmd			cmd;
 	size_t					cmds;
 
 	int					error;

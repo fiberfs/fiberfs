@@ -68,10 +68,11 @@ static void *_server_thread(void *arg);
 static inline struct chttp_test_server *
 _server_context_ok(struct fbr_test_context *ctx)
 {
-	assert(ctx);
-	fbr_test_ERROR(!ctx->server, "server context does not exist");
-	_server_ok(ctx->server);
-	return ctx->server;
+	fbr_test_context_ok(ctx);
+	chttp_test_context_ok(ctx->chttp_test);
+	fbr_test_ERROR(!ctx->chttp_test->server, "server context does not exist");
+	_server_ok(ctx->chttp_test->server);
+	return ctx->chttp_test->server;
 }
 
 static inline void
@@ -239,18 +240,19 @@ _server_finish(struct fbr_test_context *ctx)
 	chttp_ZERO(server);
 	free(server);
 
-	ctx->server = NULL;
+	ctx->chttp_test->server = NULL;
 }
 
 static void
 _gzip_finish(struct fbr_test_context *ctx)
 {
-	assert(ctx);
-	assert(ctx->gzip);
+	fbr_test_context_ok(ctx);
+	chttp_test_context_ok(ctx->chttp_test);
+	assert(ctx->chttp_test->gzip);
 
-	chttp_gzip_free(ctx->gzip);
+	chttp_gzip_free(ctx->chttp_test->gzip);
 
-	ctx->gzip = NULL;
+	ctx->chttp_test->gzip = NULL;
 }
 
 static void
@@ -280,9 +282,10 @@ chttp_test_cmd_server_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 {
 	struct chttp_test_server *server;
 
-	assert(ctx);
+	fbr_test_context_ok(ctx);
+	chttp_test_context_ok(ctx->chttp_test);
 	fbr_test_ERROR(cmd->param_count > 2, "too many parameters");
-	fbr_test_ERROR(ctx->server != NULL, "server context exists");
+	fbr_test_ERROR(ctx->chttp_test->server != NULL, "server context exists");
 
 	server = malloc(sizeof(*server));
 	assert(server);
@@ -329,7 +332,7 @@ chttp_test_cmd_server_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	_server_init_socket(server);
 
-	ctx->server = server;
+	ctx->chttp_test->server = server;
 
 	fbr_test_register_finish(ctx, "server", _server_finish);
 
@@ -962,17 +965,18 @@ chttp_test_cmd_server_enable_gzip(struct fbr_test_context *ctx, struct fbr_test_
 
 	server = _server_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
-	fbr_test_ERROR(ctx->gzip != NULL, "gzip already initialized");
+	fbr_test_ERROR(ctx->chttp_test->gzip != NULL, "gzip already initialized");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
 		return;
 	}
 
-	ctx->gzip = chttp_gzip_deflate_alloc();
-	assert(ctx->gzip);
+	ctx->chttp_test->gzip = chttp_gzip_deflate_alloc();
+	assert(ctx->chttp_test->gzip);
 
-	chttp_gzip_register(NULL, ctx->gzip, ctx->gzip_buf, sizeof(ctx->gzip_buf));
+	chttp_gzip_register(NULL, ctx->chttp_test->gzip, ctx->chttp_test->gzip_buf,
+		sizeof(ctx->chttp_test->gzip_buf));
 
 	fbr_test_register_finish(ctx, "gzip", _gzip_finish);
 
@@ -1028,14 +1032,15 @@ chttp_test_cmd_server_send_chunked_gzip(struct fbr_test_context *ctx, struct fbr
 		return;
 	}
 
-	assert(ctx->gzip);
+	assert(ctx->chttp_test->gzip);
 
 	fbr_test_unescape(&cmd->params[0]);
 
 	if (cmd->params[0].len == 0) {
-		chttp_gzip_send_chunk(ctx->gzip, &server->addr, NULL, 0);
+		chttp_gzip_send_chunk(ctx->chttp_test->gzip, &server->addr, NULL, 0);
 	} else {
-		chttp_gzip_send_chunk(ctx->gzip, &server->addr, cmd->params[0].value, cmd->params[0].len);
+		chttp_gzip_send_chunk(ctx->chttp_test->gzip, &server->addr, cmd->params[0].value,
+			cmd->params[0].len);
 	}
 }
 
@@ -1052,8 +1057,8 @@ chttp_test_cmd_server_end_chunked(struct fbr_test_context *ctx, struct fbr_test_
 		return;
 	}
 
-	if (ctx->gzip) {
-		chttp_gzip_send_chunk(ctx->gzip, &server->addr, NULL, 0);
+	if (ctx->chttp_test->gzip) {
+		chttp_gzip_send_chunk(ctx->chttp_test->gzip, &server->addr, NULL, 0);
 	}
 
 	_server_send_printf(server, "0\r\n\r\n");
@@ -1144,7 +1149,8 @@ chttp_test_cmd_server_send_random_body(struct fbr_test_context *ctx, struct fbr_
 
 	if (do_gzip) {
 		chttp_gzip_deflate_init(&gzip);
-		chttp_gzip_register(NULL, &gzip, ctx->gzip_buf, sizeof(ctx->gzip_buf));
+		chttp_gzip_register(NULL, &gzip, ctx->chttp_test->gzip_buf,
+			sizeof(ctx->chttp_test->gzip_buf));
 
 		_server_send_printf(server, "Content-Encoding: gzip\r\n");
 	}
@@ -1227,7 +1233,8 @@ chttp_test_cmd_server_send_random_body(struct fbr_test_context *ctx, struct fbr_
 	chttp_test_md5_final(&md5);
 	chttp_test_md5_store_server(ctx, &md5);
 
-	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* body md5 %s", ctx->md5_server);
+	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* body md5 %s",
+		ctx->chttp_test->md5_server);
 }
 
 void

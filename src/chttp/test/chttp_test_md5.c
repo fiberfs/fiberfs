@@ -269,29 +269,39 @@ _md5_store(struct chttp_test_md5 *md5, char *md5_buf)
 void
 chttp_test_md5_store_server(struct fbr_test_context *ctx, struct chttp_test_md5 *md5)
 {
-	_md5_store(md5, ctx->md5_server);
+	fbr_test_context_ok(ctx);
+	chttp_test_context_ok(ctx->chttp_test);
+
+	_md5_store(md5, ctx->chttp_test->md5_server);
 }
 
 void
 chttp_test_md5_store_client(struct fbr_test_context *ctx, struct chttp_test_md5 *md5)
 {
-	_md5_store(md5, ctx->md5_client);
+	fbr_test_context_ok(ctx);
+	chttp_test_context_ok(ctx->chttp_test);
+
+	_md5_store(md5, ctx->chttp_test->md5_client);
 }
 
 char *
 chttp_test_var_md5_server(struct fbr_test_context *ctx)
 {
-	assert(strlen(ctx->md5_server) == 32);
+	fbr_test_context_ok(ctx);
+	chttp_test_context_ok(ctx->chttp_test);
+	assert(strlen(ctx->chttp_test->md5_server) == 32);
 
-	return ctx->md5_server;
+	return ctx->chttp_test->md5_server;
 }
 
 char *
 chttp_test_var_md5_client(struct fbr_test_context *ctx)
 {
-	assert(strlen(ctx->md5_client) == 32);
+	fbr_test_context_ok(ctx);
+	chttp_test_context_ok(ctx->chttp_test);
+	assert(strlen(ctx->chttp_test->md5_client) == 32);
 
-	return ctx->md5_client;
+	return ctx->chttp_test->md5_client;
 }
 
 /*
