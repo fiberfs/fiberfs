@@ -4,6 +4,8 @@
  */
 
 #include "test/fbr_test.h"
+#include "test/fbr_test_cmds.h"
+#include "test/chttp_test_cmds.h"
 
 #include <stdio.h>
 #include <stdlib.h>

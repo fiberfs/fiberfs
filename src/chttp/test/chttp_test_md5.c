@@ -6,6 +6,7 @@
  */
 
 #include "test/fbr_test.h"
+#include "test/chttp_test_cmds.h"
 
 #include <stdlib.h>
 

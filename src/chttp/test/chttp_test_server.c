@@ -5,6 +5,8 @@
 
 #include "compress/chttp_gzip.h"
 #include "test/fbr_test.h"
+#include "test/fbr_test_cmds.h"
+#include "test/chttp_test_cmds.h"
 #include "tls/chttp_tls.h"
 
 #include <stdarg.h>

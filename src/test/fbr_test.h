@@ -9,8 +9,6 @@
 #include "chttp.h"
 #include "data/queue.h"
 #include "data/tree.h"
-#include "test/fbr_test_cmds.h"
-#include "test/chttp_test_cmds.h"
 
 #include <stdio.h>
 #include <pthread.h>
@@ -21,6 +19,64 @@ enum fbr_test_verbocity {
 	FBR_LOG_NONE = 0,
 	FBR_LOG_VERBOSE,
 	FBR_LOG_VERY_VERBOSE
+};
+
+#define FBR_TEST_MAX_PARAMS		16
+
+// TODO move these out
+#define CHTTP_TEST_MD5_BUFLEN		33
+#define CHTTP_TEST_GZIP_BUFLEN		4096
+
+struct chttp_test_server;
+struct fbr_test_random;
+struct chttp_test_dns;
+struct chttp_test_tcp_pool;
+struct chttp_gzip;
+
+struct fbr_test_context {
+	unsigned int			magic;
+#define FBR_TEST_CONTEXT_MAGIC		0xAD98A6FF
+
+	struct fbr_test			*test;
+
+	struct chttp_context		chttp_static;
+	struct chttp_context		*chttp;
+
+	struct chttp_test_server	*server;
+	struct fbr_test_random		*random;
+	struct chttp_test_dns		*dns;
+	struct chttp_test_tcp_pool	*tcp_pool;
+	struct chttp_gzip		*gzip;
+	char				gzip_buf[CHTTP_TEST_GZIP_BUFLEN];
+
+	char				md5_server[CHTTP_TEST_MD5_BUFLEN];
+	char				md5_client[CHTTP_TEST_MD5_BUFLEN];
+};
+
+struct fbr_test_param {
+	char				*value;
+	size_t				len;
+
+	unsigned int			v_const:1;
+};
+
+struct fbr_test_cmd;
+
+typedef void (fbr_test_cmd_f)(struct fbr_test_context *, struct fbr_test_cmd *);
+typedef char *(fbr_test_var_f)(struct fbr_test_context *);
+
+struct fbr_test_cmd {
+	unsigned int			magic;
+#define FBR_TEST_CMD_MAGIC		0x8F923F2E
+
+	const char			*name;
+
+	size_t				param_count;
+	struct fbr_test_param		params[FBR_TEST_MAX_PARAMS];
+
+	fbr_test_cmd_f			*func;
+
+	unsigned int			async:1;
 };
 
 struct fbr_test_cmdentry {
@@ -117,6 +173,16 @@ void fbr_test_fill_random(uint8_t *buf, size_t len);
 	do {								\
 		assert(test);						\
 		assert((test)->magic == FBR_TEST_MAGIC);		\
+	} while (0)
+#define fbr_test_context_ok(context)					\
+	do {								\
+		assert(context);					\
+		assert((context)->magic == FBR_TEST_CONTEXT_MAGIC);	\
+	} while (0)
+#define fbr_test_cmd_ok(cmd)						\
+	do {								\
+		assert(cmd);						\
+		assert((cmd)->magic == FBR_TEST_CMD_MAGIC);		\
 	} while (0)
 
 #endif /* _FBR_TEST_H_INCLUDED_ */

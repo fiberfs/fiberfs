@@ -8,9 +8,8 @@
 
 #ifndef CHTTP_TEST_CMD
 
-#include "test/fbr_test_cmds.h"
+#include "test/fbr_test.h"
 
-// TODO move into its own header
 struct chttp_test_md5 {
 	unsigned int				magic;
 #define CHTTP_TEST_MD5_MAGIC			0x4E4330A7
