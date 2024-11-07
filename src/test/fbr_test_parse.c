@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 chttp
+ * Copyright (c) 2024 FiberFS
  *
  */
 
@@ -194,7 +194,7 @@ fbr_test_parse_cmd(struct fbr_test *test)
 	assert(test->line_buf_len);
 
 	cmd = &test->cmd;
-	chttp_ZERO(cmd);
+	fbr_ZERO(cmd);
 	cmd->magic = FBR_TEST_CMD_MAGIC;
 	cmd->name = test->line_buf;
 

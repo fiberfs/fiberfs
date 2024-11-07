@@ -3,10 +3,7 @@
  *
  */
 
-#include "compress/chttp_gzip.h"
-#include "dns/chttp_dns.h"
 #include "test/fbr_test.h"
-#include "tls/chttp_tls.h"
 
 #include <errno.h>
 #include <limits.h>

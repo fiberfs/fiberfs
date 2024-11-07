@@ -77,7 +77,7 @@ _test_cmds_free(struct fbr_test_context *ctx)
 
 		RB_REMOVE(fbr_test_tree, &test->cmd_tree, entry);
 
-		chttp_ZERO(entry);
+		fbr_ZERO(entry);
 		free(entry);
 	}
 

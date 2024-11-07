@@ -8,6 +8,7 @@
 
 #ifndef CHTTP_TEST_CMD
 
+#include "chttp.h"
 #include "test/fbr_test.h"
 
 #define CHTTP_TEST_MD5_BUFLEN		33

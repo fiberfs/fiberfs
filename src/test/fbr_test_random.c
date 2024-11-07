@@ -24,7 +24,7 @@ _random_finish(struct fbr_test_context *ctx)
 	assert(ctx->random);
 	assert(ctx->random->magic == _RANDOM_MAGIC);
 
-	chttp_ZERO(ctx->random);
+	fbr_ZERO(ctx->random);
 	free(ctx->random);
 
 	ctx->random = NULL;

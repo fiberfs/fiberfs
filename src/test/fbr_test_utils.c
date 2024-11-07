@@ -24,7 +24,7 @@ fbr_test_convert(struct fbr_test_context *ctx)
 	return test;
 }
 
-void __chttp_attr_printf_p(3)
+void __fbr_attr_printf_p(3)
 fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
     const char *fmt, ...)
 {
@@ -69,7 +69,7 @@ fbr_test_skip(struct fbr_test_context *ctx)
 	test->skip = 1;
 }
 
-void __chttp_attr_printf
+void __fbr_attr_printf
 fbr_test_warn(int condition, const char *fmt, ...)
 {
 	va_list ap;
@@ -87,7 +87,7 @@ fbr_test_warn(int condition, const char *fmt, ...)
 	printf("\n");
 }
 
-void __chttp_attr_printf
+void __fbr_attr_printf
 fbr_test_ERROR(int condition, const char *fmt, ...)
 {
 	va_list ap;

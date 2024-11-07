@@ -1,19 +1,19 @@
 # FiberFS Makefile (tests)
 
-CHTTP_TEST=../src/chttp_test
+FIBERFS_TEST=../src/fiberfs_test
 V=vv
 CHTS=$(sort $(wildcard */*.cht */*.tst))
 VALGRIND=
 GDB=gdb --args
 
-.PHONY:	all test check chttp_test valgrind verbose
+.PHONY:	all test check fiberfs_test valgrind verbose
 
 all:		check
 
 FORCE:
 
-chttp_test:
-		$(MAKE) -C .. chttp_test
+fiberfs_test:
+		$(MAKE) -C .. fiberfs_test
 
 valgrind:	VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
 valgrind:	check
@@ -25,9 +25,8 @@ check:		$(CHTS)
 
 verbose:	$(CHTS)
 
-%.cht:		chttp_test FORCE
-		$(VALGRIND) $(CHTTP_TEST) -$(V) $@
+%.cht:		fiberfs_test FORCE
+		$(VALGRIND) $(FIBERFS_TEST) -$(V) $@
 
-%.tst:		chttp_test FORCE
-		$(VALGRIND) $(CHTTP_TEST) -$(V) $@
-
+%.tst:		fiberfs_test FORCE
+		$(VALGRIND) $(FIBERFS_TEST) -$(V) $@

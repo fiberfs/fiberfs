@@ -6,10 +6,12 @@
 #ifndef _FBR_TEST_H_INCLUDED_
 #define _FBR_TEST_H_INCLUDED_
 
-#include "chttp.h"
+#include "fiberfs.h"
 #include "data/queue.h"
 #include "data/tree.h"
 
+#include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <pthread.h>
 
@@ -136,10 +138,10 @@ void fbr_test_parse_cmd(struct fbr_test *test);
 
 struct fbr_test *fbr_test_convert(struct fbr_test_context *ctx);
 void fbr_test_skip(struct fbr_test_context *ctx);
-void __chttp_attr_printf_p(3) fbr_test_log(struct fbr_test_context *ctx,
+void __fbr_attr_printf_p(3) fbr_test_log(struct fbr_test_context *ctx,
 	enum fbr_test_verbocity level, const char *fmt, ...);
-void __chttp_attr_printf fbr_test_warn(int condition, const char *fmt, ...);
-void __chttp_attr_printf fbr_test_ERROR(int condition, const char *fmt, ...);
+void __fbr_attr_printf fbr_test_warn(int condition, const char *fmt, ...);
+void __fbr_attr_printf fbr_test_ERROR(int condition, const char *fmt, ...);
 long fbr_test_parse_long(const char *str);
 void fbr_test_ERROR_param_count(struct fbr_test_cmd *cmd, size_t count);
 void fbr_test_ERROR_string(const char *str);

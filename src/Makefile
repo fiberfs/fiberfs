@@ -54,13 +54,13 @@ HTMLDIR=report
 
 .PHONY:		all lib gcov clean cleanall
 
-all:		chttp_client chttp_test lib
+all:		chttp_client fiberfs_test lib
 lib:		libchttp.so libchttp.a
 
 chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
 		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libchttp.a $(LIBFLAGS)
 
-chttp_test:	libchttp.a $(TEST_OBJS)
+fiberfs_test:	libchttp.a $(TEST_OBJS)
 		$(CC) -o $@ $(TEST_OBJS) libchttp.a $(LIBFLAGS_TEST)
 
 libchttp.so:	$(OBJS)
@@ -80,7 +80,7 @@ chttp/test/%.o:	chttp/test/%.c $(INCLUDES) $(TEST_INCLUDES)
 
 clean:
 		$(RM) *.o */*.o */*/*.o *.so *.a
-		$(RM) chttp_client chttp_test
+		$(RM) chttp_client fiberfs_test
 		$(RM) *.gcno */*.gcno *.gcda */*.gcda *.gcov */*.gcov
 		$(RM) coverage.info gcov.data
 		$(RMDIR) $(HTMLDIR)

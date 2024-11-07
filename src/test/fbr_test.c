@@ -27,13 +27,13 @@ _finish_test(struct fbr_test_context *ctx)
 		test->ft_file = NULL;
 	}
 
-	chttp_ZERO(test->context);
+	fbr_ZERO(test->context);
 	ctx = NULL;
 
 	free(test->context);
 	free(test->line_raw);
 
-	chttp_ZERO(test);
+	fbr_ZERO(test);
 }
 
 static void
@@ -41,7 +41,7 @@ _init_test(struct fbr_test *test)
 {
 	assert(test);
 
-	chttp_ZERO(test);
+	fbr_ZERO(test);
 
 	test->magic = FBR_TEST_MAGIC;
 	test->verbocity = FBR_LOG_VERBOSE;
@@ -71,7 +71,7 @@ _init_test(struct fbr_test *test)
 static void
 _usage(int error)
 {
-	printf("%ssage: chttp_test [-q] [-v] [-vv] [-h] [-V] TEST_FILE\n",
+	printf("%ssage: fiberfs_test [-q] [-v] [-vv] [-h] [-V] TEST_FILE\n",
 		(error ? "ERROR u" : "U"));
 }
 
@@ -141,7 +141,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[i], "-vv")) {
 			test.verbocity = FBR_LOG_VERY_VERBOSE;
 		} else if (!strcmp(argv[i], "-V")) {
-			fbr_test_log(test.context, FBR_LOG_FORCE, "chttp_test %s", CHTTP_VERSION);
+			fbr_test_log(test.context, FBR_LOG_FORCE, "fiberfs_test %s", FIBERFS_VERSION);
 			return 0;
 		} else if (!strcmp(argv[i], "-h")) {
 			_usage(0);
@@ -230,7 +230,7 @@ fbr_test_run_finish(struct fbr_test_context *ctx, const char *name)
 
 		finish->func(test->context);
 
-		chttp_ZERO(finish);
+		fbr_ZERO(finish);
 		free(finish);
 
 		return;
@@ -259,7 +259,7 @@ fbr_test_run_all_finish(struct fbr_test *test)
 
 		finish->func(test->context);
 
-		chttp_ZERO(finish);
+		fbr_ZERO(finish);
 		free(finish);
 	}
 
