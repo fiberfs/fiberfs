@@ -1,7 +1,7 @@
 # FiberFS Makefile (tests)
 
 FIBERFS_TEST=../src/fiberfs_test
-V=vv
+FLAGS=-vv
 CHTS=$(sort $(wildcard */*.cht */*.tst))
 VALGRIND=
 GDB=gdb --args
@@ -20,13 +20,13 @@ valgrind:	check
 
 test:		check
 
-check:		V=q
+check:		FLAGS=-q
 check:		$(CHTS)
 
 verbose:	$(CHTS)
 
 %.cht:		fiberfs_test FORCE
-		$(VALGRIND) $(FIBERFS_TEST) -$(V) $@
+		$(VALGRIND) $(FIBERFS_TEST) $(FLAGS) $@
 
 %.tst:		fiberfs_test FORCE
-		$(VALGRIND) $(FIBERFS_TEST) -$(V) $@
+		$(VALGRIND) $(FIBERFS_TEST) $(FLAGS) $@
