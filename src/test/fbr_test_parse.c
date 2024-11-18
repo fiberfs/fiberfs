@@ -7,6 +7,12 @@
 
 #include <stdlib.h>
 
+enum fbr_test_quote {
+	FRB_QUOTE_NONE = 0,
+	FRB_QUOTE_DOUBLE,
+	FRB_QUOTE_SINGLE
+};
+
 #define _TRIM_STR_LEFT(s, len)				\
 	while ((len) > 0 && (s)[0] <= ' ') {		\
 		(s)++;					\
@@ -29,6 +35,7 @@ void
 fbr_test_unescape(struct fbr_test_param *param)
 {
 	size_t offset, i;
+	char val;
 
 	assert(param);
 	assert(param->value);
@@ -50,14 +57,13 @@ fbr_test_unescape(struct fbr_test_param *param)
 
 		assert(i < param->len - 1);
 
-		switch (param->value[i + 1]) {
+		val = param->value[i + 1];
+
+		switch (val) {
 			case '\\':
-				param->value[i - offset] = '\\';
-				offset++;
-				i++;
-				continue;
 			case '\"':
-				param->value[i - offset] = '\"';
+			case '\'':
+				param->value[i - offset] = val;
 				offset++;
 				i++;
 				continue;
@@ -179,14 +185,51 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 	return 1;
 }
 
+enum fbr_test_quote
+_match_quote(char *value)
+{
+	enum fbr_test_quote quote;
+	int escaped;
+
+	assert(value);
+
+	quote = FRB_QUOTE_NONE;
+
+	switch (value[0]) {
+		case '\"':
+			quote = FRB_QUOTE_DOUBLE;
+			break;
+		case '\'':
+			quote = FRB_QUOTE_SINGLE;
+			break;
+		default:
+			return quote;
+	}
+
+	assert(quote > FRB_QUOTE_NONE);
+
+	escaped = 1;
+
+	// We always have valid buffer here
+	while (value[0 - escaped] == '\\') {
+		escaped++;
+	}
+
+	if (escaped % 2 != 1) {
+		return FRB_QUOTE_NONE;
+	}
+
+	return quote;
+}
+
 void
 fbr_test_parse_cmd(struct fbr_test *test)
 {
 	struct fbr_test_cmdentry *cmd_entry;
 	struct fbr_test_cmd *cmd;
 	char *buf, *var;
-	size_t i, len, count, start;
-	int quote;
+	size_t i, len, start;
+	enum fbr_test_quote quote, quote_end;
 
 	fbr_test_ok(test);
 	fbr_test_cmd_ok(&test->cmd);
@@ -201,28 +244,24 @@ fbr_test_parse_cmd(struct fbr_test *test)
 	buf = test->line_buf;
 	len = test->line_buf_len;
 	start = 0;
-	quote = 0;
+	quote = FRB_QUOTE_NONE;
+	quote_end = FRB_QUOTE_NONE;
 
 	for (i = 0; i < len; i++) {
-		if (quote && buf[i] == '\"') {
-			count = 1;
-			while (buf[i - count] == '\\') {
-				count++;
-			}
-
-			if (count % 2 != 1) {
-				continue;
-			} else {
-				assert(cmd->param_count);
-				assert(cmd->params[cmd->param_count - 1].value[0] == '\"');
-
-				quote = 0;
-				buf[i] = ' ';
-				cmd->params[cmd->param_count - 1].value += 1;
-				start++;
-			}
+		if (i) {
+			quote_end = _match_quote(&buf[i]);
 		}
-		if (!quote && buf[i] <= ' ' ) {
+
+		if (quote && quote == quote_end) {
+			assert(cmd->param_count);
+
+			quote = FRB_QUOTE_NONE;
+			buf[i] = ' ';
+			start++;
+			cmd->params[cmd->param_count - 1].value++;
+		}
+
+		if (!quote && buf[i] <= ' ') {
 			buf[i] = '\0';
 
 			if (cmd->param_count) {
@@ -248,9 +287,7 @@ fbr_test_parse_cmd(struct fbr_test *test)
 
 			start = i;
 
-			if (buf[i] == '\"') {
-				quote = 1;
-			}
+			quote = _match_quote(&buf[i]);
 		}
 	}
 

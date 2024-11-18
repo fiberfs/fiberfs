@@ -1,2 +1,1 @@
-# FiberFS test
-fiber_test "FiberFS test"
+fiber_test 'FiberFS\'s test'
