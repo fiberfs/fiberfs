@@ -186,16 +186,16 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 }
 
 enum fbr_test_quote
-_match_quote(char *value)
+_match_quote(char *value, size_t pos)
 {
 	enum fbr_test_quote quote;
-	int escaped;
+	size_t escaped;
 
 	assert(value);
 
 	quote = FRB_QUOTE_NONE;
 
-	switch (value[0]) {
+	switch (value[pos]) {
 		case '\"':
 			quote = FRB_QUOTE_DOUBLE;
 			break;
@@ -210,8 +210,7 @@ _match_quote(char *value)
 
 	escaped = 1;
 
-	// We always have valid buffer here
-	while (value[0 - escaped] == '\\') {
+	while (escaped <= pos && value[pos - escaped] == '\\') {
 		escaped++;
 	}
 
@@ -245,12 +244,9 @@ fbr_test_parse_cmd(struct fbr_test *test)
 	len = test->line_buf_len;
 	start = 0;
 	quote = FRB_QUOTE_NONE;
-	quote_end = FRB_QUOTE_NONE;
 
 	for (i = 0; i < len; i++) {
-		if (i) {
-			quote_end = _match_quote(&buf[i]);
-		}
+		quote_end = _match_quote(buf, i);
 
 		if (quote && quote == quote_end) {
 			assert(cmd->param_count);
@@ -287,7 +283,7 @@ fbr_test_parse_cmd(struct fbr_test *test)
 
 			start = i;
 
-			quote = _match_quote(&buf[i]);
+			quote = _match_quote(buf, i);
 		}
 	}
 
