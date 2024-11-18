@@ -95,11 +95,25 @@ fbr_test_unescape(struct fbr_test_param *param)
 	}
 }
 
+size_t
+_count_escapes(char *buf, size_t pos)
+{
+	size_t count = 0;
+
+	assert(buf);
+
+	while (count <= pos && buf[pos - count] == '\\') {
+		count++;
+	}
+
+	return count;
+}
+
 int
 fbr_test_readline(struct fbr_test *test, size_t append_len)
 {
 	char *ret;
-	size_t oldlen, i;
+	size_t oldlen, i, escapes;
 
 	fbr_test_ok(test);
 	assert(test->line_raw);
@@ -155,28 +169,22 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 		return fbr_test_readline(test, 0);
 	}
 
-	if (test->line_buf[test->line_buf_len - 1] == '\\') {
-		i = 1;
-		while (i < test->line_buf_len &&
-		    test->line_buf[test->line_buf_len - i - 1] == '\\') {
-			i++;
-		}
+	escapes = _count_escapes(test->line_buf, test->line_buf_len - 1);
 
-		if (i % 2 == 1) {
-			// Read the next line
-			test->line_buf[test->line_buf_len - 1] = '\0';
-			test->line_buf_len--;
+	if (escapes % 2 == 1) {
+		// Read the next line
+		test->line_buf[test->line_buf_len - 1] = '\0';
+		test->line_buf_len--;
 
-			_TRIM_STR_RIGHT(test->line_buf, test->line_buf_len);
+		_TRIM_STR_RIGHT(test->line_buf, test->line_buf_len);
 
-			if (test->line_buf_len) {
-				i = test->line_buf - test->line_raw + test->line_buf_len;
-				assert(i < test->line_raw_len);
+		if (test->line_buf_len) {
+			i = test->line_buf - test->line_raw + test->line_buf_len;
+			assert(i < test->line_raw_len);
 
-				return fbr_test_readline(test, i);
-			} else {
-				return fbr_test_readline(test, 0);
-			}
+			return fbr_test_readline(test, i);
+		} else {
+			return fbr_test_readline(test, 0);
 		}
 	}
 
@@ -186,16 +194,16 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 }
 
 enum fbr_test_quote
-_match_quote(char *value, size_t pos)
+_match_quote(char *buf, size_t pos)
 {
 	enum fbr_test_quote quote;
 	size_t escaped;
 
-	assert(value);
+	assert(buf);
 
 	quote = FRB_QUOTE_NONE;
 
-	switch (value[pos]) {
+	switch (buf[pos]) {
 		case '\"':
 			quote = FRB_QUOTE_DOUBLE;
 			break;
@@ -208,13 +216,13 @@ _match_quote(char *value, size_t pos)
 
 	assert(quote > FRB_QUOTE_NONE);
 
-	escaped = 1;
-
-	while (escaped <= pos && value[pos - escaped] == '\\') {
-		escaped++;
+	if (pos == 0) {
+		return quote;
 	}
 
-	if (escaped % 2 != 1) {
+	escaped = _count_escapes(buf, pos - 1);
+
+	if (escaped % 2 == 1) {
 		return FRB_QUOTE_NONE;
 	}
 
