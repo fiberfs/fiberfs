@@ -9,6 +9,8 @@ LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 # TODO break this up so we dont share headers as much
 CHTTP_CLIENT:=$(wildcard chttp/client/*.c)
 CHTTP_CLIENT_OBJS:=$(CHTTP_CLIENT:.c=.o)
+FJSON_CLIENT:=$(wildcard fjson/client/*.c)
+FJSON_CLIENT_OBJS:=$(FJSON_CLIENT:.c=.o)
 TEST:=$(wildcard test/*.c chttp/test/*.c fjson/test/*.c)
 TEST_INCLUDES:=$(wildcard test/*.h chttp/test/*.h fjson/test/*.h)
 TEST_OBJS:=$(TEST:.c=.o)
@@ -54,11 +56,14 @@ HTMLDIR=report
 
 .PHONY:		all lib gcov clean cleanall
 
-all:		chttp_client fiberfs_test lib
+all:		chttp_client fjson_client fiberfs_test lib
 lib:		libchttp.so libchttp.a
 
 chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
 		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libchttp.a $(LIBFLAGS)
+
+fjson_client:	$(FJSON_CLIENT_OBJS)
+		$(CC) -o $@ $(FJSON_CLIENT_OBJS) $(LIBFLAGS)
 
 fiberfs_test:	libchttp.a $(TEST_OBJS)
 		$(CC) -o $@ $(TEST_OBJS) libchttp.a $(LIBFLAGS_TEST)
@@ -83,8 +88,9 @@ fjson/test/%.o:	fjson/test/%.c $(INCLUDES) $(TEST_INCLUDES)
 
 clean:
 		$(RM) *.o */*.o */*/*.o *.so *.a
-		$(RM) chttp_client fiberfs_test
-		$(RM) *.gcno */*.gcno *.gcda */*.gcda *.gcov */*.gcov
+		$(RM) chttp_client fjson_client fiberfs_test
+		$(RM) *.gcno */*.gcno */*/*.gcno *.gcda */*.gcda */*/*.gcda
+		$(RM) *.gcov */*.gcov */*/*.gcov
 		$(RM) coverage.info gcov.data
 		$(RMDIR) $(HTMLDIR)
 
@@ -101,5 +107,5 @@ gcov.data:	CFLAGS+=$(GCOVFLAGS)
 gcov.data:	LIBFLAGS+=$(GCOVLIBFLAGS)
 gcov.data:
 		$(MAKE) cleanall CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
-		$(MAKE) -C .. check V=vv
+		$(MAKE) -C .. check FLAGS=-vv
 		touch gcov.data
