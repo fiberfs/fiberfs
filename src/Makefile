@@ -6,18 +6,32 @@ LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 
-# TODO break this up so we dont share headers as much
+TEST_SRC:=$(wildcard test/*.c chttp/test/*.c fjson/test/*.c)
+TEST_OBJS:=$(TEST_SRC:.c=.o)
+TEST_INCLUDES:=$(wildcard test/*.h)
+
 CHTTP_CLIENT:=$(wildcard chttp/client/*.c)
 CHTTP_CLIENT_OBJS:=$(CHTTP_CLIENT:.c=.o)
+CHTTP_SRC:=$(wildcard chttp/*.c chttp/*/*.c)
+CHTTP_SRC:=$(filter-out $(TEST_SRC), $(CHTTP_SRC))
+CHTTP_OBJS:=$(CHTTP_SRC:.c=.o)
+CHTTP_TEST_INCLUDES:=$(wildcard chttp/test/*.h)
+CHTTP_INCLUDES:=$(wildcard chttp/*.h chttp/*/*.h)
+CHTTP_INCLUDES:=$(filter-out $(CHTTP_TEST_INCLUDES), $(CHTTP_INCLUDES))
+
 FJSON_CLIENT:=$(wildcard fjson/client/*.c)
 FJSON_CLIENT_OBJS:=$(FJSON_CLIENT:.c=.o)
-TEST:=$(wildcard test/*.c chttp/test/*.c fjson/test/*.c)
-TEST_INCLUDES:=$(wildcard test/*.h chttp/test/*.h fjson/test/*.h)
-TEST_OBJS:=$(TEST:.c=.o)
+FJSON_SRC:=$(wildcard fjson/*.c)
+FJSON_SRC:=$(filter-out $(TEST_SRC), $(FJSON_SRC))
+FJSON_OBJS:=$(FJSON_SRC:.c=.o)
+FJSON_TEST_INCLUDES:=$(wildcard fjson/test/*.h)
+FJSON_INCLUDES:=$(wildcard fjson/*.h)
+FJSON_INCLUDES:=$(filter-out $(FJSON_TEST_INCLUDES), $(FJSON_INCLUDES))
+
 INCLUDES:=$(wildcard *.h */*.h */*/*.h)
-INCLUDES:=$(filter-out $(TEST_INCLUDES), $(INCLUDES))
+INCLUDES:=$(filter-out $(TEST_INCLUDES) $(CHTTP_INCLUDES) $(FJSON_INCLUDES), $(INCLUDES))
 SOURCE:=$(wildcard *.c */*.c */*/*.c)
-SOURCE:=$(filter-out $(CHTTP_CLIENT) $(TEST), $(SOURCE))
+SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT), $(SOURCE))
 OBJS:=$(SOURCE:.c=.o)
 
 RM=rm -f
@@ -57,33 +71,42 @@ HTMLDIR=report
 .PHONY:		all lib gcov clean cleanall
 
 all:		chttp_client fjson_client fiberfs_test lib
-lib:		libchttp.so libchttp.a
+lib:		libchttp.so libchttp.a libfjson.a
 
 chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
 		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libchttp.a $(LIBFLAGS)
 
-fjson_client:	$(FJSON_CLIENT_OBJS)
+fjson_client:	libfjson.a $(FJSON_CLIENT_OBJS)
 		$(CC) -o $@ $(FJSON_CLIENT_OBJS) $(LIBFLAGS)
 
-fiberfs_test:	libchttp.a $(TEST_OBJS)
-		$(CC) -o $@ $(TEST_OBJS) libchttp.a $(LIBFLAGS_TEST)
+fiberfs_test:	libchttp.a libfjson.a $(TEST_OBJS)
+		$(CC) -o $@ $(TEST_OBJS) libchttp.a libfjson.a $(LIBFLAGS_TEST)
 
-libchttp.so:	$(OBJS)
-		$(CC) $(LDFLAGS) -o $@ $(OBJS)
+libchttp.so:	$(CHTTP_OBJS)
+		$(CC) $(LDFLAGS) -o $@ $(CHTTP_OBJS)
 
-libchttp.a:	$(OBJS)
-		ar cr $@ $(OBJS)
+libchttp.a:	$(CHTTP_OBJS)
+		ar cr $@ $(CHTTP_OBJS)
+
+libfjson.a:	$(FJSON_OBJS)
+		ar cr $@ $(FJSON_OBJS)
 
 %.o:		%.c $(INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
-test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES)
+chttp/%.o:	chttp/%.c $(CHTTP_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
-chttp/test/%.o:	chttp/test/%.c $(INCLUDES) $(TEST_INCLUDES)
+fjson/%.o:	fjson/%.c $(FJSON_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
-fjson/test/%.o:	fjson/test/%.c $(INCLUDES) $(TEST_INCLUDES)
+test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES) $(CHTTP_TEST_INCLUDES) $(FJSON_TEST_INCLUDES)
+		$(CC) $(CFLAGS) -c $< -o $@
+
+chttp/test/%.o:	chttp/test/%.c $(CHTTP_INCLUDES) $(TEST_INCLUDES) $(CHTTP_TEST_INCLUDES)
+		$(CC) $(CFLAGS) -c $< -o $@
+
+fjson/test/%.o:	fjson/test/%.c $(FJSON_INCLUDES) $(TEST_INCLUDES) $(FJSON_TEST_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
