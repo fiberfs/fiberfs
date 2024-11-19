@@ -29,9 +29,11 @@ FJSON_INCLUDES:=$(wildcard fjson/*.h)
 FJSON_INCLUDES:=$(filter-out $(FJSON_TEST_INCLUDES), $(FJSON_INCLUDES))
 
 INCLUDES:=$(wildcard *.h */*.h */*/*.h)
-INCLUDES:=$(filter-out $(TEST_INCLUDES) $(CHTTP_INCLUDES) $(FJSON_INCLUDES), $(INCLUDES))
+INCLUDES:=$(filter-out $(TEST_INCLUDES) $(CHTTP_INCLUDES) $(CHTTP_TEST_INCLUDES) \
+	$(FJSON_TEST_INCLUDES) $(FJSON_INCLUDES), $(INCLUDES))
 SOURCE:=$(wildcard *.c */*.c */*/*.c)
-SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT), $(SOURCE))
+SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(FJSON_SRC), \
+	$(SOURCE))
 OBJS:=$(SOURCE:.c=.o)
 
 RM=rm -f
@@ -79,7 +81,7 @@ chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
 fjson_client:	libfjson.a $(FJSON_CLIENT_OBJS)
 		$(CC) -o $@ $(FJSON_CLIENT_OBJS) $(LIBFLAGS)
 
-fiberfs_test:	libchttp.a libfjson.a $(TEST_OBJS)
+fiberfs_test:	libchttp.a libfjson.a $(OBJS) $(TEST_OBJS)
 		$(CC) -o $@ $(TEST_OBJS) libchttp.a libfjson.a $(LIBFLAGS_TEST)
 
 libchttp.so:	$(CHTTP_OBJS)
