@@ -19,7 +19,8 @@
 		],
 		"C_Cpp.default.includePath": [
 			"src",
-			"src/chttp"
+			"src/chttp",
+			"src/fjson"
 		],
 		"C_Cpp.default.compilerArgs": [
 			"-DCHTTP_OPENSSL",

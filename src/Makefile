@@ -1,7 +1,7 @@
 # FiberFS Makefile (src)
 
 CC=gcc
-CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -I. -Ichttp -fno-omit-frame-pointer
+CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -I. -Ichttp -Ifjson -fno-omit-frame-pointer
 LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
@@ -9,10 +9,10 @@ LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 # TODO break this up so we dont share headers as much
 CHTTP_CLIENT:=$(wildcard chttp/client/*.c)
 CHTTP_CLIENT_OBJS:=$(CHTTP_CLIENT:.c=.o)
-TEST:=$(wildcard test/*.c chttp/test/*.c )
-TEST_INCLUDES:=$(wildcard test/*.h chttp/test/*.h)
+TEST:=$(wildcard test/*.c chttp/test/*.c fjson/test/*.c)
+TEST_INCLUDES:=$(wildcard test/*.h chttp/test/*.h fjson/test/*.h)
 TEST_OBJS:=$(TEST:.c=.o)
-INCLUDES:=$(wildcard *.h */*.h)
+INCLUDES:=$(wildcard *.h */*.h */*/*.h)
 INCLUDES:=$(filter-out $(TEST_INCLUDES), $(INCLUDES))
 SOURCE:=$(wildcard *.c */*.c */*/*.c)
 SOURCE:=$(filter-out $(CHTTP_CLIENT) $(TEST), $(SOURCE))
@@ -76,6 +76,9 @@ test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
 chttp/test/%.o:	chttp/test/%.c $(INCLUDES) $(TEST_INCLUDES)
+		$(CC) $(CFLAGS) -c $< -o $@
+
+fjson/test/%.o:	fjson/test/%.c $(INCLUDES) $(TEST_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
