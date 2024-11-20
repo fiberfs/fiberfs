@@ -53,7 +53,7 @@ chttp_test_cmd_chttp_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	test = fbr_test_convert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
-	fbr_test_ERROR(test->cmds != 1, "test file must begin with chttp_test");
+	fbr_test_ERROR(test->cmd_count != 1, "test file must begin with chttp_test");
 
 	fbr_test_unescape(&cmd->params[0]);
 

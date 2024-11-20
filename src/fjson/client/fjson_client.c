@@ -18,10 +18,9 @@ _usage(int error)
 int
 main(int argc, char **argv)
 {
-	printf("fjson_client\n");
+	struct fjson_context json;
 
-	(void)argc;
-	(void)argv;
+	printf("fjson_client\n");
 
 	if (argc < 2) {
 		_usage(1);
@@ -46,7 +45,11 @@ main(int argc, char **argv)
 
 	printf("json: %s\n", argv[1]);
 
-	fjson_parse_token(argv[1]);
+	fjson_context_init(&json);
+
+	fjson_parse_token(&json, argv[1]);
+
+	fjson_context_free(&json);
 
 	return 0;
 }

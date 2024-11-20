@@ -93,12 +93,12 @@ _test_run_test_file(void *arg)
 
 		fbr_test_cmd_ok(&test->cmd);
 
-		fbr_test_ERROR(!test->cmds && strcmp(test->cmd.name, "chttp_test") &&
+		fbr_test_ERROR(!test->cmd_count && strcmp(test->cmd.name, "chttp_test") &&
 			strcmp(test->cmd.name, "fiber_test"),
 			"test file must begin with chttp_test or fiber_test (found: %s)",
 			test->cmd.name);
 
-		test->cmds++;
+		test->cmd_count++;
 
 		cmd_entry = fbr_test_cmds_get(test, test->cmd.name);
 		fbr_test_ERROR(!cmd_entry || !cmd_entry->is_cmd,

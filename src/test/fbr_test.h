@@ -101,6 +101,9 @@ struct fbr_test {
 
 	enum fbr_test_verbocity			verbocity;
 
+	struct fbr_test_cmdentry		*cmds;
+	size_t					cmds_size;
+	size_t					cmds_pos;
 	struct fbr_test_tree			cmd_tree;
 	TAILQ_HEAD(, fbr_test_finish)		finish_list;
 
@@ -115,7 +118,7 @@ struct fbr_test {
 	size_t					lines_multi;
 
 	struct fbr_test_cmd			cmd;
-	size_t					cmds;
+	size_t					cmd_count;
 
 	int					error;
 	int					skip;

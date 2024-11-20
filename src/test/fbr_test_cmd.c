@@ -26,6 +26,41 @@ fbr_test_entry_cmp(const struct fbr_test_cmdentry *k1,
 	return strcmp(k1->name, k2->name);
 }
 
+static struct fbr_test_cmdentry *
+_test_cmd_alloc(struct fbr_test *test)
+{
+	struct fbr_test_cmdentry *entry;
+	size_t size;
+
+	fbr_test_ok(test);
+	assert(test->cmds_pos <= test->cmds_size);
+
+	if (test->cmds_pos == test->cmds_size) {
+		if (test->cmds_size == 0) {
+			test->cmds_size = 128;
+		} else {
+			size = test->cmds_size * 2;
+			assert(size / 2 == test->cmds_size);
+			test->cmds_size = size;
+		}
+
+		size = test->cmds_size * sizeof(*test->cmds);
+		assert(size / sizeof(*test->cmds) == test->cmds_size);
+
+		test->cmds = realloc(test->cmds, size);
+		assert(test->cmds);
+	}
+	assert(test->cmds_pos < test->cmds_size);
+
+	entry = &test->cmds[test->cmds_pos];
+	fbr_ZERO(entry);
+	entry->magic = FBR_TEST_ENTRY_MAGIC;
+
+	test->cmds_pos++;
+
+	return entry;
+}
+
 static void
 _test_cmd_register(struct fbr_test *test, const char *name, fbr_test_cmd_f *func)
 {
@@ -33,10 +68,9 @@ _test_cmd_register(struct fbr_test *test, const char *name, fbr_test_cmd_f *func
 
 	fbr_test_ok(test);
 
-	entry = calloc(1, sizeof(*entry));
+	entry = _test_cmd_alloc(test);
 	assert(entry);
 
-	entry->magic = FBR_TEST_ENTRY_MAGIC;
 	entry->name = name;
 	entry->cmd_func = func;
 	entry->is_cmd = 1;
@@ -52,10 +86,9 @@ _test_var_register(struct fbr_test *test, const char *name, fbr_test_var_f *func
 
 	fbr_test_ok(test);
 
-	entry = calloc(1, sizeof(*entry));
+	entry = _test_cmd_alloc(test);
 	assert(entry);
 
-	entry->magic = FBR_TEST_ENTRY_MAGIC;
 	entry->name = name;
 	entry->var_func = func;
 	entry->is_var = 1;
@@ -79,10 +112,14 @@ _test_cmds_free(struct fbr_test_context *ctx)
 		RB_REMOVE(fbr_test_tree, &test->cmd_tree, entry);
 
 		fbr_ZERO(entry);
-		free(entry);
 	}
 
 	assert(RB_EMPTY(&test->cmd_tree));
+
+	free(test->cmds);
+
+	test->cmds = NULL;
+	test->cmds_size = 0;
 }
 
 void
