@@ -42,7 +42,7 @@ NULL=/dev/null
 TEST_TRUE= > $(NULL) 2>&1 && echo true
 TCC=$(CC) -x c - -o $(NULL)
 
-# Detect openssl
+# Detect openssl (OPENSSL=false to disable)
 OPENSSL_C='\#include <openssl/ssl.h>\nint main() {SSL *ssl;}'
 OPENSSL_CFLAGS=-DCHTTP_OPENSSL
 OPENSSL_LIB=-lssl -lcrypto
@@ -52,7 +52,7 @@ ifeq ($(OPENSSL),true)
 	LIBFLAGS+=$(OPENSSL_LIB)
 endif
 
-# Detect zlib
+# Detect zlib (ZLIB=false to disable)
 ZLIB_C='\#include <zlib.h>\nint main() {zlibVersion();}'
 ZLIB_CFLAGS=-DCHTTP_ZLIB
 ZLIB_LIB=-lz
@@ -73,19 +73,19 @@ HTMLDIR=report
 .PHONY:		all lib gcov clean cleanall
 
 all:		chttp_client fjson_client fiberfs_test lib
-lib:		libchttp.so libchttp.a libfjson.a
+lib:		libfiberfs.so libchttp.a libfjson.a
 
 chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
 		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libchttp.a $(LIBFLAGS)
 
 fjson_client:	libfjson.a $(FJSON_CLIENT_OBJS)
-		$(CC) -o $@ $(FJSON_CLIENT_OBJS) $(LIBFLAGS)
+		$(CC) -o $@ $(FJSON_CLIENT_OBJS) libfjson.a $(LIBFLAGS)
 
 fiberfs_test:	libchttp.a libfjson.a $(OBJS) $(TEST_OBJS)
 		$(CC) -o $@ $(TEST_OBJS) libchttp.a libfjson.a $(LIBFLAGS_TEST)
 
-libchttp.so:	$(CHTTP_OBJS)
-		$(CC) $(LDFLAGS) -o $@ $(CHTTP_OBJS)
+libfiberfs.so:	$(OBJS) libchttp.a libfjson.a
+		$(CC) $(LDFLAGS) -o $@ $(OBJS) libchttp.a libfjson.a
 
 libchttp.a:	$(CHTTP_OBJS)
 		ar cr $@ $(CHTTP_OBJS)

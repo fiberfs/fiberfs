@@ -6,8 +6,8 @@
 *.gcov
 src/coverage.info
 src/chttp_client
+src/fjson_client
 src/fiberfs_test
 src/report
 src/gcov.data
-nbproject
 .vscode
