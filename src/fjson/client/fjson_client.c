@@ -15,6 +15,22 @@ _usage(int error)
 		(error ? "ERROR u" : "U"));
 }
 
+static int
+_json_print(struct fjson_context *ctx)
+{
+	struct fjson_token *token;
+
+	fjson_context_ok(ctx);
+
+	token = fjson_get_last_token(ctx);
+	fjson_token_ok(token);
+
+	printf("Token: %s depth: %zu closed: %d\n", fjson_token_name(token->type),
+		ctx->tokens_pos, token->closed);
+
+	return 0;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -47,7 +63,11 @@ main(int argc, char **argv)
 
 	fjson_context_init(&json);
 
-	fjson_parse_token(&json, argv[1]);
+	json.callback = &_json_print;
+
+	fjson_parse(&json, argv[1], strlen(argv[1]));
+
+	printf("Done: %s (%zu)\n", fjson_state_name(json.state), json.position);
 
 	fjson_context_free(&json);
 

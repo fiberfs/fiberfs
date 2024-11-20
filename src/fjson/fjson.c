@@ -8,6 +8,12 @@
 
 #include <stdlib.h>
 
+struct fjson_token _FJSON_TOKEN_BAD = {
+	FJSON_TOKEN_MAGIC,
+	FJSON_TOKEN_UNDEF,
+	0
+};
+
 void
 fjson_context_init(struct fjson_context *ctx)
 {
@@ -51,10 +57,325 @@ fjson_context_free(struct fjson_context *ctx)
 	}
 }
 
+static void
+_remove_token(struct fjson_context *ctx)
+{
+	struct fjson_token *token;
+
+	fjson_context_ok(ctx);
+	assert(ctx->state == FJSON_STATE_INDEXING || ctx->state == FJSON_STATE_ERROR_CALLBACK);
+	assert(ctx->tokens_pos < FJSON_MAX_DEPTH);
+	assert(ctx->tokens_pos);
+
+	ctx->tokens_pos--;
+
+	token = &ctx->tokens[ctx->tokens_pos];
+	fjson_token_ok(token);
+
+	fbr_ZERO(token);
+}
+
+struct fjson_token *
+fjson_get_last_token(struct fjson_context *ctx)
+{
+	struct fjson_token *token;
+
+	fjson_context_ok(ctx);
+	assert(ctx->state == FJSON_STATE_INDEXING);
+	assert(ctx->tokens_pos < FJSON_MAX_DEPTH);
+
+	if (ctx->tokens_pos == 0) {
+		return &_FJSON_TOKEN_BAD;
+	}
+
+	token = &ctx->tokens[ctx->tokens_pos - 1];
+	fjson_token_ok(token);
+
+	return token;
+}
+
+static struct fjson_token *
+_get_new_token(struct fjson_context *ctx)
+{
+	struct fjson_token *token;
+
+	fjson_context_ok(ctx);
+	assert(ctx->state == FJSON_STATE_INDEXING);
+	assert(ctx->tokens_pos < FJSON_MAX_DEPTH);
+
+	token = &ctx->tokens[ctx->tokens_pos];
+	assert_zero(token->magic);
+
+	fbr_ZERO(token);
+	token->magic = FJSON_TOKEN_MAGIC;
+
+	ctx->tokens_pos++;
+
+	return token;
+}
+
+static void
+_callback(struct fjson_context *ctx)
+{
+	int ret;
+
+	fjson_context_ok(ctx);
+
+	if (ctx->callback) {
+		ret = ctx->callback(ctx);
+
+		if (ret) {
+			ctx->state = FJSON_STATE_ERROR_CALLBACK;
+		}
+	}
+}
+
+static void
+_parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
+{
+	struct fjson_token *token;
+	enum fjson_token_type literal_type;
+	const char *literal_value;
+	size_t literal_len;
+
+	fjson_context_ok(ctx);
+	assert(ctx->state == FJSON_STATE_INDEXING);
+	assert(ctx->pos < buf_len);
+
+	assert(buf);
+	assert(buf_len);
+
+	literal_type = FJSON_TOKEN_UNDEF;
+	literal_value = NULL;
+	literal_len = 0;
+
+	// Linter...
+	(void)literal_type;
+	(void)literal_len;
+
+	for (; ctx->pos < buf_len; ctx->pos++) {
+		switch (buf[ctx->pos]) {
+		/* Start of object */
+		case '{':
+			token = _get_new_token(ctx);
+			fjson_token_ok(token);
+
+			token->type = FJSON_TOKEN_OBJECT;
+
+			_callback(ctx);
+
+			continue;
+		/* End of object */
+		case '}':
+			token = fjson_get_last_token(ctx);
+
+			if (token->type != FJSON_TOKEN_OBJECT &&
+			    token->type != FJSON_TOKEN_LABEL) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
+
+			if (token->type == FJSON_TOKEN_LABEL) {
+				_remove_token(ctx);
+
+				token = fjson_get_last_token(ctx);
+
+				if (token->type != FJSON_TOKEN_OBJECT) {
+					ctx->state = FJSON_STATE_ERROR_BADJSON;
+					return;
+				}
+			}
+
+			// TODO dangling comma
+
+			token->closed = 1;
+
+			_callback(ctx);
+
+			_remove_token(ctx);
+
+			continue;
+		/* Start of array */
+		case '[':
+			token = _get_new_token(ctx);
+			fjson_token_ok(token);
+
+			token->type = FJSON_TOKEN_ARRAY;
+
+			_callback(ctx);
+
+			continue;
+		/* End of array */
+		case ']':
+			token = fjson_get_last_token(ctx);
+
+			if (token->type != FJSON_TOKEN_ARRAY) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
+
+			token->closed = 1;
+
+			_callback(ctx);
+
+			_remove_token(ctx);
+
+			continue;
+		/* String literal */
+		case '\"':
+			ctx->state = FJSON_STATE_ERROR_BADJSON;
+			return;
+		/* Object key value separator (label only) */
+		case ':':
+			token = fjson_get_last_token(ctx);
+
+			if (token->type != FJSON_TOKEN_LABEL) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
+
+			// TODO syntax checks
+
+			continue;
+		/* Element separator (objects and arrays) */
+		case ',':
+			token = fjson_get_last_token(ctx);
+
+			if (token->type != FJSON_TOKEN_LABEL &&
+			    token->type != FJSON_TOKEN_ARRAY) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
+
+			// TODO syntax checks
+
+			if (token->type == FJSON_TOKEN_LABEL) {
+				_remove_token(ctx);
+			}
+
+			continue;
+		/* Number */
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+		case '-':
+			ctx->state = FJSON_STATE_ERROR_BADJSON;
+			return;
+		/* Literal true */
+		case 't':
+			literal_type = FJSON_TOKEN_TRUE;
+			literal_value = "true";
+			literal_len = 4;
+			goto literal;
+		/* Literal false */
+		case 'f':
+			literal_type = FJSON_TOKEN_FALSE;
+			literal_value = "false";
+			literal_len = 5;
+			goto literal;
+		/* Literal null */
+		case 'n':
+			literal_type = FJSON_TOKEN_NULL;
+			literal_value = "null";
+			literal_len = 4;
+			goto literal;
+		literal:
+			assert(literal_type > FJSON_TOKEN_UNDEF);
+			assert(literal_value);
+			assert(literal_len);
+
+			if (buf_len - ctx->pos < literal_len) {
+				ctx->state = FJSON_STATE_NEEDMORE;
+				return;
+			}
+
+			if (strncmp(&buf[ctx->pos], literal_value, literal_len)) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
+
+			token = _get_new_token(ctx);
+
+			token->type = literal_type;
+
+			_callback(ctx);
+
+			_remove_token(ctx);
+
+			ctx->pos += literal_len - 1;
+
+			// TODO syntax check, whats our context?
+
+			continue;
+		/* Whitespace */
+		case '\t':
+		case '\r':
+		case '\n':
+		case ' ':
+		case '\v':
+		case '\f':
+			continue;
+		/* Invalid json token char */
+		default:
+			ctx->state = FJSON_STATE_ERROR_BADJSON;
+			return;
+		}
+	}
+
+	assert(ctx->state == FJSON_STATE_INDEXING);
+}
+
 void
-fjson_parse_token(struct fjson_context *ctx, const char *buf)
+fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
 	fjson_context_ok(ctx);
 
-	(void)buf;
+	if (buf_len == 0 || ctx->state >= FJSON_STATE_ERROR) {
+		return;
+	}
+
+	if (ctx->state == FJSON_STATE_DONE) {
+		ctx->state = FJSON_STATE_ERROR_BADJSON;
+		ctx->position++;
+		return;
+	}
+
+	if (ctx->state == FJSON_STATE_INIT) {
+		ctx->state = FJSON_STATE_INDEXING;
+	} else {
+		assert(ctx->state == FJSON_STATE_NEEDMORE);
+		ctx->state = FJSON_STATE_INDEXING;
+	}
+
+	ctx->pos = 0;
+
+	if (ctx->tokens_pos >= FJSON_MAX_DEPTH) {
+		ctx->state = FJSON_STATE_ERROR_TOODEEP;
+		ctx->position += ctx->pos;
+		return;
+	}
+
+	_parse_tokens(ctx, buf, buf_len);
+
+	ctx->position += ctx->pos;
+
+	if (ctx->state >= FJSON_STATE_ERROR) {
+		return;
+	}
+
+	assert(ctx->pos == buf_len);
+	assert(ctx->state == FJSON_STATE_INDEXING);
+
+	if (ctx->tokens_pos) {
+		ctx->state = FJSON_STATE_NEEDMORE;
+	} else {
+		ctx->state = FJSON_STATE_DONE;
+	}
 }

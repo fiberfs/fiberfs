@@ -18,7 +18,7 @@ fjson_cmd_json_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fjson = fjson_context_alloc();
 
-	fjson_parse_token(fjson, cmd->params[0].value);
+	fjson_parse(fjson, cmd->params[0].value, cmd->params[0].len);
 
 	fjson_context_free(fjson);
 
