@@ -57,14 +57,27 @@ fjson_context_free(struct fjson_context *ctx)
 	}
 }
 
+static inline int
+_context_error(struct fjson_context *ctx)
+{
+	return (ctx->state >= FJSON_STATE_ERROR);
+}
+
+static inline struct fjson_token *
+_bad_token(void)
+{
+	assert(_FJSON_TOKEN_BAD.type == FJSON_TOKEN_UNDEF);
+	return &_FJSON_TOKEN_BAD;
+}
+
 static void
-_remove_token(struct fjson_context *ctx)
+_pop_token(struct fjson_context *ctx)
 {
 	struct fjson_token *token;
 
 	fjson_context_ok(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING || ctx->state == FJSON_STATE_ERROR_CALLBACK);
-	assert(ctx->tokens_pos < FJSON_MAX_DEPTH);
+	assert(ctx->tokens_pos <= FJSON_MAX_DEPTH);
 	assert(ctx->tokens_pos);
 
 	ctx->tokens_pos--;
@@ -76,32 +89,39 @@ _remove_token(struct fjson_context *ctx)
 }
 
 struct fjson_token *
-fjson_get_last_token(struct fjson_context *ctx)
+fjson_get_token(struct fjson_context *ctx, size_t depth)
 {
 	struct fjson_token *token;
 
 	fjson_context_ok(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
-	assert(ctx->tokens_pos < FJSON_MAX_DEPTH);
+	assert(ctx->tokens_pos <= FJSON_MAX_DEPTH);
 
-	if (ctx->tokens_pos == 0) {
-		return &_FJSON_TOKEN_BAD;
+	if (ctx->tokens_pos == 0 || depth >= ctx->tokens_pos) {
+		return _bad_token();
 	}
 
-	token = &ctx->tokens[ctx->tokens_pos - 1];
-	fjson_token_ok(token);
+	assert(depth < ctx->tokens_pos);
+
+	token = &ctx->tokens[ctx->tokens_pos - 1 - depth];
+	assert(token->magic == FJSON_TOKEN_MAGIC);
 
 	return token;
 }
 
 static struct fjson_token *
-_get_new_token(struct fjson_context *ctx)
+_get_next_token(struct fjson_context *ctx)
 {
 	struct fjson_token *token;
 
 	fjson_context_ok(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
-	assert(ctx->tokens_pos < FJSON_MAX_DEPTH);
+	assert(ctx->tokens_pos <= FJSON_MAX_DEPTH);
+
+	if (ctx->tokens_pos == FJSON_MAX_DEPTH) {
+		ctx->state = FJSON_STATE_ERROR_TOODEEP;
+		return _bad_token();
+	}
 
 	token = &ctx->tokens[ctx->tokens_pos];
 	assert_zero(token->magic);
@@ -145,20 +165,19 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	assert(buf);
 	assert(buf_len);
 
-	literal_type = FJSON_TOKEN_UNDEF;
 	literal_value = NULL;
-	literal_len = 0;
-
-	// Linter...
-	(void)literal_type;
-	(void)literal_len;
 
 	for (; ctx->pos < buf_len; ctx->pos++) {
+		assert(ctx->state == FJSON_STATE_INDEXING);
 		switch (buf[ctx->pos]) {
 		/* Start of object */
 		case '{':
-			token = _get_new_token(ctx);
+			token = _get_next_token(ctx);
 			fjson_token_ok(token);
+
+			if (_context_error(ctx)) {
+				return;
+			}
 
 			token->type = FJSON_TOKEN_OBJECT;
 
@@ -167,7 +186,10 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			continue;
 		/* End of object */
 		case '}':
-			token = fjson_get_last_token(ctx);
+			token = fjson_get_token(ctx, 0);
+			fjson_token_ok(token);
+
+			// TODO dangling comma
 
 			if (token->type != FJSON_TOKEN_OBJECT &&
 			    token->type != FJSON_TOKEN_LABEL) {
@@ -176,9 +198,8 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			}
 
 			if (token->type == FJSON_TOKEN_LABEL) {
-				_remove_token(ctx);
-
-				token = fjson_get_last_token(ctx);
+				_pop_token(ctx);
+				token = fjson_get_token(ctx, 0);
 
 				if (token->type != FJSON_TOKEN_OBJECT) {
 					ctx->state = FJSON_STATE_ERROR_BADJSON;
@@ -186,19 +207,23 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 				}
 			}
 
-			// TODO dangling comma
+			assert(token->type == FJSON_TOKEN_OBJECT);
 
 			token->closed = 1;
 
 			_callback(ctx);
 
-			_remove_token(ctx);
+			_pop_token(ctx);
 
 			continue;
 		/* Start of array */
 		case '[':
-			token = _get_new_token(ctx);
+			token = _get_next_token(ctx);
 			fjson_token_ok(token);
+
+			if (_context_error(ctx)) {
+				return;
+			}
 
 			token->type = FJSON_TOKEN_ARRAY;
 
@@ -207,7 +232,8 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			continue;
 		/* End of array */
 		case ']':
-			token = fjson_get_last_token(ctx);
+			token = fjson_get_token(ctx, 0);
+			fjson_token_ok(token);
 
 			if (token->type != FJSON_TOKEN_ARRAY) {
 				ctx->state = FJSON_STATE_ERROR_BADJSON;
@@ -218,7 +244,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 			_callback(ctx);
 
-			_remove_token(ctx);
+			_pop_token(ctx);
 
 			continue;
 		/* String literal */
@@ -227,7 +253,8 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			return;
 		/* Object key value separator (label only) */
 		case ':':
-			token = fjson_get_last_token(ctx);
+			token = fjson_get_token(ctx, 0);
+			fjson_token_ok(token);
 
 			if (token->type != FJSON_TOKEN_LABEL) {
 				ctx->state = FJSON_STATE_ERROR_BADJSON;
@@ -239,7 +266,8 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			continue;
 		/* Element separator (objects and arrays) */
 		case ',':
-			token = fjson_get_last_token(ctx);
+			token = fjson_get_token(ctx, 0);
+			fjson_token_ok(token);
 
 			if (token->type != FJSON_TOKEN_LABEL &&
 			    token->type != FJSON_TOKEN_ARRAY) {
@@ -250,7 +278,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			// TODO syntax checks
 
 			if (token->type == FJSON_TOKEN_LABEL) {
-				_remove_token(ctx);
+				_pop_token(ctx);
 			}
 
 			continue;
@@ -270,25 +298,25 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			return;
 		/* Literal true */
 		case 't':
-			literal_type = FJSON_TOKEN_TRUE;
 			literal_value = "true";
+			literal_type = FJSON_TOKEN_TRUE;
 			literal_len = 4;
 			goto literal;
 		/* Literal false */
 		case 'f':
-			literal_type = FJSON_TOKEN_FALSE;
 			literal_value = "false";
+			literal_type = FJSON_TOKEN_FALSE;
 			literal_len = 5;
 			goto literal;
 		/* Literal null */
 		case 'n':
-			literal_type = FJSON_TOKEN_NULL;
 			literal_value = "null";
+			literal_type = FJSON_TOKEN_NULL;
 			literal_len = 4;
 			goto literal;
 		literal:
-			assert(literal_type > FJSON_TOKEN_UNDEF);
 			assert(literal_value);
+			assert(literal_type > FJSON_TOKEN_UNDEF);
 			assert(literal_len);
 
 			if (buf_len - ctx->pos < literal_len) {
@@ -301,17 +329,24 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 				return;
 			}
 
-			token = _get_new_token(ctx);
+			token = _get_next_token(ctx);
+			fjson_token_ok(token);
+
+			if (_context_error(ctx)) {
+				return;
+			}
 
 			token->type = literal_type;
 
 			_callback(ctx);
 
-			_remove_token(ctx);
+			_pop_token(ctx);
 
 			ctx->pos += literal_len - 1;
 
 			// TODO syntax check, whats our context?
+
+			literal_value = NULL;
 
 			continue;
 		/* Whitespace */
@@ -366,7 +401,7 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 	ctx->position += ctx->pos;
 
-	if (ctx->state >= FJSON_STATE_ERROR) {
+	if (ctx->state > FJSON_STATE_INDEXING) {
 		return;
 	}
 

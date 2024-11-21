@@ -66,7 +66,7 @@ struct fjson_context {
 void fjson_context_init(struct fjson_context *ctx);
 void fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len);
 struct fjson_context *fjson_context_alloc(void);
-struct fjson_token *fjson_get_last_token(struct fjson_context *ctx);
+struct fjson_token *fjson_get_token(struct fjson_context *ctx, size_t depth);
 void fjson_context_free(struct fjson_context *ctx);
 
 const char *fjson_token_name(enum fjson_token_type type);

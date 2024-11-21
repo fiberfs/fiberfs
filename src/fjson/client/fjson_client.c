@@ -22,7 +22,7 @@ _json_print(struct fjson_context *ctx)
 
 	fjson_context_ok(ctx);
 
-	token = fjson_get_last_token(ctx);
+	token = fjson_get_token(ctx, 0);
 	fjson_token_ok(token);
 
 	printf("Token: %s depth: %zu closed: %d\n", fjson_token_name(token->type),
