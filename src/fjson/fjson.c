@@ -73,6 +73,22 @@ _bad_token(void)
 	return &_FJSON_TOKEN_BAD;
 }
 
+static void
+_callback(struct fjson_context *ctx)
+{
+	int ret;
+
+	fjson_context_ok(ctx);
+
+	if (ctx->callback) {
+		ret = ctx->callback(ctx);
+
+		if (ret) {
+			ctx->state = FJSON_STATE_ERROR_CALLBACK;
+		}
+	}
+}
+
 // Tokens are checked when a child is allocated or when they are closed
 static void
 _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_token_type child)
@@ -159,6 +175,27 @@ _pop_token(struct fjson_context *ctx)
 	fbr_ZERO(token);
 }
 
+static void
+_close_token(struct fjson_context *ctx, struct fjson_token *token, int callback)
+{
+	fjson_context_ok(ctx);
+	fjson_token_ok(token);
+
+	token->closed = 1;
+
+	_check_errors(ctx, token, FJSON_TOKEN_UNDEF);
+
+	if (_context_error(ctx)) {
+		return;
+	}
+
+	if (callback) {
+		_callback(ctx);
+	}
+
+	_pop_token(ctx);
+}
+
 struct fjson_token *
 fjson_get_token(struct fjson_context *ctx, size_t depth)
 {
@@ -180,7 +217,6 @@ fjson_get_token(struct fjson_context *ctx, size_t depth)
 	return token;
 }
 
-// TODO we always add_length?
 static struct fjson_token *
 _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 {
@@ -229,22 +265,6 @@ _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 }
 
 static void
-_callback(struct fjson_context *ctx)
-{
-	int ret;
-
-	fjson_context_ok(ctx);
-
-	if (ctx->callback) {
-		ret = ctx->callback(ctx);
-
-		if (ret) {
-			ctx->state = FJSON_STATE_ERROR_CALLBACK;
-		}
-	}
-}
-
-static void
 _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
 	struct fjson_token *token;
@@ -288,15 +308,12 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			}
 
 			if (token->type == FJSON_TOKEN_LABEL) {
-				token->closed = 1;
-
-				_check_errors(ctx, token, FJSON_TOKEN_UNDEF);
+				_close_token(ctx, token, 0);
 
 				if (_context_error(ctx)) {
 					return;
 				}
 
-				_pop_token(ctx);
 				token = fjson_get_token(ctx, 0);
 
 				if (token->type != FJSON_TOKEN_OBJECT) {
@@ -307,17 +324,11 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 			assert(token->type == FJSON_TOKEN_OBJECT);
 
-			token->closed = 1;
-
-			_check_errors(ctx, token, FJSON_TOKEN_UNDEF);
+			_close_token(ctx, token, 1);
 
 			if (_context_error(ctx)) {
 				return;
 			}
-
-			_callback(ctx);
-
-			_pop_token(ctx);
 
 			continue;
 		/* Start of array */
@@ -342,17 +353,11 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 				return;
 			}
 
-			token->closed = 1;
-
-			_check_errors(ctx, token, FJSON_TOKEN_UNDEF);
+			_close_token(ctx, token, 1);
 
 			if (_context_error(ctx)) {
 				return;
 			}
-
-			_callback(ctx);
-
-			_pop_token(ctx);
 
 			continue;
 		/* String literal */
@@ -365,6 +370,11 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			fjson_token_ok(token);
 
 			if (token->type != FJSON_TOKEN_LABEL) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
+
+			if (token->seperated) {
 				ctx->state = FJSON_STATE_ERROR_BADJSON;
 				return;
 			}
@@ -383,21 +393,28 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 				return;
 			}
 
+			if (token->seperated) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
+
 			token->seperated = 1;
 
 			if (token->type == FJSON_TOKEN_LABEL) {
-				token->closed = 1;
-
-				_check_errors(ctx, token, FJSON_TOKEN_UNDEF);
+				_close_token(ctx, token, 0);
 
 				if (_context_error(ctx)) {
 					return;
 				}
 
-				_pop_token(ctx);
 				token = fjson_get_token(ctx, 0);
 
 				if (token->type != FJSON_TOKEN_OBJECT) {
+					ctx->state = FJSON_STATE_ERROR_BADJSON;
+					return;
+				}
+
+				if (token->seperated) {
 					ctx->state = FJSON_STATE_ERROR_BADJSON;
 					return;
 				}
