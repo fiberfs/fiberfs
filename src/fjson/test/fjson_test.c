@@ -19,9 +19,13 @@ fjson_cmd_json_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fjson = fjson_context_alloc();
 
 	fjson_parse(fjson, cmd->params[0].value, cmd->params[0].len);
+	fjson_finish(fjson);
+
+	fbr_test_ERROR(fjson->error, "fjson error %s: %s", fjson_state_name(fjson->state),
+		fjson->error_msg);
 
 	fjson_context_free(fjson);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "json_test %s",
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "json_test passed %s",
 		cmd->params[0].value);
 }

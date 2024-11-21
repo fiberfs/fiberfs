@@ -6,8 +6,6 @@
 #ifndef _FJSON_H_INCLUDED_
 #define _FJSON_H_INCLUDED_
 
-#include "fiberfs.h"
-
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -20,8 +18,8 @@ enum fjson_state {
 	FJSON_STATE_NEEDMORE,
 	FJSON_STATE_DONE,
 	FJSON_STATE_ERROR,
-	FJSON_STATE_ERROR_BADJSON,
-	FJSON_STATE_ERROR_TOODEEP,
+	FJSON_STATE_ERROR_JSON,
+	FJSON_STATE_ERROR_SIZE,
 	FJSON_STATE_ERROR_CALLBACK
 };
 
@@ -63,6 +61,9 @@ struct fjson_context {
 	size_t				pos;
 
 	unsigned int			do_free:1;
+	unsigned int			error:1;
+
+	const char			*error_msg;
 
 	struct fjson_token		tokens[FJSON_MAX_DEPTH];
 	size_t				tokens_pos;
@@ -70,15 +71,19 @@ struct fjson_context {
 	fjson_parse_f			*callback;
 };
 
+#define __fjson_attr_printf_p(fpos)					\
+	__attribute__((__format__(__printf__, (fpos), ((fpos) + 1))))
+
 void fjson_context_init(struct fjson_context *ctx);
 void fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len);
 struct fjson_context *fjson_context_alloc(void);
 struct fjson_token *fjson_get_token(struct fjson_context *ctx, size_t depth);
+void fjson_finish(struct fjson_context *ctx);
 void fjson_context_free(struct fjson_context *ctx);
 
 const char *fjson_token_name(enum fjson_token_type type);
 const char *fjson_state_name(enum fjson_state state);
-void __fbr_attr_printf_p(6) fjson_do_assert(int cond, const char *function, const char *file,
+void __fjson_attr_printf_p(6) fjson_do_assert(int cond, const char *function, const char *file,
 	int line, int assert, const char *fmt, ...);
 
 #define fjson_context_ok(ctx)						\

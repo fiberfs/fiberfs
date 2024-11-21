@@ -59,10 +59,18 @@ fjson_context_free(struct fjson_context *ctx)
 	}
 }
 
-static inline int
-_context_error(struct fjson_context *ctx)
+static void
+_set_error(struct fjson_context *ctx, enum fjson_state error, const char *msg)
 {
-	return (ctx->state >= FJSON_STATE_ERROR);
+	fjson_context_ok(ctx);
+	assert(error >= FJSON_STATE_ERROR);
+
+	ctx->error = 1;
+	ctx->state = error;
+
+	if (msg) {
+		ctx->error_msg = msg;
+	}
 }
 
 static inline struct fjson_token *
@@ -84,7 +92,7 @@ _callback(struct fjson_context *ctx)
 		ret = ctx->callback(ctx);
 
 		if (ret) {
-			ctx->state = FJSON_STATE_ERROR_CALLBACK;
+			_set_error(ctx, FJSON_STATE_ERROR_CALLBACK, NULL);
 		}
 	}
 }
@@ -102,7 +110,7 @@ _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_t
 			assert_zero(token->closed);
 			assert_zero(token->seperated);
 			if (token->length > 1) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "too many tokens");
 				return;
 			}
 
@@ -111,7 +119,7 @@ _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_t
 		case FJSON_TOKEN_ARRAY:
 			if (token->closed) {
 				if (token->seperated) {
-					ctx->state = FJSON_STATE_ERROR_BADJSON;
+					_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad comma");
 					return;
 				}
 				return;
@@ -120,26 +128,26 @@ _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_t
 			assert(token->length);
 
 			if (token->type == FJSON_TOKEN_OBJECT && child != FJSON_TOKEN_LABEL) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad object");
 				return;
 			}
 			if (token->length == 1 && token->seperated) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad comma");
 				return;
 			}
 			if (token->length > 1 && !token->seperated) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "missing comma");
 				return;
 			}
 
 			break;
 		case FJSON_TOKEN_LABEL:
 			if (token->length != 1) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad label");
 				return;
 			}
 			if (token->closed && !token->seperated) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "missing colon");
 				return;
 			}
 
@@ -185,7 +193,7 @@ _close_token(struct fjson_context *ctx, struct fjson_token *token, int callback)
 
 	_check_errors(ctx, token, FJSON_TOKEN_UNDEF);
 
-	if (_context_error(ctx)) {
+	if (ctx->error) {
 		return;
 	}
 
@@ -227,7 +235,7 @@ _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 	assert(ctx->tokens_pos <= FJSON_MAX_DEPTH);
 
 	if (ctx->tokens_pos == FJSON_MAX_DEPTH) {
-		ctx->state = FJSON_STATE_ERROR_TOODEEP;
+		_set_error(ctx, FJSON_STATE_ERROR_SIZE, "too deep");
 		return _bad_token();
 	}
 
@@ -238,13 +246,13 @@ _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 		token->length++;
 
 		if(!token->length) {
-			ctx->state = FJSON_STATE_ERROR_TOODEEP;
+			_set_error(ctx, FJSON_STATE_ERROR_SIZE, "length too long");
 			return _bad_token();
 		}
 
 		_check_errors(ctx, token, type);
 
-		if (_context_error(ctx)) {
+		if (ctx->error) {
 			return _bad_token();
 		}
 
@@ -289,7 +297,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			token = _alloc_next_token(ctx, FJSON_TOKEN_OBJECT);
 			fjson_token_ok(token);
 
-			if (_context_error(ctx)) {
+			if (ctx->error) {
 				return;
 			}
 
@@ -303,21 +311,21 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 			if (token->type != FJSON_TOKEN_OBJECT &&
 			    token->type != FJSON_TOKEN_LABEL) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad object");
 				return;
 			}
 
 			if (token->type == FJSON_TOKEN_LABEL) {
 				_close_token(ctx, token, 0);
 
-				if (_context_error(ctx)) {
+				if (ctx->error) {
 					return;
 				}
 
 				token = fjson_get_token(ctx, 0);
 
 				if (token->type != FJSON_TOKEN_OBJECT) {
-					ctx->state = FJSON_STATE_ERROR_BADJSON;
+					_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad object");
 					return;
 				}
 			}
@@ -326,7 +334,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 			_close_token(ctx, token, 1);
 
-			if (_context_error(ctx)) {
+			if (ctx->error) {
 				return;
 			}
 
@@ -336,7 +344,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			token = _alloc_next_token(ctx, FJSON_TOKEN_ARRAY);
 			fjson_token_ok(token);
 
-			if (_context_error(ctx)) {
+			if (ctx->error) {
 				return;
 			}
 
@@ -349,20 +357,20 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			fjson_token_ok(token);
 
 			if (token->type != FJSON_TOKEN_ARRAY) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad array");
 				return;
 			}
 
 			_close_token(ctx, token, 1);
 
-			if (_context_error(ctx)) {
+			if (ctx->error) {
 				return;
 			}
 
 			continue;
 		/* String literal */
 		case '\"':
-			ctx->state = FJSON_STATE_ERROR_BADJSON;
+			_set_error(ctx, FJSON_STATE_ERROR_JSON, "TODO string");
 			return;
 		/* Object key value separator (label only) */
 		case ':':
@@ -370,12 +378,12 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			fjson_token_ok(token);
 
 			if (token->type != FJSON_TOKEN_LABEL) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad colon");
 				return;
 			}
 
 			if (token->seperated) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "too many colons");
 				return;
 			}
 
@@ -389,12 +397,12 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 			if (token->type != FJSON_TOKEN_LABEL &&
 			    token->type != FJSON_TOKEN_ARRAY) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad comma");
 				return;
 			}
 
 			if (token->seperated) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "too many commas");
 				return;
 			}
 
@@ -403,19 +411,19 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			if (token->type == FJSON_TOKEN_LABEL) {
 				_close_token(ctx, token, 0);
 
-				if (_context_error(ctx)) {
+				if (ctx->error) {
 					return;
 				}
 
 				token = fjson_get_token(ctx, 0);
 
 				if (token->type != FJSON_TOKEN_OBJECT) {
-					ctx->state = FJSON_STATE_ERROR_BADJSON;
+					_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad label");
 					return;
 				}
 
 				if (token->seperated) {
-					ctx->state = FJSON_STATE_ERROR_BADJSON;
+					_set_error(ctx, FJSON_STATE_ERROR_JSON, "too many commas");
 					return;
 				}
 
@@ -435,7 +443,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		case '8':
 		case '9':
 		case '-':
-			ctx->state = FJSON_STATE_ERROR_BADJSON;
+			_set_error(ctx, FJSON_STATE_ERROR_JSON, "TODO numbers");
 			return;
 		/* Literal true */
 		case 't':
@@ -466,14 +474,14 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			}
 
 			if (strncmp(&buf[ctx->pos], literal_value, literal_len)) {
-				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad literal");
 				return;
 			}
 
 			token = _alloc_next_token(ctx, literal_type);
 			fjson_token_ok(token);
 
-			if (_context_error(ctx)) {
+			if (ctx->error) {
 				return;
 			}
 
@@ -496,7 +504,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			continue;
 		/* Invalid json token char */
 		default:
-			ctx->state = FJSON_STATE_ERROR_BADJSON;
+			_set_error(ctx, FJSON_STATE_ERROR_JSON, "invalid char");
 			return;
 		}
 	}
@@ -516,7 +524,7 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	}
 
 	if (ctx->state == FJSON_STATE_DONE) {
-		ctx->state = FJSON_STATE_ERROR_BADJSON;
+		_set_error(ctx, FJSON_STATE_ERROR_JSON, "invalid token");
 		ctx->position++;
 		return;
 	}
@@ -528,7 +536,7 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 		token = _alloc_next_token(ctx, FJSON_TOKEN_ROOT);
 		fjson_token_ok(token);
-		assert_zero(_context_error(ctx));
+		assert_zero(ctx->error);
 	} else {
 		assert(ctx->state == FJSON_STATE_NEEDMORE);
 		assert(ctx->tokens_pos);
@@ -536,12 +544,6 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	}
 
 	ctx->pos = 0;
-
-	if (ctx->tokens_pos >= FJSON_MAX_DEPTH) {
-		ctx->state = FJSON_STATE_ERROR_TOODEEP;
-		ctx->position += ctx->pos;
-		return;
-	}
 
 	_parse_tokens(ctx, buf, buf_len);
 
@@ -554,6 +556,7 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	assert(ctx->pos == buf_len);
 	assert(ctx->state == FJSON_STATE_INDEXING);
 	assert(ctx->tokens_pos);
+	assert_zero(ctx->error);
 
 	if (ctx->tokens_pos > 1) {
 		ctx->state = FJSON_STATE_NEEDMORE;
@@ -563,4 +566,14 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 		ctx->state = FJSON_STATE_DONE;
 	}
+}
+
+void
+fjson_finish(struct fjson_context *ctx)
+{
+	if (ctx->state >= FJSON_STATE_DONE) {
+		return;
+	}
+
+	_set_error(ctx, FJSON_STATE_ERROR_JSON, "incomplete");
 }

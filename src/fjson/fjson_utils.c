@@ -53,10 +53,10 @@ fjson_state_name(enum fjson_state state)
 			return "DONE";
 		case FJSON_STATE_ERROR:
 			return "ERROR";
-		case FJSON_STATE_ERROR_BADJSON:
-			return "ERROR_BADJSON";
-		case FJSON_STATE_ERROR_TOODEEP:
-			return "ERROR_TOODEEP";
+		case FJSON_STATE_ERROR_JSON:
+			return "ERROR_JSON";
+		case FJSON_STATE_ERROR_SIZE:
+			return "ERROR_SIZE";
 		case FJSON_STATE_ERROR_CALLBACK:
 			return "ERROR_CALLBACK";
 	}
