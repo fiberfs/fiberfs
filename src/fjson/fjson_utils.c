@@ -10,7 +10,9 @@ fjson_token_name(enum fjson_token_type type)
 {
 	switch (type) {
 		case FJSON_TOKEN_UNDEF:
-			return "UNDEFINED";
+			return "_UNDEFINED";
+		case FJSON_TOKEN_ROOT:
+			return "_ROOT";
 		case FJSON_TOKEN_OBJECT:
 			return "OBJECT";
 		case FJSON_TOKEN_ARRAY:
@@ -29,7 +31,7 @@ fjson_token_name(enum fjson_token_type type)
 			return "NULL";
 	}
 
-	return "ERROR";
+	return "_ERROR";
 }
 
 const char *

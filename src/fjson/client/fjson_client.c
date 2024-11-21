@@ -25,8 +25,8 @@ _json_print(struct fjson_context *ctx)
 	token = fjson_get_token(ctx, 0);
 	fjson_token_ok(token);
 
-	printf("Token: %s depth: %zu closed: %d\n", fjson_token_name(token->type),
-		ctx->tokens_pos, token->closed);
+	printf("Token: %s length: %u depth: %zu closed: %d\n", fjson_token_name(token->type),
+		token->length, ctx->tokens_pos - 2, token->closed);
 
 	return 0;
 }
@@ -67,7 +67,7 @@ main(int argc, char **argv)
 
 	fjson_parse(&json, argv[1], strlen(argv[1]));
 
-	printf("Done: %s (%zu)\n", fjson_state_name(json.state), json.position);
+	printf("Done: %s (%zu)\n", fjson_state_name(json.state), json.position + 1);
 
 	fjson_context_free(&json);
 

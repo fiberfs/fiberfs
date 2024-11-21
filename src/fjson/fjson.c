@@ -11,6 +11,8 @@
 struct fjson_token _FJSON_TOKEN_BAD = {
 	FJSON_TOKEN_MAGIC,
 	FJSON_TOKEN_UNDEF,
+	0,
+	0,
 	0
 };
 
@@ -67,7 +69,58 @@ static inline struct fjson_token *
 _bad_token(void)
 {
 	assert(_FJSON_TOKEN_BAD.type == FJSON_TOKEN_UNDEF);
+	assert_zero(_FJSON_TOKEN_BAD.length);
 	return &_FJSON_TOKEN_BAD;
+}
+
+static void
+_check_errors(struct fjson_context *ctx, struct fjson_token *token)
+{
+	fjson_context_ok(ctx);
+	fjson_token_ok(token);
+
+	switch (token->type) {
+		case FJSON_TOKEN_ROOT:
+			if (token->length > 1) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
+
+			break;
+		case FJSON_TOKEN_OBJECT:
+			assert_zero(token->closed);
+			break;
+		case FJSON_TOKEN_LABEL:
+			if (token->length != 1) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
+
+			break;
+		case FJSON_TOKEN_ARRAY:
+			if (token->closed) {
+				if (token->seperated) {
+					ctx->state = FJSON_STATE_ERROR_BADJSON;
+					return;
+				}
+				return;
+			}
+
+			assert(token->length);
+
+			if (token->length == 1 && token->seperated) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
+			if (token->length > 1 && !token->seperated) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
+
+			break;
+		default:
+			break;
+	}
 }
 
 static void
@@ -109,8 +162,9 @@ fjson_get_token(struct fjson_context *ctx, size_t depth)
 	return token;
 }
 
+// TODO we always add_length?
 static struct fjson_token *
-_get_next_token(struct fjson_context *ctx)
+_alloc_next_token(struct fjson_context *ctx)
 {
 	struct fjson_token *token;
 
@@ -121,6 +175,26 @@ _get_next_token(struct fjson_context *ctx)
 	if (ctx->tokens_pos == FJSON_MAX_DEPTH) {
 		ctx->state = FJSON_STATE_ERROR_TOODEEP;
 		return _bad_token();
+	}
+
+	if (ctx->tokens_pos) {
+		token = &ctx->tokens[ctx->tokens_pos - 1];
+		fjson_token_ok(token);
+
+		token->length++;
+
+		if(!token->length) {
+			ctx->state = FJSON_STATE_ERROR_TOODEEP;
+			return _bad_token();
+		}
+
+		_check_errors(ctx, token);
+
+		if (_context_error(ctx)) {
+			return _bad_token();
+		}
+
+		token->seperated = 0;
 	}
 
 	token = &ctx->tokens[ctx->tokens_pos];
@@ -172,7 +246,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		switch (buf[ctx->pos]) {
 		/* Start of object */
 		case '{':
-			token = _get_next_token(ctx);
+			token = _alloc_next_token(ctx);
 			fjson_token_ok(token);
 
 			if (_context_error(ctx)) {
@@ -189,8 +263,6 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			token = fjson_get_token(ctx, 0);
 			fjson_token_ok(token);
 
-			// TODO dangling comma
-
 			if (token->type != FJSON_TOKEN_OBJECT &&
 			    token->type != FJSON_TOKEN_LABEL) {
 				ctx->state = FJSON_STATE_ERROR_BADJSON;
@@ -198,6 +270,14 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			}
 
 			if (token->type == FJSON_TOKEN_LABEL) {
+				token->closed = 1;
+
+				_check_errors(ctx, token);
+
+				if (_context_error(ctx)) {
+					return;
+				}
+
 				_pop_token(ctx);
 				token = fjson_get_token(ctx, 0);
 
@@ -205,11 +285,19 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 					ctx->state = FJSON_STATE_ERROR_BADJSON;
 					return;
 				}
+
+				token->closed = 1;
+			} else {
+				assert(token->type == FJSON_TOKEN_OBJECT);
+				if (token->length == 0) {
+					token->closed = 1;
+				}
 			}
 
-			assert(token->type == FJSON_TOKEN_OBJECT);
-
-			token->closed = 1;
+			if (!token->closed) {
+				ctx->state = FJSON_STATE_ERROR_BADJSON;
+				return;
+			}
 
 			_callback(ctx);
 
@@ -218,7 +306,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			continue;
 		/* Start of array */
 		case '[':
-			token = _get_next_token(ctx);
+			token = _alloc_next_token(ctx);
 			fjson_token_ok(token);
 
 			if (_context_error(ctx)) {
@@ -242,6 +330,12 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 			token->closed = 1;
 
+			_check_errors(ctx, token);
+
+			if (_context_error(ctx)) {
+				return;
+			}
+
 			_callback(ctx);
 
 			_pop_token(ctx);
@@ -261,7 +355,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 				return;
 			}
 
-			// TODO syntax checks
+			token->seperated = 1;
 
 			continue;
 		/* Element separator (objects and arrays) */
@@ -275,7 +369,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 				return;
 			}
 
-			// TODO syntax checks
+			token->seperated = 1;
 
 			if (token->type == FJSON_TOKEN_LABEL) {
 				_pop_token(ctx);
@@ -329,7 +423,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 				return;
 			}
 
-			token = _get_next_token(ctx);
+			token = _alloc_next_token(ctx);
 			fjson_token_ok(token);
 
 			if (_context_error(ctx)) {
@@ -343,8 +437,6 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			_pop_token(ctx);
 
 			ctx->pos += literal_len - 1;
-
-			// TODO syntax check, whats our context?
 
 			literal_value = NULL;
 
@@ -370,6 +462,8 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 void
 fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
+	struct fjson_token *token;
+
 	fjson_context_ok(ctx);
 
 	if (buf_len == 0 || ctx->state >= FJSON_STATE_ERROR) {
@@ -384,8 +478,17 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 	if (ctx->state == FJSON_STATE_INIT) {
 		ctx->state = FJSON_STATE_INDEXING;
+
+		assert_zero(ctx->tokens_pos);
+
+		token = _alloc_next_token(ctx);
+		fjson_token_ok(token);
+		assert_zero(_context_error(ctx));
+
+		token->type = FJSON_TOKEN_ROOT;
 	} else {
 		assert(ctx->state == FJSON_STATE_NEEDMORE);
+		assert(ctx->tokens_pos);
 		ctx->state = FJSON_STATE_INDEXING;
 	}
 
@@ -407,10 +510,14 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 	assert(ctx->pos == buf_len);
 	assert(ctx->state == FJSON_STATE_INDEXING);
+	assert(ctx->tokens_pos);
 
-	if (ctx->tokens_pos) {
+	if (ctx->tokens_pos > 1) {
 		ctx->state = FJSON_STATE_NEEDMORE;
 	} else {
+		token = fjson_get_token(ctx, 0);
+		assert(token->type == FJSON_TOKEN_ROOT);
+
 		ctx->state = FJSON_STATE_DONE;
 	}
 }

@@ -8,6 +8,7 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define FJSON_MAX_DEPTH			32
 
@@ -24,6 +25,7 @@ enum fjson_state {
 
 enum fjson_token_type {
 	FJSON_TOKEN_UNDEF = 0,
+	FJSON_TOKEN_ROOT,
 	FJSON_TOKEN_OBJECT,
 	FJSON_TOKEN_ARRAY,
 	FJSON_TOKEN_LABEL,
@@ -43,7 +45,10 @@ struct fjson_token {
 
 	enum fjson_token_type		type;
 
+	uint32_t			length;
+
 	unsigned int			closed:1;
+	unsigned int			seperated:1;
 };
 
 struct fjson_context {
