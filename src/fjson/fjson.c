@@ -282,8 +282,12 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 	fjson_context_ok(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
-	assert(ctx->pos < buf_len);
 
+	if (buf_len == 0) {
+		return;
+	}
+
+	assert(ctx->pos < buf_len);
 	assert(buf);
 	assert(buf_len);
 
@@ -519,7 +523,7 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 	fjson_context_ok(ctx);
 
-	if (buf_len == 0 || ctx->state >= FJSON_STATE_ERROR) {
+	if (ctx->state >= FJSON_STATE_ERROR) {
 		return;
 	}
 
@@ -573,13 +577,14 @@ fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len)
 	size_t len;
 
 	fjson_context_ok(ctx);
+	assert(ctx->pos <= buf_len);
 	assert(buf);
 
 	if (ctx->state != FJSON_STATE_NEEDMORE) {
 		return 0;
 	}
 
-	if (ctx->pos >= buf_len) {
+	if (ctx->pos == buf_len) {
 		return 0;
 	} else if (ctx->pos == 0) {
 		return buf_len;
