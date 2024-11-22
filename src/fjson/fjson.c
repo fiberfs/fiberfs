@@ -572,7 +572,7 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 }
 
 size_t
-fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len)
+fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len, size_t buf_max)
 {
 	size_t len;
 
@@ -587,6 +587,10 @@ fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len)
 	if (ctx->pos == buf_len) {
 		return 0;
 	} else if (ctx->pos == 0) {
+		if (buf_len == buf_max) {
+			_set_error(ctx, FJSON_STATE_ERROR_SIZE, "out of buffer");
+		}
+
 		return buf_len;
 	}
 
@@ -605,8 +609,6 @@ fjson_finish(struct fjson_context *ctx)
 	if (ctx->state >= FJSON_STATE_DONE) {
 		return;
 	}
-
-	assert(ctx->state == FJSON_STATE_NEEDMORE || ctx->state == FJSON_STATE_INIT);
 
 	_set_error(ctx, FJSON_STATE_ERROR_JSON, "incomplete");
 }

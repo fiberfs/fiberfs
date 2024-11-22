@@ -113,7 +113,7 @@ fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_test_ERROR(fjson.error, "fjson error %s: %s", fjson_state_name(fjson.state),
 			fjson.error_msg);
 
-		pos = fjson_shift(&fjson, buf, len);
+		pos = fjson_shift(&fjson, buf, len, sizeof(buf) - 1);
 		buf[pos] = '\0';
 
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "  shift pos: %zu '%s'", pos, buf);
