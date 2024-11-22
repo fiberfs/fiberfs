@@ -523,12 +523,6 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		return;
 	}
 
-	if (ctx->state == FJSON_STATE_DONE) {
-		_set_error(ctx, FJSON_STATE_ERROR_JSON, "invalid token");
-		ctx->position++;
-		return;
-	}
-
 	if (ctx->state == FJSON_STATE_INIT) {
 		ctx->state = FJSON_STATE_INDEXING;
 
@@ -538,7 +532,7 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		fjson_token_ok(token);
 		assert_zero(ctx->error);
 	} else {
-		assert(ctx->state == FJSON_STATE_NEEDMORE);
+		assert(ctx->state == FJSON_STATE_NEEDMORE || ctx->state == FJSON_STATE_DONE);
 		assert(ctx->tokens_pos);
 		ctx->state = FJSON_STATE_INDEXING;
 	}
@@ -571,6 +565,33 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			ctx->state = FJSON_STATE_DONE;
 		}
 	}
+}
+
+size_t
+fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len)
+{
+	size_t len;
+
+	fjson_context_ok(ctx);
+	assert(buf);
+
+	if (ctx->state != FJSON_STATE_NEEDMORE) {
+		return 0;
+	}
+
+	if (ctx->pos >= buf_len) {
+		return 0;
+	} else if (ctx->pos == 0) {
+		return buf_len;
+	}
+
+	len = buf_len - ctx->pos;
+
+	memmove(buf, buf + ctx->pos, len);
+
+	ctx->pos = 0;
+
+	return len;
 }
 
 void

@@ -84,18 +84,39 @@ void
 fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct fjson_context fjson;
-	size_t i;
+	char buf[1024];
+	size_t i, pos, len;
 
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR(!cmd->param_count, "Need a single parameter");
 
 	fjson_context_init(&fjson);
 
+	pos = 0;
+
 	for (i = 0; i < cmd->param_count; i++) {
 		fbr_test_unescape(&cmd->params[i]);
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "json_multi: %s", cmd->params[i].value);
-		fjson_parse(&fjson, cmd->params[i].value, cmd->params[i].len);
-		// TODO shift support
+		fbr_test_ERROR(cmd->params[i].len >= sizeof(buf) - pos, "Out of buffer");
+
+		memcpy(buf + pos, cmd->params[i].value, cmd->params[i].len + 1);
+
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "json_multi: '%s' => '%s'",
+			cmd->params[i].value, buf);
+
+		len = pos + cmd->params[i].len;
+
+		fjson_parse(&fjson, buf, len);
+
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "  pos: %zu len: %zu position: %zu state: %s",
+			fjson.pos, len, fjson.position, fjson_state_name(fjson.state));
+
+		fbr_test_ERROR(fjson.error, "fjson error %s: %s", fjson_state_name(fjson.state),
+			fjson.error_msg);
+
+		pos = fjson_shift(&fjson, buf, len);
+		buf[pos] = '\0';
+
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "  shift pos: %zu '%s'", pos, buf);
 	}
 
 	fjson_finish(&fjson);
