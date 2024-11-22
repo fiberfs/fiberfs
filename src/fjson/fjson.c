@@ -575,5 +575,7 @@ fjson_finish(struct fjson_context *ctx)
 		return;
 	}
 
+	assert(ctx->state == FJSON_STATE_NEEDMORE || ctx->state == FJSON_STATE_INIT);
+
 	_set_error(ctx, FJSON_STATE_ERROR_JSON, "incomplete");
 }

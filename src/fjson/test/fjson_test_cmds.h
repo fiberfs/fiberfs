@@ -24,6 +24,8 @@
 #endif
 
 FJSON_TEST_CMD(json_test)
+FJSON_TEST_CMD(json_test_dynamic)
+FJSON_TEST_CMD(json_fail)
 
 #undef FJSON_TEST_CMD
 #undef FJSON_TEST_VAR
