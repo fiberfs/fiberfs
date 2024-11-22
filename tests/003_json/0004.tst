@@ -1,4 +1,4 @@
-fiber_test "json tests"
+fiber_test "JSON tests"
 
 json_test '{}'
 json_test '[]'

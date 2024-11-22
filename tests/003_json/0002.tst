@@ -1,3 +1,3 @@
-fiber_test "json dynamic"
+fiber_test "Dynamic json"
 
-json_test_dynamic 'true'
+json_dynamic 'true'

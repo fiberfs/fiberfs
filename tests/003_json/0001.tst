@@ -1,3 +1,3 @@
-fiber_test "json parsing"
+fiber_test "JSON parsing"
 
 json_test '{}'

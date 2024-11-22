@@ -564,7 +564,12 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		token = fjson_get_token(ctx, 0);
 		assert(token->type == FJSON_TOKEN_ROOT);
 
-		ctx->state = FJSON_STATE_DONE;
+		if (token->length == 0) {
+			ctx->state = FJSON_STATE_NEEDMORE;
+		} else {
+			assert(token->length == 1);
+			ctx->state = FJSON_STATE_DONE;
+		}
 	}
 }
 

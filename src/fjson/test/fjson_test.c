@@ -31,7 +31,7 @@ fjson_cmd_json_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fjson_cmd_json_test_dynamic(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fjson_cmd_json_dynamic(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct fjson_context *fjson;
 
@@ -78,4 +78,33 @@ fjson_cmd_json_fail(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "json_fail passed %s",
 		cmd->params[0].value);
+}
+
+void
+fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct fjson_context fjson;
+	size_t i;
+
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR(!cmd->param_count, "Need a single parameter");
+
+	fjson_context_init(&fjson);
+
+	for (i = 0; i < cmd->param_count; i++) {
+		fbr_test_unescape(&cmd->params[i]);
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "json_multi: %s", cmd->params[i].value);
+		fjson_parse(&fjson, cmd->params[i].value, cmd->params[i].len);
+		// TODO shift support
+	}
+
+	fjson_finish(&fjson);
+
+	fbr_test_ERROR(fjson.error, "fjson error %s: %s", fjson_state_name(fjson.state),
+		fjson.error_msg);
+
+	fjson_context_free(&fjson);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "json_multi passed %zu",
+		cmd->param_count);
 }

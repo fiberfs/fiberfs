@@ -1,3 +1,3 @@
-fiber_test "json bad"
+fiber_test "Bad json"
 
 json_fail 'invalid'
