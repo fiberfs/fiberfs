@@ -60,7 +60,7 @@ fjson_cmd_json_fail(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fjson_context fjson;
 
 	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR(cmd->param_count != 1, "Need a single parameter");
 
 	fbr_test_unescape(&cmd->params[0]);
 
