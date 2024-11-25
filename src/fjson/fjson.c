@@ -729,6 +729,7 @@ fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len, size_t buf_max
 	return len;
 }
 
+// TODO take the finish flag directly in parse
 void
 fjson_finish_buf(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
