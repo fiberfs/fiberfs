@@ -1,8 +1,18 @@
 fiber_test "JSON tests"
 
 json_test '{}'
-json_test '[]'
+json_test ' []'
 json_test 'true'
-json_test 'false'
+json_test '  false  '
 json_test 'null'
-json_test '[{}, true, false , [ {} ] ]'
+json_test ' [ {}  , true, false , [ {} ] ]'
+json_test ' 123'
+json_test '-123 '
+json_test '123.0'
+json_test '123.456'
+json_test '123e12'
+json_test '123e-1'
+json_test '123e+1'
+json_test '0.0'
+json_test '-0'
+json_test 6

@@ -47,6 +47,10 @@ struct fjson_token {
 
 	uint32_t			length;
 
+	void				*value;
+	double				dvalue;
+	size_t				value_len;
+
 	unsigned int			closed:1;
 	unsigned int			seperated:1;
 };
@@ -62,6 +66,7 @@ struct fjson_context {
 
 	unsigned int			do_free:1;
 	unsigned int			error:1;
+	unsigned int			multi:1;
 
 	const char			*error_msg;
 

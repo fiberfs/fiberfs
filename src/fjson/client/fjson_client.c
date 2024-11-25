@@ -28,6 +28,10 @@ _json_print(struct fjson_context *ctx)
 	printf("Token: %s length: %u depth: %zu closed: %d\n", fjson_token_name(token->type),
 		token->length, ctx->tokens_pos - 2, token->closed);
 
+	if (token->type == FJSON_TOKEN_NUMBER) {
+		printf("  dvalue=%lf\n", token->dvalue);
+	}
+
 	return 0;
 }
 

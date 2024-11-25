@@ -92,6 +92,7 @@ fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fjson_context_init(&fjson);
 
+	fjson.multi = 1;
 	pos = 0;
 
 	for (i = 0; i < cmd->param_count; i++) {
@@ -104,6 +105,10 @@ fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 			cmd->params[i].value, buf);
 
 		len = pos + cmd->params[i].len;
+
+		if (i == cmd->param_count - 1) {
+			fjson.multi = 0;
+		}
 
 		fjson_parse(&fjson, buf, len);
 

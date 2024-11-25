@@ -6,11 +6,16 @@
 #include "fiberfs.h"
 #include "fjson.h"
 
+#include <errno.h>
+#include <math.h>
 #include <stdlib.h>
 
 struct fjson_token _FJSON_TOKEN_BAD = {
 	FJSON_TOKEN_MAGIC,
 	FJSON_TOKEN_UNDEF,
+	0,
+	NULL,
+	0,
 	0,
 	0,
 	0
@@ -273,6 +278,115 @@ _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 }
 
 static void
+_parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
+{
+	struct fjson_token *token;
+	int has_decimal, has_exponent, has_number;
+	size_t start;
+	double value;
+	char *end;
+
+	fjson_context_ok(ctx);
+	assert(ctx->state == FJSON_STATE_INDEXING);
+	assert(ctx->pos < buf_len);
+	assert(buf);
+	assert(buf_len);
+
+	start = ctx->pos;
+	has_decimal = 0;
+	has_exponent = 0;
+	has_number = 1;
+
+	for (ctx->pos++; ctx->pos < buf_len; ctx->pos++) {
+		switch (buf[ctx->pos]) {
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+			has_number = 1;
+			continue;
+		case '.':
+			if (has_decimal || has_exponent) {
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad decimal number");
+				break;
+			}
+
+			has_decimal = 1;
+			has_number = 0;
+
+			continue;
+		case 'e':
+		case 'E':
+			if (has_exponent || !has_number) {
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad exponent number");
+				break;
+			}
+
+			has_exponent = 1;
+			has_number = 0;
+
+			continue;
+		case '+':
+		case '-':
+			if (!has_exponent || has_number) {
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad number");
+				break;
+			}
+
+			continue;
+		default:
+			break;
+		}
+
+		break;
+	}
+
+	if (ctx->error) {
+		return;
+	}
+
+	if (ctx->pos == buf_len && ctx->multi) {
+		ctx->state = FJSON_STATE_NEEDMORE;
+		ctx->pos = start;
+
+		return;
+	}
+
+	if (!has_number) {
+		_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad number");
+		return;
+	}
+
+	value = strtod(&buf[start], &end);
+
+	if (end != buf + ctx->pos ||
+		(value == HUGE_VAL && errno == ERANGE) ||
+		(value == -HUGE_VAL && errno == ERANGE)) {
+		_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad number");
+		return;
+	}
+
+	token = _alloc_next_token(ctx, FJSON_TOKEN_NUMBER);
+	fjson_token_ok(token);
+
+	token->dvalue = value;
+
+	if (ctx->error) {
+		return;
+	}
+
+	_callback(ctx);
+
+	_pop_token(ctx);
+}
+
+static void
 _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
 	struct fjson_token *token;
@@ -447,8 +561,15 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		case '8':
 		case '9':
 		case '-':
-			_set_error(ctx, FJSON_STATE_ERROR_JSON, "TODO numbers");
-			return;
+			_parse_double(ctx, buf, buf_len);
+
+			if (ctx->state > FJSON_STATE_INDEXING) {
+				return;
+			}
+
+			ctx->pos--;
+
+			continue;
 		/* Literal true */
 		case 't':
 			literal_value = "true";
@@ -569,6 +690,11 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			ctx->state = FJSON_STATE_DONE;
 		}
 	}
+
+	if (!ctx->multi && ctx->state == FJSON_STATE_NEEDMORE) {
+		_set_error(ctx, FJSON_STATE_ERROR_JSON, "incomplete");
+		return;
+	}
 }
 
 size_t
@@ -606,6 +732,8 @@ fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len, size_t buf_max
 void
 fjson_finish(struct fjson_context *ctx)
 {
+	fjson_context_ok(ctx);
+
 	if (ctx->state >= FJSON_STATE_DONE) {
 		return;
 	}
