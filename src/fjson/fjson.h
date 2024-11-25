@@ -66,7 +66,7 @@ struct fjson_context {
 
 	unsigned int			do_free:1;
 	unsigned int			error:1;
-	unsigned int			multi:1;
+	unsigned int			finish:1;
 
 	const char			*error_msg;
 
@@ -84,6 +84,7 @@ void fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len);
 struct fjson_context *fjson_context_alloc(void);
 struct fjson_token *fjson_get_token(struct fjson_context *ctx, size_t depth);
 size_t fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len, size_t buf_max);
+void fjson_finish_buf(struct fjson_context *ctx, const char *buf, size_t buf_len);
 void fjson_finish(struct fjson_context *ctx);
 void fjson_context_free(struct fjson_context *ctx);
 

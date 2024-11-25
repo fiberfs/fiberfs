@@ -351,7 +351,7 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		return;
 	}
 
-	if (ctx->pos == buf_len && ctx->multi) {
+	if (ctx->pos == buf_len && !ctx->finish) {
 		ctx->state = FJSON_STATE_NEEDMORE;
 		ctx->pos = start;
 
@@ -691,7 +691,7 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		}
 	}
 
-	if (!ctx->multi && ctx->state == FJSON_STATE_NEEDMORE) {
+	if (ctx->finish && ctx->state == FJSON_STATE_NEEDMORE) {
 		_set_error(ctx, FJSON_STATE_ERROR_JSON, "incomplete");
 		return;
 	}
@@ -727,6 +727,18 @@ fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len, size_t buf_max
 	ctx->pos = 0;
 
 	return len;
+}
+
+void
+fjson_finish_buf(struct fjson_context *ctx, const char *buf, size_t buf_len)
+{
+	fjson_context_ok(ctx);
+
+	ctx->finish = 1;
+
+	fjson_parse(ctx, buf, buf_len);
+
+	fjson_finish(ctx);
 }
 
 void

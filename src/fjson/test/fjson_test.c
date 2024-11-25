@@ -18,6 +18,8 @@ fjson_cmd_json_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fjson_context_init(&fjson);
 
+	fjson.finish = 1;
+
 	fjson_parse(&fjson, cmd->params[0].value, cmd->params[0].len);
 	fjson_finish(&fjson);
 
@@ -42,8 +44,7 @@ fjson_cmd_json_dynamic(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fjson = fjson_context_alloc();
 
-	fjson_parse(fjson, cmd->params[0].value, cmd->params[0].len);
-	fjson_finish(fjson);
+	fjson_finish_buf(fjson, cmd->params[0].value, cmd->params[0].len);
 
 	fbr_test_ERROR(fjson->error, "fjson error %s: %s", fjson_state_name(fjson->state),
 		fjson->error_msg);
@@ -58,6 +59,7 @@ void
 fjson_cmd_json_fail(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct fjson_context fjson;
+	size_t pos;
 
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR(cmd->param_count != 1, "Need a single parameter");
@@ -67,6 +69,8 @@ fjson_cmd_json_fail(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fjson_context_init(&fjson);
 
 	fjson_parse(&fjson, cmd->params[0].value, cmd->params[0].len);
+	pos = fjson_shift(&fjson, cmd->params[0].value, cmd->params[0].len, cmd->params[0].len);
+	fjson_finish_buf(&fjson, cmd->params[0].value, pos);
 	fjson_finish(&fjson);
 
 	fbr_test_ERROR(!fjson.error, "fjson error: valid json %s", fjson_state_name(fjson.state));
@@ -92,7 +96,6 @@ fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fjson_context_init(&fjson);
 
-	fjson.multi = 1;
 	pos = 0;
 
 	for (i = 0; i < cmd->param_count; i++) {
@@ -105,10 +108,6 @@ fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 			cmd->params[i].value, buf);
 
 		len = pos + cmd->params[i].len;
-
-		if (i == cmd->param_count - 1) {
-			fjson.multi = 0;
-		}
 
 		fjson_parse(&fjson, buf, len);
 
@@ -124,7 +123,7 @@ fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "  shift pos: %zu '%s'", pos, buf);
 	}
 
-	fjson_finish(&fjson);
+	fjson_finish_buf(&fjson, buf, pos);
 
 	fbr_test_ERROR(fjson.error, "fjson error %s: %s", fjson_state_name(fjson.state),
 		fjson.error_msg);

@@ -68,6 +68,7 @@ main(int argc, char **argv)
 	fjson_context_init(&json);
 
 	json.callback = &_json_print;
+	json.finish = 1;
 
 	fjson_parse(&json, argv[1], strlen(argv[1]));
 	fjson_finish(&json);
