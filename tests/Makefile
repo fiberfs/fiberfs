@@ -1,9 +1,11 @@
 # FiberFS Makefile (tests)
 
 FIBERFS_TEST=../src/fiberfs_test
-FLAGS=-vv
-CHTS=$(sort $(wildcard */*.cht */*.tst))
-VALGRIND=
+FLAGS=-q
+TESTS=$(sort $(wildcard */*.cht */*.tst))
+TESTS_JSON=$(sort $(wildcard 003_json/*.tst))
+PRE_EXEC=
+VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
 GDB=gdb --args
 
 .PHONY:	all test check fiberfs_test valgrind verbose
@@ -15,18 +17,23 @@ FORCE:
 fiberfs_test:
 		$(MAKE) -C .. fiberfs_test
 
-valgrind:	VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
+valgrind:	PRE_EXEC=$(VALGRIND)
 valgrind:	check
 
 test:		check
 
-check:		FLAGS=-q
-check:		$(CHTS)
+check:		$(TESTS)
 
-verbose:	$(CHTS)
+verbose:	FLAGS=-vv
+verbose:	$(TESTS)
+
+vjson:		PRE_EXEC=$(VALGRIND)
+vjson:		json
+
+json:		$(TESTS_JSON)
 
 %.cht:		fiberfs_test FORCE
-		$(VALGRIND) $(FIBERFS_TEST) $(FLAGS) $@
+		$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
 
 %.tst:		fiberfs_test FORCE
-		$(VALGRIND) $(FIBERFS_TEST) $(FLAGS) $@
+		$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@

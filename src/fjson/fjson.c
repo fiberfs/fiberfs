@@ -672,8 +672,8 @@ fjson_parse_part(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		return;
 	}
 
-	assert(ctx->state == FJSON_STATE_INDEXING ||
-		ctx->state == FJSON_STATE_NEEDMORE);
+	assert(ctx->state == FJSON_STATE_NEEDMORE ||
+		(ctx->state == FJSON_STATE_INDEXING && ctx->pos == buf_len));
 	assert(ctx->tokens_pos);
 	assert_zero(ctx->error);
 
@@ -694,7 +694,6 @@ fjson_parse_part(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	}
 
 	assert(ctx->state >= FJSON_STATE_NEEDMORE);
-	assert(ctx->state == FJSON_STATE_NEEDMORE || ctx->pos == buf_len);
 
 	if (ctx->finish && ctx->state == FJSON_STATE_NEEDMORE) {
 		_set_error(ctx, FJSON_STATE_ERROR_JSON, "incomplete");
