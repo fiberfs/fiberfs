@@ -638,7 +638,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 }
 
 void
-fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
+fjson_parse_part(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
 	struct fjson_token *token;
 
@@ -668,16 +668,18 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 	ctx->position += ctx->pos;
 
-	if (ctx->state > FJSON_STATE_INDEXING) {
+	if (ctx->state >= FJSON_STATE_DONE) {
 		return;
 	}
 
-	assert(ctx->pos == buf_len);
-	assert(ctx->state == FJSON_STATE_INDEXING);
+	assert(ctx->state == FJSON_STATE_INDEXING ||
+		ctx->state == FJSON_STATE_NEEDMORE);
 	assert(ctx->tokens_pos);
 	assert_zero(ctx->error);
 
-	if (ctx->tokens_pos > 1) {
+	if (ctx->state == FJSON_STATE_NEEDMORE) {
+		// Do nothing
+	} else if (ctx->tokens_pos > 1) {
 		ctx->state = FJSON_STATE_NEEDMORE;
 	} else {
 		token = fjson_get_token(ctx, 0);
@@ -691,10 +693,24 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		}
 	}
 
+	assert(ctx->state >= FJSON_STATE_NEEDMORE);
+	assert(ctx->state == FJSON_STATE_NEEDMORE || ctx->pos == buf_len);
+
 	if (ctx->finish && ctx->state == FJSON_STATE_NEEDMORE) {
 		_set_error(ctx, FJSON_STATE_ERROR_JSON, "incomplete");
+		assert(ctx->state >= FJSON_STATE_DONE);
 		return;
 	}
+}
+
+void
+fjson_parse_final(struct fjson_context *ctx, const char *buf, size_t buf_len)
+{
+	fjson_context_ok(ctx);
+
+	ctx->finish = 1;
+
+	fjson_parse_part(ctx, buf, buf_len);
 }
 
 size_t
@@ -727,29 +743,4 @@ fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len, size_t buf_max
 	ctx->pos = 0;
 
 	return len;
-}
-
-// TODO take the finish flag directly in parse
-void
-fjson_finish_buf(struct fjson_context *ctx, const char *buf, size_t buf_len)
-{
-	fjson_context_ok(ctx);
-
-	ctx->finish = 1;
-
-	fjson_parse(ctx, buf, buf_len);
-
-	fjson_finish(ctx);
-}
-
-void
-fjson_finish(struct fjson_context *ctx)
-{
-	fjson_context_ok(ctx);
-
-	if (ctx->state >= FJSON_STATE_DONE) {
-		return;
-	}
-
-	_set_error(ctx, FJSON_STATE_ERROR_JSON, "incomplete");
 }

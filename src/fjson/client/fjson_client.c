@@ -68,10 +68,8 @@ main(int argc, char **argv)
 	fjson_context_init(&json);
 
 	json.callback = &_json_print;
-	json.finish = 1;
 
-	fjson_parse(&json, argv[1], strlen(argv[1]));
-	fjson_finish(&json);
+	fjson_parse_final(&json, argv[1], strlen(argv[1]));
 
 	printf("Done: %s: %s (%zu)\n", fjson_state_name(json.state),
 		json.error ? json.error_msg : "ok", json.position + 1);
