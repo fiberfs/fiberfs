@@ -95,7 +95,7 @@ fbr_test_unescape(struct fbr_test_param *param)
 	}
 }
 
-size_t
+static size_t
 _count_escapes(char *buf, size_t pos)
 {
 	size_t count = 0;
@@ -193,7 +193,7 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 	return 1;
 }
 
-enum fbr_test_quote
+static enum fbr_test_quote
 _match_quote(char *buf, size_t pos)
 {
 	enum fbr_test_quote quote;

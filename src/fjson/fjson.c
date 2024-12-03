@@ -277,6 +277,91 @@ _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 	return token;
 }
 
+static size_t
+_count_escapes(const char *buf, size_t pos)
+{
+	size_t count = 0;
+
+	assert(buf);
+
+	while (count <= pos && buf[pos - count] == '\\') {
+		count++;
+	}
+
+	return count;
+}
+
+static void
+_parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
+{
+	struct fjson_token *token;
+	int is_valid;
+	size_t start, count;
+
+	fjson_context_ok(ctx);
+	assert(ctx->state == FJSON_STATE_INDEXING);
+	assert(ctx->pos < buf_len);
+	assert(buf);
+	assert(buf_len);
+
+	start = ctx->pos;
+	is_valid = 0;
+
+	for (ctx->pos++; ctx->pos < buf_len; ctx->pos++) {
+		switch (buf[ctx->pos]) {
+		case '\"':
+			count = _count_escapes(buf, ctx->pos - 1);
+
+			if (count % 2 != 0) {
+				continue;
+			}
+
+			is_valid = 1;
+
+			break;
+		case '\r':
+		case '\n':
+		case '\v':
+		case '\f':
+		case '\0':
+			_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad string char");
+			return;
+		default:
+			continue;
+		}
+
+		break;
+	}
+
+	if (!is_valid) {
+		if (ctx->pos == buf_len && !ctx->finish) {
+			ctx->state = FJSON_STATE_NEEDMORE;
+			ctx->pos = start;
+
+			return;
+		}
+
+		_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad string");
+		return;
+	}
+
+	token = _alloc_next_token(ctx, FJSON_TOKEN_STRING);
+	fjson_token_ok(token);
+
+	if (ctx->error) {
+		return;
+	}
+
+	assert(start + 1 <= ctx->pos);
+
+	token->svalue = &buf[start + 1];
+	token->svalue_len = ctx->pos - start - 1;
+
+	_callback(ctx);
+
+	_pop_token(ctx);
+}
+
 static void
 _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
@@ -375,11 +460,11 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	token = _alloc_next_token(ctx, FJSON_TOKEN_NUMBER);
 	fjson_token_ok(token);
 
-	token->dvalue = value;
-
 	if (ctx->error) {
 		return;
 	}
+
+	token->dvalue = value;
 
 	_callback(ctx);
 
@@ -488,8 +573,34 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			continue;
 		/* String literal */
 		case '\"':
-			_set_error(ctx, FJSON_STATE_ERROR_JSON, "TODO string");
-			return;
+			_parse_string(ctx, buf, buf_len);
+
+			if (ctx->state > FJSON_STATE_INDEXING) {
+				return;
+			}
+
+			continue;
+		/* Number */
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+		case '-':
+			_parse_double(ctx, buf, buf_len);
+
+			if (ctx->state > FJSON_STATE_INDEXING) {
+				return;
+			}
+
+			ctx->pos--;
+
+			continue;
 		/* Object key value separator (label only) */
 		case ':':
 			token = fjson_get_token(ctx, 0);
@@ -547,27 +658,6 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 				token->seperated = 1;
 			}
-
-			continue;
-		/* Number */
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9':
-		case '-':
-			_parse_double(ctx, buf, buf_len);
-
-			if (ctx->state > FJSON_STATE_INDEXING) {
-				return;
-			}
-
-			ctx->pos--;
 
 			continue;
 		/* Literal true */
