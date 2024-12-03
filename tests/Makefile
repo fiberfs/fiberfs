@@ -32,8 +32,6 @@ vjson:		json
 
 json:		$(TESTS_JSON)
 
-# TODO look at $(eval)
-
 %.cht:		fiberfs_test FORCE
 		$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
 
