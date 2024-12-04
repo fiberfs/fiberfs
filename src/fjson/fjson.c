@@ -21,6 +21,9 @@ struct fjson_token _FJSON_TOKEN_BAD = {
 	0
 };
 
+static void _check_errors(struct fjson_context *ctx, struct fjson_token *token,
+	enum fjson_token_type child);
+
 void
 fjson_context_init(struct fjson_context *ctx)
 {
@@ -99,71 +102,6 @@ _callback(struct fjson_context *ctx)
 		if (ret) {
 			_set_error(ctx, FJSON_STATE_ERROR_CALLBACK, NULL);
 		}
-	}
-}
-
-// Tokens are checked when a child is allocated or when they are closed
-static void
-_check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_token_type child)
-{
-	fjson_context_ok(ctx);
-	fjson_token_ok(token);
-	assert(child > FJSON_TOKEN_UNDEF || token->closed);
-
-	switch (token->type) {
-		case FJSON_TOKEN_ROOT:
-			assert_zero(token->closed);
-			assert_zero(token->seperated);
-			if (token->length > 1) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "too many tokens");
-				return;
-			}
-
-			break;
-		case FJSON_TOKEN_OBJECT:
-		case FJSON_TOKEN_ARRAY:
-			if (token->closed) {
-				if (token->seperated) {
-					_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad comma");
-					return;
-				}
-				return;
-			}
-
-			assert(token->length);
-
-			if (token->type == FJSON_TOKEN_OBJECT && child != FJSON_TOKEN_LABEL) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad object");
-				return;
-			}
-			if (token->length == 1 && token->seperated) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad comma");
-				return;
-			}
-			if (token->length > 1 && !token->seperated) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "missing comma");
-				return;
-			}
-
-			break;
-		case FJSON_TOKEN_LABEL:
-			if (token->length != 1) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad label");
-				return;
-			}
-			if (token->closed && !token->seperated) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "missing colon");
-				return;
-			}
-
-			break;
-		case FJSON_TOKEN_STRING:
-		case FJSON_TOKEN_NUMBER:
-		case FJSON_TOKEN_TRUE:
-		case FJSON_TOKEN_FALSE:
-		case FJSON_TOKEN_NULL:
-		case FJSON_TOKEN_UNDEF:
-			fjson_ABORT("Bad token check");
 	}
 }
 
@@ -476,6 +414,66 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	_callback(ctx);
 
 	_pop_token(ctx);
+}
+
+// Tokens are checked when a child is allocated or when they are closed
+static void
+_check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_token_type child)
+{
+	fjson_context_ok(ctx);
+	fjson_token_ok(token);
+	assert(child > FJSON_TOKEN_UNDEF || token->closed);
+
+	switch (token->type) {
+		case FJSON_TOKEN_ROOT:
+			assert_zero(token->closed);
+			assert_zero(token->seperated);
+			if (token->length > 1) {
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "too many tokens");
+				return;
+			}
+
+			break;
+		case FJSON_TOKEN_OBJECT:
+		case FJSON_TOKEN_ARRAY:
+			if (token->closed) {
+				if (token->seperated) {
+					_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad comma");
+					return;
+				}
+				return;
+			}
+
+			assert(token->length);
+
+			if (token->type == FJSON_TOKEN_OBJECT && child != FJSON_TOKEN_LABEL) {
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad object");
+				return;
+			}
+			if (token->length == 1 && token->seperated) {
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad comma");
+				return;
+			}
+			if (token->length > 1 && !token->seperated) {
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "missing comma");
+				return;
+			}
+
+			break;
+		case FJSON_TOKEN_LABEL:
+			if (token->length != 1) {
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad label");
+				return;
+			}
+			if (token->closed && !token->seperated) {
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "missing colon");
+				return;
+			}
+
+			break;
+		default:
+			fjson_ABORT("Bad token check");
+	}
 }
 
 static void
