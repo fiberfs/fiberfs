@@ -162,9 +162,6 @@ _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_t
 		case FJSON_TOKEN_TRUE:
 		case FJSON_TOKEN_FALSE:
 		case FJSON_TOKEN_NULL:
-			assert_zero(token->closed);
-			assert_zero(token->seperated);
-			break;
 		case FJSON_TOKEN_UNDEF:
 			fjson_ABORT("Bad token check");
 	}
@@ -663,10 +660,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 					return;
 				}
 
-				if (token->seperated) {
-					_set_error(ctx, FJSON_STATE_ERROR_JSON, "too many commas");
-					return;
-				}
+				assert_zero(token->seperated);
 
 				token->seperated = 1;
 			}
