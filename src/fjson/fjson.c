@@ -295,7 +295,7 @@ static void
 _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
 	struct fjson_token *token;
-	int is_valid;
+	int is_valid, is_label;
 	size_t start, count;
 
 	fjson_context_ok(ctx);
@@ -306,6 +306,7 @@ _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 	start = ctx->pos;
 	is_valid = 0;
+	is_label = 0;
 
 	for (ctx->pos++; ctx->pos < buf_len; ctx->pos++) {
 		switch (buf[ctx->pos]) {
@@ -345,7 +346,14 @@ _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		return;
 	}
 
-	token = _alloc_next_token(ctx, FJSON_TOKEN_STRING);
+	token = fjson_get_token(ctx, 0);
+	fjson_token_ok(token);
+
+	if (token->type == FJSON_TOKEN_OBJECT) {
+		is_label = 1;
+	}
+
+	token = _alloc_next_token(ctx, is_label ? FJSON_TOKEN_LABEL : FJSON_TOKEN_STRING);
 	fjson_token_ok(token);
 
 	if (ctx->error) {
@@ -359,7 +367,9 @@ _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 	_callback(ctx);
 
-	_pop_token(ctx);
+	if (!is_label) {
+		_pop_token(ctx);
+	}
 }
 
 static void
@@ -519,6 +529,8 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			}
 
 			if (token->type == FJSON_TOKEN_LABEL) {
+				token->seperated = 1;
+
 				_close_token(ctx, token, 0);
 
 				if (ctx->error) {
@@ -611,7 +623,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 				return;
 			}
 
-			if (token->seperated) {
+			if (token->seperated || token->length > 0) {
 				_set_error(ctx, FJSON_STATE_ERROR_JSON, "too many colons");
 				return;
 			}

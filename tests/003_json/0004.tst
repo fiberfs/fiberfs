@@ -19,3 +19,6 @@ json_test 6
 json_test '"test string"'
 json_test '"test \\\"quoted\\\" here"'
 json_test '""'
+json_test '{"test":123}'
+json_test '{"test":123,"test2":null}'
+json_test '{ "test" : 123 , "test2" : null, "test3": "test4"}'

@@ -25,12 +25,13 @@ _json_print(struct fjson_context *ctx)
 	token = fjson_get_token(ctx, 0);
 	fjson_token_ok(token);
 
-	printf("Token: %s length: %u depth: %zu closed: %d\n", fjson_token_name(token->type),
-		token->length, ctx->tokens_pos - 2, token->closed);
+	printf("Token: %s length: %u depth: %zu sep: %d closed: %d\n",
+		fjson_token_name(token->type), token->length, ctx->tokens_pos - 2,
+		token->seperated, token->closed);
 
 	if (token->type == FJSON_TOKEN_NUMBER) {
 		printf("  dvalue=%lf\n", token->dvalue);
-	} else if (token->type == FJSON_TOKEN_STRING) {
+	} else if (token->type == FJSON_TOKEN_STRING || token->type == FJSON_TOKEN_LABEL) {
 		printf("  svalue=%.*s:%zu\n", (int)token->svalue_len, token->svalue,
 			token->svalue_len);
 	}
