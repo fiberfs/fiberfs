@@ -54,7 +54,7 @@ fjson_cmd_json_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fjson_context_init(&fjson);
 
-	fjson_parse_final(&fjson, cmd->params[0].value, cmd->params[0].len);
+	fjson_parse(&fjson, cmd->params[0].value, cmd->params[0].len);
 
 	fbr_test_ERROR(fjson.error, "fjson error %s: %s", fjson_state_name(fjson.state),
 		fjson.error_msg);
@@ -77,7 +77,7 @@ fjson_cmd_json_dynamic(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fjson = fjson_context_alloc();
 
-	fjson_parse_final(fjson, cmd->params[0].value, cmd->params[0].len);
+	fjson_parse(fjson, cmd->params[0].value, cmd->params[0].len);
 
 	fbr_test_ERROR(fjson->error, "fjson error %s: %s", fjson_state_name(fjson->state),
 		fjson->error_msg);
@@ -100,7 +100,7 @@ fjson_cmd_json_fail(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fjson_context_init(&fjson);
 
-	fjson_parse_final(&fjson, cmd->params[0].value, cmd->params[0].len);
+	fjson_parse(&fjson, cmd->params[0].value, cmd->params[0].len);
 
 	fbr_test_ERROR(!fjson.error, "fjson error: valid json %s", fjson_state_name(fjson.state));
 
@@ -138,7 +138,7 @@ fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		len = pos + cmd->params[i].len;
 
-		fjson_parse_part(&fjson, buf, len);
+		fjson_parse_partial(&fjson, buf, len);
 
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "  pos: %zu len: %zu position: %zu state: %s",
 			fjson.pos, len, fjson.position, fjson_state_name(fjson.state));
@@ -152,7 +152,7 @@ fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "  shift pos: %zu '%s'", pos, buf);
 	}
 
-	fjson_parse_final(&fjson, buf, pos);
+	fjson_parse(&fjson, buf, pos);
 
 	fbr_test_ERROR(fjson.error, "fjson error %s: %s", fjson_state_name(fjson.state),
 		fjson.error_msg);
@@ -233,7 +233,7 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "read %zu (asked %zu)", len, size);
 
-		fjson_parse_part(&fjson, buf, len + pos);
+		fjson_parse_partial(&fjson, buf, len + pos);
 
 		pos = fjson_shift(&fjson, buf, len + pos, sizeof(buf));
 
@@ -242,7 +242,7 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 		}
 	} while (len > 0);
 
-	fjson_parse_final(&fjson, buf, pos);
+	fjson_parse(&fjson, buf, pos);
 
 	if (fail) {
 		fbr_test_ERROR(!fjson.error, "no fjson error %s", fjson_state_name(fjson.state));

@@ -732,7 +732,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 }
 
 void
-fjson_parse_part(struct fjson_context *ctx, const char *buf, size_t buf_len)
+fjson_parse_partial(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
 	struct fjson_token *token;
 
@@ -789,14 +789,14 @@ fjson_parse_part(struct fjson_context *ctx, const char *buf, size_t buf_len)
 }
 
 void
-fjson_parse_final(struct fjson_context *ctx, const char *buf, size_t buf_len)
+fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
 	fjson_context_ok(ctx);
 	assert_zero(ctx->finish);
 
 	ctx->finish = 1;
 
-	fjson_parse_part(ctx, buf, buf_len);
+	fjson_parse_partial(ctx, buf, buf_len);
 
 	if (ctx->state == FJSON_STATE_NEEDMORE) {
 		_set_error(ctx, FJSON_STATE_ERROR_JSON, "incomplete");

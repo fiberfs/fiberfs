@@ -77,7 +77,7 @@ main(int argc, char **argv)
 
 	json.callback = &_json_print;
 
-	fjson_parse_final(&json, argv[1], strlen(argv[1]));
+	fjson_parse(&json, argv[1], strlen(argv[1]));
 
 	printf("Done: %s: %s\n", fjson_state_name(json.state),
 		json.error ? json.error_msg : "ok");
