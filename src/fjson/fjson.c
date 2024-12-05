@@ -738,8 +738,9 @@ fjson_parse_part(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 	fjson_context_ok(ctx);
 
+	ctx->pos = 0;
+
 	if (ctx->state >= FJSON_STATE_ERROR) {
-		ctx->pos = 0;
 		return;
 	}
 
@@ -756,8 +757,6 @@ fjson_parse_part(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		assert(ctx->tokens_pos);
 		ctx->state = FJSON_STATE_INDEXING;
 	}
-
-	ctx->pos = 0;
 
 	_parse_tokens(ctx, buf, buf_len);
 
@@ -793,6 +792,7 @@ void
 fjson_parse_final(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
 	fjson_context_ok(ctx);
+	assert_zero(ctx->finish);
 
 	ctx->finish = 1;
 
