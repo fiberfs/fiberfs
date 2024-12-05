@@ -45,6 +45,8 @@ int
 main(int argc, char **argv)
 {
 	struct fjson_context json;
+	int error = 0;
+	size_t i;
 
 	printf("fjson_client\n");
 
@@ -77,10 +79,20 @@ main(int argc, char **argv)
 
 	fjson_parse_final(&json, argv[1], strlen(argv[1]));
 
-	printf("Done: %s: %s (%zu)\n", fjson_state_name(json.state),
-		json.error ? json.error_msg : "ok", json.position + 1);
+	printf("Done: %s: %s\n", fjson_state_name(json.state),
+		json.error ? json.error_msg : "ok");
+
+	if (json.error) {
+		printf("%s\n", argv[1]);
+		for (i = 1; i < json.position; i++) {
+			printf(" ");
+		}
+		printf("^\n");
+
+		error = 1;
+	}
 
 	fjson_context_free(&json);
 
-	return 0;
+	return error;
 }
