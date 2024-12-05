@@ -170,5 +170,7 @@ void fbr_test_fill_random(uint8_t *buf, size_t len);
 		assert(cmd);						\
 		assert((cmd)->magic == FBR_TEST_CMD_MAGIC);		\
 	} while (0)
+#define fbr_test_ASSERT(cond, fmt, ...)					\
+	fbr_test_ERROR(!(cond), fmt, ##__VA_ARGS__);
 
 #endif /* _FBR_TEST_H_INCLUDED_ */

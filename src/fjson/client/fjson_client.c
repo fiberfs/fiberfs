@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "fiberfs.h"
 #include "fjson.h"
 
 static void
@@ -16,11 +17,12 @@ _usage(int error)
 }
 
 static int
-_json_print(struct fjson_context *ctx)
+_json_print(struct fjson_context *ctx, void *priv)
 {
 	struct fjson_token *token;
 
 	fjson_context_ok(ctx);
+	assert_zero(priv);
 
 	token = fjson_get_token(ctx, 0);
 	fjson_token_ok(token);

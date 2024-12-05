@@ -37,7 +37,7 @@ enum fjson_token_type {
 };
 
 struct fjson_context;
-typedef int (fjson_parse_f)(struct fjson_context *);
+typedef int (fjson_parse_f)(struct fjson_context *, void *);
 
 struct fjson_token {
 	unsigned int			magic;
@@ -74,6 +74,7 @@ struct fjson_context {
 	size_t				tokens_pos;
 
 	fjson_parse_f			*callback;
+	void				*callback_priv;
 };
 
 #define __fjson_attr_printf_p(fpos)					\

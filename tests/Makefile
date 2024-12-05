@@ -24,6 +24,7 @@ test:		check
 
 check:		$(TESTS)
 
+# TODO fix this (eval)
 verbose:	FLAGS=-vv
 verbose:	$(TESTS)
 

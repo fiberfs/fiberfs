@@ -1,0 +1,314 @@
+{
+  "TextGlassSpecVersion": 1.0,
+  "type": "pattern",
+  "domain": "browser",
+  "domainVersion": "1.0.0",
+  "description": "TextGlass browser detection",
+  "publishDate": "2015-10-19T11:47:22-0400",
+  "legal": {
+    "copyright": "(c) 2015 TextGlass",
+    "license": "Apache License 2.0"
+  },
+  "inputParser": {
+    "tokenSeperators": [ " ", "/", "(", ")", ";" ]
+  },
+  "patternSet": {
+    "defaultId": "unknown",
+    "patterns": [
+      {
+        "patternId": "chrome",
+        "rankType": "Weak",
+        "patternType": "Simple",
+        "patternTokens": ["Chrome"]
+      },
+      {
+        "patternId": "chrome_m",
+        "rankType": "Weak",
+        "patternType": "SimpleOrderedAnd",
+        "patternTokens": ["Chrome", "Mobile"]
+      },
+      {
+        "patternId": "chrome_ios",
+        "rankType": "Weak",
+        "patternType": "Simple",
+        "patternTokens": ["CriOS"]
+      },
+      {
+        "patternId": "safari",
+        "rankType": "Weak",
+        "patternType": "SimpleOrderedAnd",
+        "patternTokens": ["AppleWebKit", "Version", "Safari"]
+      },
+      {
+        "patternId": "safari_m",
+        "rankType": "Weak",
+        "patternType": "SimpleOrderedAnd",
+        "patternTokens": ["AppleWebKit", "Version", "Mobile", "Safari"]
+      },
+      {
+        "patternId": "firefox_m",
+        "rankType": "Weak",
+        "patternType": "SimpleOrderedAnd",
+        "patternTokens": ["Mobile", "Firefox"]
+      },
+      {
+        "patternId": "firefox",
+        "rankType": "Weak",
+        "patternType": "Simple",
+        "patternTokens": ["Firefox"]
+      },
+      {
+        "patternId": "msie",
+        "rankType": "Weak",
+        "rankValue": -100,
+        "patternType": "Simple",
+        "patternTokens": ["MSIE"]
+      },
+      {
+        "patternId": "msie11",
+        "rankType": "Weak",
+        "rankValue": -50,
+        "patternType": "SimpleOrderedAnd",
+        "patternTokens": ["Trident", "rv:11.0"]
+      },
+      {
+        "patternId": "iemobile",
+        "rankType": "Weak",
+        "patternType": "Simple",
+        "patternTokens": ["IEMobile"]
+      },
+      {
+        "patternId": "opera",
+        "rankType": "Weak",
+        "patternType": "Simple",
+        "patternTokens": ["Opera"]
+      }
+    ]
+  },
+  "attributes": {
+    "base": {
+      "parentId": "root",
+      "attributes": {
+      }
+    },
+    "unknown": {
+      "parentId": "base",
+      "attributes": {
+        "unknown": "true"
+      }
+    },
+    "chrome_m": {
+      "parentId": "chrome",
+      "attributes": {
+        "mobile": "true"
+      }
+    },
+    "chrome": {
+      "parentId": "base",
+      "attributes": {
+        "name": "Chrome",
+        "vendor": "Google"
+      },
+      "attributeTransformers": {
+        "version" : {
+          "transformers": [
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": "Chrome/",
+                "get": 1
+              }
+            },
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": ".",
+                "get": 0
+              }
+            },
+            {
+              "type": "IsNumber"
+            }
+          ]
+        }
+      }
+    },
+    "chrome_ios": {
+      "parentId": "base",
+      "attributes": {
+        "name": "Chrome",
+        "vendor": "Google",
+        "mobile": "true"
+      },
+      "attributeTransformers": {
+        "version" : {
+          "transformers": [
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": "CriOS/",
+                "get": 1
+              }
+            },
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": ".",
+                "get": 0
+              }
+            },
+            {
+              "type": "IsNumber"
+            }
+          ]
+        }
+      }
+    },
+    "safari_m": {
+      "parentId": "safari",
+      "attributes": {
+        "mobile": "true"
+      }
+    },
+    "safari": {
+      "parentId": "base",
+      "attributes": {
+        "name": "Safari",
+        "vendor": "Apple"
+      },
+      "attributeTransformers": {
+        "version" : {
+          "transformers": [
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": "Version/",
+                "get": 1
+              }
+            },
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": ".",
+                "get": 0
+              }
+            },
+            {
+              "type": "IsNumber"
+            }
+          ]
+        }
+      }
+    },
+    "firefox_m": {
+      "parentId": "firefox",
+      "attributes": {
+        "mobile": "true"
+      }
+    },
+    "firefox": {
+      "parentId": "base",
+      "attributes": {
+        "name": "Firefox",
+        "vendor": "Mozilla"
+      },
+      "attributeTransformers": {
+        "version" : {
+          "transformers": [
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": "Firefox/",
+                "get": 1
+              }
+            },
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": ".",
+                "get": 0
+              }
+            },
+            {
+              "type": "IsNumber"
+            }
+          ]
+        }
+      }
+    },
+    "iemobile": {
+      "parentId": "base",
+      "attributes": {
+        "name": "IE Mobile",
+        "vendor": "Microsoft",
+        "mobile": "true"
+      },
+      "attributeTransformers": {
+        "version" : {
+          "transformers": [
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": "IEMobile/",
+                "get": 1
+              }
+            },
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": ".",
+                "get": 0
+              }
+            },
+            {
+              "type": "IsNumber"
+            }
+          ]
+        }
+      }
+    },
+    "msie11": {
+      "parentId": "msie",
+      "attributes": {
+        "version": "11"
+      }
+    },
+    "msie": {
+      "parentId": "base",
+      "attributes": {
+        "name": "Internet Explorer",
+        "vendor": "Microsoft"
+      },
+      "attributeTransformers": {
+        "version" : {
+          "transformers": [
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": "MSIE ",
+                "get": 1
+              }
+            },
+            {
+              "type": "SplitAndGet",
+              "parameters": {
+                "delimiter": ".",
+                "get": 0
+              }
+            },
+            {
+              "type": "IsNumber"
+            }
+          ]
+        }
+      }
+    },
+    "opera": {
+      "parentId": "base",
+      "attributes": {
+        "name": "Opera",
+        "vendor": ""
+      }
+    }
+  }
+}

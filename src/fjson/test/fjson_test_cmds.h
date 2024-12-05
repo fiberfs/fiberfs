@@ -27,6 +27,8 @@ FJSON_TEST_CMD(json_test)
 FJSON_TEST_CMD(json_dynamic)
 FJSON_TEST_CMD(json_fail)
 FJSON_TEST_CMD(json_multi)
+FJSON_TEST_CMD(json_file)
+FJSON_TEST_CMD(json_file_fail)
 
 #undef FJSON_TEST_CMD
 #undef FJSON_TEST_VAR

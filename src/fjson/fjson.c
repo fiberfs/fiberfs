@@ -97,7 +97,7 @@ _callback(struct fjson_context *ctx)
 	fjson_context_ok(ctx);
 
 	if (ctx->callback) {
-		ret = ctx->callback(ctx);
+		ret = ctx->callback(ctx, ctx->callback_priv);
 
 		if (ret) {
 			_set_error(ctx, FJSON_STATE_ERROR_CALLBACK, NULL);
@@ -396,9 +396,9 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	value = strtod(&buf[start], &end);
 
 	if (end != buf + ctx->pos ||
-		(value == HUGE_VAL && errno == ERANGE) ||
-		(value == -HUGE_VAL && errno == ERANGE)) {
-		_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad number");
+	    (value == HUGE_VAL && errno == ERANGE) ||
+	    (value == -HUGE_VAL && errno == ERANGE)) {
+		_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad number conversion");
 		return;
 	}
 
@@ -465,8 +465,8 @@ _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_t
 				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad label");
 				return;
 			}
-			if (token->closed && !token->seperated) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "missing colon");
+			if (!token->seperated) {
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "missing seperator");
 				return;
 			}
 
@@ -739,6 +739,7 @@ fjson_parse_part(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	fjson_context_ok(ctx);
 
 	if (ctx->state >= FJSON_STATE_ERROR) {
+		ctx->pos = 0;
 		return;
 	}
 
