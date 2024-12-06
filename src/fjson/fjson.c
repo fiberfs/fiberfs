@@ -475,7 +475,7 @@ _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_t
 
 			break;
 		default:
-			fjson_ABORT("Bad token check");
+			assert(!"bad token check");
 	}
 }
 

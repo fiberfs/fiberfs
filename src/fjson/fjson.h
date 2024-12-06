@@ -77,9 +77,6 @@ struct fjson_context {
 	void				*callback_priv;
 };
 
-#define __fjson_attr_printf_p(fpos)					\
-	__attribute__((__format__(__printf__, (fpos), ((fpos) + 1))))
-
 void fjson_context_init(struct fjson_context *ctx);
 struct fjson_context *fjson_context_alloc(void);
 struct fjson_token *fjson_get_token(struct fjson_context *ctx, size_t depth);
@@ -90,8 +87,6 @@ void fjson_context_free(struct fjson_context *ctx);
 
 const char *fjson_token_name(enum fjson_token_type type);
 const char *fjson_state_name(enum fjson_state state);
-void __fjson_attr_printf_p(6) fjson_do_assert(int cond, const char *function, const char *file,
-	int line, int assert, const char *fmt, ...);
 
 #define fjson_context_ok(ctx)						\
 	do {								\
@@ -103,11 +98,5 @@ void __fjson_attr_printf_p(6) fjson_do_assert(int cond, const char *function, co
 		assert(token);						\
 		assert((token)->magic == FJSON_TOKEN_MAGIC);		\
 	} while (0)
-#define fjson_ABORT(fmt, ...)						\
-	fjson_do_assert(1, __func__, __FILE__, __LINE__, 0, fmt,	\
-		##__VA_ARGS__);
-#define fjson_ASSERT(cond, fmt, ...)					\
-	fjson_do_assert(cond, __func__, __FILE__, __LINE__, 1, fmt,	\
-		##__VA_ARGS__);
 
 #endif /* _FJSON_H_INCLUDED_ */
