@@ -228,7 +228,7 @@ static void
 _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
 	struct fjson_token *token;
-	int is_valid, is_label;
+	int is_valid, is_encoded;
 	size_t start, count;
 
 	fjson_context_ok(ctx);
@@ -239,7 +239,7 @@ _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 	start = ctx->pos;
 	is_valid = 0;
-	is_label = 0;
+	is_encoded = 0;
 
 	for (ctx->pos++; ctx->pos < buf_len; ctx->pos++) {
 		switch (buf[ctx->pos]) {
@@ -253,6 +253,9 @@ _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			is_valid = 1;
 
 			break;
+		case '\\':
+			is_encoded = 1;
+			continue;
 		case '\r':
 		case '\n':
 		case '\v':
@@ -283,10 +286,10 @@ _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	fjson_token_ok(token);
 
 	if (token->type == FJSON_TOKEN_OBJECT) {
-		is_label = 1;
+		token = _alloc_next_token(ctx, FJSON_TOKEN_LABEL);
+	} else {
+		token = _alloc_next_token(ctx, FJSON_TOKEN_STRING);
 	}
-
-	token = _alloc_next_token(ctx, is_label ? FJSON_TOKEN_LABEL : FJSON_TOKEN_STRING);
 	fjson_token_ok(token);
 
 	if (ctx->error) {
@@ -298,9 +301,11 @@ _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	token->svalue = &buf[start + 1];
 	token->svalue_len = ctx->pos - start - 1;
 
+	(void)is_encoded; // TODO
+
 	_callback(ctx);
 
-	if (!is_label) {
+	if (token->type == FJSON_TOKEN_STRING) {
 		_pop_token(ctx);
 	}
 }
@@ -363,7 +368,7 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		case '+':
 		case '-':
 			if (!has_exponent || has_number) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad number");
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad number syntax");
 				break;
 			}
 
@@ -436,7 +441,7 @@ _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_t
 		case FJSON_TOKEN_ARRAY:
 			if (token->closed) {
 				if (token->seperated) {
-					_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad comma");
+					_set_error(ctx, FJSON_STATE_ERROR_JSON, "extra comma");
 					return;
 				}
 				return;
@@ -445,7 +450,7 @@ _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_t
 			assert(token->length);
 
 			if (token->type == FJSON_TOKEN_OBJECT && child != FJSON_TOKEN_LABEL) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad object");
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad object child");
 				return;
 			}
 			if (token->length == 1 && token->seperated) {
@@ -460,7 +465,7 @@ _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_t
 			break;
 		case FJSON_TOKEN_LABEL:
 			if (token->length != 1) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad label");
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "wrong label");
 				return;
 			}
 			if (!token->seperated) {
@@ -517,7 +522,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 			if (token->type != FJSON_TOKEN_OBJECT &&
 			    token->type != FJSON_TOKEN_LABEL) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad object");
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "no object");
 				return;
 			}
 
@@ -631,7 +636,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 			if (token->type != FJSON_TOKEN_LABEL &&
 			    token->type != FJSON_TOKEN_ARRAY) {
-				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad comma");
+				_set_error(ctx, FJSON_STATE_ERROR_JSON, "many commas");
 				return;
 			}
 
@@ -665,25 +670,25 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		/* Literal true */
 		case 't':
 			literal_value = "true";
-			literal_type = FJSON_TOKEN_TRUE;
 			literal_len = 4;
+			literal_type = FJSON_TOKEN_TRUE;
 			goto literal;
 		/* Literal false */
 		case 'f':
 			literal_value = "false";
-			literal_type = FJSON_TOKEN_FALSE;
 			literal_len = 5;
+			literal_type = FJSON_TOKEN_FALSE;
 			goto literal;
 		/* Literal null */
 		case 'n':
 			literal_value = "null";
-			literal_type = FJSON_TOKEN_NULL;
 			literal_len = 4;
+			literal_type = FJSON_TOKEN_NULL;
 			goto literal;
 		literal:
 			assert(literal_value);
-			assert(literal_type > FJSON_TOKEN_UNDEF);
 			assert(literal_len);
+			assert(literal_type > FJSON_TOKEN_UNDEF);
 
 			if (buf_len - ctx->pos < literal_len) {
 				ctx->state = FJSON_STATE_NEEDMORE;
@@ -721,7 +726,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			continue;
 		/* Invalid json token char */
 		default:
-			_set_error(ctx, FJSON_STATE_ERROR_JSON, "invalid char");
+			_set_error(ctx, FJSON_STATE_ERROR_JSON, "invalid syntax");
 			return;
 		}
 	}
