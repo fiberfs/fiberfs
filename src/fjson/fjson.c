@@ -153,11 +153,9 @@ fjson_get_token(struct fjson_context *ctx, size_t depth)
 	assert(ctx->state == FJSON_STATE_INDEXING);
 	assert(ctx->tokens_pos <= FJSON_MAX_DEPTH);
 
-	if (ctx->tokens_pos == 0 || depth >= ctx->tokens_pos) {
+	if (depth >= ctx->tokens_pos) {
 		return _bad_token();
 	}
-
-	assert(depth < ctx->tokens_pos);
 
 	token = &ctx->tokens[ctx->tokens_pos - 1 - depth];
 	assert(token->magic == FJSON_TOKEN_MAGIC);
