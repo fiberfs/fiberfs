@@ -18,7 +18,7 @@ fi
 if [ ! -x "$FJSON" ]
 then
 	echo "Binary not found: $FJSON"
-	echo "Please run 'make afl' in src directory"
+	echo "Please run 'make afl'"
 	exit 1
 fi
 
@@ -33,6 +33,6 @@ $AFL -m $AFL_MEMORY_MB \
 
 if [ "$?" != "0" ]
 then
-	echo "Did you run 'make afl' in the src directory?"
+	echo "Did you run 'make afl'?"
 	exit 1
 fi
