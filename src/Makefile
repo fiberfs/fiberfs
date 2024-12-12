@@ -70,6 +70,10 @@ LCOV=lcov --capture --no-external --directory ./
 LCOVHTML=genhtml
 HTMLDIR=report
 
+# afl
+AFL_CC=afl-clang-fast
+AFL_CFLAGS=-Wno-gnu-zero-variadic-macro-arguments
+
 .PHONY:		all lib gcov clean cleanall
 
 all:		chttp_client fjson_client fiberfs_test lib
@@ -137,3 +141,9 @@ gcov.data:
 		$(MAKE) cleanall CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
 		$(MAKE) -C .. check FLAGS=-vv
 		touch gcov.data
+
+#afl:		export AFL_USE_ASAN=1
+#afl:		export AFL_USE_MSAN=1
+afl:		CC=$(AFL_CC)
+afl:		CFLAGS+=$(AFL_CFLAGS)
+afl:		clean all

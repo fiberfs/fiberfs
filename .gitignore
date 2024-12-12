@@ -4,10 +4,11 @@
 *.gcda
 *.gcno
 *.gcov
+.vscode
 src/coverage.info
 src/chttp_client
 src/fjson_client
 src/fiberfs_test
 src/report
 src/gcov.data
-.vscode
+tests/afl_json/results
