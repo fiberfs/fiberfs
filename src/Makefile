@@ -2,6 +2,8 @@
 
 CC=gcc
 CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -I. -Ichttp -Ifjson -fno-omit-frame-pointer
+CFLAGS_GCC=
+CFLAGS_CLANG=-Wno-gnu-zero-variadic-macro-arguments
 LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
@@ -42,6 +44,16 @@ NULL=/dev/null
 TEST_TRUE= > $(NULL) 2>&1 && echo true
 TCC=$(CC) -x c - -o $(NULL)
 
+# Detect compiler
+ifeq ($(findstring clang,$(CC)),clang)
+	CC_CLANG=true
+	CFLAGS+=$(CFLAGS_CLANG)
+endif
+ifeq ($(findstring gcc,$(CC)),gcc)
+	CC_GCC=true
+	CFLAGS+=$(CFLAGS_GCC)
+endif
+
 # Detect openssl (OPENSSL=false to disable)
 OPENSSL_C='\#include <openssl/ssl.h>\nint main() {SSL *ssl;}'
 OPENSSL_CFLAGS=-DCHTTP_OPENSSL
@@ -72,9 +84,12 @@ HTMLDIR=report
 
 # afl
 AFL_CC=afl-clang-fast
-AFL_CFLAGS=-Wno-gnu-zero-variadic-macro-arguments
+AFL_CFLAGS=
+ifeq ($(CC_GCC),true)
+	AFL_CFLAGS+=$(CFLAGS_CLANG)
+endif
 
-.PHONY:		all lib gcov clean cleanall
+.PHONY:		all lib gcov clean
 
 all:		chttp_client fjson_client fiberfs_test lib
 lib:		libfiberfs.so libchttp.a libfjson.a
@@ -126,11 +141,6 @@ clean:
 		$(RM) coverage.info gcov.data
 		$(RMDIR) $(HTMLDIR)
 
-# Parallel safe
-cleanall:
-		$(MAKE) clean
-		$(MAKE) all
-
 gcov:		gcov.data
 		$(GCOV) -r *.c */*.c */*/*.c
 		$(LCOV) --output-file coverage.info
@@ -138,8 +148,8 @@ gcov:		gcov.data
 
 gcov.data:	CFLAGS+=$(GCOVFLAGS)
 gcov.data:	LIBFLAGS+=$(GCOVLIBFLAGS)
-gcov.data:
-		$(MAKE) cleanall CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
+gcov.data:	clean
+		$(MAKE) all CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
 		$(MAKE) -C .. check FLAGS=-vv
 		touch gcov.data
 
@@ -147,4 +157,5 @@ gcov.data:
 #afl:		export AFL_USE_MSAN=1
 afl:		CC=$(AFL_CC)
 afl:		CFLAGS+=$(AFL_CFLAGS)
-afl:		clean all
+afl:		clean
+		$(MAKE) all CC=$(CC) CFLAGS="$(CFLAGS)"

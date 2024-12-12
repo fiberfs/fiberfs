@@ -100,7 +100,7 @@ main(int argc, char **argv)
 			if (pos) {
 				printf("Shifting %zu\n", pos);
 			}
-		} while (len > 0);
+		} while (len > 0 && !json.error);
 
 		fjson_parse(&json, buf, pos);
 
