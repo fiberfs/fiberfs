@@ -126,6 +126,7 @@ clean:
 		$(RM) coverage.info gcov.data
 		$(RMDIR) $(HTMLDIR)
 
+# Parallel safe
 cleanall:
 		$(MAKE) clean
 		$(MAKE) all

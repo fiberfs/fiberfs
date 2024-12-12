@@ -66,20 +66,16 @@ main(int argc, char **argv)
 
 	error = 0;
 
-	if (!strcmp(argv[1], "-f") || !strcmp(argv[1], "-i")) {
-		if (!strcmp(argv[1], "-i")) {
+	if (!strcmp(argv[1], "-f")) {
+		if (argc == 2) {
 			fd = STDIN_FILENO;
-		} else {
-			assert_zero(strcmp(argv[1], "-f"));
-
-			if (argc != 3) {
-				_usage(1);
-				return 1;
-			}
-
+		} else if (argc == 3) {
 			printf("json file: %s\n", argv[2]);
 
 			fd = open(argv[2], O_RDONLY);
+		} else {
+			_usage(1);
+			return 1;
 		}
 
 		if (fd < 0) {

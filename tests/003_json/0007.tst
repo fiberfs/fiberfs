@@ -40,3 +40,7 @@ json_file good_json/034.json
 json_file good_json/035.json
 json_file good_json/036.json
 json_file good_json/037.json
+json_file good_json/038.json
+json_file good_json/039.json
+json_file good_json/040.json
+json_file good_json/041.json
