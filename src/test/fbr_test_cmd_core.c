@@ -29,7 +29,7 @@ fbr_test_cmd_sleep_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	long ms;
 
-	assert(ctx);
+	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	ms = fbr_test_parse_long(cmd->params[0].value);
@@ -45,7 +45,7 @@ fbr_test_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	int ret;
 
-	assert(ctx);
+	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
 
 	ret = strcmp(cmd->params[0].value, cmd->params[1].value);
@@ -60,7 +60,7 @@ fbr_test_cmd_not_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	int ret;
 
-	assert(ctx);
+	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
 
 	ret = strcmp(cmd->params[0].value, cmd->params[1].value);
@@ -74,10 +74,22 @@ fbr_test_cmd_not_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 void
 fbr_test_cmd_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	assert(ctx);
+	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_test_skip(ctx);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Skipping");
+}
+
+void
+fbr_test_cmd_print(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	size_t i;
+
+	fbr_test_context_ok(ctx);
+
+	for (i = 0; i < cmd->param_count; i++) {
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s", cmd->params[i].value);
+	}
 }

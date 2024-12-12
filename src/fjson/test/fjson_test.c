@@ -170,7 +170,7 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 	char buf[4096], path[PATH_MAX + 1], *rpath;
 	size_t size, len, pos;
 	long val;
-	int fd, is_random = 0;
+	int fd, is_random = 0, ret;
 
 	fbr_test_context_ok(ctx);
 	fbr_test_ok(ctx->test);
@@ -221,6 +221,8 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 	fjson.callback_priv = ctx;
 	pos = 0;
 
+	fbr_test_random_seed();
+
 	do {
 		if (is_random) {
 			size = fbr_test_gen_random(1, 25);
@@ -255,7 +257,9 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 	}
 
 	fjson_context_free(&fjson);
-	close(fd);
+
+	ret = close(fd);
+	fbr_test_ERROR(ret, "close() failed");
 }
 
 void

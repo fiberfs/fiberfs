@@ -27,6 +27,7 @@ FBR_TEST_CMD(skip)
 FBR_TEST_CMD(sleep_ms)
 FBR_TEST_CMD(equal)
 FBR_TEST_CMD(not_equal)
+FBR_TEST_CMD(print)
 
 FBR_TEST_CMD(random_range)
 FBR_TEST_VAR(random)
