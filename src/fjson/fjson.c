@@ -328,9 +328,9 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	start = ctx->pos;
 	has_decimal = 0;
 	has_exponent = 0;
-	has_number = 1;
+	has_number = 0;
 
-	for (ctx->pos++; ctx->pos < buf_len; ctx->pos++) {
+	for (; ctx->pos < buf_len; ctx->pos++) {
 		switch (buf[ctx->pos]) {
 		case '0':
 		case '1':
@@ -345,7 +345,7 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			has_number = 1;
 			continue;
 		case '.':
-			if (has_decimal || has_exponent) {
+			if (has_decimal || has_exponent || !has_number) {
 				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad decimal number");
 				break;
 			}
@@ -367,6 +367,9 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			continue;
 		case '+':
 		case '-':
+			if (ctx->pos == start) {
+				continue;
+			}
 			if (!has_exponent || has_number) {
 				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad number syntax");
 				break;
