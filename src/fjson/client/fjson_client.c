@@ -51,7 +51,7 @@ main(int argc, char **argv)
 {
 	struct fjson_context json;
 	char buf[1024];
-	int fd, error = 0;
+	int fd, error;
 	size_t i, size, pos, len;
 
 	printf("fjson_client\n");
@@ -64,15 +64,23 @@ main(int argc, char **argv)
 	fjson_context_init(&json);
 	json.callback = &_json_print;
 
-	if (!strcmp(argv[1], "-f")) {
-		if (argc != 3) {
-			_usage(1);
-			return 1;
+	error = 0;
+
+	if (!strcmp(argv[1], "-f") || !strcmp(argv[1], "-i")) {
+		if (!strcmp(argv[1], "-i")) {
+			fd = STDIN_FILENO;
+		} else {
+			assert_zero(strcmp(argv[1], "-f"));
+
+			if (argc != 3) {
+				_usage(1);
+				return 1;
+			}
+
+			printf("json file: %s\n", argv[2]);
+
+			fd = open(argv[2], O_RDONLY);
 		}
-
-		printf("json file: %s\n", argv[2]);
-
-		fd = open(argv[2], O_RDONLY);
 
 		if (fd < 0) {
 			printf("bad file\n");
@@ -100,11 +108,13 @@ main(int argc, char **argv)
 
 		fjson_parse(&json, buf, pos);
 
-		error = close(fd);
+		if (fd != STDIN_FILENO) {
+			error = close(fd);
 
-		if (error) {
-			printf("bad close()\n");
-			return 1;
+			if (error) {
+				printf("bad close()\n");
+				return 1;
+			}
 		}
 
 		if (json.error) {

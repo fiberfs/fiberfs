@@ -25,7 +25,7 @@ $AFL -m $AFL_MEMORY_MB \
      -i tests \
      -o results \
      -x json.dict \
-     -- $FJSON -f @@
+     -- $FJSON -i
 
 if [ "$?" != "0" ]
 then
