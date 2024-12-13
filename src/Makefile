@@ -44,16 +44,6 @@ NULL=/dev/null
 TEST_TRUE= > $(NULL) 2>&1 && echo true
 TCC=$(CC) -x c - -o $(NULL)
 
-# Detect compiler
-ifeq ($(findstring clang,$(CC)),clang)
-	CC_CLANG=true
-	CFLAGS+=$(CFLAGS_CLANG)
-endif
-ifeq ($(findstring gcc,$(CC)),gcc)
-	CC_GCC=true
-	CFLAGS+=$(CFLAGS_GCC)
-endif
-
 # Detect openssl (OPENSSL=false to disable)
 OPENSSL_C='\#include <openssl/ssl.h>\nint main() {SSL *ssl;}'
 OPENSSL_CFLAGS=-DCHTTP_OPENSSL
@@ -72,6 +62,16 @@ ZLIB=$(shell printf $(ZLIB_C) | $(TCC) $(ZLIB_LIB) $(TEST_TRUE))
 ifeq ($(ZLIB),true)
 	CFLAGS+=$(ZLIB_CFLAGS)
 	LIBFLAGS+=$(ZLIB_LIB)
+endif
+
+# Detect compiler
+ifeq ($(findstring clang,$(CC)),clang)
+	CC_CLANG=true
+	CFLAGS+=$(CFLAGS_CLANG)
+endif
+ifeq ($(findstring gcc,$(CC)),gcc)
+	CC_GCC=true
+	CFLAGS+=$(CFLAGS_GCC)
 endif
 
 # gcov
