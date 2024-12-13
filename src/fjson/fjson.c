@@ -198,9 +198,9 @@ _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 	}
 
 	token = &ctx->tokens[ctx->tokens_pos];
-	assert_zero(token->magic);
 
-	fbr_ZERO(token);
+	assert_zero(token->magic);
+	assert(token->type == FJSON_TOKEN_UNDEF);
 
 	token->magic = FJSON_TOKEN_MAGIC;
 	token->type = type;
