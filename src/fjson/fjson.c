@@ -365,11 +365,12 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			has_number = 0;
 
 			continue;
-		case '+':
 		case '-':
 			if (ctx->pos == start) {
 				continue;
 			}
+			/* Fallthru */
+		case '+':
 			if (!has_exponent || has_number) {
 				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad number syntax");
 				break;
