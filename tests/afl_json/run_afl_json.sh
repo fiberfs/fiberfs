@@ -3,7 +3,7 @@
 AFL=afl-fuzz
 AFL_MEMORY_MB=50
 AFL_TIMEOUT_MS=2000
-AFL_TESTS=../003_json/good_json
+AFL_INPUT=../003_json/good_json
 AFL_RESULTS=results
 AFL_DICT=json.dict
 
@@ -22,13 +22,18 @@ then
 	exit 1
 fi
 
+if [ -d "$AFL_RESULTS" ]
+then
+	AFL_INPUT=-
+fi
+
 export AFL_SKIP_CPUFREQ=1
 
 $AFL -m $AFL_MEMORY_MB \
      -t $AFL_TIMEOUT_MS \
-     -i $AFL_TESTS \
-     -o $AFL_RESULTS \
-     -x $AFL_DICT \
+     -i "$AFL_INPUT" \
+     -o "$AFL_RESULTS" \
+     -x "$AFL_DICT" \
      -- $FJSON -f
 
 if [ "$?" != "0" ]
