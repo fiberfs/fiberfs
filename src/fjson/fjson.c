@@ -367,6 +367,7 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			continue;
 		case '-':
 			if (ctx->pos == start) {
+				assert_zero(has_number);
 				continue;
 			}
 			/* Fallthru */
@@ -375,6 +376,8 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 				_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad number syntax");
 				break;
 			}
+
+			assert_zero(has_number);
 
 			continue;
 		default:
@@ -540,11 +543,6 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 				}
 
 				token = fjson_get_token(ctx, 0);
-
-				if (token->type != FJSON_TOKEN_OBJECT) {
-					_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad object");
-					return;
-				}
 			}
 
 			assert(token->type == FJSON_TOKEN_OBJECT);
@@ -660,11 +658,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 				token = fjson_get_token(ctx, 0);
 
-				if (token->type != FJSON_TOKEN_OBJECT) {
-					_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad label");
-					return;
-				}
-
+				assert(token->type == FJSON_TOKEN_OBJECT);
 				assert_zero(token->seperated);
 
 				token->seperated = 1;
