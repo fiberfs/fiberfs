@@ -28,6 +28,10 @@ main(int argc, char **argv)
 	printf("sizeof(struct chttp_ctx)=%zu\n", CHTTP_CTX_SIZE);
 	printf("sizeof(struct chttp_dpage)=%zu\n", sizeof(struct chttp_dpage));
 
+	printf("CHTTP_DPAGE_SIZE=%zu\n", CHTTP_DPAGE_SIZE);
+	printf("sizeof(context->_data)=%zu\n", sizeof(((struct chttp_context *)0)->_data));
+	assert(CHTTP_DPAGE_SIZE == sizeof(((struct chttp_context *)0)->_data));
+
 	//_DEBUG_CHTTP_DPAGE_MIN_SIZE = 12;
 
 	// dynamic

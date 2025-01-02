@@ -34,13 +34,13 @@ _context_alloc_size(size_t dpage_size)
 
 	ctx->do_free = 1;
 
-	return (ctx);
+	return ctx;
 }
 
 struct chttp_context *
 chttp_context_alloc(void)
 {
-	return (_context_alloc_size(chttp_dpage_size(0)));
+	return _context_alloc_size(chttp_dpage_size(0));
 }
 
 void
@@ -48,7 +48,7 @@ chttp_context_init(struct chttp_context *ctx)
 {
 	assert(ctx);
 
-	_context_init_size(ctx, CHTTP_DPAGE_SIZE);
+	_context_init_size(ctx, sizeof(ctx->_data));
 }
 
 struct chttp_context *
@@ -63,7 +63,7 @@ chttp_context_init_buf(void *buffer, size_t buffer_len)
 
 	_context_init_size(ctx, buffer_len - CHTTP_CTX_SIZE);
 
-	return (ctx);
+	return ctx;
 }
 
 void

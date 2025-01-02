@@ -65,7 +65,7 @@ _dpage_alloc_ctx(struct chttp_context *ctx, size_t dpage_size)
 
 	ctx->dpage_last = dpage;
 
-	return (dpage);
+	return dpage;
 }
 
 void
@@ -156,7 +156,7 @@ chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 	dpage = _dpage_alloc_ctx(ctx, dpage_size);
 	assert(dpage == ctx->dpage_last);
 
-	return (dpage);
+	return dpage;
 }
 
 void
