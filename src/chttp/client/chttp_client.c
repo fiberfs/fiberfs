@@ -132,7 +132,7 @@ main(int argc, char **argv)
 	chttp_gzip_register(context, &gzip, gzip_buf, sizeof(gzip_buf));
 	do {
 		body_len = chttp_body_read(context, body_buf, sizeof(body_buf));
-		printf("***BODY*** (%zu, %d)\n", body_len, tlsc->state);
+		printf("***BODY*** (%zu, %d)\n", body_len, context->state);
 		chttp_print_hex(body_buf, body_len);
 	} while (body_len);
 	chttp_context_free(context);
