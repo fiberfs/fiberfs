@@ -40,12 +40,33 @@ OBJS:=$(SOURCE:.c=.o)
 
 RM=rm -f
 RMDIR=rm -rf
+PKG=pkg-config
 NULL=/dev/null
 TEST_TRUE= > $(NULL) 2>&1 && echo true
 TCC=$(CC) -x c - -o $(NULL)
 
+# Detect fuse3 (required)
+FUSE3_PKG=fuse3
+define FUSE3_C=
+	#define FUSE_USE_VERSION 35 \n
+	#include <fuse3/fuse_lowlevel.h> \n
+	int main() {
+		fuse_lowlevel_version();
+	}
+endef
+FUSE3_CFLAGS=-DFBR_FUSE3
+FUSE3_LIB=-lfuse3
+FUSE3=$(shell printf "$(FUSE3_C)" | $(TCC) $(FUSE3_LIB) $(TEST_TRUE))
+ifeq ($(FUSE3),true)
+	CFLAGS+=$(FUSE3_CFLAGS)
+	LIBFLAGS+=$(FUSE3_LIB)
+else
+$(error fuse3 not found. Required for compiling)
+endif
+
 # Detect openssl (OPENSSL=false to disable)
-OPENSSL_C='\#include <openssl/ssl.h>\nint main() {SSL *ssl;}'
+OPENSSL_PKG=openssl
+OPENSSL_C='\#include <openssl/ssl.h>\n int main() {SSL *ssl;}'
 OPENSSL_CFLAGS=-DCHTTP_OPENSSL
 OPENSSL_LIB=-lssl -lcrypto
 OPENSSL=$(shell printf $(OPENSSL_C) | $(TCC) $(OPENSSL_LIB) $(TEST_TRUE))
@@ -55,7 +76,8 @@ ifeq ($(OPENSSL),true)
 endif
 
 # Detect zlib (ZLIB=false to disable)
-ZLIB_C='\#include <zlib.h>\nint main() {zlibVersion();}'
+ZLIB_PKG=zlib
+ZLIB_C='\#include <zlib.h>\n int main() {zlibVersion();}'
 ZLIB_CFLAGS=-DCHTTP_ZLIB
 ZLIB_LIB=-lz
 ZLIB=$(shell printf $(ZLIB_C) | $(TCC) $(ZLIB_LIB) $(TEST_TRUE))
