@@ -32,6 +32,8 @@ FBR_TEST_CMD(print)
 FBR_TEST_CMD(random_range)
 FBR_TEST_VAR(random)
 
+FBR_TEST_CMD(fiber_mount)
+
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR
 
