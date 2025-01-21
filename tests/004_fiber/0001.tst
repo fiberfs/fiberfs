@@ -1,5 +1,3 @@
 fiber_test "Fuse test mounting"
 
-skip
-
-fuse_test
+fuse_test /tmp/fuse1

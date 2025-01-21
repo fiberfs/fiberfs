@@ -81,11 +81,11 @@ fbr_test_fuse_cmd_fuse_test(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 {
 	int ret;
 
-	fbr_test_ERROR_param_count(cmd, 0);
+	fbr_test_ERROR_param_count(cmd, 1);
 
-	ret = fbr_fuse_test_mount("/tmp/fuse1");
+	ret = fbr_fuse_test_mount(cmd->params[0].value);
 
-	fbr_test_ERROR(ret, "Fuse mount failed");
+	fbr_test_ERROR(ret, "Fuse mount failed: %s", cmd->params[0].value);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber mount");
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Fuse passed: %s", cmd->params[0].value);
 }
