@@ -6,6 +6,6 @@
 #ifndef _FBR_FUSE_H_INCLUDED_
 #define _FBR_FUSE_H_INCLUDED_
 
-void fbr_fuse_mount(void);
+int fbr_fuse_test_mount(void);
 
 #endif /* _FBR_FUSE_H_INCLUDED_ */

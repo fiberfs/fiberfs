@@ -1,3 +1,3 @@
-fiber_test "Mounting"
+fiber_test "Fuse test mounting"
 
-fiber_mount
+fiber_test_fuse
