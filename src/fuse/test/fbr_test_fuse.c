@@ -77,7 +77,7 @@ fbr_fuse_test_mount(const char *path)
 }
 
 void
-fbr_test_cmd_fiber_test_fuse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_test_fuse_cmd_fuse_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	int ret;
 

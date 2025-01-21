@@ -22,7 +22,7 @@
 #error "FBR_TEST_FUSE_VAR missing"
 #endif
 
-FBR_TEST_FUSE_CMD(json_test)
+FBR_TEST_FUSE_CMD(fuse_test)
 
 #undef FBR_TEST_FUSE_CMD
 #undef FBR_TEST_FUSE_VAR
