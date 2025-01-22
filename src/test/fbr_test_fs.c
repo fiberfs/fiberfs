@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "fs/fbr_fs.h"
 #include "test/fbr_test.h"
@@ -87,7 +88,7 @@ fbr_test_cmd_fs_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	struct _fs_path *entry;
 	size_t len;
 	long random;
-	int exists, attempts;
+	int exists, attempts, ret;
 
 	_random_init(ctx);
 	fbr_test_cmd_ok(cmd);
@@ -103,8 +104,6 @@ fbr_test_cmd_fs_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 			tmproot = P_tmpdir;
 		}
 	}
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "tmproot: '%s'", tmproot);
 
 	entry = calloc(1, sizeof(*entry));
 	assert(entry);
@@ -124,7 +123,8 @@ fbr_test_cmd_fs_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 		fbr_test_ERROR(attempts > 10, "Too many tmpdir attempts");
 	} while (exists);
 
-	// TODO mkdir
+	//ret = mkdir(entry->path, 0700);
+	(void)ret;
 
 	entry->next = ctx->fs->dirs;
 	ctx->fs->dirs = entry;

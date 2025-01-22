@@ -29,6 +29,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	int ret;
 
 	fbr_fuse_ctx_ok(ctx);
+	assert(ctx->state == FBR_FUSE_NONE);
 	assert(path);
 
 	fargs.argv = argv;
@@ -55,18 +56,17 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	fuse_opt_free_args(&fargs);
 
 	if (!ctx->session) {
-		ctx->state = FBR_FUSE_ERROR;
+		fbr_fuse_error(ctx, FBR_FUSE_ERROR_MOUNT);
+
 		return 1;
 	}
 
-	ctx->state = FBR_FUSE_INIT;
+	ctx->state = FBR_FUSE_SESSION;
 
 	ret = fuse_set_signal_handlers(ctx->session);
 
 	if (ret) {
-		fbr_fuse_unmount(ctx);
-
-		ctx->state = FBR_FUSE_ERROR;
+		fbr_fuse_error(ctx, FBR_FUSE_ERROR_MOUNT);
 
 		return 1;
 	}
@@ -76,14 +76,14 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	ret = fuse_session_mount(ctx->session, path);
 
 	if (ret) {
-		fbr_fuse_unmount(ctx);
-
-		ctx->state = FBR_FUSE_ERROR;
+		fbr_fuse_error(ctx, FBR_FUSE_ERROR_MOUNT);
 
 		return 1;
 	}
 
 	ctx->state = FBR_FUSE_MOUNTED;
+
+	fbr_fuse_mounted(ctx);
 
 	return 0;
 }
@@ -93,7 +93,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_ctx_ok(ctx);
 
-	if (ctx->state >= FBR_FUSE_ERROR || ctx->state == FBR_FUSE_UNDEF) {
+	if (ctx->state <= FBR_FUSE_ERROR) {
 		return;
 	}
 
@@ -106,13 +106,26 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 		case FBR_FUSE_PREMOUNT:
 			fuse_remove_signal_handlers(ctx->session);
 			/* Fallthru */
-		case FBR_FUSE_INIT:
+		case FBR_FUSE_SESSION:
 			fuse_session_destroy(ctx->session);
 			ctx->session = NULL;
-			/* Fallthru */
+			break;
 		default:
+			assert(!"fuse state");
 			break;
 	}
 
-	ctx->state = FBR_FUSE_UNDEF;
+	ctx->state = FBR_FUSE_NONE;
+}
+
+void
+fbr_fuse_error(struct fbr_fuse_context *ctx, enum fbr_fuse_state error)
+{
+	fbr_fuse_ctx_ok(ctx);
+	assert(error <= FBR_FUSE_ERROR && error > FBR_FUSE_NONE);
+
+	fbr_fuse_unmount(ctx);
+
+	ctx->state = error;
+	ctx->error = 1;
 }
