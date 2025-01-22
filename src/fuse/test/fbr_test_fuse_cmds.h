@@ -15,13 +15,6 @@
 
 #endif /* FBR_TEST_FUSE_CMD */
 
-#ifndef FBR_TEST_FUSE_CMD
-#error "FBR_TEST_FUSE_CMD missing"
-#endif
-#ifndef FBR_TEST_FUSE_VAR
-#error "FBR_TEST_FUSE_VAR missing"
-#endif
-
 FBR_TEST_FUSE_CMD(fuse_test)
 
 #undef FBR_TEST_FUSE_CMD

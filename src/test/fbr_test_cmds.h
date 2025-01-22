@@ -15,13 +15,6 @@
 
 #endif /* FBR_TEST_CMD */
 
-#ifndef FBR_TEST_CMD
-#error "FBR_TEST_CMD missing"
-#endif
-#ifndef FBR_TEST_VAR
-#error "FBR_TEST_VAR missing"
-#endif
-
 FBR_TEST_CMD(fiber_test)
 FBR_TEST_CMD(skip)
 FBR_TEST_CMD(sleep_ms)

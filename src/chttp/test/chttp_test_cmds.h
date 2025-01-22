@@ -62,13 +62,6 @@ void chttp_test_md5_store_client(struct fbr_test_context *ctx, struct chttp_test
 
 #endif /* CHTTP_TEST_CMD */
 
-#ifndef CHTTP_TEST_CMD
-#error "CHTTP_TEST_CMD missing"
-#endif
-#ifndef CHTTP_TEST_VAR
-#error "CHTTP_TEST_VAR missing"
-#endif
-
 CHTTP_TEST_CMD(chttp_test)
 CHTTP_TEST_CMD(connect_or_skip)
 CHTTP_TEST_CMD(tls_or_skip)

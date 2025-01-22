@@ -16,13 +16,6 @@
 
 #endif /* FJSON_TEST_CMD */
 
-#ifndef FJSON_TEST_CMD
-#error "FJSON_TEST_CMD missing"
-#endif
-#ifndef FJSON_TEST_VAR
-#error "FJSON_TEST_VAR missing"
-#endif
-
 FJSON_TEST_CMD(json_test)
 FJSON_TEST_CMD(json_dynamic)
 FJSON_TEST_CMD(json_fail)
