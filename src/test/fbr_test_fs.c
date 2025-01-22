@@ -43,8 +43,9 @@ _fs_finish(struct fbr_test_context *ctx)
 
 		assert(entry->magic == _FS_PATH_MAGIC);
 
-		printf("ZZZ path='%s'\n", entry->path);
-		// TODO rmdir
+		fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "removing tmpdir '%s'", entry->path);
+
+		fbr_rmdir(entry->path);
 
 		fbr_ZERO(entry);
 		free(entry);
@@ -59,7 +60,7 @@ _fs_finish(struct fbr_test_context *ctx)
 }
 
 static void
-_random_init(struct fbr_test_context *ctx)
+_fs_init(struct fbr_test_context *ctx)
 {
 	struct fbr_test_fs *fs;
 
@@ -90,7 +91,7 @@ fbr_test_cmd_fs_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	long random;
 	int exists, attempts, ret;
 
-	_random_init(ctx);
+	_fs_init(ctx);
 	fbr_test_cmd_ok(cmd);
 
 	fbr_test_ERROR(cmd->param_count > 1, "Too many parameters");
@@ -123,9 +124,11 @@ fbr_test_cmd_fs_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 		fbr_test_ERROR(attempts > 10, "Too many tmpdir attempts");
 	} while (exists);
 
-	//ret = mkdir(entry->path, 0700);
-	(void)ret;
+	ret = mkdir(entry->path, S_IRWXU);
+	fbr_test_ERROR(ret, "mkdir failed %d", ret);
 
 	entry->next = ctx->fs->dirs;
 	ctx->fs->dirs = entry;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "tmpdir '%s'", entry->path);
 }

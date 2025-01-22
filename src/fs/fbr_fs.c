@@ -3,13 +3,16 @@
  *
  */
 
+#define _XOPEN_SOURCE 500
+
+#include <ftw.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "fs/fbr_fs.h"
 
-mode_t
+static mode_t
 _fs_mode(const char *path)
 {
 	struct stat st;
@@ -50,4 +53,31 @@ fbr_fs_isdir(const char *path)
 	}
 
 	return 0;
+}
+
+static int
+_fs_rmdir_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+{
+	(void)sb;
+	(void)ftwbuf;
+
+	switch (typeflag) {
+		case FTW_F:
+		case FTW_SL:
+			(void)unlink(fpath);
+			break;
+		case FTW_DP:
+			(void)rmdir(fpath);
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+void
+fbr_rmdir(const char *path)
+{
+	(void)nftw(path, _fs_rmdir_cb, 64, FTW_DEPTH | FTW_MOUNT | FTW_PHYS);
 }
