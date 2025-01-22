@@ -71,6 +71,7 @@ _fs_init(struct fbr_test_context *ctx)
 		assert(fs);
 
 		fs->magic = _FS_MAGIC;
+		fs->tmpdir_str = "";
 
 		ctx->fs = fs;
 
@@ -129,6 +130,16 @@ fbr_test_cmd_fs_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	entry->next = ctx->fs->dirs;
 	ctx->fs->dirs = entry;
+	ctx->fs->tmpdir_str = entry->path;
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "tmpdir '%s'", entry->path);
+}
+
+char *
+fbr_test_var_fs_tmpdir(struct fbr_test_context *ctx)
+{
+	_fs_init(ctx);
+	assert(ctx->fs->tmpdir_str);
+
+	return ctx->fs->tmpdir_str;
 }

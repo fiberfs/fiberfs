@@ -26,6 +26,7 @@ FBR_TEST_CMD(random_range)
 FBR_TEST_VAR(random)
 
 FBR_TEST_CMD(fs_mkdir_tmp)
+FBR_TEST_VAR(fs_tmpdir)
 
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR
