@@ -31,9 +31,13 @@ FBR_TEST_VAR(fs_tmpdir)
 FBR_TEST_CMD(set_var1)
 FBR_TEST_CMD(set_var2)
 FBR_TEST_CMD(set_var3)
+FBR_TEST_CMD(set_var4)
+FBR_TEST_CMD(set_var5)
 FBR_TEST_VAR(var1)
 FBR_TEST_VAR(var2)
 FBR_TEST_VAR(var3)
+FBR_TEST_VAR(var4)
+FBR_TEST_VAR(var5)
 
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR

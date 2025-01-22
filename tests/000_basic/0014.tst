@@ -10,3 +10,7 @@ print $var2
 
 set_var1
 equal $var1 "$var3"
+
+set_var5 "\"" $var3 "\""
+set_var4 '""'
+equal $var4 $var5

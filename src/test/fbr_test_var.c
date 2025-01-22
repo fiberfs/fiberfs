@@ -7,7 +7,7 @@
 
 #include "test/fbr_test.h"
 
-#define _MAX_VARS		3
+#define _MAX_VARS		5
 
 struct fbr_test_var {
 	unsigned int		magic;
@@ -45,6 +45,8 @@ _var_init(struct fbr_test_context *ctx)
 	fbr_test_context_ok(ctx);
 
 	if (!ctx->var) {
+		assert(_MAX_VARS == sizeof(ctx->var->vars) / sizeof(*ctx->var->vars));
+
 		var = calloc(1, sizeof(*var));
 		assert(var);
 
@@ -73,21 +75,18 @@ _var_get(struct fbr_test_context *ctx, size_t index)
 	return ctx->var->vars[index];
 }
 
-char *
-fbr_test_var_var1(struct fbr_test_context *ctx)
-{
-	return _var_get(ctx, 1);
+#define _VAR_GET(index)						\
+char *								\
+fbr_test_var_var##index(struct fbr_test_context *ctx)		\
+{								\
+	return _var_get(ctx, index);				\
 }
-char *
-fbr_test_var_var2(struct fbr_test_context *ctx)
-{
-	return _var_get(ctx, 2);
-}
-char *
-fbr_test_var_var3(struct fbr_test_context *ctx)
-{
-	return _var_get(ctx, 3);
-}
+
+_VAR_GET(1)
+_VAR_GET(2)
+_VAR_GET(3)
+_VAR_GET(4)
+_VAR_GET(5)
 
 static void
 _var_set(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, size_t index)
@@ -102,6 +101,7 @@ _var_set(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, size_t index)
 	len = 0;
 
 	for (i = 0; i < cmd->param_count; i++) {
+		fbr_test_unescape(&cmd->params[i]);
 		len += cmd->params[i].len;
 	}
 
@@ -128,18 +128,15 @@ _var_set(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, size_t index)
 	ctx->var->vars[index][len] = '\0';
 }
 
-void
-fbr_test_cmd_set_var1(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	_var_set(ctx, cmd, 1);
+#define _VAR_SET(index)									\
+void											\
+fbr_test_cmd_set_var##index(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)	\
+{											\
+	_var_set(ctx, cmd, index);							\
 }
-void
-fbr_test_cmd_set_var2(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	_var_set(ctx, cmd, 2);
-}
-void
-fbr_test_cmd_set_var3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	_var_set(ctx, cmd, 3);
-}
+
+_VAR_SET(1)
+_VAR_SET(2)
+_VAR_SET(3)
+_VAR_SET(4)
+_VAR_SET(5)
