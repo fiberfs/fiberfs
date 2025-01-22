@@ -7,13 +7,18 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "test/fbr_test.h"
+#include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_lowlevel.h"
+#include "test/fbr_test.h"
 
 static void
 _test_init(void *userdata, struct fuse_conn_info *conn)
 {
-	assert_zero(userdata);
+	struct fbr_fuse_context *ctx;
+
+	ctx = (struct fbr_fuse_context*)userdata;
+
+	fbr_fuse_ctx_ok(ctx);
 	assert(conn);
 
 	printf("ZZZ init called\n");
@@ -26,52 +31,24 @@ static const struct fuse_lowlevel_ops _test_ops = {
 int
 fbr_fuse_test_mount(const char *path)
 {
-	struct fuse_args fargs;
-	struct fuse_session *session;
-	char *argv[4];
+	struct fbr_fuse_context ctx;
 	int ret;
-
-	assert(path);
 
 	//fuse_cmdline_help();
 	//fuse_lowlevel_help();
 
-	fargs.argv = argv;
-	fargs.argv[0] = "fiberfs";
-	fargs.argv[1] = "-o";
-	fargs.argv[2] = "fsname=fiberfs_test";
-	fargs.argv[3] = "-d";
-	fargs.argc = sizeof(argv) / sizeof(*argv);
-	fargs.allocated = 0;
+	fbr_fuse_init(&ctx);
 
-	session = fuse_session_new(&fargs, &_test_ops, sizeof(_test_ops), NULL);
+	ctx.fuse_ops = &_test_ops;
+	ctx.debug = 1;
 
-	if (!session) {
-		fuse_opt_free_args(&fargs);
-		return 1;
-	}
-
-	ret = fuse_set_signal_handlers(session);
+	ret = fbr_fuse_mount(&ctx, path);
 
 	if (ret) {
-		fuse_session_destroy(session);
-		fuse_opt_free_args(&fargs);
-		return 1;
+		return ret;
 	}
 
-	ret = fuse_session_mount(session, path);
-
-	if (ret) {
-		fuse_remove_signal_handlers(session);
-		fuse_session_destroy(session);
-		fuse_opt_free_args(&fargs);
-		return 1;
-	}
-
-	fuse_session_unmount(session);
-	fuse_remove_signal_handlers(session);
-	fuse_session_destroy(session);
-	fuse_opt_free_args(&fargs);
+	fbr_fuse_unmount(&ctx);
 
 	return 0;
 }
