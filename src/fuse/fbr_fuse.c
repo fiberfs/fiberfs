@@ -57,7 +57,6 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	if (!ctx->session) {
 		fbr_fuse_error(ctx, FBR_FUSE_ERROR_MOUNT);
-
 		return 1;
 	}
 
@@ -67,7 +66,6 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	if (ret) {
 		fbr_fuse_error(ctx, FBR_FUSE_ERROR_MOUNT);
-
 		return 1;
 	}
 
@@ -77,7 +75,6 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	if (ret) {
 		fbr_fuse_error(ctx, FBR_FUSE_ERROR_MOUNT);
-
 		return 1;
 	}
 
@@ -111,8 +108,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 			ctx->session = NULL;
 			break;
 		default:
-			assert(!"fuse state");
-			break;
+			fbr_ABORT("bad fuse state: %d", ctx->state);
 	}
 
 	ctx->state = FBR_FUSE_NONE;
