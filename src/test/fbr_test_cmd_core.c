@@ -46,7 +46,8 @@ fbr_test_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int ret;
 
 	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 2);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ERROR(cmd->param_count != 2, "need 2 parameters");
 
 	ret = strcmp(cmd->params[0].value, cmd->params[1].value);
 

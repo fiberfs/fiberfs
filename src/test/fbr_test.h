@@ -28,6 +28,7 @@ enum fbr_test_verbocity {
 struct fbr_test;
 struct fbr_test_fs;
 struct fbr_test_random;
+struct fbr_test_var;
 struct chttp_test_context;
 
 struct fbr_test_context {
@@ -37,6 +38,7 @@ struct fbr_test_context {
 	struct fbr_test			*test;
 	struct fbr_test_fs		*fs;
 	struct fbr_test_random		*random;
+	struct fbr_test_var		*var;
 	struct chttp_test_context	*chttp_test;
 };
 

@@ -310,6 +310,7 @@ fbr_test_parse_cmd(struct fbr_test *test)
 
 	for (i = 0; i < cmd->param_count; i++) {
 		// TODO remove
+		assert(cmd->params[i].value);
 		assert(cmd->params[i].len == strlen(cmd->params[i].value));
 
 		if (cmd->params[i].value[0] == '$' && cmd->params[i].value[1] == '$') {
