@@ -147,6 +147,7 @@ _server_cmd_async(struct chttp_test_server *server, struct fbr_test_cmd *cmd)
 
 	cmdentry = _server_cmdentry_alloc();
 
+	cmdentry->cmd.magic = FBR_TEST_CMD_MAGIC;
 	cmdentry->cmd.name = strdup(cmd->name);
 	cmdentry->cmd.param_count = cmd->param_count;
 	cmdentry->cmd.func = cmd->func;

@@ -58,6 +58,7 @@ fbr_test_fuse_cmd_fuse_test(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 {
 	int ret;
 
+	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	ret = fbr_fuse_test_mount(cmd->params[0].value);

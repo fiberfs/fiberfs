@@ -20,7 +20,7 @@ struct fbr_test_random {
 static void
 _random_finish(struct fbr_test_context *ctx)
 {
-	assert(ctx);
+	fbr_test_context_ok(ctx);
 	assert(ctx->random);
 	assert(ctx->random->magic == _RANDOM_MAGIC);
 
@@ -35,7 +35,7 @@ _random_init(struct fbr_test_context *ctx)
 {
 	struct fbr_test_random *random;
 
-	assert(ctx);
+	fbr_test_context_ok(ctx);
 
 	if (!ctx->random) {
 		random = calloc(1, sizeof(*random));

@@ -25,6 +25,9 @@ enum fbr_test_verbocity {
 
 #define FBR_TEST_MAX_PARAMS		16
 
+struct fbr_test;
+struct fbr_test_fs;
+struct fbr_test_random;
 struct chttp_test_context;
 
 struct fbr_test_context {
@@ -32,6 +35,7 @@ struct fbr_test_context {
 #define FBR_TEST_CONTEXT_MAGIC		0xAD98A6FF
 
 	struct fbr_test			*test;
+	struct fbr_test_fs		*fs;
 	struct fbr_test_random		*random;
 	struct chttp_test_context	*chttp_test;
 };

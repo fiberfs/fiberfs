@@ -131,7 +131,7 @@ fbr_test_ERROR_param_count(struct fbr_test_cmd *cmd, size_t count)
 {
 	size_t i;
 
-	assert(cmd);
+	fbr_test_cmd_ok(cmd);
 	fbr_test_ERROR_string(cmd->name);
 	fbr_test_ERROR(cmd->param_count != count,
 		"invalid parameter count, found %zu, expected %zu", cmd->param_count, count);
