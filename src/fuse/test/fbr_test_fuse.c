@@ -21,12 +21,25 @@ struct fbr_test_fuse {
 static void
 _fuse_finish(struct fbr_test_context *ctx)
 {
+	struct fbr_fuse_context *fctx;
+
 	fbr_test_context_ok(ctx);
 	assert(ctx->fuse);
 	assert(ctx->fuse->magic == _FUSE_MAGIC);
 
-	if (ctx->fuse->ctx.state > FBR_FUSE_ERROR) {
-		fbr_fuse_unmount(&ctx->fuse->ctx);
+	fctx = &ctx->fuse->ctx;
+	fbr_fuse_ctx_ok(fctx);
+
+	if (fctx->state != FBR_FUSE_NONE) {
+		// This can race, session can disappear on us...
+		assert(fctx->session);
+		fuse_session_exit(fctx->session);
+
+		fctx->abort = 1;
+
+		while (fctx->state != FBR_FUSE_NONE) {
+			fbr_sleep_ms(15);
+		}
 	}
 
 	fbr_ZERO(ctx->fuse);
@@ -66,7 +79,7 @@ _test_init(void *userdata, struct fuse_conn_info *conn)
 	fbr_fuse_ctx_ok(ctx);
 	assert(conn);
 
-	printf("ZZZ init called\n");
+	fbr_fuse_running(ctx);
 }
 
 static const struct fuse_lowlevel_ops _test_ops = {
@@ -74,7 +87,7 @@ static const struct fuse_lowlevel_ops _test_ops = {
 };
 
 static int
-_fuse_test_mount(struct fbr_fuse_context *ctx, const char *path)
+_fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 {
 	int ret;
 
@@ -84,7 +97,11 @@ _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path)
 	fbr_fuse_init(ctx);
 
 	ctx->fuse_ops = &_test_ops;
-	ctx->debug = 1;
+	//ctx->sighandle = 1;
+
+	if (debug) {
+		ctx->debug = 1;
+	}
 
 	ret = fbr_fuse_mount(ctx, path);
 
@@ -92,22 +109,27 @@ _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path)
 		return ret;
 	}
 
-	//printf("ZZZ mounted returned\n");
+	// TODO do stuff here? Split out unmount?
 
 	fbr_fuse_unmount(ctx);
 
-	return 0;
+	assert(ctx->state == FBR_FUSE_NONE);
+
+	return ctx->error;
 }
 
 void
 fbr_test_fuse_cmd_fuse_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
+	struct fbr_test *test;
 	int ret;
 
 	_fuse_init(ctx);
+	test = fbr_test_convert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	ret = _fuse_test_mount(&ctx->fuse->ctx, cmd->params[0].value);
+	ret = _fuse_test_mount(&ctx->fuse->ctx, cmd->params[0].value,
+		test->verbocity >= FBR_LOG_VERBOSE);
 
 	fbr_test_ERROR(ret, "Fuse mount failed: %s", cmd->params[0].value);
 
