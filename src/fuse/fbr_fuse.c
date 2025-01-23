@@ -63,6 +63,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	ctx->state = FBR_FUSE_SESSION;
 
+	// TODO?
 	ret = fuse_set_signal_handlers(ctx->session);
 
 	if (ret) {
@@ -81,9 +82,11 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	ctx->state = FBR_FUSE_MOUNTED;
 
-	fuse_daemonize(ctx->foreground);
+	fuse_daemonize(1);
 
 	fbr_fuse_mounted(ctx);
+
+	// launch thread
 
 	config.max_idle_threads = 16;
 
@@ -116,6 +119,8 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 			fbr_sleep_ms(5);
 		}
 	}
+
+	// join thread
 
 	switch (state) {
 		case FBR_FUSE_MOUNTED:

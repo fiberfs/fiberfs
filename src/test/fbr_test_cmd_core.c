@@ -94,3 +94,20 @@ fbr_test_cmd_print(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s", cmd->params[i].value);
 	}
 }
+
+void
+fbr_test_cmd_set_timeout_sec(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct fbr_test *test;
+	long timeout;
+
+	test = fbr_test_convert(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	timeout = fbr_test_parse_long(cmd->params[0].value);
+	fbr_test_ERROR(timeout < 0, "invalid timeout");
+
+	test->timeout_ms = timeout * 1000;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "timeout %ldms", test->timeout_ms);
+}

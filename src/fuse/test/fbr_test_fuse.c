@@ -85,7 +85,6 @@ _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	ctx->fuse_ops = &_test_ops;
 	ctx->debug = 1;
-	ctx->foreground = 1;
 
 	ret = fbr_fuse_mount(ctx, path);
 

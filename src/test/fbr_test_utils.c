@@ -168,12 +168,12 @@ fbr_test_sleep_ms(long ms)
 }
 
 int
-fbr_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long timeout_ms)
+fbr_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long *timeout_ms)
 {
 	unsigned long time;
 
 	assert(stopped);
-	assert(timeout_ms + FBR_TEST_JOIN_INTERVAL_MS > timeout_ms);
+	assert(timeout_ms);
 
 	time = 0;
 
@@ -182,7 +182,7 @@ fbr_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long time
 
 		time += FBR_TEST_JOIN_INTERVAL_MS;
 
-		if (time > timeout_ms) {
+		if (*timeout_ms && time > *timeout_ms) {
 			return 1;
 		}
 	}

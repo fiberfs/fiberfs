@@ -162,7 +162,7 @@ main(int argc, char **argv)
 
 	assert_zero(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
 
-	ret = fbr_test_join_thread(test.thread, &test.stopped, test.timeout_ms);
+	ret = fbr_test_join_thread(test.thread, &test.stopped, &test.timeout_ms);
 
 	timeout = (int)test.timeout_ms / 1000;
 	error = test.error;

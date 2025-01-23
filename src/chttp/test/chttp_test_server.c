@@ -172,6 +172,7 @@ _server_finish(struct fbr_test_context *ctx)
 {
 	struct chttp_test_server *server;
 	struct _server_cmdentry *cmdentry, *temp;
+	unsigned long timeout;
 	int ret;
 	size_t finished = 0;
 
@@ -187,7 +188,9 @@ _server_finish(struct fbr_test_context *ctx)
 	_server_SIGNAL(server);
 	_server_UNLOCK(server);
 
-	ret = fbr_test_join_thread(server->thread, &server->stopped, _SERVER_JOIN_TIMEOUT_MS);
+	timeout = _SERVER_JOIN_TIMEOUT_MS;
+
+	ret = fbr_test_join_thread(server->thread, &server->stopped, &timeout);
 	fbr_test_ERROR(ret, "server thread is blocked");
 
 	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread joined");

@@ -106,7 +106,7 @@ struct fbr_test {
 
 	pthread_t				thread;
 	volatile int				stopped;
-	unsigned long				timeout_ms;
+	volatile unsigned long			timeout_ms;
 
 	enum fbr_test_verbocity			verbocity;
 
@@ -158,7 +158,7 @@ long fbr_test_parse_long(const char *str);
 void fbr_test_ERROR_param_count(struct fbr_test_cmd *cmd, size_t count);
 void fbr_test_ERROR_string(const char *str);
 void fbr_test_sleep_ms(long ms);
-int fbr_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long timeout_ms);
+int fbr_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long *timeout_ms);
 size_t fbr_test_line_pos(struct fbr_test *test);
 void fbr_test_random_seed(void);
 long fbr_test_gen_random(long low, long high);
