@@ -11,6 +11,51 @@
 #include "fuse/fbr_fuse_lowlevel.h"
 #include "test/fbr_test.h"
 
+struct fbr_test_fuse {
+	unsigned int			magic;
+#define _FUSE_MAGIC			0x323EF113
+
+	struct fbr_fuse_context		ctx;
+};
+
+static void
+_fuse_finish(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+	assert(ctx->fuse);
+	assert(ctx->fuse->magic == _FUSE_MAGIC);
+
+	if (ctx->fuse->ctx.state > FBR_FUSE_ERROR) {
+		fbr_fuse_unmount(&ctx->fuse->ctx);
+	}
+
+	fbr_ZERO(ctx->fuse);
+	free(ctx->fuse);
+
+	ctx->fuse = NULL;
+}
+
+static void
+_fuse_init(struct fbr_test_context *ctx)
+{
+	struct fbr_test_fuse *fuse;
+
+	fbr_test_context_ok(ctx);
+
+	if (!ctx->fuse) {
+		fuse = malloc(sizeof(*fuse));
+		assert(fuse);
+
+		fuse->magic = _FUSE_MAGIC;
+
+		ctx->fuse = fuse;
+
+		fbr_test_register_finish(ctx, "fuse", _fuse_finish);
+	}
+
+	assert(ctx->fuse->magic == _FUSE_MAGIC);
+}
+
 static void
 _test_init(void *userdata, struct fuse_conn_info *conn)
 {
@@ -28,27 +73,29 @@ static const struct fuse_lowlevel_ops _test_ops = {
 	.init = _test_init
 };
 
-int
-fbr_fuse_test_mount(const char *path)
+static int
+_fuse_test_mount(struct fbr_fuse_context *ctx, const char *path)
 {
-	struct fbr_fuse_context ctx;
 	int ret;
 
 	//fuse_cmdline_help();
 	//fuse_lowlevel_help();
 
-	fbr_fuse_init(&ctx);
+	fbr_fuse_init(ctx);
 
-	ctx.fuse_ops = &_test_ops;
-	ctx.debug = 1;
+	ctx->fuse_ops = &_test_ops;
+	ctx->debug = 1;
+	ctx->foreground = 1;
 
-	ret = fbr_fuse_mount(&ctx, path);
+	ret = fbr_fuse_mount(ctx, path);
 
 	if (ret) {
 		return ret;
 	}
 
-	fbr_fuse_unmount(&ctx);
+	//printf("ZZZ mounted returned\n");
+
+	fbr_fuse_unmount(ctx);
 
 	return 0;
 }
@@ -58,10 +105,10 @@ fbr_test_fuse_cmd_fuse_test(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 {
 	int ret;
 
-	fbr_test_context_ok(ctx);
+	_fuse_init(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	ret = fbr_fuse_test_mount(cmd->params[0].value);
+	ret = _fuse_test_mount(&ctx->fuse->ctx, cmd->params[0].value);
 
 	fbr_test_ERROR(ret, "Fuse mount failed: %s", cmd->params[0].value);
 

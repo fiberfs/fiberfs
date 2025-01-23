@@ -26,6 +26,9 @@ struct fbr_fuse_context {
 
 	unsigned int			error:1;
 	unsigned int			debug:1;
+	unsigned int			foreground:1;
+
+	int				exit_value;
 };
 
 void fbr_fuse_init(struct fbr_fuse_context *ctx);

@@ -27,6 +27,7 @@ enum fbr_test_verbocity {
 
 struct fbr_test;
 struct fbr_test_fs;
+struct fbr_test_fuse;
 struct fbr_test_random;
 struct fbr_test_var;
 struct chttp_test_context;
@@ -37,6 +38,7 @@ struct fbr_test_context {
 
 	struct fbr_test			*test;
 	struct fbr_test_fs		*fs;
+	struct fbr_test_fuse		*fuse;
 	struct fbr_test_random		*random;
 	struct fbr_test_var		*var;
 	struct chttp_test_context	*chttp_test;
@@ -104,6 +106,7 @@ struct fbr_test {
 
 	pthread_t				thread;
 	volatile int				stopped;
+	unsigned long				timeout_ms;
 
 	enum fbr_test_verbocity			verbocity;
 
@@ -130,7 +133,7 @@ struct fbr_test {
 	int					skip;
 };
 
-#define FBR_TEST_TIMEOUT_SEC			10
+#define FBR_TEST_DEFAULT_TIMEOUT_SEC		10
 #define FBR_TEST_JOIN_INTERVAL_MS		25
 
 void fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,

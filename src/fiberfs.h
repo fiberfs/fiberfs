@@ -18,6 +18,7 @@
 
 void __fbr_attr_printf_p(6) fbr_do_assert(int cond, const char *function, const char *file,
 	int line, int assert, const char *fmt, ...);
+void fbr_sleep_ms(long ms);
 
 #define assert_zero(expr)						\
 	assert(!(expr))

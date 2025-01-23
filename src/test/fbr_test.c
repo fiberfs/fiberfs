@@ -44,6 +44,7 @@ _init_test(struct fbr_test *test)
 	fbr_ZERO(test);
 
 	test->magic = FBR_TEST_MAGIC;
+	test->timeout_ms = FBR_TEST_DEFAULT_TIMEOUT_SEC * 1000;
 	test->verbocity = FBR_LOG_VERBOSE;
 	test->line_raw_len = 1024;
 	test->line_raw = malloc(test->line_raw_len);
@@ -128,7 +129,7 @@ int
 main(int argc, char **argv)
 {
 	struct fbr_test test;
-	int i, ret;
+	int i, ret, timeout, error, skip;
 
 	_init_test(&test);
 	fbr_test_cmds_init(&test);
@@ -161,19 +162,23 @@ main(int argc, char **argv)
 
 	assert_zero(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
 
-	ret = fbr_test_join_thread(test.thread, &test.stopped, FBR_TEST_TIMEOUT_SEC * 1000);
-	fbr_test_ERROR(ret, "test timed out after %ds", FBR_TEST_TIMEOUT_SEC);
+	ret = fbr_test_join_thread(test.thread, &test.stopped, test.timeout_ms);
 
-	if (test.error) {
-		fbr_test_log(test.context, FBR_LOG_FORCE, "FAILED");
+	timeout = (int)test.timeout_ms / 1000;
+	error = test.error;
+	skip = test.skip;
+
+	fbr_test_run_all_finish(&test);
+
+	fbr_test_ERROR(ret, "test timed out after %ds", timeout);
+
+	if (error) {
+		fbr_test_log(NULL, FBR_LOG_FORCE, "FAILED");
 		return 1;
-	} else if (test.skip) {
-		fbr_test_run_all_finish(&test);
+	} else if (skip) {
 		fbr_test_log(NULL, FBR_LOG_FORCE, "SKIPPED");
 		return 0;
 	}
-
-	fbr_test_run_all_finish(&test);
 
 	fbr_test_log(NULL, FBR_LOG_FORCE, "PASSED");
 

@@ -25,6 +25,7 @@ int
 fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 {
 	struct fuse_args fargs;
+	struct fuse_loop_config config;
 	char *argv[4];
 	int ret;
 
@@ -80,7 +81,14 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	ctx->state = FBR_FUSE_MOUNTED;
 
+	fuse_daemonize(ctx->foreground);
+
 	fbr_fuse_mounted(ctx);
+
+	config.max_idle_threads = 16;
+
+	//ctx->exit_value = fuse_session_loop_mt(ctx->session, &config);
+	(void)config;
 
 	return 0;
 }
@@ -88,6 +96,8 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 void
 fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 {
+	enum fbr_fuse_state state;
+
 	fbr_fuse_ctx_ok(ctx);
 
 	if (ctx->state <= FBR_FUSE_ERROR) {
@@ -96,7 +106,18 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	assert(ctx->session);
 
-	switch (ctx->state) {
+	state = ctx->state;
+	ctx->state = FBR_FUSE_NONE;
+
+	if (!fuse_session_exited(ctx->session)) {
+		fuse_session_exit(ctx->session);
+
+		while (!fuse_session_exited(ctx->session)) {
+			fbr_sleep_ms(5);
+		}
+	}
+
+	switch (state) {
 		case FBR_FUSE_MOUNTED:
 			fuse_session_unmount(ctx->session);
 			/* Fallthru */
@@ -108,10 +129,8 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 			ctx->session = NULL;
 			break;
 		default:
-			fbr_ABORT("bad fuse state: %d", ctx->state);
+			fbr_ABORT("bad fuse state: %d", state);
 	}
-
-	ctx->state = FBR_FUSE_NONE;
 }
 
 void

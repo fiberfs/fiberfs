@@ -47,6 +47,9 @@ _fs_finish(struct fbr_test_context *ctx)
 
 		fbr_rmdir(entry->path);
 
+		fbr_test_warn(fbr_fs_exists(entry->path), "tmpdir couldn't be removed %s",
+			entry->path);
+
 		fbr_ZERO(entry);
 		free(entry);
 	}
