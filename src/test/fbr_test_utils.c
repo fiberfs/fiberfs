@@ -168,7 +168,8 @@ fbr_test_sleep_ms(long ms)
 }
 
 int
-fbr_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long *timeout_ms)
+fbr_test_join_thread(pthread_t thread, volatile int *stopped,
+    volatile unsigned long *timeout_ms)
 {
 	unsigned long time;
 
