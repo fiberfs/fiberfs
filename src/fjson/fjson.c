@@ -54,11 +54,9 @@ fjson_context_alloc(void)
 void
 fjson_context_free(struct fjson_context *ctx)
 {
-	int do_free;
-
 	fjson_context_ok(ctx);
 
-	do_free = ctx->do_free;
+	int do_free = ctx->do_free;
 
 	fbr_ZERO(ctx);
 
@@ -92,12 +90,10 @@ _bad_token(void)
 static void
 _callback(struct fjson_context *ctx)
 {
-	int ret;
-
 	fjson_context_ok(ctx);
 
 	if (ctx->callback) {
-		ret = ctx->callback(ctx, ctx->callback_priv);
+		int ret = ctx->callback(ctx, ctx->callback_priv);
 
 		if (ret) {
 			_set_error(ctx, FJSON_STATE_ERROR_CALLBACK, NULL);
@@ -108,8 +104,6 @@ _callback(struct fjson_context *ctx)
 static void
 _pop_token(struct fjson_context *ctx)
 {
-	struct fjson_token *token;
-
 	fjson_context_ok(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING || ctx->state == FJSON_STATE_ERROR_CALLBACK);
 	assert(ctx->tokens_pos <= FJSON_MAX_DEPTH);
@@ -117,7 +111,7 @@ _pop_token(struct fjson_context *ctx)
 
 	ctx->tokens_pos--;
 
-	token = &ctx->tokens[ctx->tokens_pos];
+	struct fjson_token *token = &ctx->tokens[ctx->tokens_pos];
 	fjson_token_ok(token);
 
 	fbr_ZERO(token);
@@ -147,8 +141,6 @@ _close_token(struct fjson_context *ctx, struct fjson_token *token, int callback)
 struct fjson_token *
 fjson_get_token(struct fjson_context *ctx, size_t depth)
 {
-	struct fjson_token *token;
-
 	fjson_context_ok(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
 	assert(ctx->tokens_pos <= FJSON_MAX_DEPTH);
@@ -157,7 +149,7 @@ fjson_get_token(struct fjson_context *ctx, size_t depth)
 		return _bad_token();
 	}
 
-	token = &ctx->tokens[ctx->tokens_pos - 1 - depth];
+	struct fjson_token *token = &ctx->tokens[ctx->tokens_pos - 1 - depth];
 	assert(token->magic == FJSON_TOKEN_MAGIC);
 
 	return token;
@@ -166,8 +158,6 @@ fjson_get_token(struct fjson_context *ctx, size_t depth)
 static struct fjson_token *
 _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 {
-	struct fjson_token *token;
-
 	fjson_context_ok(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
 	assert(ctx->tokens_pos <= FJSON_MAX_DEPTH);
@@ -176,6 +166,8 @@ _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 		_set_error(ctx, FJSON_STATE_ERROR_SIZE, "too deep");
 		return _bad_token();
 	}
+
+	struct fjson_token *token;
 
 	if (ctx->tokens_pos) {
 		token = &ctx->tokens[ctx->tokens_pos - 1];
@@ -213,9 +205,9 @@ _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 static size_t
 _count_escapes(const char *buf, size_t pos)
 {
-	size_t count = 0;
-
 	assert(buf);
+
+	size_t count = 0;
 
 	while (count <= pos && buf[pos - count] == '\\') {
 		count++;
@@ -227,19 +219,16 @@ _count_escapes(const char *buf, size_t pos)
 static void
 _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
-	struct fjson_token *token;
-	int is_valid, is_encoded;
-	size_t start, count;
-
 	fjson_context_ok(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
 	assert(ctx->pos < buf_len);
 	assert(buf);
 	assert(buf_len);
 
-	start = ctx->pos;
-	is_valid = 0;
-	is_encoded = 0;
+	size_t start = ctx->pos;
+	size_t count;
+	int is_valid = 0;
+	int is_encoded = 0;
 
 	for (ctx->pos++; ctx->pos < buf_len; ctx->pos++) {
 		switch (buf[ctx->pos]) {
@@ -282,7 +271,7 @@ _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		return;
 	}
 
-	token = fjson_get_token(ctx, 0);
+	struct fjson_token *token = fjson_get_token(ctx, 0);
 	fjson_token_ok(token);
 
 	if (token->type == FJSON_TOKEN_OBJECT) {
@@ -313,22 +302,16 @@ _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 static void
 _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
-	struct fjson_token *token;
-	int has_decimal, has_exponent, has_number;
-	size_t start;
-	double value;
-	char *end;
-
 	fjson_context_ok(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
 	assert(ctx->pos < buf_len);
 	assert(buf);
 	assert(buf_len);
 
-	start = ctx->pos;
-	has_decimal = 0;
-	has_exponent = 0;
-	has_number = 0;
+	size_t start = ctx->pos;
+	int has_decimal = 0;
+	int has_exponent = 0;
+	int has_number = 0;
 
 	for (; ctx->pos < buf_len; ctx->pos++) {
 		switch (buf[ctx->pos]) {
@@ -403,7 +386,8 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		return;
 	}
 
-	value = strtod(&buf[start], &end);
+	char *end;
+	double value = strtod(&buf[start], &end);
 
 	if (end != buf + ctx->pos ||
 	    (value == HUGE_VAL && errno == ERANGE) ||
@@ -412,7 +396,7 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		return;
 	}
 
-	token = _alloc_next_token(ctx, FJSON_TOKEN_NUMBER);
+	struct fjson_token *token = _alloc_next_token(ctx, FJSON_TOKEN_NUMBER);
 	fjson_token_ok(token);
 
 	if (ctx->error) {
@@ -489,11 +473,6 @@ _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_t
 static void
 _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
-	struct fjson_token *token;
-	enum fjson_token_type literal_type;
-	const char *literal_value;
-	size_t literal_len;
-
 	fjson_context_ok(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
 
@@ -505,7 +484,10 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	assert(buf);
 	assert(buf_len);
 
-	literal_value = NULL;
+	struct fjson_token *token;
+	enum fjson_token_type literal_type;
+	const char *literal_value = NULL;
+	size_t literal_len;
 
 	for (; ctx->pos < buf_len; ctx->pos++) {
 		assert(ctx->state == FJSON_STATE_INDEXING);
@@ -735,8 +717,6 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 void
 fjson_parse_partial(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
-	struct fjson_token *token;
-
 	fjson_context_ok(ctx);
 
 	ctx->pos = 0;
@@ -750,7 +730,7 @@ fjson_parse_partial(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 		assert_zero(ctx->tokens_pos);
 
-		token = _alloc_next_token(ctx, FJSON_TOKEN_ROOT);
+		struct fjson_token *token = _alloc_next_token(ctx, FJSON_TOKEN_ROOT);
 		fjson_token_ok(token);
 		assert_zero(ctx->error);
 	} else {
@@ -775,7 +755,7 @@ fjson_parse_partial(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	if (ctx->tokens_pos > 1) {
 		ctx->state = FJSON_STATE_NEEDMORE;
 	} else {
-		token = fjson_get_token(ctx, 0);
+		struct fjson_token *token = fjson_get_token(ctx, 0);
 		assert(token->type == FJSON_TOKEN_ROOT);
 
 		if (token->length == 0) {
@@ -809,8 +789,6 @@ fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len)
 size_t
 fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len, size_t buf_max)
 {
-	size_t len;
-
 	fjson_context_ok(ctx);
 	assert(ctx->pos <= buf_len);
 	assert(buf);
@@ -829,7 +807,7 @@ fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len, size_t buf_max
 		return buf_len;
 	}
 
-	len = buf_len - ctx->pos;
+	size_t len = buf_len - ctx->pos;
 
 	memmove(buf, buf + ctx->pos, len);
 
