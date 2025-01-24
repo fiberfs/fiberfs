@@ -33,12 +33,10 @@ _random_finish(struct fbr_test_context *ctx)
 static void
 _random_init(struct fbr_test_context *ctx)
 {
-	struct fbr_test_random *random;
-
 	fbr_test_context_ok(ctx);
 
 	if (!ctx->random) {
-		random = calloc(1, sizeof(*random));
+		struct fbr_test_random *random = calloc(1, sizeof(*random));
 		assert(random);
 
 		random->magic = _RANDOM_MAGIC;
@@ -58,12 +56,10 @@ _random_init(struct fbr_test_context *ctx)
 void
 fbr_test_cmd_random_range(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	long val;
-
 	_random_init(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
 
-	val = fbr_test_parse_long(cmd->params[0].value);
+	long val = fbr_test_parse_long(cmd->params[0].value);
 	fbr_test_ERROR(val < 0, "invalid random range");
 
 	ctx->random->low = val;
@@ -81,14 +77,11 @@ fbr_test_cmd_random_range(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 char *
 fbr_test_var_random(struct fbr_test_context *ctx)
 {
-	long rval;
-	int ret;
-
 	_random_init(ctx);
 
-	rval = fbr_test_gen_random(ctx->random->low, ctx->random->high);
+	long rval = fbr_test_gen_random(ctx->random->low, ctx->random->high);
 
-	ret = snprintf(ctx->random->random_str, sizeof(ctx->random->random_str), "%ld", rval);
+	int ret = snprintf(ctx->random->random_str, sizeof(ctx->random->random_str), "%ld", rval);
 	assert((size_t)ret < sizeof(ctx->random->random_str));
 
 	return ctx->random->random_str;

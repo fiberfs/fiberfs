@@ -11,11 +11,10 @@
 static void
 _finish_test(struct fbr_test_context *ctx)
 {
-	struct fbr_test *test;
-
 	fbr_test_context_ok(ctx);
 	assert_zero(ctx->chttp_test);
-	test = fbr_test_convert(ctx);
+
+	struct fbr_test *test = fbr_test_convert(ctx);
 	assert(test->context == ctx);
 
 	fbr_test_ok(test);
@@ -79,10 +78,7 @@ _usage(int error)
 static void *
 _test_run_test_file(void *arg)
 {
-	struct fbr_test *test;
-	struct fbr_test_cmdentry *cmd_entry;
-
-	test = (struct fbr_test*)arg;
+	struct fbr_test *test = (struct fbr_test*)arg;
 	fbr_test_ok(test);
 	assert_zero(test->stopped);
 
@@ -101,7 +97,7 @@ _test_run_test_file(void *arg)
 
 		test->cmd_count++;
 
-		cmd_entry = fbr_test_cmds_get(test, test->cmd.name);
+		struct fbr_test_cmdentry *cmd_entry = fbr_test_cmds_get(test, test->cmd.name);
 		fbr_test_ERROR(!cmd_entry || !cmd_entry->is_cmd,
 			"command %s not found (line %zu)", test->cmd.name,
 			fbr_test_line_pos(test));
@@ -129,12 +125,11 @@ int
 main(int argc, char **argv)
 {
 	struct fbr_test test;
-	int i, ret, timeout, error, skip;
 
 	_init_test(&test);
 	fbr_test_cmds_init(&test);
 
-	for (i = 1; i < argc; i++) {
+	for (int i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-q")) {
 			test.verbocity = FBR_LOG_NONE;
 		} else if (!strcmp(argv[i], "-v")) {
@@ -162,11 +157,11 @@ main(int argc, char **argv)
 
 	assert_zero(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
 
-	ret = fbr_test_join_thread(test.thread, &test.stopped, &test.timeout_ms);
+	int ret = fbr_test_join_thread(test.thread, &test.stopped, &test.timeout_ms);
 
-	timeout = (int)test.timeout_ms / 1000;
-	error = test.error;
-	skip = test.skip;
+	int timeout = (int)test.timeout_ms / 1000;
+	int error = test.error;
+	int skip = test.skip;
 
 	fbr_test_run_all_finish(&test);
 
@@ -189,12 +184,12 @@ void
 fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
     fbr_test_finish_f *func)
 {
-	struct fbr_test *test;
-	struct fbr_test_finish *finish;
-
 	fbr_test_context_ok(ctx);
-	test = fbr_test_convert(ctx);
+
+	struct fbr_test *test = fbr_test_convert(ctx);
 	assert(name && *name);
+
+	struct fbr_test_finish *finish;
 
 	TAILQ_FOREACH(finish, &test->finish_list, entry) {
 		assert(finish->magic == FBR_TEST_FINISH_MAGIC);
@@ -217,12 +212,12 @@ fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 void
 fbr_test_run_finish(struct fbr_test_context *ctx, const char *name)
 {
-	struct fbr_test *test;
-	struct fbr_test_finish *finish, *temp;
-
 	fbr_test_context_ok(ctx);
-	test = fbr_test_convert(ctx);
+
+	struct fbr_test *test = fbr_test_convert(ctx);
 	assert(name && *name);
+
+	struct fbr_test_finish *finish, *temp;
 
 	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
 		assert(finish->magic == FBR_TEST_FINISH_MAGIC);
@@ -247,13 +242,13 @@ fbr_test_run_finish(struct fbr_test_context *ctx, const char *name)
 void
 fbr_test_run_all_finish(struct fbr_test *test)
 {
-	struct fbr_test_finish *finish, *temp;
-
 	fbr_test_ok(test);
 
 	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
 		fbr_test_log(test->context, FBR_LOG_NONE, "shutdown");
 	}
+
+	struct fbr_test_finish *finish, *temp;
 
 	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
 		assert(finish->magic == FBR_TEST_FINISH_MAGIC);

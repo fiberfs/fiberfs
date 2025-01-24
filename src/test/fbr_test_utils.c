@@ -14,11 +14,9 @@
 struct fbr_test *
 fbr_test_convert(struct fbr_test_context *ctx)
 {
-	struct fbr_test *test;
-
 	fbr_test_context_ok(ctx);
 
-	test = ctx->test;
+	struct fbr_test *test = ctx->test;
 	fbr_test_ok(test);
 
 	return test;
@@ -28,12 +26,9 @@ void __fbr_attr_printf_p(3)
 fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
     const char *fmt, ...)
 {
-	struct fbr_test *test;
-	va_list ap;
-
 	if (ctx) {
 		fbr_test_context_ok(ctx);
-		test = fbr_test_convert(ctx);
+		struct fbr_test *test = fbr_test_convert(ctx);
 
 		if (level != FBR_LOG_FORCE && (test->verbocity == FBR_LOG_NONE ||
 		    test->verbocity < level)) {
@@ -51,6 +46,7 @@ fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
 		printf("--- ");
 	}
 
+	va_list ap;
 	va_start(ap, fmt);
 	vprintf(fmt, ap);
 	va_end(ap);
@@ -61,10 +57,9 @@ fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
 void
 fbr_test_skip(struct fbr_test_context *ctx)
 {
-	struct fbr_test *test;
-
 	fbr_test_context_ok(ctx);
-	test = fbr_test_convert(ctx);
+
+	struct fbr_test *test = fbr_test_convert(ctx);
 
 	test->skip = 1;
 }
@@ -72,14 +67,13 @@ fbr_test_skip(struct fbr_test_context *ctx)
 void __fbr_attr_printf
 fbr_test_warn(int condition, const char *fmt, ...)
 {
-	va_list ap;
-
 	if (!condition) {
 		return;
 	}
 
 	printf("WARNING: ");
 
+	va_list ap;
 	va_start(ap, fmt);
 	vprintf(fmt, ap);
 	va_end(ap);
@@ -90,14 +84,13 @@ fbr_test_warn(int condition, const char *fmt, ...)
 void __fbr_attr_printf
 fbr_test_ERROR(int condition, const char *fmt, ...)
 {
-	va_list ap;
-
 	if (!condition) {
 		return;
 	}
 
 	printf("ERROR: ");
 
+	va_list ap;
 	va_start(ap, fmt);
 	vprintf(fmt, ap);
 	va_end(ap);
@@ -110,14 +103,12 @@ fbr_test_ERROR(int condition, const char *fmt, ...)
 long
 fbr_test_parse_long(const char *str)
 {
-	long ret;
-	char *end;
-
 	assert(str);
 
 	errno = 0;
 
-	ret = strtol(str, &end, 10);
+	char *end;
+	long ret = strtol(str, &end, 10);
 
 	if (ret == LONG_MAX || ret == LONG_MIN || errno || end == str || *end != '\0') {
 		fbr_test_ERROR(1, "invalid number '%s'", str);
@@ -129,14 +120,12 @@ fbr_test_parse_long(const char *str)
 void
 fbr_test_ERROR_param_count(struct fbr_test_cmd *cmd, size_t count)
 {
-	size_t i;
-
 	fbr_test_cmd_ok(cmd);
 	fbr_test_ERROR_string(cmd->name);
 	fbr_test_ERROR(cmd->param_count != count,
 		"invalid parameter count, found %zu, expected %zu", cmd->param_count, count);
 
-	for (i = 0; i < cmd->param_count; i++) {
+	for (size_t i = 0; i < cmd->param_count; i++) {
 		fbr_test_ERROR(cmd->params[i].len == 0, "empty parameter found");
 		// TODO remove
 		assert(cmd->params[i].len == strlen(cmd->params[i].value));
@@ -152,10 +141,9 @@ fbr_test_ERROR_string(const char *str)
 void
 fbr_test_sleep_ms(long ms)
 {
-	struct timespec tspec, rem;
-
 	assert(ms >= 0);
 
+	struct timespec tspec, rem;
 	tspec.tv_sec = ms / 1000;
 	tspec.tv_nsec = (ms % 1000) * 1000 * 1000;
 
@@ -171,12 +159,10 @@ int
 fbr_test_join_thread(pthread_t thread, volatile int *stopped,
     volatile unsigned long *timeout_ms)
 {
-	unsigned long time;
-
 	assert(stopped);
 	assert(timeout_ms);
 
-	time = 0;
+	unsigned long time = 0;
 
 	while (!*stopped) {
 		fbr_test_sleep_ms(FBR_TEST_JOIN_INTERVAL_MS);
@@ -205,8 +191,8 @@ void
 fbr_test_random_seed(void)
 {
 	struct timespec now;
-
 	assert_zero(clock_gettime(CLOCK_MONOTONIC, &now));
+
 	srandom(now.tv_sec + now.tv_nsec);
 }
 
@@ -214,12 +200,10 @@ fbr_test_random_seed(void)
 long
 fbr_test_gen_random(long low, long high)
 {
-	long rval;
-
 	assert(low >= 0);
 	assert(high >= low);
 
-	rval = random();
+	long rval = random();
 	rval %= (high - low) + 1;
 	rval += low;
 
@@ -229,9 +213,7 @@ fbr_test_gen_random(long low, long high)
 void
 fbr_test_fill_random(uint8_t *buf, size_t len)
 {
-	size_t i;
-
-	for (i = 0; i < len; i++) {
+	for (size_t i = 0; i < len; i++) {
 		// TODO write a wider char if possible
 		buf[i] = fbr_test_gen_random(0, UINT8_MAX);
 	}

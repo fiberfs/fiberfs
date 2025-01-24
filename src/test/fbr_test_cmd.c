@@ -30,11 +30,10 @@ fbr_test_entry_cmp(const struct fbr_test_cmdentry *k1,
 static struct fbr_test_cmdentry *
 _test_cmd_alloc(struct fbr_test *test)
 {
-	struct fbr_test_cmdentry *entry;
-	size_t size;
-
 	fbr_test_ok(test);
 	assert(test->cmds_pos <= test->cmds_size);
+
+	size_t size;
 
 	if (test->cmds_pos == test->cmds_size) {
 		if (test->cmds_size == 0) {
@@ -53,7 +52,7 @@ _test_cmd_alloc(struct fbr_test *test)
 	}
 	assert(test->cmds_pos < test->cmds_size);
 
-	entry = &test->cmds[test->cmds_pos];
+	struct fbr_test_cmdentry *entry = &test->cmds[test->cmds_pos];
 	fbr_ZERO(entry);
 	entry->magic = FBR_TEST_ENTRY_MAGIC;
 
@@ -65,47 +64,42 @@ _test_cmd_alloc(struct fbr_test *test)
 static void
 _test_cmd_register(struct fbr_test *test, const char *name, fbr_test_cmd_f *func)
 {
-	struct fbr_test_cmdentry *entry, *ret;
-
 	fbr_test_ok(test);
 
-	entry = _test_cmd_alloc(test);
+	struct fbr_test_cmdentry *entry = _test_cmd_alloc(test);
 	assert(entry);
 
 	entry->name = name;
 	entry->cmd_func = func;
 	entry->is_cmd = 1;
 
-	ret = RB_INSERT(fbr_test_tree, &test->cmd_tree, entry);
+	struct fbr_test_cmdentry *ret = RB_INSERT(fbr_test_tree, &test->cmd_tree, entry);
 	assert_zero(ret);
 }
 
 static void
 _test_var_register(struct fbr_test *test, const char *name, fbr_test_var_f *func)
 {
-	struct fbr_test_cmdentry *entry, *ret;
-
 	fbr_test_ok(test);
 
-	entry = _test_cmd_alloc(test);
+	struct fbr_test_cmdentry *entry = _test_cmd_alloc(test);
 	assert(entry);
 
 	entry->name = name;
 	entry->var_func = func;
 	entry->is_var = 1;
 
-	ret = RB_INSERT(fbr_test_tree, &test->cmd_tree, entry);
+	struct fbr_test_cmdentry *ret = RB_INSERT(fbr_test_tree, &test->cmd_tree, entry);
 	assert_zero(ret);
 }
 
 static void
 _test_cmds_free(struct fbr_test_context *ctx)
 {
-	struct fbr_test *test;
-	struct fbr_test_cmdentry *entry, *next;
-
-	test = fbr_test_convert(ctx);
+	struct fbr_test *test = fbr_test_convert(ctx);
 	fbr_test_ok(test);
+
+	struct fbr_test_cmdentry *entry, *next;
 
 	RB_FOREACH_SAFE(entry, fbr_test_tree, &test->cmd_tree, next) {
 		assert(entry->magic == FBR_TEST_ENTRY_MAGIC);
@@ -163,14 +157,13 @@ fbr_test_cmds_init(struct fbr_test *test)
 struct fbr_test_cmdentry *
 fbr_test_cmds_get(struct fbr_test *test, const char *name)
 {
-	struct fbr_test_cmdentry *result, find;
-
 	fbr_test_ok(test);
 	assert(name);
 
+	struct fbr_test_cmdentry find;
 	find.name = name;
 
-	result = RB_FIND(fbr_test_tree, &test->cmd_tree, &find);
+	struct fbr_test_cmdentry *result = RB_FIND(fbr_test_tree, &test->cmd_tree, &find);
 
 	if (!result) {
 		return NULL;

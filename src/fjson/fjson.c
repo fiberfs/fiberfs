@@ -30,7 +30,6 @@ fjson_context_init(struct fjson_context *ctx)
 	assert(ctx);
 
 	fbr_ZERO(ctx);
-
 	ctx->magic = FJSON_CTX_MAGIC;
 
 	fjson_context_ok(ctx);

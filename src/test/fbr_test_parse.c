@@ -34,9 +34,6 @@ enum fbr_test_quote {
 void
 fbr_test_unescape(struct fbr_test_param *param)
 {
-	size_t offset, i;
-	char val;
-
 	assert(param);
 	assert(param->value);
 	// TODO remove
@@ -46,7 +43,9 @@ fbr_test_unescape(struct fbr_test_param *param)
 		return;
 	}
 
-	for (i = 0, offset = 0; i < param->len; i++) {
+	size_t offset = 0;
+
+	for (size_t i = 0; i < param->len; i++) {
 		if (param->value[i] != '\\') {
 			if (offset) {
 				param->value[i - offset] = param->value[i];
@@ -57,7 +56,7 @@ fbr_test_unescape(struct fbr_test_param *param)
 
 		assert(i < param->len - 1);
 
-		val = param->value[i + 1];
+		char val = param->value[i + 1];
 
 		switch (val) {
 			case '\\':
@@ -98,9 +97,9 @@ fbr_test_unescape(struct fbr_test_param *param)
 static size_t
 _count_escapes(char *buf, size_t pos)
 {
-	size_t count = 0;
-
 	assert(buf);
+
+	size_t count = 0;
 
 	while (count <= pos && buf[pos - count] == '\\') {
 		count++;
@@ -112,9 +111,6 @@ _count_escapes(char *buf, size_t pos)
 int
 fbr_test_readline(struct fbr_test *test, size_t append_len)
 {
-	char *ret;
-	size_t oldlen, i, escapes;
-
 	fbr_test_ok(test);
 	assert(test->line_raw);
 	assert(test->line_raw_len > 1);
@@ -133,7 +129,7 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 	if (test->line_raw_len > append_len + 1) {
 		test->line_raw[test->line_raw_len - 2] = '\n';
 
-		ret = fgets(test->line_raw + append_len, test->line_raw_len - append_len,
+		char *ret = fgets(test->line_raw + append_len, test->line_raw_len - append_len,
 			test->ft_file);
 
 		if (!ret && !append_len) {
@@ -144,7 +140,7 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 	// Didn't reach end of line, expand and read more
 	while (test->line_raw[test->line_raw_len - 2] &&
 	    test->line_raw[test->line_raw_len - 2] != '\n') {
-		oldlen = test->line_raw_len;
+		size_t oldlen = test->line_raw_len;
 		test->line_raw_len *= 2;
 		assert(test->line_raw_len / 2 == oldlen);
 
@@ -169,7 +165,7 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 		return fbr_test_readline(test, 0);
 	}
 
-	escapes = _count_escapes(test->line_buf, test->line_buf_len - 1);
+	size_t escapes = _count_escapes(test->line_buf, test->line_buf_len - 1);
 
 	if (escapes % 2 == 1) {
 		// Read the next line
@@ -179,7 +175,7 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 		_TRIM_STR_RIGHT(test->line_buf, test->line_buf_len);
 
 		if (test->line_buf_len) {
-			i = test->line_buf - test->line_raw + test->line_buf_len;
+			size_t i = test->line_buf - test->line_raw + test->line_buf_len;
 			assert(i < test->line_raw_len);
 
 			return fbr_test_readline(test, i);
@@ -196,12 +192,9 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 static enum fbr_test_quote
 _match_quote(char *buf, size_t pos)
 {
-	enum fbr_test_quote quote;
-	size_t escaped;
-
 	assert(buf);
 
-	quote = FRB_QUOTE_NONE;
+	enum fbr_test_quote quote = FRB_QUOTE_NONE;
 
 	switch (buf[pos]) {
 		case '\"':
@@ -220,7 +213,7 @@ _match_quote(char *buf, size_t pos)
 		return quote;
 	}
 
-	escaped = _count_escapes(buf, pos - 1);
+	size_t escaped = _count_escapes(buf, pos - 1);
 
 	if (escaped % 2 == 1) {
 		return FRB_QUOTE_NONE;
@@ -232,29 +225,24 @@ _match_quote(char *buf, size_t pos)
 void
 fbr_test_parse_cmd(struct fbr_test *test)
 {
-	struct fbr_test_cmdentry *cmd_entry;
-	struct fbr_test_cmd *cmd;
-	char *buf, *var;
-	size_t i, len, start;
-	enum fbr_test_quote quote, quote_end;
-
 	fbr_test_ok(test);
 	fbr_test_cmd_ok(&test->cmd);
 	assert(test->line_buf);
 	assert(test->line_buf_len);
 
-	cmd = &test->cmd;
+	struct fbr_test_cmd *cmd = &test->cmd;
 	fbr_ZERO(cmd);
 	cmd->magic = FBR_TEST_CMD_MAGIC;
 	cmd->name = test->line_buf;
 
-	buf = test->line_buf;
-	len = test->line_buf_len;
-	start = 0;
-	quote = FRB_QUOTE_NONE;
+	char *buf = test->line_buf;
+	size_t len = test->line_buf_len;
+	size_t start = 0;
+	size_t i;
+	enum fbr_test_quote quote = FRB_QUOTE_NONE;
 
 	for (i = 0; i < len; i++) {
-		quote_end = _match_quote(buf, i);
+		enum fbr_test_quote quote_end = _match_quote(buf, i);
 
 		if (quote && quote == quote_end) {
 			assert(cmd->param_count);
@@ -316,11 +304,11 @@ fbr_test_parse_cmd(struct fbr_test *test)
 		if (cmd->params[i].value[0] == '$' && cmd->params[i].value[1] == '$') {
 			cmd->params[i].value += 1;
 		} else if (cmd->params[i].value[0] == '$') {
-			var = cmd->params[i].value;
+			char *var = cmd->params[i].value;
 
 			fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "Var: %s", var);
 
-			cmd_entry = fbr_test_cmds_get(test, var);
+			struct fbr_test_cmdentry *cmd_entry = fbr_test_cmds_get(test, var);
 			fbr_test_ERROR(!cmd_entry || !cmd_entry->is_var,
 				"variable %s not found (line %zu)", var, fbr_test_line_pos(test));
 			assert(cmd_entry->var_func);

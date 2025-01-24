@@ -20,7 +20,6 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 	assert(ctx);
 
 	fbr_ZERO(ctx);
-
 	ctx->magic = FBR_FUSE_CTX_MAGIC;
 
 	fbr_fuse_ctx_ok(ctx);
