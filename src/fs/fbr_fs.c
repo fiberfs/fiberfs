@@ -16,9 +16,8 @@ static mode_t
 _fs_mode(const char *path)
 {
 	struct stat st;
-	int ret;
 
-	ret = lstat(path, &st);
+	int ret = lstat(path, &st);
 
 	if (ret) {
 		return 0;
@@ -30,9 +29,7 @@ _fs_mode(const char *path)
 int
 fbr_fs_exists(const char *path)
 {
-	mode_t st_mode;
-
-	st_mode = _fs_mode(path);
+	mode_t st_mode = _fs_mode(path);
 
 	if (st_mode) {
 		return 1;
@@ -44,9 +41,7 @@ fbr_fs_exists(const char *path)
 int
 fbr_fs_isdir(const char *path)
 {
-	mode_t st_mode;
-
-	st_mode = _fs_mode(path);
+	mode_t st_mode = _fs_mode(path);
 
 	if (S_ISDIR(st_mode)) {
 		return 1;

@@ -19,13 +19,11 @@ struct fbr_test_var {
 static void
 _var_finish(struct fbr_test_context *ctx)
 {
-	size_t i;
-
 	fbr_test_context_ok(ctx);
 	assert(ctx->var);
 	assert(ctx->var->magic == _VAR_MAGIC);
 
-	for (i = 0; i < _MAX_VARS; i++) {
+	for (size_t i = 0; i < _MAX_VARS; i++) {
 		if (ctx->var->vars[i]) {
 			free(ctx->var->vars[i]);
 		}
@@ -40,14 +38,12 @@ _var_finish(struct fbr_test_context *ctx)
 static void
 _var_init(struct fbr_test_context *ctx)
 {
-	struct fbr_test_var *var;
-
 	fbr_test_context_ok(ctx);
 
 	if (!ctx->var) {
 		assert(_MAX_VARS == sizeof(ctx->var->vars) / sizeof(*ctx->var->vars));
 
-		var = calloc(1, sizeof(*var));
+		struct fbr_test_var *var = calloc(1, sizeof(*var));
 		assert(var);
 
 		var->magic = _VAR_MAGIC;
@@ -91,16 +87,14 @@ _VAR_GET(5)
 static void
 _var_set(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, size_t index)
 {
-	size_t len, i;
-
 	_var_init(ctx);
 	fbr_test_cmd_ok(cmd);
 	assert(index > 0 && index <= _MAX_VARS);
 
+	size_t len = 0;
 	index--;
-	len = 0;
 
-	for (i = 0; i < cmd->param_count; i++) {
+	for (size_t i = 0; i < cmd->param_count; i++) {
 		fbr_test_unescape(&cmd->params[i]);
 		len += cmd->params[i].len;
 	}
@@ -120,7 +114,7 @@ _var_set(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, size_t index)
 
 	len = 0;
 
-	for (i = 0; i < cmd->param_count; i++) {
+	for (size_t i = 0; i < cmd->param_count; i++) {
 		memcpy(&ctx->var->vars[index][len], cmd->params[i].value, cmd->params[i].len);
 		len += cmd->params[i].len;
 	}

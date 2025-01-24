@@ -29,14 +29,12 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 static void *
 _fuse_mount_thread(void *arg)
 {
-	struct fbr_fuse_context *ctx;
-	struct fuse_loop_config config;
-
-	ctx = (struct fbr_fuse_context*)arg;
+	struct fbr_fuse_context *ctx = (struct fbr_fuse_context*)arg;
 	fbr_fuse_mounted(ctx);
 	assert(ctx->session);
 	assert_zero(ctx->running);
 
+	struct fuse_loop_config config;
 	fbr_ZERO(&config);
 	config.max_idle_threads = 16;
 
@@ -52,21 +50,20 @@ _fuse_mount_thread(void *arg)
 int
 fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 {
-	struct fuse_args fargs;
-	char *argv[4];
-	int ret;
-
 	fbr_fuse_ctx_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
 	assert_zero(ctx->session);
 	assert(path);
 
+	char *argv[4];
+	struct fuse_args fargs;
 	fargs.argv = argv;
 	fargs.argv[0] = "fiberfs";
 	fargs.argv[1] = "-o";
 	fargs.argv[2] = "fsname=fiberfs";
 	fargs.argv[3] = "-d";
 	fargs.argc = sizeof(argv) / sizeof(*argv);
+	assert(fargs.argc == 4);
 	fargs.allocated = 0;
 
 	if (!ctx->debug) {
@@ -88,6 +85,8 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 		fbr_fuse_error(ctx);
 		return 1;
 	}
+
+	int ret;
 
 	if (ctx->sighandle) {
 		ret = fuse_set_signal_handlers(ctx->session);
@@ -132,12 +131,20 @@ fbr_fuse_running(struct fbr_fuse_context *ctx)
 }
 
 void
+fbr_fuse_error(struct fbr_fuse_context *ctx)
+{
+	fbr_fuse_ctx_ok(ctx);
+
+	fbr_fuse_unmount(ctx);
+
+	assert(ctx->state == FBR_FUSE_NONE);
+
+	ctx->error = 1;
+}
+
+void
 fbr_fuse_abort(struct fbr_fuse_context *ctx)
 {
-	char cmd[PATH_MAX + 32];
-	size_t len;
-	int ret;
-
 	fbr_fuse_ctx_ok(ctx);
 
 	if (ctx->state != FBR_FUSE_MOUNTED || ctx->exited) {
@@ -146,10 +153,11 @@ fbr_fuse_abort(struct fbr_fuse_context *ctx)
 
 	fuse_session_exit(ctx->session);
 
-	len = snprintf(cmd, sizeof(cmd), "fusermount -u %s", ctx->path);
+	char cmd[PATH_MAX + 32];
+	size_t len = snprintf(cmd, sizeof(cmd), "fusermount -u %s", ctx->path);
 	assert(len < sizeof(cmd));
 
-	ret = system(cmd);
+	int ret = system(cmd);
 	(void)ret;
 }
 
@@ -192,16 +200,4 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 	}
 
 	fbr_ZERO(ctx);
-}
-
-void
-fbr_fuse_error(struct fbr_fuse_context *ctx)
-{
-	fbr_fuse_ctx_ok(ctx);
-
-	fbr_fuse_unmount(ctx);
-
-	assert(ctx->state == FBR_FUSE_NONE);
-
-	ctx->error = 1;
 }

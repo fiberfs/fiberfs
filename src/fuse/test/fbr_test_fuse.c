@@ -21,13 +21,11 @@ struct fbr_test_fuse {
 static void
 _fuse_finish(struct fbr_test_context *ctx)
 {
-	struct fbr_fuse_context *fctx;
-
 	fbr_test_context_ok(ctx);
 	assert(ctx->fuse);
 	assert(ctx->fuse->magic == _FUSE_MAGIC);
 
-	fctx = &ctx->fuse->ctx;
+	struct fbr_fuse_context *fctx = &ctx->fuse->ctx;
 	fbr_fuse_ctx_ok(fctx);
 
 	if (fctx->state != FBR_FUSE_NONE) {
@@ -49,12 +47,10 @@ _fuse_finish(struct fbr_test_context *ctx)
 static void
 _fuse_init(struct fbr_test_context *ctx)
 {
-	struct fbr_test_fuse *fuse;
-
 	fbr_test_context_ok(ctx);
 
 	if (!ctx->fuse) {
-		fuse = malloc(sizeof(*fuse));
+		struct fbr_test_fuse *fuse = malloc(sizeof(*fuse));
 		assert(fuse);
 
 		fuse->magic = _FUSE_MAGIC;
@@ -74,7 +70,7 @@ _test_init(void *userdata, struct fuse_conn_info *conn)
 
 	ctx = (struct fbr_fuse_context*)userdata;
 
-	fbr_fuse_ctx_ok(ctx);
+	fbr_fuse_mounted(ctx);
 	assert(conn);
 
 	fbr_fuse_running(ctx);
@@ -87,8 +83,6 @@ static const struct fuse_lowlevel_ops _test_ops = {
 static int
 _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 {
-	int ret;
-
 	//fuse_cmdline_help();
 	//fuse_lowlevel_help();
 
@@ -101,7 +95,7 @@ _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 		ctx->debug = 1;
 	}
 
-	ret = fbr_fuse_mount(ctx, path);
+	int ret = fbr_fuse_mount(ctx, path);
 
 	if (ret) {
 		return ret;
@@ -119,14 +113,11 @@ _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 void
 fbr_test_fuse_cmd_fuse_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct fbr_test *test;
-	int ret;
-
 	_fuse_init(ctx);
-	test = fbr_test_convert(ctx);
+	struct fbr_test *test = fbr_test_convert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	ret = _fuse_test_mount(&ctx->fuse->ctx, cmd->params[0].value,
+	int ret = _fuse_test_mount(&ctx->fuse->ctx, cmd->params[0].value,
 		test->verbocity >= FBR_LOG_VERBOSE);
 
 	fbr_test_ERROR(ret, "Fuse mount failed: %s", cmd->params[0].value);
