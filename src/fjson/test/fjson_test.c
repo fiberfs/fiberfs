@@ -16,15 +16,12 @@
 static int
 _json_print(struct fjson_context *fjson, void *priv)
 {
-	struct fbr_test_context *ctx;
-	struct fjson_token *token;
-
 	fjson_context_ok(fjson);
 
-	ctx = (struct fbr_test_context*)priv;
+	struct fbr_test_context *ctx = (struct fbr_test_context*)priv;
 	fbr_test_context_ok(ctx);
 
-	token = fjson_get_token(fjson, 0);
+	struct fjson_token *token = fjson_get_token(fjson, 0);
 	fjson_token_ok(token);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE,
@@ -45,13 +42,12 @@ _json_print(struct fjson_context *fjson, void *priv)
 void
 fjson_cmd_json_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct fjson_context fjson;
-
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	fbr_test_unescape(&cmd->params[0]);
 
+	struct fjson_context fjson;
 	fjson_context_init(&fjson);
 
 	fjson_parse(&fjson, cmd->params[0].value, cmd->params[0].len);
@@ -68,14 +64,12 @@ fjson_cmd_json_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 void
 fjson_cmd_json_dynamic(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct fjson_context *fjson;
-
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	fbr_test_unescape(&cmd->params[0]);
 
-	fjson = fjson_context_alloc();
+	struct fjson_context *fjson = fjson_context_alloc();
 
 	fjson_parse(fjson, cmd->params[0].value, cmd->params[0].len);
 
@@ -91,13 +85,12 @@ fjson_cmd_json_dynamic(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 void
 fjson_cmd_json_fail(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct fjson_context fjson;
-
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR(cmd->param_count != 1, "Need a single parameter");
 
 	fbr_test_unescape(&cmd->params[0]);
 
+	struct fjson_context fjson;
 	fjson_context_init(&fjson);
 
 	fjson_parse(&fjson, cmd->params[0].value, cmd->params[0].len);
@@ -116,18 +109,16 @@ fjson_cmd_json_fail(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 void
 fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct fjson_context fjson;
-	char buf[1024];
-	size_t i, pos, len;
-
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR(!cmd->param_count, "Need a single parameter");
 
+	struct fjson_context fjson;
 	fjson_context_init(&fjson);
 
-	pos = 0;
+	char buf[1024];
+	size_t pos = 0;
 
-	for (i = 0; i < cmd->param_count; i++) {
+	for (size_t i = 0; i < cmd->param_count; i++) {
 		fbr_test_unescape(&cmd->params[i]);
 		fbr_test_ERROR(cmd->params[i].len >= sizeof(buf) - pos, "Out of buffer");
 
@@ -136,7 +127,7 @@ fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "json_multi: '%s' => '%s'",
 			cmd->params[i].value, buf);
 
-		len = pos + cmd->params[i].len;
+		size_t len = pos + cmd->params[i].len;
 
 		fjson_parse_partial(&fjson, buf, len);
 
@@ -166,19 +157,17 @@ fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 static void
 _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 {
-	struct fjson_context fjson;
-	char buf[4096], path[PATH_MAX + 1], *rpath;
-	size_t size, len, pos;
-	long val;
-	int fd, is_random = 0, ret;
-
 	fbr_test_context_ok(ctx);
 	fbr_test_ok(ctx->test);
 	fbr_test_ERROR(cmd->param_count < 1, "Need a single parameter");
 	fbr_test_ERROR(cmd->param_count > 2, "Too many parameters");
 
+	char buf[4096], path[PATH_MAX + 1];
+	size_t size, len, pos;
+	int is_random = 0;
+
 	if (cmd->param_count >= 2) {
-		val = fbr_test_parse_long(cmd->params[1].value);
+		long val = fbr_test_parse_long(cmd->params[1].value);
 		fbr_test_ERROR(val < 0 || val > (long)sizeof(buf), "Bad size");
 		size = (size_t)val;
 	} else {
@@ -192,10 +181,11 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 	if (cmd->params[0].value[0] == '/') {
 		snprintf(path, sizeof(path), "%s", cmd->params[0].value);
 	} else {
-		rpath = realpath(ctx->test->test_file, path);
+		char *rpath = realpath(ctx->test->test_file, path);
 		fbr_test_ERROR(rpath != path, "realpath failed");
 
 		len = strlen(rpath);
+
 		fbr_test_ERROR(!len, "bad path");
 
 		for (pos = len - 1; pos > 0; pos--) {
@@ -212,9 +202,10 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 		snprintf(rpath, sizeof(path) - pos, "%s", cmd->params[0].value);
 	}
 
-	fd = open(path, O_RDONLY);
+	int fd = open(path, O_RDONLY);
 	fbr_test_ERROR(fd < 0, "Cant open %s", path);
 
+	struct fjson_context fjson;
 	fjson_context_init(&fjson);
 
 	fjson.callback = &_json_print;
@@ -258,7 +249,7 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 
 	fjson_context_free(&fjson);
 
-	ret = close(fd);
+	int ret = close(fd);
 	fbr_test_ERROR(ret, "close() failed");
 }
 
