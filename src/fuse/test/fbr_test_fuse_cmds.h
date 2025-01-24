@@ -15,7 +15,8 @@
 
 #endif /* FBR_TEST_FUSE_CMD */
 
-FBR_TEST_FUSE_CMD(fuse_test)
+FBR_TEST_FUSE_CMD(fuse_test_mount)
+FBR_TEST_FUSE_CMD(fuse_test_unmount)
 
 #undef FBR_TEST_FUSE_CMD
 #undef FBR_TEST_FUSE_VAR

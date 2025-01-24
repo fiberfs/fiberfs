@@ -28,14 +28,7 @@ _fuse_finish(struct fbr_test_context *ctx)
 	struct fbr_fuse_context *fctx = &ctx->fuse->ctx;
 	fbr_fuse_ctx_ok(fctx);
 
-	if (fctx->state != FBR_FUSE_NONE) {
-		fbr_fuse_abort(fctx);
-
-		while (fctx->state != FBR_FUSE_NONE) {
-			fbr_sleep_ms(15);
-		}
-	}
-
+	fbr_fuse_unmount(fctx);
 	fbr_fuse_free(fctx);
 
 	fbr_ZERO(ctx->fuse);
@@ -101,7 +94,13 @@ _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 		return ret;
 	}
 
-	// TODO do stuff here? Split out unmount?
+	return ctx->error;
+}
+
+static int
+_fuse_test_unmount(struct fbr_fuse_context *ctx)
+{
+	fbr_fuse_ctx_ok(ctx);
 
 	fbr_fuse_unmount(ctx);
 
@@ -111,16 +110,34 @@ _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 }
 
 void
-fbr_test_fuse_cmd_fuse_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_test_fuse_cmd_fuse_test_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_fuse_init(ctx);
+
 	struct fbr_test *test = fbr_test_convert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	int ret = _fuse_test_mount(&ctx->fuse->ctx, cmd->params[0].value,
 		test->verbocity >= FBR_LOG_VERBOSE);
 
+	fbr_fuse_ctx_ok(&ctx->fuse->ctx);
+
 	fbr_test_ERROR(ret, "Fuse mount failed: %s", cmd->params[0].value);
+	fbr_test_ERROR(strcmp(cmd->params[0].value, ctx->fuse->ctx.path),
+		"ctx->path error: %s", ctx->fuse->ctx.path);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Fuse passed: %s", cmd->params[0].value);
+}
+
+void
+fbr_test_fuse_cmd_fuse_test_unmount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_fuse_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	int ret = _fuse_test_unmount(&ctx->fuse->ctx);
+
+	fbr_test_ERROR(ret, "Fuse unmount failed: %s", cmd->params[0].value);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Fuse unmounted");
 }

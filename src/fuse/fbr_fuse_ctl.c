@@ -28,7 +28,9 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 static void *
 _fuse_mount_thread(void *arg)
 {
-	struct fbr_fuse_context *ctx = (struct fbr_fuse_context*)arg;
+	struct fbr_fuse_context *ctx;
+
+	ctx = (struct fbr_fuse_context*)arg;
 	fbr_fuse_mounted(ctx);
 	assert(ctx->session);
 	assert_zero(ctx->running);
@@ -187,6 +189,7 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_ctx_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
+	assert(ctx->exited);
 
 	if (ctx->session) {
 		fuse_session_destroy(ctx->session);
