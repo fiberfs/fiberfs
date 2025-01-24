@@ -31,11 +31,7 @@ _fuse_finish(struct fbr_test_context *ctx)
 	fbr_fuse_ctx_ok(fctx);
 
 	if (fctx->state != FBR_FUSE_NONE) {
-		// This can race, session can disappear on us...
-		assert(fctx->session);
-		fuse_session_exit(fctx->session);
-
-		fctx->abort = 1;
+		fbr_fuse_abort(fctx);
 
 		while (fctx->state != FBR_FUSE_NONE) {
 			fbr_sleep_ms(15);

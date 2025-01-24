@@ -4,10 +4,12 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "fiberfs.h"
 #include "fbr_fuse.h"
 #include "fbr_fuse_lowlevel.h"
+#include "fs/fbr_fs.h"
 
 void
 fbr_fuse_init(struct fbr_fuse_context *ctx)
@@ -31,13 +33,14 @@ _fuse_mount_thread(void *arg)
 	fbr_fuse_mounted(ctx);
 	assert(ctx->session);
 	assert_zero(ctx->running);
-	assert_zero(fuse_session_exited(ctx->session));
 
 	config.max_idle_threads = 16;
 
 	ctx->exit_value = fuse_session_loop_mt(ctx->session, &config);
 
 	ctx->exited = 1;
+
+	fuse_session_unmount(ctx->session);
 
 	return NULL;
 }
@@ -92,6 +95,9 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 		}
 	}
 
+	ctx->path = strdup(path);
+	assert(ctx->path);
+
 	ret = fuse_session_mount(ctx->session, path);
 
 	if (ret) {
@@ -124,6 +130,24 @@ fbr_fuse_running(struct fbr_fuse_context *ctx)
 }
 
 void
+fbr_fuse_abort(struct fbr_fuse_context *ctx)
+{
+	fbr_fuse_ctx_ok(ctx);
+
+	if (ctx->state != FBR_FUSE_MOUNTED || ctx->exited) {
+		return;
+	}
+
+	// TODO this can race if we are aborting and unmounting in different threads
+
+	assert(ctx->session);
+
+	fuse_session_exit(ctx->session);
+
+	fbr_fs_exists(ctx->path);
+}
+
+void
 fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_ctx_ok(ctx);
@@ -134,32 +158,20 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	assert(ctx->session);
 
-	if (!fuse_session_exited(ctx->session)) {
-		fuse_session_exit(ctx->session);
+	fbr_fuse_abort(ctx);
+
+	assert_zero(pthread_join(ctx->loop_thread, NULL));
+	assert(ctx->exited);
+
+	if (ctx->sighandle) {
+		fuse_remove_signal_handlers(ctx->session);
 	}
 
-	switch (ctx->state) {
-		case FBR_FUSE_MOUNTED:
-			// TODO not sure we can umount with the loop active?
-			fuse_session_unmount(ctx->session);
+	free(ctx->path);
+	ctx->path = NULL;
 
-			if (!ctx->exited) {
-				assert_zero(pthread_join(ctx->loop_thread, NULL));
-				assert(ctx->exited);
-			}
-			/* Fallthru */
-		case FBR_FUSE_SESSION:
-			if (ctx->sighandle) {
-				fuse_remove_signal_handlers(ctx->session);
-			}
-
-			fuse_session_destroy(ctx->session);
-			ctx->session = NULL;
-
-			break;
-		default:
-			fbr_ABORT("bad fuse state: %d", ctx->state);
-	}
+	fuse_session_destroy(ctx->session);
+	ctx->session = NULL;
 
 	ctx->state = FBR_FUSE_NONE;
 }
