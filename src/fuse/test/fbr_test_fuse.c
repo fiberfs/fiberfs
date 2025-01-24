@@ -38,6 +38,8 @@ _fuse_finish(struct fbr_test_context *ctx)
 		}
 	}
 
+	fbr_fuse_free(fctx);
+
 	fbr_ZERO(ctx->fuse);
 	free(ctx->fuse);
 

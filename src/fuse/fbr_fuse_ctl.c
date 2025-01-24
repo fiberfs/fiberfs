@@ -3,6 +3,9 @@
  *
  */
 
+#include <limits.h>
+#include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,6 +26,25 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 	fbr_fuse_ctx_ok(ctx);
 }
 
+void
+fbr_fuse_free(struct fbr_fuse_context *ctx)
+{
+	fbr_fuse_ctx_ok(ctx);
+	assert(ctx->state == FBR_FUSE_NONE);
+
+	if (ctx->session) {
+		fuse_session_destroy(ctx->session);
+		ctx->session = NULL;
+	}
+
+	if (ctx->path) {
+		free(ctx->path);
+		ctx->path = NULL;
+	}
+
+	fbr_ZERO(ctx);
+}
+
 static void *
 _fuse_mount_thread(void *arg)
 {
@@ -34,6 +56,7 @@ _fuse_mount_thread(void *arg)
 	assert(ctx->session);
 	assert_zero(ctx->running);
 
+	fbr_ZERO(&config);
 	config.max_idle_threads = 16;
 
 	ctx->exit_value = fuse_session_loop_mt(ctx->session, &config);
@@ -85,8 +108,6 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 		return 1;
 	}
 
-	ctx->state = FBR_FUSE_SESSION;
-
 	if (ctx->sighandle) {
 		ret = fuse_set_signal_handlers(ctx->session);
 
@@ -132,19 +153,23 @@ fbr_fuse_running(struct fbr_fuse_context *ctx)
 void
 fbr_fuse_abort(struct fbr_fuse_context *ctx)
 {
+	char cmd[PATH_MAX + 32];
+	size_t len;
+	int ret;
+
 	fbr_fuse_ctx_ok(ctx);
 
 	if (ctx->state != FBR_FUSE_MOUNTED || ctx->exited) {
 		return;
 	}
 
-	// TODO this can race if we are aborting and unmounting in different threads
-
-	assert(ctx->session);
-
 	fuse_session_exit(ctx->session);
 
-	fbr_fs_exists(ctx->path);
+	len = snprintf(cmd, sizeof(cmd), "fusermount -u %s", ctx->path);
+	assert(len < sizeof(cmd));
+
+	ret = system(cmd);
+	(void)ret;
 }
 
 void
@@ -156,22 +181,15 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 		return;
 	}
 
-	assert(ctx->session);
-
 	fbr_fuse_abort(ctx);
 
 	assert_zero(pthread_join(ctx->loop_thread, NULL));
 	assert(ctx->exited);
+	assert(ctx->session);
 
 	if (ctx->sighandle) {
 		fuse_remove_signal_handlers(ctx->session);
 	}
-
-	free(ctx->path);
-	ctx->path = NULL;
-
-	fuse_session_destroy(ctx->session);
-	ctx->session = NULL;
 
 	ctx->state = FBR_FUSE_NONE;
 }
