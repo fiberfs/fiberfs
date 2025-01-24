@@ -26,25 +26,6 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 	fbr_fuse_ctx_ok(ctx);
 }
 
-void
-fbr_fuse_free(struct fbr_fuse_context *ctx)
-{
-	fbr_fuse_ctx_ok(ctx);
-	assert(ctx->state == FBR_FUSE_NONE);
-
-	if (ctx->session) {
-		fuse_session_destroy(ctx->session);
-		ctx->session = NULL;
-	}
-
-	if (ctx->path) {
-		free(ctx->path);
-		ctx->path = NULL;
-	}
-
-	fbr_ZERO(ctx);
-}
-
 static void *
 _fuse_mount_thread(void *arg)
 {
@@ -192,6 +173,25 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 	}
 
 	ctx->state = FBR_FUSE_NONE;
+}
+
+void
+fbr_fuse_free(struct fbr_fuse_context *ctx)
+{
+	fbr_fuse_ctx_ok(ctx);
+	assert(ctx->state == FBR_FUSE_NONE);
+
+	if (ctx->session) {
+		fuse_session_destroy(ctx->session);
+		ctx->session = NULL;
+	}
+
+	if (ctx->path) {
+		free(ctx->path);
+		ctx->path = NULL;
+	}
+
+	fbr_ZERO(ctx);
 }
 
 void
