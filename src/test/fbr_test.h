@@ -136,10 +136,12 @@ struct fbr_test {
 #define FBR_TEST_DEFAULT_TIMEOUT_SEC		10
 #define FBR_TEST_JOIN_INTERVAL_MS		25
 
+int fbr_test_main(int argc, char **argv);
 void fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 	fbr_test_finish_f *func);
 void fbr_test_run_finish(struct fbr_test_context *ctx, const char *name);
 void fbr_test_run_all_finish(struct fbr_test *test);
+void fbr_test_finish_abort(void);
 
 void fbr_test_cmds_init(struct fbr_test *test);
 struct fbr_test_cmdentry *fbr_test_cmds_get(struct fbr_test *test, const char *name);

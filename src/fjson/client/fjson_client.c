@@ -5,14 +5,15 @@
 
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
 #include "fjson.h"
-#include "test/fbr_test.h"
 
 static void
 _usage(int error)
@@ -44,6 +45,29 @@ _json_print(struct fjson_context *ctx, void *priv)
 	}
 
 	return 0;
+}
+
+void
+_random_seed(void)
+{
+	struct timespec now;
+	assert_zero(clock_gettime(CLOCK_MONOTONIC, &now));
+
+	srandom(now.tv_sec + now.tv_nsec);
+}
+
+// Inclusive
+long
+_gen_random(long low, long high)
+{
+	assert(low >= 0);
+	assert(high >= low);
+
+	long rval = random();
+	rval %= (high - low) + 1;
+	rval += low;
+
+	return rval;
 }
 
 int
@@ -85,10 +109,10 @@ main(int argc, char **argv)
 
 		pos = 0;
 
-		fbr_test_random_seed();
+		_random_seed();
 
 		do {
-			size = fbr_test_gen_random(1, sizeof(buf) - pos);
+			size = _gen_random(1, sizeof(buf) - pos);
 			assert(size + pos <= sizeof(buf));
 
 			len = read(fd, buf + pos, size);

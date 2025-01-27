@@ -121,11 +121,11 @@ lib:		libfiberfs.so libchttp.a libfjson.a
 chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
 		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libchttp.a $(LIBFLAGS)
 
-fjson_client:	libfjson.a libfbrtest.a $(FJSON_CLIENT_OBJS)
-		$(CC) -o $@ $(FJSON_CLIENT_OBJS) libfjson.a libfbrtest.a $(LIBFLAGS_TEST)
+fjson_client:	libfjson.a $(FJSON_CLIENT_OBJS)
+		$(CC) -o $@ $(FJSON_CLIENT_OBJS) libfjson.a $(LIBFLAGS_TEST)
 
-fiberfs_test:	libfbrtest.a libchttp.a libfjson.a $(OBJS)
-		$(CC) -o $@ $(OBJS) libfbrtest.a libchttp.a libfjson.a $(LIBFLAGS_TEST)
+fiberfs_test:	libchttp.a libfjson.a $(TEST_OBJS) $(OBJS)
+		$(CC) -o $@ $(TEST_OBJS) $(OBJS) libchttp.a libfjson.a $(LIBFLAGS_TEST)
 
 libfiberfs.so:	$(OBJS) libchttp.a libfjson.a
 		$(CC) $(LDFLAGS) -o $@ $(OBJS) libchttp.a libfjson.a
@@ -135,9 +135,6 @@ libchttp.a:	$(CHTTP_OBJS)
 
 libfjson.a:	$(FJSON_OBJS)
 		ar cr $@ $(FJSON_OBJS)
-
-libfbrtest.a:	$(TEST_OBJS)
-		ar cr $@ $(TEST_OBJS)
 
 %.o:		%.c $(INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@

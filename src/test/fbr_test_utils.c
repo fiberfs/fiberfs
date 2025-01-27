@@ -97,6 +97,8 @@ fbr_test_ERROR(int condition, const char *fmt, ...)
 
 	printf("\nFAILED\n");
 
+	//fbr_test_finish_abort();
+
 	exit(1);
 }
 

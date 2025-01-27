@@ -8,6 +8,8 @@
 
 #include <stdlib.h>
 
+static struct fbr_test *_TEST;
+
 static void
 _finish_test(struct fbr_test_context *ctx)
 {
@@ -122,12 +124,16 @@ _test_run_test_file(void *arg)
 }
 
 int
-main(int argc, char **argv)
+fbr_test_main(int argc, char **argv)
 {
 	struct fbr_test test;
 
 	_init_test(&test);
 	fbr_test_cmds_init(&test);
+
+	assert_zero(_TEST);
+	_TEST = &test;
+	fbr_test_context_ok(_TEST);
 
 	for (int i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-q")) {
@@ -178,6 +184,12 @@ main(int argc, char **argv)
 	fbr_test_log(NULL, FBR_LOG_FORCE, "PASSED");
 
 	return 0;
+}
+
+int
+main(int argc, char **argv)
+{
+	return fbr_test_main(argc, argv);
 }
 
 void
@@ -264,4 +276,11 @@ fbr_test_run_all_finish(struct fbr_test *test)
 	}
 
 	assert(TAILQ_EMPTY(&test->finish_list));
+}
+
+void
+fbr_test_finish_abort(void)
+{
+	fbr_test_ok(_TEST);
+	fbr_test_run_all_finish(_TEST);
 }
