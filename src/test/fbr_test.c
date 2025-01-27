@@ -133,7 +133,7 @@ fbr_test_main(int argc, char **argv)
 
 	assert_zero(_TEST);
 	_TEST = &test;
-	fbr_test_context_ok(_TEST);
+	fbr_test_ok(_TEST);
 
 	for (int i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-q")) {

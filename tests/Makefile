@@ -25,9 +25,8 @@ test:		check
 
 check:		$(TESTS)
 
-# TODO fix this (eval)
-verbose:	FLAGS=-vv
-verbose:	$(TESTS)
+verbose:
+		$(eval FLAGS=-vv)
 
 vjson:		PRE_EXEC=$(VALGRIND)
 vjson:		json
