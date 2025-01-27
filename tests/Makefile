@@ -9,37 +9,33 @@ PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
 GDB=gdb --args
 
-.PHONY:	all test check fiberfs_test valgrind verbose vjson json vfiber fiber
+.PHONY:	all test check fiberfs_test valgrind verbose json fiber
 
 all:		check
 
-FORCE:
-
-fiberfs_test:
-		$(MAKE) -C .. fiberfs_test
-
-valgrind:	PRE_EXEC=$(VALGRIND)
-valgrind:	check
-
 test:		check
 
-check:		$(TESTS)
+$(FIBERFS_TEST):
+		$(MAKE) -C .. fiberfs_test
+
+valgrind:
+		$(eval PRE_EXEC=$(VALGRIND))
+		@echo valgrind enabled
 
 verbose:
 		$(eval FLAGS=-vv)
+		@echo verbose enabled
 
-vjson:		PRE_EXEC=$(VALGRIND)
-vjson:		json
+check:		$(TESTS)
 
 json:		$(TESTS_JSON)
 
-vfiber:		PRE_EXEC=$(VALGRIND)
-vfiber:		fiber
-
 fiber:		$(TESTS_FIBER)
 
-%.cht:		fiberfs_test FORCE
+FORCE:
+
+%.cht:		$(FIBERFS_TEST) FORCE
 		$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
 
-%.tst:		fiberfs_test FORCE
+%.tst:		$(FIBERFS_TEST) FORCE
 		$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
