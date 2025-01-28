@@ -20,46 +20,48 @@ struct fbr_test_fuse {
 };
 
 static void
-_fuse_finish(struct fbr_test_context *ctx)
+_fuse_finish(struct fbr_test_context *test_ctx)
 {
-	fbr_test_context_ok(ctx);
-	assert(ctx->fuse);
-	assert(ctx->fuse->magic == _FUSE_MAGIC);
+	fbr_test_context_ok(test_ctx);
+	assert(test_ctx->fuse);
+	assert(test_ctx->fuse->magic == _FUSE_MAGIC);
 
-	struct fbr_fuse_context *fctx = &ctx->fuse->ctx;
-	fbr_fuse_ctx_ok(fctx);
+	struct fbr_fuse_context *ctx = &test_ctx->fuse->ctx;
+	fbr_fuse_ctx_ok(ctx);
 
-	fbr_fuse_unmount(fctx);
-	fbr_fuse_free(fctx);
+	fbr_fuse_unmount(ctx);
+	fbr_fuse_free(ctx);
 
-	fbr_ZERO(ctx->fuse);
-	free(ctx->fuse);
+	fbr_ZERO(test_ctx->fuse);
+	free(test_ctx->fuse);
 
-	ctx->fuse = NULL;
+	test_ctx->fuse = NULL;
 }
 
 static void
-_fuse_init(struct fbr_test_context *ctx)
+_fuse_init(struct fbr_test_context *test_ctx)
 {
-	fbr_test_context_ok(ctx);
+	fbr_test_context_ok(test_ctx);
 
-	if (!ctx->fuse) {
+	if (!test_ctx->fuse) {
 		struct fbr_test_fuse *fuse = malloc(sizeof(*fuse));
 		assert(fuse);
 
 		fuse->magic = _FUSE_MAGIC;
 
-		ctx->fuse = fuse;
+		test_ctx->fuse = fuse;
 
-		fbr_test_register_finish(ctx, "fuse", _fuse_finish);
+		fbr_test_register_finish(test_ctx, "fuse", _fuse_finish);
 	}
 
-	assert(ctx->fuse->magic == _FUSE_MAGIC);
+	assert(test_ctx->fuse->magic == _FUSE_MAGIC);
 }
 
 static int
-_fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
+_fuse_test_mount(struct fbr_test_context *test_ctx, struct fbr_fuse_context *ctx,
+    const char *path, int debug)
 {
+	fbr_test_context_ok(test_ctx);
 	assert_zero(_TEST_FUSE_STATE);
 
 	//fuse_cmdline_help();
@@ -68,6 +70,7 @@ _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 	fbr_fuse_init(ctx);
 
 	ctx->fuse_ops = TEST_FUSE_OPS;
+	ctx->test_ctx = test_ctx;
 	//ctx->sighandle = 1;
 
 	if (debug) {
@@ -112,7 +115,7 @@ fbr_test_fuse_cmd_fuse_test_mount(struct fbr_test_context *ctx, struct fbr_test_
 	struct fbr_test *test = fbr_test_convert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	int ret = _fuse_test_mount(&ctx->fuse->ctx, cmd->params[0].value,
+	int ret = _fuse_test_mount(ctx, &ctx->fuse->ctx, cmd->params[0].value,
 		test->verbocity >= FBR_LOG_VERBOSE);
 
 	fbr_fuse_ctx_ok(&ctx->fuse->ctx);

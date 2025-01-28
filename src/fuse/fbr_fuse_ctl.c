@@ -13,6 +13,8 @@
 #include "fbr_fuse.h"
 #include "fbr_fuse_lowlevel.h"
 
+static struct fbr_fuse_context *_FUSE_CTX;
+
 void
 fbr_fuse_init(struct fbr_fuse_context *ctx)
 {
@@ -59,6 +61,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	char *argv[4];
 	struct fuse_args fargs;
 	fargs.argv = argv;
+	// TODO default_permissions allow_other
 	fargs.argv[0] = "fiberfs";
 	fargs.argv[1] = "-o";
 	fargs.argv[2] = "fsname=fiberfs";
@@ -103,6 +106,8 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	ctx->state = FBR_FUSE_MOUNTED;
 
+	_FUSE_CTX = ctx;
+
 	assert_zero(pthread_create(&ctx->loop_thread, NULL, _fuse_mount_thread, ctx));
 
 	while (!ctx->running) {
@@ -115,6 +120,13 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	}
 
 	return 0;
+}
+
+struct fbr_fuse_context *
+fbr_fuse_get_ctx(void)
+{
+	fbr_fuse_mounted(_FUSE_CTX);
+	return _FUSE_CTX;
 }
 
 void
@@ -170,6 +182,8 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 	assert_zero(pthread_join(ctx->loop_thread, NULL));
 	assert(ctx->exited);
 	assert(ctx->session);
+
+	_FUSE_CTX = NULL;
 
 	if (ctx->sighandle) {
 		fuse_remove_signal_handlers(ctx->session);
