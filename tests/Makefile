@@ -9,11 +9,13 @@ PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
 GDB=gdb --args
 
-.PHONY:	all test check fiberfs_test valgrind verbose json fiber
+.PHONY: all test check fiberfs_test valgrind verbose json fiber FORCE
 
 all:			check
 
 test:			check
+
+FORCE:
 
 $(FIBERFS_TEST):	FORCE
 			$(MAKE) -C .. fiberfs_test
@@ -31,8 +33,6 @@ check:			$(TESTS)
 json:			$(TESTS_JSON)
 
 fiber:			$(TESTS_FIBER)
-
-FORCE:
 
 %.cht:			$(FIBERFS_TEST) FORCE
 			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@

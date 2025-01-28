@@ -9,6 +9,7 @@
 #include "fiberfs.h"
 #include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_lowlevel.h"
+#include "fuse/test/fbr_test_fuse_cmds.h"
 #include "test/fbr_test.h"
 
 struct fbr_test_fuse {
@@ -17,8 +18,6 @@ struct fbr_test_fuse {
 
 	struct fbr_fuse_context		ctx;
 };
-
-static int _fuse_state;
 
 static void
 _fuse_finish(struct fbr_test_context *ctx)
@@ -58,47 +57,17 @@ _fuse_init(struct fbr_test_context *ctx)
 	assert(ctx->fuse->magic == _FUSE_MAGIC);
 }
 
-static void
-_test_init(void *userdata, struct fuse_conn_info *conn)
-{
-	struct fbr_fuse_context *ctx;
-
-	ctx = (struct fbr_fuse_context*)userdata;
-
-	fbr_fuse_mounted(ctx);
-	assert(conn);
-
-	_fuse_state = 1;
-}
-
-static void
-_test_destroy(void *userdata)
-{
-	struct fbr_fuse_context *ctx;
-
-	ctx = (struct fbr_fuse_context*)userdata;
-
-	fbr_fuse_ctx_ok(ctx);
-
-	_fuse_state = 2;
-}
-
-static const struct fuse_lowlevel_ops _test_ops = {
-	.init = _test_init,
-	.destroy = _test_destroy
-};
-
 static int
 _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 {
-	assert_zero(_fuse_state);
+	assert_zero(_TEST_FUSE_STATE);
 
 	//fuse_cmdline_help();
 	//fuse_lowlevel_help();
 
 	fbr_fuse_init(ctx);
 
-	ctx->fuse_ops = &_test_ops;
+	ctx->fuse_ops = TEST_FUSE_OPS;
 	//ctx->sighandle = 1;
 
 	if (debug) {
@@ -111,7 +80,7 @@ _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 		return ret;
 	}
 
-	fbr_test_ASSERT(_fuse_state == 1, "Init callback is broken");
+	fbr_test_ASSERT(_TEST_FUSE_STATE == 1, "Init callback is broken");
 
 	return ctx->error;
 }
@@ -119,7 +88,7 @@ _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 static int
 _fuse_test_unmount(struct fbr_fuse_context *ctx)
 {
-	assert(_fuse_state == 1);
+	assert(_TEST_FUSE_STATE == 1);
 	fbr_fuse_ctx_ok(ctx);
 
 	fbr_fuse_unmount(ctx);
@@ -130,7 +99,7 @@ _fuse_test_unmount(struct fbr_fuse_context *ctx)
 	fuse_session_destroy(ctx->session);
 	ctx->session = NULL;
 
-	fbr_test_ASSERT(_fuse_state == 2, "Destroy callback is broken");
+	fbr_test_ASSERT(_TEST_FUSE_STATE == 2, "Destroy callback is broken");
 
 	return ctx->error;
 }
