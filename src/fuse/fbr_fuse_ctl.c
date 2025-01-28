@@ -12,7 +12,6 @@
 #include "fiberfs.h"
 #include "fbr_fuse.h"
 #include "fbr_fuse_lowlevel.h"
-#include "fs/fbr_fs.h"
 
 void
 fbr_fuse_init(struct fbr_fuse_context *ctx)
@@ -54,6 +53,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	fbr_fuse_ctx_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
 	assert_zero(ctx->session);
+	assert(ctx->fuse_ops);
 	assert(path);
 
 	char *argv[4];
@@ -72,13 +72,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 		fargs.argc--;
 	}
 
-	if (!ctx->fuse_ops) {
-		// TODO
-		//ctx->fuse_ops = ...
-		assert(ctx->fuse_ops);
-	}
-
-	ctx->session = fuse_session_new(&fargs, ctx->fuse_ops, sizeof(*ctx->fuse_ops), ctx);
+	ctx->session = fuse_session_new(&fargs, FBR_FUSE_OPS, sizeof(*FBR_FUSE_OPS), ctx);
 
 	fuse_opt_free_args(&fargs);
 

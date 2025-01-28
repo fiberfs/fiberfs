@@ -11,31 +11,31 @@ GDB=gdb --args
 
 .PHONY:	all test check fiberfs_test valgrind verbose json fiber
 
-all:		check
+all:			check
 
-test:		check
+test:			check
 
-$(FIBERFS_TEST):
-		$(MAKE) -C .. fiberfs_test
+$(FIBERFS_TEST):	FORCE
+			$(MAKE) -C .. fiberfs_test
 
 valgrind:
-		$(eval PRE_EXEC=$(VALGRIND))
-		@echo valgrind enabled
+			$(eval PRE_EXEC=$(VALGRIND))
+			@echo valgrind: enabled
 
 verbose:
-		$(eval FLAGS=-vv)
-		@echo verbose enabled
+			$(eval FLAGS=-vv)
+			@echo verbose: enabled
 
-check:		$(TESTS)
+check:			$(TESTS)
 
-json:		$(TESTS_JSON)
+json:			$(TESTS_JSON)
 
-fiber:		$(TESTS_FIBER)
+fiber:			$(TESTS_FIBER)
 
 FORCE:
 
-%.cht:		$(FIBERFS_TEST) FORCE
-		$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
+%.cht:			$(FIBERFS_TEST) FORCE
+			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
 
-%.tst:		$(FIBERFS_TEST) FORCE
-		$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
+%.tst:			$(FIBERFS_TEST) FORCE
+			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@

@@ -18,6 +18,8 @@ struct fbr_test_fuse {
 	struct fbr_fuse_context		ctx;
 };
 
+static int _fuse_state;
+
 static void
 _fuse_finish(struct fbr_test_context *ctx)
 {
@@ -66,16 +68,31 @@ _test_init(void *userdata, struct fuse_conn_info *conn)
 	fbr_fuse_mounted(ctx);
 	assert(conn);
 
-	fbr_fuse_running(ctx);
+	_fuse_state = 1;
+}
+
+static void
+_test_destroy(void *userdata)
+{
+	struct fbr_fuse_context *ctx;
+
+	ctx = (struct fbr_fuse_context*)userdata;
+
+	fbr_fuse_ctx_ok(ctx);
+
+	_fuse_state = 2;
 }
 
 static const struct fuse_lowlevel_ops _test_ops = {
-	.init = _test_init
+	.init = _test_init,
+	.destroy = _test_destroy
 };
 
 static int
 _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 {
+	assert_zero(_fuse_state);
+
 	//fuse_cmdline_help();
 	//fuse_lowlevel_help();
 
@@ -94,17 +111,26 @@ _fuse_test_mount(struct fbr_fuse_context *ctx, const char *path, int debug)
 		return ret;
 	}
 
+	fbr_test_ASSERT(_fuse_state == 1, "Init callback is broken");
+
 	return ctx->error;
 }
 
 static int
 _fuse_test_unmount(struct fbr_fuse_context *ctx)
 {
+	assert(_fuse_state == 1);
 	fbr_fuse_ctx_ok(ctx);
 
 	fbr_fuse_unmount(ctx);
 
 	assert(ctx->state == FBR_FUSE_NONE);
+
+	assert(ctx->session);
+	fuse_session_destroy(ctx->session);
+	ctx->session = NULL;
+
+	fbr_test_ASSERT(_fuse_state == 2, "Destroy callback is broken");
 
 	return ctx->error;
 }

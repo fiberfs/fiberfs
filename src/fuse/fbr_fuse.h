@@ -34,6 +34,8 @@ struct fbr_fuse_context {
 	int				exit_value;
 };
 
+extern const struct fuse_lowlevel_ops *FBR_FUSE_OPS;
+
 void fbr_fuse_init(struct fbr_fuse_context *ctx);
 void fbr_fuse_free(struct fbr_fuse_context *ctx);
 int fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path);
