@@ -9,13 +9,13 @@
 #include <stdlib.h>
 
 static struct fbr_test *_TEST;
-static int _GONE;
 
 static void
 _finish_test(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 	assert_zero(ctx->chttp_test);
+	assert_zero(_TEST);
 
 	struct fbr_test *test = fbr_test_convert(ctx);
 	assert(test->context == ctx);
@@ -289,7 +289,7 @@ fbr_test_run_all_finish(struct fbr_test *test)
 {
 	fbr_test_ok(test);
 
-	_GONE = 1;
+	_TEST = NULL;
 
 	fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "shutdown");
 
@@ -316,7 +316,7 @@ fbr_test_run_all_finish(struct fbr_test *test)
 void
 fbr_test_finish_abort(void)
 {
-	if (_GONE) {
+	if (!_TEST) {
 		return;
 	}
 
@@ -328,7 +328,7 @@ fbr_test_finish_abort(void)
 int
 fbr_test_is_forked(void)
 {
-	if (_GONE) {
+	if (!_TEST) {
 		return 0;
 	}
 
@@ -340,7 +340,7 @@ fbr_test_is_forked(void)
 int
 fbr_test_is_thread(void)
 {
-	if (_GONE) {
+	if (!_TEST) {
 		return 0;
 	}
 
@@ -356,7 +356,7 @@ fbr_test_is_thread(void)
 void
 fbr_test_set_error(void)
 {
-	if (_GONE) {
+	if (!_TEST) {
 		return;
 	}
 
