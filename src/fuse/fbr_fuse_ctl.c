@@ -197,7 +197,10 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_ctx_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
-	assert(ctx->exited);
+
+	if (ctx->running) {
+		assert(ctx->exited);
+	}
 
 	if (ctx->session) {
 		fuse_session_destroy(ctx->session);
