@@ -3,7 +3,6 @@
  *
  */
 
-#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -126,27 +125,6 @@ fbr_test_fuse_cmd_fuse_test_mount(struct fbr_test_context *ctx, struct fbr_test_
 		"ctx->path error: %s", ctx->fuse->ctx.path);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Fuse passed: %s", cmd->params[0].value);
-}
-
-void
-fbr_test_fuse_cmd_fuse_test_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	_fuse_init(ctx);
-	assert(ctx->fuse);
-	assert(ctx->fuse->magic == _FUSE_MAGIC);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	struct fbr_fuse_context *fuse_ctx = &ctx->fuse->ctx;
-	fbr_fuse_mounted(fuse_ctx);
-	assert(fuse_ctx->path);
-
-	DIR *d = opendir(fuse_ctx->path);
-	fbr_test_ASSERT(d, "opendir failed for %s", fuse_ctx->path);
-
-	int ret = closedir(d);
-	fbr_test_ERROR(ret, "closedir failed %d", ret);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fuse_test_ls done %s", fuse_ctx->path);
 }
 
 void

@@ -3,6 +3,7 @@
  *
  */
 
+#include <dirent.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -150,4 +151,20 @@ fbr_test_var_fs_tmpdir(struct fbr_test_context *ctx)
 	assert(ctx->fs->tmpdir_str);
 
 	return ctx->fs->tmpdir_str;
+}
+
+void
+fbr_test_cmd_fs_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	DIR *d = opendir(cmd->params[0].value);
+	fbr_test_ASSERT(d, "opendir failed for %s", cmd->params[0].value);
+
+	int ret = closedir(d);
+	fbr_test_ERROR(ret, "closedir failed %d", ret);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fuse_test_ls done %s", cmd->params[0].value);
 }

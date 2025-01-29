@@ -28,6 +28,7 @@ FBR_TEST_VAR(random)
 
 FBR_TEST_CMD(fs_mkdir_tmp)
 FBR_TEST_VAR(fs_tmpdir)
+FBR_TEST_CMD(fs_ls)
 
 FBR_TEST_CMD(set_var1)
 FBR_TEST_CMD(set_var2)

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 static struct fbr_test *_TEST;
+static int _GONE;
 
 static void
 _finish_test(struct fbr_test_context *ctx)
@@ -21,7 +22,13 @@ _finish_test(struct fbr_test_context *ctx)
 
 	fbr_test_ok(test);
 
+	_GONE = 1;
+
+	fbr_test_ERROR(ctx->fs != NULL, "fs detected");
+	fbr_test_ERROR(ctx->fuse != NULL, "fuse detected");
 	fbr_test_ERROR(ctx->random != NULL, "random detected");
+	fbr_test_ERROR(ctx->var != NULL, "var detected");
+	fbr_test_ERROR(ctx->chttp_test != NULL, "chttp_test detected");
 
 	if (test->ft_file) {
 		fclose(test->ft_file);
@@ -83,6 +90,7 @@ _test_run_test_file(void *arg)
 	struct fbr_test *test = (struct fbr_test*)arg;
 	fbr_test_ok(test);
 	assert_zero(test->stopped);
+	assert(fbr_test_is_thread());
 
 	test->ft_file = fopen(test->test_file, "r");
 	fbr_test_ERROR(!test->ft_file, "invalid file %s", test->test_file);
@@ -166,6 +174,7 @@ fbr_test_main(int argc, char **argv)
 	}
 
 	assert_zero(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
+	assert_zero(fbr_test_is_thread());
 
 	int ret = fbr_test_join_thread(test.thread, &test.stopped, &test.timeout_ms);
 
@@ -307,14 +316,52 @@ fbr_test_run_all_finish(struct fbr_test *test)
 void
 fbr_test_finish_abort(void)
 {
+	if (_GONE) {
+		return;
+	}
+
 	fbr_test_ok(_TEST);
+
 	fbr_test_run_all_finish(_TEST);
 }
 
 int
 fbr_test_is_forked(void)
 {
+	if (_GONE) {
+		return 0;
+	}
+
 	fbr_test_ok(_TEST);
 
 	return _TEST->forked;
+}
+
+int
+fbr_test_is_thread(void)
+{
+	if (_GONE) {
+		return 0;
+	}
+
+	fbr_test_ok(_TEST);
+
+	if (pthread_self() == _TEST->thread) {
+		return 1;
+	}
+
+	return 0;
+}
+
+void
+fbr_test_set_error(void)
+{
+	if (_GONE) {
+		return;
+	}
+
+	fbr_test_ok(_TEST);
+
+	_TEST->error = 1;
+	_TEST->stopped = 1;
 }
