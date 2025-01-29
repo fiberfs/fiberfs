@@ -5,5 +5,5 @@ set_timeout_sec 2
 fs_mkdir_tmp
 
 fuse_test_mount $fs_tmpdir
-#fork fs_ls $fs_tmpdir
+#vfork fs_ls $fs_tmpdir
 fuse_test_unmount

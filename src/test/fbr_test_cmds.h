@@ -42,6 +42,7 @@ FBR_TEST_VAR(var4)
 FBR_TEST_VAR(var5)
 
 FBR_TEST_CMD(fork)
+FBR_TEST_CMD(vfork)
 
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR
