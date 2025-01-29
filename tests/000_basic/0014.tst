@@ -1,4 +1,4 @@
-chttp_test Variables
+fiber_test Variables
 
 set_var1 "ab" "c" 123
 equal $var1 "abc123"

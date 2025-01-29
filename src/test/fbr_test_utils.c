@@ -34,8 +34,6 @@ fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
 		    test->verbocity < level)) {
 			return;
 		}
-	} else {
-		assert(level == FBR_LOG_FORCE);
 	}
 
 	if (level == FBR_LOG_NONE) {
@@ -95,7 +93,11 @@ fbr_test_ERROR(int condition, const char *fmt, ...)
 	vprintf(fmt, ap);
 	va_end(ap);
 
-	printf("\nFAILED\n");
+	if (fbr_test_is_forked()) {
+		printf("\n");
+	} else {
+		printf("\nFAILED\n");
+	}
 
 	fbr_test_finish_abort();
 

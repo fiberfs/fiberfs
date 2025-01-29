@@ -135,6 +135,8 @@ fbr_test_main(int argc, char **argv)
 	_TEST = &test;
 	fbr_test_ok(_TEST);
 
+	test.prog_name = argv[0];
+
 	for (int i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-q")) {
 			test.verbocity = FBR_LOG_NONE;
@@ -148,6 +150,8 @@ fbr_test_main(int argc, char **argv)
 		} else if (!strcmp(argv[i], "-h")) {
 			_usage(0);
 			return 0;
+		} else if (!strcmp(argv[i], "-k")) {
+			test.forked = 1;
 		} else if (test.test_file == NULL) {
 			test.test_file = argv[i];
 		} else {
@@ -168,20 +172,40 @@ fbr_test_main(int argc, char **argv)
 	int timeout = (int)test.timeout_ms / 1000;
 	int error = test.error;
 	int skip = test.skip;
+	int forked = test.forked;
+	enum fbr_test_verbocity verbosity = test.verbocity;
 
 	fbr_test_run_all_finish(&test);
 
 	fbr_test_ERROR(ret, "test timed out after %ds", timeout);
 
 	if (error) {
-		fbr_test_log(NULL, FBR_LOG_FORCE, "FAILED");
+		if (forked) {
+			if (verbosity >= FBR_LOG_VERBOSE) {
+				fbr_test_log(NULL, FBR_LOG_NONE, "FAILED");
+			}
+		} else {
+			fbr_test_log(NULL, FBR_LOG_FORCE, "FAILED");
+		}
 		return 1;
 	} else if (skip) {
-		fbr_test_log(NULL, FBR_LOG_FORCE, "SKIPPED");
+		if (forked) {
+			if (verbosity >= FBR_LOG_VERBOSE) {
+				fbr_test_log(NULL, FBR_LOG_NONE, "SKIPPED");
+			}
+		} else {
+			fbr_test_log(NULL, FBR_LOG_FORCE, "SKIPPED");
+		}
 		return 0;
 	}
 
-	fbr_test_log(NULL, FBR_LOG_FORCE, "PASSED");
+	if (forked) {
+		if (verbosity >= FBR_LOG_VERBOSE) {
+			fbr_test_log(NULL, FBR_LOG_NONE, "PASSED");
+		}
+	} else {
+		fbr_test_log(NULL, FBR_LOG_FORCE, "PASSED");
+	}
 
 	return 0;
 }
@@ -285,4 +309,12 @@ fbr_test_finish_abort(void)
 {
 	fbr_test_ok(_TEST);
 	fbr_test_run_all_finish(_TEST);
+}
+
+int
+fbr_test_is_forked(void)
+{
+	fbr_test_ok(_TEST);
+
+	return _TEST->forked;
 }

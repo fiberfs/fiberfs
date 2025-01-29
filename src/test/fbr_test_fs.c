@@ -15,7 +15,7 @@ struct _fs_path {
 	unsigned int		magic;
 #define _FS_PATH_MAGIC		0x1E9B84CD
 
-	char			path[PATH_MAX];
+	char			path[PATH_MAX + 1];
 	struct _fs_path		*next;
 };
 
@@ -82,19 +82,12 @@ _fs_init(struct fbr_test_context *ctx)
 	assert(ctx->fs->magic == _FS_MAGIC);
 }
 
-void
-fbr_test_cmd_fs_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+char *
+fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot)
 {
 	_fs_init(ctx);
-	fbr_test_cmd_ok(cmd);
 
-	fbr_test_ERROR(cmd->param_count > 1, "Too many parameters");
-
-	char *tmproot;
-
-	if (cmd->param_count == 1) {
-		tmproot = cmd->params[0].value;
-	} else {
+	if (!tmproot) {
 		tmproot = getenv("TMPDIR");
 
 		if (!tmproot) {
@@ -125,9 +118,29 @@ fbr_test_cmd_fs_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	entry->next = ctx->fs->dirs;
 	ctx->fs->dirs = entry;
-	ctx->fs->tmpdir_str = entry->path;
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "tmpdir '%s'", entry->path);
+	return entry->path;
+}
+
+void
+fbr_test_cmd_fs_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_fs_init(ctx);
+	fbr_test_cmd_ok(cmd);
+
+	fbr_test_ERROR(cmd->param_count > 1, "Too many parameters");
+
+	char *tmproot = NULL;
+
+	if (cmd->param_count == 1) {
+		tmproot = cmd->params[0].value;
+	}
+
+	char *tmpdir = fbr_test_mkdir_tmp(ctx, tmproot);
+
+	ctx->fs->tmpdir_str = tmpdir;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "tmpdir '%s'", tmpdir);
 }
 
 char *

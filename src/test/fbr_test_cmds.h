@@ -40,6 +40,8 @@ FBR_TEST_VAR(var3)
 FBR_TEST_VAR(var4)
 FBR_TEST_VAR(var5)
 
+FBR_TEST_CMD(fork)
+
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR
 

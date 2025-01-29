@@ -9,7 +9,10 @@ PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
 GDB=gdb --args
 
-.PHONY: all test check fiberfs_test valgrind verbose json fiber FORCE
+export FIBER_VALGRIND=$(PRE_EXEC)
+export FIBER_FLAGS=$(FLAGS)
+
+.PHONY: all test check valgrind verbose json fiber FORCE
 
 all:			check
 

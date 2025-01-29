@@ -23,7 +23,7 @@ enum fbr_test_verbocity {
 	FBR_LOG_VERY_VERBOSE
 };
 
-#define FBR_TEST_MAX_PARAMS		16
+#define FBR_TEST_MAX_PARAMS			16
 
 struct fbr_test;
 struct fbr_test_fs;
@@ -33,22 +33,22 @@ struct fbr_test_var;
 struct chttp_test_context;
 
 struct fbr_test_context {
-	unsigned int			magic;
-#define FBR_TEST_CONTEXT_MAGIC		0xAD98A6FF
+	unsigned int				magic;
+#define FBR_TEST_CONTEXT_MAGIC			0xAD98A6FF
 
-	struct fbr_test			*test;
-	struct fbr_test_fs		*fs;
-	struct fbr_test_fuse		*fuse;
-	struct fbr_test_random		*random;
-	struct fbr_test_var		*var;
-	struct chttp_test_context	*chttp_test;
+	struct fbr_test				*test;
+	struct fbr_test_fs			*fs;
+	struct fbr_test_fuse			*fuse;
+	struct fbr_test_random			*random;
+	struct fbr_test_var			*var;
+	struct chttp_test_context		*chttp_test;
 };
 
 struct fbr_test_param {
-	char				*value;
-	size_t				len;
+	char					*value;
+	size_t					len;
 
-	unsigned int			v_const:1;
+	unsigned int				v_const:1;
 };
 
 struct fbr_test_cmd;
@@ -57,17 +57,17 @@ typedef void (fbr_test_cmd_f)(struct fbr_test_context *, struct fbr_test_cmd *);
 typedef char *(fbr_test_var_f)(struct fbr_test_context *);
 
 struct fbr_test_cmd {
-	unsigned int			magic;
-#define FBR_TEST_CMD_MAGIC		0x8F923F2E
+	unsigned int				magic;
+#define FBR_TEST_CMD_MAGIC			0x8F923F2E
 
-	const char			*name;
+	const char				*name;
 
-	size_t				param_count;
-	struct fbr_test_param		params[FBR_TEST_MAX_PARAMS];
+	size_t					param_count;
+	struct fbr_test_param			params[FBR_TEST_MAX_PARAMS];
 
-	fbr_test_cmd_f			*func;
+	fbr_test_cmd_f				*func;
 
-	unsigned int			async:1;
+	unsigned int				async:1;
 };
 
 struct fbr_test_cmdentry {
@@ -116,6 +116,7 @@ struct fbr_test {
 	struct fbr_test_tree			cmd_tree;
 	TAILQ_HEAD(, fbr_test_finish)		finish_list;
 
+	const char				*prog_name;
 	char					*test_file;
 	FILE					*ft_file;
 
@@ -129,6 +130,7 @@ struct fbr_test {
 	struct fbr_test_cmd			cmd;
 	size_t					cmd_count;
 
+	int					forked;
 	int					error;
 	int					skip;
 };
@@ -142,6 +144,7 @@ void fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 void fbr_test_run_finish(struct fbr_test_context *ctx, const char *name);
 void fbr_test_run_all_finish(struct fbr_test *test);
 void fbr_test_finish_abort(void);
+int fbr_test_is_forked(void);
 
 void fbr_test_cmds_init(struct fbr_test *test);
 struct fbr_test_cmdentry *fbr_test_cmds_get(struct fbr_test *test, const char *name);
@@ -166,6 +169,7 @@ size_t fbr_test_line_pos(struct fbr_test *test);
 void fbr_test_random_seed(void);
 long fbr_test_gen_random(long low, long high);
 void fbr_test_fill_random(uint8_t *buf, size_t len);
+char *fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot);
 
 #define fbr_test_ok(test)						\
 	do {								\

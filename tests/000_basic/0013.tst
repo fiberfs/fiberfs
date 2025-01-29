@@ -1,3 +1,3 @@
-chttp_test "test"
+fiber_test "test"
 
 print "abc" 123 $random
