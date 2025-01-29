@@ -22,8 +22,6 @@ _finish_test(struct fbr_test_context *ctx)
 
 	fbr_test_ok(test);
 
-	_GONE = 1;
-
 	fbr_test_ERROR(ctx->fs != NULL, "fs detected");
 	fbr_test_ERROR(ctx->fuse != NULL, "fuse detected");
 	fbr_test_ERROR(ctx->random != NULL, "random detected");
@@ -290,6 +288,8 @@ void
 fbr_test_run_all_finish(struct fbr_test *test)
 {
 	fbr_test_ok(test);
+
+	_GONE = 1;
 
 	fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "shutdown");
 
