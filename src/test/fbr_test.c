@@ -175,16 +175,14 @@ fbr_test_main(int argc, char **argv)
 	assert_zero(fbr_test_is_thread());
 
 	int ret = fbr_test_join_thread(test.thread, &test.stopped, &test.timeout_ms);
+	fbr_test_ERROR(ret, "test timed out after %ds", (int)test.timeout_ms / 1000);
 
-	int timeout = (int)test.timeout_ms / 1000;
 	int error = test.error;
 	int skip = test.skip;
 	int forked = test.forked;
 	enum fbr_test_verbocity verbosity = test.verbocity;
 
 	fbr_test_run_all_finish(&test);
-
-	fbr_test_ERROR(ret, "test timed out after %ds", timeout);
 
 	if (error) {
 		if (forked) {

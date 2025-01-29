@@ -16,9 +16,8 @@
 #include <pthread.h>
 
 enum fbr_test_verbocity {
-	FBR_LOG_FORCE = -2,
-	FBR_LOG_ROOT = -1,
-	FBR_LOG_NONE = 0,
+	FBR_LOG_FORCE = 0,
+	FBR_LOG_NONE,
 	FBR_LOG_VERBOSE,
 	FBR_LOG_VERY_VERBOSE
 };

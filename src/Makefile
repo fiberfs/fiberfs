@@ -149,6 +149,9 @@ test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES) $(CHTTP_TEST_INCLUDES) \
 			$(FJSON_TEST_INCLUDES) $(TEST_INCLUDES_FUSE)
 		$(CC) $(CFLAGS) -c $< -o $@
 
+fuse/test/%.o:	fuse/test/%.c $(INCLUDES) $(TEST_INCLUDES) $(TEST_INCLUDES_FUSE)
+		$(CC) $(CFLAGS) -c $< -o $@
+
 chttp/test/%.o:	chttp/test/%.c $(CHTTP_INCLUDES) $(TEST_INCLUDES) $(CHTTP_TEST_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
