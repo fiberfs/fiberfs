@@ -48,7 +48,7 @@ _test_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	fbr_test_log(ctx->test_ctx, FBR_LOG_VERBOSE, "LOOKUP parent: %lu name: %s",
 		parent, name);
 
-	(void)fuse_reply_err(req, EIO);
+	(void)fuse_reply_err(req, ENOENT);
 }
 
 static const struct fuse_lowlevel_ops _TEST_FUSE_OPS = {

@@ -240,6 +240,8 @@ fbr_test_run_finish(struct fbr_test_context *ctx, const char *name)
 
 		TAILQ_REMOVE(&test->finish_list, finish, entry);
 
+		fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "finishing %s", finish->name);
+
 		finish->func(test->context);
 
 		fbr_ZERO(finish);
@@ -256,9 +258,7 @@ fbr_test_run_all_finish(struct fbr_test *test)
 {
 	fbr_test_ok(test);
 
-	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
-		fbr_test_log(test->context, FBR_LOG_NONE, "shutdown");
-	}
+	fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "shutdown");
 
 	struct fbr_test_finish *finish, *temp;
 
@@ -268,6 +268,8 @@ fbr_test_run_all_finish(struct fbr_test *test)
 		TAILQ_REMOVE(&test->finish_list, finish, entry);
 
 		fbr_test_context_ok(test->context);
+
+		fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "finishing %s", finish->name);
 
 		finish->func(test->context);
 

@@ -19,6 +19,7 @@ extern const struct fuse_lowlevel_ops *TEST_FUSE_OPS;
 #endif /* FBR_TEST_FUSE_CMD */
 
 FBR_TEST_FUSE_CMD(fuse_test_mount)
+FBR_TEST_FUSE_CMD(fuse_test_ls)
 FBR_TEST_FUSE_CMD(fuse_test_unmount)
 
 #undef FBR_TEST_FUSE_CMD
