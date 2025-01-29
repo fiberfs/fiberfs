@@ -93,16 +93,15 @@ fbr_test_ERROR(int condition, const char *fmt, ...)
 	vprintf(fmt, ap);
 	va_end(ap);
 
+	printf("\n");
+
 	if (fbr_test_is_thread()) {
-		printf("\n");
 		fbr_test_set_error();
 		pthread_exit(NULL);
 	}
 
-	if (fbr_test_is_forked()) {
-		printf("\n");
-	} else {
-		printf("\nFAILED\n");
+	if (!fbr_test_is_forked()) {
+		printf("FAILED\n");
 	}
 
 	fbr_test_finish_abort();
