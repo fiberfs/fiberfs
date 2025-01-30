@@ -78,7 +78,7 @@ _init_test(struct fbr_test *test)
 static void
 _usage(int error)
 {
-	printf("%ssage: fiberfs_test [-q] [-v] [-vv] [-h] [-V] TEST_FILE\n",
+	printf("%ssage: fiberfs_test [-q] [-v] [-vv] [-h] [-k] [-V] TEST_FILE\n",
 		(error ? "ERROR u" : "U"));
 }
 

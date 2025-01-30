@@ -160,11 +160,25 @@ fbr_test_cmd_fs_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_cmd_ok(cmd);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	DIR *d = opendir(cmd->params[0].value);
-	fbr_test_ASSERT(d, "opendir failed for %s", cmd->params[0].value);
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
 
-	int ret = closedir(d);
+	DIR *dir = opendir(cmd->params[0].value);
+	fbr_test_ASSERT(dir, "opendir failed for %s", cmd->params[0].value);
+
+	struct dirent *dentry;
+	while ((dentry = readdir(dir)) != NULL) {
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "entry: %s type: %s ino: %lu",
+			dentry->d_name,
+			dentry->d_type == DT_REG ? "file" :
+				dentry->d_type == DT_DIR ? "dir" : "other",
+			dentry->d_ino);
+	}
+
+	int ret = closedir(dir);
 	fbr_test_ERROR(ret, "closedir failed %d", ret);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fuse_test_ls done %s", cmd->params[0].value);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_ls done %s", cmd->params[0].value);
 }

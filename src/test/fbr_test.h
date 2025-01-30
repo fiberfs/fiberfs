@@ -154,6 +154,10 @@ void fbr_test_unescape(struct fbr_test_param *param);
 int fbr_test_readline(struct fbr_test *test, size_t append_len);
 void fbr_test_parse_cmd(struct fbr_test *test);
 
+void fbr_test_fork(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd);
+int fbr_test_can_fork(struct fbr_test_context *ctx);
+int fbr_test_can_vfork(struct fbr_test_context *ctx);
+
 struct fbr_test *fbr_test_convert(struct fbr_test_context *ctx);
 void fbr_test_skip(struct fbr_test_context *ctx);
 void __fbr_attr_printf_p(3) fbr_test_log(struct fbr_test_context *ctx,
