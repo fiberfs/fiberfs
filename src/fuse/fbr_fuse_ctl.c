@@ -106,6 +106,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	ctx->state = FBR_FUSE_MOUNTED;
 
+	assert_zero(_FUSE_CTX);
 	_FUSE_CTX = ctx;
 
 	assert_zero(pthread_create(&ctx->loop_thread, NULL, _fuse_mount_thread, ctx));
@@ -130,9 +131,10 @@ fbr_fuse_get_ctx(void)
 }
 
 void
-fbr_fuse_running(struct fbr_fuse_context *ctx)
+fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
 	fbr_fuse_mounted(ctx);
+	assert(conn);
 
 	ctx->running = 1;
 }
@@ -198,6 +200,7 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_ctx_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
+	assert_zero(_FUSE_CTX);
 
 	if (ctx->running) {
 		assert(ctx->exited);

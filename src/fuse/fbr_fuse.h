@@ -37,13 +37,15 @@ struct fbr_fuse_context {
 	int				exit_value;
 };
 
+struct fuse_conn_info;
+
 extern const struct fuse_lowlevel_ops *FBR_FUSE_OPS;
 
 void fbr_fuse_init(struct fbr_fuse_context *ctx);
 void fbr_fuse_free(struct fbr_fuse_context *ctx);
 int fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path);
 struct fbr_fuse_context *fbr_fuse_get_ctx(void);
-void fbr_fuse_running(struct fbr_fuse_context *ctx);
+void fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);
 void fbr_fuse_abort(struct fbr_fuse_context *ctx);
 void fbr_fuse_unmount(struct fbr_fuse_context *ctx);
 void fbr_fuse_error(struct fbr_fuse_context *ctx);
