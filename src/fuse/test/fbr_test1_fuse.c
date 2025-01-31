@@ -50,15 +50,15 @@ _test1_ino(const char *name) {
 	assert(name);
 
 	if (!strcmp(name, "fiber1")) {
-		return 2;
+		return 101;
 	} else if (!strcmp(name, "fiber2")) {
-		return 3;
+		return 102;
 	} else if (!strcmp(name, "fiber3")) {
-		return 4;
+		return 103;
 	} else if (!strcmp(name, "fiber4")) {
-		return 5;
+		return 104;
 	} else if (!strcmp(name, "fiber5")) {
-		return 6;
+		return 105;
 	}
 
 	return 0;
@@ -67,15 +67,15 @@ _test1_ino(const char *name) {
 static const char *
 _test1_name(fuse_ino_t ino) {
 	switch (ino) {
-		case 2:
+		case 101:
 			return "fiber1";
-		case 3:
+		case 102:
 			return "fiber2";
-		case 4:
+		case 103:
 			return "fiber3";
-		case 5:
+		case 104:
 			return "fiber4";
-		case 6:
+		case 105:
 			return "fiber5";
 	}
 
@@ -96,11 +96,11 @@ _test1_stat(fuse_ino_t ino, struct stat *st_attr)
 			st_attr->st_mode = S_IFDIR | 0755;
 			st_attr->st_nlink = 2;
 			break;
-		case 2:
-		case 3:
-		case 4:
-		case 5:
-		case 6:
+		case 101:
+		case 102:
+		case 103:
+		case 104:
+		case 105:
 			/* fiberX */
 			name = _test1_name(ino);
 			assert(name);
@@ -232,24 +232,29 @@ _test1_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 	size_t dir_size;
 	size_t dir_ino;
 
-	if (!off) {
+	if (off == 0) {
 		off = 1;
-
-		fbr_test_log(test_ctx, FBR_LOG_VERY_VERBOSE, "READDIR name: . dir_ino: 1");
 
 		dir_size = fuse_add_direntry(req, dir_buf + dir_pos, sizeof(dir_buf) - dir_pos,
 			".", &st_attr, off);
 		fbr_test_ASSERT(dir_size <= sizeof(dir_buf), "dir_buf too small .");
 
 		if (dir_size <= sizeof(dir_buf) - dir_pos) {
+			fbr_test_log(test_ctx, FBR_LOG_VERY_VERBOSE, "READDIR name: .");
+
 			dir_pos += dir_size;
 		}
+	}
+	if (off == 1) {
+		off = 100;
 
 		dir_size = fuse_add_direntry(req, dir_buf + dir_pos, sizeof(dir_buf) - dir_pos,
 			"..", &st_attr, off);
 		fbr_test_ASSERT(dir_size <= sizeof(dir_buf), "dir_buf too small ..");
 
 		if (dir_size <= sizeof(dir_buf) - dir_pos) {
+			fbr_test_log(test_ctx, FBR_LOG_VERY_VERBOSE, "READDIR name: ..");
+
 			dir_pos += dir_size;
 		}
 	}
