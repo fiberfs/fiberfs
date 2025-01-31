@@ -31,6 +31,8 @@ _fuse_finish(struct fbr_test_context *test_ctx)
 	fbr_fuse_ctx_ok(ctx);
 
 	fbr_fuse_unmount(ctx);
+	fbr_test_ERROR(ctx->error, "Fuse error detected");
+
 	fbr_fuse_free(ctx);
 
 	fbr_ZERO(test_ctx->fuse);
@@ -120,6 +122,10 @@ fbr_fuse_test_unmount(struct fbr_test_context *test_ctx)
 	fbr_fuse_unmount(ctx);
 
 	assert(ctx->state == FBR_FUSE_NONE);
+
+	int error = ctx->error;
+	ctx->error = 0;
+	fbr_test_ERROR(error, "Fuse error detected");
 }
 
 void

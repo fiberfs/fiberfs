@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <pthread.h>
 
+#include "fiberfs.h"
+
 enum fbr_fuse_state {
 	FBR_FUSE_NONE = 0,
 	FBR_FUSE_MOUNTED
@@ -49,6 +51,8 @@ void fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 void fbr_fuse_abort(struct fbr_fuse_context *ctx);
 void fbr_fuse_unmount(struct fbr_fuse_context *ctx);
 void fbr_fuse_error(struct fbr_fuse_context *ctx);
+void __fbr_attr_printf_p(7) fbr_fuse_do_assert(int cond, void *req, const char *assertion,
+	const char *function, const char *file, int line, const char *fmt, ...);
 
 #define fbr_fuse_ctx_ok(ctx)						\
 	do {								\
@@ -61,5 +65,11 @@ void fbr_fuse_error(struct fbr_fuse_context *ctx);
 		assert((ctx)->state == FBR_FUSE_MOUNTED);		\
 		assert_zero((ctx)->exited);				\
 	} while (0)
+#define fbr_fuse_ASSERT(cond, req)					\
+	fbr_fuse_do_assert(cond, req, #cond, __func__, __FILE__,	\
+		__LINE__, NULL);
+#define fbr_fuse_ASSERTF(cond, req, fmt, ...)				\
+	fbr_fuse_do_assert(cond, req, #cond, __func__, __FILE__,	\
+		__LINE__, fmt,	##__VA_ARGS__);
 
 #endif /* _FBR_FUSE_H_INCLUDED_ */
