@@ -314,7 +314,7 @@ _fuse_ops_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 		return;
 	}
 
-	(void)fuse_reply_err(req, EIO);
+	(void)fuse_reply_err(req, ENOSYS);
 }
 
 static void
@@ -561,6 +561,7 @@ _fuse_ops_fallocate(fuse_req_t req, fuse_ino_t ino, int mode, off_t offset, off_
 	(void)fuse_reply_err(req, ENOSYS);
 }
 
+/*
 static void
 _fuse_ops_readdirplus(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
@@ -572,8 +573,9 @@ _fuse_ops_readdirplus(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 		return;
 	}
 
-	(void)fuse_reply_err(req, EIO);
+	(void)fuse_reply_err(req, ENOSYS);
 }
+*/
 
 static void
 _fuse_ops_copy_file_range(fuse_req_t req, fuse_ino_t ino_in, off_t off_in,
@@ -646,7 +648,8 @@ static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.forget_multi = _fuse_ops_forget_multi,
 	.flock = _fuse_ops_flock,
 	.fallocate = _fuse_ops_fallocate,
-	.readdirplus = _fuse_ops_readdirplus,
+	// This causes readdir to be skipped
+	//.readdirplus = _fuse_ops_readdirplus,
 	.copy_file_range = _fuse_ops_copy_file_range,
 	.lseek = _fuse_ops_lseek
 };

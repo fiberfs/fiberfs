@@ -58,16 +58,18 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	assert(ctx->fuse_ops);
 	assert(path);
 
-	char *argv[4];
+	char *argv[6];
 	struct fuse_args fargs;
 	fargs.argv = argv;
-	// TODO default_permissions allow_other
+	// TODO allow_other?
 	fargs.argv[0] = "fiberfs";
 	fargs.argv[1] = "-o";
 	fargs.argv[2] = "fsname=fiberfs";
-	fargs.argv[3] = "-d";
+	fargs.argv[3] = "-o";
+	fargs.argv[4] = "default_permissions";
+	fargs.argv[5] = "-d";
 	fargs.argc = sizeof(argv) / sizeof(*argv);
-	assert(fargs.argc == 4);
+	assert(fargs.argc == 6);
 	fargs.allocated = 0;
 
 	if (!ctx->debug) {
