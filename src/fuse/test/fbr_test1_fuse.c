@@ -226,8 +226,12 @@ _test1_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 	}
 
 	// TODO an ERROR here can lock up
+	// We exit() the fuse thread, which locks up the the fuse_ctl unmount
+	// We might need to finish the req?
+	// We end up doing a double shutdown, once in fuse and once in test
+	// Fuse might need its own error handling to skip the double shutdown?
 
-	char dir_buf[96];
+	char dir_buf[100];
 	size_t dir_pos = 0;
 	size_t dir_size;
 	size_t dir_ino;

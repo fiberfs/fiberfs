@@ -7,6 +7,7 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <time.h>
@@ -95,10 +96,7 @@ fbr_test_ERROR(int condition, const char *fmt, ...)
 
 	printf("\n");
 
-	if (fbr_test_is_thread()) {
-		fbr_test_set_error();
-		pthread_exit(NULL);
-	}
+	fbr_test_set_error();
 
 	if (!fbr_test_is_forked()) {
 		printf("FAILED\n");

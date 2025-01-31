@@ -6,6 +6,7 @@
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
 
+#include <pthread.h>
 #include <stdlib.h>
 
 static struct fbr_test *_TEST;
@@ -361,5 +362,9 @@ fbr_test_set_error(void)
 	fbr_test_ok(_TEST);
 
 	_TEST->error = 1;
-	_TEST->stopped = 1;
+
+	if (fbr_test_is_thread()) {
+		_TEST->stopped = 1;
+		pthread_exit(NULL);
+	}
 }
