@@ -135,7 +135,7 @@ _test1_ops_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 
 	if (!ret || !S_ISDIR(st_attr.st_mode)) {
 		ret = fuse_reply_err(req, ENOTDIR);
-		fbr_test_ERROR(ret, "_test1_ops_lookup fuse_reply_err %d", ret);
+		fbr_test_fuse_ERROR(ctx, NULL, ret, "_test1_ops_lookup fuse_reply_err %d", ret);
 		return;
 	}
 
@@ -148,12 +148,12 @@ _test1_ops_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 
 	if (!ret) {
 		ret = fuse_reply_err(req, ENOENT);
-		fbr_test_ERROR(ret, "_test1_ops_lookup fuse_reply_err %d", ret);
+		fbr_test_fuse_ERROR(ctx, NULL, ret, "_test1_ops_lookup fuse_reply_err %d", ret);
 		return;
 	}
 
 	ret = fuse_reply_entry(req, &entry);
-	fbr_test_ERROR(ret, "_test1_ops_lookup fuse_reply_entry %d", ret);
+	fbr_test_fuse_ERROR(ctx, NULL, ret, "_test1_ops_lookup fuse_reply_entry %d", ret);
 }
 
 static void
@@ -172,12 +172,12 @@ _test1_ops_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 	if (!ret) {
 		ret = fuse_reply_err(req, ENOENT);
-		fbr_test_ERROR(ret, "_test1_ops_getattr fuse_reply_err %d", ret);
+		fbr_test_fuse_ERROR(ctx, NULL, ret, "_test1_ops_getattr fuse_reply_err %d", ret);
 		return;
 	}
 
 	ret = fuse_reply_attr(req, &st_attr, _TEST1_FUSE_TTL_SEC);
-	fbr_test_ERROR(ret, "_test1_ops_getattr fuse_reply_attr %d", ret);
+	fbr_test_fuse_ERROR(ctx, NULL, ret, "_test1_ops_getattr fuse_reply_attr %d", ret);
 }
 
 static void
@@ -194,7 +194,7 @@ _test1_ops_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 	if (!ret) {
 		ret = fuse_reply_err(req, ENOENT);
-		fbr_test_ERROR(ret, "_test1_fuse_opendir fuse_reply_err %d", ret);
+		fbr_test_fuse_ERROR(ctx, NULL, ret, "_test1_fuse_opendir fuse_reply_err %d", ret);
 		return;
 	}
 
@@ -202,7 +202,7 @@ _test1_ops_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	//fi->fh
 
 	ret = fuse_reply_open(req, fi);
-	fbr_test_ERROR(ret, "_test1_fuse_opendir fuse_reply_open %d", ret);
+	fbr_test_fuse_ERROR(ctx, NULL, ret, "_test1_fuse_opendir fuse_reply_open %d", ret);
 }
 
 static void
@@ -221,15 +221,9 @@ _test1_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 	if (!ret || !S_ISDIR(st_attr.st_mode)) {
 		ret = fuse_reply_err(req, EIO);
-		fbr_test_ERROR(ret, "_test1_fuse_readdir fuse_reply_err %d", ret);
+		fbr_test_fuse_ERROR(ctx, NULL, ret, "_test1_fuse_readdir fuse_reply_err %d", ret);
 		return;
 	}
-
-	// TODO an ERROR here can lock up
-	// We exit() the fuse thread, which locks up the the fuse_ctl unmount
-	// We might need to finish the req?
-	// We end up doing a double shutdown, once in fuse and once in test
-	// Fuse might need its own error handling to skip the double shutdown?
 
 	char dir_buf[100];
 	size_t dir_pos = 0;
@@ -241,7 +235,7 @@ _test1_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 		dir_size = fuse_add_direntry(req, dir_buf + dir_pos, sizeof(dir_buf) - dir_pos,
 			".", &st_attr, off);
-		fbr_test_ASSERT(dir_size <= sizeof(dir_buf), "dir_buf too small .");
+		fbr_test_fuse_ASSERT(ctx, req, dir_size <= sizeof(dir_buf), "dir_buf too small .");
 
 		if (dir_size <= sizeof(dir_buf) - dir_pos) {
 			fbr_test_log(test_ctx, FBR_LOG_VERY_VERBOSE, "READDIR name: .");
@@ -254,7 +248,7 @@ _test1_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 		dir_size = fuse_add_direntry(req, dir_buf + dir_pos, sizeof(dir_buf) - dir_pos,
 			"..", &st_attr, off);
-		fbr_test_ASSERT(dir_size <= sizeof(dir_buf), "dir_buf too small ..");
+		fbr_test_fuse_ASSERT(ctx, req, dir_size <= sizeof(dir_buf), "dir_buf too small ..");
 
 		if (dir_size <= sizeof(dir_buf) - dir_pos) {
 			fbr_test_log(test_ctx, FBR_LOG_VERY_VERBOSE, "READDIR name: ..");
@@ -277,7 +271,8 @@ _test1_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 		dir_size = fuse_add_direntry(req, dir_buf + dir_pos, sizeof(dir_buf) - dir_pos,
 			name, &st_attr, dir_ino);
-		fbr_test_ASSERT(dir_size <= sizeof(dir_buf), "dir_buf too small %s", name);
+		fbr_test_fuse_ASSERT(ctx, req, dir_size <= sizeof(dir_buf), "dir_buf too small %s",
+			name);
 
 		if (dir_size > sizeof(dir_buf) - dir_pos) {
 			break;
@@ -294,7 +289,7 @@ _test1_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 	fbr_test_log(test_ctx, FBR_LOG_VERY_VERBOSE, "READDIR reply size: %zu", dir_pos);
 
 	ret = fuse_reply_buf(req, dir_buf, dir_pos);
-	fbr_test_ERROR(ret, "_test1_ops_readdir fuse_reply_buf %d", ret);
+	fbr_test_fuse_ERROR(ctx, NULL, ret, "_test1_ops_readdir fuse_reply_buf %d", ret);
 }
 
 static void
@@ -307,7 +302,7 @@ _test1_ops_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "RELEASEDIR ino: %lu fh: %lu", ino, fi->fh);
 
 	int ret = fuse_reply_err(req, 0);
-	fbr_test_ERROR(ret, "_test1_fuse_releasedir fuse_reply_err %d", ret);
+	fbr_test_fuse_ERROR(ctx, NULL, ret, "_test1_fuse_releasedir fuse_reply_err %d", ret);
 }
 
 static void

@@ -19,6 +19,11 @@ int fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 	const struct fuse_lowlevel_ops *fuse_ops);
 void fbr_fuse_test_unmount(struct fbr_test_context *test_ctx);
 struct fbr_fuse_context *fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx);
+void __fbr_attr_printf_p(4) fbr_test_fuse_ERROR(struct fbr_fuse_context *ctx, void *req,
+	int condition, const char *fmt, ...);
+
+#define fbr_test_fuse_ASSERT(ctx, req, cond, fmt, ...)				\
+	fbr_test_fuse_ERROR(ctx, req, !(cond), fmt, ##__VA_ARGS__);
 
 #endif /* FBR_TEST_FUSE_CMD */
 

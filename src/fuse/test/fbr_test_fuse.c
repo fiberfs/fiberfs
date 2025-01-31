@@ -3,6 +3,7 @@
  *
  */
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -140,4 +141,35 @@ fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx)
 	fbr_fuse_ctx_ok(ctx);
 
 	return ctx;
+}
+
+void __fbr_attr_printf_p(4)
+fbr_test_fuse_ERROR(struct fbr_fuse_context *ctx, void *req, int condition,
+    const char *fmt, ...)
+{
+	fbr_fuse_ctx_ok(ctx);
+
+	if (!condition) {
+		return;
+	}
+
+	printf("ERROR: ");
+
+	va_list ap;
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
+
+	printf("\n");
+
+	fbr_test_set_error();
+
+	fbr_fuse_abort(ctx);
+
+	if (req) {
+		fuse_req_t freq = (fuse_req_t) req;
+		(void)fuse_reply_err(freq, EIO);
+	}
+
+	pthread_exit(NULL);
 }
