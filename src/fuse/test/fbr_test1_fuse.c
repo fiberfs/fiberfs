@@ -8,9 +8,10 @@
 #include <unistd.h>
 
 #include "fiberfs.h"
+#include "fbr_test_fuse_cmds.h"
 #include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_lowlevel.h"
-#include "fuse/test/fbr_test_fuse_cmds.h"
+#include "fuse/fbr_fuse_ops.h"
 #include "test/fbr_test.h"
 
 #define _TEST1_FUSE_TTL_SEC		3.0
@@ -123,7 +124,7 @@ _test1_stat(fuse_ino_t ino, struct stat *st_attr)
 static void
 _test1_ops_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
-	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx();
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->priv;
 	fbr_test_context_ok(test_ctx);
 
@@ -159,7 +160,7 @@ _test1_ops_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 static void
 _test1_ops_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx();
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->priv;
 	fbr_test_context_ok(test_ctx);
 
@@ -183,7 +184,7 @@ _test1_ops_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 static void
 _test1_ops_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx();
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->priv;
 	fbr_test_context_ok(test_ctx);
 
@@ -209,7 +210,7 @@ static void
 _test1_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
-	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx();
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->priv;
 	fbr_test_context_ok(test_ctx);
 
@@ -295,7 +296,7 @@ _test1_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 static void
 _test1_ops_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx();
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->priv;
 	fbr_test_context_ok(test_ctx);
 
@@ -308,7 +309,7 @@ _test1_ops_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 static void
 _test1_ops_forget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
 {
-	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx();
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->priv;
 	fbr_test_context_ok(test_ctx);
 
@@ -322,7 +323,7 @@ _test1_ops_forget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
 static void
 _test1_ops_forget_multi(fuse_req_t req, size_t count, struct fuse_forget_data *forgets)
 {
-	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx();
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->priv;
 	fbr_test_context_ok(test_ctx);
 

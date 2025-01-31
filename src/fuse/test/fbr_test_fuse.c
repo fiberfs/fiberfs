@@ -8,9 +8,10 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
+#include "fbr_test_fuse_cmds.h"
 #include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_lowlevel.h"
-#include "fuse/test/fbr_test_fuse_cmds.h"
+#include "fuse/fbr_fuse_ops.h"
 #include "test/fbr_test.h"
 
 struct fbr_test_fuse {
@@ -103,7 +104,7 @@ fbr_test_fuse_cmd_fuse_test_mount(struct fbr_test_context *ctx, struct fbr_test_
 	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, NULL);
 	fbr_test_ERROR(ret, "Fuse mount failed: %s", cmd->params[0].value);
 
-	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_ctx();
+	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_ctx(NULL);
 	fbr_fuse_ctx_ok(fuse_ctx);
 	fbr_fuse_ctx_ok(&ctx->fuse->ctx);
 	assert(fuse_ctx == &ctx->fuse->ctx);

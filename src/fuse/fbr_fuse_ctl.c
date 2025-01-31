@@ -13,7 +13,7 @@
 #include "fbr_fuse.h"
 #include "fbr_fuse_lowlevel.h"
 
-static struct fbr_fuse_context *_FUSE_CTX;
+extern struct fbr_fuse_context *_FUSE_CTX;
 
 void
 fbr_fuse_init(struct fbr_fuse_context *ctx)
@@ -123,13 +123,6 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	}
 
 	return 0;
-}
-
-struct fbr_fuse_context *
-fbr_fuse_get_ctx(void)
-{
-	fbr_fuse_mounted(_FUSE_CTX);
-	return _FUSE_CTX;
 }
 
 void
