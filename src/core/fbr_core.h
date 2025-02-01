@@ -25,9 +25,10 @@ struct fbr_file {
 };
 
 /*
- * A directory is a extended type of file
+ * A directory is an extended type of file
  * It has a refcount, a list of children, and search tree of names
- * It has a refcount for each file it contains
+ * It gets a ref for each child it contains
+ * An embedded name lives below the directory
  */
 struct fbr_directory {
 	struct fbr_file			file;
@@ -38,7 +39,7 @@ struct fbr_directory {
 
 /*
  * There is a global inode search table
- * Each file lives in a directory and this search table
+ * Each file lives in a directory, this search table, and the kernel
  */
 
 #endif /* _FBR_CORE_H_INCLUDED_ */
