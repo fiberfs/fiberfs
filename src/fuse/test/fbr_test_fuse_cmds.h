@@ -30,8 +30,8 @@ void __fbr_attr_printf(4) fbr_test_fuse_ERROR(int condition, struct fbr_fuse_con
 FBR_TEST_FUSE_CMD(fuse_test_mount)
 FBR_TEST_FUSE_CMD(fuse_test_unmount)
 
-FBR_TEST_FUSE_CMD(fuse_test1_mount)
-FBR_TEST_FUSE_CMD(fuse_test1_unmount)
+FBR_TEST_FUSE_CMD(fuse_test_ops_mount)
+FBR_TEST_FUSE_CMD(fuse_test_ops_unmount)
 
 #undef FBR_TEST_FUSE_CMD
 #undef FBR_TEST_FUSE_VAR
