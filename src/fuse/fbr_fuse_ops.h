@@ -13,19 +13,14 @@ struct fbr_fuse_context *fbr_fuse_get_ctx(fuse_req_t req);
 void __fbr_attr_printf(6) fbr_fuse_do_assert(fuse_req_t req, const char *assertion,
 	const char *function, const char *file, int line, const char *fmt, ...);
 
-#define fbr_fuse_ASSERT(cond, req)						\
-{										\
-	if (__builtin_expect(!(cond), 0)) {					\
-		fbr_fuse_do_assert(req, #cond, __func__, __FILE__, __LINE__,	\
-			NULL);							\
-	}									\
-}
 #define fbr_fuse_ASSERTF(cond, req, fmt, ...)					\
 {										\
 	if (__builtin_expect(!(cond), 0)) {					\
-		fbr_fuse_do_assert(cond, req, #cond, __func__, __FILE__, 	\
+		fbr_fuse_do_assert(req, #cond, __func__, __FILE__, 	\
 			__LINE__, fmt, ##__VA_ARGS__);				\
 	}									\
 }
+#define fbr_fuse_ASSERT(cond, req)						\
+	fbr_fuse_ASSERTF(cond, req, NULL)
 
 #endif /* _FBR_FUSE_OPS_H_INCLUDED_ */

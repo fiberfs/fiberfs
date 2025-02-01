@@ -16,9 +16,9 @@ struct fbr_fuse_context *_FUSE_CTX;
 struct fbr_fuse_context *
 fbr_fuse_get_ctx(fuse_req_t req)
 {
-	fbr_fuse_ASSERT(_FUSE_CTX != NULL, req);
+	fbr_fuse_ASSERT(_FUSE_CTX, req);
 	fbr_fuse_ASSERT(_FUSE_CTX->magic == FBR_FUSE_CTX_MAGIC, req);
-	fbr_fuse_ASSERT(_FUSE_CTX->exited == 0, req);
+	fbr_fuse_ASSERT(!_FUSE_CTX->exited, req);
 
 	return _FUSE_CTX;
 }
