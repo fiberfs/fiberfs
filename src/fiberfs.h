@@ -11,12 +11,10 @@
 
 #define FIBERFS_VERSION			"0.1.0"
 
-#define __fbr_attr_printf							\
-	__fbr_attr_printf_p(2)
-#define __fbr_attr_printf_p(fpos)						\
+#define __fbr_attr_printf(fpos)							\
 	__attribute__((__format__(__printf__, (fpos), ((fpos) + 1))))
 
-void __fbr_attr_printf_p(5) fbr_do_abort(const char *assertion, const char *function,
+void __fbr_attr_printf(5) fbr_do_abort(const char *assertion, const char *function,
 	const char *file, int line, const char *fmt, ...);
 void fbr_sleep_ms(long ms);
 
@@ -28,9 +26,7 @@ void fbr_sleep_ms(long ms);
 	fbr_do_assert(NULL, __func__, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
 #define fbr_ASSERT(cond, fmt, ...)						\
 {										\
-	if (cond) {								\
-		;								\
-	} else {								\
+	if (__builtin_expect(!(cond), 0)) {					\
 		fbr_do_assert(#cond, __func__, __FILE__, __LINE__, fmt,		\
 			##__VA_ARGS__);						\
 	}									\

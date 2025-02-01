@@ -88,15 +88,15 @@ void fjson_context_free(struct fjson_context *ctx);
 const char *fjson_token_name(enum fjson_token_type type);
 const char *fjson_state_name(enum fjson_state state);
 
-#define fjson_context_ok(ctx)						\
-	do {								\
-		assert(ctx);						\
-		assert((ctx)->magic == FJSON_CTX_MAGIC);		\
-	} while (0)
-#define fjson_token_ok(token)						\
-	do {								\
-		assert(token);						\
-		assert((token)->magic == FJSON_TOKEN_MAGIC);		\
-	} while (0)
+#define fjson_context_ok(ctx)					\
+{								\
+	assert(ctx);						\
+	assert((ctx)->magic == FJSON_CTX_MAGIC);		\
+}
+#define fjson_token_ok(token)					\
+{								\
+	assert(token);						\
+	assert((token)->magic == FJSON_TOKEN_MAGIC);		\
+}
 
 #endif /* _FJSON_H_INCLUDED_ */

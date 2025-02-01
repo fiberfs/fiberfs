@@ -160,10 +160,11 @@ int fbr_test_can_vfork(struct fbr_test_context *ctx);
 
 struct fbr_test *fbr_test_convert(struct fbr_test_context *ctx);
 void fbr_test_skip(struct fbr_test_context *ctx);
-void __fbr_attr_printf_p(3) fbr_test_log(struct fbr_test_context *ctx,
+void __fbr_attr_printf(3) fbr_test_log(struct fbr_test_context *ctx,
 	enum fbr_test_verbocity level, const char *fmt, ...);
-void __fbr_attr_printf fbr_test_warn(int condition, const char *fmt, ...);
-void __fbr_attr_printf fbr_test_ERROR(int condition, const char *fmt, ...);
+void __fbr_attr_printf(2) fbr_test_warn(int condition, const char *fmt, ...);
+void __fbr_attr_printf(5) fbr_test_do_abort(const char *assertion, const char *function,
+	const char *file, int line, const char *fmt, ...);
 long fbr_test_parse_long(const char *str);
 void fbr_test_ERROR_param_count(struct fbr_test_cmd *cmd, size_t count);
 void fbr_test_ERROR_string(const char *str);
@@ -176,22 +177,29 @@ long fbr_test_gen_random(long low, long high);
 void fbr_test_fill_random(uint8_t *buf, size_t len);
 char *fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot);
 
-#define fbr_test_ok(test)					\
-{								\
-	assert(test);						\
-	assert((test)->magic == FBR_TEST_MAGIC);		\
+#define fbr_test_ok(test)						\
+{									\
+	assert(test);							\
+	assert((test)->magic == FBR_TEST_MAGIC);			\
 }
-#define fbr_test_context_ok(context)				\
-{								\
-	assert(context);					\
-	assert((context)->magic == FBR_TEST_CONTEXT_MAGIC);	\
+#define fbr_test_context_ok(context)					\
+{									\
+	assert(context);						\
+	assert((context)->magic == FBR_TEST_CONTEXT_MAGIC);		\
 }
-#define fbr_test_cmd_ok(cmd)					\
-{								\
-	assert(cmd);						\
-	assert((cmd)->magic == FBR_TEST_CMD_MAGIC);		\
+#define fbr_test_cmd_ok(cmd)						\
+{									\
+	assert(cmd);							\
+	assert((cmd)->magic == FBR_TEST_CMD_MAGIC);			\
 }
-#define fbr_test_ASSERT(cond, fmt, ...)				\
+#define fbr_test_ERROR(cond, fmt, ...)					\
+{									\
+	if (__builtin_expect(cond, 0)) {				\
+		fbr_test_do_abort(#cond, __func__, __FILE__, __LINE__,	\
+			fmt, ##__VA_ARGS__);				\
+	}								\
+}
+#define fbr_test_ASSERT(cond, fmt, ...)					\
 	fbr_test_ERROR(!(cond), fmt, ##__VA_ARGS__);
 
 #endif /* _FBR_TEST_H_INCLUDED_ */

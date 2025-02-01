@@ -23,7 +23,7 @@ fbr_test_convert(struct fbr_test_context *ctx)
 	return test;
 }
 
-void __fbr_attr_printf_p(3)
+void __fbr_attr_printf(3)
 fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
     const char *fmt, ...)
 {
@@ -63,7 +63,7 @@ fbr_test_skip(struct fbr_test_context *ctx)
 	test->skip = 1;
 }
 
-void __fbr_attr_printf
+void __fbr_attr_printf(2)
 fbr_test_warn(int condition, const char *fmt, ...)
 {
 	if (!condition) {
@@ -80,14 +80,11 @@ fbr_test_warn(int condition, const char *fmt, ...)
 	printf("\n");
 }
 
-void __fbr_attr_printf
-fbr_test_ERROR(int condition, const char *fmt, ...)
+void __fbr_attr_printf(5)
+fbr_test_do_abort(const char *assertion, const char *function, const char *file, int line,
+    const char *fmt, ...)
 {
-	if (!condition) {
-		return;
-	}
-
-	printf("ERROR: ");
+	printf("%s:%d %s(): Assertion '%s' failed\nERROR: ", file, line, function, assertion);
 
 	va_list ap;
 	va_start(ap, fmt);

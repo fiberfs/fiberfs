@@ -11,7 +11,7 @@
 
 #include "fiberfs.h"
 
-void __fbr_attr_printf_p(5)
+void __fbr_attr_printf(5)
 fbr_do_abort(const char *assertion, const char *function, const char *file, int line,
     const char *fmt, ...)
 {
