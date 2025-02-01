@@ -24,7 +24,7 @@ fbr_fuse_get_ctx(fuse_req_t req)
 }
 
 void __fbr_attr_printf(6)
-fbr_fuse_do_assert(fuse_req_t req, const char *assertion, const char *function,
+fbr_fuse_do_abort(fuse_req_t req, const char *assertion, const char *function,
     const char *file, int line, const char *fmt, ...)
 {
 	fprintf(stderr, "%s:%d %s(): Assertion '%s' failed\n", file, line, function, assertion);
