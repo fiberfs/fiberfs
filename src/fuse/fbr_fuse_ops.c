@@ -23,14 +23,10 @@ fbr_fuse_get_ctx(fuse_req_t req)
 	return _FUSE_CTX;
 }
 
-void __fbr_attr_printf_p(7)
-fbr_fuse_do_assert(int cond, fuse_req_t req, const char *assertion, const char *function,
+void __fbr_attr_printf_p(6)
+fbr_fuse_do_assert(fuse_req_t req, const char *assertion, const char *function,
     const char *file, int line, const char *fmt, ...)
 {
-	if (cond) {
-		return;
-	}
-
 	fprintf(stderr, "%s:%d %s(): Assertion '%s' failed\n", file, line, function, assertion);
 
 	if (fmt) {
@@ -40,11 +36,11 @@ fbr_fuse_do_assert(int cond, fuse_req_t req, const char *assertion, const char *
 		va_start(ap, fmt);
 		vfprintf(stderr, fmt, ap);
 		va_end(ap);
-	} else {
-		fprintf(stderr, "ERROR");
-	}
 
-	fprintf(stderr, "\n");
+		fprintf(stderr, "\n");
+	} else {
+		fprintf(stderr, "ERROR\n");
+	}
 
 	fbr_fuse_ctx_ok(_FUSE_CTX);
 

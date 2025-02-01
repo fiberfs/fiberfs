@@ -11,23 +11,25 @@
 
 #include "fiberfs.h"
 
-void __fbr_attr_printf_p(6)
-fbr_do_assert(int cond, const char *function, const char *file, int line, int assert,
+void __fbr_attr_printf_p(5)
+fbr_do_abort(const char *assertion, const char *function, const char *file, int line,
     const char *fmt, ...)
 {
-	if (cond) {
-		return;
+	fprintf(stderr, "%s:%d %s(): ", file, line, function);
+
+	if (assertion) {
+		fprintf(stderr, "Assertion '%s' failed\n", assertion);
+	} else {
+		fprintf(stderr, "Aborted\n");
 	}
 
-	fprintf(stderr, "%s:%d %s(): %s\n", file, line, function,
-		assert ? "Assertion failed" : "Aborted");
-
-	va_list ap;
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-
-	printf("\n");
+	if (fmt) {
+		va_list ap;
+		va_start(ap, fmt);
+		vfprintf(stderr, fmt, ap);
+		va_end(ap);
+		fprintf(stderr, "\n");
+	}
 
 	abort();
 }

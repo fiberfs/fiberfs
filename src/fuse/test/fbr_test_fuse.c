@@ -151,7 +151,7 @@ fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx)
 }
 
 void __fbr_attr_printf_p(4)
-fbr_test_fuse_ERROR(struct fbr_fuse_context *ctx, void *req, int condition,
+fbr_test_fuse_ERROR(int condition, struct fbr_fuse_context *ctx, void *req,
     const char *fmt, ...)
 {
 	fbr_fuse_ctx_ok(ctx);

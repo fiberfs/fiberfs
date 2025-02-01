@@ -11,7 +11,7 @@ check:
 		$(MAKE) -C tests $@
 
 valgrind:
-		$(MAKE) -C tests $@
+		$(MAKE) -C tests $@ all
 
 %:
 		$(MAKE) -C src $@
