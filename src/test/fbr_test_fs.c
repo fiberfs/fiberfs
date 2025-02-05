@@ -4,10 +4,13 @@
  */
 
 #include <dirent.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "fs/fbr_fs.h"
 #include "test/fbr_test.h"
@@ -165,8 +168,10 @@ fbr_test_cmd_fs_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		return;
 	}
 
-	DIR *dir = opendir(cmd->params[0].value);
-	fbr_test_ASSERT(dir, "opendir failed for %s", cmd->params[0].value);
+	char *filename = cmd->params[0].value;
+
+	DIR *dir = opendir(filename);
+	fbr_test_ASSERT(dir, "opendir failed for %s", filename);
 
 	struct dirent *dentry;
 	while ((dentry = readdir(dir)) != NULL) {
@@ -180,5 +185,44 @@ fbr_test_cmd_fs_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int ret = closedir(dir);
 	fbr_test_ERROR(ret, "closedir failed %d", ret);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_ls done %s", cmd->params[0].value);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_ls done %s", filename);
+}
+
+void
+fbr_test_cmd_fs_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	char *filename = cmd->params[0].value;
+
+	int fd = open(filename, O_RDONLY);
+	fbr_test_ASSERT(fd >= 0, "open() failed %s %d", filename, fd);
+
+	char buf[1024];
+	ssize_t bytes;
+
+	do {
+		bytes = read(fd, buf, sizeof(buf));
+
+		if (bytes > 0) {
+			fbr_test_log(ctx, FBR_LOG_VERBOSE, "cat: %.*s (%zu bytes)",
+				(int)bytes, buf, bytes);
+		} else if (!bytes) {
+			fbr_test_log(ctx, FBR_LOG_VERBOSE, "cat: EOF");
+		} else {
+			fbr_test_ABORT("cat: ERROR %zd", bytes);
+		}
+	} while (bytes > 0);
+
+	int ret = close(fd);
+	fbr_test_ERROR(ret, "fs_cat close() failed");
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_cat done %s", filename);
 }

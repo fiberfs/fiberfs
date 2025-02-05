@@ -84,7 +84,12 @@ void __fbr_attr_printf(5)
 fbr_test_do_abort(const char *assertion, const char *function, const char *file, int line,
     const char *fmt, ...)
 {
-	printf("%s:%d %s(): Assertion '%s' failed\nERROR: ", file, line, function, assertion);
+	if (assertion) {
+		printf("%s:%d %s(): Assertion '%s' failed\nERROR: ", file, line, function,
+			assertion);
+	} else {
+		printf("%s:%d %s(): Aborted\nERROR: ", file, line, function);
+	}
 
 	va_list ap;
 	va_start(ap, fmt);

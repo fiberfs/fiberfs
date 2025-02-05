@@ -31,25 +31,14 @@ static struct fbr_test_cmdentry *
 _test_cmd_alloc(struct fbr_test *test)
 {
 	fbr_test_ok(test);
-	assert(test->cmds_pos <= test->cmds_size);
 
-	size_t size;
-
-	if (test->cmds_pos == test->cmds_size) {
-		if (test->cmds_size == 0) {
-			test->cmds_size = 128;
-		} else {
-			size = test->cmds_size * 2;
-			assert(size / 2 == test->cmds_size);
-			test->cmds_size = size;
-		}
-
-		size = test->cmds_size * sizeof(*test->cmds);
-		assert(size / sizeof(*test->cmds) == test->cmds_size);
-
-		test->cmds = realloc(test->cmds, size);
+	if (test->cmds_size == 0) {
+		test->cmds_size = 256;
+		size_t size = test->cmds_size * sizeof(*test->cmds);
+		test->cmds = malloc(size);
 		assert(test->cmds);
 	}
+
 	assert(test->cmds_pos < test->cmds_size);
 
 	struct fbr_test_cmdentry *entry = &test->cmds[test->cmds_pos];

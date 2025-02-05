@@ -14,7 +14,7 @@
 #include "fuse/fbr_fuse_ops.h"
 #include "test/fbr_test.h"
 
-#define _TEST_OPS_FUSE_TTL_SEC		3.0
+#define _TEST_OPS_FUSE_TTL_SEC		1.0
 
 int _TEST_OPS_FUSE_STATE;
 
@@ -60,6 +60,12 @@ _test_ino(const char *name) {
 		return 104;
 	} else if (!strcmp(name, "fiber5")) {
 		return 105;
+	} else if (!strcmp(name, "fiber41")) {
+		return 4001;
+	} else if (!strcmp(name, "fiber42")) {
+		return 4002;
+	} else if (!strcmp(name, "fiber43")) {
+		return 4003;
 	}
 
 	return 0;
@@ -78,6 +84,12 @@ _test_name(fuse_ino_t ino) {
 			return "fiber4";
 		case 105:
 			return "fiber5";
+		case 4001:
+			return "fiber41";
+		case 4002:
+			return "fiber42";
+		case 4003:
+			return "fiber43";
 	}
 
 	return NULL;
@@ -93,15 +105,18 @@ _test_stat(fuse_ino_t ino, struct stat *st_attr)
 
 	switch (ino) {
 		case 1:
-			/* root */
+		case 104:
+			/* roots */
 			st_attr->st_mode = S_IFDIR | 0755;
 			st_attr->st_nlink = 2;
 			break;
 		case 101:
 		case 102:
 		case 103:
-		case 104:
 		case 105:
+		case 4001:
+		case 4002:
+		case 4003:
 			/* fiberX */
 			name = _test_name(ino);
 			assert(name);
@@ -166,7 +181,7 @@ _test_ops_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 	(void)fi;
 
-	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "GETATR ino: %lu", ino);
+	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "GETATTR ino: %lu", ino);
 
 	struct stat st_attr;
 	int ret = _test_stat(ino, &st_attr);
@@ -201,6 +216,7 @@ _test_ops_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 	//fi->cache_readdir
 	//fi->fh
+	fi->cache_readdir = 1;
 
 	ret = fuse_reply_open(req, fi);
 	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_ops_opendir fuse_reply_open %d", ret);
@@ -245,7 +261,14 @@ _test_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 		}
 	}
 	if (off == 1) {
-		off = 100;
+		if (ino == 1) {
+			off = 100;
+		} else {
+			assert(ino == 104);
+			off = 4000;
+			ret = _test_stat(1, &st_attr);
+			fbr_test_fuse_ASSERT(ret, ctx, req, "_test_ops_readdir missing ino 1");
+		}
 
 		dir_size = fuse_add_direntry(req, dir_buf + dir_pos, sizeof(dir_buf) - dir_pos,
 			"..", &st_attr, off);
@@ -307,6 +330,103 @@ _test_ops_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 }
 
 static void
+_test_ops_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+{
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
+	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->priv;
+	fbr_test_context_ok(test_ctx);
+
+	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "OPEN ino: %lu flags: %d fh: %lu direct: %d",
+		ino, fi->flags, fi->fh, fi->direct_io);
+
+	struct stat st_attr;
+	int ret = _test_stat(ino, &st_attr);
+
+	if (!ret) {
+		ret = fuse_reply_err(req, ENOENT);
+		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_ops_open fuse_reply_err %d", ret);
+		return;
+	} else if (!S_ISREG(st_attr.st_mode)) {
+		ret = fuse_reply_err(req, EISDIR);
+		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_ops_open fuse_reply_err %d", ret);
+		return;
+	} else if (fi->flags & O_WRONLY || fi->flags & O_RDWR) {
+		ret = fuse_reply_err(req, EROFS);
+		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_ops_open fuse_reply_err %d", ret);
+		return;
+	}
+
+	//fi->keep_cache
+
+	ret = fuse_reply_open(req, fi);
+	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_ops_open fuse_reply_open %d", ret);
+}
+
+static void
+_test_ops_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
+{
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
+	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->priv;
+	fbr_test_context_ok(test_ctx);
+
+	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "READ ino: %lu size: %zu off: %ld flags: %d"
+		" fh: %lu", ino, size, off, fi->flags, fi->fh);
+
+	struct stat st_attr;
+	int ret = _test_stat(ino, &st_attr);
+
+	if (!ret || !S_ISREG(st_attr.st_mode)) {
+		ret = fuse_reply_err(req, EIO);
+		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_ops_open fuse_reply_err %d", ret);
+		return;
+	}
+
+	const char *data = _test_name(ino);
+	size_t len = strlen(data);
+
+	if (off) {
+		fbr_test_fuse_ASSERT(off <= (off_t)len, ctx, req, "Bad offset");
+		data += len;
+		len -= off;
+	}
+
+	if (len > size) {
+		len = size;
+	}
+
+	ret = fuse_reply_buf(req, data, len);
+	fbr_test_fuse_ERROR(ret, ctx, NULL, "_fuse_ops_read fuse_reply_buf %d", ret);
+}
+
+static void
+_test_ops_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+{
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
+	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->priv;
+	fbr_test_context_ok(test_ctx);
+
+	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "RELEASE ino: %lu flags: %d fh: %lu",
+		ino, fi->flags, fi->fh);
+
+	int ret = fuse_reply_err(req, 0);
+	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_ops_release fuse_reply_err %d", ret);
+}
+
+static void
+_test_ops_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+{
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
+	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->priv;
+	fbr_test_context_ok(test_ctx);
+
+	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "FLUSH ino: %lu flags: %d fh: %lu",
+		ino, fi->flags, fi->fh);
+
+	int ret = fuse_reply_err(req, 0);
+	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_ops_release fuse_reply_err %d", ret);
+}
+
+static void
 _test_ops_forget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
 {
 	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
@@ -344,6 +464,10 @@ static const struct fuse_lowlevel_ops _TEST_OPS_FUSE_OPS = {
 	.opendir = _test_ops_opendir,
 	.readdir = _test_ops_readdir,
 	.releasedir = _test_ops_releasedir,
+	.open = _test_ops_open,
+	.read = _test_ops_read,
+	.release = _test_ops_release,
+	.flush = _test_ops_flush,
 	.forget = _test_ops_forget,
 	.forget_multi = _test_ops_forget_multi
 };

@@ -201,5 +201,8 @@ char *fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot);
 }
 #define fbr_test_ASSERT(cond, fmt, ...)					\
 	fbr_test_ERROR(!(cond), fmt, ##__VA_ARGS__);
+#define fbr_test_ABORT(fmt, ...)					\
+	fbr_test_do_abort(NULL, __func__, __FILE__, __LINE__, fmt,	\
+		##__VA_ARGS__);
 
 #endif /* _FBR_TEST_H_INCLUDED_ */
