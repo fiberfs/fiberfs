@@ -50,11 +50,14 @@ fbr_test_fork(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(bytes == len);
 
 	for (size_t i = 0; i < cmd->param_count; i++) {
-		bytes = fwrite(" ", 1, 1, f);
-		assert(bytes == 1);
+		bytes = fwrite(" \"", 1, 2, f);
+		assert(bytes == 2);
 
 		bytes = fwrite(cmd->params[i].value, 1, cmd->params[i].len, f);
 		assert(bytes == cmd->params[i].len);
+
+		bytes = fwrite("\"", 1, 1, f);
+		assert(bytes == 1);
 	}
 
 	bytes = fwrite("\n", 1, 1, f);
