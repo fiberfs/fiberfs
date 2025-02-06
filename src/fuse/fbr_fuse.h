@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <pthread.h>
 
+#include "core/fbr_core.h"
+
 enum fbr_fuse_state {
 	FBR_FUSE_NONE = 0,
 	FBR_FUSE_MOUNTED
@@ -26,8 +28,9 @@ struct fbr_fuse_context {
 	const struct fuse_lowlevel_ops	*fuse_ops;
 	pthread_t			loop_thread;
 
+	struct fbr_directory		*root;
+
 	void				*context_priv;
-	void				*root_priv;
 
 	unsigned int			error:1;
 	unsigned int			debug:1;

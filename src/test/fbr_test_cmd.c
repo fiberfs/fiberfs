@@ -12,13 +12,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int fbr_test_entry_cmp(const struct fbr_test_cmdentry *k1,
+static int _test_entry_cmp(const struct fbr_test_cmdentry *k1,
     const struct fbr_test_cmdentry *k2);
 
-RB_GENERATE_STATIC(fbr_test_tree, fbr_test_cmdentry, entry, fbr_test_entry_cmp)
+RB_GENERATE_STATIC(fbr_test_tree, fbr_test_cmdentry, entry, _test_entry_cmp)
 
 static int
-fbr_test_entry_cmp(const struct fbr_test_cmdentry *k1,
+_test_entry_cmp(const struct fbr_test_cmdentry *k1,
     const struct fbr_test_cmdentry *k2)
 {
 	assert(k1);
