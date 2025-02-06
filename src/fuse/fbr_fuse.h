@@ -26,7 +26,8 @@ struct fbr_fuse_context {
 	const struct fuse_lowlevel_ops	*fuse_ops;
 	pthread_t			loop_thread;
 
-	void				*priv;
+	void				*context_priv;
+	void				*root_priv;
 
 	unsigned int			error:1;
 	unsigned int			debug:1;
