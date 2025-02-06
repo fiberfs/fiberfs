@@ -12,7 +12,7 @@
 #include "fiberfs.h"
 #include "fbr_fuse.h"
 #include "fbr_fuse_lowlevel.h"
-#include "core/fbr_core.h"
+#include "core/fbr_core_files.h"
 
 extern struct fbr_fuse_context *_FUSE_CTX;
 

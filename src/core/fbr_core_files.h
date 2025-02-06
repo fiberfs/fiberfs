@@ -67,9 +67,13 @@ struct fbr_directory {
  */
 
 struct fbr_file *fbr_file_alloc(char *name, size_t name_len);
-struct fbr_directory *fbr_directory_alloc(void);
+void fbr_file_init(struct fbr_file *file, char *inline_ptr, char *name, size_t name_len);
+size_t fbr_filename_inline_len(size_t name_len);
 const char *fbr_get_filename(struct fbr_file *file);
 void fbr_file_free(struct fbr_file *file);
+
+struct fbr_directory *fbr_root_alloc(void);
+struct fbr_directory *fbr_directory_alloc(char *name, size_t name_len);
 void fbr_directory_free(struct fbr_directory *directory);
 
 #define fbr_file_ok(file)					\
@@ -79,8 +83,12 @@ void fbr_directory_free(struct fbr_directory *directory);
 }
 #define fbr_directory_ok(dir)					\
 {								\
-	fbr_file_ok((struct fbr_file*)(dir));			\
+	fbr_file_ok(fbr_file_cast(dir));			\
 	assert((dir)->magic == FBR_DIRECTORY_MAGIC);		\
 }
+#define fbr_file_cast(dir)					\
+	((struct fbr_file*)(dir))
+#define fbr_dir_cast(file)					\
+	((struct fbr_directory*)(file))
 
 #endif /* _FBR_CORE_H_INCLUDED_ */

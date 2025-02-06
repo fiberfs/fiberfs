@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <pthread.h>
 
-#include "core/fbr_core.h"
+#include "core/fbr_core_files.h"
 
 enum fbr_fuse_state {
 	FBR_FUSE_NONE = 0,

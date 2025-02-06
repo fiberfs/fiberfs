@@ -5,7 +5,7 @@
 
 #include "fiberfs.h"
 #include "fbr_test_fuse_cmds.h"
-#include "core/fbr_core.h"
+#include "core/fbr_core_files.h"
 #include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_lowlevel.h"
 
@@ -21,7 +21,7 @@ _test_sim_init(void *userdata, struct fuse_conn_info *conn)
 
 	assert_zero(ctx->root);
 
-	ctx->root = fbr_directory_alloc();
+	ctx->root = fbr_root_alloc();
 	fbr_directory_ok(ctx->root);
 
 }
@@ -40,6 +40,7 @@ fbr_test_fuse_cmd_fuse_test_sim_mount(struct fbr_test_context *ctx, struct fbr_t
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	fbr_directory_ok(fuse_ctx->root);
+	assert_zero(fbr_get_filename(fbr_file_cast(fuse_ctx->root)));
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Fuse test_sim mounted: %s", cmd->params[0].value);
 }
