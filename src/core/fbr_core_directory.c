@@ -9,14 +9,28 @@
 #include "fbr_core_fs.h"
 #include "data/queue.h"
 #include "data/tree.h"
+#include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_ops.h"
+
+// TODO this isnt safe to use...
+char *FBR_DIRECTORY_ROOT = "_ROOT";
 
 RB_GENERATE_STATIC(fbr_filename_tree, fbr_file, filename_entry, fbr_filename_cmp)
 
 struct fbr_directory *
 fbr_directory_root_alloc(void)
 {
-	return fbr_directory_alloc(NULL, 0);
+	struct fbr_directory *root = fbr_directory_alloc_nolen(FBR_DIRECTORY_ROOT);
+	fbr_directory_ok(root);
+
+	/* TODO
+	assert_zero(root->dirname.layout);
+
+	root->dirname.layout = FBR_FILENAME_CONST;
+	root->dirname.name_ptr = FBR_DIRECTORY_ROOT;
+	*/
+
+	return root;
 }
 
 struct fbr_directory *
@@ -29,12 +43,10 @@ fbr_directory_alloc_nolen(char *name)
 struct fbr_directory *
 fbr_directory_alloc(char *name, size_t name_len)
 {
-	struct fbr_directory *directory;
-
 	size_t inline_len = fbr_filename_inline_len(name_len);
 	char *inline_ptr = NULL;
 
-	directory = calloc(1, sizeof(*directory) + inline_len);
+	struct fbr_directory *directory = calloc(1, sizeof(*directory) + inline_len);
 	fbr_fuse_ASSERT(directory, NULL);
 
 	if (inline_len) {
@@ -50,7 +62,26 @@ fbr_directory_alloc(char *name, size_t name_len)
 
 	fbr_directory_ok(directory);
 
+	// TODO req...
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(NULL);
+	fbr_dindex_add(ctx->dindex, directory);
+
 	return directory;
+}
+
+int
+fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2)
+{
+	fbr_directory_ok(d1);
+	fbr_directory_ok(d2);
+
+	const char *dirname1 = fbr_filename_get(&d1->dirname);
+	const char *dirname2 = fbr_filename_get(&d2->dirname);
+
+	assert(dirname1);
+	assert(dirname2);
+
+	return strcmp(dirname1, dirname2);
 }
 
 void

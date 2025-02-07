@@ -83,22 +83,21 @@ fbr_filename_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
 }
 
 struct fbr_file *
-fbr_file_alloc_nolen(char *name)
+fbr_file_alloc_nolen(struct fbr_directory *directory, char *name)
 {
 	assert(name);
-	return fbr_file_alloc(name, strlen(name));
+	return fbr_file_alloc(directory, name, strlen(name));
 }
 
-// TODO take in a req?
 struct fbr_file *
-fbr_file_alloc(char *name, size_t name_len)
+fbr_file_alloc(struct fbr_directory *directory, char *name, size_t name_len)
 {
-	struct fbr_file *file;
+	fbr_directory_ok(directory);
 
 	size_t inline_len = fbr_filename_inline_len(name_len);
 	char *inline_ptr = NULL;
 
-	file = calloc(1, sizeof(*file) + inline_len);
+	struct fbr_file *file = calloc(1, sizeof(*file) + inline_len);
 	fbr_fuse_ASSERT(file, NULL);
 
 	if (inline_len) {
@@ -110,6 +109,8 @@ fbr_file_alloc(char *name, size_t name_len)
 	fbr_filename_init(&file->filename, inline_ptr, name, name_len);
 
 	fbr_file_ok(file);
+
+	fbr_directory_add(directory, file);
 
 	return file;
 }

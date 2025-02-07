@@ -19,18 +19,10 @@ _test_sim_init(void *userdata, struct fuse_conn_info *conn)
 	fbr_fuse_mounted(ctx);
 	assert(conn);
 
-	assert_zero(ctx->root);
+	struct fbr_directory *root = fbr_directory_root_alloc();
 
-	ctx->root = fbr_directory_root_alloc();
-	fbr_directory_ok(ctx->root);
-
-	struct fbr_file *file = fbr_file_alloc_nolen("fiber1");
-
-	fbr_directory_add(ctx->root, file);
-
-	file = fbr_file_alloc_nolen("fiber2");
-
-	fbr_directory_add(ctx->root, file);
+	(void)fbr_file_alloc_nolen(root, "fiber1");
+	(void)fbr_file_alloc_nolen(root, "fiber2");
 }
 
 static const struct fuse_lowlevel_ops _TEST_SIM_FUSE_OPS = {
@@ -46,8 +38,8 @@ fbr_test_fuse_cmd_fuse_test_sim_mount(struct fbr_test_context *ctx, struct fbr_t
 	fbr_test_ERROR(ret, "Fuse mount failed: %s", cmd->params[0].value);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
-	fbr_directory_ok(fuse_ctx->root);
-	assert_zero(fbr_filename_get(&fuse_ctx->root->dirname));
+	struct fbr_directory *root = fbr_dindex_get(fuse_ctx->dindex, FBR_DIRECTORY_ROOT);
+	fbr_directory_ok(root);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Fuse test_sim mounted: %s", cmd->params[0].value);
 }

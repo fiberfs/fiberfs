@@ -64,9 +64,13 @@ struct fbr_directory {
 	unsigned long				version;
 	unsigned int				refcount;
 
+	RB_ENTRY(fbr_directory)			dindex_entry;
+
 	TAILQ_HEAD(, fbr_file)			file_list;
 	struct fbr_filename_tree		filename_tree;
 };
+
+RB_HEAD(fbr_dindex_tree, fbr_directory);
 
 /*
  * Global inode search table: itable
@@ -80,15 +84,24 @@ void fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *
 const char *fbr_filename_get(const struct fbr_filename *filename);
 int fbr_filename_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 
-struct fbr_file *fbr_file_alloc_nolen(char *name);
-struct fbr_file *fbr_file_alloc(char *name, size_t name_len);
+struct fbr_file *fbr_file_alloc_nolen(struct fbr_directory *directory, char *name);
+struct fbr_file *fbr_file_alloc(struct fbr_directory *directory, char *name, size_t name_len);
 void fbr_file_free(struct fbr_file *file);
+
+extern char *FBR_DIRECTORY_ROOT;
 
 struct fbr_directory *fbr_directory_root_alloc(void);
 struct fbr_directory *fbr_directory_alloc_nolen(char *name);
 struct fbr_directory *fbr_directory_alloc(char *name, size_t name_len);
+int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
 void fbr_directory_add(struct fbr_directory *directory, struct fbr_file *file);
 void fbr_directory_free(struct fbr_directory *directory);
+
+struct fbr_dindex *fbr_dindex_alloc(void);
+struct fbr_directory *fbr_dindex_get(struct fbr_dindex *dindex, char *dirname);
+void fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory);
+void fbr_dindex_delete(struct fbr_dindex *dindex, struct fbr_directory *directory);
+void fbr_dindex_free(struct fbr_dindex *dindex);
 
 #define fbr_file_ok(file)					\
 {								\

@@ -28,8 +28,7 @@ struct fbr_fuse_context {
 	const struct fuse_lowlevel_ops	*fuse_ops;
 	pthread_t			loop_thread;
 
-	struct fbr_directory		*root;
-
+	struct fbr_dindex		*dindex;
 	void				*context_priv;
 
 	unsigned int			error:1;
