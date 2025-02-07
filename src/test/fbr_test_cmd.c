@@ -18,8 +18,7 @@ static int _test_entry_cmp(const struct fbr_test_cmdentry *k1,
 RB_GENERATE_STATIC(fbr_test_tree, fbr_test_cmdentry, entry, _test_entry_cmp)
 
 static int
-_test_entry_cmp(const struct fbr_test_cmdentry *k1,
-    const struct fbr_test_cmdentry *k2)
+_test_entry_cmp(const struct fbr_test_cmdentry *k1, const struct fbr_test_cmdentry *k2)
 {
 	assert(k1);
 	assert(k2);

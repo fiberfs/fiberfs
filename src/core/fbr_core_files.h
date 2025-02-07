@@ -37,11 +37,15 @@ struct fbr_file {
 
 	unsigned long				inode;
 	unsigned long				version;
+
 	unsigned int				refcount;
+
 	unsigned int				type;
 	unsigned long				size;
 	unsigned int				uid;
 	unsigned int				gid;
+
+	struct fbr_directory			*directory;
 
 	TAILQ_ENTRY(fbr_file)			file_entry;
 	RB_ENTRY(fbr_file)			filename_entry;
@@ -50,30 +54,40 @@ struct fbr_file {
 RB_HEAD(fbr_filename_tree, fbr_file);
 
 struct fbr_directory {
-	struct fbr_file				file;
-
 	unsigned int				magic;
 #define FBR_DIRECTORY_MAGIC			0xADB900B1
 
-	unsigned int				refcount_child;
+	// TODO directory state
+
+	struct fbr_filename			dirname;
+
+	unsigned long				version;
+	unsigned int				refcount;
 
 	TAILQ_HEAD(, fbr_file)			file_list;
 	struct fbr_filename_tree		filename_tree;
 };
 
 /*
- * There is a global inode search table
- * Each file lives in a directory, this search table, and the kernel
+ * Global inode search table: itable
+ * Gloabl directory search table: dindex. Contains full paths
+ * When a directory has no more references, it and all its children are freed
  */
 
-struct fbr_file *fbr_file_alloc(char *name, size_t name_len);
-void fbr_file_init(struct fbr_file *file, char *inline_ptr, char *name, size_t name_len);
 size_t fbr_filename_inline_len(size_t name_len);
-const char *fbr_get_filename(struct fbr_file *file);
+void fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
+	size_t name_len);
+const char *fbr_filename_get(const struct fbr_filename *filename);
+int fbr_filename_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
+
+struct fbr_file *fbr_file_alloc_nolen(char *name);
+struct fbr_file *fbr_file_alloc(char *name, size_t name_len);
 void fbr_file_free(struct fbr_file *file);
 
-struct fbr_directory *fbr_root_alloc(void);
+struct fbr_directory *fbr_directory_root_alloc(void);
+struct fbr_directory *fbr_directory_alloc_nolen(char *name);
 struct fbr_directory *fbr_directory_alloc(char *name, size_t name_len);
+void fbr_directory_add(struct fbr_directory *directory, struct fbr_file *file);
 void fbr_directory_free(struct fbr_directory *directory);
 
 #define fbr_file_ok(file)					\
@@ -83,12 +97,8 @@ void fbr_directory_free(struct fbr_directory *directory);
 }
 #define fbr_directory_ok(dir)					\
 {								\
-	fbr_file_ok(fbr_file_cast(dir));			\
+	assert(dir);						\
 	assert((dir)->magic == FBR_DIRECTORY_MAGIC);		\
 }
-#define fbr_file_cast(dir)					\
-	((struct fbr_file*)(dir))
-#define fbr_dir_cast(file)					\
-	((struct fbr_directory*)(file))
 
 #endif /* _FBR_CORE_H_INCLUDED_ */
