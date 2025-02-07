@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "core/fbr_core_files.h"
+#include "fbr_core_fs.h"
 #include "data/queue.h"
 #include "data/tree.h"
 #include "fuse/fbr_fuse_ops.h"

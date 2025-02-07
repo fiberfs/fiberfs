@@ -57,9 +57,9 @@ struct fbr_directory {
 	unsigned int				magic;
 #define FBR_DIRECTORY_MAGIC			0xADB900B1
 
-	// TODO directory state
-
 	struct fbr_filename			dirname;
+
+	// TODO directory state
 
 	unsigned long				version;
 	unsigned int				refcount;

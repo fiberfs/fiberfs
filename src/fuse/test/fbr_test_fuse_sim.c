@@ -5,7 +5,7 @@
 
 #include "fiberfs.h"
 #include "fbr_test_fuse_cmds.h"
-#include "core/fbr_core_files.h"
+#include "core/fbr_core_fs.h"
 #include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_lowlevel.h"
 
@@ -31,7 +31,6 @@ _test_sim_init(void *userdata, struct fuse_conn_info *conn)
 	file = fbr_file_alloc_nolen("fiber2");
 
 	fbr_directory_add(ctx->root, file);
-
 }
 
 static const struct fuse_lowlevel_ops _TEST_SIM_FUSE_OPS = {
