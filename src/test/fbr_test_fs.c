@@ -13,7 +13,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "fs/fbr_fs.h"
+#include "sys/fbr_sys.h"
 #include "test/fbr_test.h"
 
 struct _fs_path {

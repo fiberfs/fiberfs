@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "fs/fbr_fs.h"
+#include "fbr_sys.h"
 
 static mode_t
 _fs_mode(const char *path)
