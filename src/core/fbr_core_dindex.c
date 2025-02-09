@@ -54,6 +54,7 @@ fbr_dindex_alloc(void)
 		struct fbr_dindex_bucket *bucket = &dindex->buckets[i];
 
 		bucket->magic = FBR_DINDEX_BUCKET_MAGIC;
+
 		RB_INIT(&bucket->tree);
 		assert_zero(pthread_rwlock_init(&bucket->rwlock, NULL));
 	}
@@ -83,6 +84,27 @@ _dindex_hash_djb2(struct fbr_dindex *dindex, struct fbr_directory *directory)
         return bucket;
 }
 
+void
+fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
+{
+	fbr_dindex_ok(dindex);
+	fbr_directory_ok(directory);
+
+	struct fbr_dindex_bucket *bucket = _dindex_hash_djb2(dindex, directory);
+
+	assert_zero(pthread_rwlock_wrlock(&bucket->rwlock));
+	fbr_dindex_bucket_ok(bucket);
+
+	assert(directory->state == FBR_DIRSTATE_NONE);
+
+	directory->state = FBR_DIRSTATE_FETCH;
+
+	struct fbr_directory *existing = RB_INSERT(fbr_dindex_tree, &bucket->tree, directory);
+	fbr_ASSERT(!existing, "TODO");
+
+	assert_zero(pthread_rwlock_unlock(&bucket->rwlock));
+}
+
 struct fbr_directory *
 fbr_dindex_get(struct fbr_dindex *dindex, char *dirname)
 {
@@ -104,23 +126,6 @@ fbr_dindex_get(struct fbr_dindex *dindex, char *dirname)
 	assert_zero(pthread_rwlock_unlock(&bucket->rwlock));
 
 	return directory;
-}
-
-void
-fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
-{
-	fbr_dindex_ok(dindex);
-	fbr_directory_ok(directory);
-
-	struct fbr_dindex_bucket *bucket = _dindex_hash_djb2(dindex, directory);
-
-	assert_zero(pthread_rwlock_wrlock(&bucket->rwlock));
-	fbr_dindex_bucket_ok(bucket);
-
-	struct fbr_directory *ret = RB_INSERT(fbr_dindex_tree, &bucket->tree, directory);
-	assert_zero(ret);
-
-	assert_zero(pthread_rwlock_unlock(&bucket->rwlock));
 }
 
 void

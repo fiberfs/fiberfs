@@ -6,6 +6,7 @@
 #ifndef _FBR_CORE_H_INCLUDED_
 #define _FBR_CORE_H_INCLUDED_
 
+#include <pthread.h>
 #include <stddef.h>
 
 #include "data/queue.h"
@@ -23,6 +24,7 @@ enum FBR_FILENAME_LAYOUT {
 
 struct fbr_filename {
 	unsigned char				layout;
+	unsigned short				len;
 	union {
 		char				name_data[FBR_FILE_EMBED_LEN];
 		char				*name_ptr;
@@ -51,6 +53,14 @@ struct fbr_file {
 	RB_ENTRY(fbr_file)			filename_entry;
 };
 
+enum fbr_directory_state {
+	FBR_DIRSTATE_NONE = 0,
+	FBR_DIRSTATE_FETCH,
+	FBR_DIRSTATE_OK,
+	FBR_DIRSTATE_STALE,
+	FBR_DIRSTATE_ERROR
+};
+
 RB_HEAD(fbr_filename_tree, fbr_file);
 
 struct fbr_directory {
@@ -59,7 +69,9 @@ struct fbr_directory {
 
 	struct fbr_filename			dirname;
 
-	// TODO directory state
+	pthread_mutex_t				lock;
+	pthread_cond_t				cond;
+	enum fbr_directory_state		state;
 
 	unsigned long				version;
 	unsigned int				refcount;
@@ -84,22 +96,20 @@ void fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *
 const char *fbr_filename_get(const struct fbr_filename *filename);
 int fbr_filename_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 
-struct fbr_file *fbr_file_alloc_nolen(struct fbr_directory *directory, char *name);
 struct fbr_file *fbr_file_alloc(struct fbr_directory *directory, char *name, size_t name_len);
 void fbr_file_free(struct fbr_file *file);
 
-extern char *FBR_DIRECTORY_ROOT;
-
 struct fbr_directory *fbr_directory_root_alloc(void);
-struct fbr_directory *fbr_directory_alloc_nolen(char *name);
 struct fbr_directory *fbr_directory_alloc(char *name, size_t name_len);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
 void fbr_directory_add(struct fbr_directory *directory, struct fbr_file *file);
+void fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_state state);
+void fbr_directory_wait_state(struct fbr_directory *directory, enum fbr_directory_state state);
 void fbr_directory_free(struct fbr_directory *directory);
 
 struct fbr_dindex *fbr_dindex_alloc(void);
-struct fbr_directory *fbr_dindex_get(struct fbr_dindex *dindex, char *dirname);
 void fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory);
+struct fbr_directory *fbr_dindex_get(struct fbr_dindex *dindex, char *dirname);
 void fbr_dindex_delete(struct fbr_dindex *dindex, struct fbr_directory *directory);
 void fbr_dindex_free(struct fbr_dindex *dindex);
 

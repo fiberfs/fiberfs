@@ -12,32 +12,15 @@
 #include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_ops.h"
 
-// TODO this isnt safe to use...
-char *FBR_DIRECTORY_ROOT = "_ROOT";
-
 RB_GENERATE_STATIC(fbr_filename_tree, fbr_file, filename_entry, fbr_filename_cmp)
 
 struct fbr_directory *
 fbr_directory_root_alloc(void)
 {
-	struct fbr_directory *root = fbr_directory_alloc_nolen(FBR_DIRECTORY_ROOT);
+	struct fbr_directory *root = fbr_directory_alloc("", 0);
 	fbr_directory_ok(root);
 
-	/* TODO
-	assert_zero(root->dirname.layout);
-
-	root->dirname.layout = FBR_FILENAME_CONST;
-	root->dirname.name_ptr = FBR_DIRECTORY_ROOT;
-	*/
-
 	return root;
-}
-
-struct fbr_directory *
-fbr_directory_alloc_nolen(char *name)
-{
-	assert(name);
-	return fbr_directory_alloc(name, strlen(name));
 }
 
 struct fbr_directory *
@@ -57,6 +40,8 @@ fbr_directory_alloc(char *name, size_t name_len)
 
 	fbr_filename_init(&directory->dirname, inline_ptr, name, name_len);
 
+	assert_zero(pthread_mutex_init(&directory->lock, NULL));
+	assert_zero(pthread_cond_init(&directory->cond, NULL));
 	TAILQ_INIT(&directory->file_list);
 	RB_INIT(&directory->filename_tree);
 
@@ -94,6 +79,34 @@ fbr_directory_add(struct fbr_directory *directory, struct fbr_file *file)
 
 	struct fbr_file *ret = RB_INSERT(fbr_filename_tree, &directory->filename_tree, file);
 	assert_zero(ret);
+}
+
+void
+fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_state state)
+{
+	fbr_directory_ok(directory);
+
+	assert_zero(pthread_mutex_lock(&directory->lock));
+
+	directory->state = state;
+
+	assert_zero(pthread_cond_broadcast(&directory->cond));
+
+	assert_zero(pthread_mutex_unlock(&directory->lock));
+}
+
+void
+fbr_directory_wait_state(struct fbr_directory *directory, enum fbr_directory_state state)
+{
+	fbr_directory_ok(directory);
+
+	assert_zero(pthread_mutex_lock(&directory->lock));
+
+	while (directory->state != state) {
+		pthread_cond_wait(&directory->cond, &directory->lock);
+	}
+
+	assert_zero(pthread_mutex_unlock(&directory->lock));
 }
 
 void

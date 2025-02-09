@@ -3,6 +3,7 @@
  *
  */
 
+#include <limits.h>
 #include <stdlib.h>
 
 #include "fiberfs.h"
@@ -26,14 +27,10 @@ fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
     size_t name_len)
 {
 	assert(filename);
+	assert(name);
+	assert(name_len <= USHRT_MAX);
 
-	if (!name_len) {
-		assert_zero(filename_ptr);
-		assert_zero(name);
-		assert_zero(filename->layout);
-
-		 return;
-	} else if (!fbr_filename_inline_len(name_len)) {
+	if (!fbr_filename_inline_len(name_len)) {
 		assert_zero(filename_ptr);
 
 		filename->layout = FBR_FILENAME_EMBED;
@@ -46,9 +43,8 @@ fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
 
 	}
 
-	assert(name_len);
-	assert(name);
 	memcpy(filename_ptr, name, name_len + 1);
+	filename->len = name_len;
 }
 
 const char *
@@ -73,6 +69,12 @@ fbr_filename_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
 	fbr_file_ok(f1);
 	fbr_file_ok(f2);
 
+	int diff = f1->filename.len - f2->filename.len;
+
+	if (diff) {
+		return diff;
+	}
+
 	const char *filename1 = fbr_filename_get(&f1->filename);
 	const char *filename2 = fbr_filename_get(&f2->filename);
 
@@ -80,13 +82,6 @@ fbr_filename_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
 	assert(filename2);
 
 	return strcmp(filename1, filename2);
-}
-
-struct fbr_file *
-fbr_file_alloc_nolen(struct fbr_directory *directory, char *name)
-{
-	assert(name);
-	return fbr_file_alloc(directory, name, strlen(name));
 }
 
 struct fbr_file *
