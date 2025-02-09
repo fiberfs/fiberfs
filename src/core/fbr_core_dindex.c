@@ -68,7 +68,7 @@ _dindex_get_bucket(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	fbr_dindex_ok(dindex);
 	fbr_directory_ok(directory);
 
-	unsigned long pos = directory->inode % FBR_DINDEX_BUCKET_COUNT;
+	size_t pos = directory->inode % FBR_DINDEX_BUCKET_COUNT;
 
         struct fbr_dindex_bucket *bucket = &(dindex->buckets[pos]);
 	fbr_dindex_bucket_ok(bucket);
