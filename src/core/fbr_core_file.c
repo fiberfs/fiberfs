@@ -10,8 +10,10 @@
 #include "fuse/fbr_fuse_ops.h"
 
 struct fbr_file *
-fbr_file_alloc(struct fbr_directory *directory, char *name, size_t name_len)
+fbr_file_alloc(struct fbr_core_fs *fs, struct fbr_directory *directory, char *name,
+    size_t name_len)
 {
+	fbr_core_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(name);
 
@@ -26,6 +28,7 @@ fbr_file_alloc(struct fbr_directory *directory, char *name, size_t name_len)
 	}
 
 	file->magic = FBR_FILE_MAGIC;
+	file->inode = fbr_core_fs_gen_inode(fs);
 
 	fbr_filename_init(&file->filename, inline_ptr, name, name_len);
 

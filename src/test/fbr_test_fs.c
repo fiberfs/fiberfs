@@ -196,7 +196,7 @@ fbr_test_cmd_fs_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct dirent *dentry;
 	while ((dentry = readdir(dir)) != NULL) {
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "entry: %s type: %s ino: %lu",
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_ls entry: %s type: %s ino: %lu",
 			dentry->d_name,
 			dentry->d_type == DT_REG ? "file" :
 				dentry->d_type == DT_DIR ? "dir" : "other",

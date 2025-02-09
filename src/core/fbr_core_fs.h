@@ -69,13 +69,16 @@ struct fbr_directory {
 	struct fbr_filename			dirname;
 
 	enum fbr_directory_state		state;
-
 	unsigned int				refcount;
+	unsigned long				inode;
 
 	pthread_mutex_t				lock;
 	pthread_cond_t				cond;
 
 	unsigned long				version;
+
+	// TODO we need creation date and insertion date
+	// creation date will tell us how often to look for updates
 
 	RB_ENTRY(fbr_directory)			dindex_entry;
 
@@ -83,9 +86,24 @@ struct fbr_directory {
 	struct fbr_filename_tree		filename_tree;
 };
 
+struct fbr_core_fs {
+	unsigned int				magic;
+#define FBR_CORE_FS_MAGIC			0x150CC3D2
+
+	struct fbr_directory			*root;
+	struct fbr_dindex			*dindex;
+
+	unsigned long				inode_next;
+
+};
+
 RB_HEAD(fbr_dindex_tree, fbr_directory);
 
 // TODO Global inode search table: itable
+
+void fbr_core_fs_init(struct fbr_core_fs *fs);
+unsigned long fbr_core_fs_gen_inode(struct fbr_core_fs *fs);
+void fbr_core_fs_free(struct fbr_core_fs *fs);
 
 size_t fbr_filename_inline_len(size_t name_len);
 void fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
@@ -94,12 +112,13 @@ const char *fbr_filename_get(const struct fbr_filename *filename);
 int fbr_filename_cmp(const struct fbr_filename *f1, const struct fbr_filename *f2);
 void fbr_filename_free(struct fbr_filename *filename);
 
-struct fbr_file *fbr_file_alloc(struct fbr_directory *directory, char *name, size_t name_len);
+struct fbr_file *fbr_file_alloc(struct fbr_core_fs *fs, struct fbr_directory *directory,
+	char *name, size_t name_len);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 void fbr_file_free(struct fbr_file *file);
 
-struct fbr_directory *fbr_directory_root_alloc(void);
-struct fbr_directory *fbr_directory_alloc(char *name, size_t name_len);
+struct fbr_directory *fbr_directory_root_alloc(struct fbr_core_fs *fs);
+struct fbr_directory *fbr_directory_alloc(struct fbr_core_fs *fs, char *name, size_t name_len);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
 void fbr_directory_add(struct fbr_directory *directory, struct fbr_file *file);
 void fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_state state);
@@ -108,13 +127,16 @@ void fbr_directory_free(struct fbr_directory *directory);
 
 struct fbr_dindex *fbr_dindex_alloc(void);
 void fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory);
-struct fbr_directory *fbr_dindex_get(struct fbr_dindex *dindex, char *dirname,
-	size_t dirname_len);
-struct fbr_directory *fbr_dindex_get_noref(struct fbr_dindex *dindex, char *dirname,
-	size_t dirname_len);
+struct fbr_directory *fbr_dindex_get(struct fbr_dindex *dindex, unsigned long inode);
+struct fbr_directory *fbr_dindex_get_noref(struct fbr_dindex *dindex, unsigned long inode);
 void fbr_dindex_release(struct fbr_dindex *dindex, struct fbr_directory *directory);
 void fbr_dindex_free(struct fbr_dindex *dindex);
 
+#define fbr_core_fs_ok(fs)					\
+{								\
+	assert(fs);						\
+	assert((fs)->magic == FBR_CORE_FS_MAGIC);		\
+}
 #define fbr_file_ok(file)					\
 {								\
 	assert(file);						\

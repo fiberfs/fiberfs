@@ -15,17 +15,22 @@
 RB_GENERATE_STATIC(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
 struct fbr_directory *
-fbr_directory_root_alloc(void)
+fbr_directory_root_alloc(struct fbr_core_fs *fs)
 {
-	struct fbr_directory *root = fbr_directory_alloc("", 0);
+	fbr_core_fs_ok(fs);
+
+	struct fbr_directory *root = fbr_directory_alloc(fs, "", 0);
 	fbr_directory_ok(root);
 
 	return root;
 }
 
 struct fbr_directory *
-fbr_directory_alloc(char *name, size_t name_len)
+fbr_directory_alloc(struct fbr_core_fs *fs, char *name, size_t name_len)
 {
+	fbr_core_fs_ok(fs);
+	assert(name);
+
 	size_t inline_len = fbr_filename_inline_len(name_len);
 	char *inline_ptr = NULL;
 
@@ -47,9 +52,16 @@ fbr_directory_alloc(char *name, size_t name_len)
 
 	fbr_directory_ok(directory);
 
-	// TODO req...
-	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(NULL);
-	fbr_dindex_add(ctx->dindex, directory);
+	if (!name_len) {
+		assert_zero(fs->root);
+		fs->root = directory;
+
+		directory->inode = 1;
+	} else {
+		directory->inode = fbr_core_fs_gen_inode(fs);
+	}
+
+	fbr_dindex_add(fs->dindex, directory);
 
 	return directory;
 }
@@ -60,7 +72,7 @@ fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2
 	fbr_directory_ok(d1);
 	fbr_directory_ok(d2);
 
-	return fbr_filename_cmp(&d1->dirname, &d2->dirname);
+	return d1->inode - d2->inode;
 }
 
 void

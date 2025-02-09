@@ -10,7 +10,7 @@
 #include "fbr_core_fs.h"
 #include "data/tree.h"
 
-#define FBR_DINDEX_BUCKET_COUNT		32
+#define FBR_DINDEX_BUCKET_COUNT		1024
 
 struct fbr_dindex_bucket {
 	unsigned				magic;
@@ -68,17 +68,9 @@ _dindex_hash_djb2(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	fbr_dindex_ok(dindex);
 	fbr_directory_ok(directory);
 
-	const char *dirname = fbr_filename_get(&directory->dirname);
-	assert(dirname);
+	unsigned long pos = directory->inode % FBR_DINDEX_BUCKET_COUNT;
 
-        unsigned long hash = 5381;
-        int c;
-
-        while ((c = *dirname++)) {
-                hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-        }
-
-        struct fbr_dindex_bucket *bucket = &(dindex->buckets[hash % FBR_DINDEX_BUCKET_COUNT]);
+        struct fbr_dindex_bucket *bucket = &(dindex->buckets[pos]);
 	fbr_dindex_bucket_ok(bucket);
 
         return bucket;
@@ -89,6 +81,7 @@ fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
 {
 	fbr_dindex_ok(dindex);
 	fbr_directory_ok(directory);
+	assert(directory->inode);
 
 	struct fbr_dindex_bucket *bucket = _dindex_hash_djb2(dindex, directory);
 
@@ -99,10 +92,7 @@ fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
 
 	directory->state = FBR_DIRSTATE_FETCH;
 
-	// refcount starts at 1, that means we need something to release this
 	directory->refcount = 1;
-
-	// TODO we need a timestamp so we can age and release
 
 	struct fbr_directory *existing = RB_INSERT(fbr_dindex_tree, &bucket->tree, directory);
 	fbr_ASSERT(!existing, "TODO");
@@ -111,16 +101,13 @@ fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
 }
 
 struct fbr_directory *
-_dindex_get(struct fbr_dindex *dindex, char *dirname, size_t dirname_len, int refcount)
+_dindex_get(struct fbr_dindex *dindex, unsigned long inode, int do_refcount)
 {
 	fbr_dindex_ok(dindex);
-	assert(dirname);
 
 	struct fbr_directory find;
 	find.magic = FBR_DIRECTORY_MAGIC;
-	find.dirname.layout = FBR_FILENAME_CONST;
-	find.dirname.len = dirname_len;
-	find.dirname.name_ptr = dirname;
+	find.inode = inode;
 
         struct fbr_dindex_bucket *bucket = _dindex_hash_djb2(dindex, &find);
 
@@ -133,7 +120,7 @@ _dindex_get(struct fbr_dindex *dindex, char *dirname, size_t dirname_len, int re
 		fbr_directory_ok(directory);
 		assert(directory->refcount);
 
-		if (refcount) {
+		if (do_refcount) {
 			directory->refcount++;
 		}
 	}
@@ -144,15 +131,15 @@ _dindex_get(struct fbr_dindex *dindex, char *dirname, size_t dirname_len, int re
 }
 
 struct fbr_directory *
-fbr_dindex_get(struct fbr_dindex *dindex, char *dirname, size_t dirname_len)
+fbr_dindex_get(struct fbr_dindex *dindex, unsigned long inode)
 {
-	return _dindex_get(dindex, dirname, dirname_len, 1);
+	return _dindex_get(dindex, inode, 1);
 }
 
 struct fbr_directory *
-fbr_dindex_get_noref(struct fbr_dindex *dindex, char *dirname, size_t dirname_len)
+fbr_dindex_get_noref(struct fbr_dindex *dindex, unsigned long inode)
 {
-	return _dindex_get(dindex, dirname, dirname_len, 0);
+	return _dindex_get(dindex, inode, 0);
 }
 
 void

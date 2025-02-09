@@ -50,7 +50,8 @@ fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
 	assert(name);
 	assert(name_len <= USHRT_MAX);
 
-	memcpy(filename_ptr, name, name_len + 1);
+	memcpy(filename_ptr, name, name_len);
+	filename_ptr[name_len] = '\0';
 	filename->len = name_len;
 }
 

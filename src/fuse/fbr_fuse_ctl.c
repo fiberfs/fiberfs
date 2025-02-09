@@ -24,7 +24,7 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 	fbr_ZERO(ctx);
 	ctx->magic = FBR_FUSE_CTX_MAGIC;
 
-	ctx->dindex = fbr_dindex_alloc();
+	fbr_core_fs_init(&ctx->fs);
 
 	fbr_fuse_ctx_ok(ctx);
 }
@@ -59,7 +59,6 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	assert(ctx->state == FBR_FUSE_NONE);
 	assert_zero(ctx->session);
 	assert(ctx->fuse_ops);
-	assert(ctx->dindex);
 	assert(path);
 
 	char *argv[6];
@@ -193,8 +192,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	ctx->state = FBR_FUSE_NONE;
 
-	fbr_dindex_free(ctx->dindex);
-	ctx->dindex = NULL;
+	fbr_core_fs_free(&ctx->fs);
 }
 
 void
@@ -202,7 +200,6 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_ctx_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
-	assert_zero(ctx->dindex);
 	assert_zero(_FUSE_CTX);
 
 	if (ctx->running) {

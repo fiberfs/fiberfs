@@ -14,7 +14,7 @@
 #include "fuse/fbr_fuse_ops.h"
 #include "test/fbr_test.h"
 
-#define _TEST_OPS_FUSE_TTL_SEC		1.0
+#define _TEST_OPS_FUSE_TTL_SEC		2.0
 
 int _TEST_OPS_FUSE_STATE;
 
@@ -215,7 +215,6 @@ _test_ops_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	}
 
 	//fi->cache_readdir
-	//fi->fh
 	fi->cache_readdir = 1;
 
 	ret = fuse_reply_open(req, fi);
@@ -357,6 +356,7 @@ _test_ops_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	}
 
 	//fi->keep_cache
+	fi->keep_cache = 1;
 
 	ret = fuse_reply_open(req, fi);
 	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_ops_open fuse_reply_open %d", ret);
