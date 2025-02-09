@@ -3,91 +3,17 @@
  *
  */
 
-#include <limits.h>
 #include <stdlib.h>
 
 #include "fiberfs.h"
 #include "fbr_core_fs.h"
 #include "fuse/fbr_fuse_ops.h"
 
-size_t
-fbr_filename_inline_len(size_t name_len)
-{
-	struct fbr_filename *filename;
-
-	if (name_len < sizeof(filename->name_data)) {
-		return 0;
-	}
-
-	return name_len + 1;
-}
-
-void
-fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
-    size_t name_len)
-{
-	assert(filename);
-	assert(name);
-	assert(name_len <= USHRT_MAX);
-
-	if (!fbr_filename_inline_len(name_len)) {
-		assert_zero(filename_ptr);
-
-		filename->layout = FBR_FILENAME_EMBED;
-		filename_ptr = filename->name_data;
-	} else {
-		assert(filename_ptr);
-
-		filename->layout = FBR_FILENAME_INLINE;
-		filename->name_ptr = filename_ptr;
-
-	}
-
-	memcpy(filename_ptr, name, name_len + 1);
-	filename->len = name_len;
-}
-
-const char *
-fbr_filename_get(const struct fbr_filename *filename)
-{
-	assert(filename);
-
-	if (filename->layout == FBR_FILENAME_NONE) {
-		return NULL;
-	} else if (filename->layout == FBR_FILENAME_EMBED) {
-		return filename->name_data;
-	}
-
-	assert(filename->layout <= FBR_FILENAME_ALLOC);
-
-	return filename->name_ptr;
-}
-
-int
-fbr_filename_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
-{
-	fbr_file_ok(f1);
-	fbr_file_ok(f2);
-
-	int diff = f1->filename.len - f2->filename.len;
-
-	if (diff) {
-		return diff;
-	}
-
-	const char *filename1 = fbr_filename_get(&f1->filename);
-	const char *filename2 = fbr_filename_get(&f2->filename);
-
-	assert(filename1);
-	assert(filename2);
-
-	return strcmp(filename1, filename2);
-}
-
 struct fbr_file *
 fbr_file_alloc(struct fbr_directory *directory, char *name, size_t name_len)
 {
 	fbr_directory_ok(directory);
+	assert(name);
 
 	size_t inline_len = fbr_filename_inline_len(name_len);
 	char *inline_ptr = NULL;
@@ -110,10 +36,21 @@ fbr_file_alloc(struct fbr_directory *directory, char *name, size_t name_len)
 	return file;
 }
 
+int
+fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
+{
+	fbr_file_ok(f1);
+	fbr_file_ok(f2);
+
+	return fbr_filename_cmp(&f1->filename, &f2->filename);
+}
+
 void
 fbr_file_free(struct fbr_file *file)
 {
 	fbr_file_ok(file);
+
+	fbr_filename_free(&file->filename);
 
 	fbr_ZERO(file);
 

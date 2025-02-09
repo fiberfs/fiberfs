@@ -98,7 +98,11 @@ fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	assert(directory->state == FBR_DIRSTATE_NONE);
 
 	directory->state = FBR_DIRSTATE_FETCH;
-	// refcount starts at 1
+
+	// refcount starts at 1, that means we need something to release this
+	directory->refcount = 1;
+
+	// TODO we need a timestamp so we can age and release
 
 	struct fbr_directory *existing = RB_INSERT(fbr_dindex_tree, &bucket->tree, directory);
 	fbr_ASSERT(!existing, "TODO");
@@ -107,7 +111,7 @@ fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
 }
 
 struct fbr_directory *
-fbr_dindex_get(struct fbr_dindex *dindex, char *dirname)
+_dindex_get(struct fbr_dindex *dindex, char *dirname, size_t dirname_len, int refcount)
 {
 	fbr_dindex_ok(dindex);
 	assert(dirname);
@@ -115,6 +119,7 @@ fbr_dindex_get(struct fbr_dindex *dindex, char *dirname)
 	struct fbr_directory find;
 	find.magic = FBR_DIRECTORY_MAGIC;
 	find.dirname.layout = FBR_FILENAME_CONST;
+	find.dirname.len = dirname_len;
 	find.dirname.name_ptr = dirname;
 
         struct fbr_dindex_bucket *bucket = _dindex_hash_djb2(dindex, &find);
@@ -124,16 +129,34 @@ fbr_dindex_get(struct fbr_dindex *dindex, char *dirname)
 
         struct fbr_directory *directory = RB_FIND(fbr_dindex_tree, &bucket->tree, &find);
 
-	// increase refcount
-	// we also need a barrow where we previously had a ref
+	if (directory) {
+		fbr_directory_ok(directory);
+		assert(directory->refcount);
+
+		if (refcount) {
+			directory->refcount++;
+		}
+	}
 
 	assert_zero(pthread_rwlock_unlock(&bucket->rwlock));
 
 	return directory;
 }
 
+struct fbr_directory *
+fbr_dindex_get(struct fbr_dindex *dindex, char *dirname, size_t dirname_len)
+{
+	return _dindex_get(dindex, dirname, dirname_len, 1);
+}
+
+struct fbr_directory *
+fbr_dindex_get_noref(struct fbr_dindex *dindex, char *dirname, size_t dirname_len)
+{
+	return _dindex_get(dindex, dirname, dirname_len, 0);
+}
+
 void
-fbr_dindex_delete(struct fbr_dindex *dindex, struct fbr_directory *directory)
+fbr_dindex_release(struct fbr_dindex *dindex, struct fbr_directory *directory)
 {
 	fbr_dindex_ok(dindex);
 	fbr_directory_ok(directory);
@@ -143,12 +166,20 @@ fbr_dindex_delete(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	assert_zero(pthread_rwlock_wrlock(&bucket->rwlock));
 	fbr_dindex_bucket_ok(bucket);
 
-	// this should be a return, only delete if we have the last ref
+	assert(directory->refcount);
+	directory->refcount--;
+
+	if (directory->refcount) {
+		assert_zero(pthread_rwlock_unlock(&bucket->rwlock));
+		return;
+	}
 
 	struct fbr_directory *ret = RB_REMOVE(fbr_dindex_tree, &bucket->tree, directory);
 	assert(directory == ret);
 
 	assert_zero(pthread_rwlock_unlock(&bucket->rwlock));
+
+	fbr_directory_free(directory);
 }
 
 void
@@ -158,8 +189,6 @@ fbr_dindex_free(struct fbr_dindex *dindex)
 
 	for (size_t i = 0; i < FBR_DINDEX_BUCKET_COUNT; i++) {
 		struct fbr_dindex_bucket *bucket = &dindex->buckets[i];
-
-		assert_zero(pthread_rwlock_wrlock(&bucket->rwlock));
 		fbr_dindex_bucket_ok(bucket);
 
 		struct fbr_directory *directory, *next;
@@ -176,7 +205,6 @@ fbr_dindex_free(struct fbr_dindex *dindex)
 
 		assert(RB_EMPTY(&bucket->tree));
 
-		assert_zero(pthread_rwlock_unlock(&bucket->rwlock));
 		assert_zero(pthread_rwlock_destroy(&bucket->rwlock));
 
 		fbr_ZERO(bucket);

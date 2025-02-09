@@ -15,11 +15,12 @@
 #define FBR_FILE_EMBED_LEN			16
 
 enum FBR_FILENAME_LAYOUT {
-	FBR_FILENAME_NONE = 0,
+	FBR_FILENAME_NULL = 0,
 	FBR_FILENAME_EMBED,
 	FBR_FILENAME_INLINE,
 	FBR_FILENAME_CONST,
-	FBR_FILENAME_ALLOC
+	FBR_FILENAME_ALLOC,
+	__FBR_FILENAME_LAYOUT_END
 };
 
 struct fbr_filename {
@@ -39,8 +40,6 @@ struct fbr_file {
 
 	unsigned long				inode;
 	unsigned long				version;
-
-	unsigned int				refcount;
 
 	unsigned int				type;
 	unsigned long				size;
@@ -69,12 +68,14 @@ struct fbr_directory {
 
 	struct fbr_filename			dirname;
 
-	pthread_mutex_t				lock;
-	pthread_cond_t				cond;
 	enum fbr_directory_state		state;
 
-	unsigned long				version;
 	unsigned int				refcount;
+
+	pthread_mutex_t				lock;
+	pthread_cond_t				cond;
+
+	unsigned long				version;
 
 	RB_ENTRY(fbr_directory)			dindex_entry;
 
@@ -84,19 +85,17 @@ struct fbr_directory {
 
 RB_HEAD(fbr_dindex_tree, fbr_directory);
 
-/*
- * Global inode search table: itable
- * Gloabl directory search table: dindex. Contains full paths
- * When a directory has no more references, it and all its children are freed
- */
+// TODO Global inode search table: itable
 
 size_t fbr_filename_inline_len(size_t name_len);
 void fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
 	size_t name_len);
 const char *fbr_filename_get(const struct fbr_filename *filename);
-int fbr_filename_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
+int fbr_filename_cmp(const struct fbr_filename *f1, const struct fbr_filename *f2);
+void fbr_filename_free(struct fbr_filename *filename);
 
 struct fbr_file *fbr_file_alloc(struct fbr_directory *directory, char *name, size_t name_len);
+int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 void fbr_file_free(struct fbr_file *file);
 
 struct fbr_directory *fbr_directory_root_alloc(void);
@@ -109,8 +108,11 @@ void fbr_directory_free(struct fbr_directory *directory);
 
 struct fbr_dindex *fbr_dindex_alloc(void);
 void fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory);
-struct fbr_directory *fbr_dindex_get(struct fbr_dindex *dindex, char *dirname);
-void fbr_dindex_delete(struct fbr_dindex *dindex, struct fbr_directory *directory);
+struct fbr_directory *fbr_dindex_get(struct fbr_dindex *dindex, char *dirname,
+	size_t dirname_len);
+struct fbr_directory *fbr_dindex_get_noref(struct fbr_dindex *dindex, char *dirname,
+	size_t dirname_len);
+void fbr_dindex_release(struct fbr_dindex *dindex, struct fbr_directory *directory);
 void fbr_dindex_free(struct fbr_dindex *dindex);
 
 #define fbr_file_ok(file)					\

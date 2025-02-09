@@ -12,7 +12,7 @@
 #include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_ops.h"
 
-RB_GENERATE_STATIC(fbr_filename_tree, fbr_file, filename_entry, fbr_filename_cmp)
+RB_GENERATE_STATIC(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
 struct fbr_directory *
 fbr_directory_root_alloc(void)
@@ -60,13 +60,7 @@ fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2
 	fbr_directory_ok(d1);
 	fbr_directory_ok(d2);
 
-	const char *dirname1 = fbr_filename_get(&d1->dirname);
-	const char *dirname2 = fbr_filename_get(&d2->dirname);
-
-	assert(dirname1);
-	assert(dirname2);
-
-	return strcmp(dirname1, dirname2);
+	return fbr_filename_cmp(&d1->dirname, &d2->dirname);
 }
 
 void
@@ -74,11 +68,14 @@ fbr_directory_add(struct fbr_directory *directory, struct fbr_file *file)
 {
 	fbr_directory_ok(directory);
 	fbr_file_ok(file);
+	assert_zero(file->directory);
 
 	TAILQ_INSERT_TAIL(&directory->file_list, file, file_entry);
 
 	struct fbr_file *ret = RB_INSERT(fbr_filename_tree, &directory->filename_tree, file);
 	assert_zero(ret);
+
+	file->directory = directory;
 }
 
 void
@@ -102,7 +99,7 @@ fbr_directory_wait_state(struct fbr_directory *directory, enum fbr_directory_sta
 
 	assert_zero(pthread_mutex_lock(&directory->lock));
 
-	while (directory->state != state) {
+	while (directory->state < state) {
 		pthread_cond_wait(&directory->cond, &directory->lock);
 	}
 
@@ -127,6 +124,8 @@ fbr_directory_free(struct fbr_directory *directory)
 
 		fbr_file_free(file);
 	}
+
+	fbr_filename_free(&directory->dirname);
 
 	assert(TAILQ_EMPTY(&directory->file_list));
 	assert(RB_EMPTY(&directory->filename_tree));
