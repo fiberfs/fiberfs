@@ -98,6 +98,7 @@ fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	assert(directory->state == FBR_DIRSTATE_NONE);
 
 	directory->state = FBR_DIRSTATE_FETCH;
+	// refcount starts at 1
 
 	struct fbr_directory *existing = RB_INSERT(fbr_dindex_tree, &bucket->tree, directory);
 	fbr_ASSERT(!existing, "TODO");
@@ -123,6 +124,9 @@ fbr_dindex_get(struct fbr_dindex *dindex, char *dirname)
 
         struct fbr_directory *directory = RB_FIND(fbr_dindex_tree, &bucket->tree, &find);
 
+	// increase refcount
+	// we also need a barrow where we previously had a ref
+
 	assert_zero(pthread_rwlock_unlock(&bucket->rwlock));
 
 	return directory;
@@ -138,6 +142,8 @@ fbr_dindex_delete(struct fbr_dindex *dindex, struct fbr_directory *directory)
 
 	assert_zero(pthread_rwlock_wrlock(&bucket->rwlock));
 	fbr_dindex_bucket_ok(bucket);
+
+	// this should be a return, only delete if we have the last ref
 
 	struct fbr_directory *ret = RB_REMOVE(fbr_dindex_tree, &bucket->tree, directory);
 	assert(directory == ret);
