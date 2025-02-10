@@ -7,6 +7,7 @@
 #include "test/fbr_test_cmds.h"
 #include "test/chttp_test_cmds.h"
 #include "test/fjson_test_cmds.h"
+#include "core/fs/test/fbr_test_fs_cmds.h"
 #include "fuse/test/fbr_test_fuse_cmds.h"
 
 #include <stdio.h>
@@ -138,6 +139,13 @@ fbr_test_cmds_init(struct fbr_test *test)
 #define FBR_TEST_FUSE_VAR(var)					\
 	_test_var_register(test, "$" #var, &fbr_test_fuse_var_##var);
 #include "fuse/test/fbr_test_fuse_cmds.h"
+
+#undef FBR_TEST_COREFS_CMDS_H_INCLUDED
+#define FBR_TEST_FS_CMD(cmd)					\
+	_test_cmd_register(test, #cmd, &fbr_test_cmd_##cmd);
+#define FBR_TEST_FS_VAR(var)					\
+	_test_var_register(test, "$" #var, &fbr_test_var_##var);
+#include "core/fs/test/fbr_test_fs_cmds.h"
 
 	fbr_test_register_finish(test->context, "cmd", _test_cmds_free);
 }

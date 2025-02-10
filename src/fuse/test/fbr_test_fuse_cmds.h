@@ -33,8 +33,6 @@ FBR_TEST_FUSE_CMD(fuse_test_unmount)
 FBR_TEST_FUSE_CMD(fuse_test_ops_mount)
 FBR_TEST_FUSE_CMD(fuse_test_ops_unmount)
 
-FBR_TEST_FUSE_CMD(fuse_test_sim_mount)
-
 #undef FBR_TEST_FUSE_CMD
 #undef FBR_TEST_FUSE_VAR
 
