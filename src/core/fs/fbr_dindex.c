@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "fbr_core_fs.h"
+#include "fbr_fs.h"
 #include "data/tree.h"
 
 #define FBR_DINDEX_BUCKET_COUNT		1024

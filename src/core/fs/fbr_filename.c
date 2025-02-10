@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "fbr_core_fs.h"
+#include "fbr_fs.h"
 
 size_t
 fbr_filename_inline_len(size_t name_len)

@@ -5,10 +5,12 @@
 
 #include "fiberfs.h"
 #include "fbr_test_fuse_cmds.h"
-#include "core/fbr_core_fs.h"
+#include "core/fs/fbr_fs.h"
 #include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_lowlevel.h"
 #include "test/fbr_test.h"
+
+// TODO move this into core/fs?
 
 static void
 _test_sim_init(void *userdata, struct fuse_conn_info *conn)

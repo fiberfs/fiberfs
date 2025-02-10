@@ -12,7 +12,7 @@
 #include "fiberfs.h"
 #include "fbr_fuse.h"
 #include "fbr_fuse_lowlevel.h"
-#include "core/fbr_core_fs.h"
+#include "core/fs/fbr_fs.h"
 
 extern struct fbr_fuse_context *_FUSE_CTX;
 
@@ -24,7 +24,7 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 	fbr_ZERO(ctx);
 	ctx->magic = FBR_FUSE_CTX_MAGIC;
 
-	fbr_core_fs_init(&ctx->fs);
+	fbr_fs_init(&ctx->fs);
 
 	fbr_fuse_ctx_ok(ctx);
 }
@@ -192,7 +192,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	ctx->state = FBR_FUSE_NONE;
 
-	fbr_core_fs_free(&ctx->fs);
+	fbr_fs_free(&ctx->fs);
 }
 
 void

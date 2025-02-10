@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <pthread.h>
 
-#include "core/fbr_core_fs.h"
+#include "core/fs/fbr_fs.h"
 
 enum fbr_fuse_state {
 	FBR_FUSE_NONE = 0,
@@ -28,7 +28,7 @@ struct fbr_fuse_context {
 	const struct fuse_lowlevel_ops	*fuse_ops;
 	pthread_t			loop_thread;
 
-	struct fbr_core_fs		fs;
+	struct fbr_fs			fs;
 	void				*context_priv;
 
 	unsigned int			error:1;

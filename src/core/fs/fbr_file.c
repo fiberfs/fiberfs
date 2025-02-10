@@ -6,14 +6,14 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "fbr_core_fs.h"
+#include "fbr_fs.h"
 #include "fuse/fbr_fuse_ops.h"
 
 struct fbr_file *
-fbr_file_alloc(struct fbr_core_fs *fs, struct fbr_directory *directory, char *name,
+fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
     size_t name_len)
 {
-	fbr_core_fs_ok(fs);
+	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(name);
 
@@ -28,7 +28,7 @@ fbr_file_alloc(struct fbr_core_fs *fs, struct fbr_directory *directory, char *na
 	}
 
 	file->magic = FBR_FILE_MAGIC;
-	file->inode = fbr_core_fs_gen_inode(fs);
+	file->inode = fbr_fs_gen_inode(fs);
 
 	fbr_filename_init(&file->filename, inline_ptr, name, name_len);
 

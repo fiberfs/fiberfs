@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "fbr_core_fs.h"
+#include "fbr_fs.h"
 #include "data/queue.h"
 #include "data/tree.h"
 #include "fuse/fbr_fuse.h"
@@ -15,9 +15,9 @@
 RB_GENERATE_STATIC(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
 struct fbr_directory *
-fbr_directory_root_alloc(struct fbr_core_fs *fs)
+fbr_directory_root_alloc(struct fbr_fs *fs)
 {
-	fbr_core_fs_ok(fs);
+	fbr_fs_ok(fs);
 
 	struct fbr_directory *root = fbr_directory_alloc(fs, "", 0);
 	fbr_directory_ok(root);
@@ -26,9 +26,9 @@ fbr_directory_root_alloc(struct fbr_core_fs *fs)
 }
 
 struct fbr_directory *
-fbr_directory_alloc(struct fbr_core_fs *fs, char *name, size_t name_len)
+fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len)
 {
-	fbr_core_fs_ok(fs);
+	fbr_fs_ok(fs);
 	assert(name);
 
 	size_t inline_len = fbr_filename_inline_len(name_len);
@@ -58,7 +58,7 @@ fbr_directory_alloc(struct fbr_core_fs *fs, char *name, size_t name_len)
 
 		directory->inode = 1;
 	} else {
-		directory->inode = fbr_core_fs_gen_inode(fs);
+		directory->inode = fbr_fs_gen_inode(fs);
 	}
 
 	fbr_dindex_add(fs->dindex, directory);
