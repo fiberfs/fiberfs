@@ -163,7 +163,7 @@ fjson/test/%.o:	fjson/test/%.c $(FJSON_INCLUDES) $(TEST_INCLUDES) $(FJSON_TEST_I
 		$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-		$(RM) *.o */*.o */*/*.o *.so *.a
+		$(RM) *.o */*.o */*/*.o */*/*/*.o *.so *.a
 		$(RM) chttp_client fjson_client fiberfs_test
 		$(RM) *.gcno */*.gcno */*/*.gcno *.gcda */*.gcda */*/*.gcda
 		$(RM) *.gcov */*.gcov */*/*.gcov
