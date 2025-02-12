@@ -34,7 +34,7 @@ static const struct fuse_lowlevel_ops _TEST_FS_OPS = {
 };
 
 void
-fbr_cmd_fs_test_simple_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_ERROR_param_count(cmd, 1);
 

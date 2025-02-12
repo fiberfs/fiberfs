@@ -1,8 +1,8 @@
-fiber_test "Fuse sim"
+fiber_test "FS init"
 
 fs_mkdir_tmp
 
-fs_test_simple_mount $fs_tmpdir
+fs_test_init_mount $fs_tmpdir
 
 fs_test_stats
 

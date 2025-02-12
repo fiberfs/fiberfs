@@ -15,7 +15,7 @@
 
 #endif /* FBR_TEST_FS_CMD */
 
-FBR_TEST_FS_CMD(fs_test_simple_mount)
+FBR_TEST_FS_CMD(fs_test_init_mount)
 
 FBR_TEST_FS_CMD(fs_test_release_root)
 FBR_TEST_FS_CMD(fs_test_stats)
