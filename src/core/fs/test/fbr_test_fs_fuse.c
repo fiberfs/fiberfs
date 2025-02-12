@@ -213,13 +213,13 @@ _test_fs_fuse_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_open fuse_reply_err %d", ret);
 		return;
 	} else if (!S_ISREG(file->mode)) {
-		fbr_file_release(fs, file);
+		fbr_inode_release(fs, file);
 
 		int ret = fuse_reply_err(req, EISDIR);
 		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_open fuse_reply_err %d", ret);
 		return;
 	} else if (fi->flags & O_WRONLY || fi->flags & O_RDWR) {
-		fbr_file_release(fs, file);
+		fbr_inode_release(fs, file);
 
 		int ret = fuse_reply_err(req, EROFS);
 		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_open fuse_reply_err %d", ret);
@@ -271,7 +271,7 @@ _test_fs_fuse_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 		ino, fi->flags, fi->fh);
 
 	struct fbr_file *file = fbr_file_fh(fi->fh);
-	fbr_file_release(fs, file);
+	fbr_inode_release(fs, file);
 
 	int ret = fuse_reply_err(req, 0);
 	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_ops_release fuse_reply_err %d", ret);

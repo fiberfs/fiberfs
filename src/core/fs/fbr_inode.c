@@ -16,7 +16,7 @@ struct fbr_inode_head {
 #define FBR_INODE_HEAD_MAGIC			0xCE5442D7
 
 	struct fbr_inode_tree			tree;
-	pthread_rwlock_t			rwlock;
+	pthread_mutex_t				lock;
 };
 
 struct fbr_inode {
@@ -62,7 +62,7 @@ fbr_inodes_alloc(void)
 		head->magic = FBR_INODE_HEAD_MAGIC;
 
 		RB_INIT(&head->tree);
-		assert_zero(pthread_rwlock_init(&head->rwlock, NULL));
+		assert_zero(pthread_mutex_init(&head->lock, NULL));
 	}
 
 	return inode;
@@ -102,23 +102,10 @@ _inode_get_head(struct fbr_inode *inode, struct fbr_file *file)
         return head;
 }
 
-static void
-_inode_file_ref(struct fbr_fs *fs, struct fbr_file *file)
-{
-	fbr_fs_ok(fs);
-	fbr_file_ok(file);
 
-	assert_zero(pthread_mutex_lock(&file->lock));
-	fbr_file_ok(file);
-
-	file->refcount++;
-	assert(file->refcount);
-
-	fbr_fs_stat_add(&fs->stats.file_refs);
-
-	assert_zero(pthread_mutex_unlock(&file->lock));
-}
-
+// fuse_lookup and root_file
+// File comes from a dindex that has a reference
+// Multiple calls ok since file comes from the same dindex
 void
 fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 {
@@ -128,11 +115,11 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 
 	struct fbr_inode_head *head = _inode_get_head(inode, file);
 
-	assert_zero(pthread_rwlock_wrlock(&head->rwlock));
+	assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
+	fbr_file_ok(file);
 
-	// Caller (fuse lookup) owns a reference
-	_inode_file_ref(fs, file);
+	fbr_file_ref_inode(fs, file);
 
 	struct fbr_file *existing = RB_INSERT(fbr_inode_tree, &head->tree, file);
 
@@ -141,10 +128,12 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 		assert(existing == file);
 	}
 
-	assert_zero(pthread_rwlock_unlock(&head->rwlock));
+	assert_zero(pthread_mutex_unlock(&head->lock));
 }
 
-// TODO better understand if this is good to use
+// fuse_getattr and fuse_readdir
+// TODO what is the context here? Do we always have a fuse_lookup?
+// dindex should pull a reference to its file so it can get attributes
 struct fbr_file *
 fbr_inode_get(struct fbr_fs *fs, unsigned long file_inode)
 {
@@ -157,21 +146,23 @@ fbr_inode_get(struct fbr_fs *fs, unsigned long file_inode)
 
         struct fbr_inode_head *head = _inode_get_head(inode, &find);
 
-        assert_zero(pthread_rwlock_wrlock(&head->rwlock));
+        assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 
         struct fbr_file *file = RB_FIND(fbr_inode_tree, &head->tree, &find);
 
 	if (file) {
 		fbr_file_ok(file);
-		assert(file->refcount);
+		assert(file->refcount_inode);
 	}
 
-	assert_zero(pthread_rwlock_unlock(&head->rwlock));
+	assert_zero(pthread_mutex_unlock(&head->lock));
 
 	return file;
 }
 
+// fuse_open, fuse_lookup is always done before
+// root_file also uses this, it always owns a reference
 struct fbr_file *
 fbr_inode_ref(struct fbr_fs *fs, unsigned long file_inode)
 {
@@ -184,30 +175,51 @@ fbr_inode_ref(struct fbr_fs *fs, unsigned long file_inode)
 
         struct fbr_inode_head *head = _inode_get_head(inode, &find);
 
-        assert_zero(pthread_rwlock_wrlock(&head->rwlock));
+        assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 
         struct fbr_file *file = RB_FIND(fbr_inode_tree, &head->tree, &find);
+	fbr_file_ok(file);
 
-	if (file) {
-		fbr_file_ok(file);
-		assert(file->refcount);
+	fbr_file_ref_inode(fs, file);
 
-		// Caller owns a reference
-		_inode_file_ref(fs, file);
-	}
-
-	assert_zero(pthread_rwlock_unlock(&head->rwlock));
+	assert_zero(pthread_mutex_unlock(&head->lock));
 
 	return file;
 }
 
+// fuse_open, called after taking a inode_ref, should always have a lookup
 void
-fbr_inode_release(struct fbr_fs *fs, unsigned long inode)
+fbr_inode_release(struct fbr_fs *fs, struct fbr_file *file)
 {
-	fbr_inode_forget(fs, inode, 1);
+	struct fbr_inode *inode = _inode_fs_get(fs);
+	fbr_file_ok(file);
+
+        struct fbr_inode_head *head = _inode_get_head(inode, file);
+
+        assert_zero(pthread_mutex_lock(&head->lock));
+	fbr_inode_head_ok(head);
+	fbr_file_ok(file);
+
+	unsigned int total;
+	unsigned int refs = fbr_file_release_inode(fs, file, &total);
+
+	if (refs) {
+		assert_zero(pthread_mutex_unlock(&head->lock));
+		return;
+	}
+
+	struct fbr_file *ret = RB_REMOVE(fbr_inode_tree, &head->tree, file);
+	assert(file == ret);
+
+	assert_zero(pthread_mutex_unlock(&head->lock));
+
+	if (!total) {
+		fbr_file_free(fs, file);
+	}
 }
 
+// fuse_forget, called after fuse_lookup or fuse_create
 void
 fbr_inode_forget(struct fbr_fs *fs, unsigned long file_inode, unsigned int refs)
 {
@@ -220,47 +232,28 @@ fbr_inode_forget(struct fbr_fs *fs, unsigned long file_inode, unsigned int refs)
 
         struct fbr_inode_head *head = _inode_get_head(inode, &find);
 
-        assert_zero(pthread_rwlock_wrlock(&head->rwlock));
+        assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 
         struct fbr_file *file = RB_FIND(fbr_inode_tree, &head->tree, &find);
 	fbr_file_ok(file);
-	assert(file->refcount >= refs);
 
-	file->refcount -= refs;
+	unsigned int total;
+	refs = fbr_file_forget_inode(fs, file, refs, &total);
 
-	fbr_fs_stat_sub_count(&fs->stats.file_refs, refs);
-
-	if (file->refcount) {
-		assert_zero(pthread_rwlock_unlock(&head->rwlock));
+	if (refs) {
+		assert_zero(pthread_mutex_unlock(&head->lock));
 		return;
 	}
 
 	struct fbr_file *ret = RB_REMOVE(fbr_inode_tree, &head->tree, file);
 	assert(file == ret);
 
-	assert_zero(pthread_rwlock_unlock(&head->rwlock));
+	assert_zero(pthread_mutex_unlock(&head->lock));
 
-	fbr_file_free(fs, file);
-}
-
-// TODO this can probably race with another operation?
-void
-fbr_inode_delete(struct fbr_fs *fs, struct fbr_file *file)
-{
-	struct fbr_inode *inode = _inode_fs_get(fs);
-	fbr_file_ok(file);
-
-        struct fbr_inode_head *head = _inode_get_head(inode, file);
-
-        assert_zero(pthread_rwlock_wrlock(&head->rwlock));
-	fbr_inode_head_ok(head);
-	fbr_file_ok(file);
-
-	struct fbr_file *ret = RB_REMOVE(fbr_inode_tree, &head->tree, file);
-	assert(file == ret);
-
-	assert_zero(pthread_rwlock_unlock(&head->rwlock));
+	if (!total) {
+		fbr_file_free(fs, file);
+	}
 }
 
 void
@@ -285,7 +278,7 @@ fbr_inodes_free(struct fbr_fs *fs)
 
 		assert(RB_EMPTY(&head->tree));
 
-		assert_zero(pthread_rwlock_destroy(&head->rwlock));
+		assert_zero(pthread_mutex_destroy(&head->lock));
 
 		fbr_ZERO(head);
 	}

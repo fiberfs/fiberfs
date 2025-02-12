@@ -86,17 +86,18 @@ fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
-	assert_zero(file->refcount);
+	assert_zero(file->refcount_dindex);
+	assert_zero(file->refcount_inode);
 
 	// directory ownership
-	file->refcount = 1;
+	file->refcount_dindex = 1;
+
+	fbr_fs_stat_add(&fs->stats.file_refs);
 
 	TAILQ_INSERT_TAIL(&directory->file_list, file, file_entry);
 
 	struct fbr_file *ret = RB_INSERT(fbr_filename_tree, &directory->filename_tree, file);
 	assert_zero(ret);
-
-	fbr_fs_stat_add(&fs->stats.file_refs);
 }
 
 void
