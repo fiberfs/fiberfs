@@ -86,11 +86,11 @@ fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
-	assert_zero(file->refcount_dindex);
-	assert_zero(file->refcount_inode);
+	assert_zero(file->refcounts.dindex);
+	assert_zero(file->refcounts.inode);
 
 	// directory ownership
-	file->refcount_dindex = 1;
+	file->refcounts.dindex = 1;
 
 	fbr_fs_stat_add(&fs->stats.file_refs);
 

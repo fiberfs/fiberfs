@@ -158,14 +158,12 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		TAILQ_REMOVE(&directory->file_list, file, file_entry);
 
-		struct fbr_file *ret = RB_REMOVE(fbr_filename_tree, &directory->filename_tree,
-			file);
-		assert(file == ret);
+		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file);
 
-		unsigned int total;
-		(void)fbr_file_release_dindex(fs, file, &total);
+		struct fbr_file_refcounts refcounts;
+		fbr_file_release_dindex(fs, file, &refcounts);
 
-		if (!total) {
+		if (refcounts.dindex + refcounts.inode == 0) {
 			fbr_file_free(fs, file);
 		}
 	}
@@ -213,8 +211,7 @@ fbr_dindex_forget(struct fbr_fs *fs, unsigned long inode, unsigned int refs)
 		return;
 	}
 
-	struct fbr_directory *ret = RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
-	assert(directory == ret);
+	(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
@@ -243,8 +240,7 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory)
 		return;
 	}
 
-	struct fbr_directory *ret = RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
-	assert(directory == ret);
+	(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
@@ -265,9 +261,7 @@ fbr_dindex_free(struct fbr_fs *fs)
 		RB_FOREACH_SAFE(directory, fbr_dindex_tree, &dirhead->tree, next) {
 			fbr_directory_ok(directory);
 
-			struct fbr_directory *ret = RB_REMOVE(fbr_dindex_tree, &dirhead->tree,
-				directory);
-			assert(directory == ret);
+			(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
 
 			_dindex_directory_free(fs, directory);
 		}

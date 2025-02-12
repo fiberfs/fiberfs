@@ -36,16 +36,18 @@ struct fbr_filename {
 	};
 };
 
+struct fbr_file_refcounts {
+	unsigned int				dindex;
+	unsigned int				inode;
+};
+
 struct fbr_file {
 	unsigned int				magic;
 #define FBR_FILE_MAGIC				0x8F97F917
 
 	struct fbr_filename			filename;
 
-	// TODO refcount_dindex might need a lock since it lives
-	// under multiple inodes
-	unsigned int				refcount_dindex;
-	unsigned int				refcount_inode;
+	struct fbr_file_refcounts		refcounts;
 	pthread_mutex_t				refcount_lock;
 
 	unsigned long				inode;
@@ -152,13 +154,13 @@ struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directo
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 int fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 void fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file);
-unsigned int fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file *file,
-	unsigned int *total_refs);
+void fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file *file,
+	struct fbr_file_refcounts *refcounts);
 void fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file);
-unsigned int fbr_file_release_inode(struct fbr_fs *fs, struct fbr_file *file,
-	unsigned int *total_refs);
-unsigned int fbr_file_forget_inode(struct fbr_fs *fs, struct fbr_file *file, unsigned int refs,
-	unsigned int *total_refs);
+void fbr_file_release_inode(struct fbr_fs *fs, struct fbr_file *file,
+	struct fbr_file_refcounts *refcounts);
+void fbr_file_forget_inode(struct fbr_fs *fs, struct fbr_file *file, unsigned int refs,
+	struct fbr_file_refcounts *refcounts);
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_attr(struct fbr_file *file, struct stat *st);
 uint64_t fbr_file_to_fh(struct fbr_file *file);

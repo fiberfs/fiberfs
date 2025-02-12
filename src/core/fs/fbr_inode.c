@@ -153,7 +153,6 @@ fbr_inode_get(struct fbr_fs *fs, unsigned long file_inode)
 
 	if (file) {
 		fbr_file_ok(file);
-		assert(file->refcount_inode);
 	}
 
 	assert_zero(pthread_mutex_unlock(&head->lock));
@@ -201,20 +200,19 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_inode_head_ok(head);
 	fbr_file_ok(file);
 
-	unsigned int total;
-	unsigned int refs = fbr_file_release_inode(fs, file, &total);
+	struct fbr_file_refcounts refcounts;
+	fbr_file_release_inode(fs, file, &refcounts);
 
-	if (refs) {
+	if (refcounts.inode) {
 		assert_zero(pthread_mutex_unlock(&head->lock));
 		return;
 	}
 
-	struct fbr_file *ret = RB_REMOVE(fbr_inode_tree, &head->tree, file);
-	assert(file == ret);
+	(void)RB_REMOVE(fbr_inode_tree, &head->tree, file);
 
 	assert_zero(pthread_mutex_unlock(&head->lock));
 
-	if (!total) {
+	if (!refcounts.dindex) {
 		fbr_file_free(fs, file);
 	}
 }
@@ -238,20 +236,19 @@ fbr_inode_forget(struct fbr_fs *fs, unsigned long file_inode, unsigned int refs)
         struct fbr_file *file = RB_FIND(fbr_inode_tree, &head->tree, &find);
 	fbr_file_ok(file);
 
-	unsigned int total;
-	refs = fbr_file_forget_inode(fs, file, refs, &total);
+	struct fbr_file_refcounts refcounts;
+	fbr_file_forget_inode(fs, file, refs, &refcounts);
 
-	if (refs) {
+	if (refcounts.inode) {
 		assert_zero(pthread_mutex_unlock(&head->lock));
 		return;
 	}
 
-	struct fbr_file *ret = RB_REMOVE(fbr_inode_tree, &head->tree, file);
-	assert(file == ret);
+	(void)RB_REMOVE(fbr_inode_tree, &head->tree, file);
 
 	assert_zero(pthread_mutex_unlock(&head->lock));
 
-	if (!total) {
+	if (!refcounts.dindex) {
 		fbr_file_free(fs, file);
 	}
 }
@@ -270,8 +267,7 @@ fbr_inodes_free(struct fbr_fs *fs)
 		RB_FOREACH_SAFE(file, fbr_inode_tree, &head->tree, next) {
 			fbr_file_ok(file);
 
-			struct fbr_file *ret = RB_REMOVE(fbr_inode_tree, &head->tree, file);
-			assert(file == ret);
+			(void)RB_REMOVE(fbr_inode_tree, &head->tree, file);
 
 			fbr_file_free(fs, file);
 		}
