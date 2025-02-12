@@ -6,33 +6,40 @@
 #include "fiberfs.h"
 #include "fbr_fs.h"
 
-#define _FS_INODE_START				1000
-
 void
 fbr_fs_init(struct fbr_fs *fs)
 {
 	assert(fs);
-	assert(_FS_INODE_START > 1);
 
 	fbr_ZERO(fs);
 
 	fs->magic = FBR_FS_MAGIC;
 
-	fs->inode_next = _FS_INODE_START;
+	fs->inode = fbr_inode_alloc();
 	fs->dindex = fbr_dindex_alloc();
 
 	fbr_fs_ok(fs);
 }
 
-unsigned long
-fbr_fs_gen_inode(struct fbr_fs *fs)
+void
+fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root)
 {
 	fbr_fs_ok(fs);
+	assert_zero(fs->root);
+	fbr_directory_ok(root);
+	assert_zero(root->dirname.len);
 
-	unsigned long inode = __sync_fetch_and_add(&fs->inode_next, 1);
-	assert(inode > 1);
+	fs->root = root;
+}
 
-	return inode;
+void
+fbr_fs_release_root(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(fs->root);
+
+	fbr_directory_release(fs->dindex, fs->root);
+	fs->root = NULL;
 }
 
 void
@@ -40,7 +47,20 @@ fbr_fs_free(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
 
+	if (fs->root) {
+		fbr_fs_release_root(fs);
+	}
+
+	fbr_inode_free(fs->inode);
 	fbr_dindex_free(fs->dindex);
 
 	fbr_ZERO(fs);
+}
+
+void
+fbr_fs_stat_add(unsigned long *stat, size_t value)
+{
+	assert(stat);
+
+        (void)__sync_add_and_fetch(stat, value);
 }

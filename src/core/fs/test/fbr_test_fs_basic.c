@@ -42,10 +42,13 @@ fbr_test_cmd_fs_test_simple_mount(struct fbr_test_context *ctx, struct fbr_test_
 	fbr_test_ERROR(ret, "fs simple fuse mount failed: %s", cmd->params[0].value);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
-	struct fbr_directory *root = fbr_dindex_get_noref(fuse_ctx->fs.dindex, 1);
+	struct fbr_directory *root = fbr_dindex_get(fuse_ctx->fs.dindex, 1);
 	fbr_directory_ok(root);
 	fbr_test_ASSERT(root == fuse_ctx->fs.root, "bad root ptr");
 	fbr_test_ASSERT(root->state == FBR_DIRSTATE_OK, "bad root state %d", root->state);
+
+	fbr_directory_release(fuse_ctx->fs.dindex, root);
+	fbr_fs_release_root(&fuse_ctx->fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_simple mounted: %s", cmd->params[0].value);
 }

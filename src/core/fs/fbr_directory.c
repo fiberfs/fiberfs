@@ -12,7 +12,7 @@
 #include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_ops.h"
 
-RB_GENERATE_STATIC(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
+RB_GENERATE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
 struct fbr_directory *
 fbr_directory_root_alloc(struct fbr_fs *fs)
@@ -45,7 +45,7 @@ fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len)
 
 	fbr_filename_init(&directory->dirname, inline_ptr, name, name_len);
 
-	assert_zero(pthread_mutex_init(&directory->lock, NULL));
+	assert_zero(pthread_mutex_init(&directory->cond_lock, NULL));
 	assert_zero(pthread_cond_init(&directory->cond, NULL));
 	TAILQ_INIT(&directory->file_list);
 	RB_INIT(&directory->filename_tree);
@@ -53,15 +53,16 @@ fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len)
 	fbr_directory_ok(directory);
 
 	if (!name_len) {
-		assert_zero(fs->root);
-		fs->root = directory;
-
 		directory->inode = 1;
+
+		fbr_fs_set_root(fs, directory);
 	} else {
-		directory->inode = fbr_fs_gen_inode(fs);
+		directory->inode = fbr_inode_gen(fs->inode);
 	}
 
 	fbr_dindex_add(fs->dindex, directory);
+
+	// TODO dup
 
 	return directory;
 }
@@ -79,70 +80,51 @@ void
 fbr_directory_add(struct fbr_directory *directory, struct fbr_file *file)
 {
 	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
-	assert_zero(file->directory);
+	assert_zero(file->refcount);
+
+	// directory ownership
+	file->refcount = 1;
 
 	TAILQ_INSERT_TAIL(&directory->file_list, file, file_entry);
 
 	struct fbr_file *ret = RB_INSERT(fbr_filename_tree, &directory->filename_tree, file);
 	assert_zero(ret);
-
-	file->directory = directory;
 }
 
 void
 fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_state state)
 {
 	fbr_directory_ok(directory);
+	assert(state == FBR_DIRSTATE_OK || state == FBR_DIRSTATE_ERROR);
 
-	assert_zero(pthread_mutex_lock(&directory->lock));
+	assert_zero(pthread_mutex_lock(&directory->cond_lock));
+
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
 
 	directory->state = state;
 
 	assert_zero(pthread_cond_broadcast(&directory->cond));
 
-	assert_zero(pthread_mutex_unlock(&directory->lock));
+	assert_zero(pthread_mutex_unlock(&directory->cond_lock));
 }
 
 void
-fbr_directory_wait_state(struct fbr_directory *directory, enum fbr_directory_state state)
+fbr_directory_wait_ok(struct fbr_directory *directory)
 {
 	fbr_directory_ok(directory);
+	assert(directory->state >= FBR_DIRSTATE_LOADING);
 
-	assert_zero(pthread_mutex_lock(&directory->lock));
+	assert_zero(pthread_mutex_lock(&directory->cond_lock));
 
-	while (directory->state < state) {
-		pthread_cond_wait(&directory->cond, &directory->lock);
+	while (directory->state == FBR_DIRSTATE_LOADING) {
+		pthread_cond_wait(&directory->cond, &directory->cond_lock);
 	}
 
-	assert_zero(pthread_mutex_unlock(&directory->lock));
-}
-
-void
-fbr_directory_free(struct fbr_directory *directory)
-{
 	fbr_directory_ok(directory);
+	assert(directory->state >= FBR_DIRSTATE_OK);
 
-	struct fbr_file *file, *temp;
-
-	TAILQ_FOREACH_SAFE(file, &directory->file_list, file_entry, temp) {
-		fbr_file_ok(file);
-
-		TAILQ_REMOVE(&directory->file_list, file, file_entry);
-
-		struct fbr_file *ret = RB_REMOVE(fbr_filename_tree, &directory->filename_tree,
-			file);
-		assert(file == ret);
-
-		fbr_file_free(file);
-	}
-
-	fbr_filename_free(&directory->dirname);
-
-	assert(TAILQ_EMPTY(&directory->file_list));
-	assert(RB_EMPTY(&directory->filename_tree));
-
-	fbr_ZERO(directory);
-
-	free(directory);
+	assert_zero(pthread_mutex_unlock(&directory->cond_lock));
 }

@@ -28,9 +28,11 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
 	}
 
 	file->magic = FBR_FILE_MAGIC;
-	file->inode = fbr_fs_gen_inode(fs);
+	file->inode = fbr_inode_gen(fs->inode);
 
 	fbr_filename_init(&file->filename, inline_ptr, name, name_len);
+
+	assert_zero(pthread_mutex_init(&file->lock, NULL));
 
 	fbr_file_ok(file);
 
@@ -49,13 +51,51 @@ fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
 }
 
 void
-fbr_file_free(struct fbr_file *file)
+_fbr_file_free(struct fbr_file *file)
 {
 	fbr_file_ok(file);
+
+	assert_zero(pthread_mutex_destroy(&file->lock));
 
 	fbr_filename_free(&file->filename);
 
 	fbr_ZERO(file);
 
 	free(file);
+}
+
+static void
+_file_release(struct fbr_file *file, unsigned int refs)
+{
+	fbr_file_ok(file);
+	assert(refs);
+
+	assert_zero(pthread_mutex_lock(&file->lock));
+	fbr_file_ok(file);
+
+	assert(file->refcount >= refs);
+	file->refcount -= refs;
+
+	if (file->refcount) {
+		assert_zero(pthread_mutex_unlock(&file->lock));
+		return;
+	}
+
+	assert_zero(pthread_mutex_unlock(&file->lock));
+
+	// TODO inode?
+
+	_fbr_file_free(file);
+}
+
+void
+fbr_file_release(struct fbr_file *file)
+{
+	_file_release(file, 1);
+}
+
+void
+fbr_file_release_count(struct fbr_file *file, unsigned int refs)
+{
+	_file_release(file, refs);
 }
