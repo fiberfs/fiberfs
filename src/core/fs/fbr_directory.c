@@ -57,12 +57,15 @@ fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len)
 
 		fbr_fs_set_root(fs, directory);
 	} else {
-		directory->inode = fbr_inode_gen(fs->inode);
+		directory->inode = fbr_inode_gen(fs);
 	}
 
-	fbr_dindex_add(fs->dindex, directory);
+	fbr_dindex_add(fs, directory);
 
 	// TODO dup
+
+	fbr_fs_stat_add(&fs->stats.directories);
+	fbr_fs_stat_add(&fs->stats.directories_total);
 
 	return directory;
 }
@@ -77,8 +80,9 @@ fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2
 }
 
 void
-fbr_directory_add(struct fbr_directory *directory, struct fbr_file *file)
+fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file *file)
 {
+	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
@@ -91,6 +95,8 @@ fbr_directory_add(struct fbr_directory *directory, struct fbr_file *file)
 
 	struct fbr_file *ret = RB_INSERT(fbr_filename_tree, &directory->filename_tree, file);
 	assert_zero(ret);
+
+	fbr_fs_stat_add(&fs->stats.file_refs);
 }
 
 void

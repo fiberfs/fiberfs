@@ -89,8 +89,10 @@ struct fbr_directory {
 
 struct fbr_fs_stats {
 	unsigned long				directories;
+	unsigned long				directories_total;
 	unsigned long				directory_refs;
 	unsigned long				files;
+	unsigned long				files_total;
 	unsigned long				file_refs;
 };
 
@@ -100,7 +102,10 @@ struct fbr_fs {
 
 	struct fbr_inode			*inode;
 	struct fbr_dindex			*dindex;
+
 	struct fbr_directory			*root;
+
+	struct fbr_fs_stats			stats;
 };
 
 RB_HEAD(fbr_dindex_tree, fbr_directory);
@@ -109,11 +114,15 @@ void fbr_fs_init(struct fbr_fs *fs);
 void fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root);
 void fbr_fs_release_root(struct fbr_fs *fs);
 void fbr_fs_free(struct fbr_fs *fs);
-void fbr_fs_stat_add(unsigned long *stat, size_t value);
+
+void fbr_fs_stat_add_count(unsigned long *stat, unsigned long value);
+void fbr_fs_stat_add(unsigned long *stat);
+void fbr_fs_stat_sub_count(unsigned long *stat, unsigned long value);
+void fbr_fs_stat_sub(unsigned long *stat);
 
 struct fbr_inode *fbr_inode_alloc(void);
-unsigned long fbr_inode_gen(struct fbr_inode *inode);
-void fbr_inode_free(struct fbr_inode *inode);
+unsigned long fbr_inode_gen(struct fbr_fs *fs);
+void fbr_inode_free(struct fbr_fs *fs);
 
 size_t fbr_filename_inline_len(size_t name_len);
 void fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
@@ -125,26 +134,27 @@ void fbr_filename_free(struct fbr_filename *filename);
 struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory,
 	char *name, size_t name_len);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
-void fbr_file_release(struct fbr_file *file);
-void fbr_file_release_count(struct fbr_file *file, unsigned int refs);
+void fbr_file_release(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_file_release_count(struct fbr_fs *fs, struct fbr_file *file, unsigned int refs);
 
 RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
 struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
-void fbr_directory_add(struct fbr_directory *directory, struct fbr_file *file);
+void fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory,
+	struct fbr_file *file);
 void fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_state state);
 void fbr_directory_wait_ok(struct fbr_directory *directory);
 
 struct fbr_dindex *fbr_dindex_alloc(void);
-void fbr_dindex_add(struct fbr_dindex *dindex, struct fbr_directory *directory);
-struct fbr_directory *fbr_dindex_get(struct fbr_dindex *dindex, unsigned long inode);
-struct fbr_directory *fbr_dindex_get_forget(struct fbr_dindex *dindex, unsigned long inode);
-void fbr_dindex_release(struct fbr_dindex *dindex, struct fbr_directory *directory);
-void fbr_dindex_release_count(struct fbr_dindex *dindex, struct fbr_directory *directory,
+void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
+struct fbr_directory *fbr_dindex_get(struct fbr_fs *fs, unsigned long inode);
+struct fbr_directory *fbr_dindex_get_forget(struct fbr_fs *fs, unsigned long inode);
+void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory);
+void fbr_dindex_release_count(struct fbr_fs *fs, struct fbr_directory *directory,
 	unsigned int refs);
-void fbr_dindex_free(struct fbr_dindex *dindex);
+void fbr_dindex_free(struct fbr_fs *fs);
 
 #define fbr_directory_release			fbr_dindex_release
 #define fbr_directory_release_count		fbr_dindex_release_count

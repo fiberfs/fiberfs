@@ -142,9 +142,9 @@ fbr_test_cmds_init(struct fbr_test *test)
 
 #undef FBR_TEST_COREFS_CMDS_H_INCLUDED
 #define FBR_TEST_FS_CMD(cmd)					\
-	_test_cmd_register(test, #cmd, &fbr_test_cmd_##cmd);
+	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
 #define FBR_TEST_FS_VAR(var)					\
-	_test_var_register(test, "$" #var, &fbr_test_var_##var);
+	_test_var_register(test, "$" #var, &fbr_var_##var);
 #include "core/fs/test/fbr_test_fs_cmds.h"
 
 	fbr_test_register_finish(test->context, "cmd", _test_cmds_free);

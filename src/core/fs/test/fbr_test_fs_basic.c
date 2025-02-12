@@ -34,7 +34,7 @@ static const struct fuse_lowlevel_ops _TEST_FS_OPS = {
 };
 
 void
-fbr_test_cmd_fs_test_simple_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_fs_test_simple_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_ERROR_param_count(cmd, 1);
 
@@ -42,13 +42,70 @@ fbr_test_cmd_fs_test_simple_mount(struct fbr_test_context *ctx, struct fbr_test_
 	fbr_test_ERROR(ret, "fs simple fuse mount failed: %s", cmd->params[0].value);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
-	struct fbr_directory *root = fbr_dindex_get(fuse_ctx->fs.dindex, 1);
+	struct fbr_fs *fs = &fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	struct fbr_directory *root = fbr_dindex_get(fs, 1);
 	fbr_directory_ok(root);
-	fbr_test_ASSERT(root == fuse_ctx->fs.root, "bad root ptr");
+	fbr_test_ASSERT(root == fs->root, "bad root ptr");
 	fbr_test_ASSERT(root->state == FBR_DIRSTATE_OK, "bad root state %d", root->state);
 
-	fbr_directory_release(fuse_ctx->fs.dindex, root);
-	fbr_fs_release_root(&fuse_ctx->fs);
+	fbr_directory_release(fs, root);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_simple mounted: %s", cmd->params[0].value);
 }
+
+void
+fbr_cmd_fs_test_release_root(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	struct fbr_fs *fs = &fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	fbr_fs_release_root(fs);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root released");
+}
+
+void
+fbr_cmd_fs_test_stats(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	struct fbr_fs *fs = &fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+#define _FS_TEST_STAT_PRINT(name)	\
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs.stats." #name ": %lu", fs->stats.name)
+
+	_FS_TEST_STAT_PRINT(directories);
+	_FS_TEST_STAT_PRINT(directories_total);
+	_FS_TEST_STAT_PRINT(directory_refs);
+	_FS_TEST_STAT_PRINT(files);
+	_FS_TEST_STAT_PRINT(files_total);
+	_FS_TEST_STAT_PRINT(file_refs);
+}
+
+#define _FS_TEST_STAT(name)							\
+char *										\
+fbr_var_fs_test_stat_##name(struct fbr_test_context *ctx)			\
+{										\
+	struct fbr_test_fuse *test_fuse = ctx->fuse;				\
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);		\
+	struct fbr_fs *fs = &fuse_ctx->fs;					\
+	fbr_fs_ok(fs);								\
+										\
+	snprintf(test_fuse->stat_str, sizeof(test_fuse->stat_str), "%lu",	\
+		fs->stats.name);						\
+	return test_fuse->stat_str;						\
+}
+
+_FS_TEST_STAT(directories)
+_FS_TEST_STAT(directories_total)
+_FS_TEST_STAT(directory_refs)
+_FS_TEST_STAT(files)
+_FS_TEST_STAT(files_total)
+_FS_TEST_STAT(file_refs)

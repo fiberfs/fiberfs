@@ -14,13 +14,6 @@
 #include "fuse/fbr_fuse_ops.h"
 #include "test/fbr_test.h"
 
-struct fbr_test_fuse {
-	unsigned int			magic;
-#define _FUSE_MAGIC			0x323EF113
-
-	struct fbr_fuse_context		ctx;
-};
-
 static void
 _fuse_finish(struct fbr_test_context *test_ctx)
 {

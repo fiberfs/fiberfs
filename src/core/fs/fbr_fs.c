@@ -38,7 +38,7 @@ fbr_fs_release_root(struct fbr_fs *fs)
 	fbr_fs_ok(fs);
 	fbr_directory_ok(fs->root);
 
-	fbr_directory_release(fs->dindex, fs->root);
+	fbr_directory_release(fs, fs->root);
 	fs->root = NULL;
 }
 
@@ -51,16 +51,36 @@ fbr_fs_free(struct fbr_fs *fs)
 		fbr_fs_release_root(fs);
 	}
 
-	fbr_inode_free(fs->inode);
-	fbr_dindex_free(fs->dindex);
+	fbr_inode_free(fs);
+	fbr_dindex_free(fs);
 
 	fbr_ZERO(fs);
 }
 
 void
-fbr_fs_stat_add(unsigned long *stat, size_t value)
+fbr_fs_stat_add_count(unsigned long *stat, unsigned long value)
 {
 	assert(stat);
 
         (void)__sync_add_and_fetch(stat, value);
+}
+
+void
+fbr_fs_stat_add(unsigned long *stat)
+{
+	fbr_fs_stat_add_count(stat, 1);
+}
+
+void
+fbr_fs_stat_sub_count(unsigned long *stat, unsigned long value)
+{
+	assert(stat);
+
+        (void)__sync_sub_and_fetch(stat, value);
+}
+
+void
+fbr_fs_stat_sub(unsigned long *stat)
+{
+	fbr_fs_stat_sub_count(stat, 1);
 }

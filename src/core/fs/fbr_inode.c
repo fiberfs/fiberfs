@@ -41,10 +41,19 @@ fbr_inode_alloc(void)
 	return inode;
 }
 
-unsigned long
-fbr_inode_gen(struct fbr_inode *inode)
+static inline struct fbr_inode *
+_inode_fs_get(struct fbr_fs *fs)
 {
-	fbr_inode_ok(inode);
+	fbr_fs_ok(fs);
+	fbr_inode_ok(fs->inode);
+
+	return fs->inode;
+}
+
+unsigned long
+fbr_inode_gen(struct fbr_fs *fs)
+{
+	struct fbr_inode *inode = _inode_fs_get(fs);
 
 	unsigned long inode_next = __sync_fetch_and_add(&inode->next, 1);
 	assert(inode_next >= _INODE_START);
@@ -53,11 +62,11 @@ fbr_inode_gen(struct fbr_inode *inode)
 }
 
 void
-fbr_inode_free(struct fbr_inode *inode)
+fbr_inode_free(struct fbr_fs *fs)
 {
-	fbr_inode_ok(inode);
+	struct fbr_inode *inode = _inode_fs_get(fs);
 
 	fbr_ZERO(inode);
-
 	free(inode);
+	fs->inode = NULL;
 }

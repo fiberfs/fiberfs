@@ -9,9 +9,19 @@
 #ifndef FBR_TEST_FUSE_CMD
 
 #include "test/fbr_test.h"
+#include "fuse/fbr_fuse.h"
 
 #define FBR_TEST_FUSE_CMD(cmd)		fbr_test_cmd_f fbr_test_fuse_cmd_##cmd;
 #define FBR_TEST_FUSE_VAR(var)		fbr_test_var_f fbr_test_fuse_var_##var;
+
+struct fbr_test_fuse {
+	unsigned int			magic;
+#define _FUSE_MAGIC			0x323EF113
+
+	struct fbr_fuse_context		ctx;
+
+	char				stat_str[64];
+};
 
 struct fuse_lowlevel_ops;
 
