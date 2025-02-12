@@ -43,7 +43,7 @@ fbr_fs_release_root(struct fbr_fs *fs)
 
 	fbr_inode_release(fs, 1);
 
-	fbr_directory_release(fs, fs->root);
+	fbr_dindex_release(fs, fs->root);
 	fs->root = NULL;
 }
 

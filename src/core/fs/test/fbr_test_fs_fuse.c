@@ -80,11 +80,10 @@ _test_fs_fuse_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "LOOKUP parent: %lu name: %s",
 		parent, name);
 
-	int ret;
 	struct fbr_directory *directory = fbr_dindex_get(fs, parent);
 
 	if (!directory) {
-		ret = fuse_reply_err(req, ENOTDIR);
+		int ret = fuse_reply_err(req, ENOTDIR);
 		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_lookup fuse_reply_err %d", ret);
 		return;
 	}
@@ -94,7 +93,7 @@ _test_fs_fuse_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	if (!file) {
 		fbr_dindex_release(fs, directory);
 
-		ret = fuse_reply_err(req, ENOENT);
+		int ret = fuse_reply_err(req, ENOENT);
 		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_lookup fuse_reply_err %d", ret);
 		return;
 	}
@@ -112,8 +111,87 @@ _test_fs_fuse_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	fbr_inode_add(fs, file);
 	fbr_dindex_release(fs, directory);
 
-	ret = fuse_reply_entry(req, &entry);
+	int ret = fuse_reply_entry(req, &entry);
 	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_lookup fuse_reply_entry %d", ret);
+}
+
+static void
+_test_fs_fuse_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+{
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
+	struct fbr_fs *fs = &ctx->fs;
+	fbr_fs_ok(fs);
+
+	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
+	fbr_test_context_ok(test_ctx);
+	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "OPENDIR ino: %lu", ino);
+
+	struct fbr_directory *directory = fbr_dindex_get(fs, ino);
+
+	if (!directory) {
+		int ret = fuse_reply_err(req, ENOENT);
+		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_opendir fuse_reply_err %d", ret);
+		return;
+	}
+
+	// fh owns the file ref now
+	fi->fh = fbr_directory_to_fh(directory);
+
+	//fi->cache_readdir
+	fi->cache_readdir = 1;
+
+	int ret = fuse_reply_open(req, fi);
+	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_opendir fuse_reply_open %d", ret);
+}
+
+static void
+_test_fs_fuse_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
+    struct fuse_file_info *fi)
+{
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
+	struct fbr_fs *fs = &ctx->fs;
+	fbr_fs_ok(fs);
+
+	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
+	fbr_test_context_ok(test_ctx);
+	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "READDIR ino: %lu size: %zu off: %ld fh: %lu",
+		ino, size, off, fi->fh);
+
+	struct fbr_directory *directory = fbr_directory_fh(fi->fh);
+
+	// TODO which owner covers this inode ref?
+	struct fbr_file *file = fbr_inode_get(fs, directory->inode);
+	fbr_file_ok(file);
+	struct stat st;
+	fbr_file_attr(file, &st);
+
+	TAILQ_FOREACH(file, &directory->file_list, file_entry) {
+		fbr_file_ok(file);
+
+		fbr_test_log(test_ctx, FBR_LOG_VERY_VERBOSE, "READDIR filename: '%s' inode: %lu",
+			fbr_filename_get(&file->filename), file->inode);
+	}
+
+	int ret = fuse_reply_buf(req, NULL, 0);
+	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_readdir fuse_reply_buf %d", ret);
+}
+
+static void
+_test_fs_fuse_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+{
+	struct fbr_fuse_context *ctx = fbr_fuse_get_ctx(req);
+	struct fbr_fs *fs = &ctx->fs;
+	fbr_fs_ok(fs);
+
+	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
+	fbr_test_context_ok(test_ctx);
+	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "RELEASEDIR ino: %lu fh: %lu", ino, fi->fh);
+
+	struct fbr_directory *directory = fbr_directory_fh(fi->fh);
+	fbr_dindex_release(fs, directory);
+
+	int ret = fuse_reply_err(req, 0);
+	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_releasedir fuse_reply_err %d", ret);
 }
 
 static void
@@ -128,23 +206,22 @@ _test_fs_fuse_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "OPEN ino: %lu flags: %d fh: %lu direct: %d",
 		ino, fi->flags, fi->fh, fi->direct_io);
 
-	int ret;
 	struct fbr_file *file = fbr_inode_ref(fs, ino);
 
 	if (!file) {
-		ret = fuse_reply_err(req, ENOENT);
+		int ret = fuse_reply_err(req, ENOENT);
 		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_open fuse_reply_err %d", ret);
 		return;
 	} else if (!S_ISREG(file->mode)) {
 		fbr_file_release(fs, file);
 
-		ret = fuse_reply_err(req, EISDIR);
+		int ret = fuse_reply_err(req, EISDIR);
 		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_open fuse_reply_err %d", ret);
 		return;
 	} else if (fi->flags & O_WRONLY || fi->flags & O_RDWR) {
 		fbr_file_release(fs, file);
 
-		ret = fuse_reply_err(req, EROFS);
+		int ret = fuse_reply_err(req, EROFS);
 		fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_open fuse_reply_err %d", ret);
 		return;
 	}
@@ -155,7 +232,7 @@ _test_fs_fuse_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	//fi->keep_cache
 	fi->keep_cache = 1;
 
-	ret = fuse_reply_open(req, fi);
+	int ret = fuse_reply_open(req, fi);
 	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_open fuse_reply_open %d", ret);
 }
 
@@ -240,11 +317,18 @@ _test_fs_fuse_forget_multi(fuse_req_t req, size_t count, struct fuse_forget_data
 
 static const struct fuse_lowlevel_ops _TEST_FS_FUSE_OPS = {
 	.init = _test_fs_fuse_init,
+
 	.getattr = _test_fs_fuse_getattr,
 	.lookup = _test_fs_fuse_lookup,
+
+	.opendir = _test_fs_fuse_opendir,
+	.readdir = _test_fs_fuse_readdir,
+	.releasedir = _test_fs_fuse_releasedir,
+
 	.open = _test_fs_fuse_open,
 	.read = _test_fs_fuse_read,
 	.release = _test_fs_fuse_release,
+
 	.forget = _test_fs_fuse_forget,
 	.forget_multi = _test_fs_fuse_forget_multi
 };

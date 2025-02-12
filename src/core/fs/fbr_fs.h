@@ -164,18 +164,15 @@ void fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory,
 void fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_state state);
 void fbr_directory_wait_ok(struct fbr_directory *directory);
 struct fbr_file *fbr_directory_find(struct fbr_directory *directory, const char *filename);
+uint64_t fbr_directory_to_fh(struct fbr_directory *directory);
+struct fbr_directory *fbr_directory_fh(uint64_t fh);
 
 struct fbr_dindex *fbr_dindex_alloc(void);
 void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_get(struct fbr_fs *fs, unsigned long inode);
 void fbr_dindex_forget(struct fbr_fs *fs, unsigned long inode, unsigned int refs);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory);
-void fbr_dindex_release_count(struct fbr_fs *fs, struct fbr_directory *directory,
-	unsigned int refs);
 void fbr_dindex_free(struct fbr_fs *fs);
-
-#define fbr_directory_release			fbr_dindex_release
-#define fbr_directory_release_count		fbr_dindex_release_count
 
 #define fbr_fs_ok(fs)						\
 {								\

@@ -55,7 +55,7 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_ASSERT(root == fs->root, "bad root ptr");
 	fbr_test_ASSERT(root->state == FBR_DIRSTATE_OK, "bad root state %d", root->state);
 
-	fbr_directory_release(fs, root);
+	fbr_dindex_release(fs, root);
 
 	struct fbr_file *root_file = fbr_inode_get(fs, 1);
 	fbr_file_ok(root_file);
