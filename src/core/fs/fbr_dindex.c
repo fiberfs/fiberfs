@@ -10,7 +10,7 @@
 #include "fbr_fs.h"
 #include "data/tree.h"
 
-#define FBR_DINDEX_HEAD_COUNT			1024
+#define _DINDEX_HEAD_COUNT			1024
 
 struct fbr_dindex_dirhead {
 	unsigned				magic;
@@ -24,7 +24,7 @@ struct fbr_dindex {
 	unsigned				magic;
 #define FBR_DINDEX_MAGIC			0xF5FCA6A6
 
-	struct fbr_dindex_dirhead		dirheads[FBR_DINDEX_HEAD_COUNT];
+	struct fbr_dindex_dirhead		dirheads[_DINDEX_HEAD_COUNT];
 };
 
 #define fbr_dindex_ok(dindex)					\
@@ -52,9 +52,9 @@ fbr_dindex_alloc(void)
 
 	dindex->magic = FBR_DINDEX_MAGIC;
 
-	assert(FBR_DINDEX_HEAD_COUNT);
+	assert(_DINDEX_HEAD_COUNT);
 
-	for (size_t i = 0; i < FBR_DINDEX_HEAD_COUNT; i++) {
+	for (size_t i = 0; i < _DINDEX_HEAD_COUNT; i++) {
 		struct fbr_dindex_dirhead *dirhead = &dindex->dirheads[i];
 
 		dirhead->magic = FBR_DINDEX_DIRHEAD_MAGIC;
@@ -81,9 +81,9 @@ _dindex_get_dirhead(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	fbr_dindex_ok(dindex);
 	fbr_directory_ok(directory);
 
-	size_t pos = directory->inode % FBR_DINDEX_HEAD_COUNT;
+	size_t pos = directory->inode % _DINDEX_HEAD_COUNT;
 
-        struct fbr_dindex_dirhead *dirhead = &(dindex->dirheads[pos]);
+        struct fbr_dindex_dirhead *dirhead = &dindex->dirheads[pos];
 	fbr_dindex_dirhead_ok(dirhead);
 
         return dirhead;
@@ -119,6 +119,7 @@ static struct fbr_directory *
 _dindex_get(struct fbr_fs *fs, unsigned long inode, int do_refcount)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
+	assert(inode);
 
 	struct fbr_directory find;
 	find.magic = FBR_DIRECTORY_MAGIC;
@@ -247,7 +248,7 @@ fbr_dindex_free(struct fbr_fs *fs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 
-	for (size_t i = 0; i < FBR_DINDEX_HEAD_COUNT; i++) {
+	for (size_t i = 0; i < _DINDEX_HEAD_COUNT; i++) {
 		struct fbr_dindex_dirhead *dirhead = &dindex->dirheads[i];
 		fbr_dindex_dirhead_ok(dirhead);
 

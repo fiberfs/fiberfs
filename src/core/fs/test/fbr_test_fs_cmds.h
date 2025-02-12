@@ -17,6 +17,8 @@
 
 FBR_TEST_FS_CMD(fs_test_init_mount)
 
+FBR_TEST_FS_CMD(fs_test_fuse_mount)
+
 FBR_TEST_FS_CMD(fs_test_release_root)
 FBR_TEST_FS_CMD(fs_test_stats)
 

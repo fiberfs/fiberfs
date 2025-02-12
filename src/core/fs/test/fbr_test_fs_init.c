@@ -3,11 +3,14 @@
  *
  */
 
+#include <sys/types.h>
+
 #include "fiberfs.h"
-#include "fbr_test_fs_cmds.h"
 #include "core/fs/fbr_fs.h"
 #include "fuse/fbr_fuse.h"
 #include "fuse/fbr_fuse_lowlevel.h"
+
+#include "fbr_test_fs_cmds.h"
 #include "test/fbr_test.h"
 #include "fuse/test/fbr_test_fuse_cmds.h"
 
@@ -23,8 +26,10 @@ _test_fs_init(void *userdata, struct fuse_conn_info *conn)
 
 	struct fbr_directory *root = fbr_directory_root_alloc(&ctx->fs);
 
-	(void)fbr_file_alloc(&ctx->fs, root, "fiber1", 6);
-	(void)fbr_file_alloc(&ctx->fs, root, "fiber2", 6);
+	mode_t fmode = S_IFREG | 0444;
+
+	(void)fbr_file_alloc(&ctx->fs, root, "fiber1", 6, fmode);
+	(void)fbr_file_alloc(&ctx->fs, root, "fiber2", 6, fmode);
 
 	fbr_directory_set_state(root, FBR_DIRSTATE_OK);
 }
@@ -39,7 +44,7 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_FS_OPS);
-	fbr_test_ERROR(ret, "fs simple fuse mount failed: %s", cmd->params[0].value);
+	fbr_test_ERROR(ret, "fs init fuse mount failed: %s", cmd->params[0].value);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	struct fbr_fs *fs = &fuse_ctx->fs;
@@ -52,7 +57,12 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_directory_release(fs, root);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_simple mounted: %s", cmd->params[0].value);
+	struct fbr_file *root_file = fbr_inode_get(fs, 1);
+	fbr_file_ok(root_file);
+
+	// TODO more checks here
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_init mounted: %s", cmd->params[0].value);
 }
 
 void

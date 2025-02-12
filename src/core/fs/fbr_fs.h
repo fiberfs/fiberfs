@@ -8,6 +8,8 @@
 
 #include <pthread.h>
 #include <stddef.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "data/queue.h"
 #include "data/tree.h"
@@ -44,13 +46,14 @@ struct fbr_file {
 	unsigned long				inode;
 	unsigned long				version;
 
-	unsigned int				type;
+	unsigned int				mode;
 	unsigned long				size;
 	unsigned int				uid;
 	unsigned int				gid;
 
 	TAILQ_ENTRY(fbr_file)			file_entry;
 	RB_ENTRY(fbr_file)			filename_entry;
+	RB_ENTRY(fbr_file)			inode_entry;
 };
 
 enum fbr_directory_state {
@@ -62,6 +65,7 @@ enum fbr_directory_state {
 };
 
 RB_HEAD(fbr_filename_tree, fbr_file);
+RB_HEAD(fbr_inode_tree, fbr_file);
 
 struct fbr_directory {
 	unsigned int				magic;
@@ -122,6 +126,8 @@ void fbr_fs_stat_sub(unsigned long *stat);
 
 struct fbr_inode *fbr_inode_alloc(void);
 unsigned long fbr_inode_gen(struct fbr_fs *fs);
+void fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file);
+struct fbr_file *fbr_inode_get(struct fbr_fs *fs, unsigned long file_inode);
 void fbr_inode_free(struct fbr_fs *fs);
 
 size_t fbr_filename_inline_len(size_t name_len);
@@ -131,11 +137,14 @@ const char *fbr_filename_get(const struct fbr_filename *filename);
 int fbr_filename_cmp(const struct fbr_filename *f1, const struct fbr_filename *f2);
 void fbr_filename_free(struct fbr_filename *filename);
 
+struct fbr_file *fbr_file_root_alloc(struct fbr_fs *fs);
 struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory,
-	char *name, size_t name_len);
+	char *name, size_t name_len, mode_t mode);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
+int fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 void fbr_file_release(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_release_count(struct fbr_fs *fs, struct fbr_file *file, unsigned int refs);
+void fbr_file_attr(struct fbr_file *file, struct stat *st);
 
 RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 

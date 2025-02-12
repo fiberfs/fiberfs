@@ -30,6 +30,9 @@ fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root)
 	assert_zero(root->dirname.len);
 
 	fs->root = root;
+
+	struct fbr_file *root_file = fbr_file_root_alloc(fs);
+	fbr_inode_add(fs, root_file);
 }
 
 void
@@ -37,6 +40,11 @@ fbr_fs_release_root(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(fs->root);
+
+	struct fbr_file *root_file = fbr_inode_get(fs, 1);
+	fbr_file_ok(root_file);
+
+	fbr_file_release(fs, root_file);
 
 	fbr_directory_release(fs, fs->root);
 	fs->root = NULL;

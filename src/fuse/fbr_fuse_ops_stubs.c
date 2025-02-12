@@ -19,11 +19,11 @@ _fuse_ops_init(void *userdata, struct fuse_conn_info *conn)
 	assert(ctx->fuse_ops);
 	assert(conn);
 
-	fbr_fuse_running(ctx, conn);
-
 	if (ctx->fuse_ops->init) {
 		ctx->fuse_ops->init(ctx, conn);
 	}
+
+	fbr_fuse_running(ctx, conn);
 }
 
 static void

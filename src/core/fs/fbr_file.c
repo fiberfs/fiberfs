@@ -4,17 +4,31 @@
  */
 
 #include <stdlib.h>
+#include <sys/types.h>
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
 #include "fuse/fbr_fuse_ops.h"
 
+void _fbr_inode_delete(struct fbr_fs *fs, struct fbr_file *file);
+
 struct fbr_file *
-fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
-    size_t name_len)
+fbr_file_root_alloc(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
-	fbr_directory_ok(directory);
+
+	// TODO mode ok?
+	struct fbr_file *root_file = fbr_file_alloc(fs, NULL, "", 0, S_IFDIR | 0755);
+	fbr_file_ok(root_file);
+
+	return root_file;
+}
+
+struct fbr_file *
+fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
+    size_t name_len, mode_t mode)
+{
+	fbr_fs_ok(fs);
 	assert(name);
 
 	size_t inline_len = fbr_filename_inline_len(name_len);
@@ -28,7 +42,13 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
 	}
 
 	file->magic = FBR_FILE_MAGIC;
-	file->inode = fbr_inode_gen(fs);
+	file->mode = mode;
+
+	if (!name_len) {
+		file->inode = 1;
+	} else {
+		file->inode = fbr_inode_gen(fs);
+	}
 
 	fbr_filename_init(&file->filename, inline_ptr, name, name_len);
 
@@ -39,7 +59,10 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
 
 	fbr_file_ok(file);
 
-	fbr_directory_add(fs, directory, file);
+	if (directory) {
+		fbr_directory_ok(directory);
+		fbr_directory_add(fs, directory, file);
+	}
 
 	return file;
 }
@@ -51,6 +74,15 @@ fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
 	fbr_file_ok(f2);
 
 	return fbr_filename_cmp(&f1->filename, &f2->filename);
+}
+
+int
+fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
+{
+	fbr_file_ok(f1);
+	fbr_file_ok(f2);
+
+	return f1->inode - f2->inode;
 }
 
 void
@@ -92,7 +124,7 @@ _file_release(struct fbr_fs *fs, struct fbr_file *file, unsigned int refs)
 
 	assert_zero(pthread_mutex_unlock(&file->lock));
 
-	// TODO inode?
+	_fbr_inode_delete(fs, file);
 
 	_fbr_file_free(fs, file);
 }
@@ -107,4 +139,21 @@ void
 fbr_file_release_count(struct fbr_fs *fs, struct fbr_file *file, unsigned int refs)
 {
 	_file_release(fs, file, refs);
+}
+
+void
+fbr_file_attr(struct fbr_file *file, struct stat *st)
+{
+	fbr_file_ok(file);
+	assert(st);
+
+	fbr_ZERO(st);
+
+	st->st_ino = file->inode;
+	st->st_mode = file->mode;
+	st->st_size = file->size;
+	st->st_uid = file->uid;
+	st->st_gid = file->gid;
+
+	st->st_nlink = 1;
 }
