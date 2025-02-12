@@ -15,7 +15,7 @@ fbr_fs_init(struct fbr_fs *fs)
 
 	fs->magic = FBR_FS_MAGIC;
 
-	fs->inode = fbr_inode_alloc();
+	fs->inode = fbr_inodes_alloc();
 	fs->dindex = fbr_dindex_alloc();
 
 	fbr_fs_ok(fs);
@@ -41,10 +41,7 @@ fbr_fs_release_root(struct fbr_fs *fs)
 	fbr_fs_ok(fs);
 	fbr_directory_ok(fs->root);
 
-	struct fbr_file *root_file = fbr_inode_get(fs, 1);
-	fbr_file_ok(root_file);
-
-	fbr_file_release(fs, root_file);
+	fbr_inode_release(fs, 1);
 
 	fbr_directory_release(fs, fs->root);
 	fs->root = NULL;
@@ -59,8 +56,8 @@ fbr_fs_free(struct fbr_fs *fs)
 		fbr_fs_release_root(fs);
 	}
 
-	fbr_inode_free(fs);
 	fbr_dindex_free(fs);
+	fbr_inodes_free(fs);
 
 	fbr_ZERO(fs);
 }

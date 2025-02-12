@@ -134,3 +134,29 @@ fbr_directory_wait_ok(struct fbr_directory *directory)
 
 	assert_zero(pthread_mutex_unlock(&directory->cond_lock));
 }
+
+struct fbr_file *
+fbr_directory_find(struct fbr_directory *directory, const char *filename)
+{
+	fbr_directory_ok(directory);
+	assert(filename);
+
+	struct fbr_file find;
+	find.magic = FBR_FILE_MAGIC;
+	fbr_ZERO(&find.filename);
+	find.filename.layout = FBR_FILENAME_CONST;
+	find.filename.len = strlen(filename);
+	find.filename.cname_ptr = filename;
+
+	struct fbr_file *file = RB_FIND(fbr_filename_tree, &directory->filename_tree, &find);
+
+	if (!file) {
+		return NULL;
+	}
+
+	fbr_file_ok(file);
+
+	// directory owns a reference
+
+	return file;
+}

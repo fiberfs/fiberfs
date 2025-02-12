@@ -3,14 +3,13 @@
  *
  */
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
 #include "fuse/fbr_fuse_ops.h"
-
-void _fbr_inode_delete(struct fbr_fs *fs, struct fbr_file *file);
 
 struct fbr_file *
 fbr_file_root_alloc(struct fbr_fs *fs)
@@ -86,7 +85,33 @@ fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
 }
 
 void
-_fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
+fbr_file_release(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	assert_zero(pthread_mutex_lock(&file->lock));
+	fbr_file_ok(file);
+
+	assert(file->refcount);
+	file->refcount--;
+
+	fbr_fs_stat_sub(&fs->stats.file_refs);
+
+	if (file->refcount) {
+		assert_zero(pthread_mutex_unlock(&file->lock));
+		return;
+	}
+
+	assert_zero(pthread_mutex_unlock(&file->lock));
+
+	fbr_file_free(fs, file);
+
+	return;
+}
+
+void
+fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -100,45 +125,6 @@ _fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	free(file);
 
 	fbr_fs_stat_sub(&fs->stats.files);
-}
-
-static void
-_file_release(struct fbr_fs *fs, struct fbr_file *file, unsigned int refs)
-{
-	fbr_fs_ok(fs);
-	fbr_file_ok(file);
-	assert(refs);
-
-	assert_zero(pthread_mutex_lock(&file->lock));
-	fbr_file_ok(file);
-
-	assert(file->refcount >= refs);
-	file->refcount -= refs;
-
-	fbr_fs_stat_sub(&fs->stats.file_refs);
-
-	if (file->refcount) {
-		assert_zero(pthread_mutex_unlock(&file->lock));
-		return;
-	}
-
-	assert_zero(pthread_mutex_unlock(&file->lock));
-
-	_fbr_inode_delete(fs, file);
-
-	_fbr_file_free(fs, file);
-}
-
-void
-fbr_file_release(struct fbr_fs *fs, struct fbr_file *file)
-{
-	_file_release(fs, file, 1);
-}
-
-void
-fbr_file_release_count(struct fbr_fs *fs, struct fbr_file *file, unsigned int refs)
-{
-	_file_release(fs, file, refs);
 }
 
 void
@@ -156,4 +142,21 @@ fbr_file_attr(struct fbr_file *file, struct stat *st)
 	st->st_gid = file->gid;
 
 	st->st_nlink = 1;
+}
+
+uint64_t
+fbr_file_to_fh(struct fbr_file *file)
+{
+	fbr_file_ok(file);
+
+	return (uint64_t)file;
+}
+
+struct fbr_file *
+fbr_file_fh(uint64_t fh)
+{
+	struct fbr_file *file = (struct fbr_file*)fh;
+	fbr_file_ok(file);
+
+	return file;
 }

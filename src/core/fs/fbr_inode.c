@@ -42,7 +42,7 @@ struct fbr_inode {
 RB_GENERATE_STATIC(fbr_inode_tree, fbr_file, inode_entry, fbr_file_inode_cmp)
 
 struct fbr_inode *
-fbr_inode_alloc(void)
+fbr_inodes_alloc(void)
 {
 	assert(_INODE_START > 1);
 
@@ -131,7 +131,7 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 	assert_zero(pthread_rwlock_wrlock(&head->rwlock));
 	fbr_inode_head_ok(head);
 
-	// Caller owns a reference
+	// Caller (fuse lookup) owns a reference
 	_inode_file_ref(fs, file);
 
 	struct fbr_file *existing = RB_INSERT(fbr_inode_tree, &head->tree, file);
@@ -144,6 +144,7 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 	assert_zero(pthread_rwlock_unlock(&head->rwlock));
 }
 
+// TODO better understand if this is good to use
 struct fbr_file *
 fbr_inode_get(struct fbr_fs *fs, unsigned long file_inode)
 {
@@ -171,25 +172,99 @@ fbr_inode_get(struct fbr_fs *fs, unsigned long file_inode)
 	return file;
 }
 
+struct fbr_file *
+fbr_inode_ref(struct fbr_fs *fs, unsigned long file_inode)
+{
+	struct fbr_inode *inode = _inode_fs_get(fs);
+	assert(file_inode);
+
+	struct fbr_file find;
+	find.magic = FBR_FILE_MAGIC;
+	find.inode = file_inode;
+
+        struct fbr_inode_head *head = _inode_get_head(inode, &find);
+
+        assert_zero(pthread_rwlock_wrlock(&head->rwlock));
+	fbr_inode_head_ok(head);
+
+        struct fbr_file *file = RB_FIND(fbr_inode_tree, &head->tree, &find);
+
+	if (file) {
+		fbr_file_ok(file);
+		assert(file->refcount);
+
+		// Caller owns a reference
+		_inode_file_ref(fs, file);
+	}
+
+	assert_zero(pthread_rwlock_unlock(&head->rwlock));
+
+	return file;
+}
+
 void
-_fbr_inode_delete(struct fbr_fs *fs, struct fbr_file *file)
+fbr_inode_release(struct fbr_fs *fs, unsigned long inode)
+{
+	fbr_inode_forget(fs, inode, 1);
+}
+
+void
+fbr_inode_forget(struct fbr_fs *fs, unsigned long file_inode, unsigned int refs)
+{
+	struct fbr_inode *inode = _inode_fs_get(fs);
+	assert(file_inode);
+
+	struct fbr_file find;
+	find.magic = FBR_FILE_MAGIC;
+	find.inode = file_inode;
+
+        struct fbr_inode_head *head = _inode_get_head(inode, &find);
+
+        assert_zero(pthread_rwlock_wrlock(&head->rwlock));
+	fbr_inode_head_ok(head);
+
+        struct fbr_file *file = RB_FIND(fbr_inode_tree, &head->tree, &find);
+	fbr_file_ok(file);
+	assert(file->refcount >= refs);
+
+	file->refcount -= refs;
+
+	fbr_fs_stat_sub_count(&fs->stats.file_refs, refs);
+
+	if (file->refcount) {
+		assert_zero(pthread_rwlock_unlock(&head->rwlock));
+		return;
+	}
+
+	struct fbr_file *ret = RB_REMOVE(fbr_inode_tree, &head->tree, file);
+	assert(file == ret);
+
+	assert_zero(pthread_rwlock_unlock(&head->rwlock));
+
+	fbr_file_free(fs, file);
+}
+
+// TODO this can probably race with another operation?
+void
+fbr_inode_delete(struct fbr_fs *fs, struct fbr_file *file)
 {
 	struct fbr_inode *inode = _inode_fs_get(fs);
 	fbr_file_ok(file);
 
-	struct fbr_inode_head *head = _inode_get_head(inode, file);
+        struct fbr_inode_head *head = _inode_get_head(inode, file);
 
-	assert_zero(pthread_rwlock_wrlock(&head->rwlock));
+        assert_zero(pthread_rwlock_wrlock(&head->rwlock));
 	fbr_inode_head_ok(head);
 	fbr_file_ok(file);
 
-	(void)RB_REMOVE(fbr_inode_tree, &head->tree, file);
+	struct fbr_file *ret = RB_REMOVE(fbr_inode_tree, &head->tree, file);
+	assert(file == ret);
 
 	assert_zero(pthread_rwlock_unlock(&head->rwlock));
 }
 
 void
-fbr_inode_free(struct fbr_fs *fs)
+fbr_inodes_free(struct fbr_fs *fs)
 {
 	struct fbr_inode *inode = _inode_fs_get(fs);
 
@@ -205,7 +280,7 @@ fbr_inode_free(struct fbr_fs *fs)
 			struct fbr_file *ret = RB_REMOVE(fbr_inode_tree, &head->tree, file);
 			assert(file == ret);
 
-			// TODO?
+			fbr_file_free(fs, file);
 		}
 
 		assert(RB_EMPTY(&head->tree));

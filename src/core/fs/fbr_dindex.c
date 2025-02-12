@@ -40,8 +40,6 @@ struct fbr_dindex {
 
 RB_GENERATE_STATIC(fbr_dindex_tree, fbr_directory, dindex_entry, fbr_directory_cmp)
 
-void _fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
-
 struct fbr_dindex *
 fbr_dindex_alloc(void)
 {
@@ -115,8 +113,8 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_zero(pthread_rwlock_unlock(&dirhead->rwlock));
 }
 
-static struct fbr_directory *
-_dindex_get(struct fbr_fs *fs, unsigned long inode, int do_refcount)
+struct fbr_directory *
+fbr_dindex_get(struct fbr_fs *fs, unsigned long inode)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 	assert(inode);
@@ -136,29 +134,15 @@ _dindex_get(struct fbr_fs *fs, unsigned long inode, int do_refcount)
 		fbr_directory_ok(directory);
 		assert(directory->refcount);
 
-		if (do_refcount) {
-			directory->refcount++;
-			assert(directory->refcount);
+		directory->refcount++;
+		assert(directory->refcount);
 
-			fbr_fs_stat_add(&fs->stats.directory_refs);
-		}
+		fbr_fs_stat_add(&fs->stats.directory_refs);
 	}
 
 	assert_zero(pthread_rwlock_unlock(&dirhead->rwlock));
 
 	return directory;
-}
-
-struct fbr_directory *
-fbr_dindex_get(struct fbr_fs *fs, unsigned long inode)
-{
-	return _dindex_get(fs, inode, 1);
-}
-
-struct fbr_directory *
-fbr_dindex_get_forget(struct fbr_fs *fs, unsigned long inode)
-{
-	return _dindex_get(fs, inode, 0);
 }
 
 static void
@@ -181,7 +165,7 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory, int r
 		if (release_files) {
 			fbr_file_release(fs, file);
 		} else {
-			_fbr_file_free(fs, file);
+			fbr_file_free(fs, file);
 		}
 	}
 
@@ -199,17 +183,24 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory, int r
 	fbr_fs_stat_sub(&fs->stats.directories);
 }
 
-static void
-_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory, unsigned int refs)
+// TODO are we storing directories anywhere?
+void
+fbr_dindex_forget(struct fbr_fs *fs, unsigned long inode, unsigned int refs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
-	fbr_directory_ok(directory);
+	assert(inode);
 	assert(refs);
 
-	struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, directory);
+	struct fbr_directory find;
+	find.magic = FBR_DIRECTORY_MAGIC;
+	find.inode = inode;
 
-	assert_zero(pthread_rwlock_wrlock(&dirhead->rwlock));
-	fbr_dindex_dirhead_ok(dirhead);
+        struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, &find);
+
+        assert_zero(pthread_rwlock_rdlock(&dirhead->rwlock));
+        fbr_dindex_dirhead_ok(dirhead);
+
+        struct fbr_directory *directory = RB_FIND(fbr_dindex_tree, &dirhead->tree, &find);
 	fbr_directory_ok(directory);
 
 	assert(directory->refcount >= refs);
@@ -233,14 +224,31 @@ _dindex_release(struct fbr_fs *fs, struct fbr_directory *directory, unsigned int
 void
 fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory)
 {
-	_dindex_release(fs, directory, 1);
-}
+	struct fbr_dindex *dindex = _dindex_fs_get(fs);
+	fbr_directory_ok(directory);
 
-void
-fbr_dindex_release_count(struct fbr_fs *fs, struct fbr_directory *directory,
-    unsigned int refs)
-{
-	_dindex_release(fs, directory, refs);
+	struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, directory);
+
+	assert_zero(pthread_rwlock_wrlock(&dirhead->rwlock));
+	fbr_dindex_dirhead_ok(dirhead);
+	fbr_directory_ok(directory);
+
+	assert(directory->refcount);
+	directory->refcount--;
+
+	fbr_fs_stat_sub(&fs->stats.directory_refs);
+
+	if (directory->refcount) {
+		assert_zero(pthread_rwlock_unlock(&dirhead->rwlock));
+		return;
+	}
+
+	struct fbr_directory *ret = RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
+	assert(directory == ret);
+
+	assert_zero(pthread_rwlock_unlock(&dirhead->rwlock));
+
+	_dindex_directory_free(fs, directory, 1);
 }
 
 void
