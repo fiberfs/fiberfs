@@ -26,6 +26,7 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
 	file->mode = mode;
 
 	if (!name_len) {
+		assert_zero(fs->root);
 		file->inode = 1;
 	} else {
 		file->inode = fbr_inode_gen(fs);
@@ -41,6 +42,8 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
 	if (directory) {
 		fbr_directory_ok(directory);
 		fbr_directory_add(fs, directory, file);
+	} else {
+		assert(file->inode == 1);
 	}
 
 	return file;

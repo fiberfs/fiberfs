@@ -22,13 +22,14 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 
 	struct fbr_directory *root = fbr_directory_alloc(fs, "", 0);
 	fbr_directory_ok(root);
-
-	fbr_fs_set_root(fs, root);
+	assert(root->inode == 1);
 
 	// TODO mode needs to be configurable
 	struct fbr_file *root_file = fbr_file_alloc(fs, NULL, "", 0, S_IFDIR | 0755);
 	fbr_file_ok(root_file);
+	assert(root_file->inode == 1);
 
+	fbr_fs_set_root(fs, root);
 	fbr_inode_add(fs, root_file);
 
 	return root;
