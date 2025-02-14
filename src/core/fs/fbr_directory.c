@@ -9,8 +9,8 @@
 #include "fbr_fs.h"
 #include "data/queue.h"
 #include "data/tree.h"
-#include "fuse/fbr_fuse.h"
-#include "fuse/fbr_fuse_ops.h"
+#include "core/fuse/fbr_fuse.h"
+#include "core/fuse/fbr_fuse_ops.h"
 
 RB_GENERATE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 

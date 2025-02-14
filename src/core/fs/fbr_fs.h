@@ -138,7 +138,6 @@ struct fbr_file *fbr_inode_get(struct fbr_fs *fs, unsigned long file_inode);
 struct fbr_file *fbr_inode_ref(struct fbr_fs *fs, unsigned long file_inode);
 void fbr_inode_release(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_inode_forget(struct fbr_fs *fs, unsigned long inode, unsigned int refs);
-void fbr_inode_delete(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_inodes_free(struct fbr_fs *fs);
 
 size_t fbr_filename_inline_len(size_t name_len);

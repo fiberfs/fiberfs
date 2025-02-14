@@ -8,11 +8,10 @@ LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 
-TEST_SRC:=$(wildcard test/*.c chttp/test/*.c fjson/test/*.c fuse/test/*.c core/fs/test/*.c)
+TEST_SRC:=$(wildcard test/*.c chttp/test/*.c fjson/test/*.c core/*/test/*.c)
 TEST_OBJS:=$(TEST_SRC:.c=.o)
 TEST_INCLUDES:=$(wildcard test/*.h)
-TEST_INCLUDES_FUSE:=$(wildcard fuse/test/*.h)
-TEST_INCLUDES_CORE:=$(wildcard core/fs/test/*.h)
+TEST_INCLUDES_CORE:=$(wildcard core/*/test/*.h)
 
 CHTTP_CLIENT:=$(wildcard chttp/client/*.c)
 CHTTP_CLIENT_OBJS:=$(CHTTP_CLIENT:.c=.o)
@@ -34,7 +33,7 @@ FJSON_INCLUDES:=$(filter-out $(FJSON_TEST_INCLUDES), $(FJSON_INCLUDES))
 
 INCLUDES:=$(wildcard *.h */*.h */*/*.h)
 INCLUDES:=$(filter-out $(TEST_INCLUDES) $(CHTTP_INCLUDES) $(CHTTP_TEST_INCLUDES) \
-	$(FJSON_TEST_INCLUDES) $(FJSON_INCLUDES) $(TEST_INCLUDES_FUSE) $(TEST_INCLUDES_CORE), \
+	$(FJSON_TEST_INCLUDES) $(FJSON_INCLUDES) $(TEST_INCLUDES_CORE), \
 	$(INCLUDES))
 SOURCE:=$(wildcard *.c */*.c */*/*.c)
 SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(FJSON_SRC), \
@@ -147,13 +146,10 @@ fjson/%.o:	fjson/%.c $(FJSON_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
 test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES) $(CHTTP_TEST_INCLUDES) \
-			$(FJSON_TEST_INCLUDES) $(TEST_INCLUDES_FUSE) $(TEST_INCLUDES_CORE)
+			$(FJSON_TEST_INCLUDES) $(TEST_INCLUDES_CORE)
 		$(CC) $(CFLAGS) -c $< -o $@
 
-fuse/test/%.o:	fuse/test/%.c $(INCLUDES) $(TEST_INCLUDES) $(TEST_INCLUDES_FUSE)
-		$(CC) $(CFLAGS) -c $< -o $@
-
-core/fs/test/%.o: core/fs/test/%.c $(INCLUDES) $(TEST_INCLUDES) $(TEST_INCLUDES_CORE)
+core/%/test/%.o: core/%/test/%.c $(INCLUDES) $(TEST_INCLUDES) $(TEST_INCLUDES_CORE)
 		$(CC) $(CFLAGS) -c $< -o $@
 
 chttp/test/%.o:	chttp/test/%.c $(CHTTP_INCLUDES) $(TEST_INCLUDES) $(CHTTP_TEST_INCLUDES)

@@ -9,7 +9,7 @@
 #ifndef FBR_TEST_FUSE_CMD
 
 #include "test/fbr_test.h"
-#include "fuse/fbr_fuse.h"
+#include "core/fuse/fbr_fuse.h"
 
 #define FBR_TEST_FUSE_CMD(cmd)		fbr_test_cmd_f fbr_test_fuse_cmd_##cmd;
 #define FBR_TEST_FUSE_VAR(var)		fbr_test_var_f fbr_test_fuse_var_##var;

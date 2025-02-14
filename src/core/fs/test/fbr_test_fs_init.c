@@ -7,12 +7,12 @@
 
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
-#include "fuse/fbr_fuse.h"
-#include "fuse/fbr_fuse_lowlevel.h"
+#include "core/fuse/fbr_fuse.h"
+#include "core/fuse/fbr_fuse_lowlevel.h"
 
 #include "fbr_test_fs_cmds.h"
 #include "test/fbr_test.h"
-#include "fuse/test/fbr_test_fuse_cmds.h"
+#include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 static void
 _test_fs_init(void *userdata, struct fuse_conn_info *conn)
