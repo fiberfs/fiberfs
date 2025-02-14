@@ -149,7 +149,10 @@ test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES) $(CHTTP_TEST_INCLUDES) \
 			$(FJSON_TEST_INCLUDES) $(TEST_INCLUDES_CORE)
 		$(CC) $(CFLAGS) -c $< -o $@
 
-core/%/test/%.o: core/%/test/%.c $(INCLUDES) $(TEST_INCLUDES) $(TEST_INCLUDES_CORE)
+core/fuse/test/%.o: core/fuse/test/%.c $(INCLUDES) $(TEST_INCLUDES) $(TEST_INCLUDES_CORE)
+		$(CC) $(CFLAGS) -c $< -o $@
+
+core/fs/test/%.o: core/fs/test/%.c $(INCLUDES) $(TEST_INCLUDES) $(TEST_INCLUDES_CORE)
 		$(CC) $(CFLAGS) -c $< -o $@
 
 chttp/test/%.o:	chttp/test/%.c $(CHTTP_INCLUDES) $(TEST_INCLUDES) $(CHTTP_TEST_INCLUDES)
