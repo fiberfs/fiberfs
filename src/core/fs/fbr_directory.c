@@ -31,19 +31,11 @@ fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len)
 	fbr_fs_ok(fs);
 	assert(name);
 
-	size_t inline_len = fbr_filename_inline_len(name_len);
-	char *inline_ptr = NULL;
-
-	struct fbr_directory *directory = calloc(1, sizeof(*directory) + inline_len);
-	fbr_fuse_ASSERT(directory, NULL);
-
-	if (inline_len) {
-		inline_ptr = (char*)directory + sizeof(*directory);
-	}
+	struct fbr_directory *directory = fbr_inline_alloc(sizeof(*directory),
+		offsetof(struct fbr_directory, dirname), name, name_len);
+	assert_zero(strncmp(fbr_filename_get(&directory->dirname), name, name_len));
 
 	directory->magic = FBR_DIRECTORY_MAGIC;
-
-	fbr_filename_init(&directory->dirname, inline_ptr, name, name_len);
 
 	assert_zero(pthread_mutex_init(&directory->cond_lock, NULL));
 	assert_zero(pthread_cond_init(&directory->cond, NULL));

@@ -8,9 +8,10 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "core/fuse/fbr_fuse_ops.h"
 
-size_t
-fbr_filename_inline_len(size_t name_len)
+static size_t
+_filename_inline_len(size_t name_len)
 {
 	struct fbr_filename *filename;
 
@@ -21,8 +22,8 @@ fbr_filename_inline_len(size_t name_len)
 	return name_len + 1;
 }
 
-void
-fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
+static void
+_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
     size_t name_len)
 {
 	assert(filename);
@@ -34,7 +35,7 @@ fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
 
 		return;
 	}
-	if (!fbr_filename_inline_len(name_len)) {
+	if (!_filename_inline_len(name_len)) {
 		assert_zero(filename_ptr);
 
 		filename->layout = FBR_FILENAME_EMBED;
@@ -53,6 +54,26 @@ fbr_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
 	memcpy(filename_ptr, name, name_len);
 	filename_ptr[name_len] = '\0';
 	filename->len = name_len;
+}
+
+void *
+fbr_inline_alloc(size_t size, size_t filename_offset, char *name, size_t name_len)
+{
+	size_t inline_len = _filename_inline_len(name_len);
+	char *inline_ptr = NULL;
+
+	void *obj = calloc(1, size + inline_len);
+	fbr_fuse_ASSERTF(obj, NULL, "memory failure");
+
+	if (inline_len) {
+		inline_ptr = (char*)obj + size;
+	}
+
+	struct fbr_filename *filename = (struct fbr_filename*)((char*)obj + filename_offset);
+
+	_filename_init(filename, inline_ptr, name, name_len);
+
+	return obj;
 }
 
 const char *

@@ -30,15 +30,9 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
 	fbr_fs_ok(fs);
 	assert(name);
 
-	size_t inline_len = fbr_filename_inline_len(name_len);
-	char *inline_ptr = NULL;
-
-	struct fbr_file *file = calloc(1, sizeof(*file) + inline_len);
-	fbr_fuse_ASSERT(file, NULL);
-
-	if (inline_len) {
-		inline_ptr = (char*)file + sizeof(*file);
-	}
+	struct fbr_file *file = fbr_inline_alloc(sizeof(*file),
+		offsetof(struct fbr_file, filename), name, name_len);
+	assert_zero(strncmp(fbr_filename_get(&file->filename), name, name_len));
 
 	file->magic = FBR_FILE_MAGIC;
 	file->mode = mode;
@@ -48,8 +42,6 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
 	} else {
 		file->inode = fbr_inode_gen(fs);
 	}
-
-	fbr_filename_init(&file->filename, inline_ptr, name, name_len);
 
 	assert_zero(pthread_mutex_init(&file->refcount_lock, NULL));
 
