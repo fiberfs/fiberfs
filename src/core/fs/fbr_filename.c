@@ -76,6 +76,19 @@ fbr_inline_alloc(size_t size, size_t filename_offset, char *name, size_t name_le
 	return obj;
 }
 
+void
+fbr_filename_init(struct fbr_filename *filename, const char *name)
+{
+	assert(filename);
+	assert(name);
+
+	fbr_ZERO(filename);
+
+	filename->layout = FBR_FILENAME_CONST;
+	filename->len = strlen(name);
+	filename->cname_ptr = name;
+}
+
 const char *
 fbr_filename_get(const struct fbr_filename *filename)
 {

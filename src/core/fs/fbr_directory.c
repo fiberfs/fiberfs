@@ -136,10 +136,7 @@ fbr_directory_find(struct fbr_directory *directory, const char *filename)
 
 	struct fbr_file find;
 	find.magic = FBR_FILE_MAGIC;
-	fbr_ZERO(&find.filename);
-	find.filename.layout = FBR_FILENAME_CONST;
-	find.filename.len = strlen(filename);
-	find.filename.cname_ptr = filename;
+	fbr_filename_init(&find.filename, filename);
 
 	struct fbr_file *file = RB_FIND(fbr_filename_tree, &directory->filename_tree, &find);
 

@@ -141,6 +141,7 @@ void fbr_inode_forget(struct fbr_fs *fs, unsigned long inode, unsigned int refs)
 void fbr_inodes_free(struct fbr_fs *fs);
 
 void *fbr_inline_alloc(size_t size, size_t filename_offset, char *name, size_t name_len);
+void fbr_filename_init(struct fbr_filename *filename, const char *name);
 const char *fbr_filename_get(const struct fbr_filename *filename);
 int fbr_filename_cmp(const struct fbr_filename *f1, const struct fbr_filename *f2);
 void fbr_filename_free(struct fbr_filename *filename);
