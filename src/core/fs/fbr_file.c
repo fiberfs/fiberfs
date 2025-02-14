@@ -12,18 +12,6 @@
 #include "core/fuse/fbr_fuse_ops.h"
 
 struct fbr_file *
-fbr_file_root_alloc(struct fbr_fs *fs)
-{
-	fbr_fs_ok(fs);
-
-	// TODO mode ok?
-	struct fbr_file *root_file = fbr_file_alloc(fs, NULL, "", 0, S_IFDIR | 0755);
-	fbr_file_ok(root_file);
-
-	return root_file;
-}
-
-struct fbr_file *
 fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
     size_t name_len, mode_t mode)
 {

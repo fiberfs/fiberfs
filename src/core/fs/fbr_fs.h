@@ -146,7 +146,6 @@ const char *fbr_filename_get(const struct fbr_filename *filename);
 int fbr_filename_cmp(const struct fbr_filename *f1, const struct fbr_filename *f2);
 void fbr_filename_free(struct fbr_filename *filename);
 
-struct fbr_file *fbr_file_root_alloc(struct fbr_fs *fs);
 struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory,
 	char *name, size_t name_len, mode_t mode);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);

@@ -18,9 +18,18 @@ struct fbr_directory *
 fbr_directory_root_alloc(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
+	assert_zero(fs->root);
 
 	struct fbr_directory *root = fbr_directory_alloc(fs, "", 0);
 	fbr_directory_ok(root);
+
+	fbr_fs_set_root(fs, root);
+
+	// TODO mode needs to be configurable
+	struct fbr_file *root_file = fbr_file_alloc(fs, NULL, "", 0, S_IFDIR | 0755);
+	fbr_file_ok(root_file);
+
+	fbr_inode_add(fs, root_file);
 
 	return root;
 }
@@ -42,15 +51,14 @@ fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len)
 	TAILQ_INIT(&directory->file_list);
 	RB_INIT(&directory->filename_tree);
 
-	fbr_directory_ok(directory);
-
 	if (!name_len) {
+		assert_zero(fs->root);
 		directory->inode = 1;
-
-		fbr_fs_set_root(fs, directory);
 	} else {
 		directory->inode = fbr_inode_gen(fs);
 	}
+
+	fbr_directory_ok(directory);
 
 	fbr_dindex_add(fs, directory);
 

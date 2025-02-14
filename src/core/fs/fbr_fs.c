@@ -29,10 +29,9 @@ fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root)
 	fbr_directory_ok(root);
 	assert_zero(root->dirname.len);
 
-	fs->root = root;
+	// TODO do we want to take another ref here?
 
-	struct fbr_file *root_file = fbr_file_root_alloc(fs);
-	fbr_inode_add(fs, root_file);
+	fs->root = root;
 }
 
 void
