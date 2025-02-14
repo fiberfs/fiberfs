@@ -57,10 +57,12 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_dindex_release(fs, root);
 
-	struct fbr_file *root_file = fbr_inode_get(fs, 1);
+	struct fbr_file *root_file = fbr_inode_take(fs, 1);
 	fbr_file_ok(root_file);
 
-	// TODO more checks here
+	// TODO more checks here?
+
+	fbr_inode_release(fs, root_file);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_init mounted: %s", cmd->params[0].value);
 }

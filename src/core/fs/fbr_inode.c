@@ -134,36 +134,11 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 // fuse_getattr and fuse_readdir
 // TODO what is the context here? Do we always have a fuse_lookup?
 // dindex should pull a reference to its file so it can get attributes
-struct fbr_file *
-fbr_inode_get(struct fbr_fs *fs, unsigned long file_inode)
-{
-	struct fbr_inode *inode = _inode_fs_get(fs);
-	assert(file_inode);
-
-	struct fbr_file find;
-	find.magic = FBR_FILE_MAGIC;
-	find.inode = file_inode;
-
-        struct fbr_inode_head *head = _inode_get_head(inode, &find);
-
-        assert_zero(pthread_mutex_lock(&head->lock));
-	fbr_inode_head_ok(head);
-
-        struct fbr_file *file = RB_FIND(fbr_inode_tree, &head->tree, &find);
-
-	if (file) {
-		fbr_file_ok(file);
-	}
-
-	assert_zero(pthread_mutex_unlock(&head->lock));
-
-	return file;
-}
 
 // fuse_open, fuse_lookup is always done before
 // root_file also uses this, it always owns a reference
 struct fbr_file *
-fbr_inode_ref(struct fbr_fs *fs, unsigned long file_inode)
+fbr_inode_take(struct fbr_fs *fs, unsigned long file_inode)
 {
 	struct fbr_inode *inode = _inode_fs_get(fs);
 	assert(file_inode);

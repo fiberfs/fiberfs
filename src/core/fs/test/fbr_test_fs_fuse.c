@@ -51,7 +51,7 @@ _test_fs_fuse_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	fbr_test_context_ok(test_ctx);
 	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "GETATTR ino: %lu", ino);
 
-	struct fbr_file *file = fbr_inode_get(fs, ino);
+	struct fbr_file *file = fbr_inode_take(fs, ino);
 
 	if (!file) {
 		int ret = fuse_reply_err(req, ENOENT);
@@ -63,6 +63,8 @@ _test_fs_fuse_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 	struct stat st;
 	fbr_file_attr(file, &st);
+
+	fbr_inode_release(fs, file);
 
 	int ret = fuse_reply_attr(req, &st, _TEST_FS_FUSE_TTL_SEC);
 	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_getattr fuse_reply_attr %d", ret);
@@ -159,11 +161,14 @@ _test_fs_fuse_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 	struct fbr_directory *directory = fbr_directory_fh(fi->fh);
 
-	// TODO which owner covers this inode ref?
-	struct fbr_file *file = fbr_inode_get(fs, directory->inode);
+	// TODO we need to sort out how a directory relates to its inode
+	struct fbr_file *file = fbr_inode_take(fs, directory->inode);
 	fbr_file_ok(file);
+
 	struct stat st;
 	fbr_file_attr(file, &st);
+
+	fbr_inode_release(fs, file);
 
 	TAILQ_FOREACH(file, &directory->file_list, file_entry) {
 		fbr_file_ok(file);
@@ -206,7 +211,7 @@ _test_fs_fuse_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "OPEN ino: %lu flags: %d fh: %lu direct: %d",
 		ino, fi->flags, fi->fh, fi->direct_io);
 
-	struct fbr_file *file = fbr_inode_ref(fs, ino);
+	struct fbr_file *file = fbr_inode_take(fs, ino);
 
 	if (!file) {
 		int ret = fuse_reply_err(req, ENOENT);
