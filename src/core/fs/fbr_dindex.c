@@ -114,7 +114,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 struct fbr_directory *
-fbr_dindex_get(struct fbr_fs *fs, unsigned long inode)
+fbr_dindex_take(struct fbr_fs *fs, unsigned long inode)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 	assert(inode);

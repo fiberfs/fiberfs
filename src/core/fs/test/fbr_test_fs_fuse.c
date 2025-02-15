@@ -82,7 +82,7 @@ _test_fs_fuse_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "LOOKUP parent: %lu name: %s",
 		parent, name);
 
-	struct fbr_directory *directory = fbr_dindex_get(fs, parent);
+	struct fbr_directory *directory = fbr_dindex_take(fs, parent);
 
 	if (!directory) {
 		int ret = fuse_reply_err(req, ENOTDIR);
@@ -128,7 +128,7 @@ _test_fs_fuse_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	fbr_test_context_ok(test_ctx);
 	fbr_test_log(test_ctx, FBR_LOG_VERBOSE, "OPENDIR ino: %lu", ino);
 
-	struct fbr_directory *directory = fbr_dindex_get(fs, ino);
+	struct fbr_directory *directory = fbr_dindex_take(fs, ino);
 
 	if (!directory) {
 		int ret = fuse_reply_err(req, ENOENT);

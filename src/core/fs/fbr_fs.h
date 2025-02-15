@@ -177,7 +177,7 @@ struct fbr_directory *fbr_directory_fh(uint64_t fh);
 
 struct fbr_dindex *fbr_dindex_alloc(void);
 void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
-struct fbr_directory *fbr_dindex_get(struct fbr_fs *fs, unsigned long inode);
+struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, unsigned long inode);
 void fbr_dindex_forget(struct fbr_fs *fs, unsigned long inode, unsigned int refs);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_dindex_free(struct fbr_fs *fs);

@@ -24,6 +24,7 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 	fbr_directory_ok(root);
 	assert(root->inode == 1);
 
+	// TODO we need to figure out how dirs and their files relate
 	// TODO mode needs to be configurable
 	struct fbr_file *root_file = fbr_file_alloc(fs, NULL, "", 0, S_IFDIR | 0755);
 	fbr_file_ok(root_file);
