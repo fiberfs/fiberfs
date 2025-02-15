@@ -39,6 +39,7 @@ struct fbr_filename {
 struct fbr_file_refcounts {
 	unsigned int				dindex;
 	unsigned int				inode;
+	unsigned int				all;
 };
 
 struct fbr_file {

@@ -187,7 +187,7 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file *file)
 
 	assert_zero(pthread_mutex_unlock(&head->lock));
 
-	if (!refcounts.dindex) {
+	if (!refcounts.all) {
 		fbr_file_free(fs, file);
 	}
 }
@@ -223,7 +223,7 @@ fbr_inode_forget(struct fbr_fs *fs, unsigned long file_inode, unsigned int refs)
 
 	assert_zero(pthread_mutex_unlock(&head->lock));
 
-	if (!refcounts.dindex) {
+	if (!refcounts.all) {
 		fbr_file_free(fs, file);
 	}
 }

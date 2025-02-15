@@ -163,7 +163,7 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 		struct fbr_file_refcounts refcounts;
 		fbr_file_release_dindex(fs, file, &refcounts);
 
-		if (refcounts.dindex + refcounts.inode == 0) {
+		if (!refcounts.all) {
 			fbr_file_free(fs, file);
 		}
 	}

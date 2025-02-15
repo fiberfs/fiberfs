@@ -67,6 +67,16 @@ fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
 	return f1->inode - f2->inode;
 }
 
+static void
+_sum_ref(struct fbr_file_refcounts *refcounts)
+{
+	assert(refcounts);
+
+	refcounts->all = refcounts->dindex + refcounts->inode;
+	assert(refcounts->all >= refcounts->dindex);
+	assert(refcounts->all >= refcounts->inode);
+}
+
 void
 fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file)
 {
@@ -78,6 +88,8 @@ fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file)
 
 	file->refcounts.dindex++;
 	assert(file->refcounts.dindex);
+
+	_sum_ref(&file->refcounts);
 
 	fbr_fs_stat_add(&fs->stats.file_refs);
 
@@ -97,6 +109,8 @@ fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file *file,
 	assert(file->refcounts.dindex);
 	file->refcounts.dindex--;
 
+	_sum_ref(&file->refcounts);
+
 	fbr_fs_stat_sub(&fs->stats.file_refs);
 
 	memcpy(refcounts, &file->refcounts, sizeof(*refcounts));
@@ -114,6 +128,8 @@ fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file)
 
 	file->refcounts.inode++;
 	assert(file->refcounts.inode);
+
+	_sum_ref(&file->refcounts);
 
 	fbr_fs_stat_add(&fs->stats.file_refs);
 
@@ -139,6 +155,8 @@ fbr_file_forget_inode(struct fbr_fs *fs, struct fbr_file *file, unsigned int ref
 
 	assert(file->refcounts.inode >= refs);
 	file->refcounts.inode -= refs;
+
+	_sum_ref(&file->refcounts);
 
 	fbr_fs_stat_sub_count(&fs->stats.file_refs, refs);
 
