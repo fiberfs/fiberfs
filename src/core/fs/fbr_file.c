@@ -27,7 +27,7 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
 
 	if (!name_len) {
 		assert_zero(fs->root);
-		file->inode = 1;
+		file->inode = FBR_INODE_ROOT;
 	} else {
 		file->inode = fbr_inode_gen(fs);
 	}
@@ -43,7 +43,7 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
 		fbr_directory_ok(directory);
 		fbr_directory_add(fs, directory, file);
 	} else {
-		assert(file->inode == 1);
+		assert(file->inode == FBR_INODE_ROOT);
 	}
 
 	return file;
@@ -68,7 +68,7 @@ fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
 }
 
 static void
-_sum_ref(struct fbr_file_refcounts *refcounts)
+_refcounts_sum(struct fbr_file_refcounts *refcounts)
 {
 	assert(refcounts);
 
@@ -89,7 +89,7 @@ fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file)
 	file->refcounts.dindex++;
 	assert(file->refcounts.dindex);
 
-	_sum_ref(&file->refcounts);
+	_refcounts_sum(&file->refcounts);
 
 	fbr_fs_stat_add(&fs->stats.file_refs);
 
@@ -109,7 +109,7 @@ fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file *file,
 	assert(file->refcounts.dindex);
 	file->refcounts.dindex--;
 
-	_sum_ref(&file->refcounts);
+	_refcounts_sum(&file->refcounts);
 
 	fbr_fs_stat_sub(&fs->stats.file_refs);
 
@@ -129,7 +129,7 @@ fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file)
 	file->refcounts.inode++;
 	assert(file->refcounts.inode);
 
-	_sum_ref(&file->refcounts);
+	_refcounts_sum(&file->refcounts);
 
 	fbr_fs_stat_add(&fs->stats.file_refs);
 
@@ -156,7 +156,7 @@ fbr_file_forget_inode(struct fbr_fs *fs, struct fbr_file *file, unsigned int ref
 	assert(file->refcounts.inode >= refs);
 	file->refcounts.inode -= refs;
 
-	_sum_ref(&file->refcounts);
+	_refcounts_sum(&file->refcounts);
 
 	fbr_fs_stat_sub_count(&fs->stats.file_refs, refs);
 

@@ -22,13 +22,13 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 
 	struct fbr_directory *root = fbr_directory_alloc(fs, "", 0);
 	fbr_directory_ok(root);
-	assert(root->inode == 1);
+	assert(root->inode == FBR_INODE_ROOT);
 
 	// TODO we need to figure out how dirs and their files relate
 	// TODO mode needs to be configurable
 	struct fbr_file *root_file = fbr_file_alloc(fs, NULL, "", 0, S_IFDIR | 0755);
 	fbr_file_ok(root_file);
-	assert(root_file->inode == 1);
+	assert(root_file->inode == FBR_INODE_ROOT);
 
 	fbr_fs_set_root(fs, root);
 	fbr_inode_add(fs, root_file);
@@ -55,7 +55,7 @@ fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len)
 
 	if (!name_len) {
 		assert_zero(fs->root);
-		directory->inode = 1;
+		directory->inode = FBR_INODE_ROOT;
 	} else {
 		directory->inode = fbr_inode_gen(fs);
 	}

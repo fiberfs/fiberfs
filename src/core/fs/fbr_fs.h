@@ -15,6 +15,7 @@
 #include "data/queue.h"
 #include "data/tree.h"
 
+#define FBR_INODE_ROOT				1
 #define FBR_FILE_EMBED_LEN			16
 
 enum FBR_FILENAME_LAYOUT {
@@ -94,7 +95,7 @@ struct fbr_directory {
 	// creation date will tell us how often to look for updates
 
 	RB_ENTRY(fbr_directory)			dindex_entry;
-
+	TAILQ_ENTRY(fbr_directory)		lru_entry;
 	TAILQ_HEAD(, fbr_file)			file_list;
 	struct fbr_filename_tree		filename_tree;
 };

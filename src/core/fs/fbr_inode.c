@@ -44,7 +44,8 @@ RB_GENERATE_STATIC(fbr_inode_tree, fbr_file, inode_entry, fbr_file_inode_cmp)
 struct fbr_inode *
 fbr_inodes_alloc(void)
 {
-	assert(_INODE_START > 1);
+	assert(FBR_INODE_ROOT == 1);
+	assert(_INODE_START > FBR_INODE_ROOT);
 
 	struct fbr_inode *inode;
 

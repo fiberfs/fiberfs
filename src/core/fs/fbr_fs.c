@@ -40,7 +40,7 @@ fbr_fs_release_root(struct fbr_fs *fs)
 	fbr_fs_ok(fs);
 	fbr_directory_ok(fs->root);
 
-	fbr_inode_forget(fs, 1, 1);
+	fbr_inode_forget(fs, FBR_INODE_ROOT, 1);
 
 	fbr_dindex_release(fs, fs->root);
 	fs->root = NULL;
