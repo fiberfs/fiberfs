@@ -6,6 +6,7 @@
 #ifndef _FBR_FS_H_INCLUDED_
 #define _FBR_FS_H_INCLUDED_
 
+#include <assert.h>
 #include <pthread.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -129,7 +130,7 @@ struct fbr_fs {
 
 RB_HEAD(fbr_dindex_tree, fbr_directory);
 
-void fbr_fs_init(struct fbr_fs *fs);
+struct fbr_fs *fbr_fs_alloc(void);
 void fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root);
 void fbr_fs_release_root(struct fbr_fs *fs);
 void fbr_fs_free(struct fbr_fs *fs);
@@ -167,8 +168,6 @@ void fbr_file_forget_inode(struct fbr_fs *fs, struct fbr_file *file, fbr_refcoun
 	struct fbr_file_refcounts *refcounts);
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_attr(struct fbr_file *file, struct stat *st);
-uint64_t fbr_file_to_fh(struct fbr_file *file);
-struct fbr_file *fbr_file_fh(uint64_t fd);
 
 RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
@@ -181,8 +180,6 @@ void fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory,
 void fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_state state);
 void fbr_directory_wait_ok(struct fbr_directory *directory);
 struct fbr_file *fbr_directory_find(struct fbr_directory *directory, const char *filename);
-uint64_t fbr_directory_to_fh(struct fbr_directory *directory);
-struct fbr_directory *fbr_directory_fh(uint64_t fh);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
 void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
@@ -206,5 +203,7 @@ void fbr_dindex_free(struct fbr_fs *fs);
 	assert(dir);						\
 	assert((dir)->magic == FBR_DIRECTORY_MAGIC);		\
 }
+#define fbr_fs_int64(obj)					\
+	((uint64_t)(obj))
 
 #endif /* _FBR_FS_H_INCLUDED_ */

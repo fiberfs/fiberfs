@@ -201,20 +201,3 @@ fbr_file_attr(struct fbr_file *file, struct stat *st)
 
 	st->st_nlink = 1;
 }
-
-uint64_t
-fbr_file_to_fh(struct fbr_file *file)
-{
-	fbr_file_ok(file);
-
-	return (uint64_t)file;
-}
-
-struct fbr_file *
-fbr_file_fh(uint64_t fh)
-{
-	struct fbr_file *file = (struct fbr_file*)fh;
-	fbr_file_ok(file);
-
-	return file;
-}

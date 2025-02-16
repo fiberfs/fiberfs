@@ -24,7 +24,7 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 	fbr_ZERO(ctx);
 	ctx->magic = FBR_FUSE_CTX_MAGIC;
 
-	fbr_fs_init(&ctx->fs);
+	ctx->fs = fbr_fs_alloc();
 
 	fbr_fuse_ctx_ok(ctx);
 }
@@ -192,7 +192,8 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	ctx->state = FBR_FUSE_NONE;
 
-	fbr_fs_free(&ctx->fs);
+	fbr_fs_free(ctx->fs);
+	ctx->fs = NULL;
 }
 
 void

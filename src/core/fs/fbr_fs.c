@@ -3,6 +3,8 @@
  *
  */
 
+ #include <stdlib.h>
+
 #include "fiberfs.h"
 #include "fbr_fs.h"
 
@@ -16,12 +18,13 @@
  * It also owns its parent inode ref
  */
 
-void
-fbr_fs_init(struct fbr_fs *fs)
+struct fbr_fs *
+fbr_fs_alloc(void)
 {
-	assert(fs);
+	struct fbr_fs *fs;
 
-	fbr_ZERO(fs);
+	fs = calloc(1, sizeof(*fs));
+	assert(fs);
 
 	fs->magic = FBR_FS_MAGIC;
 
@@ -32,6 +35,8 @@ fbr_fs_init(struct fbr_fs *fs)
 	assert(fs->dindex);
 
 	fbr_fs_ok(fs);
+
+	return fs;
 }
 
 void
@@ -67,6 +72,8 @@ fbr_fs_free(struct fbr_fs *fs)
 	fbr_inodes_free(fs);
 
 	fbr_ZERO(fs);
+
+	free(fs);
 }
 
 void

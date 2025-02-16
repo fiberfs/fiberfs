@@ -24,12 +24,15 @@ _test_fs_init(void *userdata, struct fuse_conn_info *conn)
 	fbr_fuse_mounted(ctx);
 	assert(conn);
 
-	struct fbr_directory *root = fbr_directory_root_alloc(&ctx->fs);
+	struct fbr_fs *fs = ctx->fs;
+	fbr_fs_ok(fs);
+
+	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 
 	mode_t fmode = S_IFREG | 0444;
 
-	(void)fbr_file_alloc(&ctx->fs, root, "fiber1", 6, fmode);
-	(void)fbr_file_alloc(&ctx->fs, root, "fiber2", 6, fmode);
+	(void)fbr_file_alloc(fs, root, "fiber1", 6, fmode);
+	(void)fbr_file_alloc(fs, root, "fiber2", 6, fmode);
 
 	fbr_directory_set_state(root, FBR_DIRSTATE_OK);
 }
@@ -47,7 +50,7 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_ERROR(ret, "fs init fuse mount failed: %s", cmd->params[0].value);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
-	struct fbr_fs *fs = &fuse_ctx->fs;
+	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
 	struct fbr_directory *root = fbr_dindex_take(fs, FBR_INODE_ROOT);
@@ -78,7 +81,7 @@ fbr_cmd_fs_test_release_root(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
-	struct fbr_fs *fs = &fuse_ctx->fs;
+	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
 	fbr_fs_release_root(fs);
@@ -92,7 +95,7 @@ fbr_cmd_fs_test_stats(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
-	struct fbr_fs *fs = &fuse_ctx->fs;
+	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
 #define _FS_TEST_STAT_PRINT(name)	\
@@ -112,7 +115,7 @@ fbr_var_fs_test_stat_##name(struct fbr_test_context *ctx)			\
 {										\
 	struct fbr_test_fuse *test_fuse = ctx->fuse;				\
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);		\
-	struct fbr_fs *fs = &fuse_ctx->fs;					\
+	struct fbr_fs *fs = fuse_ctx->fs;					\
 	fbr_fs_ok(fs);								\
 										\
 	snprintf(test_fuse->stat_str, sizeof(test_fuse->stat_str), "%lu",	\

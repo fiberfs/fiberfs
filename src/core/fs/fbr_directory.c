@@ -169,20 +169,3 @@ fbr_directory_find(struct fbr_directory *directory, const char *filename)
 
 	return file;
 }
-
-uint64_t
-fbr_directory_to_fh(struct fbr_directory *directory)
-{
-	fbr_directory_ok(directory);
-
-	return (uint64_t)directory;
-}
-
-struct fbr_directory *
-fbr_directory_fh(uint64_t fh)
-{
-	struct fbr_directory *directory = (struct fbr_directory*)fh;
-	fbr_directory_ok(directory);
-
-	return directory;
-}

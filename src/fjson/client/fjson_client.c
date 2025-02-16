@@ -47,7 +47,7 @@ _json_print(struct fjson_context *ctx, void *priv)
 	return 0;
 }
 
-void
+static void
 _random_seed(void)
 {
 	struct timespec now;
@@ -57,7 +57,7 @@ _random_seed(void)
 }
 
 // Inclusive
-long
+static long
 _gen_random(long low, long high)
 {
 	assert(low >= 0);
