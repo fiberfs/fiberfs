@@ -38,7 +38,7 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 }
 
 struct fbr_directory *
-fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len, unsigned long inode)
+fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len, fbr_inode_t inode)
 {
 	fbr_fs_ok(fs);
 	assert(name);

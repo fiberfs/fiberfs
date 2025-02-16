@@ -43,9 +43,12 @@ struct fbr_dindex {
 
 RB_GENERATE_STATIC(fbr_dindex_tree, fbr_directory, dindex_entry, fbr_directory_cmp)
 
-struct fbr_dindex *
-fbr_dindex_alloc(void)
+void
+fbr_dindex_alloc(struct fbr_fs *fs)
 {
+	fbr_fs_ok(fs);
+	assert_zero(fs->dindex);
+
 	struct fbr_dindex *dindex;
 
 	dindex = calloc(1, sizeof(*dindex));
@@ -66,7 +69,7 @@ fbr_dindex_alloc(void)
 
 	TAILQ_INIT(&dindex->lru);
 
-	return dindex;
+	fs->dindex = dindex;
 }
 
 static inline struct fbr_dindex *
@@ -166,7 +169,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 struct fbr_directory *
-fbr_dindex_take(struct fbr_fs *fs, unsigned long inode)
+fbr_dindex_take(struct fbr_fs *fs, fbr_inode_t inode)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 	assert(inode);
@@ -237,7 +240,7 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 void
-fbr_dindex_forget(struct fbr_fs *fs, unsigned long inode, unsigned int refs)
+fbr_dindex_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 	assert(inode);

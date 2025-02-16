@@ -37,10 +37,13 @@ struct fbr_filename {
 	};
 };
 
+typedef unsigned long fbr_inode_t;
+typedef unsigned int fbr_refcount_t;
+
 struct fbr_file_refcounts {
-	unsigned int				dindex;
-	unsigned int				inode;
-	unsigned int				all;
+	fbr_refcount_t				dindex;
+	fbr_refcount_t				inode;
+	unsigned long				all;
 };
 
 struct fbr_file {
@@ -52,7 +55,8 @@ struct fbr_file {
 	struct fbr_file_refcounts		refcounts;
 	pthread_mutex_t				refcount_lock;
 
-	unsigned long				inode;
+	fbr_inode_t				inode;
+	fbr_inode_t				parent_inode;
 	unsigned long				version;
 
 	unsigned int				mode;
@@ -74,7 +78,7 @@ enum fbr_directory_state {
 };
 
 RB_HEAD(fbr_filename_tree, fbr_file);
-RB_HEAD(fbr_inode_tree, fbr_file);
+RB_HEAD(fbr_inodes_tree, fbr_file);
 
 struct fbr_directory {
 	unsigned int				magic;
@@ -83,8 +87,8 @@ struct fbr_directory {
 	struct fbr_filename			dirname;
 
 	enum fbr_directory_state		state;
-	unsigned int				refcount;
-	unsigned long				inode;
+	fbr_refcount_t				refcount;
+	fbr_inode_t				inode;
 
 	pthread_mutex_t				cond_lock;
 	pthread_cond_t				cond;
@@ -115,7 +119,7 @@ struct fbr_fs {
 	unsigned int				magic;
 #define FBR_FS_MAGIC				0x150CC3D2
 
-	struct fbr_inode			*inode;
+	struct fbr_inodes			*inodes;
 	struct fbr_dindex			*dindex;
 
 	struct fbr_directory			*root;
@@ -135,12 +139,12 @@ void fbr_fs_stat_add(unsigned long *stat);
 void fbr_fs_stat_sub_count(unsigned long *stat, unsigned long value);
 void fbr_fs_stat_sub(unsigned long *stat);
 
-struct fbr_inode *fbr_inodes_alloc(void);
+void fbr_inodes_alloc(struct fbr_fs *fs);
 unsigned long fbr_inode_gen(struct fbr_fs *fs);
 void fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file);
-struct fbr_file *fbr_inode_take(struct fbr_fs *fs, unsigned long file_inode);
+struct fbr_file *fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode);
 void fbr_inode_release(struct fbr_fs *fs, struct fbr_file *file);
-void fbr_inode_forget(struct fbr_fs *fs, unsigned long inode, unsigned int refs);
+void fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs);
 void fbr_inodes_free(struct fbr_fs *fs);
 
 void *fbr_inline_alloc(size_t size, size_t filename_offset, char *name, size_t name_len);
@@ -159,7 +163,7 @@ void fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file *file,
 void fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_release_inode(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_file_refcounts *refcounts);
-void fbr_file_forget_inode(struct fbr_fs *fs, struct fbr_file *file, unsigned int refs,
+void fbr_file_forget_inode(struct fbr_fs *fs, struct fbr_file *file, fbr_refcount_t refs,
 	struct fbr_file_refcounts *refcounts);
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_attr(struct fbr_file *file, struct stat *st);
@@ -170,7 +174,7 @@ RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
 struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len,
-	unsigned long inode);
+	fbr_inode_t inode);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
 void fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);
@@ -180,10 +184,10 @@ struct fbr_file *fbr_directory_find(struct fbr_directory *directory, const char 
 uint64_t fbr_directory_to_fh(struct fbr_directory *directory);
 struct fbr_directory *fbr_directory_fh(uint64_t fh);
 
-struct fbr_dindex *fbr_dindex_alloc(void);
+void fbr_dindex_alloc(struct fbr_fs *fs);
 void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
-struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, unsigned long inode);
-void fbr_dindex_forget(struct fbr_fs *fs, unsigned long inode, unsigned int refs);
+struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, fbr_inode_t inode);
+void fbr_dindex_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_dindex_free(struct fbr_fs *fs);
 

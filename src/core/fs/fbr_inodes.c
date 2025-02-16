@@ -7,97 +7,102 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "core/fuse/fbr_fuse_lowlevel.h"
 
-#define _INODE_HEAD_COUNT			1024
 #define _INODE_START				1000
+#define _INODES_HEAD_COUNT			1024
 
-struct fbr_inode_head {
+struct fbr_inodes_head {
 	unsigned				magic;
-#define FBR_INODE_HEAD_MAGIC			0xCE5442D7
+#define FBR_INODES_HEAD_MAGIC			0xCE5442D7
 
-	struct fbr_inode_tree			tree;
+	struct fbr_inodes_tree			tree;
 	pthread_mutex_t				lock;
 };
 
-struct fbr_inode {
+struct fbr_inodes {
 	unsigned				magic;
-#define FBR_INODE_MAGIC				0x452D632A
+#define FBR_INODES_MAGIC			0x452D632A
 
-	struct fbr_inode_head			heads[_INODE_HEAD_COUNT];
+	struct fbr_inodes_head			heads[_INODES_HEAD_COUNT];
 
-	unsigned long				next;
+	fbr_inode_t				next;
 };
 
 #define fbr_inode_ok(inode)					\
 {								\
 	assert(inode);						\
-	assert((inode)->magic == FBR_INODE_MAGIC);		\
+	assert((inode)->magic == FBR_INODES_MAGIC);		\
 }
 #define fbr_inode_head_ok(head)					\
 {								\
 	assert(head);						\
-	assert((head)->magic == FBR_INODE_HEAD_MAGIC);		\
+	assert((head)->magic == FBR_INODES_HEAD_MAGIC);		\
 }
 
-RB_GENERATE_STATIC(fbr_inode_tree, fbr_file, inode_entry, fbr_file_inode_cmp)
+RB_GENERATE_STATIC(fbr_inodes_tree, fbr_file, inode_entry, fbr_file_inode_cmp)
 
-struct fbr_inode *
-fbr_inodes_alloc(void)
+void
+fbr_inodes_alloc(struct fbr_fs *fs)
 {
 	assert(FBR_INODE_ROOT == 1);
+	assert(FBR_INODE_ROOT == FUSE_ROOT_ID);
 	assert(_INODE_START > FBR_INODE_ROOT);
 
-	struct fbr_inode *inode;
+	fbr_fs_ok(fs);
+	assert_zero(fs->inodes);
 
-	inode = calloc(1, sizeof(*inode));
-	assert(inode);
+	struct fbr_inodes *inodes;
 
-	inode->magic = FBR_INODE_MAGIC;
-	inode->next = _INODE_START;
+	inodes = calloc(1, sizeof(*inodes));
+	assert(inodes);
 
-	assert(_INODE_HEAD_COUNT);
+	inodes->magic = FBR_INODES_MAGIC;
+	inodes->next = _INODE_START;
 
-	for (size_t i = 0; i < _INODE_HEAD_COUNT; i++) {
-		struct fbr_inode_head *head = &inode->heads[i];
+	assert(_INODES_HEAD_COUNT);
 
-		head->magic = FBR_INODE_HEAD_MAGIC;
+	for (size_t i = 0; i < _INODES_HEAD_COUNT; i++) {
+		struct fbr_inodes_head *head = &inodes->heads[i];
+
+		head->magic = FBR_INODES_HEAD_MAGIC;
 
 		RB_INIT(&head->tree);
 		assert_zero(pthread_mutex_init(&head->lock, NULL));
 	}
 
-	return inode;
+	fs->inodes = inodes;
 }
 
-static inline struct fbr_inode *
-_inode_fs_get(struct fbr_fs *fs)
+static inline struct fbr_inodes *
+_inodes_fs_get(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
-	fbr_inode_ok(fs->inode);
+	fbr_inode_ok(fs->inodes);
 
-	return fs->inode;
+	return fs->inodes;
 }
 
-unsigned long
+fbr_inode_t
 fbr_inode_gen(struct fbr_fs *fs)
 {
-	struct fbr_inode *inode = _inode_fs_get(fs);
+	struct fbr_inodes *inodes = _inodes_fs_get(fs);
 
-	unsigned long inode_next = __sync_fetch_and_add(&inode->next, 1);
+	fbr_inode_t inode_next = __sync_fetch_and_add(&inodes->next, 1);
 	assert(inode_next >= _INODE_START);
 
 	return inode_next;
 }
 
-static struct fbr_inode_head *
-_inode_get_head(struct fbr_inode *inode, struct fbr_file *file)
+static struct fbr_inodes_head *
+_inodes_get_head(struct fbr_inodes *inodes, struct fbr_file *file)
 {
-	fbr_inode_ok(inode);
+	fbr_inode_ok(inodes);
 	fbr_file_ok(file);
 
-	size_t pos = file->inode % _INODE_HEAD_COUNT;
+	size_t pos = file->inode % _INODES_HEAD_COUNT;
 
-        struct fbr_inode_head *head = &inode->heads[pos];
+        struct fbr_inodes_head *head = &inodes->heads[pos];
 	fbr_inode_head_ok(head);
 
         return head;
@@ -110,11 +115,11 @@ _inode_get_head(struct fbr_inode *inode, struct fbr_file *file)
 void
 fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 {
-	struct fbr_inode *inode = _inode_fs_get(fs);
+	struct fbr_inodes *inodes = _inodes_fs_get(fs);
 	fbr_file_ok(file);
 	assert(file->inode);
 
-	struct fbr_inode_head *head = _inode_get_head(inode, file);
+	struct fbr_inodes_head *head = _inodes_get_head(inodes, file);
 
 	assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
@@ -122,7 +127,7 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 
 	fbr_file_ref_inode(fs, file);
 
-	struct fbr_file *existing = RB_INSERT(fbr_inode_tree, &head->tree, file);
+	struct fbr_file *existing = RB_INSERT(fbr_inodes_tree, &head->tree, file);
 
 	if (existing) {
 		fbr_file_ok(existing);
@@ -139,21 +144,21 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 // fuse_open, fuse_lookup is always done before
 // root_file also uses this, it always owns a reference
 struct fbr_file *
-fbr_inode_take(struct fbr_fs *fs, unsigned long file_inode)
+fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode)
 {
-	struct fbr_inode *inode = _inode_fs_get(fs);
-	assert(file_inode);
+	struct fbr_inodes *inodes = _inodes_fs_get(fs);
+	assert(inode);
 
 	struct fbr_file find;
 	find.magic = FBR_FILE_MAGIC;
-	find.inode = file_inode;
+	find.inode = inode;
 
-        struct fbr_inode_head *head = _inode_get_head(inode, &find);
+        struct fbr_inodes_head *head = _inodes_get_head(inodes, &find);
 
         assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 
-        struct fbr_file *file = RB_FIND(fbr_inode_tree, &head->tree, &find);
+        struct fbr_file *file = RB_FIND(fbr_inodes_tree, &head->tree, &find);
 	fbr_file_ok(file);
 
 	fbr_file_ref_inode(fs, file);
@@ -167,10 +172,10 @@ fbr_inode_take(struct fbr_fs *fs, unsigned long file_inode)
 void
 fbr_inode_release(struct fbr_fs *fs, struct fbr_file *file)
 {
-	struct fbr_inode *inode = _inode_fs_get(fs);
+	struct fbr_inodes *inodes = _inodes_fs_get(fs);
 	fbr_file_ok(file);
 
-        struct fbr_inode_head *head = _inode_get_head(inode, file);
+        struct fbr_inodes_head *head = _inodes_get_head(inodes, file);
 
         assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
@@ -184,7 +189,7 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file *file)
 		return;
 	}
 
-	(void)RB_REMOVE(fbr_inode_tree, &head->tree, file);
+	(void)RB_REMOVE(fbr_inodes_tree, &head->tree, file);
 
 	assert_zero(pthread_mutex_unlock(&head->lock));
 
@@ -195,21 +200,21 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file *file)
 
 // fuse_forget, called after fuse_lookup or fuse_create
 void
-fbr_inode_forget(struct fbr_fs *fs, unsigned long file_inode, unsigned int refs)
+fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 {
-	struct fbr_inode *inode = _inode_fs_get(fs);
-	assert(file_inode);
+	struct fbr_inodes *inodes = _inodes_fs_get(fs);
+	assert(inode);
 
 	struct fbr_file find;
 	find.magic = FBR_FILE_MAGIC;
-	find.inode = file_inode;
+	find.inode = inode;
 
-        struct fbr_inode_head *head = _inode_get_head(inode, &find);
+        struct fbr_inodes_head *head = _inodes_get_head(inodes, &find);
 
         assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 
-        struct fbr_file *file = RB_FIND(fbr_inode_tree, &head->tree, &find);
+        struct fbr_file *file = RB_FIND(fbr_inodes_tree, &head->tree, &find);
 	fbr_file_ok(file);
 
 	struct fbr_file_refcounts refcounts;
@@ -220,7 +225,7 @@ fbr_inode_forget(struct fbr_fs *fs, unsigned long file_inode, unsigned int refs)
 		return;
 	}
 
-	(void)RB_REMOVE(fbr_inode_tree, &head->tree, file);
+	(void)RB_REMOVE(fbr_inodes_tree, &head->tree, file);
 
 	assert_zero(pthread_mutex_unlock(&head->lock));
 
@@ -232,18 +237,18 @@ fbr_inode_forget(struct fbr_fs *fs, unsigned long file_inode, unsigned int refs)
 void
 fbr_inodes_free(struct fbr_fs *fs)
 {
-	struct fbr_inode *inode = _inode_fs_get(fs);
+	struct fbr_inodes *inodes = _inodes_fs_get(fs);
 
-	for (size_t i = 0; i < _INODE_HEAD_COUNT; i++) {
-		struct fbr_inode_head *head = &inode->heads[i];
+	for (size_t i = 0; i < _INODES_HEAD_COUNT; i++) {
+		struct fbr_inodes_head *head = &inodes->heads[i];
 		fbr_inode_head_ok(head);
 
 		struct fbr_file *file, *next;
 
-		RB_FOREACH_SAFE(file, fbr_inode_tree, &head->tree, next) {
+		RB_FOREACH_SAFE(file, fbr_inodes_tree, &head->tree, next) {
 			fbr_file_ok(file);
 
-			(void)RB_REMOVE(fbr_inode_tree, &head->tree, file);
+			(void)RB_REMOVE(fbr_inodes_tree, &head->tree, file);
 
 			fbr_file_free(fs, file);
 		}
@@ -255,7 +260,7 @@ fbr_inodes_free(struct fbr_fs *fs)
 		fbr_ZERO(head);
 	}
 
-	fbr_ZERO(inode);
-	free(inode);
-	fs->inode = NULL;
+	fbr_ZERO(inodes);
+	free(inodes);
+	fs->inodes = NULL;
 }

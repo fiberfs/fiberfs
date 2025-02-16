@@ -144,7 +144,7 @@ fbr_file_release_inode(struct fbr_fs *fs, struct fbr_file *file,
 }
 
 void
-fbr_file_forget_inode(struct fbr_fs *fs, struct fbr_file *file, unsigned int refs,
+fbr_file_forget_inode(struct fbr_fs *fs, struct fbr_file *file, fbr_refcount_t refs,
     struct fbr_file_refcounts *refcounts)
 {
 	fbr_file_ok(file);

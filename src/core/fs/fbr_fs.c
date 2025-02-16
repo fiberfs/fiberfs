@@ -25,8 +25,11 @@ fbr_fs_init(struct fbr_fs *fs)
 
 	fs->magic = FBR_FS_MAGIC;
 
-	fs->inode = fbr_inodes_alloc();
-	fs->dindex = fbr_dindex_alloc();
+	fbr_inodes_alloc(fs);
+	fbr_dindex_alloc(fs);
+
+	assert(fs->inodes);
+	assert(fs->dindex);
 
 	fbr_fs_ok(fs);
 }
