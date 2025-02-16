@@ -290,7 +290,7 @@ fbr_test_cmd_fs_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int fd = open(filename, O_RDONLY);
 	fbr_test_ASSERT(fd >= 0, "open() failed %s %d", filename, fd);
 
-	char result[1024];
+	char result[1025];
 	size_t result_len = 0;
 	result[0] = '\0';
 
@@ -308,7 +308,7 @@ fbr_test_cmd_fs_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 				continue;
 			}
 
-			fbr_test_ASSERT(result_len + bytes < sizeof(result), "result overflow");
+			fbr_test_ASSERT(result_len + bytes <= sizeof(result), "result overflow");
 			strncat(result, buf, sizeof(result) - result_len - 1);
 
 			result_len += bytes;
