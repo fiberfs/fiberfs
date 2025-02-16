@@ -18,6 +18,9 @@
 #define FBR_INODE_ROOT				1
 #define FBR_FILE_EMBED_LEN			16
 
+typedef unsigned long fbr_inode_t;
+typedef unsigned int fbr_refcount_t;
+
 enum FBR_FILENAME_LAYOUT {
 	FBR_FILENAME_NULL = 0,
 	FBR_FILENAME_EMBED,
@@ -36,9 +39,6 @@ struct fbr_filename {
 		const char			*cname_ptr;
 	};
 };
-
-typedef unsigned long fbr_inode_t;
-typedef unsigned int fbr_refcount_t;
 
 struct fbr_file_refcounts {
 	fbr_refcount_t				dindex;

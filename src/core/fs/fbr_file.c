@@ -37,14 +37,17 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent, char *name,
 	fbr_fs_stat_add(&fs->stats.files);
 	fbr_fs_stat_add(&fs->stats.files_total);
 
-	fbr_file_ok(file);
-
 	if (parent) {
 		fbr_directory_ok(parent);
 		fbr_directory_add(fs, parent, file);
+
+		assert(file->parent_inode);
 	} else {
 		assert(file->inode == FBR_INODE_ROOT);
+		assert_zero(file->parent_inode);
 	}
+
+	fbr_file_ok(file);
 
 	return file;
 }

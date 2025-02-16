@@ -94,6 +94,7 @@ fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
+	assert_zero(file->parent_inode);
 	assert_zero(file->refcounts.dindex);
 	assert_zero(file->refcounts.inode);
 
@@ -101,6 +102,8 @@ fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr
 	file->refcounts.dindex = 1;
 
 	fbr_fs_stat_add(&fs->stats.file_refs);
+
+	file->parent_inode = directory->inode;
 
 	TAILQ_INSERT_TAIL(&directory->file_list, file, file_entry);
 

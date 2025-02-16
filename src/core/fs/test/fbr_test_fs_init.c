@@ -62,6 +62,7 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_file_ok(root_file);
 
 	fbr_test_ASSERT(root->file == root_file, "Bad root file");
+	fbr_test_ERROR(root_file->parent_inode, "root has a parent inode");
 	fbr_test_ERROR(root_file->filename.len, "root_file name has length");
 	fbr_test_ERROR(strcmp(fbr_filename_get(&root_file->filename), ""), "root_file not empty")
 
