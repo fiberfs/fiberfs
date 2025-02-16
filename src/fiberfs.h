@@ -10,9 +10,9 @@
 
 #include "utils/fbr_utils.h"
 
-#define FIBERFS_VERSION			"0.1.0"
+#define FIBERFS_VERSION				"0.1.0"
 
-#define fbr_ZERO(p)								\
+#define fbr_ZERO(p)				\
 	explicit_bzero(p, sizeof(*(p)))
 
 #endif /* _FIBERFS_H_INCLUDED_ */
