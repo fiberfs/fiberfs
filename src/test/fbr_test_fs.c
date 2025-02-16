@@ -48,9 +48,9 @@ _fs_finish(struct fbr_test_context *ctx)
 
 		fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "removing tmpdir '%s'", entry->path);
 
-		fbr_rmdir(entry->path);
+		fbr_sys_rmdir(entry->path);
 
-		fbr_test_warn(fbr_fs_exists(entry->path), "tmpdir couldn't be removed %s",
+		fbr_test_warn(fbr_sys_exists(entry->path), "tmpdir couldn't be removed %s",
 			entry->path);
 
 		fbr_ZERO(entry);
@@ -112,7 +112,7 @@ fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot)
 		size_t len = snprintf(entry->path, sizeof(entry->path), "%s/_fbrtmp%ld", tmproot, random);
 		assert(len < sizeof(entry->path));
 
-		exists = fbr_fs_exists(entry->path);
+		exists = fbr_sys_exists(entry->path);
 		attempts++;
 
 		fbr_test_ERROR(attempts > 10, "Too many tmpdir attempts");

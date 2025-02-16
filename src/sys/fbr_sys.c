@@ -13,7 +13,7 @@
 #include "fbr_sys.h"
 
 static mode_t
-_fs_mode(const char *path)
+_sys_mode(const char *path)
 {
 	struct stat st;
 
@@ -27,9 +27,9 @@ _fs_mode(const char *path)
 }
 
 int
-fbr_fs_exists(const char *path)
+fbr_sys_exists(const char *path)
 {
-	mode_t st_mode = _fs_mode(path);
+	mode_t st_mode = _sys_mode(path);
 
 	if (st_mode) {
 		return 1;
@@ -39,9 +39,9 @@ fbr_fs_exists(const char *path)
 }
 
 int
-fbr_fs_isdir(const char *path)
+fbr_sys_isdir(const char *path)
 {
-	mode_t st_mode = _fs_mode(path);
+	mode_t st_mode = _sys_mode(path);
 
 	if (S_ISDIR(st_mode)) {
 		return 1;
@@ -51,7 +51,7 @@ fbr_fs_isdir(const char *path)
 }
 
 static int
-_fs_rmdir_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+_sys_rmdir_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
 {
 	(void)sb;
 	(void)ftwbuf;
@@ -72,7 +72,7 @@ _fs_rmdir_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW 
 }
 
 void
-fbr_rmdir(const char *path)
+fbr_sys_rmdir(const char *path)
 {
-	(void)nftw(path, _fs_rmdir_cb, 64, FTW_DEPTH | FTW_MOUNT | FTW_PHYS);
+	(void)nftw(path, _sys_rmdir_cb, 64, FTW_DEPTH | FTW_MOUNT | FTW_PHYS);
 }
