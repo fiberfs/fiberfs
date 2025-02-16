@@ -137,8 +137,8 @@ libfiberfs.so:	$(OBJS) libchttp.a libfjson.a
 libchttp.a:	$(CHTTP_OBJS)
 		ar cr $@ $(CHTTP_OBJS)
 
-libfjson.a:	$(FJSON_OBJS)
-		ar cr $@ $(FJSON_OBJS)
+libfjson.a:	$(FJSON_OBJS) $(UTILS_OBJS)
+		ar cr $@ $(FJSON_OBJS) $(UTILS_OBJS)
 
 %.o:		%.c $(INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
@@ -147,6 +147,9 @@ chttp/%.o:	chttp/%.c $(CHTTP_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
 fjson/%.o:	fjson/%.c $(FJSON_INCLUDES)
+		$(CC) $(CFLAGS) -c $< -o $@
+
+utils/%.o:	utils/%.c $(UTILS_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
 test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES) $(CHTTP_TEST_INCLUDES) \

@@ -6,9 +6,10 @@
 #ifndef _FJSON_H_INCLUDED_
 #define _FJSON_H_INCLUDED_
 
-#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#include "utils/fbr_assert.h"
 
 #define FJSON_MAX_DEPTH			32
 

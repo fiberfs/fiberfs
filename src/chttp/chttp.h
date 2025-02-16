@@ -6,6 +6,11 @@
 #ifndef _CHTTP_H_INCLUDED_
 #define _CHTTP_H_INCLUDED_
 
+// TODO
+// re-align with fbr style
+// move to fbr_assert.h
+#undef assert_zero
+
 #include "memory/chttp_dpage.h"
 #include "network/chttp_network.h"
 

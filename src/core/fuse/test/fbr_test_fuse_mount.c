@@ -74,7 +74,6 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 	}
 
 	ctx->context_priv = test_ctx;
-	//ctx->sighandle = 1;
 
 	if (test->verbocity >= FBR_LOG_VERBOSE) {
 		ctx->debug = 1;

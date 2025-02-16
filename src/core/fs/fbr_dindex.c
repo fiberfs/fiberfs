@@ -185,6 +185,8 @@ fbr_dindex_take(struct fbr_fs *fs, fbr_inode_t inode)
 
         struct fbr_directory *directory = RB_FIND(fbr_dindex_tree, &dirhead->tree, &find);
 
+	// TODO directory is null if it hasnt been fetched yet
+
 	fbr_directory_ok(directory);
 	assert(directory->refcount);
 

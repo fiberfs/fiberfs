@@ -89,20 +89,10 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 		return 1;
 	}
 
-	int ret;
-
-	if (ctx->sighandle) {
-		ret = fuse_set_signal_handlers(ctx->session);
-
-		if (ret) {
-			ctx->sighandle = 0;
-		}
-	}
-
 	ctx->path = strdup(path);
 	assert(ctx->path);
 
-	ret = fuse_session_mount(ctx->session, path);
+	int ret = fuse_session_mount(ctx->session, path);
 
 	if (ret) {
 		fbr_fuse_error(ctx);
@@ -185,10 +175,6 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 	assert(ctx->session);
 
 	_FUSE_CTX = NULL;
-
-	if (ctx->sighandle) {
-		fuse_remove_signal_handlers(ctx->session);
-	}
 
 	ctx->state = FBR_FUSE_NONE;
 

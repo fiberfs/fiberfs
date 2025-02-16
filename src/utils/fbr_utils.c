@@ -4,35 +4,9 @@
  */
 
 #include <errno.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
 
 #include "fiberfs.h"
-
-void __fbr_attr_printf(5)
-fbr_do_abort(const char *assertion, const char *function, const char *file, int line,
-    const char *fmt, ...)
-{
-	fprintf(stderr, "%s:%d %s(): ", file, line, function);
-
-	if (assertion) {
-		fprintf(stderr, "Assertion '%s' failed\n", assertion);
-	} else {
-		fprintf(stderr, "Aborted\n");
-	}
-
-	if (fmt) {
-		va_list ap;
-		va_start(ap, fmt);
-		vfprintf(stderr, fmt, ap);
-		va_end(ap);
-		fprintf(stderr, "\n");
-	}
-
-	abort();
-}
 
 void
 fbr_sleep_ms(long ms)

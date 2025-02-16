@@ -10,7 +10,6 @@
 #include "data/queue.h"
 #include "data/tree.h"
 
-#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <pthread.h>

@@ -29,6 +29,7 @@ int fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 	const struct fuse_lowlevel_ops *fuse_ops);
 void fbr_fuse_test_unmount(struct fbr_test_context *test_ctx);
 struct fbr_fuse_context *fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx);
+// TODO this goes away
 void __fbr_attr_printf(4) fbr_test_fuse_ERROR(int condition, struct fbr_fuse_context *ctx,
 	void *req, const char *fmt, ...);
 
