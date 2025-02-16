@@ -6,6 +6,16 @@
 #include "fiberfs.h"
 #include "fbr_fs.h"
 
+/*
+ * Each directory has a list of files with references
+ * Each directory lives in the dindex and is controlled by the LRU
+ * Each directory has a reference to its parent inode file
+ * Each file has a parent inode value
+ *
+ * The root directory doesnt live in the LRU, the fs owns its ref
+ * It also owns its parent inode ref
+ */
+
 void
 fbr_fs_init(struct fbr_fs *fs)
 {
@@ -27,9 +37,6 @@ fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root)
 	fbr_fs_ok(fs);
 	assert_zero(fs->root);
 	fbr_directory_ok(root);
-	assert_zero(root->dirname.len);
-
-	// TODO do we want to take another ref here?
 
 	fs->root = root;
 }
@@ -39,8 +46,6 @@ fbr_fs_release_root(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(fs->root);
-
-	fbr_inode_forget(fs, FBR_INODE_ROOT, 1);
 
 	fbr_dindex_release(fs, fs->root);
 	fs->root = NULL;

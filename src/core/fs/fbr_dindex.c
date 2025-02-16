@@ -220,6 +220,8 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 		}
 	}
 
+	fbr_inode_release(fs, directory->file);
+
 	assert(TAILQ_EMPTY(&directory->file_list));
 	assert(RB_EMPTY(&directory->filename_tree));
 

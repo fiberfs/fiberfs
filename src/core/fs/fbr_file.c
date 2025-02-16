@@ -12,7 +12,7 @@
 #include "core/fuse/fbr_fuse_ops.h"
 
 struct fbr_file *
-fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
+fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent, char *name,
     size_t name_len, mode_t mode)
 {
 	fbr_fs_ok(fs);
@@ -39,9 +39,9 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory, char *name,
 
 	fbr_file_ok(file);
 
-	if (directory) {
-		fbr_directory_ok(directory);
-		fbr_directory_add(fs, directory, file);
+	if (parent) {
+		fbr_directory_ok(parent);
+		fbr_directory_add(fs, parent, file);
 	} else {
 		assert(file->inode == FBR_INODE_ROOT);
 	}

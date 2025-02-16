@@ -94,6 +94,8 @@ struct fbr_directory {
 	// TODO we need creation date and insertion date
 	// creation date will tell us how often to look for updates
 
+	struct fbr_file				*file;
+
 	RB_ENTRY(fbr_directory)			dindex_entry;
 	TAILQ_ENTRY(fbr_directory)		lru_entry;
 	TAILQ_HEAD(, fbr_file)			file_list;
@@ -147,7 +149,7 @@ const char *fbr_filename_get(const struct fbr_filename *filename);
 int fbr_filename_cmp(const struct fbr_filename *f1, const struct fbr_filename *f2);
 void fbr_filename_free(struct fbr_filename *filename);
 
-struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *directory,
+struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	char *name, size_t name_len, mode_t mode);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 int fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
@@ -167,7 +169,8 @@ struct fbr_file *fbr_file_fh(uint64_t fd);
 RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
 struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
-struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len);
+struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len,
+	unsigned long inode);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
 void fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);

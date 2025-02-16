@@ -160,15 +160,12 @@ _test_fs_fuse_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 		ino, size, off, fi->fh);
 
 	struct fbr_directory *directory = fbr_directory_fh(fi->fh);
-
-	// TODO we need to sort out how a directory relates to its inode
-	struct fbr_file *file = fbr_inode_take(fs, directory->inode);
-	fbr_file_ok(file);
+	fbr_file_ok(directory->file);
 
 	struct stat st;
-	fbr_file_attr(file, &st);
+	fbr_file_attr(directory->file, &st);
 
-	fbr_inode_release(fs, file);
+	struct fbr_file *file;
 
 	TAILQ_FOREACH(file, &directory->file_list, file_entry) {
 		fbr_file_ok(file);

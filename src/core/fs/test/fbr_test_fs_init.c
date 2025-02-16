@@ -50,19 +50,23 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	struct fbr_fs *fs = &fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
-	struct fbr_directory *root = fbr_dindex_take(fs, 1);
+	struct fbr_directory *root = fbr_dindex_take(fs, FBR_INODE_ROOT);
 	fbr_directory_ok(root);
 	fbr_test_ASSERT(root == fs->root, "bad root ptr");
 	fbr_test_ASSERT(root->state == FBR_DIRSTATE_OK, "bad root state %d", root->state);
 
-	fbr_dindex_release(fs, root);
+	fbr_test_ERROR(root->dirname.len, "root dirname has length");
+	fbr_test_ERROR(strcmp(fbr_filename_get(&root->dirname), ""), "root dirname not empty")
 
-	struct fbr_file *root_file = fbr_inode_take(fs, 1);
+	struct fbr_file *root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
 	fbr_file_ok(root_file);
 
-	// TODO more checks here?
+	fbr_test_ASSERT(root->file == root_file, "Bad root file");
+	fbr_test_ERROR(root_file->filename.len, "root_file name has length");
+	fbr_test_ERROR(strcmp(fbr_filename_get(&root_file->filename), ""), "root_file not empty")
 
 	fbr_inode_release(fs, root_file);
+	fbr_dindex_release(fs, root);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_init mounted: %s", cmd->params[0].value);
 }
