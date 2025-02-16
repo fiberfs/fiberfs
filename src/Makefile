@@ -31,6 +31,10 @@ FJSON_TEST_INCLUDES:=$(wildcard fjson/test/*.h)
 FJSON_INCLUDES:=$(wildcard fjson/*.h)
 FJSON_INCLUDES:=$(filter-out $(FJSON_TEST_INCLUDES), $(FJSON_INCLUDES))
 
+UTILS_SRC=$(wildcard utils/*.c)
+UTILS_OBJS=$(UTILS_SRC:.c=.o)
+UTILS_INCLUDES:=$(wildcard utils/*.h)
+
 INCLUDES:=$(wildcard *.h */*.h */*/*.h)
 INCLUDES:=$(filter-out $(TEST_INCLUDES) $(CHTTP_INCLUDES) $(CHTTP_TEST_INCLUDES) \
 	$(FJSON_TEST_INCLUDES) $(FJSON_INCLUDES) $(TEST_INCLUDES_CORE), \

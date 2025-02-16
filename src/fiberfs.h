@@ -6,30 +6,13 @@
 #ifndef _FIBERFS_H_INCLUDED_
 #define _FIBERFS_H_INCLUDED_
 
-#include <assert.h>
 #include <string.h>
+
+#include "utils/fbr_utils.h"
 
 #define FIBERFS_VERSION			"0.1.0"
 
-#define __fbr_attr_printf(fpos)							\
-	__attribute__((__format__(__printf__, (fpos), ((fpos) + 1))))
-
-void __fbr_attr_printf(5) fbr_do_abort(const char *assertion, const char *function,
-	const char *file, int line, const char *fmt, ...);
-void fbr_sleep_ms(long ms);
-
-#define assert_zero(expr)							\
-	assert(!(expr))
 #define fbr_ZERO(p)								\
 	explicit_bzero(p, sizeof(*(p)))
-#define fbr_ABORT(fmt, ...)							\
-	fbr_do_abort(NULL, __func__, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
-#define fbr_ASSERT(cond, fmt, ...)						\
-{										\
-	if (__builtin_expect(!(cond), 0)) {					\
-		fbr_do_abort(#cond, __func__, __FILE__, __LINE__, fmt,		\
-			##__VA_ARGS__);						\
-	}									\
-}
 
 #endif /* _FIBERFS_H_INCLUDED_ */
