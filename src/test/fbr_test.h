@@ -162,8 +162,8 @@ void fbr_test_skip(struct fbr_test_context *ctx);
 void __fbr_attr_printf(3) fbr_test_log(struct fbr_test_context *ctx,
 	enum fbr_test_verbocity level, const char *fmt, ...);
 void __fbr_attr_printf(2) fbr_test_warn(int condition, const char *fmt, ...);
-void __fbr_attr_printf(5) fbr_test_do_abort(const char *assertion, const char *function,
-	const char *file, int line, const char *fmt, ...);
+void __fbr_attr_printf(5) __fbr_noreturn fbr_test_do_abort(const char *assertion,
+	const char *function, const char *file, int line, const char *fmt, ...);
 long fbr_test_parse_long(const char *str);
 void fbr_test_ERROR_param_count(struct fbr_test_cmd *cmd, size_t count);
 void fbr_test_ERROR_string(const char *str);

@@ -80,7 +80,7 @@ fbr_test_warn(int condition, const char *fmt, ...)
 	printf("\n");
 }
 
-void __fbr_attr_printf(5)
+void __fbr_attr_printf(5) __fbr_noreturn
 fbr_test_do_abort(const char *assertion, const char *function, const char *file, int line,
     const char *fmt, ...)
 {

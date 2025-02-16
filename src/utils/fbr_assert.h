@@ -10,9 +10,11 @@
 
 #define __fbr_attr_printf(fpos)							\
 	__attribute__((__format__(__printf__, (fpos), ((fpos) + 1))))
+#define __fbr_noreturn								\
+	__attribute__ ((__noreturn__))
 
-void __fbr_attr_printf(5) fbr_do_abort(const char *assertion, const char *function,
-	const char *file, int line, const char *fmt, ...);
+void __fbr_attr_printf(5) __fbr_noreturn fbr_do_abort(const char *assertion,
+	const char *function, const char *file, int line, const char *fmt, ...);
 
 #undef assert
 #define assert(expr)								\
