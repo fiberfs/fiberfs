@@ -21,12 +21,8 @@
 #define _TEST_FS_FUSE_TTL_SEC		2.0
 
 static void
-_test_fs_fuse_init(void *userdata, struct fuse_conn_info *conn)
+_test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
-	struct fbr_fuse_context *ctx;
-
-	ctx = (struct fbr_fuse_context*)userdata;
-
 	fbr_fuse_mounted(ctx);
 	assert(conn);
 
@@ -44,9 +40,9 @@ _test_fs_fuse_init(void *userdata, struct fuse_conn_info *conn)
 }
 
 static void
-_test_fs_fuse_getattr(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
+_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
@@ -79,9 +75,9 @@ _test_fs_fuse_getattr(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi
 }
 
 static void
-_test_fs_fuse_lookup(fuse_req_t _req, fuse_ino_t parent, const char *name)
+_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
@@ -130,9 +126,9 @@ _test_fs_fuse_lookup(fuse_req_t _req, fuse_ino_t parent, const char *name)
 }
 
 static void
-_test_fs_fuse_opendir(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
+_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
@@ -162,10 +158,10 @@ _test_fs_fuse_opendir(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi
 }
 
 static void
-_test_fs_fuse_readdir(fuse_req_t _req, fuse_ino_t ino, size_t size, off_t off,
+_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
@@ -196,9 +192,9 @@ _test_fs_fuse_readdir(fuse_req_t _req, fuse_ino_t ino, size_t size, off_t off,
 }
 
 static void
-_test_fs_fuse_releasedir(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
+_test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
@@ -216,9 +212,9 @@ _test_fs_fuse_releasedir(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info 
 }
 
 static void
-_test_fs_fuse_open(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
+_test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
@@ -263,9 +259,9 @@ _test_fs_fuse_open(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
 }
 
 static void
-_test_fs_fuse_read(fuse_req_t _req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
+_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
@@ -287,9 +283,9 @@ _test_fs_fuse_read(fuse_req_t _req, fuse_ino_t ino, size_t size, off_t off, stru
 }
 
 static void
-_test_fs_fuse_release(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
+_test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
@@ -308,9 +304,9 @@ _test_fs_fuse_release(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi
 }
 
 static void
-_test_fs_fuse_forget(fuse_req_t _req, fuse_ino_t ino, uint64_t nlookup)
+_test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
@@ -329,9 +325,9 @@ _test_fs_fuse_forget(fuse_req_t _req, fuse_ino_t ino, uint64_t nlookup)
 }
 
 static void
-_test_fs_fuse_forget_multi(fuse_req_t _req, size_t count, struct fuse_forget_data *forgets)
+_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count, struct fuse_forget_data *forgets)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
@@ -345,13 +341,13 @@ _test_fs_fuse_forget_multi(fuse_req_t _req, size_t count, struct fuse_forget_dat
 	request->fuse_req = NULL;
 
 	for (size_t i = 0; i < count; i++) {
-		_test_fs_fuse_forget(_req, forgets[i].ino, forgets[i].nlookup);
+		_test_fs_fuse_forget(request, forgets[i].ino, forgets[i].nlookup);
 	}
 
 	fuse_reply_none(req);
 }
 
-static const struct fuse_lowlevel_ops _TEST_FS_FUSE_OPS = {
+static const struct fbr_fuse_callbacks _TEST_FS_FUSE_CALLBACKS = {
 	.init = _test_fs_fuse_init,
 
 	.getattr = _test_fs_fuse_getattr,
@@ -374,7 +370,7 @@ fbr_cmd_fs_test_fuse_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 {
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_FS_FUSE_OPS);
+	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_FS_FUSE_CALLBACKS);
 	fbr_test_ERROR(ret, "fs fuse mount failed: %s", cmd->params[0].value);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", cmd->params[0].value);

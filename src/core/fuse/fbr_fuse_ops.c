@@ -13,6 +13,7 @@
 
 struct fbr_fuse_context *_FUSE_CTX;
 
+// TODO clean this up
 struct fbr_fuse_context *
 fbr_fuse_get_ctx(fuse_req_t req)
 {

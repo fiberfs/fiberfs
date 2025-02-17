@@ -15,27 +15,27 @@ enum fbr_fuse_state {
 };
 
 struct fbr_fuse_context {
-	unsigned int			magic;
-#define FBR_FUSE_CTX_MAGIC		0xC07C5CCE
+	unsigned int				magic;
+#define FBR_FUSE_CTX_MAGIC			0xC07C5CCE
 
-	volatile enum fbr_fuse_state	state;
+	volatile enum fbr_fuse_state		state;
 
-	char				*path;
+	char					*path;
 
-	struct fuse_session		*session;
-	const struct fuse_lowlevel_ops	*fuse_ops;
-	pthread_t			loop_thread;
+	struct fuse_session			*session;
+	const struct fbr_fuse_callbacks		*fuse_callbacks;
+	pthread_t				loop_thread;
 
 	// TODO these need to live somewhere else
-	struct fbr_fs			*fs;
-	void				*context_priv;
+	struct fbr_fs				*fs;
+	void					*context_priv;
 
-	unsigned int			error:1;
-	unsigned int			debug:1;
-	volatile unsigned int		running:1;
-	volatile unsigned int		exited:1;
+	unsigned int				error:1;
+	unsigned int				debug:1;
+	volatile unsigned int			running:1;
+	volatile unsigned int			exited:1;
 
-	int				exit_value;
+	int					exit_value;
 };
 
 struct fuse_conn_info;

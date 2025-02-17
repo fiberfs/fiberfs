@@ -11,16 +11,9 @@
 
 #define _fuse_ops_callback(request, name, ...)					\
 {										\
-	if (request->fuse_ctx->fuse_ops->name) {				\
-		request->fuse_ctx->fuse_ops->name(				\
-			_fuse_request_cast(request), __VA_ARGS__);		\
+	if (request->fuse_ctx->fuse_callbacks->name) {				\
+		request->fuse_ctx->fuse_callbacks->name(request, __VA_ARGS__);	\
 	}									\
-}
-
-static inline fuse_req_t
-_fuse_request_cast(struct fbr_request *request)
-{
-	return (fuse_req_t)request;
 }
 
 static inline struct fbr_request *
@@ -31,7 +24,7 @@ _fuse_setup(fuse_req_t fuse_req)
 	request = fbr_request_alloc(fuse_req);
 	fbr_request_ok(request);
 	fbr_fuse_mounted(request->fuse_ctx);
-	assert(request->fuse_ctx->fuse_ops);
+	assert(request->fuse_ctx->fuse_callbacks);
 	assert(request->fuse_req);
 
 	return request;
@@ -71,11 +64,11 @@ _fuse_ops_init(void *userdata, struct fuse_conn_info *conn)
 	ctx = (struct fbr_fuse_context*)userdata;
 
 	fbr_fuse_mounted(ctx);
-	assert(ctx->fuse_ops);
+	assert(ctx->fuse_callbacks);
 	assert(conn);
 
-	if (ctx->fuse_ops->init) {
-		ctx->fuse_ops->init(ctx, conn);
+	if (ctx->fuse_callbacks->init) {
+		ctx->fuse_callbacks->init(ctx, conn);
 	}
 
 	fbr_fuse_running(ctx, conn);
@@ -89,10 +82,10 @@ _fuse_ops_destroy(void *userdata)
 	ctx = (struct fbr_fuse_context*)userdata;
 
 	fbr_fuse_ctx_ok(ctx);
-	assert(ctx->fuse_ops);
+	assert(ctx->fuse_callbacks);
 
-	if (ctx->fuse_ops->destroy) {
-		ctx->fuse_ops->destroy(ctx);
+	if (ctx->fuse_callbacks->destroy) {
+		ctx->fuse_callbacks->destroy(ctx);
 	}
 }
 
@@ -212,13 +205,13 @@ static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.destroy = _fuse_ops_destroy,
 	.lookup = _fuse_ops_lookup,
 	.getattr = _fuse_ops_getattr,
+	.opendir = _fuse_ops_opendir,
+	.readdir = _fuse_ops_readdir,
+	.releasedir = _fuse_ops_releasedir,
 	.open = _fuse_ops_open,
 	.read = _fuse_ops_read,
 	.flush = _fuse_ops_flush,
 	.release = _fuse_ops_release,
-	.opendir = _fuse_ops_opendir,
-	.readdir = _fuse_ops_readdir,
-	.releasedir = _fuse_ops_releasedir,
 	.forget = _fuse_ops_forget,
 	.forget_multi = _fuse_ops_forget_multi
 };

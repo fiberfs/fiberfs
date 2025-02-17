@@ -32,18 +32,6 @@ fbr_request_alloc(fuse_req_t fuse_req)
 	return request;
 }
 
-// TODO remove this, just redefine the ops struct properly
-struct fbr_request *
-fbr_request_fuse_cast(fuse_req_t fuse_req)
-{
-	assert(fuse_req);
-
-	struct fbr_request *request = (struct fbr_request*)fuse_req;
-	fbr_request_ok(request);
-
-	return request;
-}
-
 void
 fbr_request_free(struct fbr_request *request)
 {

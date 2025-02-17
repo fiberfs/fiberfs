@@ -8,6 +8,29 @@
 
 #include "fiberfs.h"
 #include "fbr_fuse_lowlevel.h"
+#include "core/request/fbr_request.h"
+
+// TODO rename this to callbacks?
+
+struct fbr_fuse_callbacks {
+	void (*init) (struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);
+	void (*destroy) (struct fbr_fuse_context *ctx);
+	void (*lookup) (struct fbr_request *request, fuse_ino_t parent, const char *name);
+	void (*getattr) (struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
+	void (*opendir) (struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
+	void (*readdir) (struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
+		struct fuse_file_info *fi);
+	void (*releasedir) (struct fbr_request *request, fuse_ino_t ino,
+		struct fuse_file_info *fi);
+	void (*open) (struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
+	void (*read) (struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
+		struct fuse_file_info *fi);
+	void (*flush) (struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
+	void (*release) (struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
+	void (*forget) (struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup);
+	void (*forget_multi) (struct fbr_request *request, size_t count,
+		struct fuse_forget_data *forgets);
+};
 
 struct fbr_fuse_context *fbr_fuse_get_ctx(fuse_req_t req);
 

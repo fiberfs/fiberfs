@@ -56,21 +56,21 @@ _fuse_init(struct fbr_test_context *test_ctx)
 	return &test_ctx->fuse->ctx;
 }
 
-static const struct fuse_lowlevel_ops _TEST_FUSE_OPS;
+static const struct fbr_fuse_callbacks _TEST_FUSE_CALLBACKS;
 
 int
 fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
-    const struct fuse_lowlevel_ops *fuse_ops)
+    const struct fbr_fuse_callbacks *fuse_callbacks)
 {
 	struct fbr_fuse_context *ctx = _fuse_init(test_ctx);
 	struct fbr_test *test = fbr_test_convert(test_ctx);
 
 	fbr_fuse_init(ctx);
 
-	if (fuse_ops) {
-		ctx->fuse_ops = fuse_ops;
+	if (fuse_callbacks) {
+		ctx->fuse_callbacks = fuse_callbacks;
 	} else {
-		ctx->fuse_ops = &_TEST_FUSE_OPS;
+		ctx->fuse_callbacks = &_TEST_FUSE_CALLBACKS;
 	}
 
 	ctx->context_priv = test_ctx;

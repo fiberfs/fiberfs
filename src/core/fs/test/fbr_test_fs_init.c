@@ -9,18 +9,15 @@
 #include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
+#include "core/fuse/fbr_fuse_ops.h"
 
 #include "fbr_test_fs_cmds.h"
 #include "test/fbr_test.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 static void
-_test_fs_init(void *userdata, struct fuse_conn_info *conn)
+_test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
-	struct fbr_fuse_context *ctx;
-
-	ctx = (struct fbr_fuse_context*)userdata;
-
 	fbr_fuse_mounted(ctx);
 	assert(conn);
 
@@ -37,7 +34,7 @@ _test_fs_init(void *userdata, struct fuse_conn_info *conn)
 	fbr_directory_set_state(root, FBR_DIRSTATE_OK);
 }
 
-static const struct fuse_lowlevel_ops _TEST_FS_OPS = {
+static const struct fbr_fuse_callbacks _TEST_FS_INIT_CALLBACKS = {
 	.init = _test_fs_init
 };
 
@@ -46,7 +43,7 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 {
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_FS_OPS);
+	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_FS_INIT_CALLBACKS);
 	fbr_test_ERROR(ret, "fs init fuse mount failed: %s", cmd->params[0].value);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);

@@ -26,7 +26,7 @@ struct fbr_test_fuse {
 struct fuse_lowlevel_ops;
 
 int fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
-	const struct fuse_lowlevel_ops *fuse_ops);
+	const struct fbr_fuse_callbacks *fuse_callbacks);
 void fbr_fuse_test_unmount(struct fbr_test_context *test_ctx);
 struct fbr_fuse_context *fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx);
 // TODO this goes away

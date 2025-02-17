@@ -58,7 +58,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	fbr_fuse_ctx_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
 	assert_zero(ctx->session);
-	assert(ctx->fuse_ops);
+	assert(ctx->fuse_callbacks);
 	assert(path);
 
 	char *argv[6];

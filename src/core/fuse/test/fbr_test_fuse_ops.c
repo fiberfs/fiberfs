@@ -20,12 +20,8 @@
 int _TEST_OPS_FUSE_STATE;
 
 static void
-_test_ops_init(void *userdata, struct fuse_conn_info *conn)
+_test_ops_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
-	struct fbr_fuse_context *ctx;
-
-	ctx = (struct fbr_fuse_context*)userdata;
-
 	fbr_fuse_mounted(ctx);
 	assert(conn);
 	assert_zero(_TEST_OPS_FUSE_STATE);
@@ -34,12 +30,8 @@ _test_ops_init(void *userdata, struct fuse_conn_info *conn)
 }
 
 static void
-_test_ops_destroy(void *userdata)
+_test_ops_destroy(struct fbr_fuse_context *ctx)
 {
-	struct fbr_fuse_context *ctx;
-
-	ctx = (struct fbr_fuse_context*)userdata;
-
 	fbr_fuse_ctx_ok(ctx);
 	assert(ctx->exited);
 	assert(_TEST_OPS_FUSE_STATE == 1);
@@ -138,9 +130,9 @@ _test_stat(fuse_ino_t ino, struct stat *st_attr)
 }
 
 static void
-_test_ops_lookup(fuse_req_t _req, fuse_ino_t parent, const char *name)
+_test_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
 	fbr_test_context_ok(test_ctx);
@@ -178,9 +170,9 @@ _test_ops_lookup(fuse_req_t _req, fuse_ino_t parent, const char *name)
 }
 
 static void
-_test_ops_getattr(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
+_test_ops_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
 	fbr_test_context_ok(test_ctx);
@@ -205,9 +197,9 @@ _test_ops_getattr(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
 }
 
 static void
-_test_ops_opendir(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
+_test_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
 	fbr_test_context_ok(test_ctx);
@@ -233,10 +225,10 @@ _test_ops_opendir(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
 }
 
 static void
-_test_ops_readdir(fuse_req_t _req, fuse_ino_t ino, size_t size, off_t off,
+_test_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
 	fbr_test_context_ok(test_ctx);
@@ -333,9 +325,9 @@ _test_ops_readdir(fuse_req_t _req, fuse_ino_t ino, size_t size, off_t off,
 }
 
 static void
-_test_ops_releasedir(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
+_test_ops_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
 	fbr_test_context_ok(test_ctx);
@@ -348,9 +340,9 @@ _test_ops_releasedir(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
 }
 
 static void
-_test_ops_open(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
+_test_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
 	fbr_test_context_ok(test_ctx);
@@ -387,9 +379,9 @@ _test_ops_open(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
 }
 
 static void
-_test_ops_read(fuse_req_t _req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
+_test_ops_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
 	fbr_test_context_ok(test_ctx);
@@ -426,9 +418,9 @@ _test_ops_read(fuse_req_t _req, fuse_ino_t ino, size_t size, off_t off, struct f
 }
 
 static void
-_test_ops_release(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
+_test_ops_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
 	fbr_test_context_ok(test_ctx);
@@ -442,9 +434,9 @@ _test_ops_release(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
 }
 
 static void
-_test_ops_flush(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
+_test_ops_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
 	fbr_test_context_ok(test_ctx);
@@ -458,9 +450,9 @@ _test_ops_flush(fuse_req_t _req, fuse_ino_t ino, struct fuse_file_info *fi)
 }
 
 static void
-_test_ops_forget(fuse_req_t _req, fuse_ino_t ino, uint64_t nlookup)
+_test_ops_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
 	fbr_test_context_ok(test_ctx);
@@ -474,9 +466,9 @@ _test_ops_forget(fuse_req_t _req, fuse_ino_t ino, uint64_t nlookup)
 }
 
 static void
-_test_ops_forget_multi(fuse_req_t _req, size_t count, struct fuse_forget_data *forgets)
+_test_ops_forget_multi(struct fbr_request *request, size_t count, struct fuse_forget_data *forgets)
 {
-	struct fbr_request *request = fbr_request_fuse_cast(_req);
+	fbr_request_ok(request);
 	struct fbr_fuse_context *ctx = request->fuse_ctx;
 	struct fbr_test_context *test_ctx = (struct fbr_test_context*)ctx->context_priv;
 	fbr_test_context_ok(test_ctx);
@@ -487,13 +479,13 @@ _test_ops_forget_multi(fuse_req_t _req, size_t count, struct fuse_forget_data *f
 	request->fuse_req = NULL;
 
 	for (size_t i = 0; i < count; i++) {
-		_test_ops_forget(_req, forgets[i].ino, forgets[i].nlookup);
+		_test_ops_forget(request, forgets[i].ino, forgets[i].nlookup);
 	}
 
 	fuse_reply_none(req);
 }
 
-static const struct fuse_lowlevel_ops _TEST_OPS_FUSE_OPS = {
+static const struct fbr_fuse_callbacks _TEST_OPS_CALLBACKS = {
 	.init = _test_ops_init,
 	.destroy = _test_ops_destroy,
 	.lookup = _test_ops_lookup,
@@ -514,7 +506,7 @@ fbr_test_fuse_cmd_fuse_test_ops_mount(struct fbr_test_context *ctx, struct fbr_t
 {
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_OPS_FUSE_OPS);
+	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_OPS_CALLBACKS);
 	fbr_test_ERROR(ret, "Fuse mount failed: %s", cmd->params[0].value);
 	fbr_test_ASSERT(_TEST_OPS_FUSE_STATE == 1, "init callback failed")
 
