@@ -315,7 +315,7 @@ fbr_test_run_all_finish(struct fbr_test *test)
 }
 
 void
-fbr_test_finish_abort(void)
+fbr_test_abort_finish(void)
 {
 	if (!_TEST) {
 		return;
@@ -355,7 +355,7 @@ fbr_test_is_thread(void)
 }
 
 void
-fbr_test_set_error(void)
+fbr_test_force_error(void)
 {
 	if (!_TEST) {
 		return;

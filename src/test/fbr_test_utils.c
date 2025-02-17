@@ -98,13 +98,13 @@ fbr_test_do_abort(const char *assertion, const char *function, const char *file,
 
 	printf("\n");
 
-	fbr_test_set_error();
+	fbr_test_force_error();
 
 	if (!fbr_test_is_forked()) {
 		printf("FAILED\n");
 	}
 
-	fbr_test_finish_abort();
+	fbr_test_abort_finish();
 
 	exit(1);
 }

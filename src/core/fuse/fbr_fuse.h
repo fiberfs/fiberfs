@@ -26,9 +26,7 @@ struct fbr_fuse_context {
 	const struct fbr_fuse_callbacks		*fuse_callbacks;
 	pthread_t				loop_thread;
 
-	// TODO these need to live somewhere else
 	struct fbr_fs				*fs;
-	void					*context_priv;
 
 	unsigned int				error:1;
 	unsigned int				debug:1;

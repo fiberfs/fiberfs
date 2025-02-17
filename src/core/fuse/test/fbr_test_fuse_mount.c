@@ -14,12 +14,17 @@
 #include "core/fuse/fbr_fuse_ops.h"
 #include "test/fbr_test.h"
 
+static struct fbr_test_context *_TEST_CTX;
+
 static void
 _fuse_finish(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
+	fbr_test_context_ok(_TEST_CTX);
 	assert(test_ctx->test_fuse);
 	assert(test_ctx->test_fuse->magic == FBR_TEST_FUSE_MAGIC);
+
+	_TEST_CTX = NULL;
 
 	struct fbr_fuse_context *fuse_ctx = &test_ctx->test_fuse->fuse_ctx;
 	fbr_fuse_context_ok(fuse_ctx);
@@ -49,9 +54,12 @@ _fuse_init(struct fbr_test_context *test_ctx)
 		test_ctx->test_fuse = test_fuse;
 
 		fbr_test_register_finish(test_ctx, "test_fuse", _fuse_finish);
+
+		_TEST_CTX = test_ctx;
 	}
 
 	assert(test_ctx->test_fuse->magic == FBR_TEST_FUSE_MAGIC);
+	fbr_test_context_ok(_TEST_CTX);
 
 	return &test_ctx->test_fuse->fuse_ctx;
 }
@@ -72,8 +80,6 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 	} else {
 		ctx->fuse_callbacks = &_TEST_FUSE_CALLBACKS_EMPTY;
 	}
-
-	ctx->context_priv = test_ctx;
 
 	if (test->verbocity >= FBR_LOG_VERBOSE) {
 		ctx->debug = 1;
@@ -142,6 +148,13 @@ fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx)
 	return fuse_ctx;
 }
 
+struct fbr_test_context *
+fbr_test_fuse_ctx(void)
+{
+	fbr_test_context_ok(_TEST_CTX);
+	return _TEST_CTX;
+}
+
 // TODO this goes away
 void __fbr_attr_printf(4)
 fbr_test_fuse_ERROR(int condition, struct fbr_fuse_context *ctx, void *req,
@@ -162,7 +175,7 @@ fbr_test_fuse_ERROR(int condition, struct fbr_fuse_context *ctx, void *req,
 
 	printf("\n");
 
-	fbr_test_set_error();
+	fbr_test_force_error();
 
 	fbr_fuse_abort(ctx);
 

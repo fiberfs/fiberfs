@@ -141,10 +141,10 @@ void fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 	fbr_test_finish_f *func);
 void fbr_test_run_finish(struct fbr_test_context *ctx, const char *name);
 void fbr_test_run_all_finish(struct fbr_test *test);
-void fbr_test_finish_abort(void);
+void fbr_test_abort_finish(void);
 int fbr_test_is_forked(void);
 int fbr_test_is_thread(void);
-void fbr_test_set_error(void);
+void fbr_test_force_error(void);
 
 void fbr_test_cmds_init(struct fbr_test *test);
 struct fbr_test_cmdentry *fbr_test_cmds_get(struct fbr_test *test, const char *name);
