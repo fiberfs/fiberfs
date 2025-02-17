@@ -26,6 +26,7 @@ struct fbr_fuse_context {
 	const struct fuse_lowlevel_ops	*fuse_ops;
 	pthread_t			loop_thread;
 
+	// TODO these need to live somewhere else
 	struct fbr_fs			*fs;
 	void				*context_priv;
 
