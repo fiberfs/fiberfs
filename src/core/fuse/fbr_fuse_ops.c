@@ -43,7 +43,7 @@ fbr_fuse_do_abort(fuse_req_t req, const char *assertion, const char *function,
 		fprintf(stderr, "ERROR\n");
 	}
 
-	fbr_fuse_ctx_ok(_FUSE_CTX);
+	fbr_fuse_context_ok(_FUSE_CTX);
 
 	_FUSE_CTX->error = 1;
 

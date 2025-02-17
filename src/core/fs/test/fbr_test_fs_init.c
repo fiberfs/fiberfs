@@ -110,7 +110,7 @@ fbr_cmd_fs_test_stats(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 char *										\
 fbr_var_fs_test_stat_##name(struct fbr_test_context *ctx)			\
 {										\
-	struct fbr_test_fuse *test_fuse = ctx->fuse;				\
+	struct fbr_test_fuse *test_fuse = ctx->test_fuse;			\
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);		\
 	struct fbr_fs *fs = fuse_ctx->fs;					\
 	fbr_fs_ok(fs);								\

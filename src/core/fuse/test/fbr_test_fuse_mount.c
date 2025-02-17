@@ -18,21 +18,21 @@ static void
 _fuse_finish(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
-	assert(test_ctx->fuse);
-	assert(test_ctx->fuse->magic == _FUSE_MAGIC);
+	assert(test_ctx->test_fuse);
+	assert(test_ctx->test_fuse->magic == FBR_TEST_FUSE_MAGIC);
 
-	struct fbr_fuse_context *ctx = &test_ctx->fuse->ctx;
-	fbr_fuse_ctx_ok(ctx);
+	struct fbr_fuse_context *fuse_ctx = &test_ctx->test_fuse->fuse_ctx;
+	fbr_fuse_context_ok(fuse_ctx);
 
-	fbr_fuse_unmount(ctx);
-	fbr_test_ERROR(ctx->error, "Fuse error detected");
+	fbr_fuse_unmount(fuse_ctx);
+	fbr_test_ERROR(fuse_ctx->error, "Fuse error detected");
 
-	fbr_fuse_free(ctx);
+	fbr_fuse_free(fuse_ctx);
 
-	fbr_ZERO(test_ctx->fuse);
-	free(test_ctx->fuse);
+	fbr_ZERO(test_ctx->test_fuse);
+	free(test_ctx->test_fuse);
 
-	test_ctx->fuse = NULL;
+	test_ctx->test_fuse = NULL;
 }
 
 static struct fbr_fuse_context *
@@ -40,23 +40,23 @@ _fuse_init(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
 
-	if (!test_ctx->fuse) {
-		struct fbr_test_fuse *fuse = malloc(sizeof(*fuse));
-		assert(fuse);
+	if (!test_ctx->test_fuse) {
+		struct fbr_test_fuse *test_fuse = malloc(sizeof(*test_fuse));
+		assert(test_fuse);
 
-		fuse->magic = _FUSE_MAGIC;
+		test_fuse->magic = FBR_TEST_FUSE_MAGIC;
 
-		test_ctx->fuse = fuse;
+		test_ctx->test_fuse = test_fuse;
 
-		fbr_test_register_finish(test_ctx, "fuse", _fuse_finish);
+		fbr_test_register_finish(test_ctx, "test_fuse", _fuse_finish);
 	}
 
-	assert(test_ctx->fuse->magic == _FUSE_MAGIC);
+	assert(test_ctx->test_fuse->magic == FBR_TEST_FUSE_MAGIC);
 
-	return &test_ctx->fuse->ctx;
+	return &test_ctx->test_fuse->fuse_ctx;
 }
 
-static const struct fbr_fuse_callbacks _TEST_FUSE_CALLBACKS;
+static const struct fbr_fuse_callbacks _TEST_FUSE_CALLBACKS_EMPTY;
 
 int
 fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
@@ -70,7 +70,7 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 	if (fuse_callbacks) {
 		ctx->fuse_callbacks = fuse_callbacks;
 	} else {
-		ctx->fuse_callbacks = &_TEST_FUSE_CALLBACKS;
+		ctx->fuse_callbacks = &_TEST_FUSE_CALLBACKS_EMPTY;
 	}
 
 	ctx->context_priv = test_ctx;
@@ -97,9 +97,9 @@ fbr_test_fuse_cmd_fuse_test_mount(struct fbr_test_context *ctx, struct fbr_test_
 	fbr_test_ERROR(ret, "Fuse mount failed: %s", cmd->params[0].value);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_ctx(NULL);
-	fbr_fuse_ctx_ok(fuse_ctx);
-	fbr_fuse_ctx_ok(&ctx->fuse->ctx);
-	assert(fuse_ctx == &ctx->fuse->ctx);
+	fbr_fuse_context_ok(fuse_ctx);
+	fbr_fuse_context_ok(&ctx->test_fuse->fuse_ctx);
+	assert(fuse_ctx == &ctx->test_fuse->fuse_ctx);
 	fbr_test_ERROR(strcmp(cmd->params[0].value, fuse_ctx->path),
 		"ctx->path error: %s", fuse_ctx->path);
 
@@ -110,7 +110,7 @@ void
 fbr_fuse_test_unmount(struct fbr_test_context *test_ctx)
 {
 	struct fbr_fuse_context *ctx = _fuse_init(test_ctx);
-	fbr_fuse_ctx_ok(ctx);
+	fbr_fuse_context_ok(ctx);
 
 	fbr_fuse_unmount(ctx);
 
@@ -136,17 +136,18 @@ fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
 
-	struct fbr_fuse_context *ctx = &test_ctx->fuse->ctx;
-	fbr_fuse_ctx_ok(ctx);
+	struct fbr_fuse_context *fuse_ctx = &test_ctx->test_fuse->fuse_ctx;
+	fbr_fuse_context_ok(fuse_ctx);
 
-	return ctx;
+	return fuse_ctx;
 }
 
+// TODO this goes away
 void __fbr_attr_printf(4)
 fbr_test_fuse_ERROR(int condition, struct fbr_fuse_context *ctx, void *req,
     const char *fmt, ...)
 {
-	fbr_fuse_ctx_ok(ctx);
+	fbr_fuse_context_ok(ctx);
 
 	if (!condition) {
 		return;

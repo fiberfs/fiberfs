@@ -16,9 +16,9 @@
 
 struct fbr_test_fuse {
 	unsigned int			magic;
-#define _FUSE_MAGIC			0x323EF113
+#define FBR_TEST_FUSE_MAGIC		0x323EF113
 
-	struct fbr_fuse_context		ctx;
+	struct fbr_fuse_context		fuse_ctx;
 
 	char				stat_str[64];
 };

@@ -26,7 +26,7 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 
 	ctx->fs = fbr_fs_alloc();
 
-	fbr_fuse_ctx_ok(ctx);
+	fbr_fuse_context_ok(ctx);
 }
 
 static void *
@@ -55,7 +55,7 @@ _fuse_mount_thread(void *arg)
 int
 fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 {
-	fbr_fuse_ctx_ok(ctx);
+	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
 	assert_zero(ctx->session);
 	assert(ctx->fuse_callbacks);
@@ -130,7 +130,7 @@ fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 void
 fbr_fuse_error(struct fbr_fuse_context *ctx)
 {
-	fbr_fuse_ctx_ok(ctx);
+	fbr_fuse_context_ok(ctx);
 
 	fbr_fuse_unmount(ctx);
 
@@ -142,7 +142,7 @@ fbr_fuse_error(struct fbr_fuse_context *ctx)
 void
 fbr_fuse_abort(struct fbr_fuse_context *ctx)
 {
-	fbr_fuse_ctx_ok(ctx);
+	fbr_fuse_context_ok(ctx);
 
 	if (ctx->state != FBR_FUSE_MOUNTED || ctx->exited) {
 		return;
@@ -162,7 +162,7 @@ fbr_fuse_abort(struct fbr_fuse_context *ctx)
 void
 fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 {
-	fbr_fuse_ctx_ok(ctx);
+	fbr_fuse_context_ok(ctx);
 
 	if (ctx->state == FBR_FUSE_NONE) {
 		return;
@@ -185,7 +185,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 void
 fbr_fuse_free(struct fbr_fuse_context *ctx)
 {
-	fbr_fuse_ctx_ok(ctx);
+	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
 	assert_zero(_FUSE_CTX);
 

@@ -81,7 +81,7 @@ _fuse_ops_destroy(void *userdata)
 
 	ctx = (struct fbr_fuse_context*)userdata;
 
-	fbr_fuse_ctx_ok(ctx);
+	fbr_fuse_context_ok(ctx);
 	assert(ctx->fuse_callbacks);
 
 	if (ctx->fuse_callbacks->destroy) {

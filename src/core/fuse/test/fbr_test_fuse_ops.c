@@ -32,7 +32,7 @@ _test_ops_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 static void
 _test_ops_destroy(struct fbr_fuse_context *ctx)
 {
-	fbr_fuse_ctx_ok(ctx);
+	fbr_fuse_context_ok(ctx);
 	assert(ctx->exited);
 	assert(_TEST_OPS_FUSE_STATE == 1);
 

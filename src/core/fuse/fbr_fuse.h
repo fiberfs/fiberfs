@@ -50,14 +50,14 @@ void fbr_fuse_abort(struct fbr_fuse_context *ctx);
 void fbr_fuse_unmount(struct fbr_fuse_context *ctx);
 void fbr_fuse_error(struct fbr_fuse_context *ctx);
 
-#define fbr_fuse_ctx_ok(ctx)					\
+#define fbr_fuse_context_ok(ctx)				\
 {								\
 	assert(ctx);						\
 	assert((ctx)->magic == FBR_FUSE_CTX_MAGIC);		\
 }
 #define fbr_fuse_mounted(ctx)					\
 {								\
-	fbr_fuse_ctx_ok(ctx);					\
+	fbr_fuse_context_ok(ctx);				\
 	assert((ctx)->state == FBR_FUSE_MOUNTED);		\
 	assert_zero((ctx)->exited);				\
 }
