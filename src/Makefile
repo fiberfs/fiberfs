@@ -92,6 +92,17 @@ ifeq ($(ZLIB),true)
 	LIBFLAGS+=$(ZLIB_LIB)
 endif
 
+# Detect libunwind (LIBUNWIND=false to disable)
+LIBUNWIND_PKG=libunwind
+LIBUNWIND_C='\#include <libunwind.h>\n int main() {unw_context_t uc;}'
+LIBUNWIND_CFLAGS=-DFBR_LIBUNWIND
+LIBUNWIND_LIB=-lunwind
+LIBUNWIND=$(shell printf $(LIBUNWIND_C) | $(TCC) $(LIBUNWIND_LIB) $(TEST_TRUE))
+ifeq ($(LIBUNWIND),true)
+	CFLAGS+=$(LIBUNWIND_CFLAGS)
+	LIBFLAGS+=$(LIBUNWIND_LIB)
+endif
+
 # Detect compiler
 ifeq ($(findstring clang,$(CC)),clang)
 	CC_CLANG=true

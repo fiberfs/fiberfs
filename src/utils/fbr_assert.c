@@ -35,15 +35,20 @@ fbr_setup_crash_signals(void)
 	assert_zero(sigaction(SIGTERM, &sa, NULL));
 	assert_zero(sigaction(SIGINT, &sa, NULL));
 	assert_zero(sigaction(SIGBUS, &sa, NULL));
+	assert_zero(sigaction(SIGILL, &sa, NULL));
+	assert_zero(sigaction(SIGPIPE, &sa, NULL));
 }
 
-static inline void
-_get_backtrace(void)
+static void
+_dump_backtrace(void)
 {
+	if (fbr_libunwind_enabled()) {
+		fbr_libunwind_backtrace();
+	}
+
+	fprintf(stderr, "\nBacktrace (addr2line -e [file] [+address]):\n");
+
 	void *stack_addrs[16];
-
-	fprintf(stderr, "Backtrace (use addr2line):\n");
-
 	int len = backtrace(stack_addrs, sizeof(stack_addrs) / sizeof(*stack_addrs));
 	backtrace_symbols_fd(stack_addrs, len, STDERR_FILENO);
 }
@@ -68,7 +73,7 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
 		fprintf(stderr, "\n");
 	}
 
-	_get_backtrace();
+	_dump_backtrace();
 
 	// TODO get fiber context
 
