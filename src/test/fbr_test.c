@@ -135,6 +135,8 @@ fbr_test_main(int argc, char **argv)
 {
 	struct fbr_test test;
 
+	fbr_setup_crash_signals();
+
 	_init_test(&test);
 	fbr_test_cmds_init(&test);
 

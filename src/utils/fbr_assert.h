@@ -13,6 +13,7 @@
 #define __fbr_noreturn								\
 	__attribute__ ((__noreturn__))
 
+void fbr_setup_crash_signals(void);
 void __fbr_attr_printf(5) __fbr_noreturn fbr_do_abort(const char *assertion,
 	const char *function, const char *file, int line, const char *fmt, ...);
 
