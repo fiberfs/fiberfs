@@ -8,7 +8,6 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
-#include "core/fuse/fbr_fuse_ops.h"
 
 static size_t
 _filename_inline_len(size_t name_len)
@@ -63,7 +62,7 @@ fbr_inline_alloc(size_t size, size_t filename_offset, char *name, size_t name_le
 	char *inline_ptr = NULL;
 
 	void *obj = calloc(1, size + inline_len);
-	fbr_fuse_ASSERTF(obj, NULL, "memory failure");
+	assert(obj);
 
 	if (inline_len) {
 		inline_ptr = (char*)obj + size;

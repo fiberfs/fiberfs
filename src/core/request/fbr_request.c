@@ -7,8 +7,8 @@
 
 #include "fiberfs.h"
 #include "fbr_request.h"
+#include "core/fuse/fbr_fuse_callback.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
-#include "core/fuse/fbr_fuse_ops.h"
 
 struct fbr_request *
 fbr_request_alloc(fuse_req_t fuse_req)

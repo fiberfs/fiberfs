@@ -8,8 +8,8 @@
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
+#include "core/fuse/fbr_fuse_callback.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
-#include "core/fuse/fbr_fuse_ops.h"
 
 #include "fbr_test_fs_cmds.h"
 #include "test/fbr_test.h"

@@ -10,8 +10,8 @@
 #include "fiberfs.h"
 #include "fbr_test_fuse_cmds.h"
 #include "core/fuse/fbr_fuse.h"
+#include "core/fuse/fbr_fuse_callback.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
-#include "core/fuse/fbr_fuse_ops.h"
 #include "test/fbr_test.h"
 
 static struct fbr_test_context *_TEST_CTX;

@@ -9,7 +9,6 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
-#include "core/fuse/fbr_fuse_ops.h"
 
 struct fbr_file *
 fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent, char *name,

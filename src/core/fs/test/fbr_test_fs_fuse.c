@@ -10,8 +10,8 @@
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
 #include "core/fuse/fbr_fuse.h"
+#include "core/fuse/fbr_fuse_callback.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
-#include "core/fuse/fbr_fuse_ops.h"
 #include "core/request/fbr_request.h"
 
 #include "fbr_test_fs_cmds.h"
@@ -270,6 +270,9 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 	int ret = fuse_reply_buf(request->fuse_req, NULL, 0);
 	fbr_test_fuse_ERROR(ret, ctx, NULL, "_test_read fuse_reply_buf %d", ret);
 	request->fuse_req = NULL;
+
+	// TODO crash testing
+	//int *i = NULL; *i = 1;
 }
 
 static void
