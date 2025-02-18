@@ -202,7 +202,9 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 void
 fbr_fuse_unmount_noctx(void)
 {
-	fbr_fuse_unmount(_FUSE_CTX);
+	if (_FUSE_CTX) {
+		fbr_fuse_unmount(_FUSE_CTX);
+	}
 }
 
 void
