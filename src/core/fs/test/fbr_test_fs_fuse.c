@@ -242,8 +242,6 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 	(void)off;
 
 	fbr_fuse_reply_buf(request, NULL, 0);
-	// TODO crash testing
-	//int *i = NULL; *i = 1;
 }
 
 static void

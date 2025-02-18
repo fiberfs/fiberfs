@@ -16,6 +16,8 @@
 
 extern void fbr_context_abort(void);
 
+static int _ASSERT_LOOP;
+
 void
 fbr_signal_catcher(int signal, siginfo_t *info, void *ucontext)
 {
@@ -60,6 +62,12 @@ void __fbr_attr_printf(5) __fbr_noreturn
 fbr_do_abort(const char *assertion, const char *function, const char *file, int line,
     const char *fmt, ...)
 {
+	if (_ASSERT_LOOP) {
+		fprintf(stderr, "\nNOTE: Abort loop detected\n");
+		abort();
+	}
+	_ASSERT_LOOP = 1;
+
 	fprintf(stderr, "%s:%d %s(): ", file, line, function);
 
 	if (assertion) {
