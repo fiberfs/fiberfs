@@ -26,7 +26,7 @@ struct fbr_fuse_context {
 	struct fuse_session			*session;
 	const struct fbr_fuse_callbacks		*fuse_callbacks;
 	pthread_t				loop_thread;
-	pthread_mutex_t				unmount_lock;
+	pthread_mutex_t				mount_lock;
 
 	struct fbr_fs				*fs;
 

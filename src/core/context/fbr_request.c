@@ -61,9 +61,11 @@ fbr_request_get(void)
 {
 	struct fbr_request *request = pthread_getspecific(_REQUEST_KEY);
 
-	if (request) {
-		fbr_request_ok(request);
+	if (!request) {
+		return NULL;
 	}
+
+	fbr_request_ok(request);
 
 	return request;
 }

@@ -23,36 +23,36 @@ _filename_inline_len(size_t name_len)
 }
 
 static void
-_filename_init(struct fbr_filename *filename, char *filename_ptr, char *name,
+_filename_init(struct fbr_filename *filename, char *filename_storage, char *name,
     size_t name_len)
 {
 	assert(filename);
 
 	if (!name) {
-		assert_zero(filename_ptr);
+		assert_zero(filename_storage);
 		assert_zero(name);
 		assert_zero(name_len);
 
 		return;
 	}
 	if (!_filename_inline_len(name_len)) {
-		assert_zero(filename_ptr);
+		assert_zero(filename_storage);
 
 		filename->layout = FBR_FILENAME_EMBED;
-		filename_ptr = filename->name_data;
+		filename_storage = filename->name_data;
 	} else {
-		assert(filename_ptr);
+		assert(filename_storage);
 
 		filename->layout = FBR_FILENAME_INLINE;
-		filename->name_ptr = filename_ptr;
+		filename->name_ptr = filename_storage;
 
 	}
 
 	assert(name);
 	assert(name_len <= USHRT_MAX);
 
-	memcpy(filename_ptr, name, name_len);
-	filename_ptr[name_len] = '\0';
+	memcpy(filename_storage, name, name_len);
+	filename_storage[name_len] = '\0';
 	filename->len = name_len;
 }
 
