@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2024-2025 FiberFS
+ * All rights reserved.
  *
  */
 

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2024 FiberFS
+ * Copyright (c) 2024-2025 FiberFS
+ * All rights reserved.
  *
  */
 
@@ -10,6 +11,7 @@
 
 #include "test/fbr_test.h"
 #include "core/fuse/fbr_fuse.h"
+#include "core/fuse/fbr_fuse_callback.h"
 
 #define FBR_TEST_FUSE_CMD(cmd)		fbr_test_cmd_f fbr_test_fuse_cmd_##cmd;
 #define FBR_TEST_FUSE_VAR(var)		fbr_test_var_f fbr_test_fuse_var_##var;
@@ -22,8 +24,6 @@ struct fbr_test_fuse {
 
 	char				stat_str[64];
 };
-
-struct fuse_lowlevel_ops;
 
 int fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 	const struct fbr_fuse_callbacks *fuse_callbacks);

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2024 FiberFS
+ * Copyright (c) 2024-2025 FiberFS
+ * All rights reserved.
  *
  */
 
@@ -29,10 +30,10 @@ struct fbr_inodes {
 	fbr_inode_t				next;
 };
 
-#define fbr_inode_ok(inode)					\
+#define fbr_inodes_ok(inodes)					\
 {								\
-	assert(inode);						\
-	assert((inode)->magic == FBR_INODES_MAGIC);		\
+	assert(inodes);						\
+	assert((inodes)->magic == FBR_INODES_MAGIC);		\
 }
 #define fbr_inode_head_ok(head)					\
 {								\
@@ -78,7 +79,7 @@ static inline struct fbr_inodes *
 _inodes_fs_get(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
-	fbr_inode_ok(fs->inodes);
+	fbr_inodes_ok(fs->inodes);
 
 	return fs->inodes;
 }
@@ -97,7 +98,7 @@ fbr_inode_gen(struct fbr_fs *fs)
 static struct fbr_inodes_head *
 _inodes_get_head(struct fbr_inodes *inodes, struct fbr_file *file)
 {
-	fbr_inode_ok(inodes);
+	fbr_inodes_ok(inodes);
 	fbr_file_ok(file);
 
 	size_t pos = file->inode % _INODES_HEAD_COUNT;
