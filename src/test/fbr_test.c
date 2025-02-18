@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 static struct fbr_test *_TEST;
+static int _ERROR;
 
 static void
 _finish_test(struct fbr_test_context *ctx)
@@ -184,10 +185,11 @@ fbr_test_main(int argc, char **argv)
 	int skip = test.skip;
 	int forked = test.forked;
 	enum fbr_test_verbocity verbosity = test.verbocity;
+	assert_zero(_ERROR);
 
 	fbr_test_run_all_finish(&test);
 
-	if (error) {
+	if (error || _ERROR) {
 		if (forked) {
 			if (verbosity >= FBR_LOG_VERBOSE) {
 				fbr_test_log(NULL, FBR_LOG_NONE, "FAILED");
@@ -289,6 +291,7 @@ void
 fbr_test_run_all_finish(struct fbr_test *test)
 {
 	fbr_test_ok(test);
+	assert_zero(_ERROR);
 
 	_TEST = NULL;
 
@@ -369,4 +372,16 @@ fbr_test_force_error(void)
 		_TEST->stopped = 1;
 		pthread_exit(NULL);
 	}
+}
+
+void
+fbr_finish_ERROR(int cond, const char *msg)
+{
+	if (!cond) {
+		return;
+	}
+
+	printf("ERROR: %s\n", msg);
+
+	_ERROR = 1;
 }
