@@ -30,7 +30,7 @@ struct fbr_fuse_callbacks {
 		struct fuse_forget_data *forgets);
 };
 
-struct fbr_fuse_context *fbr_fuse_get_ctx(fuse_req_t req);
+struct fbr_fuse_context *fbr_fuse_get_ctx(void);
 void fbr_fuse_reply_none(struct fbr_request *request);
 void fbr_fuse_reply_err(struct fbr_request *request, int error);
 void fbr_fuse_reply_buf(struct fbr_request *request, const char *buf, size_t size);
@@ -38,19 +38,5 @@ void fbr_fuse_reply_entry(struct fbr_request *request, const struct fuse_entry_p
 void fbr_fuse_reply_attr(struct fbr_request *request, const struct stat *attr,
 	double attr_timeout);
 void fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_info *fi);
-
-// TODO this all goes away
-void __fbr_attr_printf(6) fbr_fuse_do_abort(fuse_req_t req, const char *assertion,
-	const char *function, const char *file, int line, const char *fmt, ...);
-
-#define fbr_fuse_ASSERTF(cond, req, fmt, ...)					\
-{										\
-	if (__builtin_expect(!(cond), 0)) {					\
-		fbr_fuse_do_abort(req, #cond, __func__, __FILE__, 	\
-			__LINE__, fmt, ##__VA_ARGS__);				\
-	}									\
-}
-#define fbr_fuse_ASSERT(cond, req)						\
-	fbr_fuse_ASSERTF(cond, req, NULL)
 
 #endif /* _FBR_FUSE_CALLBACK_H_INCLUDED_ */

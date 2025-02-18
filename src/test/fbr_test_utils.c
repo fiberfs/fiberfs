@@ -3,14 +3,15 @@
  *
  */
 
-#include "test/fbr_test.h"
-
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <time.h>
+
+#include "test/fbr_test.h"
+#include "core/context/fbr_request.h"
 
 struct fbr_test *
 fbr_test_convert(struct fbr_test_context *ctx)
@@ -99,6 +100,8 @@ fbr_test_do_abort(const char *assertion, const char *function, const char *file,
 	printf("\n");
 
 	fbr_test_force_error();
+
+	fbr_context_abort();
 
 	if (!fbr_test_is_forked()) {
 		printf("FAILED\n");

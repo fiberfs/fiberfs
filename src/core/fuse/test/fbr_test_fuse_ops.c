@@ -206,7 +206,6 @@ _test_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_
 {
 	fbr_request_ok(request);
 	assert(request->fuse_req);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
 		"READDIR ino: %lu size: %zu off: %ld fh: %lu", ino, size, off, fi->fh);
@@ -229,8 +228,7 @@ _test_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_
 
 		dir_size = fuse_add_direntry(request->fuse_req, dir_buf + dir_pos,
 			sizeof(dir_buf) - dir_pos, ".", &st_attr, off);
-		fbr_test_fuse_ASSERT(dir_size <= sizeof(dir_buf), ctx, request->fuse_req,
-			"dir_buf too small .");
+		fbr_ASSERT(dir_size <= sizeof(dir_buf), "dir_buf too small .");
 
 		if (dir_size <= sizeof(dir_buf) - dir_pos) {
 			fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE,
@@ -246,14 +244,12 @@ _test_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_
 			assert(ino == 104);
 			off = 4000;
 			ret = _test_stat(1, &st_attr);
-			fbr_test_fuse_ASSERT(ret, ctx, request->fuse_req,
-				"_test_ops_readdir missing ino 1");
+			fbr_ASSERT(ret, "_test_ops_readdir missing ino 1");
 		}
 
 		dir_size = fuse_add_direntry(request->fuse_req, dir_buf + dir_pos,
 			sizeof(dir_buf) - dir_pos, "..", &st_attr, off);
-		fbr_test_fuse_ASSERT(dir_size <= sizeof(dir_buf), ctx, request->fuse_req,
-			"dir_buf too small ..");
+		fbr_ASSERT(dir_size <= sizeof(dir_buf), "dir_buf too small ..");
 
 		if (dir_size <= sizeof(dir_buf) - dir_pos) {
 			fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE,
@@ -277,8 +273,7 @@ _test_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_
 
 		dir_size = fuse_add_direntry(request->fuse_req, dir_buf + dir_pos,
 			sizeof(dir_buf) - dir_pos, name, &st_attr, dir_ino);
-		fbr_test_fuse_ASSERT(dir_size <= sizeof(dir_buf), ctx, request->fuse_req,
-			"dir_buf too small %s", name);
+		fbr_ASSERT(dir_size <= sizeof(dir_buf), "dir_buf too small %s", name);
 
 		if (dir_size > sizeof(dir_buf) - dir_pos) {
 			break;
@@ -343,7 +338,6 @@ _test_ops_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t o
     struct fuse_file_info *fi)
 {
 	fbr_request_ok(request);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
 		"READ ino: %lu size: %zu off: %ld flags: %d fh: %lu",
@@ -361,7 +355,7 @@ _test_ops_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t o
 	size_t len = strlen(data);
 
 	if (off) {
-		fbr_test_fuse_ASSERT(off <= (off_t)len, ctx, request->fuse_req, "Bad offset");
+		assert(off <= (off_t)len);
 		data += len;
 		len -= off;
 	}

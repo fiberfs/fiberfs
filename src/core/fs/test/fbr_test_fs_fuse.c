@@ -42,11 +42,7 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 static void
 _test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
-	struct fbr_fs *fs = ctx->fs;
-	fbr_fs_ok(fs);
-
+	struct fbr_fs *fs = fbr_request_fs(request);
 	(void)fi;
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "GETATTR ino: %lu", ino);
@@ -71,10 +67,7 @@ _test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 static void
 _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 {
-	fbr_request_ok(request);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
-	struct fbr_fs *fs = ctx->fs;
-	fbr_fs_ok(fs);
+	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "LOOKUP parent: %lu name: %s",
 		parent, name);
@@ -114,10 +107,7 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 static void
 _test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
-	struct fbr_fs *fs = ctx->fs;
-	fbr_fs_ok(fs);
+	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "OPENDIR ino: %lu", ino);
 
@@ -142,9 +132,6 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
     struct fuse_file_info *fi)
 {
 	fbr_request_ok(request);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
-	struct fbr_fs *fs = ctx->fs;
-	fbr_fs_ok(fs);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
 		"READDIR ino: %lu size: %zu off: %ld fh: %lu", ino, size, off, fi->fh);
@@ -161,8 +148,8 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 		fbr_file_ok(file);
 
 		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE,
-			"READDIR filename: '%s' inode: %lu",
-			fbr_filename_get(&file->filename), file->inode);
+			"READDIR filename: '%s' inode: %lu", fbr_filename_get(&file->filename),
+			file->inode);
 	}
 
 	fbr_fuse_reply_buf(request, NULL, 0);
@@ -171,10 +158,7 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 static void
 _test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
-	struct fbr_fs *fs = ctx->fs;
-	fbr_fs_ok(fs);
+	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASEDIR ino: %lu fh: %lu",
 		ino, fi->fh);
@@ -188,14 +172,11 @@ _test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fus
 static void
 _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
-	struct fbr_fs *fs = ctx->fs;
-	fbr_fs_ok(fs);
+	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"OPEN ino: %lu flags: %d fh: %lu direct: %d",
-		ino, fi->flags, fi->fh, fi->direct_io);
+		"OPEN ino: %lu flags: %d fh: %lu direct: %d", ino, fi->flags, fi->fh,
+		fi->direct_io);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -224,16 +205,14 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 }
 
 static void
-_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
+_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
+    struct fuse_file_info *fi)
 {
 	fbr_request_ok(request);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
-	struct fbr_fs *fs = ctx->fs;
-	fbr_fs_ok(fs);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"READ ino: %lu size: %zu off: %ld flags: %d fh: %lu",
-		ino, size, off, fi->flags, fi->fh);
+		"READ ino: %lu size: %zu off: %ld flags: %d fh: %lu", ino, size, off, fi->flags,
+		fi->fh);
 
 	struct fbr_file *file = fbr_fh_file(fi->fh);
 
@@ -247,10 +226,7 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 static void
 _test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
-	struct fbr_fs *fs = ctx->fs;
-	fbr_fs_ok(fs);
+	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASE ino: %lu flags: %d fh: %lu",
 		ino, fi->flags, fi->fh);
@@ -264,10 +240,7 @@ _test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 static void
 _test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup)
 {
-	fbr_request_ok(request);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
-	struct fbr_fs *fs = ctx->fs;
-	fbr_fs_ok(fs);
+	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "FORGET ino: %lu nlookup: %lu",
 		ino, nlookup);
@@ -280,10 +253,7 @@ _test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlook
 static void
 _test_fs_fuse_forget_multi(struct fbr_request *request, size_t count, struct fuse_forget_data *forgets)
 {
-	fbr_request_ok(request);
-	struct fbr_fuse_context *ctx = request->fuse_ctx;
-	struct fbr_fs *fs = ctx->fs;
-	fbr_fs_ok(fs);
+	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "FORGET_MULTI count: %zu", count);
 

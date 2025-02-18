@@ -30,12 +30,6 @@ int fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 void fbr_fuse_test_unmount(struct fbr_test_context *test_ctx);
 struct fbr_fuse_context *fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx);
 struct fbr_test_context *fbr_test_fuse_ctx(void);
-// TODO this goes away
-void __fbr_attr_printf(4) fbr_test_fuse_ERROR(int condition, struct fbr_fuse_context *ctx,
-	void *req, const char *fmt, ...);
-
-#define fbr_test_fuse_ASSERT(cond, ctx, req, fmt, ...)				\
-	fbr_test_fuse_ERROR(!(cond), ctx, req, fmt, ##__VA_ARGS__);
 
 #endif /* FBR_TEST_FUSE_CMD */
 

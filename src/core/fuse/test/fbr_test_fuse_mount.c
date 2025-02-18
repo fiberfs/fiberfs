@@ -102,7 +102,7 @@ fbr_test_fuse_cmd_fuse_test_mount(struct fbr_test_context *ctx, struct fbr_test_
 	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, NULL);
 	fbr_test_ERROR(ret, "Fuse mount failed: %s", cmd->params[0].value);
 
-	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_ctx(NULL);
+	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_ctx();
 	fbr_fuse_context_ok(fuse_ctx);
 	fbr_fuse_context_ok(&ctx->test_fuse->fuse_ctx);
 	assert(fuse_ctx == &ctx->test_fuse->fuse_ctx);
@@ -153,36 +153,4 @@ fbr_test_fuse_ctx(void)
 {
 	fbr_test_context_ok(_TEST_CTX);
 	return _TEST_CTX;
-}
-
-// TODO this goes away
-void __fbr_attr_printf(4)
-fbr_test_fuse_ERROR(int condition, struct fbr_fuse_context *ctx, void *req,
-    const char *fmt, ...)
-{
-	fbr_fuse_context_ok(ctx);
-
-	if (!condition) {
-		return;
-	}
-
-	printf("ERROR: ");
-
-	va_list ap;
-	va_start(ap, fmt);
-	vprintf(fmt, ap);
-	va_end(ap);
-
-	printf("\n");
-
-	fbr_test_force_error();
-
-	fbr_fuse_abort(ctx);
-
-	if (req) {
-		fuse_req_t freq = (fuse_req_t) req;
-		(void)fuse_reply_err(freq, EIO);
-	}
-
-	pthread_exit(NULL);
 }
