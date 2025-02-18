@@ -17,8 +17,14 @@ struct fbr_request {
 	struct fbr_fuse_context			*fuse_ctx;
 };
 
+void fbr_context_request_init(void);
+void fbr_context_request_finish(void);
+
 struct fbr_request *fbr_request_alloc(fuse_req_t fuse_req);
+struct fbr_request *fbr_request_get(void);
 void fbr_request_free(struct fbr_request *request);
+
+void fbr_context_abort(void);
 
 #define fbr_request_ok(request)						\
 {									\

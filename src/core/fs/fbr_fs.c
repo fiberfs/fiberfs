@@ -7,6 +7,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "core/context/fbr_request.h"
 
 /*
  * Each directory has a list of files with references
@@ -35,6 +36,8 @@ fbr_fs_alloc(void)
 	assert(fs->dindex);
 
 	fbr_fs_ok(fs);
+
+	fbr_context_request_init();
 
 	return fs;
 }
@@ -74,6 +77,8 @@ fbr_fs_free(struct fbr_fs *fs)
 	fbr_ZERO(fs);
 
 	free(fs);
+
+	fbr_context_request_finish();
 }
 
 void

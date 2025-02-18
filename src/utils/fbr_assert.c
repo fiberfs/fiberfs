@@ -11,7 +11,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "fiberfs.h"
+#include "fbr_assert.h"
+#include "fbr_utils.h"
+
+extern void fbr_context_abort(void);
 
 void
 fbr_signal_catcher(int signal, siginfo_t *info, void *ucontext)
@@ -75,7 +78,7 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
 
 	_dump_backtrace();
 
-	// TODO get fiber context
+	fbr_context_abort();
 
 	abort();
 }

@@ -104,6 +104,8 @@ fbr_cmd_fs_test_stats(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_FS_TEST_STAT_PRINT(files);
 	_FS_TEST_STAT_PRINT(files_total);
 	_FS_TEST_STAT_PRINT(file_refs);
+	_FS_TEST_STAT_PRINT(requests);
+	_FS_TEST_STAT_PRINT(requests_total);
 }
 
 #define _FS_TEST_STAT(name)							\
@@ -126,3 +128,5 @@ _FS_TEST_STAT(directory_refs)
 _FS_TEST_STAT(files)
 _FS_TEST_STAT(files_total)
 _FS_TEST_STAT(file_refs)
+_FS_TEST_STAT(requests)
+_FS_TEST_STAT(requests_total)

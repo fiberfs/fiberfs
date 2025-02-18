@@ -113,6 +113,8 @@ struct fbr_fs_stats {
 	unsigned long				files;
 	unsigned long				files_total;
 	unsigned long				file_refs;
+	unsigned long				requests;
+	unsigned long				requests_total;
 };
 
 struct fbr_fs {

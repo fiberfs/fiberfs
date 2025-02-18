@@ -175,3 +175,9 @@ main(int argc, char **argv)
 
 	return error;
 }
+
+// Required for fiber asserting
+void
+fbr_context_abort(void)
+{
+}
