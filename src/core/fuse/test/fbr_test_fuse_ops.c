@@ -10,7 +10,7 @@
 
 #include "fiberfs.h"
 #include "fbr_test_fuse_cmds.h"
-#include "core/callback/fbr_callback.h"
+#include "core/context/fbr_callback.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "test/fbr_test.h"

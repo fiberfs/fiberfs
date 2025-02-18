@@ -7,7 +7,7 @@
 #include <sys/types.h>
 
 #include "fiberfs.h"
-#include "core/callback/fbr_callback.h"
+#include "core/context/fbr_callback.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"

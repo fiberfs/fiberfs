@@ -7,7 +7,7 @@
 #include "fiberfs.h"
 #include "fbr_fuse.h"
 #include "fbr_fuse_lowlevel.h"
-#include "core/callback/fbr_callback.h"
+#include "core/context/fbr_callback.h"
 
 #define _fuse_ops_callback(request, name, ...)					\
 {										\
