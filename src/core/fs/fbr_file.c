@@ -80,6 +80,17 @@ _refcounts_sum(struct fbr_file_refcounts *refcounts)
 	assert(refcounts->all >= refcounts->inode);
 }
 
+static void
+_refcounts_sum_copy(struct fbr_file_refcounts *refcounts, struct fbr_file_refcounts *dest)
+{
+	assert(refcounts);
+	assert(dest);
+
+	_refcounts_sum(refcounts);
+
+	memcpy(dest, refcounts, sizeof(*refcounts));
+}
+
 void
 fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file)
 {
@@ -112,11 +123,9 @@ fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file *file,
 	assert(file->refcounts.dindex);
 	file->refcounts.dindex--;
 
-	_refcounts_sum(&file->refcounts);
+	_refcounts_sum_copy(&file->refcounts, refcounts);
 
 	fbr_fs_stat_sub(&fs->stats.file_refs);
-
-	memcpy(refcounts, &file->refcounts, sizeof(*refcounts));
 
 	assert_zero(pthread_mutex_unlock(&file->refcount_lock));
 }
@@ -159,11 +168,9 @@ fbr_file_forget_inode(struct fbr_fs *fs, struct fbr_file *file, fbr_refcount_t r
 	assert(file->refcounts.inode >= refs);
 	file->refcounts.inode -= refs;
 
-	_refcounts_sum(&file->refcounts);
+	_refcounts_sum_copy(&file->refcounts, refcounts);
 
 	fbr_fs_stat_sub_count(&fs->stats.file_refs, refs);
-
-	memcpy(refcounts, &file->refcounts, sizeof(*refcounts));
 
 	assert_zero(pthread_mutex_unlock(&file->refcount_lock));
 }
