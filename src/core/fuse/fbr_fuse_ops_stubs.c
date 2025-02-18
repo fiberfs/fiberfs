@@ -7,7 +7,7 @@
 #include "fbr_fuse.h"
 #include "fbr_fuse_callback.h"
 #include "fbr_fuse_lowlevel.h"
-#include "core/request/fbr_request.h"
+#include "core/context/fbr_request.h"
 
 #define _fuse_ops_callback(request, name, ...)					\
 {										\
@@ -36,8 +36,7 @@ _fuse_finish_none(struct fbr_request *request)
 	fbr_request_ok(request);
 
 	if (request->fuse_req) {
-		fuse_reply_none(request->fuse_req);
-		request->fuse_req = NULL;
+		fbr_fuse_reply_none(request);
 	}
 
 	fbr_request_free(request);
@@ -49,8 +48,7 @@ _fuse_finish_error(struct fbr_request *request, int error)
 	fbr_request_ok(request);
 
 	if (request->fuse_req) {
-		(void)fuse_reply_err(request->fuse_req, error);
-		request->fuse_req = NULL;
+		fbr_fuse_reply_err(request, error);
 	}
 
 	fbr_request_free(request);

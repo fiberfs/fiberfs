@@ -8,7 +8,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fuse_lowlevel.h"
-#include "core/request/fbr_request.h"
+#include "core/context/fbr_request.h"
 
 struct fbr_fuse_callbacks {
 	void (*init)(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);
@@ -31,6 +31,13 @@ struct fbr_fuse_callbacks {
 };
 
 struct fbr_fuse_context *fbr_fuse_get_ctx(fuse_req_t req);
+void fbr_fuse_reply_none(struct fbr_request *request);
+void fbr_fuse_reply_err(struct fbr_request *request, int error);
+void fbr_fuse_reply_buf(struct fbr_request *request, const char *buf, size_t size);
+void fbr_fuse_reply_entry(struct fbr_request *request, const struct fuse_entry_param *entry);
+void fbr_fuse_reply_attr(struct fbr_request *request, const struct stat *attr,
+	double attr_timeout);
+void fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_info *fi);
 
 // TODO this all goes away
 void __fbr_attr_printf(6) fbr_fuse_do_abort(fuse_req_t req, const char *assertion,
