@@ -8,8 +8,16 @@
 #define _FBR_FUSE_CALLBACK_H_INCLUDED_
 
 #include "fiberfs.h"
-#include "fbr_fuse_lowlevel.h"
-#include "core/context/fbr_request.h"
+#include "core/fuse/fbr_fuse.h"
+#include "core/fuse/fbr_fuse_lowlevel.h"
+
+struct fbr_request {
+	unsigned int				magic;
+#define FBR_REQUEST_MAGIC			0xE2719F6A
+
+	fuse_req_t				fuse_req;
+	struct fbr_fuse_context			*fuse_ctx;
+};
 
 struct fbr_fuse_callbacks {
 	void (*init)(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);
@@ -31,7 +39,15 @@ struct fbr_fuse_callbacks {
 		struct fuse_forget_data *forgets);
 };
 
+void fbr_context_request_init(void);
+void fbr_context_request_finish(void);
+
 struct fbr_fuse_context *fbr_fuse_callback_ctx(void);
+
+struct fbr_request *fbr_request_alloc(fuse_req_t fuse_req);
+struct fbr_request *fbr_request_get(void);
+void fbr_request_free(struct fbr_request *request);
+
 void fbr_fuse_reply_none(struct fbr_request *request);
 void fbr_fuse_reply_err(struct fbr_request *request, int error);
 void fbr_fuse_reply_buf(struct fbr_request *request, const char *buf, size_t size);
@@ -39,5 +55,12 @@ void fbr_fuse_reply_entry(struct fbr_request *request, const struct fuse_entry_p
 void fbr_fuse_reply_attr(struct fbr_request *request, const struct stat *attr,
 	double attr_timeout);
 void fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_info *fi);
+
+#define fbr_request_ok(request)						\
+{									\
+	assert(request);						\
+	assert((request)->magic == FBR_REQUEST_MAGIC);			\
+	fbr_fuse_mounted(request->fuse_ctx);				\
+}
 
 #endif /* _FBR_FUSE_CALLBACK_H_INCLUDED_ */

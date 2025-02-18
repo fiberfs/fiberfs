@@ -8,7 +8,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
-#include "core/context/fbr_request.h"
+#include "core/callback/fbr_callback.h"
 
 /*
  * Each directory has a list of files with references

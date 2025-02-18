@@ -8,9 +8,8 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "fbr_request.h"
+#include "fbr_callback.h"
 #include "core/fs/fbr_fs.h"
-#include "core/fuse/fbr_fuse_callback.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 
 static pthread_key_t _REQUEST_KEY;

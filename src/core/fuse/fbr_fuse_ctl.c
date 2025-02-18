@@ -15,7 +15,7 @@
 #include "fbr_fuse_lowlevel.h"
 #include "core/fs/fbr_fs.h"
 
-extern struct fbr_fuse_context *_FUSE_CTX;
+struct fbr_fuse_context *_FUSE_CTX;
 
 void
 fbr_fuse_init(struct fbr_fuse_context *ctx)
@@ -24,6 +24,8 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 
 	fbr_ZERO(ctx);
 	ctx->magic = FBR_FUSE_CTX_MAGIC;
+
+	assert_zero(pthread_mutex_init(&ctx->unmount_lock, NULL));
 
 	ctx->fs = fbr_fs_alloc();
 
@@ -165,7 +167,11 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_context_ok(ctx);
 
+	assert_zero(pthread_mutex_lock(&ctx->unmount_lock));
+	fbr_fuse_context_ok(ctx);
+
 	if (ctx->state == FBR_FUSE_NONE) {
+		assert_zero(pthread_mutex_unlock(&ctx->unmount_lock));
 		return;
 	}
 
@@ -175,21 +181,18 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 	assert(ctx->exited);
 	assert(ctx->session);
 
-	_FUSE_CTX = NULL;
-
 	ctx->state = FBR_FUSE_NONE;
 
 	fbr_fs_free(ctx->fs);
 	ctx->fs = NULL;
+
+	assert_zero(pthread_mutex_unlock(&ctx->unmount_lock));
 }
 
 void
-fbr_fuse_try_unmount(void)
+fbr_fuse_unmount_noctx(void)
 {
-	// TODO consider locking this with unmount
-	if (_FUSE_CTX) {
-		fbr_fuse_unmount(_FUSE_CTX);
-	}
+	fbr_fuse_unmount(_FUSE_CTX);
 }
 
 void
@@ -197,11 +200,13 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
-	assert_zero(_FUSE_CTX);
 
 	if (ctx->running) {
 		assert(ctx->exited);
 	}
+
+	assert(_FUSE_CTX);
+	_FUSE_CTX = NULL;
 
 	if (ctx->session) {
 		fuse_session_destroy(ctx->session);
@@ -212,6 +217,8 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 		free(ctx->path);
 		ctx->path = NULL;
 	}
+
+	assert_zero(pthread_mutex_destroy(&ctx->unmount_lock));
 
 	fbr_ZERO(ctx);
 }

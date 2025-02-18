@@ -5,15 +5,14 @@
  */
 
 #include "fiberfs.h"
-#include "fbr_fuse.h"
-#include "fbr_fuse_callback.h"
-#include "fbr_fuse_lowlevel.h"
-#include "core/context/fbr_request.h"
+#include "fbr_callback.h"
+#include "core/fuse/fbr_fuse.h"
+#include "core/fuse/fbr_fuse_lowlevel.h"
 
 #include <pthread.h>
 #include <stdio.h>
 
-struct fbr_fuse_context *_FUSE_CTX;
+extern struct fbr_fuse_context *_FUSE_CTX;
 
 struct fbr_fuse_context *
 fbr_fuse_callback_ctx(void)

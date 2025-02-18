@@ -7,7 +7,6 @@
 #include "fiberfs.h"
 #include "fbr_test_fuse_cmds.h"
 #include "core/fuse/fbr_fuse.h"
-#include "core/fuse/fbr_fuse_callback.h"
 #include "test/fbr_test.h"
 
 void

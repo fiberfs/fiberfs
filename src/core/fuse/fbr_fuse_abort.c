@@ -7,9 +7,8 @@
  #include "pthread.h"
 
  #include "fiberfs.h"
- #include "fbr_request.h"
- #include "core/fuse/fbr_fuse.h"
- #include "core/fuse/fbr_fuse_callback.h"
+ #include "fbr_fuse.h"
+ #include "core/callback/fbr_callback.h"
 
 void
 fbr_context_abort(void)
@@ -17,7 +16,7 @@ fbr_context_abort(void)
 	struct fbr_request *request = fbr_request_get();
 
 	if (!request) {
-		fbr_fuse_try_unmount();
+		fbr_fuse_unmount_noctx();
 		return;
 	}
 

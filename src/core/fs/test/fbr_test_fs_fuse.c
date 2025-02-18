@@ -8,11 +8,10 @@
 #include <sys/types.h>
 
 #include "fiberfs.h"
-#include "core/context/fbr_request.h"
+#include "core/callback/fbr_callback.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
 #include "core/fuse/fbr_fuse.h"
-#include "core/fuse/fbr_fuse_callback.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 
 #include "fbr_test_fs_cmds.h"

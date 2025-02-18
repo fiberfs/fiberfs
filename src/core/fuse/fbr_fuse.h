@@ -26,6 +26,7 @@ struct fbr_fuse_context {
 	struct fuse_session			*session;
 	const struct fbr_fuse_callbacks		*fuse_callbacks;
 	pthread_t				loop_thread;
+	pthread_mutex_t				unmount_lock;
 
 	struct fbr_fs				*fs;
 
@@ -47,7 +48,7 @@ int fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path);
 void fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);
 void fbr_fuse_abort(struct fbr_fuse_context *ctx);
 void fbr_fuse_unmount(struct fbr_fuse_context *ctx);
-void fbr_fuse_try_unmount(void);
+void fbr_fuse_unmount_noctx(void);
 void fbr_fuse_error(struct fbr_fuse_context *ctx);
 
 #define fbr_fuse_context_ok(ctx)				\

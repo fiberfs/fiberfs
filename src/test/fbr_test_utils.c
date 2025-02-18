@@ -12,7 +12,8 @@
 #include <time.h>
 
 #include "test/fbr_test.h"
-#include "core/context/fbr_request.h"
+
+extern void fbr_context_abort(void);
 
 struct fbr_test *
 fbr_test_convert(struct fbr_test_context *ctx)
