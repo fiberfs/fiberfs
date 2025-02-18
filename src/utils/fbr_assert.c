@@ -51,7 +51,7 @@ _dump_backtrace(void)
 		fbr_libunwind_backtrace();
 	}
 
-	fprintf(stderr, "\nBacktrace (addr2line -e [file] [+address]):\n");
+	fprintf(stderr, "\nBacktrace (addr2line -spfe [file] [+address]):\n");
 
 	void *stack_addrs[16];
 	int len = backtrace(stack_addrs, sizeof(stack_addrs) / sizeof(*stack_addrs));

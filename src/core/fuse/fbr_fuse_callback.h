@@ -30,7 +30,7 @@ struct fbr_fuse_callbacks {
 		struct fuse_forget_data *forgets);
 };
 
-struct fbr_fuse_context *fbr_fuse_get_ctx(void);
+struct fbr_fuse_context *fbr_fuse_callback_ctx(void);
 void fbr_fuse_reply_none(struct fbr_request *request);
 void fbr_fuse_reply_err(struct fbr_request *request, int error);
 void fbr_fuse_reply_buf(struct fbr_request *request, const char *buf, size_t size);

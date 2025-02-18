@@ -183,6 +183,15 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 }
 
 void
+fbr_fuse_try_unmount(void)
+{
+	// TODO consider locking this with unmount
+	if (_FUSE_CTX) {
+		fbr_fuse_unmount(_FUSE_CTX);
+	}
+}
+
+void
 fbr_fuse_free(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_context_ok(ctx);

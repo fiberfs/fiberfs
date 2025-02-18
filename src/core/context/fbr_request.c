@@ -41,7 +41,7 @@ fbr_request_alloc(fuse_req_t fuse_req)
 	request->magic = FBR_REQUEST_MAGIC;
 	request->fuse_req = fuse_req;
 
-	request->fuse_ctx = fbr_fuse_get_ctx();
+	request->fuse_ctx = fbr_fuse_callback_ctx();
 
 	fbr_request_ok(request);
 

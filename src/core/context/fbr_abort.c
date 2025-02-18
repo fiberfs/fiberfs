@@ -16,6 +16,7 @@ fbr_context_abort(void)
 	struct fbr_request *request = fbr_request_get();
 
 	if (!request) {
+		fbr_fuse_try_unmount();
 		return;
 	}
 
