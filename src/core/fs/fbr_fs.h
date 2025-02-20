@@ -13,34 +13,15 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "fbr_path.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "data/queue.h"
 #include "data/tree.h"
 
 #define FBR_INODE_ROOT				FUSE_ROOT_ID
-#define FBR_FILE_EMBED_LEN			16
 
 typedef unsigned long fbr_inode_t;
 typedef unsigned int fbr_refcount_t;
-
-enum FBR_FILENAME_LAYOUT {
-	FBR_FILENAME_NULL = 0,
-	FBR_FILENAME_EMBED,
-	FBR_FILENAME_INLINE,
-	FBR_FILENAME_CONST,
-	FBR_FILENAME_ALLOC,
-	__FBR_FILENAME_LAYOUT_END
-};
-
-struct fbr_filename {
-	unsigned char				layout;
-	unsigned short				len;
-	union {
-		char				name_data[FBR_FILE_EMBED_LEN];
-		char				*name_ptr;
-		const char			*cname_ptr;
-	};
-};
 
 struct fbr_file_refcounts {
 	fbr_refcount_t				dindex;
@@ -52,7 +33,7 @@ struct fbr_file {
 	unsigned int				magic;
 #define FBR_FILE_MAGIC				0x8F97F917
 
-	struct fbr_filename			filename;
+	struct fbr_path				path;
 
 	struct fbr_file_refcounts		refcounts;
 	pthread_mutex_t				refcount_lock;
@@ -86,7 +67,7 @@ struct fbr_directory {
 	unsigned int				magic;
 #define FBR_DIRECTORY_MAGIC			0xADB900B1
 
-	struct fbr_filename			dirname;
+	struct fbr_path				dirname;
 
 	enum fbr_directory_state		state;
 	fbr_refcount_t				refcount;
@@ -151,12 +132,6 @@ void fbr_inode_release(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs);
 void fbr_inodes_free(struct fbr_fs *fs);
 
-void *fbr_inline_alloc(size_t size, size_t filename_offset, char *name, size_t name_len);
-void fbr_filename_init(struct fbr_filename *filename, const char *name);
-const char *fbr_filename_get(const struct fbr_filename *filename);
-int fbr_filename_cmp(const struct fbr_filename *f1, const struct fbr_filename *f2);
-void fbr_filename_free(struct fbr_filename *filename);
-
 struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	char *name, size_t name_len, mode_t mode);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
@@ -182,7 +157,7 @@ void fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);
 void fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_state state);
 void fbr_directory_wait_ok(struct fbr_directory *directory);
-struct fbr_file *fbr_directory_find(struct fbr_directory *directory, const char *filename);
+struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const char *filename);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
 void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);

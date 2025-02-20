@@ -12,20 +12,31 @@
 #include "fbr_fs.h"
 
 struct fbr_file *
-fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent, char *name,
-    size_t name_len, mode_t mode)
+fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent, char *filename,
+    size_t filename_len, mode_t mode)
 {
 	fbr_fs_ok(fs);
-	assert(name);
+	assert(filename);
 
-	struct fbr_file *file = fbr_inline_alloc(sizeof(*file),
-		offsetof(struct fbr_file, filename), name, name_len);
-	assert_zero(strncmp(fbr_filename_get(&file->filename), name, name_len));
+	struct fbr_path_name dirname;
+	if (parent) {
+		fbr_directory_ok(parent);
+		fbr_path_get_dir(&parent->dirname, &dirname);
+		assert(dirname.name);
+	} else {
+		dirname.name = "";
+		dirname.len = 0;
+	}
+
+	struct fbr_file *file = fbr_path_storage_alloc(sizeof(*file),
+		offsetof(struct fbr_file, path), dirname.name, dirname.len, filename,
+		filename_len);
+	assert_dev(file);
 
 	file->magic = FBR_FILE_MAGIC;
 	file->mode = mode;
 
-	if (!name_len) {
+	if (!filename_len) {
 		assert_zero(fs->root);
 		file->inode = FBR_INODE_ROOT;
 	} else {
@@ -38,7 +49,6 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent, char *name,
 	fbr_fs_stat_add(&fs->stats.files_total);
 
 	if (parent) {
-		fbr_directory_ok(parent);
 		fbr_directory_add(fs, parent, file);
 
 		assert(file->parent_inode);
@@ -58,7 +68,7 @@ fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
 	fbr_file_ok(f1);
 	fbr_file_ok(f2);
 
-	return fbr_filename_cmp(&f1->filename, &f2->filename);
+	return fbr_path_cmp_file(&f1->path, &f2->path);
 }
 
 int
@@ -183,7 +193,7 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 
 	assert_zero(pthread_mutex_destroy(&file->refcount_lock));
 
-	fbr_filename_free(&file->filename);
+	fbr_path_free(&file->path);
 
 	fbr_ZERO(file);
 

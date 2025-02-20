@@ -39,15 +39,15 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 }
 
 struct fbr_directory *
-fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len, fbr_inode_t inode)
+fbr_directory_alloc(struct fbr_fs *fs, char *dirname, size_t dirname_len, fbr_inode_t inode)
 {
 	fbr_fs_ok(fs);
-	assert(name);
+	assert(dirname);
 	assert(inode);
 
-	struct fbr_directory *directory = fbr_inline_alloc(sizeof(*directory),
-		offsetof(struct fbr_directory, dirname), name, name_len);
-	assert_zero(strncmp(fbr_filename_get(&directory->dirname), name, name_len));
+	struct fbr_directory *directory = fbr_path_storage_alloc(sizeof(*directory),
+		offsetof(struct fbr_directory, dirname), dirname, dirname_len, "", 0);
+	assert_dev(directory);
 
 	directory->magic = FBR_DIRECTORY_MAGIC;
 	directory->inode = inode;
@@ -59,9 +59,9 @@ fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len, fbr_inode_t 
 
 	if (directory->inode == FBR_INODE_ROOT) {
 		assert_zero(fs->root);
-		assert_zero(name_len);
+		assert_zero(dirname_len);
 	} else {
-		assert(name_len);
+		assert(dirname_len);
 	}
 
 	directory->file = fbr_inode_take(fs, directory->inode);
@@ -149,14 +149,14 @@ fbr_directory_wait_ok(struct fbr_directory *directory)
 }
 
 struct fbr_file *
-fbr_directory_find(struct fbr_directory *directory, const char *filename)
+fbr_directory_find_file(struct fbr_directory *directory, const char *filename)
 {
 	fbr_directory_ok(directory);
 	assert(filename);
 
 	struct fbr_file find;
 	find.magic = FBR_FILE_MAGIC;
-	fbr_filename_init(&find.filename, filename);
+	fbr_path_init_file(&find.path, filename, strlen(filename));
 
 	struct fbr_file *file = RB_FIND(fbr_filename_tree, &directory->filename_tree, &find);
 

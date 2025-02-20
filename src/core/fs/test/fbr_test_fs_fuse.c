@@ -79,7 +79,7 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 		return;
 	}
 
-	struct fbr_file *file = fbr_directory_find(directory, name);
+	struct fbr_file *file = fbr_directory_find_file(directory, name);
 
 	if (!file) {
 		fbr_dindex_release(fs, directory);
@@ -147,8 +147,11 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 	TAILQ_FOREACH(file, &directory->file_list, file_entry) {
 		fbr_file_ok(file);
 
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
 		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE,
-			"READDIR filename: '%s' inode: %lu", fbr_filename_get(&file->filename),
+			"READDIR filename: '%.*s' inode: %lu", (int)filename.len, filename.name,
 			file->inode);
 	}
 

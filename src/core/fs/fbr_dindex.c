@@ -233,7 +233,7 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	assert_zero(pthread_mutex_destroy(&directory->cond_lock));
 
-	fbr_filename_free(&directory->dirname);
+	fbr_path_free(&directory->dirname);
 
 	fbr_ZERO(directory);
 
