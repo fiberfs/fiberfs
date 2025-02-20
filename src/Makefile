@@ -128,7 +128,7 @@ ifeq ($(CC_GCC),true)
 	AFL_CFLAGS+=$(CFLAGS_CLANG)
 endif
 
-.PHONY:		all lib gcov clean
+.PHONY:		all lib clean gcov afl
 
 all:		chttp_client fjson_client fiberfs_test lib
 lib:		libfiberfs.so libchttp.a libfjson.a
