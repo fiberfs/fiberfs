@@ -1,8 +1,8 @@
 fiber_test "FS init"
 
-fs_mkdir_tmp
+sys_mkdir_tmp
 
-fs_test_init_mount $fs_tmpdir
+fs_test_init_mount $sys_tmpdir
 
 fs_test_stats
 

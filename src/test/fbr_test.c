@@ -25,7 +25,7 @@ _finish_test(struct fbr_test_context *ctx)
 
 	fbr_test_ok(test);
 
-	fbr_test_ERROR(ctx->fs != NULL, "fs detected");
+	fbr_test_ERROR(ctx->sys != NULL, "sys detected");
 	fbr_test_ERROR(ctx->test_fuse != NULL, "test_fuse detected");
 	fbr_test_ERROR(ctx->random != NULL, "random detected");
 	fbr_test_ERROR(ctx->var != NULL, "var detected");

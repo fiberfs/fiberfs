@@ -13,10 +13,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "core/fuse/fbr_fuse_lowlevel.h"
 #include "data/queue.h"
 #include "data/tree.h"
 
-#define FBR_INODE_ROOT				1
+#define FBR_INODE_ROOT				FUSE_ROOT_ID
 #define FBR_FILE_EMBED_LEN			16
 
 typedef unsigned long fbr_inode_t;

@@ -29,6 +29,7 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 
 	struct fbr_directory *root = fbr_directory_alloc(fs, "", 0, FBR_INODE_ROOT);
 	fbr_directory_ok(root);
+	assert(root->inode == FBR_INODE_ROOT);
 
 	fbr_fs_set_root(fs, root);
 

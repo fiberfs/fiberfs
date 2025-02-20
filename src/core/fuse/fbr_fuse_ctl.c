@@ -217,7 +217,6 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 		assert(ctx->exited);
 	}
 
-	assert(_FUSE_CTX);
 	_FUSE_CTX = NULL;
 
 	if (ctx->session) {

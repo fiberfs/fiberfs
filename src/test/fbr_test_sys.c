@@ -17,35 +17,35 @@
 #include "sys/fbr_sys.h"
 #include "test/fbr_test.h"
 
-struct _fs_path {
-	unsigned int		magic;
-#define _FS_PATH_MAGIC		0x1E9B84CD
+struct _sys_path {
+	unsigned int			magic;
+#define _SYS_PATH_MAGIC			0x1E9B84CD
 
-	char			path[PATH_MAX + 1];
-	struct _fs_path		*next;
+	char				path[PATH_MAX + 1];
+	struct _sys_path		*next;
 };
 
-struct fbr_test_fs {
-	unsigned int		magic;
-#define _FS_MAGIC		0x0364A7FA
+struct fbr_test_sys {
+	unsigned int			magic;
+#define _SYS_MAGIC			0x0364A7FA
 
-	struct _fs_path		*dirs;
+	struct _sys_path		*dirs;
 
-	char			*tmpdir_str;
+	char				*tmpdir_str;
 };
 
 static void
-_fs_finish(struct fbr_test_context *ctx)
+_sys_finish(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	assert(ctx->fs);
-	assert(ctx->fs->magic == _FS_MAGIC);
+	assert(ctx->sys);
+	assert(ctx->sys->magic == _SYS_MAGIC);
 
-	while (ctx->fs->dirs) {
-		struct _fs_path *entry = ctx->fs->dirs;
-		ctx->fs->dirs = entry->next;
+	while (ctx->sys->dirs) {
+		struct _sys_path *entry = ctx->sys->dirs;
+		ctx->sys->dirs = entry->next;
 
-		assert(entry->magic == _FS_PATH_MAGIC);
+		assert(entry->magic == _SYS_PATH_MAGIC);
 
 		fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "removing tmpdir '%s'", entry->path);
 
@@ -58,40 +58,40 @@ _fs_finish(struct fbr_test_context *ctx)
 		free(entry);
 	}
 
-	assert_zero(ctx->fs->dirs);
+	assert_zero(ctx->sys->dirs);
 
-	fbr_ZERO(ctx->fs);
-	free(ctx->fs);
+	fbr_ZERO(ctx->sys);
+	free(ctx->sys);
 
-	ctx->fs = NULL;
+	ctx->sys = NULL;
 }
 
 static void
-_fs_init(struct fbr_test_context *ctx)
+_sys_init(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 
-	if (!ctx->fs) {
-		struct fbr_test_fs *fs = calloc(1, sizeof(*fs));
-		assert(fs);
+	if (!ctx->sys) {
+		struct fbr_test_sys *sys = calloc(1, sizeof(*sys));
+		assert(sys);
 
-		fs->magic = _FS_MAGIC;
-		fs->tmpdir_str = "";
+		sys->magic = _SYS_MAGIC;
+		sys->tmpdir_str = "";
 
-		ctx->fs = fs;
+		ctx->sys = sys;
 
-		fbr_test_register_finish(ctx, "fs", _fs_finish);
+		fbr_test_register_finish(ctx, "sys", _sys_finish);
 
 		fbr_test_random_seed();
 	}
 
-	assert(ctx->fs->magic == _FS_MAGIC);
+	assert(ctx->sys->magic == _SYS_MAGIC);
 }
 
 char *
 fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot)
 {
-	_fs_init(ctx);
+	_sys_init(ctx);
 
 	if (!tmproot) {
 		tmproot = getenv("TMPDIR");
@@ -101,9 +101,9 @@ fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot)
 		}
 	}
 
-	struct _fs_path *entry = calloc(1, sizeof(*entry));
+	struct _sys_path *entry = calloc(1, sizeof(*entry));
 	assert(entry);
-	entry->magic = _FS_PATH_MAGIC;
+	entry->magic = _SYS_PATH_MAGIC;
 
 	int attempts = 0, exists;
 
@@ -122,16 +122,16 @@ fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot)
 	int ret = mkdir(entry->path, S_IRWXU);
 	fbr_test_ERROR(ret, "mkdir failed %d", ret);
 
-	entry->next = ctx->fs->dirs;
-	ctx->fs->dirs = entry;
+	entry->next = ctx->sys->dirs;
+	ctx->sys->dirs = entry;
 
 	return entry->path;
 }
 
 void
-fbr_test_cmd_fs_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_test_cmd_sys_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	_fs_init(ctx);
+	_sys_init(ctx);
 	fbr_test_cmd_ok(cmd);
 
 	fbr_test_ERROR(cmd->param_count > 1, "Too many parameters");
@@ -144,22 +144,22 @@ fbr_test_cmd_fs_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	char *tmpdir = fbr_test_mkdir_tmp(ctx, tmproot);
 
-	ctx->fs->tmpdir_str = tmpdir;
+	ctx->sys->tmpdir_str = tmpdir;
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "tmpdir '%s'", tmpdir);
 }
 
 char *
-fbr_test_var_fs_tmpdir(struct fbr_test_context *ctx)
+fbr_test_var_sys_tmpdir(struct fbr_test_context *ctx)
 {
-	_fs_init(ctx);
-	assert(ctx->fs->tmpdir_str);
+	_sys_init(ctx);
+	assert(ctx->sys->tmpdir_str);
 
-	return ctx->fs->tmpdir_str;
+	return ctx->sys->tmpdir_str;
 }
 
 static int
-_fs_name_cmp(const void *v1, const void *v2)
+_sys_name_cmp(const void *v1, const void *v2)
 {
 	const char *s1 = *((const char**)v1);
 	const char *s2 = *((const char**)v2);
@@ -168,9 +168,9 @@ _fs_name_cmp(const void *v1, const void *v2)
 }
 
 void
-fbr_test_cmd_fs_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_test_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	_fs_init(ctx);
+	_sys_init(ctx);
 	fbr_test_cmd_ok(cmd);
 	fbr_test_ERROR(cmd->param_count == 0, "Need at least 1 parameter");
 	fbr_test_ERROR(cmd->param_count > 2, "Too many parameters");
@@ -197,7 +197,7 @@ fbr_test_cmd_fs_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct dirent *dentry;
 	while ((dentry = readdir(dir)) != NULL) {
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_ls entry: %s type: %s ino: %lu",
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_ls entry: %s type: %s ino: %lu",
 			dentry->d_name,
 			dentry->d_type == DT_REG ? "file" :
 				dentry->d_type == DT_DIR ? "dir" : "other",
@@ -228,11 +228,11 @@ fbr_test_cmd_fs_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(ret, "closedir failed %d", ret);
 
 	if (!want_result) {
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_ls done %s", filename);
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_ls done %s", filename);
 		return;
 	}
 
-	qsort(names, names_len, sizeof(*names), _fs_name_cmp);
+	qsort(names, names_len, sizeof(*names), _sys_name_cmp);
 
 	size_t result_len = total_len + 1;
 	char *result = malloc(result_len);
@@ -259,18 +259,18 @@ fbr_test_cmd_fs_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_ls result '%s'", result);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_ls result '%s'", result);
 	fbr_test_ERROR(strcmp(result, cmd->params[1].value), "Expected result string failed");
 
 	free(result);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_ls result done %s", filename);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_ls result done %s", filename);
 }
 
 void
-fbr_test_cmd_fs_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_test_cmd_sys_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	_fs_init(ctx);
+	_sys_init(ctx);
 	fbr_test_cmd_ok(cmd);
 	fbr_test_ERROR(cmd->param_count == 0, "Need at least 1 parameter");
 	fbr_test_ERROR(cmd->param_count > 2, "Too many parameters");
@@ -321,14 +321,14 @@ fbr_test_cmd_fs_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	} while (bytes > 0);
 
 	int ret = close(fd);
-	fbr_test_ERROR(ret, "fs_cat close() failed");
+	fbr_test_ERROR(ret, "sys_cat close() failed");
 
 	if (!want_result) {
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_cat done %s", filename);
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_cat done %s", filename);
 		return;
 	}
 
 	fbr_test_ERROR(strcmp(result, cmd->params[1].value), "Expected result string failed");
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_cat result done %s", filename);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_cat result done %s", filename);
 }

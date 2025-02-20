@@ -1,15 +1,15 @@
 fiber_test "Fuse test cat"
 
-fs_mkdir_tmp
+sys_mkdir_tmp
 
-fuse_test_ops_mount $fs_tmpdir
+fuse_test_ops_mount $sys_tmpdir
 
-fs_ls $fs_tmpdir
+sys_ls $sys_tmpdir
 
-set_var2 $fs_tmpdir "/fiber4/fiber42"
-fs_cat $var2 "fiber42"
+set_var2 $sys_tmpdir "/fiber4/fiber42"
+sys_cat $var2 "fiber42"
 
-set_var3 $fs_tmpdir "/fiber2"
-fs_cat $var3 "fiber2"
+set_var3 $sys_tmpdir "/fiber2"
+sys_cat $var3 "fiber2"
 
 fuse_test_ops_unmount
