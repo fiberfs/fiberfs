@@ -78,8 +78,10 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_ASSERT(name.name, "filename is null");
 	fbr_test_ERROR(strcmp(name.name, ""), "root_file not empty")
 
-	fbr_inode_release(fs, root_file);
-	fbr_dindex_release(fs, root);
+	fbr_inode_release(fs, &root_file);
+	fbr_dindex_release(fs, &root);
+	assert_zero_dev(root_file);
+	assert_zero_dev(root);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_init mounted: %s", cmd->params[0].value);
 }

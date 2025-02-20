@@ -241,7 +241,8 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 		}
 	}
 
-	fbr_inode_release(fs, directory->file);
+	fbr_inode_release(fs, &directory->file);
+	assert_zero_dev(directory->file);
 
 	assert(TAILQ_EMPTY(&directory->file_list));
 	assert(RB_EMPTY(&directory->filename_tree));
@@ -296,10 +297,14 @@ fbr_dindex_forget(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_re
 }
 
 void
-fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory)
+fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
+	assert(*directory_ref);
+
+	struct fbr_directory *directory = *directory_ref;
 	fbr_directory_ok(directory);
+	*directory_ref = NULL;
 
 	struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, directory);
 
@@ -327,7 +332,7 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 void
-fbr_dindex_free(struct fbr_fs *fs)
+fbr_dindex_free_all(struct fbr_fs *fs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 

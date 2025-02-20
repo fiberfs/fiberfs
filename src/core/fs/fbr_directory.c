@@ -36,7 +36,8 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 
 	fbr_fs_set_root(fs, root);
 
-	fbr_inode_release(fs, root_file);
+	fbr_inode_release(fs, &root_file);
+	assert_zero_dev(root_file);
 
 	return root;
 }

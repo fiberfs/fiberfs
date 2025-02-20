@@ -63,7 +63,8 @@ _test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	struct stat st;
 	fbr_file_attr(file, &st);
 
-	fbr_inode_release(fs, file);
+	fbr_inode_release(fs, &file);
+	assert_zero_dev(file);
 
 	fbr_fuse_reply_attr(request, &st, _TEST_FS_FUSE_TTL_SEC);
 }
@@ -86,7 +87,8 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	struct fbr_path_name parent_dirname;
 	fbr_path_get_dir(&parent_file->path, &parent_dirname);
 
-	fbr_inode_release(fs, parent_file);
+	fbr_inode_release(fs, &parent_file);
+	assert_zero_dev(parent_file);
 
 	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname);
 
@@ -98,7 +100,8 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	struct fbr_file *file = fbr_directory_find_file(directory, name);
 
 	if (!file) {
-		fbr_dindex_release(fs, directory);
+		fbr_dindex_release(fs, &directory);
+		assert_zero_dev(directory);
 
 		fbr_fuse_reply_err(request, ENOENT);
 		return;
@@ -115,7 +118,8 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	fbr_file_attr(file, &entry.attr);
 
 	fbr_inode_add(fs, file);
-	fbr_dindex_release(fs, directory);
+	fbr_dindex_release(fs, &directory);
+	assert_zero_dev(directory);
 
 	fbr_fuse_reply_entry(request, &entry);
 }
@@ -137,7 +141,8 @@ _test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	struct fbr_path_name dirname;
 	fbr_path_get_dir(&file->path, &dirname);
 
-	fbr_inode_release(fs, file);
+	fbr_inode_release(fs, &file);
+	assert_zero_dev(file);
 
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname);
 
@@ -195,7 +200,8 @@ _test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fus
 		ino, fi->fh);
 
 	struct fbr_directory *directory = fbr_fh_directory(fi->fh);
-	fbr_dindex_release(fs, directory);
+	fbr_dindex_release(fs, &directory);
+	assert_zero_dev(directory);
 
 	fbr_fuse_reply_err(request, 0);
 }
@@ -215,12 +221,14 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 		fbr_fuse_reply_err(request, ENOENT);
 		return;
 	} else if (!S_ISREG(file->mode)) {
-		fbr_inode_release(fs, file);
+		fbr_inode_release(fs, &file);
+		assert_zero_dev(file);
 
 		fbr_fuse_reply_err(request, EISDIR);
 		return;
 	} else if (fi->flags & O_WRONLY || fi->flags & O_RDWR) {
-		fbr_inode_release(fs, file);
+		fbr_inode_release(fs, &file);
+		assert_zero_dev(file);
 
 		fbr_fuse_reply_err(request, EROFS);
 		return;
@@ -263,7 +271,8 @@ _test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 		ino, fi->flags, fi->fh);
 
 	struct fbr_file *file = fbr_fh_file(fi->fh);
-	fbr_inode_release(fs, file);
+	fbr_inode_release(fs, &file);
+	assert_zero_dev(file);
 
 	fbr_fuse_reply_err(request, 0);
 }

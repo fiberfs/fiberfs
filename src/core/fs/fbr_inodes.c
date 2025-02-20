@@ -169,10 +169,14 @@ fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode)
 
 // fuse_open, called after taking a inode_ref, should always have a lookup
 void
-fbr_inode_release(struct fbr_fs *fs, struct fbr_file *file)
+fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref)
 {
 	struct fbr_inodes *inodes = _inodes_fs_get(fs);
+	assert(file_ref);
+
+	struct fbr_file *file = *file_ref;
 	fbr_file_ok(file);
+	*file_ref = NULL;
 
         struct fbr_inodes_head *head = _inodes_get_head(inodes, file);
 
@@ -234,7 +238,7 @@ fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 }
 
 void
-fbr_inodes_free(struct fbr_fs *fs)
+fbr_inodes_free_all(struct fbr_fs *fs)
 {
 	struct fbr_inodes *inodes = _inodes_fs_get(fs);
 

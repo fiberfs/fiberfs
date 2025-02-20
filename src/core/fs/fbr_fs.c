@@ -59,8 +59,8 @@ fbr_fs_release_root(struct fbr_fs *fs)
 	fbr_fs_ok(fs);
 	fbr_directory_ok(fs->root);
 
-	fbr_dindex_release(fs, fs->root);
-	fs->root = NULL;
+	fbr_dindex_release(fs, &fs->root);
+	assert_zero_dev(fs->root);
 }
 
 void
@@ -72,8 +72,8 @@ fbr_fs_free(struct fbr_fs *fs)
 		fbr_fs_release_root(fs);
 	}
 
-	fbr_dindex_free(fs);
-	fbr_inodes_free(fs);
+	fbr_dindex_free_all(fs);
+	fbr_inodes_free_all(fs);
 
 	fbr_ZERO(fs);
 

@@ -130,9 +130,9 @@ void fbr_inodes_alloc(struct fbr_fs *fs);
 unsigned long fbr_inode_gen(struct fbr_fs *fs);
 void fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file);
 struct fbr_file *fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode);
-void fbr_inode_release(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref);
 void fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs);
-void fbr_inodes_free(struct fbr_fs *fs);
+void fbr_inodes_free_all(struct fbr_fs *fs);
 
 struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	const struct fbr_path_name *filename, mode_t mode);
@@ -166,8 +166,8 @@ void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname);
 void fbr_dindex_forget(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	fbr_refcount_t refs);
-void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory);
-void fbr_dindex_free(struct fbr_fs *fs);
+void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
+void fbr_dindex_free_all(struct fbr_fs *fs);
 
 #define fbr_fs_ok(fs)						\
 {								\
