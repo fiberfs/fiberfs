@@ -27,8 +27,6 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 
 	assert_zero(pthread_mutex_init(&ctx->mount_lock, NULL));
 
-	ctx->fs = fbr_fs_alloc();
-
 	fbr_fuse_context_ok(ctx);
 }
 
@@ -110,6 +108,9 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	}
 
 	ctx->state = FBR_FUSE_MOUNTED;
+
+	ctx->fs = fbr_fs_alloc();
+	fbr_fs_ok(ctx->fs);
 
 	assert_zero(_FUSE_CTX);
 	_FUSE_CTX = ctx;
@@ -212,6 +213,7 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
+	assert_zero(ctx->fs);
 
 	if (ctx->running) {
 		assert(ctx->exited);
