@@ -56,6 +56,9 @@ _test_path_print_file(struct fbr_test_context *ctx, struct fbr_file *file,
 	fbr_test_context_ok(ctx);
 	fbr_file_ok(file);
 
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "file layout: %d",
+		file->path.layout.value);
+
 	struct fbr_path_name dirname, filename, fullpath;
 
 	fbr_path_get_dir(&file->path, &dirname);
@@ -81,6 +84,9 @@ _test_path_print_directory(struct fbr_test_context *ctx, struct fbr_directory *d
 {
 	fbr_test_context_ok(ctx);
 	fbr_directory_ok(directory);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory layout: %d",
+		directory->dirname.layout.value);
 
 	struct fbr_path_name dirname, filename, fullpath;
 
