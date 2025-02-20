@@ -33,8 +33,8 @@ fbr_fs_alloc(void)
 	fbr_inodes_alloc(fs);
 	fbr_dindex_alloc(fs);
 
-	assert(fs->inodes);
-	assert(fs->dindex);
+	assert_dev(fs->inodes);
+	assert_dev(fs->dindex);
 
 	fbr_fs_ok(fs);
 

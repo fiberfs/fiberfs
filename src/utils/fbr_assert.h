@@ -35,4 +35,12 @@ void fbr_libunwind_backtrace(void);
 	}									\
 }
 
+#ifdef FBR_NO_ASSERT_DEV
+#define assert_dev(expr)							\
+	//assert_dev(expr)
+#else
+#define assert_dev(expr)							\
+	assert(expr)
+#endif
+
 #endif /* _FBR_ASSERT_H_INCLUDED_ */
