@@ -142,7 +142,7 @@ void fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 	fbr_test_finish_f *func);
 void fbr_test_run_finish(struct fbr_test_context *ctx, const char *name);
 void fbr_test_run_all_finish(struct fbr_test *test);
-void fbr_test_abort_finish(void);
+void fbr_test_context_abort(void);
 int fbr_test_is_forked(void);
 int fbr_test_is_thread(void);
 void fbr_test_force_error(void);

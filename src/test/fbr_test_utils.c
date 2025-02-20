@@ -109,7 +109,7 @@ fbr_test_do_abort(const char *assertion, const char *function, const char *file,
 		printf("FAILED\n");
 	}
 
-	fbr_test_abort_finish();
+	fbr_test_context_abort();
 
 	exit(1);
 }

@@ -70,4 +70,4 @@ void fbr_path_name_init(struct fbr_path_name *name, const char *s);
 int fbr_path_name_cmp(struct fbr_path_name *name, const char *s);
 void fbr_path_free(struct fbr_path *path);
 
- #endif /* _FBR_PATH_H_INCLUDED_ */
+#endif /* _FBR_PATH_H_INCLUDED_ */

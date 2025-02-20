@@ -4,7 +4,7 @@
  *
  */
 
- #include <stdlib.h>
+#include <stdlib.h>
 
 #include "fiberfs.h"
 #include "fbr_fs.h"

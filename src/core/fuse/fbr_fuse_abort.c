@@ -4,11 +4,13 @@
  *
  */
 
- #include "pthread.h"
+#include "pthread.h"
 
- #include "fiberfs.h"
- #include "fbr_fuse.h"
- #include "core/context/fbr_callback.h"
+#include "fiberfs.h"
+#include "fbr_fuse.h"
+#include "core/context/fbr_callback.h"
+
+extern void fbr_test_context_abort(void);
 
 void
 fbr_context_abort(void)
@@ -17,7 +19,7 @@ fbr_context_abort(void)
 
 	if (!request) {
 		fbr_fuse_unmount_noctx();
-		// TODO abort test here
+		fbr_test_context_abort();
 		return;
 	}
 

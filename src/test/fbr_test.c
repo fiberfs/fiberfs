@@ -319,13 +319,11 @@ fbr_test_run_all_finish(struct fbr_test *test)
 }
 
 void
-fbr_test_abort_finish(void)
+fbr_test_context_abort(void)
 {
 	if (!_TEST) {
 		return;
 	}
-
-	fbr_test_ok(_TEST);
 
 	fbr_test_run_all_finish(_TEST);
 }
