@@ -143,7 +143,8 @@ _dindex_get_dirhead(struct fbr_dindex *dindex, struct fbr_directory *directory)
         unsigned long hash = 5381;
         int c;
 
-        while ((c = *dirname.name++)) {
+        for (size_t i = 0; i < dirname.len; i++) {
+		c = dirname.name[i];
                 hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
         }
 

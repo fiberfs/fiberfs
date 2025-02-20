@@ -14,7 +14,7 @@
 #define FBR_PATH_PTR_LEN_SIZE			((sizeof(short) * 8) - FBR_PATH_LAYOUT_LEN)
 #define FBR_PATH_PTR_LEN_MAX			(1 << FBR_PATH_PTR_LEN_SIZE)
 
-enum FBR_PATH_LAYOUT {
+enum fbr_path_layout {
 	FBR_PATH_NULL = 0,
 	FBR_PATH_EMBED_DIR,
 	FBR_PATH_EMBED_FILE,
@@ -22,7 +22,7 @@ enum FBR_PATH_LAYOUT {
 	__FBR_PATH_LAYOUT_END
 };
 
-struct fbr_path_layout {
+struct _fbr_path_layout {
 	unsigned int				value:FBR_PATH_LAYOUT_LEN;
 };
 
@@ -44,7 +44,7 @@ struct fbr_path_embed {
 
 struct fbr_path {
 	union {
-		struct fbr_path_layout		layout;
+		struct _fbr_path_layout		layout;
 		struct fbr_path_embed		embed;
 		struct fbr_path_ptr		ptr;
 	};

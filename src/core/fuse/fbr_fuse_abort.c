@@ -17,6 +17,7 @@ fbr_context_abort(void)
 
 	if (!request) {
 		fbr_fuse_unmount_noctx();
+		// TODO abort test here
 		return;
 	}
 

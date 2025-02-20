@@ -50,58 +50,30 @@ fbr_cmd_fs_test_path_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 }
 
 static void
-_test_path_print_file(struct fbr_test_context *ctx, struct fbr_file *file,
-    char *d, char *f, char *fp)
+_test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char *name,
+	enum fbr_path_layout layout, char *d, char *f, char *fp)
 {
 	fbr_test_context_ok(ctx);
-	fbr_file_ok(file);
+	assert(path);
+	assert(name);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "file layout: %d",
-		file->path.layout.value);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s layout: %d", name, path->layout.value);
 
 	struct fbr_path_name dirname, filename, fullpath;
 
-	fbr_path_get_dir(&file->path, &dirname);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "file dirname: '%.*s':%zu",
+	fbr_path_get_dir(path, &dirname);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s dirname: '%.*s':%zu", name,
 		(int)dirname.len, dirname.name, dirname.len);
 
-	fbr_path_get_file(&file->path, &filename);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "file filename: '%.*s':%zu",
+	fbr_path_get_file(path, &filename);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s filename: '%.*s':%zu", name,
 		(int)filename.len, filename.name, filename.len);
 
-	fbr_path_get_full(&file->path, &fullpath);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "file fullpath: '%.*s':%zu",
+	fbr_path_get_full(path, &fullpath);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullpath: '%.*s':%zu", name,
 		(int)fullpath.len, fullpath.name, fullpath.len);
 
-	fbr_test_ERROR(fbr_path_name_cmp(&dirname, d), "dirname isnt '%s'", d);
-	fbr_test_ERROR(fbr_path_name_cmp(&filename, f), "filename isnt '%s'", d);
-	fbr_test_ERROR(fbr_path_name_cmp(&fullpath, fp), "fullpath isnt '%s'", fp);
-}
-
-static void
-_test_path_print_directory(struct fbr_test_context *ctx, struct fbr_directory *directory,
-    char *d, char *f, char *fp)
-{
-	fbr_test_context_ok(ctx);
-	fbr_directory_ok(directory);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory layout: %d",
-		directory->dirname.layout.value);
-
-	struct fbr_path_name dirname, filename, fullpath;
-
-	fbr_path_get_dir(&directory->dirname, &dirname);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory dirname: '%.*s':%zu",
-		(int)dirname.len, dirname.name, dirname.len);
-
-	fbr_path_get_file(&directory->dirname, &filename);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory filename: '%.*s':%zu",
-		(int)filename.len, filename.name, filename.len);
-
-	fbr_path_get_full(&directory->dirname, &fullpath);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory fullpath: '%.*s':%zu",
-		(int)fullpath.len, fullpath.name, fullpath.len);
-
+	fbr_test_ASSERT(path->layout.value == layout, "layout isnt %d", layout);
 	fbr_test_ERROR(fbr_path_name_cmp(&dirname, d), "dirname isnt '%s'", d);
 	fbr_test_ERROR(fbr_path_name_cmp(&filename, f), "filename isnt '%s'", d);
 	fbr_test_ERROR(fbr_path_name_cmp(&fullpath, fp), "fullpath isnt '%s'", fp);
@@ -124,16 +96,25 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_file *file = directory->file;
 	fbr_file_ok(file);
 
-	_test_path_print_file(ctx, file, "", "", "");
-	_test_path_print_directory(ctx, directory, "", "", "");
+	enum fbr_path_layout layout = FBR_PATH_EMBED_DIR;
+
+	_test_path_print_path(ctx, &file->path, "file", layout, "", "", "");
+	_test_path_print_path(ctx, &directory->dirname, "dir", layout, "", "", "");
 
 	char sdir[PATH_MAX], sfull[PATH_MAX];
 	sdir[0] = '\0';
 	sfull[0] = '\0';
 
+	fbr_inode_t inode = file->inode;
+
 	for (size_t i = 0; i < cmd->param_count; i++) {
 		char *name = cmd->params[i].value;
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** %zu '%s'", i + 1, name);
+
+		layout = FBR_PATH_PTR;
+		if (!i && strlen(name) <= 15) {
+			layout = FBR_PATH_EMBED_FILE;
+		}
 
 		strncpy(sfull, sdir, sizeof(sfull));
 		if (i) {
@@ -146,23 +127,66 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		file = fbr_file_alloc(fs, directory, &filename, 0);
 
-		_test_path_print_file(ctx, file, sdir, name, sfull);
+		_test_path_print_path(ctx, &file->path, "file", layout, sdir, name, sfull);
+
+		struct fbr_file *f2 = fbr_directory_find_file(directory, name);
+		assert(f2 == file);
 
 		// lookup
 		fbr_inode_add(fs, file);
+
+		inode = file->inode;
 
 		struct fbr_path_name dirname;
 		fbr_path_get_full(&file->path, &dirname);
 
 		directory = fbr_directory_alloc(fs, &dirname, file->inode);
 
-		_test_path_print_directory(ctx, directory, sfull, "", sfull);
+		if (strlen(sfull) <= 15) {
+			layout = FBR_PATH_EMBED_DIR;
+		}
+
+		_test_path_print_path(ctx, &directory->dirname, "dir", layout, sfull, "", sfull);
 
 		if (i) {
 			strncat(sdir, "/", sizeof(sdir) - strlen(sdir) - 1);
 		}
 		strncat(sdir, name, sizeof(sdir) - strlen(sdir) - 1);
 	}
+
+	size_t max = 0;
+
+	while (inode > FBR_INODE_ROOT) {
+		max++;
+		fbr_test_ERROR(max > cmd->param_count, "too many inode loops");
+
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** inode=%lu", inode);
+
+		file = fbr_inode_take(fs, inode);
+		fbr_file_ok(file);
+
+		fbr_inode_t next = file->parent_inode;
+
+		struct fbr_path_name dirname;
+		fbr_path_get_full(&file->path, &dirname);
+
+		directory = fbr_dindex_take(fs, &dirname);
+		fbr_directory_ok(directory);
+
+		fbr_dindex_forget(fs, &dirname, 2);
+
+		fbr_inode_forget(fs, inode, 2);
+
+		inode = next;
+	}
+
+	fbr_fs_release_root(fs);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Files: %zu", fs->stats.files);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Directories: %zu", fs->stats.directories);
+
+	fbr_test_ERROR(fs->stats.files, "Files detected");
+	fbr_test_ERROR(fs->stats.directories, "Directories detected");
 
 	fbr_fs_free(fs);
 }
