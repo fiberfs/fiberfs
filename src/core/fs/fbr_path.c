@@ -5,81 +5,91 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "fiberfs.h"
 #include "fbr_path.h"
 
+static const struct fbr_path_name _PATH_NAME_EMPTY = {0, ""};
+const struct fbr_path_name *PATH_NAME_EMPTY = &_PATH_NAME_EMPTY;
+
 static size_t
-_path_storage_len(size_t dirname_len, size_t filename_len)
+_path_storage_len(const struct fbr_path_name *dirname, const struct fbr_path_name *filename)
 {
+	assert(dirname);
+	assert(filename);
+
 	struct fbr_path *path;
 
-	if (dirname_len <= sizeof(path->embed.data) && !filename_len) {
+	if (dirname->len <= sizeof(path->embed.data) && !filename->len) {
 		return 0;
-	} else if (!dirname_len && filename_len <= sizeof(path->embed.data)) {
+	} else if (!dirname->len && filename->len <= sizeof(path->embed.data)) {
 		return 0;
 	}
 
-	return dirname_len + 1 + filename_len;
+	return dirname->len + 1 + filename->len;
 }
 
 static void
-_path_init(struct fbr_path *path, char *name_storage, const char *dirname,
-    size_t dirname_len, const char *filename, size_t filename_len)
+_path_init(struct fbr_path *path, char *name_storage, const struct fbr_path_name *dirname,
+	const struct fbr_path_name *filename)
 {
 	assert(path);
 	assert(path->layout.value == FBR_PATH_NULL);
-	assert(dirname);
-	assert(dirname_len <= FBR_PATH_PTR_LEN_MAX);
-	assert(filename);
-	assert(filename_len <= FBR_PATH_PTR_LEN_MAX);
+	assert(dirname && dirname->name);
+	assert(dirname->len <= FBR_PATH_PTR_LEN_MAX);
+	assert(filename && filename->name);
+	assert(filename->len <= FBR_PATH_PTR_LEN_MAX);
 
-	if (!_path_storage_len(dirname_len, filename_len)) {
+	if (!_path_storage_len(dirname, filename)) {
 		assert_zero(name_storage);
 		name_storage = path->embed.data;
 
-		if (!filename_len) {
-			assert_dev(dirname_len <= FBR_PATH_EMBED_LEN_MAX);
+		if (!filename->len) {
+			assert_dev(dirname->len <= FBR_PATH_EMBED_LEN_MAX);
 
 			path->layout.value = FBR_PATH_EMBED_DIR;
-			path->embed.len = dirname_len;
+			path->embed.len = dirname->len;
 		} else {
-			assert_zero(dirname_len);
-			assert_dev(filename_len <= FBR_PATH_EMBED_LEN_MAX);
+			assert_zero(dirname->len);
+			assert_dev(filename->len <= FBR_PATH_EMBED_LEN_MAX);
 
 			path->layout.value = FBR_PATH_EMBED_FILE;
-			path->embed.len = filename_len;
+			path->embed.len = filename->len;
 		}
 	} else {
 		assert(name_storage);
 
 		path->layout.value = FBR_PATH_PTR;
 		path->ptr.value = name_storage;
-		path->ptr.dir_len = dirname_len;
-		path->ptr.file_len = filename_len;
+		path->ptr.dir_len = dirname->len;
+		path->ptr.file_len = filename->len;
 	}
 
 	int extra_slash = 0;
 
-	if (dirname_len) {
-		memcpy(name_storage, dirname, dirname_len);
+	if (dirname->len) {
+		memcpy(name_storage, dirname->name, dirname->len);
 
-		if (filename_len) {
-			name_storage[dirname_len] = '/';
+		if (filename->len) {
+			name_storage[dirname->len] = '/';
 			extra_slash = 1;
 		}
 	}
 
-	if (filename_len) {
-		memcpy(name_storage + dirname_len + extra_slash, filename, filename_len);
+	if (filename->len) {
+		memcpy(name_storage + dirname->len + extra_slash, filename->name, filename->len);
 	}
 }
 
 void *
-fbr_path_storage_alloc(size_t size, size_t path_offset, const char *dirname, size_t dirname_len,
-    const char *filename, size_t filename_len)
+fbr_path_storage_alloc(size_t size, size_t path_offset, const struct fbr_path_name *dirname,
+    const struct fbr_path_name *filename)
 {
-	size_t storage_len = _path_storage_len(dirname_len, filename_len);
+	assert(dirname);
+	assert(filename);
+
+	size_t storage_len = _path_storage_len(dirname, filename);
 	char *storage_ptr = NULL;
 
 	void *obj = calloc(1, size + storage_len);
@@ -91,7 +101,7 @@ fbr_path_storage_alloc(size_t size, size_t path_offset, const char *dirname, siz
 
 	struct fbr_path *path = (struct fbr_path*)((char*)obj + path_offset);
 
-	_path_init(path, storage_ptr, dirname, dirname_len, filename, filename_len);
+	_path_init(path, storage_ptr, dirname, filename);
 
 	return obj;
 }
@@ -256,6 +266,16 @@ fbr_path_cmp_file(const struct fbr_path *file1, const struct fbr_path *file2)
 	assert(filename1.name && filename2.name);
 
 	return strncmp(filename1.name, filename2.name, filename1.len);
+}
+
+void
+fbr_path_name_init(struct fbr_path_name *name, const char *s)
+{
+	assert(name);
+	assert(s);
+
+	name->len = strlen(s);
+	name->name = s;
 }
 
 void

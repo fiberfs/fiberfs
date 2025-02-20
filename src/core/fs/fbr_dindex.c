@@ -179,7 +179,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 struct fbr_directory *
-fbr_dindex_take(struct fbr_fs *fs, struct fbr_path_name *dirname)
+fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 	assert(dirname);
@@ -208,6 +208,8 @@ fbr_dindex_take(struct fbr_fs *fs, struct fbr_path_name *dirname)
 	fbr_fs_stat_add(&fs->stats.directory_refs);
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
+
+	// TODO directory state FBR_DIRSTATE_LOADING?
 
 	return directory;
 }
@@ -252,7 +254,7 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 void
-fbr_dindex_forget(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_refcount_t refs)
+fbr_dindex_forget(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_refcount_t refs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 	assert(dirname);

@@ -16,8 +16,8 @@
 
 enum FBR_PATH_LAYOUT {
 	FBR_PATH_NULL = 0,
-	FBR_PATH_EMBED_FILE,
 	FBR_PATH_EMBED_DIR,
+	FBR_PATH_EMBED_FILE,
 	FBR_PATH_PTR,
 	__FBR_PATH_LAYOUT_END
 };
@@ -55,8 +55,10 @@ struct fbr_path_name {
 	const char				*name;
 };
 
-void *fbr_path_storage_alloc(size_t size, size_t path_offset, const char *dirname,
-	size_t dirname_len, const char *filename, size_t filename_len);
+extern const struct fbr_path_name *PATH_NAME_EMPTY;
+
+void *fbr_path_storage_alloc(size_t size, size_t path_offset, const struct fbr_path_name *dirname,
+	const struct fbr_path_name *filename);
 void fbr_path_init_dir(struct fbr_path *path, const char *dirname, size_t dirname_len);
 void fbr_path_init_file(struct fbr_path *path, const char *filename, size_t filename_len);
 void fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir);
@@ -64,6 +66,7 @@ void fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result
 void fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result);
 int fbr_path_cmp_dir(const struct fbr_path *dir1, const struct fbr_path *dir2);
 int fbr_path_cmp_file(const struct fbr_path *file1, const struct fbr_path *file2);
+void fbr_path_name_init(struct fbr_path_name *name, const char *s);
 void fbr_path_free(struct fbr_path *path);
 
  #endif /* _FBR_PATH_H_INCLUDED_ */

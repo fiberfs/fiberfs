@@ -20,8 +20,6 @@
 
 #define FBR_INODE_ROOT				FUSE_ROOT_ID
 
-extern struct fbr_path_name			*FBR_DIRNAME_ROOT;
-
 typedef unsigned long fbr_inode_t;
 typedef unsigned int fbr_refcount_t;
 
@@ -116,6 +114,8 @@ struct fbr_fs {
 
 RB_HEAD(fbr_dindex_tree, fbr_directory);
 
+extern const struct fbr_path_name *FBR_DIRNAME_ROOT;
+
 struct fbr_fs *fbr_fs_alloc(void);
 void fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root);
 void fbr_fs_release_root(struct fbr_fs *fs);
@@ -135,7 +135,7 @@ void fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 void fbr_inodes_free(struct fbr_fs *fs);
 
 struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
-	char *name, size_t name_len, mode_t mode);
+	const struct fbr_path_name *filename, mode_t mode);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 int fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 void fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file);
@@ -152,10 +152,10 @@ void fbr_file_attr(struct fbr_file *file, struct stat *st);
 RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
 struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
-struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, char *name, size_t name_len,
+struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	fbr_inode_t inode);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
-void fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory,
+void fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);
 void fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_state state);
 void fbr_directory_wait_ok(struct fbr_directory *directory);
@@ -163,8 +163,9 @@ struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const 
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
 void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
-struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, struct fbr_path_name *dirname);
-void fbr_dindex_forget(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_refcount_t refs);
+struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname);
+void fbr_dindex_forget(struct fbr_fs *fs, const struct fbr_path_name *dirname,
+	fbr_refcount_t refs);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_dindex_free(struct fbr_fs *fs);
 

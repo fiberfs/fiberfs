@@ -12,8 +12,8 @@
 #include "data/tree.h"
 #include "core/fuse/fbr_fuse.h"
 
-static struct fbr_path_name _FBR_DIRNAME_ROOT = {0, ""};
-struct fbr_path_name *FBR_DIRNAME_ROOT = &_FBR_DIRNAME_ROOT;
+static const struct fbr_path_name _FBR_DIRNAME_ROOT = {0, ""};
+const struct fbr_path_name *FBR_DIRNAME_ROOT = &_FBR_DIRNAME_ROOT;
 
 RB_GENERATE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
@@ -24,13 +24,13 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 	assert_zero(fs->root);
 
 	// TODO mode needs to be configurable
-	struct fbr_file *root_file = fbr_file_alloc(fs, NULL, "", 0, S_IFDIR | 0755);
+	struct fbr_file *root_file = fbr_file_alloc(fs, NULL, PATH_NAME_EMPTY, S_IFDIR | 0755);
 	fbr_file_ok(root_file);
 	assert(root_file->inode == FBR_INODE_ROOT);
 
 	fbr_inode_add(fs, root_file);
 
-	struct fbr_directory *root = fbr_directory_alloc(fs, "", 0, FBR_INODE_ROOT);
+	struct fbr_directory *root = fbr_directory_alloc(fs, FBR_DIRNAME_ROOT, root_file->inode);
 	fbr_directory_ok(root);
 	assert(root->inode == FBR_INODE_ROOT);
 
@@ -42,14 +42,13 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 }
 
 struct fbr_directory *
-fbr_directory_alloc(struct fbr_fs *fs, char *dirname, size_t dirname_len, fbr_inode_t inode)
+fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_inode_t inode)
 {
 	fbr_fs_ok(fs);
 	assert(dirname);
-	assert(inode);
 
 	struct fbr_directory *directory = fbr_path_storage_alloc(sizeof(*directory),
-		offsetof(struct fbr_directory, dirname), dirname, dirname_len, "", 0);
+		offsetof(struct fbr_directory, dirname), dirname, PATH_NAME_EMPTY);
 	assert_dev(directory);
 
 	directory->magic = FBR_DIRECTORY_MAGIC;
@@ -62,9 +61,9 @@ fbr_directory_alloc(struct fbr_fs *fs, char *dirname, size_t dirname_len, fbr_in
 
 	if (directory->inode == FBR_INODE_ROOT) {
 		assert_zero(fs->root);
-		assert_zero(dirname_len);
+		assert_zero(dirname->len);
 	} else {
-		assert(dirname_len);
+		assert(dirname->len);
 	}
 
 	directory->file = fbr_inode_take(fs, directory->inode);
@@ -92,15 +91,15 @@ fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2
 }
 
 void
-fbr_directory_add(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file *file)
+fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
 	assert_zero(file->parent_inode);
-	assert_zero(file->refcounts.dindex);
-	assert_zero(file->refcounts.inode);
+	assert_zero(file->refcounts.all);
 
 	// directory ownership
 	file->refcounts.dindex = 1;

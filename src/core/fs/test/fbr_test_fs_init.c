@@ -27,10 +27,14 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 
+	struct fbr_path_name filename;
 	mode_t fmode = S_IFREG | 0444;
 
-	(void)fbr_file_alloc(fs, root, "fiber1", 6, fmode);
-	(void)fbr_file_alloc(fs, root, "fiber2", 6, fmode);
+	fbr_path_name_init(&filename, "fiber1");
+	(void)fbr_file_alloc(fs, root, &filename, fmode);
+
+	fbr_path_name_init(&filename, "fiber2");
+	(void)fbr_file_alloc(fs, root, &filename, fmode);
 
 	fbr_directory_set_state(root, FBR_DIRSTATE_OK);
 }
