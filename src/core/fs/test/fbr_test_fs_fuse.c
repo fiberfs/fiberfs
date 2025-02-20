@@ -72,7 +72,19 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "LOOKUP parent: %lu name: %s",
 		parent, name);
 
-	struct fbr_directory *directory = fbr_dindex_take(fs, parent);
+	struct fbr_file *parent_file = fbr_inode_take(fs, parent);
+
+	if (!parent_file) {
+		fbr_fuse_reply_err(request, ENOTDIR);
+		return;
+	}
+
+	struct fbr_path_name parent_dirname;
+	fbr_path_get_dir(&parent_file->path, &parent_dirname);
+
+	fbr_inode_release(fs, parent_file);
+
+	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname);
 
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOTDIR);
@@ -111,7 +123,19 @@ _test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "OPENDIR ino: %lu", ino);
 
-	struct fbr_directory *directory = fbr_dindex_take(fs, ino);
+	struct fbr_file *file = fbr_inode_take(fs, ino);
+
+	if (!file) {
+		fbr_fuse_reply_err(request, ENOENT);
+		return;
+	}
+
+	struct fbr_path_name dirname;
+	fbr_path_get_dir(&file->path, &dirname);
+
+	fbr_inode_release(fs, file);
+
+	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname);
 
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOENT);

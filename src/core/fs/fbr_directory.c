@@ -12,6 +12,9 @@
 #include "data/tree.h"
 #include "core/fuse/fbr_fuse.h"
 
+static struct fbr_path_name _FBR_DIRNAME_ROOT = {0, ""};
+struct fbr_path_name *FBR_DIRNAME_ROOT = &_FBR_DIRNAME_ROOT;
+
 RB_GENERATE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
 struct fbr_directory *
@@ -85,7 +88,7 @@ fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2
 	fbr_directory_ok(d1);
 	fbr_directory_ok(d2);
 
-	return d1->inode - d2->inode;
+	return fbr_path_cmp_dir(&d1->dirname, &d1->dirname);
 }
 
 void

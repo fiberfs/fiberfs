@@ -20,6 +20,8 @@
 
 #define FBR_INODE_ROOT				FUSE_ROOT_ID
 
+extern struct fbr_path_name			*FBR_DIRNAME_ROOT;
+
 typedef unsigned long fbr_inode_t;
 typedef unsigned int fbr_refcount_t;
 
@@ -161,8 +163,8 @@ struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const 
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
 void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
-struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, fbr_inode_t inode);
-void fbr_dindex_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs);
+struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, struct fbr_path_name *dirname);
+void fbr_dindex_forget(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_refcount_t refs);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_dindex_free(struct fbr_fs *fs);
 

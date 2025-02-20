@@ -133,9 +133,18 @@ _dindex_get_dirhead(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	fbr_dindex_ok(dindex);
 	fbr_directory_ok(directory);
 
-	size_t pos = directory->inode % _DINDEX_HEAD_COUNT;
+	struct fbr_path_name dirname;
+	fbr_path_get_dir(&directory->dirname, &dirname);
+	assert(dirname.name);
 
-        struct fbr_dindex_dirhead *dirhead = &dindex->dirheads[pos];
+        unsigned long hash = 5381;
+        int c;
+
+        while ((c = *dirname.name++)) {
+                hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+        }
+
+        struct fbr_dindex_dirhead *dirhead = &(dindex->dirheads[hash % _DINDEX_HEAD_COUNT]);
 	fbr_dindex_dirhead_ok(dirhead);
 
         return dirhead;
@@ -170,14 +179,14 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 struct fbr_directory *
-fbr_dindex_take(struct fbr_fs *fs, fbr_inode_t inode)
+fbr_dindex_take(struct fbr_fs *fs, struct fbr_path_name *dirname)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
-	assert(inode);
+	assert(dirname);
 
 	struct fbr_directory find;
 	find.magic = FBR_DIRECTORY_MAGIC;
-	find.inode = inode;
+	fbr_path_init_dir(&find.dirname, dirname->name, dirname->len);
 
         struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, &find);
 
@@ -243,15 +252,15 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 void
-fbr_dindex_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
+fbr_dindex_forget(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_refcount_t refs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
-	assert(inode);
+	assert(dirname);
 	assert(refs);
 
 	struct fbr_directory find;
 	find.magic = FBR_DIRECTORY_MAGIC;
-	find.inode = inode;
+	fbr_path_init_dir(&find.dirname, dirname->name, dirname->len);
 
         struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, &find);
 
