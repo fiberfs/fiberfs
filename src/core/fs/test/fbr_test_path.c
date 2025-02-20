@@ -74,9 +74,9 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char 
 		(int)fullpath.len, fullpath.name, fullpath.len);
 
 	fbr_test_ASSERT(path->layout.value == layout, "layout isnt %d", layout);
-	fbr_test_ERROR(fbr_path_name_cmp(&dirname, d), "dirname isnt '%s'", d);
-	fbr_test_ERROR(fbr_path_name_cmp(&filename, f), "filename isnt '%s'", d);
-	fbr_test_ERROR(fbr_path_name_cmp(&fullpath, fp), "fullpath isnt '%s'", fp);
+	fbr_test_ERROR(fbr_path_name_str_cmp(&dirname, d), "dirname isnt '%s'", d);
+	fbr_test_ERROR(fbr_path_name_str_cmp(&filename, f), "filename isnt '%s'", d);
+	fbr_test_ERROR(fbr_path_name_str_cmp(&fullpath, fp), "fullpath isnt '%s'", fp);
 }
 
 void
@@ -154,6 +154,9 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		strncat(sdir, name, sizeof(sdir) - strlen(sdir) - 1);
 	}
 
+	struct fbr_path_name full;
+	fbr_path_name_init(&full, sfull);
+
 	size_t max = 0;
 
 	while (inode > FBR_INODE_ROOT) {
@@ -164,6 +167,11 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		file = fbr_inode_take(fs, inode);
 		fbr_file_ok(file);
+
+		struct fbr_path_name filename;
+		fbr_path_get_full(&file->path, &filename);
+
+		fbr_test_ERROR(fbr_path_name_cmp(&filename, &full), "Path mismatch");
 
 		fbr_inode_t next = file->parent_inode;
 
@@ -178,6 +186,8 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_inode_forget(fs, inode, 2);
 
 		inode = next;
+
+		fbr_path_name_parent(&full, &full);
 	}
 
 	fbr_fs_release_root(fs);

@@ -269,29 +269,60 @@ fbr_path_cmp_file(const struct fbr_path *file1, const struct fbr_path *file2)
 }
 
 void
-fbr_path_name_init(struct fbr_path_name *name, const char *s)
+fbr_path_name_init(struct fbr_path_name *name, const char *str)
 {
 	assert(name);
-	assert(s);
+	assert(str);
 
-	name->len = strlen(s);
-	name->name = s;
+	name->len = strlen(str);
+	name->name = str;
 }
 
 int
-fbr_path_name_cmp(struct fbr_path_name *name, const char *s)
+fbr_path_name_str_cmp(const struct fbr_path_name *name, const char *str)
 {
 	assert(name);
-	assert(s);
+	assert(str);
 
-	size_t len = strlen(s);
-	int diff = name->len != len;
+	struct fbr_path_name name_str;
+	fbr_path_name_init(&name_str, str);
+
+	return fbr_path_name_cmp(name, &name_str);
+}
+
+int
+fbr_path_name_cmp(const struct fbr_path_name *name1, const struct fbr_path_name *name2)
+{
+	assert(name1);
+	assert(name2);
+
+	int diff = name1->len - name2->len;
 
 	if (diff) {
 		return diff;
 	}
 
-	return strncmp(name->name, s, len);
+	return strncmp(name1->name, name2->name, name1->len);
+}
+
+void
+fbr_path_name_parent(const struct fbr_path_name *name, struct fbr_path_name *result)
+{
+	assert(name);
+	assert(result);
+
+	if (result != name) {
+		memcpy(result, name, sizeof(*result));
+	}
+
+	while (result->len > 0) {
+		if (result->name[result->len - 1] == '/') {
+			result->len--;
+			break;
+		}
+
+		result->len--;
+	}
 }
 
 void
