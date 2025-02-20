@@ -59,7 +59,7 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char 
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s layout: %d", name, path->layout.value);
 
-	struct fbr_path_name dirname, filename, fullpath;
+	struct fbr_path_name dirname, filename, fullpath, fullparent;
 
 	fbr_path_get_dir(path, &dirname);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s dirname: '%.*s':%zu", name,
@@ -72,6 +72,10 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char 
 	fbr_path_get_full(path, &fullpath);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullpath: '%.*s':%zu", name,
 		(int)fullpath.len, fullpath.name, fullpath.len);
+
+	fbr_path_name_parent(&fullpath, &fullparent);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullparent: '%.*s':%zu", name,
+		(int)fullparent.len, fullparent.name, fullparent.len);
 
 	fbr_test_ASSERT(path->layout.value == layout, "layout isnt %d", layout);
 	fbr_test_ERROR(fbr_path_name_str_cmp(&dirname, d), "dirname isnt '%s'", d);
