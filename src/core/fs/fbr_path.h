@@ -67,6 +67,7 @@ void fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result
 int fbr_path_cmp_dir(const struct fbr_path *dir1, const struct fbr_path *dir2);
 int fbr_path_cmp_file(const struct fbr_path *file1, const struct fbr_path *file2);
 void fbr_path_name_init(struct fbr_path_name *name, const char *s);
+int fbr_path_name_cmp(struct fbr_path_name *name, const char *s);
 void fbr_path_free(struct fbr_path *path);
 
  #endif /* _FBR_PATH_H_INCLUDED_ */

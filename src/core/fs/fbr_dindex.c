@@ -93,6 +93,9 @@ _dindex_lru_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	}
 
 	TAILQ_INSERT_HEAD(&dindex->lru, directory, lru_entry);
+
+	dindex->lru_len++;
+	assert(dindex->lru_len);
 }
 
 static void
@@ -335,6 +338,8 @@ fbr_dindex_free(struct fbr_fs *fs)
 
 		RB_FOREACH_SAFE(directory, fbr_dindex_tree, &dirhead->tree, next) {
 			fbr_directory_ok(directory);
+
+			_dindex_lru_remove(dindex, directory);
 
 			(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
 

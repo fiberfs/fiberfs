@@ -208,8 +208,8 @@ fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result)
 		result->name = path->embed.data;
 		return;
 	} else if (path->layout.value == FBR_PATH_EMBED_FILE) {
-		result->len = 0;
-		result->name = "";
+		result->len = path->embed.len;
+		result->name = path->embed.data;
 		return;
 	}
 
@@ -276,6 +276,22 @@ fbr_path_name_init(struct fbr_path_name *name, const char *s)
 
 	name->len = strlen(s);
 	name->name = s;
+}
+
+int
+fbr_path_name_cmp(struct fbr_path_name *name, const char *s)
+{
+	assert(name);
+	assert(s);
+
+	size_t len = strlen(s);
+	int diff = name->len != len;
+
+	if (diff) {
+		return diff;
+	}
+
+	return strncmp(name->name, s, len);
 }
 
 void

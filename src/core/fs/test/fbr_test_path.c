@@ -4,6 +4,8 @@
  *
  */
 
+#include <limits.h>
+
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_path.h"
@@ -48,7 +50,8 @@ fbr_cmd_fs_test_path_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 }
 
 static void
-_test_path_file(struct fbr_test_context *ctx, struct fbr_file *file)
+_test_path_print_file(struct fbr_test_context *ctx, struct fbr_file *file,
+    char *d, char *f, char *fp)
 {
 	fbr_test_context_ok(ctx);
 	fbr_file_ok(file);
@@ -66,10 +69,15 @@ _test_path_file(struct fbr_test_context *ctx, struct fbr_file *file)
 	fbr_path_get_full(&file->path, &fullpath);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "file fullpath: '%.*s':%zu",
 		(int)fullpath.len, fullpath.name, fullpath.len);
+
+	fbr_test_ERROR(fbr_path_name_cmp(&dirname, d), "dirname isnt '%s'", d);
+	fbr_test_ERROR(fbr_path_name_cmp(&filename, f), "filename isnt '%s'", d);
+	fbr_test_ERROR(fbr_path_name_cmp(&fullpath, fp), "fullpath isnt '%s'", fp);
 }
 
 static void
-_test_path_directory(struct fbr_test_context *ctx, struct fbr_directory *directory)
+_test_path_print_directory(struct fbr_test_context *ctx, struct fbr_directory *directory,
+    char *d, char *f, char *fp)
 {
 	fbr_test_context_ok(ctx);
 	fbr_directory_ok(directory);
@@ -87,6 +95,10 @@ _test_path_directory(struct fbr_test_context *ctx, struct fbr_directory *directo
 	fbr_path_get_full(&directory->dirname, &fullpath);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory fullpath: '%.*s':%zu",
 		(int)fullpath.len, fullpath.name, fullpath.len);
+
+	fbr_test_ERROR(fbr_path_name_cmp(&dirname, d), "dirname isnt '%s'", d);
+	fbr_test_ERROR(fbr_path_name_cmp(&filename, f), "filename isnt '%s'", d);
+	fbr_test_ERROR(fbr_path_name_cmp(&fullpath, fp), "fullpath isnt '%s'", fp);
 }
 
 void
@@ -95,7 +107,6 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
 
-	// fs
 	struct fbr_fs *fs = fbr_fs_alloc();
 	fbr_fs_ok(fs);
 
@@ -107,11 +118,44 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_file *file = directory->file;
 	fbr_file_ok(file);
 
-	_test_path_directory(ctx, directory);
-	_test_path_file(ctx, file);
+	_test_path_print_file(ctx, file, "", "", "");
+	_test_path_print_directory(ctx, directory, "", "", "");
+
+	char sdir[PATH_MAX], sfull[PATH_MAX];
+	sdir[0] = '\0';
+	sfull[0] = '\0';
 
 	for (size_t i = 0; i < cmd->param_count; i++) {
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** %zu '%s'", i + 1, cmd->params[i].value);
+		char *name = cmd->params[i].value;
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** %zu '%s'", i + 1, name);
+
+		strncpy(sfull, sdir, sizeof(sfull));
+		if (i) {
+			strncat(sfull, "/", sizeof(sfull) - strlen(sfull) - 1);
+		}
+		strncat(sfull, name, sizeof(sfull) - strlen(sfull) - 1);
+
+		struct fbr_path_name filename;
+		fbr_path_name_init(&filename, name);
+
+		file = fbr_file_alloc(fs, directory, &filename, 0);
+
+		_test_path_print_file(ctx, file, sdir, name, sfull);
+
+		// lookup
+		fbr_inode_add(fs, file);
+
+		struct fbr_path_name dirname;
+		fbr_path_get_full(&file->path, &dirname);
+
+		directory = fbr_directory_alloc(fs, &dirname, file->inode);
+
+		_test_path_print_directory(ctx, directory, sfull, "", sfull);
+
+		if (i) {
+			strncat(sdir, "/", sizeof(sdir) - strlen(sdir) - 1);
+		}
+		strncat(sdir, name, sizeof(sdir) - strlen(sdir) - 1);
 	}
 
 	fbr_fs_free(fs);
