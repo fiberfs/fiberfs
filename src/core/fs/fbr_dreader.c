@@ -42,7 +42,7 @@ fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader)
 }
 
 void
-fbr_dirbuffer_init(struct fbr_dirbuffer *dbuf, size_t fuse_size, size_t fuse_offset)
+fbr_dirbuffer_init(struct fbr_dirbuffer *dbuf, size_t fuse_size)
 {
 	assert(dbuf);
 	assert(fuse_size);
@@ -55,7 +55,6 @@ fbr_dirbuffer_init(struct fbr_dirbuffer *dbuf, size_t fuse_size, size_t fuse_off
 	}
 
 	dbuf->free = dbuf->max;
-	dbuf->offset = fuse_offset;
 }
 
 void
@@ -75,10 +74,8 @@ fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf, const
 	memcpy(namebuf, name, name_len);
 	namebuf[name_len] = '\0';
 
-	dbuf->offset++;
-
 	size_t write = fuse_add_direntry(request->fuse_req, dbuf->buffer + dbuf->pos,
-		dbuf->free, namebuf, st, dbuf->offset);
+		dbuf->free, namebuf, st, 1);
 
 	if (write > dbuf->free) {
 		dbuf->full = 1;

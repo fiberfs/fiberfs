@@ -209,7 +209,7 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 	fbr_directory_ok(directory);
 
 	struct fbr_dirbuffer dbuf;
-	fbr_dirbuffer_init(&dbuf, size, off);
+	fbr_dirbuffer_init(&dbuf, size);
 
 	if (!dbuf.full && !reader->read_dot) {
 		fbr_file_ok(directory->file);
