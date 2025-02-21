@@ -21,6 +21,37 @@
 #define _TEST_FS_FUSE_TTL_SEC		2.0
 
 static void
+_test_fs_init_directory(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+
+	struct fbr_path_name dirname;
+	fbr_path_get_dir(&directory->dirname, &dirname);
+
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** init directory: '%.*s':%zu",
+		(int)dirname.len, dirname.name, dirname.len);
+
+	char name[7];
+	strncpy(name, "fiberX", sizeof(name));
+	name[sizeof(name) - 1] = '\0';
+	assert(name[5] == 'X');
+
+	for (size_t i = 0; i < 4; i++) {
+		mode_t fmode = S_IFREG | 0444;
+
+		name[5] = i + '1';
+
+		struct fbr_path_name filename;
+		fbr_path_name_init(&filename, name);
+
+		(void)fbr_file_alloc(fs, directory, &filename, fmode);
+	}
+
+	fbr_directory_set_state(directory, FBR_DIRSTATE_OK);
+}
+
+static void
 _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
 	fbr_fuse_mounted(ctx);
@@ -31,16 +62,7 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 
-	struct fbr_path_name filename;
-	mode_t fmode = S_IFREG | 0444;
-
-	fbr_path_name_init(&filename, "fiber1");
-	(void)fbr_file_alloc(fs, root, &filename, fmode);
-
-	fbr_path_name_init(&filename, "fiber2");
-	(void)fbr_file_alloc(fs, root, &filename, fmode);
-
-	fbr_directory_set_state(root, FBR_DIRSTATE_OK);
+	_test_fs_init_directory(fs, root);
 }
 
 static void
@@ -139,7 +161,11 @@ _test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	}
 
 	struct fbr_path_name dirname;
+	// TODO we need full path, dirname of a directory is the parent
 	fbr_path_get_dir(&file->path, &dirname);
+
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** open directory: '%.*s':%zu",
+		(int)dirname.len, dirname.name, dirname.len);
 
 	fbr_inode_release(fs, &file);
 	assert_zero_dev(file);
@@ -151,8 +177,10 @@ _test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 		return;
 	}
 
-	// fh owns the file ref now
-	fi->fh = fbr_fs_int64(directory);
+	struct fbr_dreader *reader = fbr_dreader_alloc(fs, directory);
+	fbr_dreader_ok(reader);
+
+	fi->fh = fbr_fs_int64(reader);
 
 	//fi->cache_readdir
 	fi->cache_readdir = 1;
@@ -164,20 +192,70 @@ static void
 _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
 		"READDIR ino: %lu size: %zu off: %ld fh: %lu", ino, size, off, fi->fh);
 
-	struct fbr_directory *directory = fbr_fh_directory(fi->fh);
-	fbr_file_ok(directory->file);
+	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 
-	struct stat st;
-	fbr_file_attr(directory->file, &st);
+	if (reader->end) {
+		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE, "READDIR return: end");
+		fbr_fuse_reply_buf(request, NULL, 0);
+		return;
+	}
 
-	struct fbr_file *file;
+	struct fbr_directory *directory = reader->directory;
+	fbr_directory_ok(directory);
 
-	TAILQ_FOREACH(file, &directory->file_list, file_entry) {
+	struct fbr_dirbuffer dbuf;
+	fbr_dirbuffer_init(&dbuf, size, off);
+
+	if (!dbuf.full && !reader->read_dot) {
+		fbr_file_ok(directory->file);
+
+		struct stat st;
+		fbr_file_attr(directory->file, &st);
+
+		fbr_dirbuffer_add(request, &dbuf, ".", 1, &st);
+
+		if (!dbuf.full) {
+			reader->read_dot = 1;
+		}
+	}
+	if (!dbuf.full && !reader->read_dotdot) {
+		struct fbr_file *parent;
+		if (directory->file->parent_inode) {
+			parent = fbr_inode_take(fs, directory->file->parent_inode);
+		} else {
+			parent = directory->file;
+		}
+		fbr_file_ok(parent);
+
+		struct stat st;
+		fbr_file_attr(parent, &st);
+
+		fbr_dirbuffer_add(request, &dbuf, "..", 2, &st);
+
+		if (!dbuf.full) {
+			reader->read_dotdot = 1;
+		}
+	}
+
+	if (dbuf.full) {
+		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE, "READDIR return: %zu",
+			dbuf.pos);
+		fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
+		return;
+	}
+
+	struct fbr_file *file = reader->position;
+
+	if (file) {
+		fbr_file_ok(file);
+	}
+
+	TAILQ_FOREACH_FROM(file, &directory->file_list, file_entry) {
 		fbr_file_ok(file);
 
 		struct fbr_path_name filename;
@@ -186,9 +264,26 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE,
 			"READDIR filename: '%.*s' inode: %lu", (int)filename.len, filename.name,
 			file->inode);
+
+		struct stat st;
+		fbr_file_attr(file, &st);
+
+		fbr_dirbuffer_add(request, &dbuf, filename.name, filename.len, &st);
+
+		if (dbuf.full) {
+			fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE,
+				"READDIR return: %zu", dbuf.pos);
+			fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
+			return;
+		}
+
+		reader->position = file;
 	}
 
-	fbr_fuse_reply_buf(request, NULL, 0);
+	reader->end = 1;
+
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE, "READDIR return: %zu", dbuf.pos);
+	fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
 }
 
 static void
@@ -199,9 +294,8 @@ _test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASEDIR ino: %lu fh: %lu",
 		ino, fi->fh);
 
-	struct fbr_directory *directory = fbr_fh_directory(fi->fh);
-	fbr_dindex_release(fs, &directory);
-	assert_zero_dev(directory);
+	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
+	fbr_dreader_free(fs, reader);
 
 	fbr_fuse_reply_err(request, 0);
 }
@@ -234,7 +328,6 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 		return;
 	}
 
-	// fh owns the file ref now
 	fi->fh = fbr_fs_int64(file);
 
 	//fi->keep_cache

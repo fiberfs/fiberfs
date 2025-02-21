@@ -15,10 +15,12 @@
 
 #include "fbr_path.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
+#include "core/context/fbr_callback.h"
 #include "data/queue.h"
 #include "data/tree.h"
 
 #define FBR_INODE_ROOT				FUSE_ROOT_ID
+#define FBR_READDIR_SIZE			4096
 
 typedef unsigned long fbr_inode_t;
 typedef unsigned int fbr_refcount_t;
@@ -87,6 +89,30 @@ struct fbr_directory {
 	TAILQ_ENTRY(fbr_directory)		lru_entry;
 	TAILQ_HEAD(, fbr_file)			file_list;
 	struct fbr_filename_tree		filename_tree;
+};
+
+struct fbr_dirbuffer {
+	char					buffer[FBR_READDIR_SIZE];
+
+	size_t					max;
+	size_t					pos;
+	size_t					free;
+	off_t					offset;
+
+	unsigned int				full:1;
+};
+
+struct fbr_dreader {
+	unsigned int				magic;
+#define FBR_DREADER_MAGIC			0xF3CFAEDF
+
+	struct fbr_directory			*directory;
+
+	struct fbr_file				*position;
+
+	unsigned int				read_dot:1;
+	unsigned int				read_dotdot:1;
+	unsigned int				end:1;
 };
 
 struct fbr_fs_stats {
@@ -169,6 +195,12 @@ void fbr_dindex_forget(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
 void fbr_dindex_free_all(struct fbr_fs *fs);
 
+struct fbr_dreader *fbr_dreader_alloc(struct fbr_fs *fs, struct fbr_directory *directory);
+void fbr_dirbuffer_init(struct fbr_dirbuffer *dbuf, size_t fuse_size, size_t fuse_offset);
+void fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
+	const char *name, size_t name_len, struct stat *st);
+void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
+
 #define fbr_fs_ok(fs)						\
 {								\
 	assert(fs);						\
@@ -183,6 +215,11 @@ void fbr_dindex_free_all(struct fbr_fs *fs);
 {								\
 	assert(dir);						\
 	assert((dir)->magic == FBR_DIRECTORY_MAGIC);		\
+}
+#define fbr_dreader_ok(reader)					\
+{								\
+	assert(reader);						\
+	assert((reader)->magic == FBR_DREADER_MAGIC);		\
 }
 #define fbr_fs_int64(obj)					\
 	((uint64_t)(obj))

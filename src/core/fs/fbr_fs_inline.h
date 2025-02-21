@@ -20,12 +20,12 @@ static inline struct fbr_file *fbr_fh_file(uint64_t fh)
 	return file;
 }
 
-static inline struct fbr_directory *fbr_fh_directory(uint64_t fh)
+static inline struct fbr_dreader *fbr_fh_dreader(uint64_t fh)
 {
-	struct fbr_directory *directory = (struct fbr_directory*)fh;
-	fbr_directory_ok(directory);
+	struct fbr_dreader *dreader = (struct fbr_dreader*)fh;
+	fbr_dreader_ok(dreader);
 
-	return directory;
+	return dreader;
 }
 
 static inline struct fbr_fs *fbr_request_fs(struct fbr_request *request)
