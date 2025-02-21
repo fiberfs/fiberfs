@@ -29,18 +29,31 @@ _test_fs_init_directory(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_path_name dirname;
 	fbr_path_get_dir(&directory->dirname, &dirname);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** init directory: '%.*s':%zu",
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** INIT directory: '%.*s':%zu",
 		(int)dirname.len, dirname.name, dirname.len);
 
-	char name[7];
+	char name[32];
 	strncpy(name, "fiberX", sizeof(name));
-	name[sizeof(name) - 1] = '\0';
 	assert(name[5] == 'X');
 
 	for (size_t i = 0; i < 4; i++) {
 		mode_t fmode = S_IFREG | 0444;
 
 		name[5] = i + '1';
+
+		struct fbr_path_name filename;
+		fbr_path_name_init(&filename, name);
+
+		(void)fbr_file_alloc(fs, directory, &filename, fmode);
+	}
+
+	strncpy(name, "fiber_dirX", sizeof(name));
+	assert(name[9] == 'X');
+
+	for (size_t i = 0; i < 4; i++) {
+		mode_t fmode = S_IFDIR | 0444;
+
+		name[9] = i + '1';
 
 		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, name);
@@ -112,12 +125,23 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	fbr_inode_release(fs, &parent_file);
 	assert_zero_dev(parent_file);
 
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP parent: '%.*s':%zu",
+		(int)parent_dirname.len, parent_dirname.name, parent_dirname.len);
+
 	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname);
 
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOTDIR);
 		return;
 	}
+
+	fbr_directory_ok(directory);
+
+	struct fbr_path_name dirname;
+	fbr_path_get_dir(&directory->dirname, &dirname);
+
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP directory: '%.*s':%zu",
+		(int)dirname.len, dirname.name, dirname.len);
 
 	struct fbr_file *file = fbr_directory_find_file(directory, name);
 
@@ -131,6 +155,12 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 
 	fbr_file_ok(file);
 	assert(file->inode);
+
+	struct fbr_path_name filename;
+	fbr_path_get_full(&file->path, &filename);
+
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP file: '%.*s':%zu",
+		(int)filename.len, filename.name, filename.len);
 
 	struct fuse_entry_param entry;
 	fbr_ZERO(&entry);
@@ -161,10 +191,9 @@ _test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	}
 
 	struct fbr_path_name dirname;
-	// TODO we need full path, dirname of a directory is the parent
-	fbr_path_get_dir(&file->path, &dirname);
+	fbr_path_get_full(&file->path, &dirname);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** open directory: '%.*s':%zu",
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** OPENDIR directory: '%.*s':%zu",
 		(int)dirname.len, dirname.name, dirname.len);
 
 	fbr_inode_release(fs, &file);

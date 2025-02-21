@@ -198,7 +198,10 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 
         struct fbr_directory *directory = RB_FIND(fbr_dindex_tree, &dirhead->tree, &find);
 
-	// TODO directory is null if it hasnt been fetched yet
+	if (!directory) {
+		assert_zero(pthread_mutex_unlock(&dirhead->lock));
+		return NULL;
+	}
 
 	fbr_directory_ok(directory);
 	assert(directory->refcount);
