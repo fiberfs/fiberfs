@@ -45,6 +45,16 @@ fbr_setup_crash_signals(void)
 	assert_zero(sigaction(SIGPIPE, &sa, NULL));
 }
 
+int
+fbr_assert_is_dev(void)
+{
+#ifdef FBR_NO_ASSERT_DEV
+	return 0;
+#else
+	return 1;
+#endif
+}
+
 static void
 _dump_backtrace(void)
 {
