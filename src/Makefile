@@ -4,45 +4,41 @@ CC=gcc
 CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -I. -Ichttp -Ifjson -fno-omit-frame-pointer
 CFLAGS_GCC=
 CFLAGS_CLANG=-Wno-gnu-zero-variadic-macro-arguments
+DEPFLAGS=-MMD -MP -MF $(BUILD)/$*.d
 LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 
+BUILD=build
+
 TEST_SRC:=$(wildcard test/*.c chttp/test/*.c fjson/test/*.c core/*/test/*.c)
-TEST_OBJS:=$(TEST_SRC:.c=.o)
-TEST_INCLUDES:=$(wildcard test/*.h)
-TEST_INCLUDES_CORE:=$(wildcard core/*/test/*.h)
+TEST_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(TEST_SRC)))
+DEPS:=$(TEST_OBJS:.o=.d)
 
 CHTTP_CLIENT:=$(wildcard chttp/client/*.c)
-CHTTP_CLIENT_OBJS:=$(CHTTP_CLIENT:.c=.o)
+CHTTP_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(CHTTP_CLIENT)))
+DEPS+=$(CHTTP_CLIENT_OBJS:.o=.d)
 CHTTP_SRC:=$(wildcard chttp/*.c chttp/*/*.c)
 CHTTP_SRC:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT), $(CHTTP_SRC))
-CHTTP_OBJS:=$(CHTTP_SRC:.c=.o)
-CHTTP_TEST_INCLUDES:=$(wildcard chttp/test/*.h)
-CHTTP_INCLUDES:=$(wildcard chttp/*.h chttp/*/*.h)
-CHTTP_INCLUDES:=$(filter-out $(CHTTP_TEST_INCLUDES), $(CHTTP_INCLUDES))
+CHTTP_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(CHTTP_SRC)))
+DEPS+=$(CHTTP_OBJS:.o=.d)
 
 FJSON_CLIENT:=$(wildcard fjson/client/*.c)
-FJSON_CLIENT_OBJS:=$(FJSON_CLIENT:.c=.o)
+FJSON_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FJSON_CLIENT)))
+DEPS+=$(FJSON_CLIENT_OBJS:.o=.d)
 FJSON_SRC:=$(wildcard fjson/*.c)
-FJSON_SRC:=$(filter-out $(TEST_SRC) $(FJSON_CLIENT), $(FJSON_SRC))
-FJSON_OBJS:=$(FJSON_SRC:.c=.o)
-FJSON_TEST_INCLUDES:=$(wildcard fjson/test/*.h)
-FJSON_INCLUDES:=$(wildcard fjson/*.h)
-FJSON_INCLUDES:=$(filter-out $(FJSON_TEST_INCLUDES), $(FJSON_INCLUDES))
+FJSON_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FJSON_SRC)))
+DEPS+=$(FJSON_OBJS:.o=.d)
 
 UTILS_SRC=$(wildcard utils/*.c)
-UTILS_OBJS=$(UTILS_SRC:.c=.o)
-UTILS_INCLUDES:=$(wildcard utils/*.h)
+UTILS_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(UTILS_SRC)))
+DEPS+=$(UTILS_OBJS:.o=.d)
 
-INCLUDES:=$(wildcard *.h */*.h */*/*.h)
-INCLUDES:=$(filter-out $(TEST_INCLUDES) $(CHTTP_INCLUDES) $(CHTTP_TEST_INCLUDES) \
-	$(FJSON_TEST_INCLUDES) $(FJSON_INCLUDES) $(TEST_INCLUDES_CORE), \
-	$(INCLUDES))
-SOURCE:=$(wildcard *.c */*.c */*/*.c)
+ALL_SOURCE:=$(wildcard *.c */*.c */*/*.c)
 SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(FJSON_SRC), \
-	$(SOURCE))
-OBJS:=$(SOURCE:.c=.o)
+	$(ALL_SOURCE))
+OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(SOURCE)))
+DEPS+=$(OBJS:.o=.d)
 
 RM=rm -f
 RMDIR=rm -rf
@@ -128,7 +124,7 @@ ifeq ($(CC_GCC),true)
 	AFL_CFLAGS+=$(CFLAGS_CLANG)
 endif
 
-.PHONY:		all lib clean gcov afl
+.PHONY:		all lib clean gcov gcovclean afl
 
 all:		chttp_client fjson_client fiberfs_test lib
 lib:		libfiberfs.so libchttp.a libfjson.a
@@ -151,41 +147,18 @@ libchttp.a:	$(CHTTP_OBJS)
 libfjson.a:	$(FJSON_OBJS) $(UTILS_OBJS)
 		ar cr $@ $(FJSON_OBJS) $(UTILS_OBJS)
 
-%.o:		%.c $(INCLUDES)
-		$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD)/%.o:	%.c | $(BUILD)
+		$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
 
-chttp/%.o:	chttp/%.c $(CHTTP_INCLUDES)
-		$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD):
+		mkdir -p $(sort $(dir $(DEPS)))
 
-fjson/%.o:	fjson/%.c $(FJSON_INCLUDES)
-		$(CC) $(CFLAGS) -c $< -o $@
+include $(wildcard $(DEPS))
 
-utils/%.o:	utils/%.c $(UTILS_INCLUDES)
-		$(CC) $(CFLAGS) -c $< -o $@
-
-test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES) $(CHTTP_TEST_INCLUDES) \
-			$(FJSON_TEST_INCLUDES) $(TEST_INCLUDES_CORE)
-		$(CC) $(CFLAGS) -c $< -o $@
-
-core/fuse/test/%.o: core/fuse/test/%.c $(INCLUDES) $(TEST_INCLUDES) $(TEST_INCLUDES_CORE)
-		$(CC) $(CFLAGS) -c $< -o $@
-
-core/fs/test/%.o: core/fs/test/%.c $(INCLUDES) $(TEST_INCLUDES) $(TEST_INCLUDES_CORE)
-		$(CC) $(CFLAGS) -c $< -o $@
-
-chttp/test/%.o:	chttp/test/%.c $(CHTTP_INCLUDES) $(TEST_INCLUDES) $(CHTTP_TEST_INCLUDES)
-		$(CC) $(CFLAGS) -c $< -o $@
-
-fjson/test/%.o:	fjson/test/%.c $(FJSON_INCLUDES) $(TEST_INCLUDES) $(FJSON_TEST_INCLUDES)
-		$(CC) $(CFLAGS) -c $< -o $@
-
-clean:
-		$(RM) *.o */*.o */*/*.o */*/*/*.o *.so *.a
+clean:		gcovclean
+		$(RMDIR) $(BUILD)
+		$(RM) *.so *.a
 		$(RM) chttp_client fjson_client fiberfs_test
-		$(RM) *.gcno */*.gcno */*/*.gcno *.gcda */*.gcda */*/*.gcda
-		$(RM) *.gcov */*.gcov */*/*.gcov
-		$(RM) coverage.info gcov.data
-		$(RMDIR) $(HTMLDIR)
 
 gcov:		gcov.data
 		$(GCOV) -r *.c */*.c */*/*.c
@@ -194,14 +167,18 @@ gcov:		gcov.data
 
 gcov.data:	CFLAGS+=$(GCOVFLAGS)
 gcov.data:	LIBFLAGS+=$(GCOVLIBFLAGS)
-gcov.data:	clean
+gcov.data:	| clean
 		$(MAKE) all CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
 		$(MAKE) -C .. check FLAGS=-vv
 		touch gcov.data
+
+gcovclean:
+		$(RM) coverage.info gcov.data
+		$(RMDIR) $(HTMLDIR)
 
 #afl:		export AFL_USE_ASAN=1
 #afl:		export AFL_USE_MSAN=1
 afl:		CC=$(AFL_CC)
 afl:		CFLAGS+=$(AFL_CFLAGS)
-afl:		clean
+afl:		| clean
 		$(MAKE) all CC=$(CC) CFLAGS="$(CFLAGS)"
