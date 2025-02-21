@@ -8,7 +8,6 @@ DEPFLAGS=-MMD -MP -MF $(BUILD)/$*.d
 LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
-
 BUILD=build
 
 TEST_SRC:=$(wildcard test/*.c chttp/test/*.c fjson/test/*.c core/*/test/*.c)
@@ -38,6 +37,7 @@ SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(
 	$(ALL_SOURCE))
 OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(SOURCE)))
 DEPS+=$(OBJS:.o=.d)
+BUILD_DIRS=$(sort $(dir $(DEPS)))
 
 RM=rm -f
 RMDIR=rm -rf
@@ -146,11 +146,11 @@ libchttp.a:	$(CHTTP_OBJS)
 libfjson.a:	$(FJSON_OBJS) $(UTILS_OBJS)
 		ar cr $@ $(FJSON_OBJS) $(UTILS_OBJS)
 
-$(BUILD)/%.o:	%.c | $(BUILD)
+$(BUILD)/%.o:	%.c | $(BUILD_DIRS)
 		$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
 
-$(BUILD):
-		mkdir -p $(sort $(dir $(DEPS)))
+$(BUILD_DIRS):
+		mkdir -p $@
 
 include $(wildcard $(DEPS))
 
