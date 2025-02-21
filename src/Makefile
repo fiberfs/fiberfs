@@ -32,7 +32,6 @@ DEPS+=$(FJSON_OBJS:.o=.d)
 
 UTILS_SRC=$(wildcard utils/*.c)
 UTILS_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(UTILS_SRC)))
-DEPS+=$(UTILS_OBJS:.o=.d)
 
 ALL_SOURCE:=$(wildcard *.c */*.c */*/*.c)
 SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(FJSON_SRC), \
