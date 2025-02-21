@@ -251,10 +251,6 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 
 	struct fbr_file *file = reader->position;
 
-	if (file) {
-		fbr_file_ok(file);
-	}
-
 	TAILQ_FOREACH_FROM(file, &directory->file_list, file_entry) {
 		fbr_file_ok(file);
 
@@ -270,14 +266,14 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 
 		fbr_dirbuffer_add(request, &dbuf, filename.name, filename.len, &st);
 
+		reader->position = file;
+
 		if (dbuf.full) {
 			fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE,
 				"READDIR return: %zu", dbuf.pos);
 			fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
 			return;
 		}
-
-		reader->position = file;
 	}
 
 	reader->end = 1;
