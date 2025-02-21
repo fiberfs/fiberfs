@@ -62,8 +62,8 @@ void *fbr_path_storage_alloc(size_t size, size_t path_offset, const struct fbr_p
 void fbr_path_init_dir(struct fbr_path *path, const char *dirname, size_t dirname_len);
 void fbr_path_init_file(struct fbr_path *path, const char *filename, size_t filename_len);
 void fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir);
-void fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file);
-void fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result);
+const char *fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file);
+const char *fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result);
 int fbr_path_cmp_dir(const struct fbr_path *dir1, const struct fbr_path *dir2);
 int fbr_path_cmp_file(const struct fbr_path *file1, const struct fbr_path *file2);
 void fbr_path_name_init(struct fbr_path_name *name, const char *str);

@@ -136,12 +136,9 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	}
 
 	fbr_directory_ok(directory);
+	const char *dirname = fbr_path_get_full(&directory->dirname, NULL);
 
-	struct fbr_path_name dirname;
-	fbr_path_get_dir(&directory->dirname, &dirname);
-
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP directory: '%.*s':%zu",
-		(int)dirname.len, dirname.name, dirname.len);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP directory: '%s'", dirname);
 
 	struct fbr_file *file = fbr_directory_find_file(directory, name);
 
@@ -156,11 +153,8 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	fbr_file_ok(file);
 	assert(file->inode);
 
-	struct fbr_path_name filename;
-	fbr_path_get_full(&file->path, &filename);
-
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP file: '%.*s':%zu",
-		(int)filename.len, filename.name, filename.len);
+	const char *filename = fbr_path_get_full(&file->path, NULL);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP file: '%s'", filename);
 
 	struct fuse_entry_param entry;
 	fbr_ZERO(&entry);
@@ -246,7 +240,7 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 		struct stat st;
 		fbr_file_attr(directory->file, &st);
 
-		fbr_dirbuffer_add(request, &dbuf, ".", 1, &st);
+		fbr_dirbuffer_add(request, &dbuf, ".", &st);
 
 		if (!dbuf.full) {
 			reader->read_dot = 1;
@@ -264,7 +258,7 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 		struct stat st;
 		fbr_file_attr(parent, &st);
 
-		fbr_dirbuffer_add(request, &dbuf, "..", 2, &st);
+		fbr_dirbuffer_add(request, &dbuf, "..", &st);
 
 		if (!dbuf.full) {
 			reader->read_dotdot = 1;
@@ -283,17 +277,15 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 	TAILQ_FOREACH_FROM(file, &directory->file_list, file_entry) {
 		fbr_file_ok(file);
 
-		struct fbr_path_name filename;
-		fbr_path_get_file(&file->path, &filename);
+		const char *filename = fbr_path_get_file(&file->path, NULL);
 
 		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE,
-			"READDIR filename: '%.*s' inode: %lu", (int)filename.len, filename.name,
-			file->inode);
+			"READDIR filename: '%s' inode: %lu", filename, file->inode);
 
 		struct stat st;
 		fbr_file_attr(file, &st);
 
-		fbr_dirbuffer_add(request, &dbuf, filename.name, filename.len, &st);
+		fbr_dirbuffer_add(request, &dbuf, filename, &st);
 
 		reader->position = file;
 

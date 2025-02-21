@@ -59,19 +59,17 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char 
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s layout: %d", name, path->layout.value);
 
-	struct fbr_path_name dirname, filename, fullpath, fullparent;
+	struct fbr_path_name dirname, fullpath, fullparent;
 
 	fbr_path_get_dir(path, &dirname);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s dirname: '%.*s':%zu", name,
 		(int)dirname.len, dirname.name, dirname.len);
 
-	fbr_path_get_file(path, &filename);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s filename: '%.*s':%zu", name,
-		(int)filename.len, filename.name, filename.len);
+	const char *filename = fbr_path_get_file(path, NULL);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s filename: '%s'", name, filename);
 
-	fbr_path_get_full(path, &fullpath);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullpath: '%.*s':%zu", name,
-		(int)fullpath.len, fullpath.name, fullpath.len);
+	const char *sfullpath = fbr_path_get_full(path, &fullpath);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullpath: '%s'", name, sfullpath);
 
 	fbr_path_name_parent(&fullpath, &fullparent);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullparent: '%.*s':%zu", name,
@@ -79,8 +77,8 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char 
 
 	fbr_test_ASSERT(path->layout.value == layout, "layout isnt %d", layout);
 	fbr_test_ERROR(fbr_path_name_str_cmp(&dirname, d), "dirname isnt '%s'", d);
-	fbr_test_ERROR(fbr_path_name_str_cmp(&filename, f), "filename isnt '%s'", d);
-	fbr_test_ERROR(fbr_path_name_str_cmp(&fullpath, fp), "fullpath isnt '%s'", fp);
+	fbr_test_ERROR(strcmp(filename, f), "filename isnt '%s'", d);
+	fbr_test_ERROR(strcmp(sfullpath, fp), "fullpath isnt '%s'", fp);
 }
 
 void
@@ -116,7 +114,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** %zu '%s'", i + 1, name);
 
 		layout = FBR_PATH_PTR;
-		if (!i && strlen(name) <= 15) {
+		if (!i && strlen(name) < 15) {
 			layout = FBR_PATH_EMBED_FILE;
 		}
 
@@ -146,7 +144,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		directory = fbr_directory_alloc(fs, &dirname, file->inode);
 
-		if (strlen(sfull) <= 15) {
+		if (strlen(sfull) < 15) {
 			layout = FBR_PATH_EMBED_DIR;
 		}
 

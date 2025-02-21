@@ -197,7 +197,7 @@ void fbr_dindex_free_all(struct fbr_fs *fs);
 struct fbr_dreader *fbr_dreader_alloc(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_dirbuffer_init(struct fbr_dirbuffer *dbuf, size_t fuse_size);
 void fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
-	const char *name, size_t name_len, struct stat *st);
+	const char *name, struct stat *st);
 void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 
 #define fbr_fs_ok(fs)						\

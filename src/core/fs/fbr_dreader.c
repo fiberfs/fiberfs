@@ -59,23 +59,17 @@ fbr_dirbuffer_init(struct fbr_dirbuffer *dbuf, size_t fuse_size)
 
 void
 fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf, const char *name,
-    size_t name_len, struct stat *st)
+    struct stat *st)
 {
 	fbr_request_ok(request);
 	assert(dbuf);
 	assert_zero(dbuf->full);
 	assert_dev(dbuf->pos + dbuf->free == dbuf->max);
 	assert(name);
-	assert(name_len < PATH_MAX);
 	assert(st);
 
-	// TODO do we want to have filenames include the null byte?
-	char namebuf[PATH_MAX];
-	memcpy(namebuf, name, name_len);
-	namebuf[name_len] = '\0';
-
 	size_t write = fuse_add_direntry(request->fuse_req, dbuf->buffer + dbuf->pos,
-		dbuf->free, namebuf, st, 1);
+		dbuf->free, name, st, 1);
 
 	if (write > dbuf->free) {
 		dbuf->full = 1;

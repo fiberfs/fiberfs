@@ -21,13 +21,13 @@ _path_storage_len(const struct fbr_path_name *dirname, const struct fbr_path_nam
 
 	struct fbr_path *path;
 
-	if (dirname->len <= sizeof(path->embed.data) && !filename->len) {
+	if (dirname->len < sizeof(path->embed.data) && !filename->len) {
 		return 0;
-	} else if (!dirname->len && filename->len <= sizeof(path->embed.data)) {
+	} else if (!dirname->len && filename->len < sizeof(path->embed.data)) {
 		return 0;
 	}
 
-	return dirname->len + 1 + filename->len;
+	return dirname->len + 1 + filename->len + 1;
 }
 
 static void
@@ -80,6 +80,8 @@ _path_init(struct fbr_path *path, char *name_storage, const struct fbr_path_name
 	if (filename->len) {
 		memcpy(name_storage + dirname->len + extra_slash, filename->name, filename->len);
 	}
+
+	assert_dev(name_storage[dirname->len + extra_slash + filename->len] == 0);
 }
 
 void *
@@ -160,24 +162,28 @@ fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir)
 	return;
 }
 
-void
+const char *
 fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file)
 {
 	assert(path);
-	assert(result_file);
+
+	struct fbr_path_name _result;
+	if (!result_file) {
+		result_file = &_result;
+	}
 
 	fbr_ZERO(result_file);
 
 	if (path->layout.value == FBR_PATH_NULL) {
-		return;
+		return NULL;
 	} else if (path->layout.value == FBR_PATH_EMBED_DIR) {
 		result_file->len = 0;
 		result_file->name = "";
-		return;
+		return result_file->name ;
 	} else if (path->layout.value == FBR_PATH_EMBED_FILE) {
 		result_file->len = path->embed.len;
 		result_file->name = path->embed.data;
-		return;
+		return result_file->name ;
 	}
 
 	assert(path->layout.value == FBR_PATH_PTR);
@@ -190,27 +196,31 @@ fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file
 	result_file->len = path->ptr.file_len;
 	result_file->name = path->ptr.value + path->ptr.dir_len + extra_slash;
 
-	return;
+	return result_file->name;
 }
 
-void
+const char *
 fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result)
 {
 	assert(path);
-	assert(result);
+
+	struct fbr_path_name _result;
+	if (!result) {
+		result = &_result;
+	}
 
 	fbr_ZERO(result);
 
 	if (path->layout.value == FBR_PATH_NULL) {
-		return;
+		return NULL;
 	} else if (path->layout.value == FBR_PATH_EMBED_DIR) {
 		result->len = path->embed.len;
 		result->name = path->embed.data;
-		return;
+		return result->name;
 	} else if (path->layout.value == FBR_PATH_EMBED_FILE) {
 		result->len = path->embed.len;
 		result->name = path->embed.data;
-		return;
+		return result->name;
 	}
 
 	assert(path->layout.value == FBR_PATH_PTR);
@@ -223,7 +233,7 @@ fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result)
 	result->len = path->ptr.dir_len + extra_slash + path->ptr.file_len;
 	result->name = path->ptr.value;
 
-	return;
+	return result->name;
 }
 
 int
