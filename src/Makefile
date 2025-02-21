@@ -12,31 +12,26 @@ BUILD=build
 
 TEST_SRC:=$(wildcard test/*.c chttp/test/*.c fjson/test/*.c core/*/test/*.c)
 TEST_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(TEST_SRC)))
-DEPS:=$(TEST_OBJS:.o=.d)
 
 CHTTP_CLIENT:=$(wildcard chttp/client/*.c)
 CHTTP_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(CHTTP_CLIENT)))
-DEPS+=$(CHTTP_CLIENT_OBJS:.o=.d)
 CHTTP_SRC:=$(wildcard chttp/*.c chttp/*/*.c)
 CHTTP_SRC:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT), $(CHTTP_SRC))
 CHTTP_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(CHTTP_SRC)))
-DEPS+=$(CHTTP_OBJS:.o=.d)
 
 FJSON_CLIENT:=$(wildcard fjson/client/*.c)
 FJSON_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FJSON_CLIENT)))
-DEPS+=$(FJSON_CLIENT_OBJS:.o=.d)
 FJSON_SRC:=$(wildcard fjson/*.c)
 FJSON_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FJSON_SRC)))
-DEPS+=$(FJSON_OBJS:.o=.d)
 
 UTILS_SRC=$(wildcard utils/*.c)
 UTILS_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(UTILS_SRC)))
 
-ALL_SOURCE:=$(wildcard *.c */*.c */*/*.c)
+ALL_SOURCE:=$(wildcard *.c */*.c */*/*.c */*/*/*.c)
 SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(FJSON_SRC), \
 	$(ALL_SOURCE))
 OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(SOURCE)))
-DEPS+=$(OBJS:.o=.d)
+DEPS:=$(patsubst %,$(BUILD)/%.d,$(basename $(ALL_SOURCE)))
 BUILD_DIRS=$(sort $(dir $(DEPS)))
 
 RM=rm -f
