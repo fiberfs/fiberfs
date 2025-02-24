@@ -94,13 +94,14 @@ ifeq ($(LIBUNWIND),true)
 endif
 
 # Detect compiler
+CFLAGS_CC=
 ifeq ($(findstring clang,$(CC)),clang)
 	CC_CLANG=true
-	CFLAGS+=$(CFLAGS_CLANG)
+	CFLAGS_CC=$(CFLAGS_CLANG)
 endif
 ifeq ($(findstring gcc,$(CC)),gcc)
 	CC_GCC=true
-	CFLAGS+=$(CFLAGS_GCC)
+	CFLAGS_CC=$(CFLAGS_GCC)
 endif
 
 # gcov
@@ -113,9 +114,9 @@ HTMLDIR=report
 
 # afl
 AFL_CC=afl-clang-fast
-AFL_CFLAGS=
+AFL_CFLAGS_CC=
 ifeq ($(CC_GCC),true)
-	AFL_CFLAGS+=$(CFLAGS_CLANG)
+	AFL_CFLAGS_CC=$(CFLAGS_CLANG)
 endif
 
 .PHONY:		all lib clean gcov gcovclean afl
@@ -142,7 +143,7 @@ libfjson.a:	$(FJSON_OBJS) $(UTILS_OBJS)
 		ar cr $@ $(FJSON_OBJS) $(UTILS_OBJS)
 
 $(BUILD)/%.o:	%.c | $(BUILD_DIRS)
-		$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
+		$(CC) $(CFLAGS) $(CFLAGS_CC) $(DEPFLAGS) -c $< -o $@
 
 $(BUILD_DIRS):
 		mkdir -p $@
@@ -172,7 +173,5 @@ gcovclean:
 
 #afl:		export AFL_USE_ASAN=1
 #afl:		export AFL_USE_MSAN=1
-afl:		CC=$(AFL_CC)
-afl:		CFLAGS+=$(AFL_CFLAGS)
 afl:		| clean
-		$(MAKE) all CC=$(CC) CFLAGS="$(CFLAGS)"
+		$(MAKE) all CC=$(AFL_CC) CFLAGS_CC="$(AFL_CFLAGS_CC)"
