@@ -114,10 +114,7 @@ HTMLDIR=report
 
 # afl
 AFL_CC=afl-clang-fast
-AFL_CFLAGS_CC=
-ifeq ($(CC_GCC),true)
-	AFL_CFLAGS_CC=$(CFLAGS_CLANG)
-endif
+AFL_CFLAGS_CC=$(CFLAGS_CLANG)
 
 .PHONY:		all lib clean gcov gcovclean afl
 
