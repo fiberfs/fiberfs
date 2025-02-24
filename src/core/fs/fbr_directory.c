@@ -99,8 +99,6 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
-	assert_zero(file->parent_inode);
-	assert_zero(file->refcounts.all);
 
 	// directory ownership
 	file->refcounts.dindex = 1;

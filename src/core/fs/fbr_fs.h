@@ -89,6 +89,8 @@ struct fbr_directory {
 	TAILQ_ENTRY(fbr_directory)		lru_entry;
 	TAILQ_HEAD(, fbr_file)			file_list;
 	struct fbr_filename_tree		filename_tree;
+
+	unsigned int				removed_dindex:1;
 };
 
 struct fbr_dirbuffer {

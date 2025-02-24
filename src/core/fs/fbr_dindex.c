@@ -153,6 +153,47 @@ _dindex_get_dirhead(struct fbr_dindex *dindex, struct fbr_directory *directory)
         return dirhead;
 }
 
+static void
+_dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert_dev(directory->removed_dindex);
+
+	struct fbr_file *file, *temp;
+
+	TAILQ_FOREACH_SAFE(file, &directory->file_list, file_entry, temp) {
+		fbr_file_ok(file);
+
+		TAILQ_REMOVE(&directory->file_list, file, file_entry);
+
+		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file);
+
+		struct fbr_file_refcounts refcounts;
+		fbr_file_release_dindex(fs, file, &refcounts);
+
+		if (!refcounts.all) {
+			fbr_file_free(fs, file);
+		}
+	}
+
+	fbr_inode_release(fs, &directory->file);
+	assert_zero_dev(directory->file);
+
+	assert(TAILQ_EMPTY(&directory->file_list));
+	assert(RB_EMPTY(&directory->filename_tree));
+
+	assert_zero(pthread_mutex_destroy(&directory->cond_lock));
+
+	fbr_path_free(&directory->dirname);
+
+	fbr_ZERO(directory);
+
+	free(directory);
+
+	fbr_fs_stat_sub(&fs->stats.directories);
+}
+
 void
 fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 {
@@ -172,13 +213,36 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	directory->refcount = 1;
 
 	struct fbr_directory *existing = RB_INSERT(fbr_dindex_tree, &dirhead->tree, directory);
-	fbr_ASSERT(!existing, "TODO");
+
+	if (existing) {
+		fbr_directory_ok(existing);
+
+		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, existing);
+		_dindex_lru_remove(dindex, existing);
+
+		existing->removed_dindex = 1;
+
+		assert(directory->refcount);
+		directory->refcount--;
+
+		fbr_fs_stat_sub(&fs->stats.directory_refs);
+
+		if (directory->refcount) {
+			existing = NULL;
+		}
+
+		assert_zero(RB_INSERT(fbr_dindex_tree, &dirhead->tree, directory));
+	}
 
 	_dindex_lru_add(dindex, directory);
 
 	fbr_fs_stat_add(&fs->stats.directory_refs);
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
+
+	if (existing) {
+		_dindex_directory_free(fs, existing);
+	}
 }
 
 struct fbr_directory *
@@ -220,46 +284,6 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 	return directory;
 }
 
-static void
-_dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
-{
-	fbr_fs_ok(fs);
-	fbr_directory_ok(directory);
-
-	struct fbr_file *file, *temp;
-
-	TAILQ_FOREACH_SAFE(file, &directory->file_list, file_entry, temp) {
-		fbr_file_ok(file);
-
-		TAILQ_REMOVE(&directory->file_list, file, file_entry);
-
-		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file);
-
-		struct fbr_file_refcounts refcounts;
-		fbr_file_release_dindex(fs, file, &refcounts);
-
-		if (!refcounts.all) {
-			fbr_file_free(fs, file);
-		}
-	}
-
-	fbr_inode_release(fs, &directory->file);
-	assert_zero_dev(directory->file);
-
-	assert(TAILQ_EMPTY(&directory->file_list));
-	assert(RB_EMPTY(&directory->filename_tree));
-
-	assert_zero(pthread_mutex_destroy(&directory->cond_lock));
-
-	fbr_path_free(&directory->dirname);
-
-	fbr_ZERO(directory);
-
-	free(directory);
-
-	fbr_fs_stat_sub(&fs->stats.directories);
-}
-
 void
 fbr_dindex_forget(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_refcount_t refs)
 {
@@ -289,9 +313,12 @@ fbr_dindex_forget(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_re
 		return;
 	}
 
-	(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
+	if (!directory->removed_dindex) {
+		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
+		_dindex_lru_remove(dindex, directory);
 
-	_dindex_lru_remove(dindex, directory);
+		directory->removed_dindex = 1;
+	}
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
@@ -324,9 +351,12 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 		return;
 	}
 
-	(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
+	if (!directory->removed_dindex) {
+		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
+		_dindex_lru_remove(dindex, directory);
 
-	_dindex_lru_remove(dindex, directory);
+		directory->removed_dindex = 1;
+	}
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
