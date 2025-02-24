@@ -27,7 +27,13 @@ _path_storage_len(const struct fbr_path_name *dirname, const struct fbr_path_nam
 		return 0;
 	}
 
-	return dirname->len + 1 + filename->len + 1;
+	int null = 1;
+	int slash = 0;
+	if (dirname->len && filename->len) {
+		slash = 1;
+	}
+
+	return dirname->len + slash + filename->len + null;
 }
 
 static void
@@ -81,7 +87,7 @@ _path_init(struct fbr_path *path, char *name_storage, const struct fbr_path_name
 		memcpy(name_storage + dirname->len + extra_slash, filename->name, filename->len);
 	}
 
-	assert_dev(name_storage[dirname->len + extra_slash + filename->len] == 0);
+	assert_dev(name_storage[dirname->len + extra_slash + filename->len] == '\0');
 }
 
 void *
