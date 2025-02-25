@@ -21,5 +21,7 @@ sleep_ms 100
 fs_test_release_root
 fs_test_stats
 equal $fs_test_stat_directories 0
+equal $fs_test_stat_files 2
+equal $fs_test_stat_file_refs 2
 
 fuse_test_unmount

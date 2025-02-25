@@ -271,16 +271,23 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 		}
 	}
 	if (!dbuf.full && !reader->read_dotdot) {
+		int do_release = 1;
+
 		struct fbr_file *parent;
 		if (directory->file->parent_inode) {
 			parent = fbr_inode_take(fs, directory->file->parent_inode);
 		} else {
 			parent = directory->file;
+			do_release = 0;
 		}
 		fbr_file_ok(parent);
 
 		struct stat st;
 		fbr_file_attr(parent, &st);
+
+		if (do_release) {
+			fbr_inode_release(fs, &parent);
+		}
 
 		fbr_dirbuffer_add(request, &dbuf, "..", &st);
 
@@ -425,13 +432,18 @@ _test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlook
 }
 
 static void
-_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count, struct fuse_forget_data *forgets)
+_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
+    struct fuse_forget_data *forgets)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "FORGET_MULTI count: %zu", count);
 
 	for (size_t i = 0; i < count; i++) {
+		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
+			"FORGET_MULTI ino: %lu nlookup: %lu",
+			forgets[i].ino, forgets[i].nlookup);
+
 		fbr_inode_forget(fs, forgets[i].ino, forgets[i].nlookup);
 	}
 
