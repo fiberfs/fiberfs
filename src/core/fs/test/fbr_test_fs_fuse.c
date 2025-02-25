@@ -144,20 +144,20 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	struct fbr_path_name parent_dirname;
 	fbr_path_get_full(&parent_file->path, &parent_dirname);
 
-	fbr_inode_release(fs, &parent_file);
-	assert_zero_dev(parent_file);
-
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP parent: '%.*s':%zu",
 		(int)parent_dirname.len, parent_dirname.name, parent_dirname.len);
 
 	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname);
 
 	if (!directory) {
-		fbr_fuse_reply_err(request, ENOTDIR);
-		return;
+		_test_fs_init_directory(fs, &parent_dirname, parent_file->inode);
+		directory = fbr_dindex_take(fs, &parent_dirname);
 	}
 
 	fbr_directory_ok(directory);
+
+	fbr_inode_release(fs, &parent_file);
+	assert_zero_dev(parent_file);
 
 	const char *dirname = fbr_path_get_full(&directory->dirname, NULL);
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP directory: '%s'", dirname);
@@ -176,7 +176,8 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	assert(file->inode);
 
 	const char *filename = fbr_path_get_full(&file->path, NULL);
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP file: '%s'", filename);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP file: '%s' (inode: %lu)",
+		filename, file->inode);
 
 	struct fuse_entry_param entry;
 	fbr_ZERO(&entry);
