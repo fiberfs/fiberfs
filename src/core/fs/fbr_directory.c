@@ -122,7 +122,7 @@ fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_stat
 	assert_zero(pthread_mutex_lock(&directory->cond_lock));
 
 	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_LOADING);
+	assert(directory->state < FBR_DIRSTATE_OK);
 
 	directory->state = state;
 
@@ -139,7 +139,7 @@ fbr_directory_wait_ok(struct fbr_directory *directory)
 
 	assert_zero(pthread_mutex_lock(&directory->cond_lock));
 
-	while (directory->state == FBR_DIRSTATE_LOADING) {
+	while (directory->state < FBR_DIRSTATE_OK) {
 		pthread_cond_wait(&directory->cond, &directory->cond_lock);
 	}
 

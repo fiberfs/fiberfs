@@ -56,8 +56,8 @@ struct fbr_file {
 enum fbr_directory_state {
 	FBR_DIRSTATE_NONE = 0,
 	FBR_DIRSTATE_LOADING,
-	FBR_DIRSTATE_OK,
 	FBR_DIRSTATE_STALE,
+	FBR_DIRSTATE_OK,
 	FBR_DIRSTATE_ERROR
 };
 
@@ -190,6 +190,7 @@ struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_n
 void fbr_dindex_forget(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	fbr_refcount_t refs);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
+void fbr_dindex_lru_max(struct fbr_fs *fs, size_t lru_max);
 void fbr_dindex_free_all(struct fbr_fs *fs);
 
 struct fbr_dreader *fbr_dreader_alloc(struct fbr_fs *fs, struct fbr_directory *directory);

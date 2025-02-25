@@ -21,7 +21,7 @@
 #define _TEST_FS_FUSE_TTL_SEC		2.0
 
 static void
-_test_fs_init_directory(struct fbr_fs *fs, struct fbr_directory *directory)
+_test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
@@ -32,14 +32,21 @@ _test_fs_init_directory(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** INIT directory: '%.*s':%zu",
 		(int)dirname.len, dirname.name, dirname.len);
 
-	char name[32];
-	strncpy(name, "fiberX", sizeof(name));
-	assert(name[5] == 'X');
+	size_t depth = 0;
+
+	while(dirname.len) {
+		fbr_path_name_parent(&dirname, &dirname);
+		depth++;
+		assert(depth < 1000);
+	}
+
+	char name[128];
 
 	for (size_t i = 0; i < 4; i++) {
 		mode_t fmode = S_IFREG | 0444;
 
-		name[5] = i + '1';
+		int ret = snprintf(name, sizeof(name), "fiber_%zu%zu", depth, i + 1);
+		assert((size_t)ret < sizeof(name));
 
 		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, name);
@@ -47,13 +54,15 @@ _test_fs_init_directory(struct fbr_fs *fs, struct fbr_directory *directory)
 		(void)fbr_file_alloc(fs, directory, &filename, fmode);
 	}
 
-	strncpy(name, "fiber_dirX", sizeof(name));
-	assert(name[9] == 'X');
-
 	for (size_t i = 0; i < 4; i++) {
-		mode_t fmode = S_IFDIR | 0444;
+		if (depth > 4) {
+			break;
+		}
 
-		name[9] = i + '1';
+		mode_t fmode = S_IFDIR | 0555;
+
+		int ret = snprintf(name, sizeof(name), "fiber_dir%zu%zu", depth, i + 1);
+		assert((size_t)ret < sizeof(name));
 
 		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, name);
@@ -62,6 +71,19 @@ _test_fs_init_directory(struct fbr_fs *fs, struct fbr_directory *directory)
 	}
 
 	fbr_directory_set_state(directory, FBR_DIRSTATE_OK);
+}
+
+static void
+_test_fs_init_directory(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_inode_t inode)
+{
+	fbr_fs_ok(fs);
+	assert(dirname);
+	assert(dirname->len);
+	assert(inode > FBR_INODE_ROOT);
+
+	struct fbr_directory *directory = fbr_directory_alloc(fs, dirname, inode);
+
+	_test_fs_init_contents(fs, directory);
 }
 
 static void
@@ -75,7 +97,7 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 
-	_test_fs_init_directory(fs, root);
+	_test_fs_init_contents(fs, root);
 }
 
 static void
@@ -120,7 +142,7 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	}
 
 	struct fbr_path_name parent_dirname;
-	fbr_path_get_dir(&parent_file->path, &parent_dirname);
+	fbr_path_get_full(&parent_file->path, &parent_dirname);
 
 	fbr_inode_release(fs, &parent_file);
 	assert_zero_dev(parent_file);
@@ -136,8 +158,8 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	}
 
 	fbr_directory_ok(directory);
-	const char *dirname = fbr_path_get_full(&directory->dirname, NULL);
 
+	const char *dirname = fbr_path_get_full(&directory->dirname, NULL);
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP directory: '%s'", dirname);
 
 	struct fbr_file *file = fbr_directory_find_file(directory, name);
@@ -190,15 +212,17 @@ _test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** OPENDIR directory: '%.*s':%zu",
 		(int)dirname.len, dirname.name, dirname.len);
 
-	fbr_inode_release(fs, &file);
-	assert_zero_dev(file);
-
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname);
 
 	if (!directory) {
-		fbr_fuse_reply_err(request, ENOENT);
-		return;
+		_test_fs_init_directory(fs, &dirname, file->inode);
+		directory = fbr_dindex_take(fs, &dirname);
 	}
+
+	fbr_directory_ok(directory);
+
+	fbr_inode_release(fs, &file);
+	assert_zero_dev(file);
 
 	struct fbr_dreader *reader = fbr_dreader_alloc(fs, directory);
 	fbr_dreader_ok(reader);

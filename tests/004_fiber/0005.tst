@@ -6,12 +6,19 @@ fs_test_fuse_mount $sys_tmpdir
 
 sys_ls $sys_tmpdir
 
-set_var1 $sys_tmpdir "/fiber_dir2"
+sleep_ms 100
 
-#sys_ls $var1
+set_var1 $sys_tmpdir "/fiber_dir02"
+sys_ls $var1
+
+sleep_ms 100
+
+set_var2 $var1 "/fiber_dir13"
+sys_ls $var2
+
+sleep_ms 100
 
 fs_test_release_root
-sleep_ms 100
 fs_test_stats
 equal $fs_test_stat_directories 0
 
