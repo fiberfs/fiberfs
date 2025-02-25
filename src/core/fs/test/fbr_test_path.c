@@ -212,7 +212,10 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		directory = fbr_dindex_take(fs, &dirname);
 		fbr_directory_ok(directory);
 
-		fbr_dindex_forget(fs, &dirname, 2);
+		struct fbr_directory *directory_dindex = directory;
+
+		fbr_dindex_release(fs, &directory);
+		fbr_dindex_release(fs, &directory_dindex);
 
 		fbr_inode_forget(fs, inode, 2);
 
