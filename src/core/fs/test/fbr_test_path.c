@@ -139,7 +139,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		// lookup
 		fbr_inode_add(fs, file);
 
-		inode = file->inode;
+		fbr_inode_t inode_next = file->inode;
 
 		struct fbr_path_name dirname;
 		fbr_path_get_full(&file->path, &dirname);
@@ -161,9 +161,16 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		_test_path_print_path(ctx, &file->path, "file", layout, "", name2, name2);
 
+		f2 = fbr_directory_find_file(directory, name2);
+		assert(f2 == file);
+
+		assert(file->parent_inode == inode);
+
 		// directory
 
-		directory = fbr_directory_alloc(fs, &dirname, inode);
+		directory = fbr_directory_alloc(fs, &dirname, inode_next);
+
+		inode = inode_next;
 
 		layout = FBR_PATH_PTR;
 		if (strlen(sfull) < 15) {
