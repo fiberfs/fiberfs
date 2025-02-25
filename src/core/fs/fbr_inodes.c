@@ -184,19 +184,25 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref)
 	fbr_inode_head_ok(head);
 	fbr_file_ok(file);
 
-	struct fbr_file_refcounts refcounts;
-	fbr_file_release_inode(fs, file, &refcounts);
+	fbr_file_release_inode_lock(fs, file);
 
-	if (refcounts.inode) {
+	if (file->refcounts.inode) {
+		assert_zero(pthread_mutex_unlock(&file->refcount_lock));
 		assert_zero(pthread_mutex_unlock(&head->lock));
 		return;
 	}
 
 	(void)RB_REMOVE(fbr_inodes_tree, &head->tree, file);
 
+	int do_free = 0;
+	if (!file->refcounts.dindex && !file->refcounts.inode) {
+		do_free = 1;
+	}
+
+	assert_zero(pthread_mutex_unlock(&file->refcount_lock));
 	assert_zero(pthread_mutex_unlock(&head->lock));
 
-	if (!refcounts.all) {
+	if (do_free) {
 		fbr_file_free(fs, file);
 	}
 }
@@ -207,6 +213,7 @@ fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 {
 	struct fbr_inodes *inodes = _inodes_fs_get(fs);
 	assert(inode);
+	assert(refs);
 
 	struct fbr_file find;
 	find.magic = FBR_FILE_MAGIC;
@@ -220,19 +227,25 @@ fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
         struct fbr_file *file = RB_FIND(fbr_inodes_tree, &head->tree, &find);
 	fbr_file_ok(file);
 
-	struct fbr_file_refcounts refcounts;
-	fbr_file_forget_inode(fs, file, refs, &refcounts);
+	fbr_file_forget_inode_lock(fs, file, refs);
 
-	if (refcounts.inode) {
+	if (file->refcounts.inode) {
+		assert_zero(pthread_mutex_unlock(&file->refcount_lock));
 		assert_zero(pthread_mutex_unlock(&head->lock));
 		return;
 	}
 
 	(void)RB_REMOVE(fbr_inodes_tree, &head->tree, file);
 
+	int do_free = 0;
+	if (!file->refcounts.dindex && !file->refcounts.inode) {
+		do_free = 1;
+	}
+
+	assert_zero(pthread_mutex_unlock(&file->refcount_lock));
 	assert_zero(pthread_mutex_unlock(&head->lock));
 
-	if (!refcounts.all) {
+	if (do_free) {
 		fbr_file_free(fs, file);
 	}
 }

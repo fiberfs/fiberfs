@@ -158,7 +158,6 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
-	assert_dev(directory->removed_dindex);
 
 	struct fbr_file *file, *temp;
 
@@ -169,12 +168,8 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file);
 
-		struct fbr_file_refcounts refcounts;
-		fbr_file_release_dindex(fs, file, &refcounts);
-
-		if (!refcounts.all) {
-			fbr_file_free(fs, file);
-		}
+		fbr_file_release_dindex(fs, &file);
+		assert_zero_dev(file);
 	}
 
 	fbr_inode_release(fs, &directory->file);
@@ -200,6 +195,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 	fbr_directory_ok(directory);
 	assert(directory->inode);
+	assert_zero(directory->dindexed);
 
 	struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, directory);
 
@@ -211,16 +207,18 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	// dindex ownership
 	directory->refcount = 1;
+	directory->dindexed = 1;
 
 	struct fbr_directory *existing = RB_INSERT(fbr_dindex_tree, &dirhead->tree, directory);
 
 	if (existing) {
 		fbr_directory_ok(existing);
+		assert(existing->dindexed);
 
 		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, existing);
 		_dindex_lru_remove(dindex, existing);
 
-		existing->removed_dindex = 1;
+		existing->dindexed = 0;
 
 		assert(directory->refcount);
 		directory->refcount--;
@@ -313,11 +311,11 @@ fbr_dindex_forget(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_re
 		return;
 	}
 
-	if (!directory->removed_dindex) {
+	if (directory->dindexed) {
 		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
 		_dindex_lru_remove(dindex, directory);
 
-		directory->removed_dindex = 1;
+		directory->dindexed = 0;
 	}
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
@@ -351,11 +349,11 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 		return;
 	}
 
-	if (!directory->removed_dindex) {
+	if (directory->dindexed) {
 		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
 		_dindex_lru_remove(dindex, directory);
 
-		directory->removed_dindex = 1;
+		directory->dindexed = 0;
 	}
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));

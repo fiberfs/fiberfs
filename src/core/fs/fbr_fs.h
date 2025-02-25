@@ -28,7 +28,6 @@ typedef unsigned int fbr_refcount_t;
 struct fbr_file_refcounts {
 	fbr_refcount_t				dindex;
 	fbr_refcount_t				inode;
-	unsigned long				all;
 };
 
 struct fbr_file {
@@ -90,7 +89,7 @@ struct fbr_directory {
 	TAILQ_HEAD(, fbr_file)			file_list;
 	struct fbr_filename_tree		filename_tree;
 
-	unsigned int				removed_dindex:1;
+	unsigned int				dindexed:1;
 };
 
 struct fbr_dirbuffer {
@@ -166,13 +165,10 @@ struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 int fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 void fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file);
-void fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file *file,
-	struct fbr_file_refcounts *refcounts);
+void fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file **file_ref);
 void fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file);
-void fbr_file_release_inode(struct fbr_fs *fs, struct fbr_file *file,
-	struct fbr_file_refcounts *refcounts);
-void fbr_file_forget_inode(struct fbr_fs *fs, struct fbr_file *file, fbr_refcount_t refs,
-	struct fbr_file_refcounts *refcounts);
+void fbr_file_release_inode_lock(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_refcount_t refs);
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_attr(struct fbr_file *file, struct stat *st);
 
