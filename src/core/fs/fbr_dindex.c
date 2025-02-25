@@ -47,6 +47,8 @@ struct fbr_dindex {
 
 RB_GENERATE_STATIC(fbr_dindex_tree, fbr_directory, dindex_entry, fbr_directory_cmp)
 
+static void _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory);
+
 void
 fbr_dindex_alloc(struct fbr_fs *fs)
 {
@@ -169,42 +171,6 @@ _dindex_get_dirhead(struct fbr_dindex *dindex, struct fbr_directory *directory)
         return dirhead;
 }
 
-static void
-_dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
-{
-	fbr_fs_ok(fs);
-	fbr_directory_ok(directory);
-
-	struct fbr_file *file, *temp;
-
-	TAILQ_FOREACH_SAFE(file, &directory->file_list, file_entry, temp) {
-		fbr_file_ok(file);
-
-		TAILQ_REMOVE(&directory->file_list, file, file_entry);
-
-		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file);
-
-		fbr_file_release_dindex(fs, &file);
-		assert_zero_dev(file);
-	}
-
-	fbr_inode_release(fs, &directory->file);
-	assert_zero_dev(directory->file);
-
-	assert(TAILQ_EMPTY(&directory->file_list));
-	assert(RB_EMPTY(&directory->filename_tree));
-
-	assert_zero(pthread_mutex_destroy(&directory->cond_lock));
-
-	fbr_path_free(&directory->dirname);
-
-	fbr_ZERO(directory);
-
-	free(directory);
-
-	fbr_fs_stat_sub(&fs->stats.directories);
-}
-
 void
 fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 {
@@ -298,6 +264,80 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 	return directory;
 }
 
+static void
+_dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+
+	struct fbr_file *file, *temp;
+
+	TAILQ_FOREACH_SAFE(file, &directory->file_list, file_entry, temp) {
+		fbr_file_ok(file);
+
+		TAILQ_REMOVE(&directory->file_list, file, file_entry);
+
+		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file);
+
+		fbr_file_release_dindex(fs, &file);
+		assert_zero_dev(file);
+	}
+
+	fbr_inode_release(fs, &directory->file);
+	assert_zero_dev(directory->file);
+
+	assert(TAILQ_EMPTY(&directory->file_list));
+	assert(RB_EMPTY(&directory->filename_tree));
+
+	assert_zero(pthread_mutex_destroy(&directory->cond_lock));
+
+	fbr_path_free(&directory->dirname);
+
+	fbr_ZERO(directory);
+
+	free(directory);
+
+	fbr_fs_stat_sub(&fs->stats.directories);
+}
+
+void
+fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
+{
+	struct fbr_dindex *dindex = _dindex_fs_get(fs);
+	assert(*directory_ref);
+
+	struct fbr_directory *directory = *directory_ref;
+	fbr_directory_ok(directory);
+	*directory_ref = NULL;
+
+	struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, directory);
+
+	assert_zero(pthread_mutex_lock(&dirhead->lock));
+	fbr_dindex_dirhead_ok(dirhead);
+	fbr_directory_ok(directory);
+
+	assert(directory->refcount);
+	directory->refcount--;
+
+	fbr_fs_stat_sub(&fs->stats.directory_refs);
+
+	if (directory->refcount) {
+		assert_zero(pthread_mutex_unlock(&dirhead->lock));
+		return;
+	}
+
+	if (directory->dindexed) {
+		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
+		_dindex_lru_remove(dindex, directory);
+
+		directory->dindexed = 0;
+	}
+
+	assert_zero(pthread_mutex_unlock(&dirhead->lock));
+
+	_dindex_directory_free(fs, directory);
+}
+
 void
 _dindex_remove(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 {
@@ -344,44 +384,6 @@ _dindex_remove(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 	if (do_free) {
 		_dindex_directory_free(fs, directory);
 	}
-}
-
-void
-fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
-{
-	struct fbr_dindex *dindex = _dindex_fs_get(fs);
-	assert(*directory_ref);
-
-	struct fbr_directory *directory = *directory_ref;
-	fbr_directory_ok(directory);
-	*directory_ref = NULL;
-
-	struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, directory);
-
-	assert_zero(pthread_mutex_lock(&dirhead->lock));
-	fbr_dindex_dirhead_ok(dirhead);
-	fbr_directory_ok(directory);
-
-	assert(directory->refcount);
-	directory->refcount--;
-
-	fbr_fs_stat_sub(&fs->stats.directory_refs);
-
-	if (directory->refcount) {
-		assert_zero(pthread_mutex_unlock(&dirhead->lock));
-		return;
-	}
-
-	if (directory->dindexed) {
-		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
-		_dindex_lru_remove(dindex, directory);
-
-		directory->dindexed = 0;
-	}
-
-	assert_zero(pthread_mutex_unlock(&dirhead->lock));
-
-	_dindex_directory_free(fs, directory);
 }
 
 void
