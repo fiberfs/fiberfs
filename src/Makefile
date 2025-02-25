@@ -27,7 +27,7 @@ FJSON_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FJSON_SRC)))
 UTILS_SRC=$(wildcard utils/*.c)
 UTILS_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(UTILS_SRC)))
 
-ALL_SOURCE:=$(wildcard *.c */*.c */*/*.c */*/*/*.c)
+ALL_SOURCE:=$(shell find * -type f -name '*.c')
 SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(FJSON_SRC), \
 	$(ALL_SOURCE))
 OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(SOURCE)))
@@ -143,7 +143,7 @@ $(BUILD)/%.o:	%.c | $(BUILD_DIRS)
 		$(CC) $(CFLAGS) $(CFLAGS_CC) $(DEPFLAGS) -c $< -o $@
 
 $(BUILD_DIRS):
-		mkdir -p $@
+		@mkdir -p $@
 
 include $(wildcard $(DEPS))
 
