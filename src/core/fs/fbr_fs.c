@@ -59,7 +59,7 @@ fbr_fs_release_root(struct fbr_fs *fs)
 	fbr_fs_ok(fs);
 	fbr_directory_ok(fs->root);
 
-	fbr_dindex_lru_max(fs, 0);
+	fbr_dindex_lru_purge(fs, 0);
 
 	fbr_dindex_release(fs, &fs->root);
 	assert_zero_dev(fs->root);

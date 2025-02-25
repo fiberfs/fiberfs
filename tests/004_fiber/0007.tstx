@@ -6,6 +6,8 @@ sys_mkdir_tmp
 
 fs_test_fuse_mount $sys_tmpdir
 
+fs_test_fuse_init_root
+
 sys_ls $sys_tmpdir
 
 set_var1 $sys_tmpdir "/fiber_dir02"

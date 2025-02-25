@@ -188,7 +188,7 @@ void fbr_dindex_alloc(struct fbr_fs *fs);
 void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
-void fbr_dindex_lru_max(struct fbr_fs *fs, size_t lru_max);
+void fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max);
 void fbr_dindex_free_all(struct fbr_fs *fs);
 
 struct fbr_dreader *fbr_dreader_alloc(struct fbr_fs *fs, struct fbr_directory *directory);

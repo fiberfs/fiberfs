@@ -158,6 +158,12 @@ fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode)
 	fbr_inode_head_ok(head);
 
         struct fbr_file *file = RB_FIND(fbr_inodes_tree, &head->tree, &find);
+
+	if (!file) {
+		assert_zero(pthread_mutex_unlock(&head->lock));
+		return NULL;
+	}
+
 	fbr_file_ok(file);
 
 	fbr_file_ref_inode(fs, file);

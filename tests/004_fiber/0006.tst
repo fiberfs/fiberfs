@@ -4,6 +4,8 @@ sys_mkdir_tmp
 
 fs_test_fuse_mount $sys_tmpdir
 
+fs_test_fuse_init_root
+
 sys_ls $sys_tmpdir
 
 set_var1 $sys_tmpdir "/fiber_dir02"
@@ -20,6 +22,16 @@ sys_ls $var4
 
 set_var5 $sys_tmpdir "/fiber_dir03/fiber_dir11/fiber_dir21/fiber_dir32/fiber_dir44"
 sys_ls $var5 "..:dir .:dir fiber_51:file fiber_52:file fiber_53:file fiber_54:file"
+
+sleep_ms 100
+
+fs_test_release_dindex
+
+sys_ls $sys_tmpdir
+# TODO this still uses old inodes due to caching
+# and valgrind is too slow for this
+#sys_ls $var1
+#sys_ls $var2
 
 sleep_ms 100
 

@@ -77,11 +77,20 @@ static void
 _test_fs_init_directory(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_inode_t inode)
 {
 	fbr_fs_ok(fs);
-	assert(dirname);
-	assert(dirname->len);
-	assert(inode > FBR_INODE_ROOT);
+	assert(inode);
 
-	struct fbr_directory *directory = fbr_directory_alloc(fs, dirname, inode);
+	struct fbr_directory *directory = NULL;
+
+	if (inode == FBR_INODE_ROOT) {
+		assert_zero(dirname);
+
+		directory = fbr_directory_root_alloc(fs);
+	} else {
+		assert(dirname);
+		assert(dirname->len);
+
+		directory = fbr_directory_alloc(fs, dirname, inode);
+	}
 
 	_test_fs_init_contents(fs, directory);
 }
@@ -91,13 +100,6 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
 	fbr_fuse_mounted(ctx);
 	assert(conn);
-
-	struct fbr_fs *fs = ctx->fs;
-	fbr_fs_ok(fs);
-
-	struct fbr_directory *root = fbr_directory_root_alloc(fs);
-
-	_test_fs_init_contents(fs, root);
 }
 
 static void
@@ -472,10 +474,27 @@ static const struct fbr_fuse_callbacks _TEST_FS_FUSE_CALLBACKS = {
 void
 fbr_cmd_fs_test_fuse_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
+	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_FS_FUSE_CALLBACKS);
 	fbr_test_ERROR(ret, "fs fuse mount failed: %s", cmd->params[0].value);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", cmd->params[0].value);
+}
+
+void
+fbr_cmd_fs_test_fuse_init_root(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	struct fbr_fs *fs = fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	_test_fs_init_directory(fs, NULL, FBR_INODE_ROOT);
+	fbr_test_ASSERT(fs->root, "root doesnt exist");
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root initialized");
 }

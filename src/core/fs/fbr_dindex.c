@@ -410,7 +410,7 @@ _dindex_lru_pop(struct fbr_fs *fs)
 }
 
 void
-fbr_dindex_lru_max(struct fbr_fs *fs, size_t lru_max)
+fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 
