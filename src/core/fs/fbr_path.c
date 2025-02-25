@@ -10,8 +10,6 @@
 #include "fiberfs.h"
 #include "fbr_path.h"
 
-// TODO do files need dir paths?
-
 static const struct fbr_path_name _PATH_NAME_EMPTY = {0, ""};
 const struct fbr_path_name *PATH_NAME_EMPTY = &_PATH_NAME_EMPTY;
 

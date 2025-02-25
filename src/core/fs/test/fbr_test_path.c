@@ -113,6 +113,8 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		char *name = cmd->params[i].value;
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** %zu '%s'", i + 1, name);
 
+		// directory file
+
 		layout = FBR_PATH_PTR;
 		if (!i && strlen(name) < 15) {
 			layout = FBR_PATH_EMBED_FILE;
@@ -127,9 +129,9 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, name);
 
-		file = fbr_file_alloc(fs, directory, &filename, 0);
+		file = fbr_file_alloc(fs, directory, &filename, S_IFDIR);
 
-		_test_path_print_path(ctx, &file->path, "file", layout, sdir, name, sfull);
+		_test_path_print_path(ctx, &file->path, "directory_file", layout, sdir, name, sfull);
 
 		struct fbr_file *f2 = fbr_directory_find_file(directory, name);
 		assert(f2 == file);
@@ -142,13 +144,33 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		struct fbr_path_name dirname;
 		fbr_path_get_full(&file->path, &dirname);
 
-		directory = fbr_directory_alloc(fs, &dirname, file->inode);
+		// random file
 
+		char name2[PATH_MAX];
+		int ret = snprintf(name2, sizeof(name2), "%s.txt", name);
+		assert((size_t)ret < sizeof(name2));
+
+		layout = FBR_PATH_PTR;
+		if (strlen(name2) < 15) {
+			layout = FBR_PATH_EMBED_FILE;
+		}
+
+		fbr_path_name_init(&filename, name2);
+
+		file = fbr_file_alloc(fs, directory, &filename, S_IFREG);
+
+		_test_path_print_path(ctx, &file->path, "file", layout, "", name2, name2);
+
+		// directory
+
+		directory = fbr_directory_alloc(fs, &dirname, inode);
+
+		layout = FBR_PATH_PTR;
 		if (strlen(sfull) < 15) {
 			layout = FBR_PATH_EMBED_DIR;
 		}
 
-		_test_path_print_path(ctx, &directory->dirname, "dir", layout, sfull, "", sfull);
+		_test_path_print_path(ctx, &directory->dirname, "directory", layout, sfull, "", sfull);
 
 		if (i) {
 			strncat(sdir, "/", sizeof(sdir) - strlen(sdir) - 1);
