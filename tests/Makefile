@@ -5,6 +5,7 @@ FLAGS=-q
 TESTS=$(sort $(wildcard */*.cht */*.tst))
 TESTS_JSON=$(sort $(wildcard 003_json/*.tst))
 TESTS_FIBER=$(sort $(wildcard 004_fiber/*.tst))
+TESTS_FIBERX=$(sort $(wildcard 004_fiber/*.tstx))
 PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
 GDB=gdb --args
@@ -37,8 +38,7 @@ json:			$(TESTS_JSON)
 
 fiber:			$(TESTS_FIBER)
 
-%.cht:			$(FIBERFS_TEST) FORCE
-			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
+fiberx:			$(TESTS_FIBERX)
 
-%.tst:			$(FIBERFS_TEST) FORCE
+%.cht %.tst %tstx:	$(FIBERFS_TEST) FORCE
 			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
