@@ -1,0 +1,33 @@
+fiber_test "FS test with a page cache drop"
+
+skip_shell_failure "sudo -n true 2> /dev/null"
+
+sys_mkdir_tmp
+
+fs_test_fuse_mount $sys_tmpdir
+
+sys_ls $sys_tmpdir
+
+sleep_ms 100
+
+set_var1 $sys_tmpdir "/fiber_dir02"
+sys_ls $var1
+
+sleep_ms 100
+
+set_var2 $var1 "/fiber_dir13"
+sys_ls $var2
+
+sleep_ms 100
+
+shell "echo 2 | sudo -n tee /proc/sys/vm/drop_caches > /dev/null"
+
+sleep_ms 100
+
+fs_test_release_root
+fs_test_stats
+equal $fs_test_stat_directories 0
+equal $fs_test_stat_files 0
+
+
+fuse_test_unmount
