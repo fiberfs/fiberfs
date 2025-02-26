@@ -159,6 +159,8 @@ void fbr_test_fork(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd);
 int fbr_test_can_fork(struct fbr_test_context *ctx);
 int fbr_test_can_vfork(struct fbr_test_context *ctx);
 
+char *fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot);
+
 struct fbr_test *fbr_test_convert(struct fbr_test_context *ctx);
 void fbr_test_skip(struct fbr_test_context *ctx);
 void __fbr_attr_printf(3) fbr_test_log(struct fbr_test_context *ctx,
@@ -177,7 +179,6 @@ void fbr_test_random_seed(void);
 long fbr_test_gen_random(long low, long high);
 void fbr_test_fill_random(uint8_t *buf, size_t len);
 int fbr_test_is_valgrind(void);
-char *fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot);
 
 #define fbr_test_ok(test)						\
 {									\

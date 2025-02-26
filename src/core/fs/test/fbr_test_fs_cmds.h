@@ -26,7 +26,6 @@ FBR_TEST_FS_CMD(fs_test_release_dindex)
 FBR_TEST_FS_CMD(fs_test_stats)
 FBR_TEST_FS_CMD(fs_test_debug)
 
-// NOTE: not ok with valgrind
 FBR_TEST_FS_CMD(_fs_test_take)
 FBR_TEST_FS_CMD(_fs_test_release)
 
