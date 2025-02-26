@@ -37,4 +37,18 @@ static inline struct fbr_fs *fbr_request_fs(struct fbr_request *request)
 	return request->fuse_ctx->fs;
 }
 
+static inline int fbr_file_is_dir(struct fbr_file *file)
+{
+	fbr_file_ok(file);
+
+	return S_ISDIR(file->mode);
+}
+
+static inline int fbr_file_is_file(struct fbr_file *file)
+{
+	fbr_file_ok(file);
+
+	return S_ISREG(file->mode);
+}
+
 #endif /* _FBR_FS_INLINE_H_INCLUDED_ */

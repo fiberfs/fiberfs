@@ -158,17 +158,17 @@ _dindex_get_dirhead(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	fbr_path_get_dir(&directory->dirname, &dirname);
 	assert(dirname.name);
 
-        unsigned long hash = 5381;
+	unsigned long hash = 5381;
 
-        for (size_t i = 0; i < dirname.len; i++) {
+	for (size_t i = 0; i < dirname.len; i++) {
 		int c = dirname.name[i];
-                hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-        }
+		hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+	}
 
-        struct fbr_dindex_dirhead *dirhead = &(dindex->dirheads[hash % _DINDEX_HEAD_COUNT]);
+	struct fbr_dindex_dirhead *dirhead = &(dindex->dirheads[hash % _DINDEX_HEAD_COUNT]);
 	fbr_dindex_dirhead_ok(dirhead);
 
-        return dirhead;
+	return dirhead;
 }
 
 void
@@ -235,12 +235,12 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 	find.magic = FBR_DIRECTORY_MAGIC;
 	fbr_path_init_dir(&find.dirname, dirname->name, dirname->len);
 
-        struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, &find);
+	struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, &find);
 
-        assert_zero(pthread_mutex_lock(&dirhead->lock));
-        fbr_dindex_dirhead_ok(dirhead);
+	assert_zero(pthread_mutex_lock(&dirhead->lock));
+	fbr_dindex_dirhead_ok(dirhead);
 
-        struct fbr_directory *directory = RB_FIND(fbr_dindex_tree, &dirhead->tree, &find);
+	struct fbr_directory *directory = RB_FIND(fbr_dindex_tree, &dirhead->tree, &find);
 
 	if (!directory) {
 		assert_zero(pthread_mutex_unlock(&dirhead->lock));
@@ -348,12 +348,12 @@ _dindex_remove(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 	find.magic = FBR_DIRECTORY_MAGIC;
 	fbr_path_init_dir(&find.dirname, dirname->name, dirname->len);
 
-        struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, &find);
+	struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, &find);
 
-        assert_zero(pthread_mutex_lock(&dirhead->lock));
-        fbr_dindex_dirhead_ok(dirhead);
+	assert_zero(pthread_mutex_lock(&dirhead->lock));
+	fbr_dindex_dirhead_ok(dirhead);
 
-        struct fbr_directory *directory = RB_FIND(fbr_dindex_tree, &dirhead->tree, &find);
+	struct fbr_directory *directory = RB_FIND(fbr_dindex_tree, &dirhead->tree, &find);
 
 	if (!directory) {
 		assert_zero(pthread_mutex_unlock(&dirhead->lock));
@@ -419,6 +419,30 @@ fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max)
 	while (dindex->lru_len > lru_max && attempts) {
 		_dindex_lru_pop(fs);
 		attempts--;
+	}
+}
+
+void
+fbr_dindex_debug(struct fbr_fs *fs, fbr_dindex_debug_f *callback)
+{
+	struct fbr_dindex *dindex = _dindex_fs_get(fs);
+	assert(callback);
+
+	for (size_t i = 0; i < _DINDEX_HEAD_COUNT; i++) {
+		struct fbr_dindex_dirhead *dirhead = &dindex->dirheads[i];
+
+		assert_zero(pthread_mutex_lock(&dirhead->lock));
+		fbr_dindex_dirhead_ok(dirhead);
+
+		struct fbr_directory *directory;
+
+		RB_FOREACH(directory, fbr_dindex_tree, &dirhead->tree) {
+			fbr_directory_ok(directory);
+
+			callback(fs, directory);
+		}
+
+		assert_zero(pthread_mutex_unlock(&dirhead->lock));
 	}
 }
 

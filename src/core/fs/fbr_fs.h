@@ -142,6 +142,9 @@ RB_HEAD(fbr_dindex_tree, fbr_directory);
 
 extern const struct fbr_path_name *FBR_DIRNAME_ROOT;
 
+typedef void (fbr_inodes_debug_f)(struct fbr_fs *fs, struct fbr_file *file);
+typedef void (fbr_dindex_debug_f)(struct fbr_fs *fs, struct fbr_directory *directory);
+
 struct fbr_fs *fbr_fs_alloc(void);
 void fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root);
 void fbr_fs_release_root(struct fbr_fs *fs);
@@ -158,6 +161,7 @@ void fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file);
 struct fbr_file *fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode);
 void fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref);
 void fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs);
+void fbr_inodes_debug(struct fbr_fs *fs, fbr_inodes_debug_f *callback);
 void fbr_inodes_free_all(struct fbr_fs *fs);
 
 struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
@@ -189,6 +193,7 @@ void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
 void fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max);
+void fbr_dindex_debug(struct fbr_fs *fs, fbr_dindex_debug_f *callback);
 void fbr_dindex_free_all(struct fbr_fs *fs);
 
 struct fbr_dreader *fbr_dreader_alloc(struct fbr_fs *fs, struct fbr_directory *directory);

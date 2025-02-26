@@ -101,10 +101,10 @@ _inodes_get_head(struct fbr_inodes *inodes, struct fbr_file *file)
 
 	size_t pos = file->inode % _INODES_HEAD_COUNT;
 
-        struct fbr_inodes_head *head = &inodes->heads[pos];
+	struct fbr_inodes_head *head = &inodes->heads[pos];
 	fbr_inode_head_ok(head);
 
-        return head;
+	return head;
 }
 
 
@@ -152,12 +152,12 @@ fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode)
 	find.magic = FBR_FILE_MAGIC;
 	find.inode = inode;
 
-        struct fbr_inodes_head *head = _inodes_get_head(inodes, &find);
+	struct fbr_inodes_head *head = _inodes_get_head(inodes, &find);
 
-        assert_zero(pthread_mutex_lock(&head->lock));
+	assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 
-        struct fbr_file *file = RB_FIND(fbr_inodes_tree, &head->tree, &find);
+	struct fbr_file *file = RB_FIND(fbr_inodes_tree, &head->tree, &find);
 
 	if (!file) {
 		assert_zero(pthread_mutex_unlock(&head->lock));
@@ -184,9 +184,9 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref)
 	fbr_file_ok(file);
 	*file_ref = NULL;
 
-        struct fbr_inodes_head *head = _inodes_get_head(inodes, file);
+	struct fbr_inodes_head *head = _inodes_get_head(inodes, file);
 
-        assert_zero(pthread_mutex_lock(&head->lock));
+	assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 	fbr_file_ok(file);
 
@@ -225,12 +225,12 @@ fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 	find.magic = FBR_FILE_MAGIC;
 	find.inode = inode;
 
-        struct fbr_inodes_head *head = _inodes_get_head(inodes, &find);
+	struct fbr_inodes_head *head = _inodes_get_head(inodes, &find);
 
-        assert_zero(pthread_mutex_lock(&head->lock));
+	assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 
-        struct fbr_file *file = RB_FIND(fbr_inodes_tree, &head->tree, &find);
+	struct fbr_file *file = RB_FIND(fbr_inodes_tree, &head->tree, &find);
 	fbr_file_ok(file);
 
 	fbr_file_forget_inode_lock(fs, file, refs);
@@ -253,6 +253,30 @@ fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 
 	if (do_free) {
 		fbr_file_free(fs, file);
+	}
+}
+
+void
+fbr_inodes_debug(struct fbr_fs *fs, fbr_inodes_debug_f *callback)
+{
+	struct fbr_inodes *inodes = _inodes_fs_get(fs);
+	assert(callback);
+
+	for (size_t i = 0; i < _INODES_HEAD_COUNT; i++) {
+		struct fbr_inodes_head *head = &inodes->heads[i];
+
+		assert_zero(pthread_mutex_lock(&head->lock));
+		fbr_inode_head_ok(head);
+
+		struct fbr_file *file;
+
+		RB_FOREACH(file, fbr_inodes_tree, &head->tree) {
+			fbr_file_ok(file);
+
+			callback(fs, file);
+		}
+
+		assert_zero(pthread_mutex_unlock(&head->lock));
 	}
 }
 

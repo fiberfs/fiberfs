@@ -89,7 +89,7 @@ fbr_fs_stat_add_count(unsigned long *stat, unsigned long value)
 {
 	assert(stat);
 
-        (void)__sync_add_and_fetch(stat, value);
+	(void)__sync_add_and_fetch(stat, value);
 }
 
 void
@@ -103,7 +103,7 @@ fbr_fs_stat_sub_count(unsigned long *stat, unsigned long value)
 {
 	assert(stat);
 
-        (void)__sync_sub_and_fetch(stat, value);
+	(void)__sync_sub_and_fetch(stat, value);
 }
 
 void
