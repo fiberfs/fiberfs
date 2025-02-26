@@ -23,12 +23,19 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 	fbr_fs_ok(fs);
 	assert_zero(fs->root);
 
-	// TODO mode needs to be configurable
-	struct fbr_file *root_file = fbr_file_alloc(fs, NULL, PATH_NAME_EMPTY, S_IFDIR | 0755);
-	fbr_file_ok(root_file);
-	assert_dev(root_file->inode == FBR_INODE_ROOT);
+	struct fbr_file *root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
 
-	fbr_inode_add(fs, root_file);
+	if (!root_file) {
+		// TODO mode needs to be configurable
+		root_file = fbr_file_alloc(fs, NULL, PATH_NAME_EMPTY, S_IFDIR | 0755);
+		fbr_file_ok(root_file);
+		assert_dev(root_file->inode == FBR_INODE_ROOT);
+
+		fbr_inode_add(fs, root_file);
+
+		// Pull a hidden ref so this inode never disappears
+		//(void)fbr_inode_take(fs, FBR_INODE_ROOT);
+	}
 
 	struct fbr_directory *root = fbr_directory_alloc(fs, FBR_DIRNAME_ROOT, root_file->inode);
 	fbr_directory_ok(root);
