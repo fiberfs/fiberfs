@@ -43,22 +43,29 @@ fbr_cmd_fs_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id: %lu", fbr_id_gen());
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id: %lu", fbr_id_gen());
 
-	fbr_id_t id1 = fbr_id_gen();
+	char id1_string[FBR_ID_STRING_MAX];
+	char id2_string[FBR_ID_STRING_MAX];
+	char id3_string[FBR_ID_STRING_MAX];
+	assert(fbr_id_string(fbr_id_gen(), id1_string, sizeof(id1_string)));
+	assert(fbr_id_string(fbr_id_gen(), id2_string, sizeof(id2_string)));
+	assert(fbr_id_string(fbr_id_gen(), id3_string, sizeof(id3_string)));
 
-	char id1_string[128];
-	assert(fbr_id_string(id1, id1_string, sizeof(id1_string)));
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id1=%lu", id1);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fbr_id_string=%s", id1_string);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id1_string=%s", id1_string);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id2_string=%s", id2_string);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id3_string=%s", id3_string);
 
 	struct fbr_id id_max;
 	id_max.parts.timestamp = FBR_ID_TIMEBITS_MAX;
 	id_max.parts.random = FBR_ID_RANDBITS_MAX;
 
+	char _id_max[FBR_ID_STRING_MAX];
+	int _id_max_len = snprintf(_id_max, sizeof(_id_max), "%lu", id_max.value);
+	assert((size_t)_id_max_len < sizeof(_id_max));
+
 	char id_max_string[FBR_ID_STRING_MAX];
 	size_t id_max_len = fbr_id_string(id_max.value, id_max_string, sizeof(id_max_string));
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_max=%lu", id1);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_max=%lu:%d", id_max.value, _id_max_len);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_max_string=%s", id_max_string);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_max_len=%zu", id_max_len);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_ID_STRING_MAX=%d", FBR_ID_STRING_MAX);
@@ -83,4 +90,6 @@ fbr_cmd_fs_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_ASSERT(id_max_len == FBR_ID_STRING_MAX - 1, "FBR_ID_STRING_MAX wrong");
 	fbr_test_ERROR(strcmp(id_max_string, id_custom), "max strings dont match");
 	fbr_test_ASSERT(id_custom_len == FBR_ID_STRING_MAX - 1, "FBR_ID_STRING_MAX wrong");
+	fbr_test_ASSERT(strcmp(id1_string, id2_string), "id1_string == id2_string");
+	fbr_test_ASSERT(strcmp(id2_string, id3_string), "id2_string == id3_string");
 }
