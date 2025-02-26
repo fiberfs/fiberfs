@@ -18,7 +18,7 @@
 #include "test/fbr_test.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
-#define _TEST_FS_FUSE_TTL_SEC		2.0
+#define _TEST_FS_FUSE_TTL_SEC		0.75
 
 static void
 _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
@@ -74,19 +74,19 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 static void
-_test_fs_init_directory(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_inode_t inode)
+_test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_inode_t inode)
 {
 	fbr_fs_ok(fs);
+	assert(dirname);
 	assert(inode);
 
 	struct fbr_directory *directory = NULL;
 
 	if (inode == FBR_INODE_ROOT) {
-		assert_zero(dirname);
+		assert_zero(dirname->len);
 
 		directory = fbr_directory_root_alloc(fs);
 	} else {
-		assert(dirname);
 		assert(dirname->len);
 
 		directory = fbr_directory_alloc(fs, dirname, inode);
@@ -525,7 +525,7 @@ fbr_cmd_fs_test_fuse_init_root(struct fbr_test_context *ctx, struct fbr_test_cmd
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
-	_test_fs_init_directory(fs, NULL, FBR_INODE_ROOT);
+	_test_fs_init_directory(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
 	fbr_test_ASSERT(fs->root, "root doesnt exist");
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root initialized");

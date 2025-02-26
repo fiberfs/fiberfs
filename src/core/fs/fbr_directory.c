@@ -34,7 +34,7 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 		fbr_inode_add(fs, root_file);
 
 		// Pull a hidden ref so this inode never disappears
-		//(void)fbr_inode_take(fs, FBR_INODE_ROOT);
+		(void)fbr_inode_take(fs, FBR_INODE_ROOT);
 	}
 
 	struct fbr_directory *root = fbr_directory_alloc(fs, FBR_DIRNAME_ROOT, root_file->inode);

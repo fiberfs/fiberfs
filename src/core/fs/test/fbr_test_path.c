@@ -224,7 +224,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_path_name_parent(&full, &full);
 	}
 
-	fbr_fs_release_root(fs);
+	fbr_fs_release_root(fs, 1);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Files: %zu", fs->stats.files);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Directories: %zu", fs->stats.directories);

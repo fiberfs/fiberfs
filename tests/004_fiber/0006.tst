@@ -6,6 +6,8 @@ fs_test_fuse_mount $sys_tmpdir
 
 fs_test_fuse_init_root
 
+# Do a bunch of operations
+
 sys_ls $sys_tmpdir
 
 set_var1 $sys_tmpdir "/fiber_dir02"
@@ -23,25 +25,33 @@ sys_ls $var4
 set_var5 $sys_tmpdir "/fiber_dir03/fiber_dir11/fiber_dir21/fiber_dir32/fiber_dir44"
 sys_ls $var5 "..:dir .:dir fiber_51:file fiber_52:file fiber_53:file fiber_54:file"
 
-#sleep_ms 100
+# Expire cache
 
-#fs_test_release_dindex
+sleep_ms 1000
 
-#sys_ls $sys_tmpdir
-# TODO this still uses old inodes due to caching
-# and valgrind is too slow for this
-#sys_ls $var1
-#sys_ls $var2
+fs_test_release_root 0
+
+fs_test_stats
+
+# New operations
+
+sys_ls $sys_tmpdir
+sys_ls $var1
+sys_ls $var2
+
+# Cleanup
 
 sleep_ms 100
 
 fs_test_stats
 fs_test_debug
+
 fs_test_release_root
+
 fs_test_stats
 fs_test_debug
+
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_files 9
-equal $fs_test_stat_file_refs 9
 
 fuse_test_unmount

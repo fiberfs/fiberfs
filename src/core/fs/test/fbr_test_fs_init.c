@@ -89,15 +89,21 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 void
 fbr_cmd_fs_test_release_root(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	fbr_test_ERROR_param_count(cmd, 0);
+	fbr_test_ERROR(cmd->param_count > 1, "Too many params");
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
-	fbr_fs_release_root(fs);
+	int release_root_inode = 1;
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root released");
+	if (cmd->param_count == 1 && !strcmp(cmd->params[0].value, "0")) {
+		release_root_inode = 0;
+	}
+
+	fbr_fs_release_root(fs, release_root_inode);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root released %d", release_root_inode);
 }
 
 void

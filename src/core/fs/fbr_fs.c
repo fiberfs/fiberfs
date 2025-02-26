@@ -13,11 +13,12 @@
 /*
  * Each directory has a list of files with references
  * Each directory lives in the dindex and is controlled by the LRU
- * Each directory has a reference to its parent inode file
+ * Each directory has a reference to its sibling inode file
  * Each file has a parent inode value
  *
  * The root directory doesnt live in the LRU, the fs owns its ref
  * It also owns its parent inode ref
+ * The root inode has a hidden ref
  */
 
 struct fbr_fs *
@@ -54,7 +55,7 @@ fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root)
 }
 
 void
-fbr_fs_release_root(struct fbr_fs *fs)
+fbr_fs_release_root(struct fbr_fs *fs, int release_root_inode)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(fs->root);
@@ -63,6 +64,10 @@ fbr_fs_release_root(struct fbr_fs *fs)
 
 	fbr_dindex_release(fs, &fs->root);
 	assert_zero_dev(fs->root);
+
+	if (release_root_inode) {
+		fbr_inode_forget(fs, FBR_INODE_ROOT, 1);
+	}
 }
 
 void
@@ -71,7 +76,7 @@ fbr_fs_free(struct fbr_fs *fs)
 	fbr_fs_ok(fs);
 
 	if (fs->root) {
-		fbr_fs_release_root(fs);
+		fbr_fs_release_root(fs, 1);
 	}
 
 	fbr_dindex_free_all(fs);
