@@ -1,4 +1,4 @@
-fiber_test "Saving a handle with an old inode and clearing page cache"
+fiber_test "Holding an old inode and clearing page cache"
 
 skip_if_valgrind
 skip_shell_failure "sudo -n true 2> /dev/null"

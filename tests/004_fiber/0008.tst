@@ -1,4 +1,4 @@
-fiber_test "Saving a handle with an old inode"
+fiber_test "Holding onto an old inode"
 
 skip_if_valgrind
 

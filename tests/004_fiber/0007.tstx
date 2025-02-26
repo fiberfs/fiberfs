@@ -1,8 +1,8 @@
 fiber_test "FS test with a page cache drop"
 
-# Init
-
 skip_shell_failure "sudo -n true 2> /dev/null"
+
+# Init
 
 sys_mkdir_tmp
 
