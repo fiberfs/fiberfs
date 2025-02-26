@@ -232,3 +232,15 @@ fbr_test_fill_random(uint8_t *buf, size_t len)
 		buf[i] = fbr_test_gen_random(0, UINT8_MAX);
 	}
 }
+
+int
+fbr_test_is_valgrind(void)
+{
+	const char *valgrind = getenv("FIBER_VALGRIND");
+
+	if (valgrind && *valgrind) {
+		return 1;
+	}
+
+	return 0;
+}

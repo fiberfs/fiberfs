@@ -108,9 +108,7 @@ fbr_test_can_vfork(struct fbr_test_context *ctx)
 		return 0;
 	}
 
-	const char *valgrind = getenv("FIBER_VALGRIND");
-
-	if (!valgrind || !*valgrind) {
+	if (!fbr_test_is_valgrind()) {
 		return 0;
 	}
 

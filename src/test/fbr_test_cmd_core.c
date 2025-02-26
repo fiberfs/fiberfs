@@ -140,9 +140,7 @@ fbr_test_cmd_skip_if_valgrind(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	const char *valgrind = getenv("FIBER_VALGRIND");
-
-	if (valgrind && *valgrind) {
+	if (fbr_test_is_valgrind()) {
 		fbr_test_skip(ctx);
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "valgrind detected, skipping");
 	} else {
