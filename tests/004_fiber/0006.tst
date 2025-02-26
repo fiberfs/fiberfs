@@ -1,5 +1,7 @@
 fiber_test "Fuse and fs"
 
+# Init
+
 sys_mkdir_tmp
 
 fs_test_fuse_mount $sys_tmpdir
@@ -33,7 +35,7 @@ fs_test_release_root 0
 
 fs_test_stats
 
-# New operations
+# New operations (old inodes are immediately released)
 
 sys_ls $sys_tmpdir
 sys_ls $var1

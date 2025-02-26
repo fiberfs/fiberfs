@@ -4,6 +4,7 @@
  *
  */
 
+#include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -19,6 +20,8 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 #define _TEST_FS_FUSE_TTL_SEC		0.75
+
+static DIR *_test_dir;
 
 static void
 _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
@@ -146,8 +149,10 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	struct fbr_path_name parent_dirname;
 	fbr_path_get_full(&parent_file->path, &parent_dirname);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP parent: '%.*s':%zu",
-		(int)parent_dirname.len, parent_dirname.name, parent_dirname.len);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
+		"** LOOKUP found parent_file: '%.*s':%zu (inode: %lu)",
+		(int)parent_dirname.len, parent_dirname.name, parent_dirname.len,
+		parent_file->inode);
 
 	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname);
 
@@ -162,7 +167,9 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	assert_zero_dev(parent_file);
 
 	const char *dirname = fbr_path_get_full(&directory->dirname, NULL);
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP directory: '%s'", dirname);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
+		"** LOOKUP found directory: '%s' (inode: %lu)",
+		dirname, directory->inode);
 
 	struct fbr_file *file = fbr_directory_find_file(directory, name);
 
@@ -178,8 +185,8 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	assert(file->inode);
 
 	const char *filename = fbr_path_get_full(&file->path, NULL);
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** LOOKUP file: '%s' (inode: %lu)",
-		filename, file->inode);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
+		"** LOOKUP found file: '%s' (inode: %lu)", filename, file->inode);
 
 	struct fuse_entry_param entry;
 	fbr_ZERO(&entry);
@@ -545,4 +552,36 @@ fbr_cmd_fs_test_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_dindex_debug(fs, _test_fs_dindex_debug);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "debug inodes done");
+}
+
+// NOTE: not ok with valgrind
+void
+fbr_cmd__fs_test_take(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	char *dirname = cmd->params[0].value;
+
+	_test_dir = opendir(dirname);
+	fbr_test_ASSERT(_test_dir, "opendir failed for %s", dirname);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "dir handle aquired %s", dirname);
+}
+
+// NOTE: not ok with valgrind
+void
+fbr_cmd__fs_test_release(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_ASSERT(_test_dir, "_test_dir invalid");
+
+	int ret = closedir(_test_dir);
+	fbr_test_ERROR(ret, "closedir failed %d", ret);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "dir handle released");
 }
