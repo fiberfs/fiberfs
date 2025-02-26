@@ -40,6 +40,8 @@ FBR_TEST_FS_VAR(fs_test_stat_file_refs)
 FBR_TEST_FS_CMD(fs_test_path_assert)
 FBR_TEST_FS_CMD(fs_test_path)
 
+FBR_TEST_FS_CMD(fs_test_id_assert)
+
 #undef FBR_TEST_FS_CMD
 #undef FBR_TEST_FS_VAR
 

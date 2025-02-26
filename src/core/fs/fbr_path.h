@@ -9,10 +9,10 @@
 
 #define FBR_PATH_LAYOUT_LEN			2
 #define FBR_PATH_EMBED_LEN_SIZE			(8 - FBR_PATH_LAYOUT_LEN)
-#define FBR_PATH_EMBED_LEN_MAX			(1 << FBR_PATH_EMBED_LEN_SIZE)
+#define FBR_PATH_EMBED_LEN_MAX			((1 << FBR_PATH_EMBED_LEN_SIZE) - 1)
 #define FBR_PATH_EMBED_LEN			(sizeof(struct fbr_path_ptr) - 1)
 #define FBR_PATH_PTR_LEN_SIZE			((sizeof(short) * 8) - FBR_PATH_LAYOUT_LEN)
-#define FBR_PATH_PTR_LEN_MAX			(1 << FBR_PATH_PTR_LEN_SIZE)
+#define FBR_PATH_PTR_LEN_MAX			((1 << FBR_PATH_PTR_LEN_SIZE) - 1)
 
 enum fbr_path_layout {
 	FBR_PATH_NULL = 0,

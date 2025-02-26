@@ -21,6 +21,72 @@
 
 #define FBR_INODE_ROOT				FUSE_ROOT_ID
 #define FBR_READDIR_SIZE			4096
+#define FBR_ID_TIMEBITS				34
+#define FBR_ID_RANDBITS				(sizeof(fbr_id_t) * 8 - FBR_ID_TIMEBITS)
+#define FBR_ID_TIMEBITS_MAX			((1L << FBR_ID_TIMEBITS) - 1)
+#define FBR_ID_RANDBITS_MAX			((1L << FBR_ID_RANDBITS) - 1)
+#define FBR_ID_STRING_MAX			(22 + 1)
+#define FBR_ID_BASETIME				1735689600 // Jan 1 2025
+#define FBR_BODY_DEFAULT_CHUNKS			8
+
+typedef unsigned long fbr_id_t;
+
+struct fbr_id_parts {
+	unsigned long				timestamp:FBR_ID_TIMEBITS;
+	unsigned int 				random:FBR_ID_RANDBITS;
+};
+
+struct fbr_id {
+	union {
+		fbr_id_t			value;
+		struct fbr_id_parts		parts;
+	};
+};
+
+enum fbr_chunk_state {
+	FBR_CHUNK_NONE = 0,
+	FBR_CHUNK_UNREAD,
+	FBR_CHUNK_LOADING,
+	FBR_CHUNK_READ
+};
+
+struct fbr_chunk {
+	char					state;
+
+	fbr_id_t				id;
+
+	size_t					offset;
+	size_t					length;
+
+	uint8_t					*data;
+
+	struct fbr_chunk			*next;
+};
+
+struct fbr_chunk_slab {
+	unsigned int				magic;
+#define FBR_CHUNK_SLAB_MAGIC			0x68469049
+
+	unsigned int				chunks_len;
+
+	struct fbr_chunk_slab			*next;
+
+	struct fbr_chunk			chunks[];
+};
+
+struct fbr_body {
+	pthread_rwlock_t			rwlock;
+
+	pthread_cond_t				cond;
+	pthread_mutex_t				cond_lock;
+
+	struct {
+		struct fbr_chunk		chunks[FBR_BODY_DEFAULT_CHUNKS];
+		struct fbr_chunk_slab		*next;
+	} 					slabhead;
+
+	struct fbr_chunk			*body;
+};
 
 typedef unsigned long fbr_inode_t;
 typedef unsigned int fbr_refcount_t;
@@ -155,6 +221,9 @@ void fbr_fs_stat_add_count(unsigned long *stat, unsigned long value);
 void fbr_fs_stat_add(unsigned long *stat);
 void fbr_fs_stat_sub_count(unsigned long *stat, unsigned long value);
 void fbr_fs_stat_sub(unsigned long *stat);
+
+fbr_id_t fbr_id_gen(void);
+size_t fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len);
 
 void fbr_inodes_alloc(struct fbr_fs *fs);
 unsigned long fbr_inode_gen(struct fbr_fs *fs);

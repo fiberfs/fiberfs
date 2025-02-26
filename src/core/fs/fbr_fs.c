@@ -4,7 +4,9 @@
  *
  */
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
@@ -115,4 +117,44 @@ void
 fbr_fs_stat_sub(unsigned long *stat)
 {
 	fbr_fs_stat_sub_count(stat, 1);
+}
+
+fbr_id_t
+fbr_id_gen(void)
+{
+	struct timespec ts;
+        assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
+
+	unsigned long timestamp = ts.tv_sec - 1735689600;
+	assert(timestamp < FBR_ID_TIMEBITS_MAX);
+
+	struct fbr_id id;
+	id.parts.timestamp = timestamp;
+
+	long rand = random() % FBR_ID_RANDBITS_MAX;
+	id.parts.random = rand;
+
+	return id.value;
+}
+
+size_t
+fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len)
+{
+	assert(value);
+	assert(buffer);
+	assert(buffer_len);
+
+	struct fbr_id id;
+	id.value = value;
+
+	unsigned long timestamp = id.parts.timestamp;
+	unsigned long rand = id.parts.random;
+
+	int ret = snprintf(buffer, buffer_len, "%lu-%lu", timestamp, rand);
+
+	if (ret < 0 || (size_t)ret >= buffer_len) {
+		return 0;
+	}
+
+	return (size_t)ret;
 }
