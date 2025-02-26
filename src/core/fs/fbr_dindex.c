@@ -212,11 +212,12 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 		}
 
 		assert_zero(RB_INSERT(fbr_dindex_tree, &dirhead->tree, directory));
+	} else {
+		fbr_fs_stat_add(&fs->stats.directories_dindex);
+		fbr_fs_stat_add(&fs->stats.directory_refs);
 	}
 
 	_dindex_lru_add(dindex, directory);
-
-	fbr_fs_stat_add(&fs->stats.directory_refs);
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
@@ -331,6 +332,8 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 		_dindex_lru_remove(dindex, directory);
 
 		directory->dindexed = 0;
+
+		fbr_fs_stat_sub(&fs->stats.directories_dindex);
 	}
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
@@ -372,6 +375,8 @@ _dindex_remove(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 		_dindex_lru_remove(dindex, directory);
 
 		directory->dindexed = 0;
+
+		fbr_fs_stat_sub(&fs->stats.directories_dindex);
 	}
 
 	int do_free = 0;
@@ -463,6 +468,8 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 			_dindex_lru_remove(dindex, directory);
 
 			(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
+
+			fbr_fs_stat_sub(&fs->stats.directories_dindex);
 
 			_dindex_directory_free(fs, directory);
 		}

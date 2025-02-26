@@ -133,6 +133,7 @@ fbr_cmd_fs_test_stats(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs.stats." #name ": %lu", fs->stats.name)
 
 	_FS_TEST_STAT_PRINT(directories);
+	_FS_TEST_STAT_PRINT(directories_dindex);
 	_FS_TEST_STAT_PRINT(directories_total);
 	_FS_TEST_STAT_PRINT(directory_refs);
 	_FS_TEST_STAT_PRINT(files);
@@ -157,6 +158,7 @@ fbr_var_fs_test_stat_##name(struct fbr_test_context *ctx)			\
 }
 
 _FS_TEST_STAT(directories)
+_FS_TEST_STAT(directories_dindex)
 _FS_TEST_STAT(directories_total)
 _FS_TEST_STAT(directory_refs)
 _FS_TEST_STAT(files)

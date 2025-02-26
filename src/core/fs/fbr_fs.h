@@ -117,6 +117,7 @@ struct fbr_dreader {
 
 struct fbr_fs_stats {
 	unsigned long				directories;
+	unsigned long				directories_dindex;
 	unsigned long				directories_total;
 	unsigned long				directory_refs;
 	unsigned long				files;

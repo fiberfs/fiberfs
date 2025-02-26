@@ -30,6 +30,7 @@ FBR_TEST_FS_CMD(_fs_test_take)
 FBR_TEST_FS_CMD(_fs_test_release)
 
 FBR_TEST_FS_VAR(fs_test_stat_directories)
+FBR_TEST_FS_VAR(fs_test_stat_directories_dindex)
 FBR_TEST_FS_VAR(fs_test_stat_directories_total)
 FBR_TEST_FS_VAR(fs_test_stat_directory_refs)
 FBR_TEST_FS_VAR(fs_test_stat_files)

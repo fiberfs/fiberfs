@@ -39,6 +39,8 @@ fs_test_debug
 _fs_test_release
 fs_test_release_root
 
+sleep_ms 100
+
 fs_test_stats
 fs_test_debug
 
