@@ -16,6 +16,7 @@
 
 #include "sys/fbr_sys.h"
 #include "test/fbr_test.h"
+#include "test/chttp_test_cmds.h"
 
 struct _sys_path {
 	unsigned int			magic;
@@ -331,6 +332,52 @@ fbr_test_cmd_sys_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(strcmp(result, cmd->params[1].value), "Expected result string failed");
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_cat result done %s", filename);
+}
+
+void
+fbr_test_cmd_sys_cat_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 2);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	char *filename = cmd->params[0].value;
+	char *md5_result = cmd->params[1].value;
+	char md5_str[CHTTP_TEST_MD5_BUFLEN];
+
+	struct chttp_test_md5 md5;
+	chttp_test_md5_init(&md5);
+
+	int fd = open(filename, O_RDONLY);
+	fbr_test_ASSERT(fd >= 0, "open() failed %s %d", filename, fd);
+
+	ssize_t bytes;
+	size_t size = 0;
+
+	do {
+		uint8_t buf[1024];
+		bytes = read(fd, buf, sizeof(buf));
+		fbr_test_ASSERT(bytes >= 0, "read error");
+
+		chttp_test_md5_update(&md5, buf, bytes);
+
+		size += bytes;
+	} while (bytes > 0);
+
+	int ret = close(fd);
+	fbr_test_ERROR(ret, "sys_cat close() failed");
+
+	chttp_test_md5_final(&md5);
+	chttp_test_md5_store(&md5, md5_str);
+
+	fbr_test_ERROR(strcmp(md5_str, md5_result), "md5 failed, got %s, expected %s",
+		md5_str, md5_result);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_cat_md5 passed (bytes %zu)", size);
 }
 
 void

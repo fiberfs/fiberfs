@@ -24,6 +24,7 @@
 #define FBR_READDIR_SIZE			4096
 #define FBR_BODY_DEFAULT_CHUNKS			4
 #define FBR_BODY_SLAB_DEFAULT_CHUNKS		32
+#define FBR_FREADER_DEFAULT_CHUNKS		8
 
 typedef unsigned long fbr_inode_t;
 typedef unsigned int fbr_refcount_t;
@@ -169,6 +170,16 @@ struct fbr_dreader {
 	unsigned int				end:1;
 };
 
+struct fbr_freader {
+	unsigned int				magic;
+#define FBR_FREADER_MAGIC			0xC476C0F5
+
+	struct fbr_file				*file;
+
+	struct fbr_chunk			*chunks[FBR_FREADER_DEFAULT_CHUNKS];
+	size_t					chunks_len;
+};
+
 struct fbr_fs_stats {
 	unsigned long				directories;
 	unsigned long				directories_dindex;
@@ -264,6 +275,9 @@ void fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
 	const char *name, struct stat *st);
 void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 
+struct fbr_freader *fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_freader_free(struct fbr_fs *fs, struct fbr_freader *reader);
+
 #define fbr_fs_ok(fs)						\
 {								\
 	assert(fs);						\
@@ -279,10 +293,15 @@ void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 	assert(dir);						\
 	assert((dir)->magic == FBR_DIRECTORY_MAGIC);		\
 }
-#define fbr_dreader_ok(reader)					\
+#define fbr_dreader_ok(dreader)					\
 {								\
-	assert(reader);						\
-	assert((reader)->magic == FBR_DREADER_MAGIC);		\
+	assert(dreader);					\
+	assert((dreader)->magic == FBR_DREADER_MAGIC);		\
+}
+#define fbr_freader_ok(freader)					\
+{								\
+	assert(freader);					\
+	assert((freader)->magic == FBR_FREADER_MAGIC);		\
 }
 #define fbr_chunk_ok(chunk)					\
 {								\

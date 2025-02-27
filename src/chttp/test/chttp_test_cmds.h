@@ -48,6 +48,7 @@ void chttp_test_init(struct fbr_test_context *test);
 void chttp_test_md5_init(struct chttp_test_md5 *md5);
 void chttp_test_md5_update(struct chttp_test_md5 *md5, uint8_t *input, size_t len);
 void chttp_test_md5_final(struct chttp_test_md5 *md5);
+void chttp_test_md5_store(struct chttp_test_md5 *md5, char *md5_buf);
 void chttp_test_md5_store_server(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
 void chttp_test_md5_store_client(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
 

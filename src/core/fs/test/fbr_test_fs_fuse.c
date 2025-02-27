@@ -393,11 +393,16 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 		fbr_inode_release(fs, &file);
 		assert_zero_dev(file);
 
+		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** OPEN detected write");
+
 		fbr_fuse_reply_err(request, EROFS);
 		return;
 	}
 
-	fi->fh = fbr_fs_int64(file);
+	struct fbr_freader *reader = fbr_freader_alloc(fs, file);
+	fbr_freader_ok(reader);
+
+	fi->fh = fbr_fs_int64(reader);
 
 	//fi->keep_cache
 	fi->keep_cache = 1;
@@ -415,9 +420,10 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 		"READ ino: %lu size: %zu off: %ld flags: %d fh: %lu", ino, size, off, fi->flags,
 		fi->fh);
 
-	struct fbr_file *file = fbr_fh_file(fi->fh);
+	struct fbr_freader *reader = fbr_fh_freader(fi->fh);
+	fbr_file_ok(reader->file);
 
-	fbr_ASSERT(file->size == 0, "TODO");
+	fbr_ASSERT(reader->file->size == 0, "TODO");
 	(void)size;
 	(void)off;
 
@@ -432,9 +438,8 @@ _test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASE ino: %lu flags: %d fh: %lu",
 		ino, fi->flags, fi->fh);
 
-	struct fbr_file *file = fbr_fh_file(fi->fh);
-	fbr_inode_release(fs, &file);
-	assert_zero_dev(file);
+	struct fbr_freader *reader = fbr_fh_freader(fi->fh);
+	fbr_freader_free(fs, reader);
 
 	fbr_fuse_reply_err(request, 0);
 }

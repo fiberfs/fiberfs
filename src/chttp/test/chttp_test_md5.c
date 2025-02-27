@@ -247,8 +247,8 @@ chttp_test_md5_final(struct chttp_test_md5 *md5)
 	md5->ready = 1;
 }
 
-static void
-_md5_store(struct chttp_test_md5 *md5, char *md5_buf)
+void
+chttp_test_md5_store(struct chttp_test_md5 *md5, char *md5_buf)
 {
 	int len;
 
@@ -272,7 +272,7 @@ chttp_test_md5_store_server(struct fbr_test_context *ctx, struct chttp_test_md5 
 	fbr_test_context_ok(ctx);
 	chttp_test_context_ok(ctx->chttp_test);
 
-	_md5_store(md5, ctx->chttp_test->md5_server);
+	chttp_test_md5_store(md5, ctx->chttp_test->md5_server);
 }
 
 void
@@ -281,7 +281,7 @@ chttp_test_md5_store_client(struct fbr_test_context *ctx, struct chttp_test_md5 
 	fbr_test_context_ok(ctx);
 	chttp_test_context_ok(ctx->chttp_test);
 
-	_md5_store(md5, ctx->chttp_test->md5_client);
+	chttp_test_md5_store(md5, ctx->chttp_test->md5_client);
 }
 
 char *

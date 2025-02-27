@@ -12,6 +12,7 @@ fs_test_fuse_init_root
 
 set_var1 $sys_tmpdir "/fiber_03"
 sys_stat_size $var1 0
+sys_cat_md5 $var1 d41d8cd98f00b204e9800998ecf8427e
 
 set_var1 $sys_tmpdir "/fiber_dir01/fiber_12"
 sys_stat_size $var1 2002
