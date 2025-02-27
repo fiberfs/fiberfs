@@ -452,15 +452,14 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 	fbr_freader_pull_chunks(fs, reader, off, size);
 
 	if (fbr_freader_ready(reader)) {
-		// TODO optimize this
+		// TODO vector write
 		char *buffer = calloc(1, size);
 		assert(buffer);
 
 		size_t len = fbr_freader_copy_chunks(fs, reader, buffer, off, size);
 
 		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-			"** READ bytes: %zu chunks: %zu (softs: %zu)",
-			len, reader->chunks_len, reader->softs);
+			"** READ bytes: %zu chunks: %zu", len, reader->chunks_len);
 
 		fbr_fuse_reply_buf(request, buffer, len);
 
@@ -470,9 +469,6 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 	}
 
 	fbr_freader_release_chunks(fs, reader, off, size);
-
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** READ releases: %zu softs: %zu",
-		reader->releases, reader->softs);
 }
 
 static void

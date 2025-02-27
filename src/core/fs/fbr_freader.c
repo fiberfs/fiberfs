@@ -89,10 +89,8 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 	fbr_file_ok(reader->file);
 	assert_zero(reader->chunks_pos);
 
-	reader->softs = 0;
-
 	struct fbr_body *body = &reader->file->body;
-	size_t offset_max = offset + size;
+	size_t offset_end = offset + size;
 
 	assert_zero(pthread_mutex_lock(&body->lock));
 
@@ -102,14 +100,12 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 		fbr_chunk_ok(chunk);
 		assert(chunk->state >= FBR_CHUNK_UNREAD);
 
-		size_t chunk_span = chunk->offset + chunk->length;
+		size_t chunk_end = chunk->offset + chunk->length;
 
-		if (chunk_span < offset) {
-			if (!chunk->refcount && chunk->state == FBR_CHUNK_READ) {
-				fbr_chunk_unread(chunk);
-				reader->softs++;
-			}
-		} else if (chunk_span >= offset || chunk->offset < offset_max) {
+		// offset in chunk ||
+		// offset sits before chunk (and hits chunk)
+		if ((offset >= chunk->offset && offset < chunk_end) ||
+		    (offset < chunk->offset && offset_end >= chunk->offset)) {
 			fbr_chunk_take(chunk);
 			_freader_chunk_add(reader, chunk);
 
@@ -117,14 +113,14 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 				fs->fs_chunk_cb(fs, reader->file, chunk);
 				assert(chunk->state > FBR_CHUNK_UNREAD);
 			}
-		} else if (chunk->offset > offset_max) {
+		} else if (chunk->offset > offset_end) {
 			break;
 		}
 
 		chunk = chunk->next;
 	}
 
-	// TODO
+	// TODO look for UNREAD and flag EIO
 	int retries = 0;
 
 	while (!fbr_freader_ready(reader)) {
@@ -153,29 +149,16 @@ fbr_freader_copy_chunks(struct fbr_fs *fs, struct fbr_freader *reader, char *buf
 		return 0;
 	}
 
-	size_t offset_max = offset + buffer_len;
+	size_t offset_end = offset + buffer_len;
 
 	for (size_t i = 0; i < reader->chunks_pos; i++) {
 		struct fbr_chunk *chunk = reader->chunks[i];
 		fbr_chunk_ok(chunk);
 
-		size_t chunk_span = chunk->offset + chunk->length;
+		size_t chunk_end = chunk->offset + chunk->length;
 
-		// offset before chunk and lands in chunk
-		if (offset < chunk->offset && chunk_span >= offset &&
-		    offset_max >= chunk->offset) {
-			size_t buffer_offset = chunk->offset - offset;
-			assert_dev(buffer_len > buffer_offset);
-
-			size_t chunk_len = buffer_len - buffer_offset;
-			if (chunk_len > chunk->length) {
-				chunk_len = chunk->length;
-			}
-
-			memcpy(buffer + buffer_offset, chunk->data, chunk_len);
-		}
 		// offset in chunk
-		else if (offset >= chunk->offset && offset < chunk_span) {
+		if (offset >= chunk->offset && offset < chunk_end) {
 			size_t chunk_offset = offset - chunk->offset;
 			assert_dev(chunk->length > chunk_offset);
 
@@ -186,9 +169,21 @@ fbr_freader_copy_chunks(struct fbr_fs *fs, struct fbr_freader *reader, char *buf
 
 			memcpy(buffer, chunk->data + chunk_offset, chunk_len);
 		}
+		// offset sits before chunk (and hits chunk)
+		else if (offset < chunk->offset && offset_end >= chunk->offset) {
+			size_t buffer_offset = chunk->offset - offset;
+			assert_dev(buffer_len > buffer_offset);
+
+			size_t chunk_len = buffer_len - buffer_offset;
+			if (chunk_len > chunk->length) {
+				chunk_len = chunk->length;
+			}
+
+			memcpy(buffer + buffer_offset, chunk->data, chunk_len);
+		}
 	}
 
-	if (offset_max > reader->file->size) {
+	if (offset_end > reader->file->size) {
 		return reader->file->size - offset;
 	}
 
@@ -203,9 +198,6 @@ fbr_freader_release_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t
 	fbr_freader_ok(reader);
 	fbr_file_ok(reader->file);
 
-	reader->releases = 0;
-	reader->softs = 0;
-
 	struct fbr_body *body = &reader->file->body;
 	size_t offset_max = offset + size;
 
@@ -217,13 +209,11 @@ fbr_freader_release_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t
 
 		size_t chunk_span = chunk->offset + chunk->length;
 
-		if (chunk_span < offset_max) {
+		if (chunk_span >= offset_max) {
 			fbr_chunk_release(&chunk);
-			reader->releases++;
-
+			// TODO we want to save these in our prefetch list
 		} else {
-			fbr_chunk_soft_release(&chunk);
-			reader->softs++;
+			fbr_chunk_release(&chunk);
 		}
 		assert_zero_dev(chunk);
 		reader->chunks[i] = NULL;

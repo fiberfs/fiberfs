@@ -181,9 +181,6 @@ struct fbr_freader {
 	struct fbr_chunk			**chunks;
 	size_t					chunks_pos;
 	size_t					chunks_len;
-
-	size_t					releases;
-	size_t					softs;
 };
 
 struct fbr_fs_stats {
@@ -260,7 +257,6 @@ void fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_
 void fbr_chunk_unread(struct fbr_chunk *chunk);
 void fbr_chunk_take(struct fbr_chunk *chunk);
 void fbr_chunk_release(struct fbr_chunk **chunk_ref);
-void fbr_chunk_soft_release(struct fbr_chunk **chunk_ref);
 void fbr_body_free(struct fbr_body *body);
 
 RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
