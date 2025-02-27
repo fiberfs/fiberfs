@@ -4,6 +4,7 @@
  *
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -43,6 +44,14 @@ void
 _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 {
 	fbr_chunk_slab_ok(slab);
+
+	for (size_t i = 0; i < slab->chunks_len; i++) {
+		fbr_chunk_ok(&slab->chunks[i]);
+		assert_zero(slab->chunks[i].refcount);
+		if (slab->chunks[i].state == FBR_CHUNK_READ) {
+			fbr_chunk_unread(&slab->chunks[i]);
+		}
+	}
 
 	size_t chunk_size = sizeof(struct fbr_chunk) * slab->chunks_len;
 	explicit_bzero(slab, sizeof(*slab) + chunk_size);
@@ -106,6 +115,71 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 	chunk->id = id;
 	chunk->offset = offset;
 	chunk->length = length;
+
+	if (!file->body.chunks) {
+		assert_zero(file->body.chunk_ptr);
+		file->body.chunks = chunk;
+	} else {
+		fbr_chunk_ok(file->body.chunk_ptr);
+		file->body.chunk_ptr->next = chunk;
+	}
+
+	file->body.chunk_ptr = chunk;
+	assert_zero(chunk->next);
+	assert_zero(chunk->data);
+}
+
+void
+fbr_chunk_unread(struct fbr_chunk *chunk)
+{
+	fbr_chunk_ok(chunk);
+	assert(chunk->state == FBR_CHUNK_READ);
+	assert_zero(chunk->refcount);
+	assert(chunk->data);
+
+	free(chunk->data);
+	chunk->data = NULL;
+
+	chunk->state = FBR_CHUNK_UNREAD;
+}
+
+void
+fbr_chunk_take(struct fbr_chunk *chunk) {
+	fbr_chunk_ok(chunk);
+
+	chunk->refcount++;
+	assert(chunk->refcount);
+}
+
+void
+_chunk_release(struct fbr_chunk **chunk_ref, int soft) {
+	assert(chunk_ref);
+	struct fbr_chunk *chunk = *chunk_ref;
+	fbr_chunk_ok(chunk);
+	*chunk_ref = NULL;
+
+	assert(chunk->refcount);
+	chunk->refcount--;
+
+	if (chunk->refcount || soft) {
+		return;
+	}
+
+	if (chunk->state == FBR_CHUNK_READ) {
+		fbr_chunk_unread(chunk);
+	}
+
+	assert(chunk->state == FBR_CHUNK_UNREAD);
+}
+
+void
+fbr_chunk_release(struct fbr_chunk **chunk_ref) {
+	_chunk_release(chunk_ref, 0);
+}
+
+void
+fbr_chunk_soft_release(struct fbr_chunk **chunk_ref) {
+	_chunk_release(chunk_ref, 1);
 }
 
 void
@@ -115,6 +189,17 @@ fbr_body_free(struct fbr_body *body)
 
 	assert_zero(pthread_mutex_destroy(&body->lock));
 	assert_zero(pthread_cond_destroy(&body->update));
+
+	if (fbr_assert_is_dev()) {
+		for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
+			struct fbr_chunk *chunk = &body->slabhead.chunks[i];
+			fbr_chunk_ok(chunk);
+			assert_zero(chunk->refcount);
+			if (chunk->state == FBR_CHUNK_READ) {
+				fbr_chunk_unread(chunk);
+			}
+		}
+	}
 
 	while (body->slabhead.next) {
 		struct fbr_chunk_slab *slab = body->slabhead.next;

@@ -5,6 +5,7 @@
  */
 
 #include <dirent.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -110,10 +111,30 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 }
 
 static void
+_test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_chunk_ok(chunk);
+	assert(chunk->state == FBR_CHUNK_UNREAD);
+
+	chunk->data = malloc(chunk->length);
+	assert(chunk->data);
+
+	memset(chunk->data, '1', chunk->length);
+
+	chunk->state = FBR_CHUNK_READ;
+}
+
+static void
 _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
 	fbr_fuse_mounted(ctx);
 	assert(conn);
+
+	fbr_fs_ok(ctx->fs);
+
+	ctx->fs->fs_chunk_cb = _test_fs_chunk_gen;
 }
 
 static void
@@ -414,7 +435,7 @@ static void
 _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
 		"READ ino: %lu size: %zu off: %ld flags: %d fh: %lu", ino, size, off, fi->flags,
@@ -423,11 +444,26 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 	struct fbr_freader *reader = fbr_fh_freader(fi->fh);
 	fbr_file_ok(reader->file);
 
-	fbr_ASSERT(reader->file->size == 0, "TODO");
-	(void)size;
-	(void)off;
+	fbr_freader_pull_chunks(fs, reader, off, size);
 
-	fbr_fuse_reply_buf(request, NULL, 0);
+	if (fbr_freader_ready(reader)) {
+		// TODO optimize this
+		char *buffer = calloc(1, size);
+		assert(buffer);
+
+		size_t len = fbr_freader_copy_chunks(fs, reader, buffer, off, size);
+
+		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
+			"** READ bytes: %zu chunks: %zu", len, reader->chunks_len);
+
+		fbr_fuse_reply_buf(request, buffer, len);
+
+		free(buffer);
+	} else {
+		fbr_fuse_reply_err(request, EIO);
+	}
+
+	fbr_freader_release_chunks(fs, reader, off, size);
 }
 
 static void

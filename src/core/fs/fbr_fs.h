@@ -24,7 +24,7 @@
 #define FBR_READDIR_SIZE			4096
 #define FBR_BODY_DEFAULT_CHUNKS			4
 #define FBR_BODY_SLAB_DEFAULT_CHUNKS		32
-#define FBR_FREADER_DEFAULT_CHUNKS		8
+#define FBR_FREADER_DEFAULT_CHUNKS		2
 
 typedef unsigned long fbr_inode_t;
 typedef unsigned int fbr_refcount_t;
@@ -176,7 +176,10 @@ struct fbr_freader {
 
 	struct fbr_file				*file;
 
-	struct fbr_chunk			*chunks[FBR_FREADER_DEFAULT_CHUNKS];
+	struct fbr_chunk			*_chunks[FBR_FREADER_DEFAULT_CHUNKS];
+
+	struct fbr_chunk			**chunks;
+	size_t					chunks_pos;
 	size_t					chunks_len;
 };
 
@@ -192,6 +195,8 @@ struct fbr_fs_stats {
 	unsigned long				requests_total;
 };
 
+typedef void (fbr_fs_chunk_f)(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
+
 struct fbr_fs {
 	unsigned int				magic;
 #define FBR_FS_MAGIC				0x150CC3D2
@@ -200,6 +205,8 @@ struct fbr_fs {
 	struct fbr_dindex			*dindex;
 
 	struct fbr_directory			*root;
+
+	fbr_fs_chunk_f				*fs_chunk_cb;
 
 	struct fbr_fs_stats			stats;
 };
@@ -247,6 +254,10 @@ void fbr_file_attr(struct fbr_file *file, struct stat *st);
 
 void fbr_body_init(struct fbr_body *body);
 void fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length);
+void fbr_chunk_unread(struct fbr_chunk *chunk);
+void fbr_chunk_take(struct fbr_chunk *chunk);
+void fbr_chunk_release(struct fbr_chunk **chunk_ref);
+void fbr_chunk_soft_release(struct fbr_chunk **chunk_ref);
 void fbr_body_free(struct fbr_body *body);
 
 RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
@@ -276,6 +287,13 @@ void fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
 void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 
 struct fbr_freader *fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file);
+int fbr_freader_ready(struct fbr_freader *reader);
+void fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset,
+	size_t size);
+size_t fbr_freader_copy_chunks(struct fbr_fs *fs, struct fbr_freader *reader, char *buffer,
+	size_t offset, size_t buffer_len);
+void fbr_freader_release_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset,
+	size_t size);
 void fbr_freader_free(struct fbr_fs *fs, struct fbr_freader *reader);
 
 #define fbr_fs_ok(fs)						\
