@@ -44,7 +44,8 @@ _freader_chunk_add(struct fbr_freader *reader, struct fbr_chunk *chunk)
 			reader->chunks = malloc(sizeof(*reader->chunks) * reader->chunks_len);
 			assert(reader->chunks);
 
-			memcpy(reader->chunks, reader->_chunks, FBR_FREADER_DEFAULT_CHUNKS);
+			memcpy(reader->chunks, reader->_chunks,
+				sizeof(*reader->chunks) * FBR_FREADER_DEFAULT_CHUNKS);
 		} else {
 			assert(reader->chunks_len > FBR_FREADER_DEFAULT_CHUNKS);
 

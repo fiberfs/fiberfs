@@ -121,7 +121,12 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 	chunk->data = malloc(chunk->length);
 	assert(chunk->data);
 
-	memset(chunk->data, '1', chunk->length);
+	size_t counter = chunk->offset;
+
+	for (size_t i = 0; i < chunk->length; i++) {
+		chunk->data[i] = (counter % 10) + '0';
+		counter++;
+	}
 
 	chunk->state = FBR_CHUNK_READ;
 }

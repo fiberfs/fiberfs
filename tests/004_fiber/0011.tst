@@ -16,10 +16,11 @@ sys_cat_md5 $var1 d41d8cd98f00b204e9800998ecf8427e
 
 set_var1 $sys_tmpdir "/fiber_dir01/fiber_12"
 sys_stat_size $var1 2002
-sys_cat_md5 $var1 ef608a79c989a2829debaf3ddc17af19
+sys_cat_md5 $var1 1f7c1e8fcd523b2fb38991706806f210
 
 set_var1 $sys_tmpdir "/fiber_dir01/fiber_dir11/fiber_24"
 sys_stat_size $var1 8008
+sys_cat_md5 $var1 560ecea077b5f4f29efdb6f41062af0d
 
 # Cleanup
 
