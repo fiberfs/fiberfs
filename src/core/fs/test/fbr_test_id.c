@@ -19,7 +19,7 @@ fbr_cmd_fs_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	unsigned long years = FBR_ID_TIMEBITS_MAX / 3600 / 24 / 365;
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_ID_TIMEBITS=%d", FBR_ID_TIMEBITS);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_ID_TIMEBITS=%zu", FBR_ID_TIMEBITS);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_ID_TIMEBITS_MAX=%lu", FBR_ID_TIMEBITS_MAX);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_ID_TIMEBITS_MAX: %lu years", years);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_ID_RANDBITS_MAX=%lu", FBR_ID_RANDBITS_MAX);
@@ -31,24 +31,23 @@ fbr_cmd_fs_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 		sizeof(struct fbr_id));
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(fbr_id_t)=%zu",
 		sizeof(fbr_id_t));
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(fbr_id_part_t)=%zu",
+		sizeof(fbr_id_part_t));
 
-	struct timespec now;
-	assert_zero(clock_gettime(CLOCK_REALTIME, &now));
+	fbr_id_t id1 = fbr_id_gen();
+	fbr_id_t id2 = fbr_id_gen();
+	fbr_id_t id3 = fbr_id_gen();
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_ID_BASETIME=%d", FBR_ID_BASETIME);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "now.tv_sec=%lu", now.tv_sec);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber time: %lu", now.tv_sec - FBR_ID_BASETIME);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id: %lu", fbr_id_gen());
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id: %lu", fbr_id_gen());
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id: %lu", fbr_id_gen());
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id: %lu", id1);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id: %lu", id2);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id: %lu", id3);
 
 	char id1_string[FBR_ID_STRING_MAX];
 	char id2_string[FBR_ID_STRING_MAX];
 	char id3_string[FBR_ID_STRING_MAX];
-	assert(fbr_id_string(fbr_id_gen(), id1_string, sizeof(id1_string)));
-	assert(fbr_id_string(fbr_id_gen(), id2_string, sizeof(id2_string)));
-	assert(fbr_id_string(fbr_id_gen(), id3_string, sizeof(id3_string)));
+	assert(fbr_id_string(id1, id1_string, sizeof(id1_string)));
+	assert(fbr_id_string(id2, id2_string, sizeof(id2_string)));
+	assert(fbr_id_string(id3, id3_string, sizeof(id3_string)));
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id1_string=%s", id1_string);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id2_string=%s", id2_string);
@@ -56,7 +55,8 @@ fbr_cmd_fs_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	struct fbr_id id_max;
 	id_max.parts.timestamp = FBR_ID_TIMEBITS_MAX;
-	id_max.parts.random = FBR_ID_RANDBITS_MAX;
+	id_max.parts.random_parts.random = FBR_ID_RANDBITS_MAX;
+	id_max.parts.random_parts.other = FBR_ID_OTHERBITS_MAX;
 
 	char _id_max[FBR_ID_STRING_MAX];
 	int _id_max_len = snprintf(_id_max, sizeof(_id_max), "%lu", id_max.value);
@@ -72,18 +72,18 @@ fbr_cmd_fs_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	char id_custom[FBR_ID_STRING_MAX];
 	int id_custom_len = snprintf(id_custom, sizeof(id_custom), "%lu-%lu",
-		FBR_ID_TIMEBITS_MAX, FBR_ID_RANDBITS_MAX);
+		FBR_ID_TIMEBITS_MAX,
+		(FBR_ID_RANDBITS_MAX << FBR_ID_OTHERBITS) | FBR_ID_OTHERBITS_MAX);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_custom=%s", id_custom);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_custom_len=%d", id_custom_len);
 
+	fbr_test_ASSERT(sizeof(fbr_id_part_t) * 2 == sizeof(fbr_id_t),
+		"fbr_id_part_t * 2 != fbr_id_t");
 	fbr_test_ASSERT(sizeof(struct fbr_id_parts) == sizeof(fbr_id_t),
 		"struct fbr_id_parts != fbr_id_t");
 	fbr_test_ASSERT(sizeof(struct fbr_id) == sizeof(struct fbr_id_parts),
 		"struct fbr_id != struct fbr_id_parts");
-	fbr_test_ASSERT(now.tv_sec > FBR_ID_BASETIME, "FBR_ID_BASETIME is too high");
-	fbr_test_ASSERT(years > 250, "Not enough years available");
-	fbr_test_ASSERT(FBR_ID_RANDBITS_MAX > (1000 * 1000 * 1000), "random is too small");
 	fbr_test_ASSERT(RAND_MAX >= FBR_ID_RANDBITS_MAX, "random storage is too small");
 	fbr_test_ASSERT(fbr_id_gen(), "fbr_id_gen() is 0");
 	fbr_test_ASSERT(fbr_id_gen() != fbr_id_gen(), "fbr_id_gen() matched");
