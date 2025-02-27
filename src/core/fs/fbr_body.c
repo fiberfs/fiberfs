@@ -45,9 +45,11 @@ _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 {
 	fbr_chunk_slab_ok(slab);
 
-	for (size_t i = 0; i < slab->chunks_len; i++) {
-		fbr_chunk_ok(&slab->chunks[i]);
-		assert_zero(slab->chunks[i].refcount);
+	if (fbr_assert_is_dev()) {
+		for (size_t i = 0; i < slab->chunks_len; i++) {
+			fbr_chunk_ok(&slab->chunks[i]);
+			assert_zero(slab->chunks[i].refcount);
+		}
 	}
 
 	size_t chunk_size = sizeof(struct fbr_chunk) * slab->chunks_len;
@@ -149,11 +151,8 @@ fbr_chunk_take(struct fbr_chunk *chunk) {
 }
 
 void
-fbr_chunk_release(struct fbr_chunk **chunk_ref) {
-	assert(chunk_ref);
-	struct fbr_chunk *chunk = *chunk_ref;
+fbr_chunk_release(struct fbr_chunk *chunk) {
 	fbr_chunk_ok(chunk);
-	*chunk_ref = NULL;
 
 	assert(chunk->refcount);
 	chunk->refcount--;

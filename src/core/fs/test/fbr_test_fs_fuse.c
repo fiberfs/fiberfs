@@ -139,6 +139,7 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	fbr_fs_ok(ctx->fs);
 
+	// TODO nice this up
 	ctx->fs->fs_chunk_cb = _test_fs_chunk_gen;
 }
 
@@ -451,7 +452,7 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 
 	fbr_freader_pull_chunks(fs, reader, off, size);
 
-	if (fbr_freader_ready(reader)) {
+	if (!reader->error) {
 		// TODO vector write
 		char *buffer = calloc(1, size);
 		assert(buffer);

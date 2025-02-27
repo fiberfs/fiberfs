@@ -24,7 +24,7 @@ fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	reader->file = file;
 
 	reader->chunks = reader->_chunks;
-	reader->chunks_len = FBR_FREADER_DEFAULT_CHUNKS;
+	reader->chunks_len = FBR_BODY_DEFAULT_CHUNKS;
 
 	return reader;
 }
@@ -34,21 +34,23 @@ _freader_chunk_add(struct fbr_freader *reader, struct fbr_chunk *chunk)
 {
 	fbr_freader_ok(reader);
 	fbr_chunk_ok(chunk);
+	assert(reader->chunks_len);
 	assert(reader->chunks_pos < 1000 * 10);
 
 	if (reader->chunks_pos >= reader->chunks_len) {
-		if (reader->chunks_len == FBR_FREADER_DEFAULT_CHUNKS) {
-			assert(reader->chunks == reader->_chunks);
-
+		if (reader->chunks_len < FBR_BODY_SLAB_DEFAULT_CHUNKS) {
+			reader->chunks_len = FBR_BODY_SLAB_DEFAULT_CHUNKS;
+		} else {
 			reader->chunks_len *= 2;
+		}
+
+		if (reader->chunks == reader->_chunks) {
 			reader->chunks = malloc(sizeof(*reader->chunks) * reader->chunks_len);
 			assert(reader->chunks);
 
 			memcpy(reader->chunks, reader->_chunks,
-				sizeof(*reader->chunks) * FBR_FREADER_DEFAULT_CHUNKS);
+				sizeof(*reader->chunks) * FBR_BODY_DEFAULT_CHUNKS);
 		} else {
-			assert(reader->chunks_len > FBR_FREADER_DEFAULT_CHUNKS);
-
 			reader->chunks_len *= 2;
 			reader->chunks = realloc(reader->chunks,
 				sizeof(*reader->chunks) * reader->chunks_len);
@@ -62,8 +64,25 @@ _freader_chunk_add(struct fbr_freader *reader, struct fbr_chunk *chunk)
 	reader->chunks_pos++;
 }
 
-int
-fbr_freader_ready(struct fbr_freader *reader)
+static int
+_freader_ready_error(struct fbr_freader *reader)
+{
+	fbr_freader_ok(reader);
+
+	for (size_t i = 0; i < reader->chunks_pos; i++) {
+		struct fbr_chunk *chunk = reader->chunks[i];
+		fbr_chunk_ok(chunk);
+
+		if (chunk->state == FBR_CHUNK_UNREAD) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static int
+_freader_ready(struct fbr_freader *reader)
 {
 	fbr_freader_ok(reader);
 
@@ -88,6 +107,8 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 	fbr_freader_ok(reader);
 	fbr_file_ok(reader->file);
 	assert_zero(reader->chunks_pos);
+
+	reader->error = 0;
 
 	struct fbr_body *body = &reader->file->body;
 	size_t offset_end = offset + size;
@@ -120,19 +141,18 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 		chunk = chunk->next;
 	}
 
-	// TODO look for UNREAD and flag EIO
-	int retries = 0;
-
-	while (!fbr_freader_ready(reader)) {
+	while (!_freader_ready(reader)) {
 		pthread_cond_wait(&body->update, &body->lock);
 
-		retries++;
-		if (retries > 3) {
+		if (_freader_ready_error(reader)) {
+			reader->error = 1;
 			break;
 		}
 	}
 
 	assert_zero(pthread_mutex_unlock(&body->lock));
+
+	// Check if we are normalized
 }
 
 size_t
@@ -148,6 +168,8 @@ fbr_freader_copy_chunks(struct fbr_fs *fs, struct fbr_freader *reader, char *buf
 	if (offset >= reader->file->size) {
 		return 0;
 	}
+
+	// TODO if we are normalized, we can vector write
 
 	size_t offset_end = offset + buffer_len;
 
@@ -210,12 +232,12 @@ fbr_freader_release_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t
 		size_t chunk_span = chunk->offset + chunk->length;
 
 		if (chunk_span >= offset_max) {
-			fbr_chunk_release(&chunk);
+			fbr_chunk_release(chunk);
 			// TODO we want to save these in our prefetch list
 		} else {
-			fbr_chunk_release(&chunk);
+			fbr_chunk_release(chunk);
 		}
-		assert_zero_dev(chunk);
+
 		reader->chunks[i] = NULL;
 	}
 
