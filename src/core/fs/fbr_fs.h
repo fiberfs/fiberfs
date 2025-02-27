@@ -181,6 +181,9 @@ struct fbr_freader {
 	struct fbr_chunk			**chunks;
 	size_t					chunks_pos;
 	size_t					chunks_len;
+
+	size_t					releases;
+	size_t					softs;
 };
 
 struct fbr_fs_stats {
