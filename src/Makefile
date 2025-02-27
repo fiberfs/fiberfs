@@ -4,6 +4,7 @@ CC=gcc
 CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -I. -Ichttp -Ifjson -fno-omit-frame-pointer
 CFLAGS_GCC=
 CFLAGS_CLANG=-Wno-gnu-zero-variadic-macro-arguments
+CFLAGS_BUILD=
 DEPFLAGS=-MMD -MP
 LDFLAGS=-shared
 LIBFLAGS=
@@ -54,7 +55,7 @@ FUSE3_CFLAGS=-DFBR_FUSE3
 FUSE3_LIB=-lfuse3
 FUSE3=$(shell printf "$(FUSE3_C)" | $(TCC) $(FUSE3_LIB) $(TEST_TRUE))
 ifeq ($(FUSE3),true)
-	CFLAGS+=$(FUSE3_CFLAGS)
+	CFLAGS_BUILD+=$(FUSE3_CFLAGS)
 	LIBFLAGS+=$(FUSE3_LIB)
 else
 $(error fuse3 not found. Required for compiling)
@@ -67,7 +68,7 @@ OPENSSL_CFLAGS=-DCHTTP_OPENSSL
 OPENSSL_LIB=-lssl -lcrypto
 OPENSSL=$(shell printf $(OPENSSL_C) | $(TCC) $(OPENSSL_LIB) $(TEST_TRUE))
 ifeq ($(OPENSSL),true)
-	CFLAGS+=$(OPENSSL_CFLAGS)
+	CFLAGS_BUILD+=$(OPENSSL_CFLAGS)
 	LIBFLAGS+=$(OPENSSL_LIB)
 endif
 
@@ -78,7 +79,7 @@ ZLIB_CFLAGS=-DCHTTP_ZLIB
 ZLIB_LIB=-lz
 ZLIB=$(shell printf $(ZLIB_C) | $(TCC) $(ZLIB_LIB) $(TEST_TRUE))
 ifeq ($(ZLIB),true)
-	CFLAGS+=$(ZLIB_CFLAGS)
+	CFLAGS_BUILD+=$(ZLIB_CFLAGS)
 	LIBFLAGS+=$(ZLIB_LIB)
 endif
 
@@ -89,8 +90,14 @@ LIBUNWIND_CFLAGS=-DFBR_LIBUNWIND
 LIBUNWIND_LIB=-lunwind
 LIBUNWIND=$(shell printf $(LIBUNWIND_C) | $(TCC) $(LIBUNWIND_LIB) $(TEST_TRUE))
 ifeq ($(LIBUNWIND),true)
-	CFLAGS+=$(LIBUNWIND_CFLAGS)
+	CFLAGS_BUILD+=$(LIBUNWIND_CFLAGS)
 	LIBFLAGS+=$(LIBUNWIND_LIB)
+endif
+
+# Release build (RELEASE=true)
+RELEASE_CFLAGS=-DFBR_NO_ASSERT_DEV
+ifeq ($(RELEASE),true)
+	CFLAGS_BUILD+=$(RELEASE_CFLAGS)
 endif
 
 # Detect compiler
@@ -140,7 +147,7 @@ libfjson.a:	$(FJSON_OBJS) $(UTILS_OBJS)
 		ar cr $@ $(FJSON_OBJS) $(UTILS_OBJS)
 
 $(BUILD)/%.o:	%.c | $(BUILD_DIRS)
-		$(CC) $(CFLAGS) $(CFLAGS_CC) $(DEPFLAGS) -c $< -o $@
+		$(CC) $(CFLAGS) $(CFLAGS_CC) $(CFLAGS_BUILD) $(DEPFLAGS) -c $< -o $@
 
 $(BUILD_DIRS):
 		@mkdir -p $@
