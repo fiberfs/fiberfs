@@ -22,7 +22,8 @@
 
 #define FBR_INODE_ROOT				FUSE_ROOT_ID
 #define FBR_READDIR_SIZE			4096
-#define FBR_BODY_DEFAULT_CHUNKS			8
+#define FBR_BODY_DEFAULT_CHUNKS			4
+#define FBR_BODY_SLAB_DEFAULT_CHUNKS		32
 
 typedef unsigned long fbr_inode_t;
 typedef unsigned int fbr_refcount_t;
@@ -35,16 +36,19 @@ enum fbr_chunk_state {
 };
 
 struct fbr_chunk {
-	char					state;
+	unsigned int				magic;
+#define FBR_CHUNK_MAGIC				0xA8E5D947
+
+	enum fbr_chunk_state			state;
 
 	fbr_id_t				id;
 
 	size_t					offset;
 	size_t					length;
-
 	fbr_refcount_t				refcount;
 
 	uint8_t					*data;
+	void					*chttp;
 
 	struct fbr_chunk			*next;
 };
@@ -61,7 +65,7 @@ struct fbr_chunk_slab {
 };
 
 struct fbr_body {
-	pthread_rwlock_t			lock;
+	pthread_mutex_t				lock;
 	pthread_cond_t				update;
 
 	struct {
@@ -69,7 +73,8 @@ struct fbr_body {
 		struct fbr_chunk_slab		*next;
 	}  slabhead;
 
-	struct fbr_chunk			*body;
+	struct fbr_chunk			*chunks;
+	struct fbr_chunk			*chunk_ptr;
 };
 
 struct fbr_file_refcounts {
@@ -98,6 +103,8 @@ struct fbr_file {
 	TAILQ_ENTRY(fbr_file)			file_entry;
 	RB_ENTRY(fbr_file)			filename_entry;
 	RB_ENTRY(fbr_file)			inode_entry;
+
+	struct fbr_body				body;
 };
 
 enum fbr_directory_state {
@@ -121,8 +128,8 @@ struct fbr_directory {
 	fbr_refcount_t				refcount;
 	fbr_inode_t				inode;
 
-	pthread_mutex_t				cond_lock;
-	pthread_cond_t				cond;
+	pthread_mutex_t				update_lock;
+	pthread_cond_t				update;
 
 	unsigned long				version;
 
@@ -227,6 +234,10 @@ void fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_re
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_attr(struct fbr_file *file, struct stat *st);
 
+void fbr_body_init(struct fbr_body *body);
+void fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length);
+void fbr_body_free(struct fbr_body *body);
+
 RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
 struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
@@ -272,6 +283,16 @@ void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 {								\
 	assert(reader);						\
 	assert((reader)->magic == FBR_DREADER_MAGIC);		\
+}
+#define fbr_chunk_ok(chunk)					\
+{								\
+	assert(chunk);						\
+	assert((chunk)->magic == FBR_CHUNK_MAGIC);		\
+}
+#define fbr_chunk_slab_ok(slab)					\
+{								\
+	assert(slab);						\
+	assert((slab)->magic == FBR_CHUNK_SLAB_MAGIC);		\
 }
 #define fbr_fs_int64(obj)					\
 	((uint64_t)(obj))

@@ -34,6 +34,7 @@ FBR_TEST_CMD(sys_mkdir_tmp)
 FBR_TEST_VAR(sys_tmpdir)
 FBR_TEST_CMD(sys_ls)
 FBR_TEST_CMD(sys_cat)
+FBR_TEST_CMD(sys_stat_size)
 
 FBR_TEST_CMD(set_var1)
 FBR_TEST_CMD(set_var2)

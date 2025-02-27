@@ -49,6 +49,8 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 
 	assert_zero(pthread_mutex_init(&file->refcount_lock, NULL));
 
+	fbr_body_init(&file->body);
+
 	fbr_fs_stat_add(&fs->stats.files);
 	fbr_fs_stat_add(&fs->stats.files_total);
 
@@ -177,6 +179,8 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
+
+	fbr_body_free(&file->body);
 
 	assert_zero(pthread_mutex_destroy(&file->refcount_lock));
 

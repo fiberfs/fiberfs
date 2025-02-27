@@ -332,3 +332,32 @@ fbr_test_cmd_sys_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_cat result done %s", filename);
 }
+
+void
+fbr_test_cmd_sys_stat_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ERROR(cmd->param_count == 0, "Need at least 1 parameter");
+	fbr_test_ERROR(cmd->param_count > 2, "Too many parameters");
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	char *filename = cmd->params[0].value;
+	fbr_test_ERROR_string(filename);
+
+	struct stat st;
+	int ret = stat(filename, &st);
+	fbr_test_ERROR(ret, "stat failed for %s", filename);
+
+	if (cmd->param_count > 1) {
+		long value = fbr_test_parse_long(cmd->params[1].value);
+		fbr_test_ASSERT(st.st_size == value, "size mismatch, expected %ld, got %ld",
+			value, st.st_size);
+	}
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_stat_size done %ld", st.st_size);
+}

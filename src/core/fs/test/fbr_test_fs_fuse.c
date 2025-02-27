@@ -54,7 +54,18 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, name);
 
-		(void)fbr_file_alloc(fs, directory, &filename, fmode);
+		struct fbr_file *file = fbr_file_alloc(fs, directory, &filename, fmode);
+
+		size_t chunks = (i + 1) * depth;
+		file->size = chunks * 1001;
+
+		fbr_id_t id = fbr_id_gen();
+		size_t offset = 0;
+		for (size_t i = 0; i < chunks; i++) {
+			fbr_body_chunk_add(file, id, offset, 1001);
+			offset += 1001;
+		}
+		assert(offset == file->size);
 	}
 
 	for (size_t i = 0; i < 4; i++) {

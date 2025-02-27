@@ -290,7 +290,8 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(TAILQ_EMPTY(&directory->file_list));
 	assert(RB_EMPTY(&directory->filename_tree));
 
-	assert_zero(pthread_mutex_destroy(&directory->cond_lock));
+	assert_zero(pthread_mutex_destroy(&directory->update_lock));
+	assert_zero(pthread_cond_destroy(&directory->update));
 
 	fbr_path_free(&directory->dirname);
 
