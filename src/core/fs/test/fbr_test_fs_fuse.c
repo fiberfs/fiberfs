@@ -73,6 +73,8 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		size_t s = 1024 * 512;
 
 		fbr_body_chunk_add(file, id, s * 0, s);
+		fbr_body_chunk_add(file, id, 10000, 100000);
+		fbr_body_chunk_add(file, id, s * 0, s + 100);
 		fbr_body_chunk_add(file, id, s * 1, s);
 
 		file->size = 1024 * 1024 ;

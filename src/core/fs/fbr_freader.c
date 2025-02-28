@@ -38,43 +38,12 @@ fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file)
 }
 
 static void
-_freader_retain_add(struct fbr_freader *reader, struct fbr_chunk *chunk)
-{
-	fbr_freader_ok(reader);
-	fbr_chunk_ok(chunk);
-
-	for (size_t i = 0; i < fbr_static_array_len(reader->retain); i++) {
-		if (!reader->retain[i]) {
-			reader->retain[i] = chunk;
-			return;
-		}
-	}
-
-	fbr_chunk_release(chunk);
-}
-
-static void
-_freader_retain_release(struct fbr_freader *reader)
-{
-	fbr_freader_ok(reader);
-
-	for (size_t i = 0; i < fbr_static_array_len(reader->retain); i++) {
-		if (reader->retain[i]) {
-			struct fbr_chunk *chunk = reader->retain[i];
-			fbr_chunk_ok(chunk);
-			fbr_chunk_release(chunk);
-			reader->retain[i] = NULL;
-		}
-	}
-}
-
-static void
-_freader_release_chunks(struct fbr_freader *reader)
+_freader_release_chunks(struct fbr_freader *reader, size_t keep_offset)
 {
 	fbr_freader_ok(reader);
 	fbr_file_ok(reader->file);
 
-	size_t offset_last = reader->offset_last;
+	size_t keep_chunks = 0;
 
 	for (size_t i = 0; i < reader->chunks_pos; i++) {
 		struct fbr_chunk *chunk = reader->chunks[i];
@@ -82,17 +51,20 @@ _freader_release_chunks(struct fbr_freader *reader)
 
 		size_t chunk_end = chunk->offset + chunk->length;
 
-		if (offset_last && chunk_end >= offset_last) {
-			_freader_retain_add(reader, chunk);
+		if (keep_offset && chunk_end >= keep_offset) {
+			assert_dev(chunk->offset < keep_offset);
+			if (i > keep_chunks) {
+				reader->chunks[keep_chunks] = chunk;
+				reader->chunks[i] = NULL;
+			}
+			keep_chunks++;
 		} else {
 			fbr_chunk_release(chunk);
+			reader->chunks[i] = NULL;
 		}
-
-		reader->chunks[i] = NULL;
 	}
 
-	reader->chunks_pos = 0;
-	reader->offset_last = 0;
+	reader->chunks_pos = keep_chunks;
 }
 
 static void
@@ -102,6 +74,12 @@ _freader_chunk_add(struct fbr_freader *reader, struct fbr_chunk *chunk)
 	fbr_chunk_ok(chunk);
 	assert(reader->chunks_len);
 	assert(reader->chunks_pos < 1000 * 10);
+
+	for (size_t i = 0; i < reader->chunks_pos; i++) {
+		if (reader->chunks[i] == chunk) {
+			return;
+		}
+	}
 
 	if (reader->chunks_pos >= reader->chunks_len) {
 		if (reader->chunks_len < FBR_BODY_SLAB_DEFAULT_CHUNKS) {
@@ -123,6 +101,8 @@ _freader_chunk_add(struct fbr_freader *reader, struct fbr_chunk *chunk)
 	}
 
 	assert_dev(reader->chunks_pos < reader->chunks_len);
+
+	fbr_chunk_take(chunk);
 
 	reader->chunks[reader->chunks_pos] = chunk;
 	reader->chunks_pos++;
@@ -175,11 +155,9 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 	struct fbr_body *body = &reader->file->body;
 	size_t offset_end = offset + size;
 
-	assert_zero(pthread_mutex_lock(&body->lock));
+	fbr_body_LOCK(body);
 
-	_freader_release_chunks(reader);
-
-	reader->offset_last = offset_end;
+	_freader_release_chunks(reader, offset);
 
 	struct fbr_chunk *chunk = body->chunks;
 
@@ -192,7 +170,6 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 		// offset starts in chunk || offset ends in chunk
 		if ((offset >= chunk->offset && offset < chunk_end) ||
 		    (offset < chunk->offset && offset_end >= chunk->offset)) {
-			fbr_chunk_take(chunk);
 			_freader_chunk_add(reader, chunk);
 
 			if (chunk->state == FBR_CHUNK_EMPTY) {
@@ -207,8 +184,6 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 		chunk = chunk->next;
 	}
 
-	_freader_retain_release(reader);
-
 	while (!_freader_ready(reader)) {
 		if (_freader_ready_error(reader)) {
 			reader->error = 1;
@@ -218,7 +193,7 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 		pthread_cond_wait(&body->update, &body->lock);
 	}
 
-	assert_zero(pthread_mutex_unlock(&body->lock));
+	fbr_body_UNLOCK(body);
 }
 
 static void
@@ -376,7 +351,7 @@ fbr_freader_iovec_gen(struct fbr_fs *fs, struct fbr_freader *reader, size_t offs
 		size_t chunk_offset = 0;
 		if (chunk->offset < offset_pos) {
 			chunk_offset = offset_pos - chunk->offset;
-			assert(chunk_offset < chunk->length);
+			assert_dev(chunk_offset < chunk->length);
 		}
 
 		size_t chunk_length = chunk->length - chunk_offset;
@@ -388,7 +363,7 @@ fbr_freader_iovec_gen(struct fbr_fs *fs, struct fbr_freader *reader, size_t offs
 
 		if (chunk_next) {
 			fbr_chunk_ok(chunk_next);
-			assert(chunk_next->offset > offset_pos);
+			assert_dev(chunk_next->offset > offset_pos);
 
 			if (chunk_length > chunk_next->offset - offset_pos) {
 				chunk_length = chunk_next->offset - offset_pos;
@@ -451,11 +426,11 @@ fbr_freader_free(struct fbr_fs *fs, struct fbr_freader *reader)
 	fbr_freader_ok(reader);
 	fbr_file_ok(reader->file);
 
-	reader->offset_last = 0;
+	fbr_body_LOCK(&reader->file->body);
 
-	assert_zero(pthread_mutex_lock(&reader->file->body.lock));
-	_freader_release_chunks(reader);
-	assert_zero(pthread_mutex_unlock(&reader->file->body.lock));
+	_freader_release_chunks(reader, 0);
+
+	fbr_body_UNLOCK(&reader->file->body);
 
 	fbr_inode_release(fs, &reader->file);
 	assert_zero_dev(reader->file);

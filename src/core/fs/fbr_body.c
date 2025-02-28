@@ -24,6 +24,20 @@ fbr_body_init(struct fbr_body *body)
 	}
 }
 
+void
+fbr_body_LOCK(struct fbr_body *body)
+{
+	assert(body);
+	assert_zero(pthread_mutex_lock(&body->lock));
+}
+
+void
+fbr_body_UNLOCK(struct fbr_body *body)
+{
+	assert(body);
+	assert_zero(pthread_mutex_unlock(&body->lock));
+}
+
 static struct fbr_chunk_slab *
 _body_chunk_slab_alloc(void)
 {
