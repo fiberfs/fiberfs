@@ -103,7 +103,6 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
     size_t size)
 {
 	fbr_fs_ok(fs);
-	assert(fs->fs_chunk_cb);
 	fbr_freader_ok(reader);
 	fbr_file_ok(reader->file);
 	assert_zero(reader->chunks_pos);
@@ -123,16 +122,16 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 
 		size_t chunk_end = chunk->offset + chunk->length;
 
-		// offset in chunk ||
-		// offset sits before chunk (and hits chunk)
+		// offset starts in chunk || offset ends in chunk
 		if ((offset >= chunk->offset && offset < chunk_end) ||
 		    (offset < chunk->offset && offset_end >= chunk->offset)) {
 			fbr_chunk_take(chunk);
 			_freader_chunk_add(reader, chunk);
 
 			if (chunk->state == FBR_CHUNK_UNREAD) {
-				fs->fs_chunk_cb(fs, reader->file, chunk);
-				assert(chunk->state > FBR_CHUNK_UNREAD);
+				if (fs->fs_chunk_cb) {
+					fs->fs_chunk_cb(fs, reader->file, chunk);
+				}
 			}
 		} else if (chunk->offset > offset_end) {
 			break;
@@ -142,17 +141,15 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 	}
 
 	while (!_freader_ready(reader)) {
-		pthread_cond_wait(&body->update, &body->lock);
-
 		if (_freader_ready_error(reader)) {
 			reader->error = 1;
 			break;
 		}
+
+		pthread_cond_wait(&body->update, &body->lock);
 	}
 
 	assert_zero(pthread_mutex_unlock(&body->lock));
-
-	// Check if we are normalized
 }
 
 size_t
@@ -168,8 +165,6 @@ fbr_freader_copy_chunks(struct fbr_fs *fs, struct fbr_freader *reader, char *buf
 	if (offset >= reader->file->size) {
 		return 0;
 	}
-
-	// TODO if we are normalized, we can vector write
 
 	size_t offset_end = offset + buffer_len;
 
@@ -221,7 +216,7 @@ fbr_freader_release_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t
 	fbr_file_ok(reader->file);
 
 	struct fbr_body *body = &reader->file->body;
-	size_t offset_max = offset + size;
+	size_t offset_end = offset + size;
 
 	assert_zero(pthread_mutex_lock(&body->lock));
 
@@ -229,9 +224,9 @@ fbr_freader_release_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t
 		struct fbr_chunk *chunk = reader->chunks[i];
 		fbr_chunk_ok(chunk);
 
-		size_t chunk_span = chunk->offset + chunk->length;
+		size_t chunk_end = chunk->offset + chunk->length;
 
-		if (chunk_span >= offset_max) {
+		if (chunk_end >= offset_end) {
 			fbr_chunk_release(chunk);
 			// TODO we want to save these in our prefetch list
 		} else {
