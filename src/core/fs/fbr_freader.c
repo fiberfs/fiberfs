@@ -365,6 +365,21 @@ fbr_freader_iovec_gen(struct fbr_fs *fs, struct fbr_freader *reader, size_t offs
 			}
 		}
 
+		// Can we merge into the last iovec?
+		if (chunk_offset && reader->iovec_pos) {
+			struct iovec *io_last = &reader->iovec[reader->iovec_pos - 1];
+
+			if (io_last->iov_base == chunk->data &&
+			    io_last->iov_len == chunk_offset) {
+				io_last->iov_len += chunk_length;
+				assert_dev(io_last->iov_len <= chunk->length);
+
+				offset_pos += chunk_length;
+
+				continue;
+			}
+		}
+
 		struct iovec *io = _freader_iovec_get(reader);
 
 		io->iov_base = chunk->data + chunk_offset;
