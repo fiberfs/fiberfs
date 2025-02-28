@@ -129,8 +129,8 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 			_freader_chunk_add(reader, chunk);
 
 			if (chunk->state == FBR_CHUNK_UNREAD) {
-				if (fs->fs_chunk_cb) {
-					fs->fs_chunk_cb(fs, reader->file, chunk);
+				if (fs->fetcher) {
+					fs->fetcher(fs, reader->file, chunk);
 				}
 			}
 		} else if (chunk->offset > offset_end) {

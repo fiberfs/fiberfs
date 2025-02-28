@@ -71,6 +71,16 @@ fbr_fs_release_root(struct fbr_fs *fs, int release_root_inode)
 }
 
 void
+fbr_fs_set_fetcher(struct fbr_fs *fs, fbr_fs_fetch_f *fetcher)
+{
+	fbr_fs_ok(fs);
+	assert_zero(fs->fetcher);
+	assert(fetcher);
+
+	fs->fetcher = fetcher;
+}
+
+void
 fbr_fs_free(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);

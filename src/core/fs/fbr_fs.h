@@ -195,7 +195,7 @@ struct fbr_fs_stats {
 	unsigned long				requests_total;
 };
 
-typedef void (fbr_fs_chunk_f)(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
+typedef void (fbr_fs_fetch_f)(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
 
 struct fbr_fs {
 	unsigned int				magic;
@@ -206,7 +206,7 @@ struct fbr_fs {
 
 	struct fbr_directory			*root;
 
-	fbr_fs_chunk_f				*fs_chunk_cb;
+	fbr_fs_fetch_f				*fetcher;
 
 	struct fbr_fs_stats			stats;
 };
@@ -221,6 +221,7 @@ typedef void (fbr_dindex_debug_f)(struct fbr_fs *fs, struct fbr_directory *direc
 struct fbr_fs *fbr_fs_alloc(void);
 void fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root);
 void fbr_fs_release_root(struct fbr_fs *fs, int release_root_inode);
+void fbr_fs_set_fetcher(struct fbr_fs *fs, fbr_fs_fetch_f *fetcher);
 void fbr_fs_free(struct fbr_fs *fs);
 
 void fbr_fs_stat_add_count(unsigned long *stat, unsigned long value);

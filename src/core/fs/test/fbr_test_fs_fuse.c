@@ -139,8 +139,7 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	fbr_fs_ok(ctx->fs);
 
-	// TODO nice this up
-	ctx->fs->fs_chunk_cb = _test_fs_chunk_gen;
+	fbr_fs_set_fetcher(ctx->fs, _test_fs_chunk_gen);
 }
 
 static void
