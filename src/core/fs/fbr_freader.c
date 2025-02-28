@@ -24,7 +24,10 @@ fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	reader->file = file;
 
 	reader->chunks = reader->_chunks;
-	reader->chunks_len = FBR_BODY_DEFAULT_CHUNKS;
+	reader->chunks_len = fbr_static_array_len(reader->_chunks);
+
+	reader->iovec = reader->_iovec;
+	reader->iovec_len = fbr_static_array_len(reader->_iovec);
 
 	return reader;
 }
@@ -48,10 +51,8 @@ _freader_chunk_add(struct fbr_freader *reader, struct fbr_chunk *chunk)
 			reader->chunks = malloc(sizeof(*reader->chunks) * reader->chunks_len);
 			assert(reader->chunks);
 
-			memcpy(reader->chunks, reader->_chunks,
-				sizeof(*reader->chunks) * FBR_BODY_DEFAULT_CHUNKS);
+			memcpy(reader->chunks, reader->_chunks, sizeof(reader->_chunks));
 		} else {
-			reader->chunks_len *= 2;
 			reader->chunks = realloc(reader->chunks,
 				sizeof(*reader->chunks) * reader->chunks_len);
 			assert(reader->chunks);
@@ -73,7 +74,7 @@ _freader_ready_error(struct fbr_freader *reader)
 		struct fbr_chunk *chunk = reader->chunks[i];
 		fbr_chunk_ok(chunk);
 
-		if (chunk->state == FBR_CHUNK_UNREAD) {
+		if (chunk->state == FBR_CHUNK_EMPTY) {
 			return 1;
 		}
 	}
@@ -90,7 +91,7 @@ _freader_ready(struct fbr_freader *reader)
 		struct fbr_chunk *chunk = reader->chunks[i];
 		fbr_chunk_ok(chunk);
 
-		if (chunk->state != FBR_CHUNK_READ) {
+		if (chunk->state != FBR_CHUNK_READY) {
 			return 0;
 		}
 	}
@@ -118,7 +119,7 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 
 	while (chunk) {
 		fbr_chunk_ok(chunk);
-		assert(chunk->state >= FBR_CHUNK_UNREAD);
+		assert(chunk->state >= FBR_CHUNK_EMPTY);
 
 		size_t chunk_end = chunk->offset + chunk->length;
 
@@ -128,7 +129,7 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 			fbr_chunk_take(chunk);
 			_freader_chunk_add(reader, chunk);
 
-			if (chunk->state == FBR_CHUNK_UNREAD) {
+			if (chunk->state == FBR_CHUNK_EMPTY) {
 				if (fs->fetcher) {
 					fs->fetcher(fs, reader->file, chunk);
 				}
@@ -152,59 +153,60 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 	assert_zero(pthread_mutex_unlock(&body->lock));
 }
 
-size_t
-fbr_freader_copy_chunks(struct fbr_fs *fs, struct fbr_freader *reader, char *buffer,
-    size_t offset, size_t buffer_len)
+static void
+_freader_iovec_expand(struct fbr_freader *reader)
+{
+	fbr_freader_ok(reader);
+	assert(reader->iovec_pos == reader->iovec_len);
+	assert(reader->iovec_len);
+	assert(reader->iovec_len < 1000 * 10);
+
+	if (reader->iovec_len < FBR_BODY_SLAB_DEFAULT_CHUNKS) {
+		reader->iovec_len = FBR_BODY_SLAB_DEFAULT_CHUNKS;
+	} else {
+		reader->iovec_len *= 2;
+	}
+
+	if (reader->iovec == reader->_iovec) {
+		reader->iovec = malloc(sizeof(*reader->iovec) * reader->iovec_len);
+		assert(reader->iovec);
+
+		memcpy(reader->iovec, reader->_iovec, sizeof(reader->_iovec));
+	} else {
+		reader->iovec = realloc(reader->iovec,
+			sizeof(*reader->iovec) * reader->iovec_len);
+		assert(reader->iovec);
+	}
+
+	assert_dev(reader->iovec_pos < reader->iovec_len);
+}
+
+void
+fbr_freader_gen_iovec(struct fbr_fs *fs, struct fbr_freader *reader)
 {
 	fbr_fs_ok(fs);
 	fbr_freader_ok(reader);
-	fbr_file_ok(reader->file);
-	assert(buffer);
-	assert(buffer_len);
+	assert(reader->iovec_len);
 
-	if (offset >= reader->file->size) {
-		return 0;
-	}
-
-	size_t offset_end = offset + buffer_len;
+	reader->iovec_pos = 0;
 
 	for (size_t i = 0; i < reader->chunks_pos; i++) {
 		struct fbr_chunk *chunk = reader->chunks[i];
 		fbr_chunk_ok(chunk);
+		assert(chunk->state == FBR_CHUNK_READY);
 
-		size_t chunk_end = chunk->offset + chunk->length;
-
-		// offset in chunk
-		if (offset >= chunk->offset && offset < chunk_end) {
-			size_t chunk_offset = offset - chunk->offset;
-			assert_dev(chunk->length > chunk_offset);
-
-			size_t chunk_len = chunk->length - chunk_offset;
-			if (chunk_len > buffer_len) {
-				chunk_len = buffer_len;
-			}
-
-			memcpy(buffer, chunk->data + chunk_offset, chunk_len);
+		if (reader->iovec_pos == reader->iovec_len) {
+			_freader_iovec_expand(reader);
 		}
-		// offset sits before chunk (and hits chunk)
-		else if (offset < chunk->offset && offset_end >= chunk->offset) {
-			size_t buffer_offset = chunk->offset - offset;
-			assert_dev(buffer_len > buffer_offset);
+		assert_dev(reader->iovec_pos < reader->iovec_len);
 
-			size_t chunk_len = buffer_len - buffer_offset;
-			if (chunk_len > chunk->length) {
-				chunk_len = chunk->length;
-			}
+		struct iovec *io = &reader->iovec[reader->iovec_pos];
 
-			memcpy(buffer + buffer_offset, chunk->data, chunk_len);
-		}
+		io->iov_base = chunk->data;
+		io->iov_len = chunk->length;
+
+		reader->iovec_pos++;
 	}
-
-	if (offset_end > reader->file->size) {
-		return reader->file->size - offset;
-	}
-
-	return buffer_len;
 }
 
 void
@@ -252,6 +254,10 @@ fbr_freader_free(struct fbr_fs *fs, struct fbr_freader *reader)
 
 	if (reader->chunks != reader->_chunks) {
 		free(reader->chunks);
+	}
+
+	if (reader->iovec != reader->_iovec) {
+		free(reader->iovec);
 	}
 
 	fbr_ZERO(reader);

@@ -77,7 +77,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	fargs.argv[3] = "-o";
 	fargs.argv[4] = "default_permissions";
 	fargs.argv[5] = "-d";
-	fargs.argc = sizeof(argv) / sizeof(*argv);
+	fargs.argc = fbr_static_array_len(argv);
 	assert(fargs.argc == 6);
 	fargs.allocated = 0;
 

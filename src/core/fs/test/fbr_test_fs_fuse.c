@@ -116,7 +116,7 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
-	assert(chunk->state == FBR_CHUNK_UNREAD);
+	assert(chunk->state == FBR_CHUNK_EMPTY);
 
 	chunk->data = malloc(chunk->length);
 	assert(chunk->data);
@@ -128,7 +128,7 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 		counter++;
 	}
 
-	chunk->state = FBR_CHUNK_READ;
+	chunk->state = FBR_CHUNK_READY;
 }
 
 static void
@@ -451,21 +451,17 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 
 	fbr_freader_pull_chunks(fs, reader, off, size);
 
-	if (!reader->error) {
-		// TODO vector write
-		char *buffer = calloc(1, size);
-		assert(buffer);
+	if (reader->error) {
+		fbr_fuse_reply_err(request, EIO);
+	} else {
 
-		size_t len = fbr_freader_copy_chunks(fs, reader, buffer, off, size);
+		fbr_freader_gen_iovec(fs, reader);
 
 		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-			"** READ bytes: %zu chunks: %zu", len, reader->chunks_len);
+			"** READ chunks: %zu io_vecs: %zu", reader->chunks_pos,
+			reader->iovec_pos);
 
-		fbr_fuse_reply_buf(request, buffer, len);
-
-		free(buffer);
-	} else {
-		fbr_fuse_reply_err(request, EIO);
+		fbr_fuse_reply_iov(request, reader->iovec, reader->iovec_pos);
 	}
 
 	fbr_freader_release_chunks(fs, reader, off, size);

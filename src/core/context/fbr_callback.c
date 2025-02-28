@@ -58,6 +58,18 @@ fbr_fuse_reply_buf(struct fbr_request *request, const char *buf, size_t size)
 }
 
 void
+fbr_fuse_reply_iov(struct fbr_request *request, const struct iovec *iov, int count)
+{
+	fbr_request_ok(request);
+	assert(request->fuse_req);
+
+	int ret = fuse_reply_iov(request->fuse_req, iov, count);
+	(void)ret;
+
+	request->fuse_req = NULL;
+}
+
+void
 fbr_fuse_reply_entry(struct fbr_request *request, const struct fuse_entry_param *entry)
 {
 	fbr_request_ok(request);

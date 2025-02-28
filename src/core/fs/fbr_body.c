@@ -110,7 +110,7 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_NONE);
 
-	chunk->state = FBR_CHUNK_UNREAD;
+	chunk->state = FBR_CHUNK_EMPTY;
 	chunk->id = id;
 	chunk->offset = offset;
 	chunk->length = length;
@@ -129,17 +129,17 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 }
 
 void
-fbr_chunk_unread(struct fbr_chunk *chunk)
+fbr_chunk_empty(struct fbr_chunk *chunk)
 {
 	fbr_chunk_ok(chunk);
-	assert(chunk->state == FBR_CHUNK_READ);
+	assert(chunk->state == FBR_CHUNK_READY);
 	assert_zero(chunk->refcount);
 	assert(chunk->data);
 
 	free(chunk->data);
 	chunk->data = NULL;
 
-	chunk->state = FBR_CHUNK_UNREAD;
+	chunk->state = FBR_CHUNK_EMPTY;
 }
 
 void
@@ -161,11 +161,11 @@ fbr_chunk_release(struct fbr_chunk *chunk) {
 		return;
 	}
 
-	if (chunk->state == FBR_CHUNK_READ) {
-		fbr_chunk_unread(chunk);
+	if (chunk->state == FBR_CHUNK_READY) {
+		fbr_chunk_empty(chunk);
 	}
 
-	assert(chunk->state == FBR_CHUNK_UNREAD);
+	assert(chunk->state == FBR_CHUNK_EMPTY);
 }
 
 void
