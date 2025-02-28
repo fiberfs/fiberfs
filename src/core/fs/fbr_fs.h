@@ -259,10 +259,9 @@ void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_attr(struct fbr_file *file, struct stat *st);
 
 void fbr_body_init(struct fbr_body *body);
+void fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length);
 void fbr_body_LOCK(struct fbr_body *body);
 void fbr_body_UNLOCK(struct fbr_body *body);
-void fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length);
-void fbr_chunk_empty(struct fbr_chunk *chunk);
 void fbr_chunk_take(struct fbr_chunk *chunk);
 void fbr_chunk_release(struct fbr_chunk *chunk);
 void fbr_body_free(struct fbr_body *body);

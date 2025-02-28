@@ -342,7 +342,7 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 	_dindex_directory_free(fs, directory);
 }
 
-void
+static void
 _dindex_remove(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
@@ -392,7 +392,7 @@ _dindex_remove(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 	}
 }
 
-void
+static void
 _dindex_lru_pop(struct fbr_fs *fs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);

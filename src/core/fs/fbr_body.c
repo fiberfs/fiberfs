@@ -124,8 +124,8 @@ fbr_body_UNLOCK(struct fbr_body *body)
 	assert_zero(pthread_mutex_unlock(&body->lock));
 }
 
-void
-fbr_chunk_empty(struct fbr_chunk *chunk)
+static void
+_chunk_empty(struct fbr_chunk *chunk)
 {
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_READY);
@@ -158,7 +158,7 @@ fbr_chunk_release(struct fbr_chunk *chunk) {
 	}
 
 	if (chunk->state == FBR_CHUNK_READY) {
-		fbr_chunk_empty(chunk);
+		_chunk_empty(chunk);
 	}
 
 	assert(chunk->state == FBR_CHUNK_EMPTY);
