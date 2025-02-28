@@ -8,8 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+// TODO
+#include <stdio.h>
+
 #include "fiberfs.h"
 #include "fbr_fs.h"
+
+static uint8_t _ZERO_FILL[1024 * 8];
 
 struct fbr_freader *
 fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file)
@@ -181,8 +186,92 @@ _freader_iovec_expand(struct fbr_freader *reader)
 	assert_dev(reader->iovec_pos < reader->iovec_len);
 }
 
+static struct iovec *
+_freader_iovec_get(struct fbr_freader *reader)
+{
+	fbr_freader_ok(reader);
+
+	if (reader->iovec_pos == reader->iovec_len) {
+		_freader_iovec_expand(reader);
+	}
+	assert_dev(reader->iovec_pos < reader->iovec_len);
+
+	struct iovec *io = &reader->iovec[reader->iovec_pos];
+
+	return io;
+}
+
+static void
+_freader_iovec_zero(struct fbr_freader *reader, size_t length)
+{
+	fbr_freader_ok(reader);
+
+	while (length) {
+		size_t zero_length = length;
+		if (zero_length > sizeof(_ZERO_FILL)) {
+			zero_length = sizeof(_ZERO_FILL);
+		}
+
+		struct iovec *io = _freader_iovec_get(reader);
+
+		io->iov_base = _ZERO_FILL;
+		io->iov_len = zero_length;
+
+		reader->iovec_pos++;
+		length -= zero_length;
+	}
+}
+
+static struct fbr_chunk *
+_freader_find_next_chunk(struct fbr_freader *reader, size_t offset)
+{
+	fbr_freader_ok(reader);
+
+	struct fbr_chunk *closest = NULL;
+	size_t closest_distance = 0;
+
+	for (size_t i = 0; i < reader->chunks_pos; i++) {
+		struct fbr_chunk *chunk = reader->chunks[i];
+		fbr_chunk_ok(chunk);
+
+		// chunk is before or at offset
+		if (chunk->offset <= offset) {
+			continue;
+		}
+
+		size_t chunk_distance = chunk->offset - offset;
+
+		if (!closest || chunk_distance < closest_distance) {
+			closest = chunk;
+			closest_distance = chunk_distance;
+		}
+	}
+
+	return closest;
+}
+
+static struct fbr_chunk *
+_freader_find_chunk(struct fbr_freader *reader, size_t offset)
+{
+	fbr_freader_ok(reader);
+
+	for (size_t i = 0; i < reader->chunks_pos; i++) {
+		struct fbr_chunk *chunk = reader->chunks[i];
+		fbr_chunk_ok(chunk);
+
+		size_t chunk_end = chunk->offset + chunk->length;
+
+		// chunk covers offset
+		if (chunk->offset <= offset && chunk_end > offset) {
+			return chunk;
+		}
+	}
+
+	return NULL;
+}
+
 void
-fbr_freader_gen_iovec(struct fbr_fs *fs, struct fbr_freader *reader)
+fbr_freader_iovec_gen(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset, size_t size)
 {
 	fbr_fs_ok(fs);
 	fbr_freader_ok(reader);
@@ -190,22 +279,90 @@ fbr_freader_gen_iovec(struct fbr_fs *fs, struct fbr_freader *reader)
 
 	reader->iovec_pos = 0;
 
-	for (size_t i = 0; i < reader->chunks_pos; i++) {
-		struct fbr_chunk *chunk = reader->chunks[i];
+	size_t offset_end = offset + size;
+	size_t offset_pos = offset;
+
+	while (offset_pos < offset_end) {
+		struct fbr_chunk *chunk = _freader_find_chunk(reader, offset_pos);
+
+		if (!chunk) {
+			// Fill with the zero page
+			chunk = _freader_find_next_chunk(reader, offset_pos);
+
+			size_t zero_fill_length = offset_end - offset_pos;
+
+			if (chunk) {
+				fbr_chunk_ok(chunk);
+				assert(chunk->offset > offset_pos);
+				zero_fill_length = chunk->offset - offset_pos;
+			}
+
+			_freader_iovec_zero(reader, zero_fill_length);
+
+			offset_pos += zero_fill_length;
+
+			if (!chunk) {
+				continue;
+			}
+		}
+
 		fbr_chunk_ok(chunk);
 		assert(chunk->state == FBR_CHUNK_READY);
+		assert(chunk->data);
 
-		if (reader->iovec_pos == reader->iovec_len) {
-			_freader_iovec_expand(reader);
+		size_t chunk_offset = 0;
+		if (chunk->offset < offset_pos) {
+			chunk_offset = offset_pos - chunk->offset;
+			assert(chunk_offset < chunk->length);
 		}
-		assert_dev(reader->iovec_pos < reader->iovec_len);
 
-		struct iovec *io = &reader->iovec[reader->iovec_pos];
+		size_t chunk_length = chunk->length - chunk_offset;
+		if (chunk_length > offset_end - offset_pos) {
+			chunk_length = offset_end - offset_pos;
+		}
 
-		io->iov_base = chunk->data;
-		io->iov_len = chunk->length;
+		struct fbr_chunk *chunk_next = _freader_find_next_chunk(reader, offset_pos);
+
+		if (chunk_next) {
+			fbr_chunk_ok(chunk_next);
+			assert(chunk_next->offset > offset_pos);
+
+			if (chunk_length > chunk_next->offset - offset_pos) {
+				chunk_length = chunk_next->offset - offset_pos;
+			}
+		}
+
+		struct iovec *io = _freader_iovec_get(reader);
+
+		io->iov_base = chunk->data + chunk_offset;
+		io->iov_len = chunk_length;
 
 		reader->iovec_pos++;
+		offset_pos += chunk_length;
+	}
+
+	assert_dev(offset_pos == offset_end);
+
+	if (fbr_assert_is_dev()) {
+		/*
+		for (size_t i = 0; i < reader->chunks_pos; i++) {
+			struct fbr_chunk *chunk = reader->chunks[i];
+			fbr_chunk_ok(chunk);
+			printf("ZZZ chunks[%zu].data = %p\n", i, (void*)chunk->data);
+			printf("ZZZ chunks[%zu].offset = %zu\n", i, chunk->offset);
+			printf("ZZZ chunks[%zu].length = %zu\n", i, chunk->length);
+		}
+		*/
+		size_t total_size = 0;
+		for (size_t i = 0; i < reader->iovec_pos; i++) {
+			struct iovec *io = &reader->iovec[i];
+			/*
+			printf("ZZZ iovec[%zu].iov_base = %p\n", i, (void*)io->iov_base);
+			printf("ZZZ iovec[%zu].iov_len = %zu\n", i, io->iov_len);
+			*/
+			total_size += io->iov_len;
+		}
+		assert(total_size == size);
 	}
 }
 

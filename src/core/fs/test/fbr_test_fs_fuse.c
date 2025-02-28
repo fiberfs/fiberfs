@@ -63,7 +63,16 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_id_t id = fbr_id_gen();
 		size_t offset = 0;
 		for (size_t i = 0; i < chunks; i++) {
-			fbr_body_chunk_add(file, id, offset, 1001);
+			if (!offset) {
+				// even length will fail checksum
+				fbr_body_chunk_add(file, id, 0, 11);
+				fbr_body_chunk_add(file, id, 0, 10);
+				fbr_body_chunk_add(file, id, 500, 607);
+				fbr_body_chunk_add(file, id, 600, 500);
+				fbr_body_chunk_add(file, id, 0, 601);
+			} else {
+				fbr_body_chunk_add(file, id, offset, 1001);
+			}
 			offset += 1001;
 		}
 		assert(offset == file->size);
@@ -122,6 +131,10 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 	assert(chunk->data);
 
 	size_t counter = chunk->offset;
+
+	if (chunk->length % 2 == 0) {
+		counter++;
+	}
 
 	for (size_t i = 0; i < chunk->length; i++) {
 		chunk->data[i] = (counter % 10) + '0';
@@ -449,13 +462,22 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 	struct fbr_freader *reader = fbr_fh_freader(fi->fh);
 	fbr_file_ok(reader->file);
 
+	if ((size_t)off >= reader->file->size) {
+		fbr_fuse_reply_buf(request, NULL, 0);
+		return;
+	}
+
+	if ((size_t)off + size > reader->file->size) {
+		size = reader->file->size - off;
+	}
+
 	fbr_freader_pull_chunks(fs, reader, off, size);
 
 	if (reader->error) {
 		fbr_fuse_reply_err(request, EIO);
 	} else {
 
-		fbr_freader_gen_iovec(fs, reader);
+		fbr_freader_iovec_gen(fs, reader, off, size);
 
 		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
 			"** READ chunks: %zu io_vecs: %zu", reader->chunks_pos,

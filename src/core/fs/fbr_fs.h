@@ -294,7 +294,8 @@ void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 struct fbr_freader *fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset,
 	size_t size);
-void fbr_freader_gen_iovec(struct fbr_fs *fs, struct fbr_freader *reader);
+void fbr_freader_iovec_gen(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset,
+	size_t size);
 void fbr_freader_release_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset,
 	size_t size);
 void fbr_freader_free(struct fbr_fs *fs, struct fbr_freader *reader);

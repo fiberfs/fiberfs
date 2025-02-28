@@ -24,7 +24,7 @@ fbr_body_init(struct fbr_body *body)
 	}
 }
 
-struct fbr_chunk_slab *
+static struct fbr_chunk_slab *
 _body_chunk_slab_alloc(void)
 {
 	size_t chunk_size = sizeof(struct fbr_chunk) * FBR_BODY_SLAB_DEFAULT_CHUNKS;
@@ -40,7 +40,7 @@ _body_chunk_slab_alloc(void)
 	return slab;
 }
 
-void
+static void
 _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 {
 	fbr_chunk_slab_ok(slab);
@@ -58,7 +58,7 @@ _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 	free(slab);
 }
 
-struct fbr_chunk *
+static struct fbr_chunk *
 _body_chunk_get(struct fbr_body *body)
 {
 	assert_dev(body);
