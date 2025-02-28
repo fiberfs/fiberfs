@@ -14,7 +14,7 @@
 #include "fiberfs.h"
 #include "fbr_fs.h"
 
-static uint8_t _ZERO_FILL[1024 * 8];
+static uint8_t _ZERO_FILL[1024 * 16];
 
 struct fbr_freader *
 fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file)
@@ -66,6 +66,33 @@ _freader_retain_release(struct fbr_freader *reader)
 			reader->retain[i] = NULL;
 		}
 	}
+}
+
+static void
+_freader_release_chunks(struct fbr_freader *reader)
+{
+	fbr_freader_ok(reader);
+	fbr_file_ok(reader->file);
+
+	size_t offset_last = reader->offset_last;
+
+	for (size_t i = 0; i < reader->chunks_pos; i++) {
+		struct fbr_chunk *chunk = reader->chunks[i];
+		fbr_chunk_ok(chunk);
+
+		size_t chunk_end = chunk->offset + chunk->length;
+
+		if (offset_last && chunk_end >= offset_last) {
+			_freader_retain_add(reader, chunk);
+		} else {
+			fbr_chunk_release(chunk);
+		}
+
+		reader->chunks[i] = NULL;
+	}
+
+	reader->chunks_pos = 0;
+	reader->offset_last = 0;
 }
 
 static void
@@ -142,7 +169,6 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 	fbr_fs_ok(fs);
 	fbr_freader_ok(reader);
 	fbr_file_ok(reader->file);
-	assert_zero(reader->chunks_pos);
 
 	reader->error = 0;
 
@@ -150,6 +176,10 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 	size_t offset_end = offset + size;
 
 	assert_zero(pthread_mutex_lock(&body->lock));
+
+	_freader_release_chunks(reader);
+
+	reader->offset_last = offset_end;
 
 	struct fbr_chunk *chunk = body->chunks;
 
@@ -415,47 +445,16 @@ fbr_freader_iovec_gen(struct fbr_fs *fs, struct fbr_freader *reader, size_t offs
 }
 
 void
-fbr_freader_release_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset,
-    size_t size)
-{
-	fbr_fs_ok(fs);
-	fbr_freader_ok(reader);
-	fbr_file_ok(reader->file);
-
-	struct fbr_body *body = &reader->file->body;
-	size_t offset_end = offset + size;
-
-	assert_zero(pthread_mutex_lock(&body->lock));
-
-	for (size_t i = 0; i < reader->chunks_pos; i++) {
-		struct fbr_chunk *chunk = reader->chunks[i];
-		fbr_chunk_ok(chunk);
-
-		size_t chunk_end = chunk->offset + chunk->length;
-
-		if (chunk_end >= offset_end) {
-			_freader_retain_add(reader, chunk);
-		} else {
-			fbr_chunk_release(chunk);
-		}
-
-		reader->chunks[i] = NULL;
-	}
-
-	assert_zero(pthread_mutex_unlock(&body->lock));
-
-	reader->chunks_pos = 0;
-}
-
-void
 fbr_freader_free(struct fbr_fs *fs, struct fbr_freader *reader)
 {
 	fbr_fs_ok(fs);
 	fbr_freader_ok(reader);
 	fbr_file_ok(reader->file);
 
+	reader->offset_last = 0;
+
 	assert_zero(pthread_mutex_lock(&reader->file->body.lock));
-	_freader_retain_release(reader);
+	_freader_release_chunks(reader);
 	assert_zero(pthread_mutex_unlock(&reader->file->body.lock));
 
 	fbr_inode_release(fs, &reader->file);

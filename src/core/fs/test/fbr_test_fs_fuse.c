@@ -45,17 +45,48 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 	}
 
 	char name[128];
+	struct fbr_path_name filename;
+	struct fbr_file *file;
+	int ret;
+
+	if (!depth) {
+		ret = snprintf(name, sizeof(name), "fiber_zero");
+		assert((size_t)ret < sizeof(name));
+
+		fbr_path_name_init(&filename, name);
+
+		file = fbr_file_alloc(fs, directory, &filename, S_IFREG | 0444);
+		fbr_file_ok(file);
+
+		file->size = 1025 * 125;
+
+		ret = snprintf(name, sizeof(name), "fiber_big");
+		assert((size_t)ret < sizeof(name));
+
+		fbr_path_name_init(&filename, name);
+
+		file = fbr_file_alloc(fs, directory, &filename, S_IFREG | 0444);
+		fbr_file_ok(file);
+
+		fbr_id_t id = fbr_id_gen();
+
+		size_t s = 1024 * 512;
+
+		fbr_body_chunk_add(file, id, s * 0, s);
+		fbr_body_chunk_add(file, id, s * 1, s);
+
+		file->size = 1024 * 1024 ;
+	}
 
 	for (size_t i = 0; i < 4; i++) {
 		mode_t fmode = S_IFREG | 0444;
 
-		int ret = snprintf(name, sizeof(name), "fiber_%zu%zu", depth, i + 1);
+		ret = snprintf(name, sizeof(name), "fiber_%zu%zu", depth, i + 1);
 		assert((size_t)ret < sizeof(name));
 
-		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, name);
 
-		struct fbr_file *file = fbr_file_alloc(fs, directory, &filename, fmode);
+		file = fbr_file_alloc(fs, directory, &filename, fmode);
 
 		size_t chunks = (i + 1) * depth;
 		file->size = chunks * 1001;
@@ -85,10 +116,9 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		mode_t fmode = S_IFDIR | 0555;
 
-		int ret = snprintf(name, sizeof(name), "fiber_dir%zu%zu", depth, i + 1);
+		ret = snprintf(name, sizeof(name), "fiber_dir%zu%zu", depth, i + 1);
 		assert((size_t)ret < sizeof(name));
 
-		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, name);
 
 		(void)fbr_file_alloc(fs, directory, &filename, fmode);
@@ -127,12 +157,15 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_EMPTY);
 
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
+		"** FETCH chunk: offset: %zu length: %zu", chunk->offset, chunk->length);
+
 	chunk->data = malloc(chunk->length);
 	assert(chunk->data);
 
 	size_t counter = chunk->offset;
 
-	if (chunk->length % 2 == 0) {
+	if (chunk->length % 2 == 0 && chunk->length < 1024) {
 		counter++;
 	}
 
@@ -476,7 +509,6 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 	if (reader->error) {
 		fbr_fuse_reply_err(request, EIO);
 	} else {
-
 		fbr_freader_iovec_gen(fs, reader, off, size);
 
 		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
@@ -485,8 +517,6 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 
 		fbr_fuse_reply_iov(request, reader->iovec, reader->iovec_pos);
 	}
-
-	fbr_freader_release_chunks(fs, reader, off, size);
 }
 
 static void

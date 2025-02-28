@@ -22,6 +22,14 @@ set_var1 $sys_tmpdir "/fiber_dir01/fiber_dir11/fiber_24"
 sys_stat_size $var1 8008
 sys_cat_md5 $var1 560ecea077b5f4f29efdb6f41062af0d
 
+set_var1 $sys_tmpdir "/fiber_zero"
+sys_stat_size $var1 128125
+sys_cat_md5 $var1 20395dbf890a189292bf2aafa6d4fb40
+
+set_var1 $sys_tmpdir "/fiber_big"
+sys_stat_size $var1 1048576
+sys_cat_md5 $var1 4cf30131c206e004d37e694a53733f70
+
 # Cleanup
 
 sleep_ms 100

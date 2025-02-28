@@ -178,6 +178,8 @@ struct fbr_freader {
 
 	struct fbr_file				*file;
 
+	size_t					offset_last;
+
 	struct fbr_chunk			*_chunks[FBR_BODY_DEFAULT_CHUNKS];
 	struct fbr_chunk			**chunks;
 	size_t					chunks_pos;
@@ -298,8 +300,6 @@ struct fbr_freader *fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset,
 	size_t size);
 void fbr_freader_iovec_gen(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset,
-	size_t size);
-void fbr_freader_release_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset,
 	size_t size);
 void fbr_freader_free(struct fbr_fs *fs, struct fbr_freader *reader);
 
