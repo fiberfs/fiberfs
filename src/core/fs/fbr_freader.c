@@ -38,6 +38,37 @@ fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file)
 }
 
 static void
+_freader_retain_add(struct fbr_freader *reader, struct fbr_chunk *chunk)
+{
+	fbr_freader_ok(reader);
+	fbr_chunk_ok(chunk);
+
+	for (size_t i = 0; i < fbr_static_array_len(reader->retain); i++) {
+		if (!reader->retain[i]) {
+			reader->retain[i] = chunk;
+			return;
+		}
+	}
+
+	fbr_chunk_release(chunk);
+}
+
+static void
+_freader_retain_release(struct fbr_freader *reader)
+{
+	fbr_freader_ok(reader);
+
+	for (size_t i = 0; i < fbr_static_array_len(reader->retain); i++) {
+		if (reader->retain[i]) {
+			struct fbr_chunk *chunk = reader->retain[i];
+			fbr_chunk_ok(chunk);
+			fbr_chunk_release(chunk);
+			reader->retain[i] = NULL;
+		}
+	}
+}
+
+static void
 _freader_chunk_add(struct fbr_freader *reader, struct fbr_chunk *chunk)
 {
 	fbr_freader_ok(reader);
@@ -145,6 +176,8 @@ fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t of
 
 		chunk = chunk->next;
 	}
+
+	_freader_retain_release(reader);
 
 	while (!_freader_ready(reader)) {
 		if (_freader_ready_error(reader)) {
@@ -386,8 +419,7 @@ fbr_freader_release_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t
 		size_t chunk_end = chunk->offset + chunk->length;
 
 		if (chunk_end >= offset_end) {
-			fbr_chunk_release(chunk);
-			// TODO we want to save these in our prefetch list
+			_freader_retain_add(reader, chunk);
 		} else {
 			fbr_chunk_release(chunk);
 		}
@@ -405,6 +437,11 @@ fbr_freader_free(struct fbr_fs *fs, struct fbr_freader *reader)
 {
 	fbr_fs_ok(fs);
 	fbr_freader_ok(reader);
+	fbr_file_ok(reader->file);
+
+	assert_zero(pthread_mutex_lock(&reader->file->body.lock));
+	_freader_retain_release(reader);
+	assert_zero(pthread_mutex_unlock(&reader->file->body.lock));
 
 	fbr_inode_release(fs, &reader->file);
 	assert_zero_dev(reader->file);

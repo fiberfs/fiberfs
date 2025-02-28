@@ -24,6 +24,7 @@
 #define FBR_READDIR_SIZE			4096
 #define FBR_BODY_DEFAULT_CHUNKS			4
 #define FBR_BODY_SLAB_DEFAULT_CHUNKS		32
+#define FBR_FREADER_RETAIN			2
 
 typedef unsigned long fbr_inode_t;
 typedef unsigned int fbr_refcount_t;
@@ -181,6 +182,8 @@ struct fbr_freader {
 	struct fbr_chunk			**chunks;
 	size_t					chunks_pos;
 	size_t					chunks_len;
+
+	struct fbr_chunk			*retain[FBR_FREADER_RETAIN];
 
 	struct iovec				_iovec[FBR_BODY_DEFAULT_CHUNKS];
 	struct iovec				*iovec;
