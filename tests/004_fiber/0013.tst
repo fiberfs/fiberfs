@@ -41,6 +41,7 @@ sleep_ms 100
 fs_test_stats
 fs_test_debug
 
+# The stale inode is forgotten after release
 _fs_test_release_file
 fs_test_release_root
 

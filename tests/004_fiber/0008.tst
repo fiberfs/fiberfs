@@ -45,6 +45,7 @@ fs_test_stats
 fs_test_debug
 
 equal $fs_test_stat_directories 0
+# It looks like stale directory inodes are not forgotten
 equal $fs_test_stat_files 4
 
 fuse_test_unmount
