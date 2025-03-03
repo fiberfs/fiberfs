@@ -220,7 +220,7 @@ fbr_test_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		names[names_len] = name;
 		names_len++;
-		fbr_test_ASSERT(names_len < fbr_static_array_len(names), "names overflow");
+		fbr_test_ASSERT(names_len < fbr_array_len(names), "names overflow");
 
 		total_len += ret + 1;
 	}

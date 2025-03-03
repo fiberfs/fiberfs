@@ -14,7 +14,7 @@ void fbr_sleep_ms(long ms);
 #define fbr_ZERO(p)				\
 	explicit_bzero(p, sizeof(*(p)))
 
-#define fbr_static_array_len(array)		\
+#define fbr_array_len(array)			\
 	(sizeof(array) / sizeof(*array))
 
 #endif /* _FBR_UTILS_H_INCLUDED_ */

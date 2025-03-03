@@ -42,7 +42,7 @@ _var_init(struct fbr_test_context *ctx)
 	fbr_test_context_ok(ctx);
 
 	if (!ctx->var) {
-		assert(_MAX_VARS == fbr_static_array_len(ctx->var->vars));
+		assert(_MAX_VARS == fbr_array_len(ctx->var->vars));
 
 		struct fbr_test_var *var = calloc(1, sizeof(*var));
 		assert(var);

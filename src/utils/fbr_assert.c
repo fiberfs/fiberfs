@@ -65,7 +65,7 @@ _dump_backtrace(void)
 	fprintf(stderr, "\nBacktrace (addr2line -spfe [file] [+address]):\n");
 
 	void *stack_addrs[16];
-	int len = backtrace(stack_addrs, fbr_static_array_len(stack_addrs));
+	int len = backtrace(stack_addrs, fbr_array_len(stack_addrs));
 	backtrace_symbols_fd(stack_addrs, len, STDERR_FILENO);
 }
 

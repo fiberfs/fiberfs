@@ -29,10 +29,10 @@ fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	reader->file = file;
 
 	reader->chunks = reader->_chunks;
-	reader->chunks_len = fbr_static_array_len(reader->_chunks);
+	reader->chunks_len = fbr_array_len(reader->_chunks);
 
 	reader->iovec = reader->_iovec;
-	reader->iovec_len = fbr_static_array_len(reader->_iovec);
+	reader->iovec_len = fbr_array_len(reader->_iovec);
 
 	return reader;
 }
