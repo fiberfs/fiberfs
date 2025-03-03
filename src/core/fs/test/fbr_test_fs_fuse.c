@@ -23,7 +23,7 @@
 #define _TEST_DIR_TTL_SEC		0.75
 #define _TEST_INODE_TTL_SEC		9999999.0
 
-static DIR *_test_dir;
+static DIR *_TEST_DIR;
 
 static void
 _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
@@ -595,6 +595,34 @@ static const struct fbr_fuse_callbacks _TEST_FS_FUSE_CALLBACKS = {
 	.forget_multi = _test_fs_fuse_forget_multi
 };
 
+void
+fbr_cmd_fs_test_fuse_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_FS_FUSE_CALLBACKS);
+	fbr_test_ERROR(ret, "fs fuse mount failed: %s", cmd->params[0].value);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", cmd->params[0].value);
+}
+
+void
+fbr_cmd_fs_test_fuse_init_root(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	struct fbr_fs *fs = fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	_test_fs_init_directory(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+	fbr_test_ASSERT(fs->root, "root doesnt exist");
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root initialized");
+}
+
 static void
 _test_fs_inodes_debug(struct fbr_fs *fs, struct fbr_file *file)
 {
@@ -628,34 +656,6 @@ _test_fs_dindex_debug(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 void
-fbr_cmd_fs_test_fuse_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_FS_FUSE_CALLBACKS);
-	fbr_test_ERROR(ret, "fs fuse mount failed: %s", cmd->params[0].value);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", cmd->params[0].value);
-}
-
-void
-fbr_cmd_fs_test_fuse_init_root(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
-
-	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
-	struct fbr_fs *fs = fuse_ctx->fs;
-	fbr_fs_ok(fs);
-
-	_test_fs_init_directory(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
-	fbr_test_ASSERT(fs->root, "root doesnt exist");
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root initialized");
-}
-
-void
 fbr_cmd_fs_test_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
@@ -681,8 +681,8 @@ fbr_cmd__fs_test_take(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	char *dirname = cmd->params[0].value;
 
-	_test_dir = opendir(dirname);
-	fbr_test_ASSERT(_test_dir, "opendir failed for %s", dirname);
+	_TEST_DIR = opendir(dirname);
+	fbr_test_ASSERT(_TEST_DIR, "opendir failed for %s", dirname);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "dir handle aquired %s", dirname);
 }
@@ -695,9 +695,9 @@ fbr_cmd__fs_test_release(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_cmd_ok(cmd);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	fbr_test_ASSERT(_test_dir, "_test_dir invalid");
+	fbr_test_ASSERT(_TEST_DIR, "_test_dir invalid");
 
-	int ret = closedir(_test_dir);
+	int ret = closedir(_TEST_DIR);
 	fbr_test_ERROR(ret, "closedir failed %d", ret);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "dir handle released");
