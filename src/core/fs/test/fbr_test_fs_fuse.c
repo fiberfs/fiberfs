@@ -159,8 +159,17 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_EMPTY);
 
+	struct fbr_file *parent_file = fbr_inode_take(fs, file->parent_inode);
+	fbr_file_ok(parent_file);
+
+	const char *dirpath = fbr_path_get_full(&parent_file->path, NULL);
+	const char *filename = fbr_path_get_full(&file->path, NULL);
+
+	fbr_inode_release(fs, &parent_file);
+
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"** FETCH chunk: offset: %zu length: %zu", chunk->offset, chunk->length);
+		"** FETCH chunk: offset: %zu length: %zu path: %s,%s",
+		chunk->offset, chunk->length, dirpath, filename);
 
 	chunk->data = malloc(chunk->length);
 	assert(chunk->data);
