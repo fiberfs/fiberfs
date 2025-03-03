@@ -38,6 +38,9 @@ sys_cat_md5 $var1 49a47e24ec21818ece7bccb86e9ad880
 
 sleep_ms 100
 
+fs_test_stats
+fs_test_debug
+
 _fs_test_release_file
 fs_test_release_root
 
