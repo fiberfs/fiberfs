@@ -38,6 +38,37 @@ fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file)
 }
 
 static void
+_freader_expand_chunks(struct fbr_freader *reader)
+{
+	fbr_freader_ok(reader);
+	assert(reader->chunks_len);
+	assert(reader->chunks_pos < 1000 * 10);
+
+	if (reader->chunks_pos < reader->chunks_len) {
+		return;
+	}
+
+	assert_dev(reader->chunks_pos == reader->chunks_len);
+
+	if (reader->chunks_len < FBR_BODY_SLAB_DEFAULT_CHUNKS) {
+		reader->chunks_len = FBR_BODY_SLAB_DEFAULT_CHUNKS;
+	} else {
+		reader->chunks_len *= 2;
+	}
+
+	if (reader->chunks == reader->_chunks) {
+		reader->chunks = malloc(sizeof(*reader->chunks) * reader->chunks_len);
+		assert(reader->chunks);
+
+		memcpy(reader->chunks, reader->_chunks, sizeof(reader->_chunks));
+	} else {
+		reader->chunks = realloc(reader->chunks,
+			sizeof(*reader->chunks) * reader->chunks_len);
+		assert(reader->chunks);
+	}
+}
+
+static void
 _freader_release_chunks(struct fbr_freader *reader, size_t keep_offset)
 {
 	fbr_freader_ok(reader);
@@ -72,34 +103,25 @@ _freader_chunk_add(struct fbr_freader *reader, struct fbr_chunk *chunk)
 {
 	fbr_freader_ok(reader);
 	fbr_chunk_ok(chunk);
-	assert(reader->chunks_len);
-	assert(reader->chunks_pos < 1000 * 10);
+
+	struct fbr_chunk *swap = NULL;
 
 	for (size_t i = 0; i < reader->chunks_pos; i++) {
 		if (reader->chunks[i] == chunk) {
-			return;
+			swap = chunk;
+		} else if (swap) {
+			// Move to back
+			assert_dev(i);
+			reader->chunks[i - 1] = reader->chunks[i];
+			reader->chunks[i] = swap;
 		}
 	}
 
-	if (reader->chunks_pos >= reader->chunks_len) {
-		if (reader->chunks_len < FBR_BODY_SLAB_DEFAULT_CHUNKS) {
-			reader->chunks_len = FBR_BODY_SLAB_DEFAULT_CHUNKS;
-		} else {
-			reader->chunks_len *= 2;
-		}
-
-		if (reader->chunks == reader->_chunks) {
-			reader->chunks = malloc(sizeof(*reader->chunks) * reader->chunks_len);
-			assert(reader->chunks);
-
-			memcpy(reader->chunks, reader->_chunks, sizeof(reader->_chunks));
-		} else {
-			reader->chunks = realloc(reader->chunks,
-				sizeof(*reader->chunks) * reader->chunks_len);
-			assert(reader->chunks);
-		}
+	if (swap) {
+		return;
 	}
 
+	_freader_expand_chunks(reader);
 	assert_dev(reader->chunks_pos < reader->chunks_len);
 
 	fbr_chunk_take(chunk);
