@@ -1,4 +1,4 @@
-fiber_test "File reading"
+fiber_test "File reading and cache clear"
 
 # Init
 

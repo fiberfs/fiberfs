@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "fiberfs.h"
 #include "core/context/fbr_callback.h"
@@ -24,6 +25,7 @@
 #define _TEST_INODE_TTL_SEC		9999999.0
 
 static DIR *_TEST_DIR;
+static int _TEST_FD = -1;
 
 static void
 _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
@@ -60,6 +62,16 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_file_ok(file);
 
 		file->size = 1025 * 125;
+
+		ret = snprintf(name, sizeof(name), "fiber_zero1");
+		assert((size_t)ret < sizeof(name));
+
+		fbr_path_name_init(&filename, name);
+
+		file = fbr_file_alloc(fs, directory, &filename, S_IFREG | 0444);
+		fbr_file_ok(file);
+
+		file->size = 500;
 
 		ret = snprintf(name, sizeof(name), "fiber_big");
 		assert((size_t)ret < sizeof(name));
@@ -672,12 +684,14 @@ fbr_cmd_fs_test_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_cmd__fs_test_take(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd__fs_test_take_dir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_ERROR(fbr_test_is_valgrind(), "cannot be used with valgrind");
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
 	fbr_test_ERROR_param_count(cmd, 1);
+
+	fbr_test_ASSERT(_TEST_DIR == NULL, "_TEST_DIR exists");
 
 	char *dirname = cmd->params[0].value;
 
@@ -688,17 +702,77 @@ fbr_cmd__fs_test_take(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_cmd__fs_test_release(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd__fs_test_release_dir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_ERROR(fbr_test_is_valgrind(), "cannot be used with valgrind");
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	fbr_test_ASSERT(_TEST_DIR, "_test_dir invalid");
+	fbr_test_ASSERT(_TEST_DIR, "_TEST_DIR invalid");
 
 	int ret = closedir(_TEST_DIR);
 	fbr_test_ERROR(ret, "closedir failed %d", ret);
 
+	_TEST_DIR = NULL;
+
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "dir handle released");
+}
+
+void
+fbr_cmd__fs_test_take_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_ERROR(fbr_test_is_valgrind(), "cannot be used with valgrind");
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	fbr_test_ASSERT(_TEST_FD == -1, "_TEST_FD exists");
+
+	char *filename = cmd->params[0].value;
+
+	_TEST_FD = open(filename, O_RDONLY);
+	fbr_test_ASSERT(_TEST_FD >= 0, "open failed for %s", filename);
+
+	uint8_t buf[100];
+	ssize_t bytes = read(_TEST_FD, buf, sizeof(buf));
+	fbr_test_ASSERT(bytes >= 0, "read error");
+
+	for (ssize_t i = 0; i < bytes; i++) {
+		fbr_test_ASSERT(buf[i] == '\0', "bad bytes in read");
+	}
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fd handle aquired %s (%zd)", filename, bytes);
+}
+
+void
+fbr_cmd__fs_test_release_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_ERROR(fbr_test_is_valgrind(), "cannot be used with valgrind");
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_ASSERT(_TEST_FD >= 0, "_TEST_FD invalid");
+
+	ssize_t bytes, total = 0;
+
+	do {
+		uint8_t buf[100];
+		bytes = read(_TEST_FD, buf, sizeof(buf));
+		fbr_test_ASSERT(bytes >= 0, "read error");
+
+		for (ssize_t i = 0; i < bytes; i++) {
+			fbr_test_ASSERT(buf[i] == '\0', "bad bytes in read");
+		}
+
+		total += bytes;
+	} while (bytes > 0);
+
+	int ret = close(_TEST_FD);
+	fbr_test_ERROR(ret, "closedir failed %d", ret);
+
+	_TEST_FD = -1;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fd handle released (%zd)", total);
 }

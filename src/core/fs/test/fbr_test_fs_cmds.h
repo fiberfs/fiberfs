@@ -26,8 +26,10 @@ FBR_TEST_FS_CMD(fs_test_release_dindex)
 FBR_TEST_FS_CMD(fs_test_stats)
 FBR_TEST_FS_CMD(fs_test_debug)
 
-FBR_TEST_FS_CMD(_fs_test_take)
-FBR_TEST_FS_CMD(_fs_test_release)
+FBR_TEST_FS_CMD(_fs_test_take_dir)
+FBR_TEST_FS_CMD(_fs_test_release_dir)
+FBR_TEST_FS_CMD(_fs_test_take_file)
+FBR_TEST_FS_CMD(_fs_test_release_file)
 
 FBR_TEST_FS_VAR(fs_test_stat_directories)
 FBR_TEST_FS_VAR(fs_test_stat_directories_dindex)

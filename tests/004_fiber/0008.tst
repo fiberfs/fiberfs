@@ -17,7 +17,7 @@ sys_ls $var1
 
 # Save old inode
 
-_fs_test_take $var1
+_fs_test_take_dir $var1
 
 # Expire cache
 
@@ -36,7 +36,7 @@ sleep_ms 100
 fs_test_stats
 fs_test_debug
 
-_fs_test_release
+_fs_test_release_dir
 fs_test_release_root
 
 sleep_ms 100
