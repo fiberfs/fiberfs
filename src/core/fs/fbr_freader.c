@@ -104,20 +104,19 @@ _freader_chunk_add(struct fbr_freader *reader, struct fbr_chunk *chunk)
 	fbr_freader_ok(reader);
 	fbr_chunk_ok(chunk);
 
-	struct fbr_chunk *swap = NULL;
+	struct fbr_chunk *swap_last = NULL;
 
 	for (size_t i = 0; i < reader->chunks_pos; i++) {
 		if (reader->chunks[i] == chunk) {
-			swap = chunk;
-		} else if (swap) {
-			// Move to back
+			swap_last = chunk;
+		} else if (swap_last) {
 			assert_dev(i);
 			reader->chunks[i - 1] = reader->chunks[i];
-			reader->chunks[i] = swap;
+			reader->chunks[i] = swap_last;
 		}
 	}
 
-	if (swap) {
+	if (swap_last) {
 		return;
 	}
 

@@ -13,7 +13,7 @@ GDB=gdb --args
 export FIBER_VALGRIND=$(PRE_EXEC)
 export FIBER_FLAGS=$(FLAGS)
 
-.PHONY: all test check valgrind verbose json fiber FORCE
+.PHONY: all test check FORCE valgrind verbose sudo json fiber fiberx
 
 all:			check
 
@@ -32,6 +32,9 @@ verbose:
 			$(eval FLAGS=-vv)
 			@echo verbose: enabled
 
+sudo:
+			sudo true
+
 check:			$(TESTS)
 
 json:			$(TESTS_JSON)
@@ -40,5 +43,8 @@ fiber:			$(TESTS_FIBER)
 
 fiberx:			$(TESTS_FIBERX)
 
-%.cht %.tst %tstx:	$(FIBERFS_TEST) FORCE
+%.cht %.tst:		$(FIBERFS_TEST) FORCE
+			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
+
+%tstx:			$(FIBERFS_TEST) FORCE | sudo
 			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
