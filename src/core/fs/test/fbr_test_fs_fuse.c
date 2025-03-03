@@ -495,10 +495,10 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 		return;
 	}
 
-	struct fbr_freader *reader = fbr_freader_alloc(fs, file);
-	fbr_freader_ok(reader);
+	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
+	fbr_fio_ok(fio);
 
-	fi->fh = fbr_fs_int64(reader);
+	fi->fh = fbr_fs_int64(fio);
 
 	//fi->keep_cache
 	fi->keep_cache = 1;
@@ -516,30 +516,30 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 		"READ ino: %lu size: %zu off: %ld flags: %d fh: %lu", ino, size, off, fi->flags,
 		fi->fh);
 
-	struct fbr_freader *reader = fbr_fh_freader(fi->fh);
-	fbr_file_ok(reader->file);
+	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
+	fbr_file_ok(fio->file);
 
-	if ((size_t)off >= reader->file->size) {
+	if ((size_t)off >= fio->file->size) {
 		fbr_fuse_reply_buf(request, NULL, 0);
 		return;
 	}
 
-	if ((size_t)off + size > reader->file->size) {
-		size = reader->file->size - off;
+	if ((size_t)off + size > fio->file->size) {
+		size = fio->file->size - off;
 	}
 
-	fbr_freader_pull_chunks(fs, reader, off, size);
+	fbr_fio_pull_chunks(fs, fio, off, size);
 
-	if (reader->error) {
+	if (fio->error) {
 		fbr_fuse_reply_err(request, EIO);
 	} else {
-		fbr_freader_iovec_gen(fs, reader, off, size);
+		fbr_fio_iovec_gen(fs, fio, off, size);
 
 		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-			"** READ chunks: %zu io_vecs: %zu", reader->chunks_pos,
-			reader->iovec_pos);
+			"** READ chunks: %zu io_vecs: %zu", fio->chunks_pos,
+			fio->iovec_pos);
 
-		fbr_fuse_reply_iov(request, reader->iovec, reader->iovec_pos);
+		fbr_fuse_reply_iov(request, fio->iovec, fio->iovec_pos);
 	}
 }
 
@@ -551,8 +551,8 @@ _test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASE ino: %lu flags: %d fh: %lu",
 		ino, fi->flags, fi->fh);
 
-	struct fbr_freader *reader = fbr_fh_freader(fi->fh);
-	fbr_freader_free(fs, reader);
+	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
+	fbr_fio_free(fs, fio);
 
 	fbr_fuse_reply_err(request, 0);
 }

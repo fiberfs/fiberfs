@@ -12,12 +12,12 @@
 #include "fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
 
-static inline struct fbr_freader *fbr_fh_freader(uint64_t fh)
+static inline struct fbr_fio *fbr_fh_fio(uint64_t fh)
 {
-	struct fbr_freader *freader = (struct fbr_freader*)fh;
-	fbr_freader_ok(freader);
+	struct fbr_fio *fio = (struct fbr_fio*)fh;
+	fbr_fio_ok(fio);
 
-	return freader;
+	return fio;
 }
 
 static inline struct fbr_dreader *fbr_fh_dreader(uint64_t fh)

@@ -169,9 +169,9 @@ struct fbr_dreader {
 	unsigned int				end:1;
 };
 
-struct fbr_freader {
+struct fbr_fio {
 	unsigned int				magic;
-#define FBR_FREADER_MAGIC			0xC476C0F5
+#define FBR_FIO_MAGIC				0xC476C0F5
 
 	unsigned int				error:1;
 
@@ -292,12 +292,12 @@ void fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
 	const char *name, struct stat *st);
 void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 
-struct fbr_freader *fbr_freader_alloc(struct fbr_fs *fs, struct fbr_file *file);
-void fbr_freader_pull_chunks(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset,
+struct fbr_fio *fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 	size_t size);
-void fbr_freader_iovec_gen(struct fbr_fs *fs, struct fbr_freader *reader, size_t offset,
+void fbr_fio_iovec_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 	size_t size);
-void fbr_freader_free(struct fbr_fs *fs, struct fbr_freader *reader);
+void fbr_fio_free(struct fbr_fs *fs, struct fbr_fio *fio);
 
 #define fbr_fs_ok(fs)						\
 {								\
@@ -319,10 +319,10 @@ void fbr_freader_free(struct fbr_fs *fs, struct fbr_freader *reader);
 	assert(dreader);					\
 	assert((dreader)->magic == FBR_DREADER_MAGIC);		\
 }
-#define fbr_freader_ok(freader)					\
+#define fbr_fio_ok(fio)					\
 {								\
-	assert(freader);					\
-	assert((freader)->magic == FBR_FREADER_MAGIC);		\
+	assert(fio);						\
+	assert((fio)->magic == FBR_FIO_MAGIC);			\
 }
 #define fbr_chunk_ok(chunk)					\
 {								\
