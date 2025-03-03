@@ -20,7 +20,8 @@
 #include "test/fbr_test.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
-#define _TEST_FS_FUSE_TTL_SEC		0.75
+#define _TEST_DIR_TTL_SEC		0.75
+#define _TEST_INODE_TTL_SEC		9999999.0
 
 static DIR *_test_dir;
 
@@ -222,7 +223,7 @@ _test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	fbr_inode_release(fs, &file);
 	assert_zero_dev(file);
 
-	fbr_fuse_reply_attr(request, &st, _TEST_FS_FUSE_TTL_SEC);
+	fbr_fuse_reply_attr(request, &st, _TEST_INODE_TTL_SEC);
 }
 
 static void
@@ -284,8 +285,8 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 
 	struct fuse_entry_param entry;
 	fbr_ZERO(&entry);
-	entry.attr_timeout = _TEST_FS_FUSE_TTL_SEC;
-	entry.entry_timeout = _TEST_FS_FUSE_TTL_SEC;
+	entry.attr_timeout = _TEST_INODE_TTL_SEC;
+	entry.entry_timeout = _TEST_DIR_TTL_SEC;
 	entry.ino = file->inode;
 	fbr_file_attr(file, &entry.attr);
 
