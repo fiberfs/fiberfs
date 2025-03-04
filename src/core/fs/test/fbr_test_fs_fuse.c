@@ -28,6 +28,8 @@
 static DIR *_TEST_DIR;
 static int _TEST_FD = -1;
 
+static int _TEST_FS_DO_INIT;
+
 static void
 _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 {
@@ -150,6 +152,10 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 	assert(dirname);
 	assert(inode);
 
+	if (!_TEST_FS_DO_INIT) {
+		return;
+	}
+
 	struct fbr_directory *directory = NULL;
 
 	if (inode == FBR_INODE_ROOT) {
@@ -214,10 +220,12 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	assert(conn);
 
 	fbr_fs_set_store(ctx->fs, &_TEST_FS_STORE_CALLBACKS);
+
+	_TEST_FS_DO_INIT = 1;
 }
 
-static void
-_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
+void
+fbr_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 	(void)fi;
@@ -242,8 +250,8 @@ _test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	fbr_fuse_reply_attr(request, &st, _TEST_INODE_TTL_SEC);
 }
 
-static void
-_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
+void
+fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
@@ -270,6 +278,11 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	if (!directory) {
 		_test_fs_init_directory(fs, &parent_dirname, parent_file->inode);
 		directory = fbr_dindex_take(fs, &parent_dirname);
+
+		if (!directory) {
+			fbr_fuse_reply_err(request, EIO);
+			return;
+		}
 	}
 
 	fbr_directory_ok(directory);
@@ -313,8 +326,8 @@ _test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char 
 	fbr_fuse_reply_entry(request, &entry);
 }
 
-static void
-_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
+void
+fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
@@ -338,6 +351,11 @@ _test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	if (!directory) {
 		_test_fs_init_directory(fs, &dirname, file->inode);
 		directory = fbr_dindex_take(fs, &dirname);
+
+		if (!directory) {
+			fbr_fuse_reply_err(request, EIO);
+			return;
+		}
 	}
 
 	fbr_directory_ok(directory);
@@ -356,8 +374,8 @@ _test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	fbr_fuse_reply_open(request, fi);
 }
 
-static void
-_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
+void
+fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
@@ -455,8 +473,8 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 	fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
 }
 
-static void
-_test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
+void
+fbr_test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
@@ -561,8 +579,8 @@ _test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 	fbr_fuse_reply_err(request, 0);
 }
 
-static void
-_test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup)
+void
+fbr_test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
@@ -574,8 +592,8 @@ _test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlook
 	fbr_fuse_reply_none(request);
 }
 
-static void
-_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
+void
+fbr_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
     struct fuse_forget_data *forgets)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
@@ -596,19 +614,19 @@ _test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
 static const struct fbr_fuse_callbacks _TEST_FS_FUSE_CALLBACKS = {
 	.init = _test_fs_fuse_init,
 
-	.getattr = _test_fs_fuse_getattr,
-	.lookup = _test_fs_fuse_lookup,
+	.getattr = fbr_test_fs_fuse_getattr,
+	.lookup = fbr_test_fs_fuse_lookup,
 
-	.opendir = _test_fs_fuse_opendir,
-	.readdir = _test_fs_fuse_readdir,
-	.releasedir = _test_fs_fuse_releasedir,
+	.opendir = fbr_test_fs_fuse_opendir,
+	.readdir = fbr_test_fs_fuse_readdir,
+	.releasedir = fbr_test_fs_fuse_releasedir,
 
 	.open = _test_fs_fuse_open,
 	.read = _test_fs_fuse_read,
 	.release = _test_fs_fuse_release,
 
-	.forget = _test_fs_fuse_forget,
-	.forget_multi = _test_fs_fuse_forget_multi
+	.forget = fbr_test_fs_fuse_forget,
+	.forget_multi = fbr_test_fs_fuse_forget_multi
 };
 
 void

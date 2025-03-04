@@ -5,6 +5,10 @@ fiber_test "RW test"
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 
+# Operations
+
+sys_ls $sys_tmpdir "..:dir .:dir"
+
 # Cleanup
 
 sleep_ms 100

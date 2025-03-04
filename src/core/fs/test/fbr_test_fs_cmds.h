@@ -9,10 +9,24 @@
 
 #ifndef FBR_TEST_FS_CMD
 
+#include "core/fs/fbr_fs.h"
 #include "test/fbr_test.h"
 
 #define FBR_TEST_FS_CMD(cmd)		fbr_test_cmd_f fbr_cmd_##cmd;
 #define FBR_TEST_FS_VAR(var)		fbr_test_var_f fbr_var_##var;
+
+void fbr_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino,
+	struct fuse_file_info *fi);
+void fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name);
+void fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino,
+	struct fuse_file_info *fi);
+void fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
+	struct fuse_file_info *fi);
+void fbr_test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino,
+	struct fuse_file_info *fi);
+void fbr_test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup);
+void fbr_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
+	struct fuse_forget_data *forgets);
 
 #endif /* FBR_TEST_FS_CMD */
 
