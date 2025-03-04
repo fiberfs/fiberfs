@@ -210,9 +210,8 @@ static void
 _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
 	fbr_fuse_mounted(ctx);
-	assert(conn);
-
 	fbr_fs_ok(ctx->fs);
+	assert(conn);
 
 	fbr_fs_set_store(ctx->fs, &_TEST_FS_STORE_CALLBACKS);
 }
