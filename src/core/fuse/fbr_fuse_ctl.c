@@ -64,6 +64,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
 	assert_zero(ctx->session);
+	assert_zero(ctx->unmount);
 	assert(ctx->fuse_callbacks);
 	assert(path);
 
@@ -178,8 +179,14 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_context_ok(ctx);
 
+	if (ctx->unmount) {
+		return;
+	}
+
 	assert_zero(pthread_mutex_lock(&ctx->mount_lock));
 	fbr_fuse_context_ok(ctx);
+
+	ctx->unmount = 1;
 
 	if (ctx->state != FBR_FUSE_MOUNTED) {
 		assert_zero(pthread_mutex_unlock(&ctx->mount_lock));

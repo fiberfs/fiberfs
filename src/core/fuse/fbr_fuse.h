@@ -32,6 +32,7 @@ struct fbr_fuse_context {
 
 	unsigned int				error:1;
 	unsigned int				debug:1;
+	unsigned int				unmount:1;
 	volatile unsigned int			running:1;
 	volatile unsigned int			exited:1;
 
