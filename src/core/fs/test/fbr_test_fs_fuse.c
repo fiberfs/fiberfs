@@ -94,6 +94,20 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_body_chunk_add(file, id, s * 1, s);
 
 		file->size = 1024 * 1024 ;
+
+		ret = snprintf(name, sizeof(name), "fiber_small");
+		assert((size_t)ret < sizeof(name));
+
+		fbr_path_name_init(&filename, name);
+
+		file = fbr_file_alloc(fs, directory, &filename, S_IFREG | 0444);
+		fbr_file_ok(file);
+
+		id = fbr_id_gen();
+
+		file->size = 100;
+
+		fbr_body_chunk_add(file, id, 0, 101);
 	}
 
 	for (size_t i = 0; i < 4; i++) {
