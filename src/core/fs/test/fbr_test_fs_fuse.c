@@ -697,7 +697,7 @@ _test_fs_dindex_debug(struct fbr_fs *fs, struct fbr_directory *directory)
 	const char *fullname = fbr_path_get_full(&directory->dirname, NULL);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"DINDEX debug: inode: %lu refcount: %u files: %zu path: %s",
+		"DINDEX debug: inode: %lu refcount: %u files: %zu path: '%s'",
 		directory->inode,
 		directory->refcount,
 		directory->file_count,
@@ -715,9 +715,12 @@ fbr_cmd_fs_test_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_fs_ok(fs);
 
 	fbr_inodes_debug(fs, _test_fs_inodes_debug);
-	fbr_dindex_debug(fs, _test_fs_dindex_debug);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "debug inodes done");
+
+	fbr_dindex_debug(fs, _test_fs_dindex_debug);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "debug dindex done");
 }
 
 void

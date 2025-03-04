@@ -10,6 +10,8 @@ fs_test_fuse_init_root
 
 # Do a bunch of operations
 
+print "### TEST 1"
+
 sys_ls $sys_tmpdir
 
 set_var1 $sys_tmpdir "/fiber_dir02"
@@ -29,13 +31,18 @@ sys_ls $var5 "..:dir .:dir fiber_51:file fiber_52:file fiber_53:file fiber_54:fi
 
 # Expire cache
 
+print "### TEST 2 (release root)"
+
 sleep_ms 1000
 
 fs_test_release_root 0
 
 fs_test_stats
+fs_test_debug
 
 # New operations (old inodes are immediately released)
+
+print "### TEST 3 (more operations"
 
 sys_ls $sys_tmpdir
 sys_ls $var1

@@ -221,6 +221,8 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
+	// TODO directory remove callback (RB_REMOVE)
+
 	if (existing) {
 		_dindex_directory_free(fs, existing);
 	}
@@ -342,6 +344,8 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
+	// TODO directory remove callback (RB_REMOVE)
+
 	_dindex_directory_free(fs, directory);
 }
 
@@ -389,6 +393,8 @@ _dindex_remove(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 	}
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
+
+	// TODO directory remove callback (RB_REMOVE)
 
 	if (do_free) {
 		_dindex_directory_free(fs, directory);

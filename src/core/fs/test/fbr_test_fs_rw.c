@@ -26,13 +26,16 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	//conn->max_readahead
 	//conn->max_background
-	//FUSE_CAP_SPLICE_READ and write_buf
-	//FUSE_CAP_WRITEBACK_CACHE
 	//FUSE_CAP_POSIX_ACL
 	//fuse_lowlevel_notify_inval_inode()
 
 	conn->want |= FUSE_CAP_SPLICE_WRITE;
 	conn->want |= FUSE_CAP_SPLICE_MOVE;
+
+	conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
+
+	// TODO
+	conn->want &= ~FUSE_CAP_SPLICE_READ;
 
 	struct fbr_directory *directory = fbr_directory_root_alloc(ctx->fs);
 	fbr_directory_set_state(directory, FBR_DIRSTATE_OK);
@@ -127,6 +130,22 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
 }
 
 static void
+_test_fs_rw_write_buf(struct fbr_request *request, fuse_ino_t ino, struct fuse_bufvec *bufv,
+	off_t off, struct fuse_file_info *fi)
+{
+	struct fbr_fs *fs = fbr_request_fs(request);
+	(void)fs;
+
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
+		"WRITE_BUF ino: %lu count: %zu off: %ld fh: %lu", ino, bufv->count, off, fi->fh);
+
+	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
+	fbr_file_ok(fio->file);
+
+	fbr_fuse_reply_err(request, EIO);
+}
+
+static void
 _test_fs_rw_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
@@ -178,6 +197,7 @@ static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 	.open = _test_fs_rw_open,
 	.read = _test_fs_rw_read,
 	.write = _test_fs_rw_write,
+	.write_buf = _test_fs_rw_write_buf,
 	.flush = _test_fs_rw_flush,
 	.release = _test_fs_rw_release,
 	.fsync = _test_fs_rw_fsync,
