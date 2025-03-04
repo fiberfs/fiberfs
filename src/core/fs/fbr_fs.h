@@ -169,6 +169,11 @@ struct fbr_dreader {
 	unsigned int				end:1;
 };
 
+struct fbr_wbuffer {
+	unsigned int				magic;
+#define FBR_WBUFFER_MAGIC			0x840F2408
+};
+
 struct fbr_fio {
 	unsigned int				magic;
 #define FBR_FIO_MAGIC				0xC476C0F5
@@ -200,8 +205,6 @@ struct fbr_fs_stats {
 	unsigned long				requests_total;
 };
 
-typedef void (fbr_fs_fetch_f)(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
-
 struct fbr_fs {
 	unsigned int				magic;
 #define FBR_FS_MAGIC				0x150CC3D2
@@ -211,7 +214,7 @@ struct fbr_fs {
 
 	struct fbr_directory			*root;
 
-	fbr_fs_fetch_f				*fetcher;
+	const struct fbr_store_callbacks	*store;
 
 	struct fbr_fs_stats			stats;
 };
@@ -219,6 +222,7 @@ struct fbr_fs {
 RB_HEAD(fbr_dindex_tree, fbr_directory);
 
 extern const struct fbr_path_name *FBR_DIRNAME_ROOT;
+struct fbr_store_callbacks;
 
 typedef void (fbr_inodes_debug_f)(struct fbr_fs *fs, struct fbr_file *file);
 typedef void (fbr_dindex_debug_f)(struct fbr_fs *fs, struct fbr_directory *directory);
@@ -226,7 +230,7 @@ typedef void (fbr_dindex_debug_f)(struct fbr_fs *fs, struct fbr_directory *direc
 struct fbr_fs *fbr_fs_alloc(void);
 void fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root);
 void fbr_fs_release_root(struct fbr_fs *fs, int release_root_inode);
-void fbr_fs_set_fetcher(struct fbr_fs *fs, fbr_fs_fetch_f *fetcher);
+void fbr_fs_set_store(struct fbr_fs *fs, const struct fbr_store_callbacks *store);
 void fbr_fs_free(struct fbr_fs *fs);
 
 void fbr_fs_stat_add_count(unsigned long *stat, unsigned long value);

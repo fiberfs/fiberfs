@@ -13,6 +13,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "core/store/fbr_store.h"
 
 static uint8_t _ZERO_FILL[1024 * 16];
 
@@ -168,6 +169,7 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
     size_t size)
 {
 	fbr_fs_ok(fs);
+	assert(fs->store);
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
@@ -194,8 +196,8 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 			_fio_chunk_add(fio, chunk);
 
 			if (chunk->state == FBR_CHUNK_EMPTY) {
-				if (fs->fetcher) {
-					fs->fetcher(fs, fio->file, chunk);
+				if (fs->store->fetch_chunk_f) {
+					fs->store->fetch_chunk_f(fs, fio->file, chunk);
 				}
 			}
 		} else if (chunk->offset > offset_end) {

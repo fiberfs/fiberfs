@@ -9,6 +9,7 @@
 #include "fiberfs.h"
 #include "fbr_fs.h"
 #include "core/context/fbr_callback.h"
+#include "core/store/fbr_store.h"
 
 /*
  * Each directory has a list of files with references
@@ -20,6 +21,8 @@
  * It also owns its parent inode ref
  * The root inode has a hidden ref
  */
+
+static const struct fbr_store_callbacks _STORE_CALLBACKS_EMPTY;
 
 struct fbr_fs *
 fbr_fs_alloc(void)
@@ -36,6 +39,8 @@ fbr_fs_alloc(void)
 
 	assert_dev(fs->inodes);
 	assert_dev(fs->dindex);
+
+	fs->store = &_STORE_CALLBACKS_EMPTY;
 
 	fbr_fs_ok(fs);
 
@@ -71,13 +76,13 @@ fbr_fs_release_root(struct fbr_fs *fs, int release_root_inode)
 }
 
 void
-fbr_fs_set_fetcher(struct fbr_fs *fs, fbr_fs_fetch_f *fetcher)
+fbr_fs_set_store(struct fbr_fs *fs, const struct fbr_store_callbacks *store)
 {
 	fbr_fs_ok(fs);
-	assert_zero(fs->fetcher);
-	assert(fetcher);
+	assert(fs->store == &_STORE_CALLBACKS_EMPTY);
+	assert(store);
 
-	fs->fetcher = fetcher;
+	fs->store = store;
 }
 
 void
