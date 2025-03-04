@@ -32,8 +32,12 @@ struct fbr_fuse_callbacks {
 	void (*open)(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
 	void (*read)(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
 		struct fuse_file_info *fi);
+	void (*write) (struct fbr_request *request, fuse_ino_t ino, const char *buf,
+		size_t size, off_t off, struct fuse_file_info *fi);
 	void (*flush)(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
 	void (*release)(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
+	void (*fsync) (struct fbr_request *request, fuse_ino_t ino, int datasync,
+		struct fuse_file_info *fi);
 	void (*forget)(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup);
 	void (*forget_multi) (struct fbr_request *request, size_t count,
 		struct fuse_forget_data *forgets);

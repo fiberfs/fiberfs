@@ -181,6 +181,9 @@ struct fbr_fio {
 #define FBR_FIO_MAGIC				0xC476C0F5
 
 	unsigned int				error:1;
+	unsigned int				read_only:1;
+	unsigned int				append:1;
+	unsigned int				truncate:1;
 
 	struct fbr_file				*file;
 

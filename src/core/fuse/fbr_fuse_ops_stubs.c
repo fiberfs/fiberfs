@@ -128,6 +128,17 @@ _fuse_ops_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fu
 }
 
 static void
+_fuse_ops_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size, off_t off,
+    struct fuse_file_info *fi)
+{
+	struct fbr_request *request = _fuse_setup(req);
+
+	_fuse_ops_callback(request, write, ino, buf, size, off, fi);
+
+	_fuse_finish_error(request, EIO);
+}
+
+static void
 _fuse_ops_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
 	struct fbr_request *request = _fuse_setup(req);
@@ -145,6 +156,16 @@ _fuse_ops_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	_fuse_ops_callback(request, release, ino, fi);
 
 	_fuse_finish_error(request, EIO);
+}
+
+static void
+_fuse_ops_fsync(fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi)
+{
+	struct fbr_request *request = _fuse_setup(req);
+
+	_fuse_ops_callback(request, fsync, ino, datasync, fi);
+
+	_fuse_finish_error(request, ENOSYS);
 }
 
 static void
@@ -208,8 +229,10 @@ static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.releasedir = _fuse_ops_releasedir,
 	.open = _fuse_ops_open,
 	.read = _fuse_ops_read,
+	.write = _fuse_ops_write,
 	.flush = _fuse_ops_flush,
 	.release = _fuse_ops_release,
+	.fsync = _fuse_ops_fsync,
 	.forget = _fuse_ops_forget,
 	.forget_multi = _fuse_ops_forget_multi
 };

@@ -415,6 +415,9 @@ fbr_fio_iovec_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 
 		fio->iovec_pos++;
 		offset_pos += chunk_length;
+
+		// TODO
+		assert(fio->iovec_pos <= FUSE_IOCTL_MAX_IOV);
 	}
 
 	assert_dev(offset_pos == offset_end);
