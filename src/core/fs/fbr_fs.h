@@ -143,6 +143,8 @@ struct fbr_directory {
 	TAILQ_HEAD(, fbr_file)			file_list;
 	struct fbr_filename_tree		filename_tree;
 
+	size_t					file_count;
+
 	unsigned int				dindexed:1;
 };
 

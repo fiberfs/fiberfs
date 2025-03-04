@@ -47,4 +47,6 @@ fbr_cmd_fs_test_rw_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
+
+	(void)fbr_directory_root_alloc(fs);
 }

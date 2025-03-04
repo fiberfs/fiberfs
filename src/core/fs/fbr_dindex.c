@@ -282,6 +282,8 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		fbr_file_release_dindex(fs, &file);
 		assert_zero_dev(file);
+
+		directory->file_count--;
 	}
 
 	fbr_inode_release(fs, &directory->file);
@@ -289,6 +291,7 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	assert(TAILQ_EMPTY(&directory->file_list));
 	assert(RB_EMPTY(&directory->filename_tree));
+	assert_zero(directory->file_count);
 
 	assert_zero(pthread_mutex_destroy(&directory->update_lock));
 	assert_zero(pthread_cond_destroy(&directory->update));

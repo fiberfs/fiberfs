@@ -118,6 +118,8 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	struct fbr_file *ret = RB_INSERT(fbr_filename_tree, &directory->filename_tree, file);
 	fbr_ASSERT(!ret, "duplicate file added to directory");
+
+	directory->file_count++;
 }
 
 void
