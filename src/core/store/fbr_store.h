@@ -10,7 +10,10 @@
 #include "core/fs/fbr_fs.h"
 
 struct fbr_store_callbacks {
-	void (*fetch_chunk_f)(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
+	void (*fetch_chunk_f)(struct fbr_fs *fs, const struct fbr_file *file,
+		struct fbr_chunk *chunk);
+	void (*directory_expired_f)(struct fbr_fs *fs, struct fbr_directory *directory,
+		struct fbr_directory *new_directory);
 };
 
 #endif /* _FBR_STORE_H_INCLUDED_ */

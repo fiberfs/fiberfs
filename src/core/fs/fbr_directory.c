@@ -11,6 +11,7 @@
 #include "data/queue.h"
 #include "data/tree.h"
 #include "core/fuse/fbr_fuse.h"
+#include "core/store/fbr_store.h"
 
 static const struct fbr_path_name _FBR_DIRNAME_ROOT = {0, ""};
 const struct fbr_path_name *FBR_DIRNAME_ROOT = &_FBR_DIRNAME_ROOT;
@@ -80,9 +81,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 	fbr_directory_ok(directory);
 	fbr_file_ok(directory->file);
 
-	fbr_dindex_add(fs, directory);
-
-	// TODO dup
+	directory->stale = fbr_dindex_add(fs, directory);
 
 	fbr_fs_stat_add(&fs->stats.directories);
 	fbr_fs_stat_add(&fs->stats.directories_total);
@@ -124,8 +123,10 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 }
 
 void
-fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_state state)
+fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
+    enum fbr_directory_state state)
 {
+	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(state == FBR_DIRSTATE_OK || state == FBR_DIRSTATE_ERROR);
 
@@ -139,11 +140,28 @@ fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_stat
 	assert_zero(pthread_cond_broadcast(&directory->update));
 
 	assert_zero(pthread_mutex_unlock(&directory->update_lock));
+
+	// TODO if error, put stale back?
+	if (directory->stale) {
+		fbr_directory_ok(directory->stale);
+		assert_zero(directory->stale->expired);
+
+		assert_dev(fs->store);
+		if (fs->store->directory_expired_f) {
+			fs->store->directory_expired_f(fs, directory->stale, directory);
+		}
+
+		directory->stale->expired = 1;
+
+		fbr_dindex_release(fs, &directory->stale);
+		assert_zero_dev(directory->stale);
+	}
 }
 
 void
-fbr_directory_wait_ok(struct fbr_directory *directory)
+fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory)
 {
+	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(directory->state >= FBR_DIRSTATE_LOADING);
 
@@ -163,6 +181,7 @@ struct fbr_file *
 fbr_directory_find_file(struct fbr_directory *directory, const char *filename)
 {
 	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
 	assert(filename);
 
 	struct fbr_file find;

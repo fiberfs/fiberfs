@@ -24,6 +24,7 @@
 #define FBR_READDIR_SIZE			4096
 #define FBR_BODY_DEFAULT_CHUNKS			4
 #define FBR_BODY_SLAB_DEFAULT_CHUNKS		32
+#define FBR_TTL_MAX				INT32_MAX
 
 typedef unsigned long fbr_inode_t;
 typedef unsigned int fbr_refcount_t;
@@ -143,6 +144,7 @@ struct fbr_directory {
 	// creation date will tell us how often to look for updates
 
 	struct fbr_file				*file;
+	struct fbr_directory			*stale;
 
 	RB_ENTRY(fbr_directory)			dindex_entry;
 	TAILQ_ENTRY(fbr_directory)		lru_entry;
@@ -150,6 +152,8 @@ struct fbr_directory {
 	struct fbr_filename_tree		filename_tree;
 
 	size_t					file_count;
+
+	unsigned int				expired:1;
 };
 
 struct fbr_dirbuffer {
@@ -208,10 +212,15 @@ struct fbr_fs_stats {
 	unsigned long				directories_total;
 	unsigned long				directory_refs;
 	unsigned long				files;
+	unsigned long				files_inodes;
 	unsigned long				files_total;
 	unsigned long				file_refs;
 	unsigned long				requests;
 	unsigned long				requests_total;
+};
+
+struct fbr_fs_config {
+	double					dentry_ttl;
 };
 
 struct fbr_fs {
@@ -221,11 +230,15 @@ struct fbr_fs {
 	struct fbr_inodes			*inodes;
 	struct fbr_dindex			*dindex;
 
+	struct fbr_fuse_context			*fuse_ctx;
 	struct fbr_directory			*root;
 
 	const struct fbr_store_callbacks	*store;
 
+	struct fbr_fs_config			config;
 	struct fbr_fs_stats			stats;
+
+	unsigned int				shutdown:1;
 };
 
 RB_HEAD(fbr_dindex_tree, fbr_directory);
@@ -246,6 +259,7 @@ void fbr_fs_stat_add_count(unsigned long *stat, unsigned long value);
 void fbr_fs_stat_add(unsigned long *stat);
 void fbr_fs_stat_sub_count(unsigned long *stat, unsigned long value);
 void fbr_fs_stat_sub(unsigned long *stat);
+double fbr_fs_dentry_ttl(struct fbr_fs *fs);
 
 fbr_id_t fbr_id_gen(void);
 size_t fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len);
@@ -269,7 +283,7 @@ void fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_release_inode_lock(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_refcount_t refs);
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
-void fbr_file_attr(struct fbr_file *file, struct stat *st);
+void fbr_file_attr(const struct fbr_file *file, struct stat *st);
 
 void fbr_body_init(struct fbr_body *body);
 void fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length);
@@ -287,12 +301,13 @@ struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_pa
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
 void fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);
-void fbr_directory_set_state(struct fbr_directory *directory, enum fbr_directory_state state);
-void fbr_directory_wait_ok(struct fbr_directory *directory);
+void fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
+	enum fbr_directory_state state);
+void fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const char *filename);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
-void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
+struct fbr_directory *fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
 void fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max);

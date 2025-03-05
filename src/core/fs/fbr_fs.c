@@ -89,6 +89,9 @@ void
 fbr_fs_free(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
+	assert_zero(fs->shutdown);
+
+	fs->shutdown = 1;
 
 	if (fs->root) {
 		fbr_fs_release_root(fs, 1);

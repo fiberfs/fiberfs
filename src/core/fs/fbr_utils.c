@@ -5,6 +5,7 @@
  */
 
 #include "fiberfs.h"
+#include "fbr_fs.h"
 
 void
 fbr_fs_stat_add_count(unsigned long *stat, unsigned long value)
@@ -32,4 +33,16 @@ void
 fbr_fs_stat_sub(unsigned long *stat)
 {
 	fbr_fs_stat_sub_count(stat, 1);
+}
+
+double
+fbr_fs_dentry_ttl(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
+
+	if (fs->config.dentry_ttl <= 0) {
+		return (double)FBR_TTL_MAX;
+	}
+
+	return fs->config.dentry_ttl;
 }

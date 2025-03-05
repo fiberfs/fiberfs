@@ -194,7 +194,7 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 }
 
 void
-fbr_file_attr(struct fbr_file *file, struct stat *st)
+fbr_file_attr(const struct fbr_file *file, struct stat *st)
 {
 	fbr_file_ok(file);
 	assert(st);

@@ -14,6 +14,8 @@ fs_test_fuse_init_root
 
 # Do operations
 
+print "### OPERATIONS"
+
 set_var1 $sys_tmpdir "/fiber_03"
 sys_stat_size $var1 0
 sys_cat_md5 $var1 d41d8cd98f00b204e9800998ecf8427e
@@ -36,11 +38,29 @@ sys_cat_md5 $var1 4cf30131c206e004d37e694a53733f70
 
 # Drop and expire everything and get fresh inodes
 
-sleep_ms 1000
+print "### CLEAR CACHE"
 
-fs_test_release_root 0
-
+sleep_ms 100
 fs_test_stats
+fs_test_debug
+
+# 3 directories + 5 files
+equal $fs_test_stat_directories 3
+equal $fs_test_stat_directories_dindex 3
+equal $fs_test_stat_files_inodes 8
+
+shell "echo 2 | sudo -n tee /proc/sys/vm/drop_caches > /dev/null"
+
+sleep_ms 100
+fs_test_stats
+fs_test_debug
+
+# 3 directories and matching files
+equal $fs_test_stat_directories 3
+equal $fs_test_stat_directories_dindex 3
+equal $fs_test_stat_files_inodes 3
+
+print "### OPERATION 222"
 
 set_var1 $sys_tmpdir "/fiber_dir01/fiber_dir11/fiber_24"
 sys_stat_size $var1 8008
@@ -48,18 +68,34 @@ sys_cat_md5 $var1 560ecea077b5f4f29efdb6f41062af0d
 
 # Cleanup
 
-sleep_ms 100
+print "### CLEANUP"
 
+sleep_ms 100
+fs_test_stats
+fs_test_debug
+
+# 3 directories + 1 file
+equal $fs_test_stat_directories 3
+equal $fs_test_stat_directories_dindex 3
+equal $fs_test_stat_files_inodes 4
+
+shell "echo 2 | sudo -n tee /proc/sys/vm/drop_caches > /dev/null"
+
+sleep_ms 100
 fs_test_stats
 fs_test_debug
 
 fs_test_release_root
-shell "echo 2 | sudo -n tee /proc/sys/vm/drop_caches > /dev/null"
 
+sleep_ms 100
 fs_test_stats
 fs_test_debug
 
 equal $fs_test_stat_directories 0
+equal $fs_test_stat_directories_dindex 0
+equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 0
+equal $fs_test_stat_files_inodes 0
+equal $fs_test_stat_file_refs 0
 
 fuse_test_unmount

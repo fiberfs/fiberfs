@@ -22,9 +22,6 @@
 #include "test/fbr_test.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
-#define _TEST_DIR_TTL_SEC		0.75
-#define _TEST_INODE_TTL_SEC		9999999.0
-
 static DIR *_TEST_DIR;
 static int _TEST_FD = -1;
 
@@ -65,6 +62,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_file_ok(file);
 
 		file->size = 1025 * 125;
+		file->version = fbr_id_gen();
 
 		ret = snprintf(name, sizeof(name), "fiber_zero1");
 		assert((size_t)ret < sizeof(name));
@@ -75,6 +73,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_file_ok(file);
 
 		file->size = 500;
+		file->version = fbr_id_gen();
 
 		ret = snprintf(name, sizeof(name), "fiber_big");
 		assert((size_t)ret < sizeof(name));
@@ -93,7 +92,8 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_body_chunk_add(file, id, s * 0, s + 100);
 		fbr_body_chunk_add(file, id, s * 1, s);
 
-		file->size = 1024 * 1024 ;
+		file->size = 1024 * 1024;
+		file->version = fbr_id_gen();
 
 		ret = snprintf(name, sizeof(name), "fiber_small");
 		assert((size_t)ret < sizeof(name));
@@ -106,6 +106,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		id = fbr_id_gen();
 
 		file->size = 100;
+		file->version = fbr_id_gen();
 
 		fbr_body_chunk_add(file, id, 0, 101);
 	}
@@ -122,6 +123,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		size_t chunks = (i + 1) * depth;
 		file->size = chunks * 1001;
+		file->version = fbr_id_gen();
 
 		fbr_id_t id = fbr_id_gen();
 		size_t offset = 0;
@@ -153,10 +155,12 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		fbr_path_name_init(&filename, name);
 
-		(void)fbr_file_alloc(fs, directory, &filename, fmode);
+		file = fbr_file_alloc(fs, directory, &filename, fmode);
+
+		file->version = fbr_id_gen();
 	}
 
-	fbr_directory_set_state(directory, FBR_DIRSTATE_OK);
+	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 }
 
 static void
@@ -186,7 +190,7 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 }
 
 static void
-_test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+_test_fs_chunk_gen(struct fbr_fs *fs, const struct fbr_file *file, struct fbr_chunk *chunk)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -222,8 +226,72 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 	chunk->state = FBR_CHUNK_READY;
 }
 
+static void
+_test_fs_directory_expired(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_directory *new_directory)
+{
+	fbr_fs_ok(fs);
+	fbr_fuse_context_ok(fs->fuse_ctx);
+	assert(fs->fuse_ctx->session);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+	assert_zero_dev(directory->expired);
+
+	if (new_directory) {
+		fbr_directory_ok(new_directory);
+		assert(new_directory->state == FBR_DIRSTATE_OK);
+	}
+
+	const char *dirname = fbr_path_get_full(&directory->dirname, NULL);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
+		"** DIR_EXP inode: %lu path: '%s' new: %s", directory->inode, dirname,
+		new_directory ? "true" : "false");
+
+	// If we have a TTL, files can never be forced to expire
+	if (fs->config.dentry_ttl > 0 && !new_directory) {
+		return;
+	}
+
+	struct fbr_file *file;
+
+	TAILQ_FOREACH(file, &directory->file_list, file_entry) {
+		fbr_file_ok(file);
+
+		struct fbr_path_name filename;
+		const char *sfilename = fbr_path_get_file(&file->path, &filename);
+
+		struct fbr_file *new_file = NULL;
+		int file_expired = 0;
+		int file_changed = 0;
+		int file_deleted = 0;
+
+		if (new_directory) {
+			new_file = fbr_directory_find_file(new_directory, sfilename);
+
+			if (!new_file) {
+				file_deleted = 1;
+			} else if (file->inode != new_file->inode) {
+				assert_dev(file->version != new_file->version);
+				file_changed = 1;
+			}
+		} else {
+			assert_dev(fs->config.dentry_ttl <= 0);
+			file_expired = 1;
+		}
+
+		if (file_deleted) {
+			fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
+				file->inode, filename.name, filename.len);
+		} else if (file_expired || file_changed) {
+			fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session, directory->inode,
+				filename.name, filename.len);
+		}
+	}
+}
+
 static const struct fbr_store_callbacks _TEST_FS_STORE_CALLBACKS = {
-	.fetch_chunk_f = _test_fs_chunk_gen
+	.fetch_chunk_f = _test_fs_chunk_gen,
+	.directory_expired_f = _test_fs_directory_expired
 };
 
 static void
@@ -261,7 +329,7 @@ fbr_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fus
 	fbr_inode_release(fs, &file);
 	assert_zero_dev(file);
 
-	fbr_fuse_reply_attr(request, &st, _TEST_INODE_TTL_SEC);
+	fbr_fuse_reply_attr(request, &st, fbr_fs_dentry_ttl(fs));
 }
 
 void
@@ -288,6 +356,12 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 		parent_file->inode);
 
 	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname);
+	struct fbr_directory *stale_directory = NULL;
+
+	if (directory && directory->inode != parent_file->inode) {
+		stale_directory = directory;
+		directory = NULL;
+	}
 
 	if (!directory) {
 		_test_fs_init_directory(fs, &parent_dirname, parent_file->inode);
@@ -297,6 +371,8 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 			fbr_fuse_reply_err(request, EIO);
 			return;
 		}
+
+		assert(directory->inode = parent_file->inode);
 	}
 
 	fbr_directory_ok(directory);
@@ -317,6 +393,11 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 		fbr_dindex_release(fs, &directory);
 		assert_zero_dev(directory);
 
+		if (stale_directory) {
+			fbr_dindex_release(fs, &stale_directory);
+			assert_zero_dev(stale_directory);
+		}
+
 		return;
 	}
 
@@ -329,8 +410,8 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 
 	struct fuse_entry_param entry;
 	fbr_ZERO(&entry);
-	entry.attr_timeout = _TEST_INODE_TTL_SEC;
-	entry.entry_timeout = _TEST_DIR_TTL_SEC;
+	entry.attr_timeout = fbr_fs_dentry_ttl(fs);
+	entry.entry_timeout = fbr_fs_dentry_ttl(fs);
 	entry.ino = file->inode;
 	fbr_file_attr(file, &entry.attr);
 
@@ -340,6 +421,11 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 
 	fbr_dindex_release(fs, &directory);
 	assert_zero_dev(directory);
+
+	if (stale_directory) {
+		fbr_dindex_release(fs, &stale_directory);
+		assert_zero_dev(stale_directory);
+	}
 }
 
 void
@@ -363,6 +449,12 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 		(int)dirname.len, dirname.name, dirname.len);
 
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname);
+	struct fbr_directory *stale_directory = NULL;
+
+	if (directory && directory->inode != file->inode) {
+		stale_directory = directory;
+		directory = NULL;
+	}
 
 	if (!directory) {
 		_test_fs_init_directory(fs, &dirname, file->inode);
@@ -372,6 +464,8 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 			fbr_fuse_reply_err(request, EIO);
 			return;
 		}
+
+		assert(directory->inode = file->inode);
 	}
 
 	fbr_directory_ok(directory);
@@ -388,6 +482,11 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	fi->cache_readdir = 1;
 
 	fbr_fuse_reply_open(request, fi);
+
+	if (stale_directory) {
+		fbr_dindex_release(fs, &stale_directory);
+		assert_zero_dev(stale_directory);
+	}
 }
 
 void

@@ -10,6 +10,7 @@
 #include "fiberfs.h"
 #include "fbr_fs.h"
 #include "data/tree.h"
+#include "core/store/fbr_store.h"
 
 #define _DINDEX_HEAD_COUNT			1024
 
@@ -205,7 +206,7 @@ _dindex_get_dirhead(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	return dirhead;
 }
 
-void
+struct fbr_directory *
 fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
@@ -223,7 +224,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(directory->state == FBR_DIRSTATE_NONE);
 	directory->state = FBR_DIRSTATE_LOADING;
 
-	// LRU technically owns this ref
+	// LRU owns this ref (fs owns root)
 	directory->refcounts.fs = 1;
 	directory->refcounts.in_dindex = 1;
 
@@ -242,6 +243,12 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 		_dindex_lru_remove(dindex, existing);
 		assert_zero_dev(existing->refcounts.in_lru);
 
+		// Caller takes a reference
+		existing->refcounts.fs++;
+		assert(existing->refcounts.fs);
+
+		fbr_fs_stat_add(&fs->stats.directory_refs);
+
 		assert_zero(RB_INSERT(fbr_dindex_tree, &dirhead->tree, directory));
 	} else {
 		fbr_fs_stat_add(&fs->stats.directories_dindex);
@@ -251,7 +258,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
-	// TODO directory remove callback
+	return existing;
 }
 
 struct fbr_directory *
@@ -289,6 +296,7 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
 	// TODO block if directory state FBR_DIRSTATE_LOADING and wait?
+	assert(directory->state == FBR_DIRSTATE_OK);
 
 	return directory;
 }
@@ -374,7 +382,11 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
-	// TODO directory remove callback (RB_REMOVE)
+	assert_dev(fs->store);
+	if (fs->store->directory_expired_f && !directory->expired && !fs->shutdown) {
+		fs->store->directory_expired_f(fs, directory, NULL);
+		directory->expired = 1;
+	}
 
 	_dindex_directory_free(fs, directory);
 }

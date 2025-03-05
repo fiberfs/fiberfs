@@ -52,6 +52,7 @@ FBR_TEST_FS_VAR(fs_test_stat_directories_dindex)
 FBR_TEST_FS_VAR(fs_test_stat_directories_total)
 FBR_TEST_FS_VAR(fs_test_stat_directory_refs)
 FBR_TEST_FS_VAR(fs_test_stat_files)
+FBR_TEST_FS_VAR(fs_test_stat_files_inodes)
 FBR_TEST_FS_VAR(fs_test_stat_files_total)
 FBR_TEST_FS_VAR(fs_test_stat_file_refs)
 

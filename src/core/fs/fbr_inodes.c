@@ -127,6 +127,8 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 	if (existing) {
 		fbr_file_ok(existing);
 		assert(existing == file);
+	} else {
+		fbr_fs_stat_add(&fs->stats.files_inodes);
 	}
 
 	assert_zero(pthread_mutex_unlock(&head->lock));
@@ -189,6 +191,8 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref)
 
 	(void)RB_REMOVE(fbr_inodes_tree, &head->tree, file);
 
+	fbr_fs_stat_sub(&fs->stats.files_inodes);
+
 	int do_free = 0;
 	if (!file->refcounts.dindex && !file->refcounts.inode) {
 		do_free = 1;
@@ -230,6 +234,8 @@ fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 	}
 
 	(void)RB_REMOVE(fbr_inodes_tree, &head->tree, file);
+
+	fbr_fs_stat_sub(&fs->stats.files_inodes);
 
 	int do_free = 0;
 	if (!file->refcounts.dindex && !file->refcounts.inode) {

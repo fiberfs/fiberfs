@@ -169,7 +169,6 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
     size_t size)
 {
 	fbr_fs_ok(fs);
-	assert(fs->store);
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
@@ -196,6 +195,7 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 			_fio_chunk_add(fio, chunk);
 
 			if (chunk->state == FBR_CHUNK_EMPTY) {
+				assert_dev(fs->store);
 				if (fs->store->fetch_chunk_f) {
 					fs->store->fetch_chunk_f(fs, fio->file, chunk);
 				}

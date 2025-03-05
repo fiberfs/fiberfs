@@ -36,7 +36,7 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_path_name_init(&filename, "fiber2");
 	(void)fbr_file_alloc(fs, root, &filename, fmode);
 
-	fbr_directory_set_state(root, FBR_DIRSTATE_OK);
+	fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
 }
 
 static const struct fbr_fuse_callbacks _TEST_FS_INIT_CALLBACKS = {
@@ -146,6 +146,7 @@ fbr_cmd_fs_test_stats(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_FS_TEST_STAT_PRINT(directories_total);
 	_FS_TEST_STAT_PRINT(directory_refs);
 	_FS_TEST_STAT_PRINT(files);
+	_FS_TEST_STAT_PRINT(files_inodes);
 	_FS_TEST_STAT_PRINT(files_total);
 	_FS_TEST_STAT_PRINT(file_refs);
 	_FS_TEST_STAT_PRINT(requests);
@@ -171,6 +172,7 @@ _FS_TEST_STAT(directories_dindex)
 _FS_TEST_STAT(directories_total)
 _FS_TEST_STAT(directory_refs)
 _FS_TEST_STAT(files)
+_FS_TEST_STAT(files_inodes)
 _FS_TEST_STAT(files_total)
 _FS_TEST_STAT(file_refs)
 _FS_TEST_STAT(requests)

@@ -133,8 +133,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		_test_path_print_path(ctx, &file->path, "directory_file", layout, sdir, name, sfull);
 
-		struct fbr_file *f2 = fbr_directory_find_file(directory, name);
-		assert(f2 == file);
+		assert(file->parent_inode == inode);
 
 		// lookup
 		fbr_inode_add(fs, file);
@@ -157,14 +156,19 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		fbr_path_name_init(&filename, name2);
 
-		file = fbr_file_alloc(fs, directory, &filename, S_IFREG);
+		struct fbr_file *file2 = fbr_file_alloc(fs, directory, &filename, S_IFREG);
 
-		_test_path_print_path(ctx, &file->path, "file", layout, "", name2, name2);
+		_test_path_print_path(ctx, &file2->path, "file", layout, "", name2, name2);
 
-		f2 = fbr_directory_find_file(directory, name2);
+		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+
+		assert(file2->parent_inode == inode);
+
+		struct fbr_file *f2 = fbr_directory_find_file(directory, name);
 		assert(f2 == file);
 
-		assert(file->parent_inode == inode);
+		f2 = fbr_directory_find_file(directory, name2);
+		assert(f2 == file2);
 
 		// directory
 
@@ -184,6 +188,8 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		}
 		strncat(sdir, name, sizeof(sdir) - strlen(sdir) - 1);
 	}
+
+	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
 	struct fbr_path_name full;
 	fbr_path_name_init(&full, sfull);
