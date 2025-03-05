@@ -46,6 +46,7 @@ static const struct fbr_fuse_callbacks _TEST_FS_INIT_CALLBACKS = {
 void
 fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
+	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_FS_INIT_CALLBACKS);
@@ -96,6 +97,23 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 }
 
 void
+fbr_cmd_fs_test_dentry_ttl_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	long ttl = fbr_test_parse_long(cmd->params[0].value);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	struct fbr_fs *fs = fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	fs->config.dentry_ttl = (double)ttl / 1000.0;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs dentry ttl %lf", fs->config.dentry_ttl);
+}
+
+void
 fbr_cmd_fs_test_release_root(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_ERROR(cmd->param_count > 1, "Too many params");
@@ -113,20 +131,6 @@ fbr_cmd_fs_test_release_root(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	fbr_fs_release_root(fs, release_root_inode);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root released %d", release_root_inode);
-}
-
-void
-fbr_cmd_fs_test_release_dindex(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_ERROR_param_count(cmd, 0);
-
-	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
-	struct fbr_fs *fs = fuse_ctx->fs;
-	fbr_fs_ok(fs);
-
-	fbr_dindex_lru_purge(fs, 0);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs dindex released");
 }
 
 void
@@ -151,6 +155,9 @@ fbr_cmd_fs_test_stats(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_FS_TEST_STAT_PRINT(file_refs);
 	_FS_TEST_STAT_PRINT(requests);
 	_FS_TEST_STAT_PRINT(requests_total);
+	_FS_TEST_STAT_PRINT(fetch_bytes);
+	_FS_TEST_STAT_PRINT(read_bytes);
+	_FS_TEST_STAT_PRINT(write_bytes);
 }
 
 #define _FS_TEST_STAT(name)							\
@@ -177,3 +184,6 @@ _FS_TEST_STAT(files_total)
 _FS_TEST_STAT(file_refs)
 _FS_TEST_STAT(requests)
 _FS_TEST_STAT(requests_total)
+_FS_TEST_STAT(fetch_bytes)
+_FS_TEST_STAT(read_bytes)
+_FS_TEST_STAT(write_bytes)

@@ -224,6 +224,8 @@ _test_fs_chunk_gen(struct fbr_fs *fs, const struct fbr_file *file, struct fbr_ch
 	}
 
 	chunk->state = FBR_CHUNK_READY;
+
+	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, chunk->length);
 }
 
 static void
@@ -280,11 +282,11 @@ _test_fs_directory_expired(struct fbr_fs *fs, struct fbr_directory *directory,
 		}
 
 		if (file_deleted) {
-			fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
+			(void)fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
 				file->inode, filename.name, filename.len);
 		} else if (file_expired || file_changed) {
-			fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session, directory->inode,
-				filename.name, filename.len);
+			(void)fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
+				directory->inode, filename.name, filename.len);
 		}
 	}
 }
@@ -679,6 +681,8 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 
 		fbr_fuse_reply_iov(request, fio->iovec, fio->iovec_pos);
 	}
+
+	fbr_fs_stat_add_count(&fs->stats.read_bytes, size);
 }
 
 static void

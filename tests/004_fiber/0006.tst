@@ -5,9 +5,7 @@ fiber_test "Fuse and fs"
 set_timeout_sec 20
 
 sys_mkdir_tmp
-
 fs_test_fuse_mount $sys_tmpdir
-
 fs_test_fuse_init_root
 
 # Do a bunch of operations

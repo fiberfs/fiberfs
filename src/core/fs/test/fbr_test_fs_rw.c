@@ -109,6 +109,8 @@ _test_fs_rw_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t
 	fbr_file_ok(fio->file);
 
 	fbr_fuse_reply_err(request, EIO);
+
+	//fbr_fs_stat_add_count(&fs->stats.read_bytes, 0);
 }
 
 static void
@@ -127,6 +129,8 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
 	(void)buf;
 
 	fbr_fuse_reply_err(request, EIO);
+
+	//fbr_fs_stat_add_count(&fs->stats.write_bytes, 0);
 }
 
 static void
@@ -143,6 +147,8 @@ _test_fs_rw_write_buf(struct fbr_request *request, fuse_ino_t ino, struct fuse_b
 	fbr_file_ok(fio->file);
 
 	fbr_fuse_reply_err(request, EIO);
+
+	//fbr_fs_stat_add_count(&fs->stats.write_bytes, );
 }
 
 static void

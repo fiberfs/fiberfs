@@ -38,7 +38,7 @@ FBR_TEST_FS_CMD(fs_test_fuse_init_root)
 FBR_TEST_FS_CMD(fs_test_rw_mount)
 
 FBR_TEST_FS_CMD(fs_test_release_root)
-FBR_TEST_FS_CMD(fs_test_release_dindex)
+FBR_TEST_FS_CMD(fs_test_dentry_ttl_ms)
 FBR_TEST_FS_CMD(fs_test_stats)
 FBR_TEST_FS_CMD(fs_test_debug)
 
@@ -55,6 +55,9 @@ FBR_TEST_FS_VAR(fs_test_stat_files)
 FBR_TEST_FS_VAR(fs_test_stat_files_inodes)
 FBR_TEST_FS_VAR(fs_test_stat_files_total)
 FBR_TEST_FS_VAR(fs_test_stat_file_refs)
+FBR_TEST_FS_VAR(fs_test_stat_fetch_bytes)
+FBR_TEST_FS_VAR(fs_test_stat_read_bytes)
+FBR_TEST_FS_VAR(fs_test_stat_write_bytes)
 
 FBR_TEST_FS_CMD(fs_test_path_assert)
 FBR_TEST_FS_CMD(fs_test_path)

@@ -141,7 +141,8 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	assert_zero(pthread_mutex_unlock(&directory->update_lock));
 
-	// TODO if error, put stale back?
+	// TODO this should move somewhere else...?
+	// TODO can we use stale if there is an error?
 	if (directory->stale) {
 		fbr_directory_ok(directory->stale);
 		assert_zero(directory->stale->expired);

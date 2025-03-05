@@ -12,18 +12,23 @@
 #include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 
+static int _REQUEST_KEY_INIT;
 static pthread_key_t _REQUEST_KEY;
 
 void
 fbr_context_request_init(void)
 {
 	assert_zero(pthread_key_create(&_REQUEST_KEY, NULL));
+
+	_REQUEST_KEY_INIT = 1;
 }
 
 void
 fbr_context_request_finish(void)
 {
 	assert_zero(pthread_key_delete(_REQUEST_KEY));
+
+	_REQUEST_KEY_INIT = 0;
 }
 
 struct fbr_request *
@@ -61,7 +66,7 @@ fbr_request_get(void)
 {
 	struct fbr_request *request = pthread_getspecific(_REQUEST_KEY);
 
-	if (!request) {
+	if (!request || !_REQUEST_KEY_INIT) {
 		return NULL;
 	}
 

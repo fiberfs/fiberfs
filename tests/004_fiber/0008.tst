@@ -1,13 +1,11 @@
 fiber_test "Holding onto an old inode"
 
-skip_if_valgrind
-
 # Init
 
+skip_if_valgrind
+
 sys_mkdir_tmp
-
 fs_test_fuse_mount $sys_tmpdir
-
 fs_test_fuse_init_root
 
 # Load inodes

@@ -211,12 +211,18 @@ struct fbr_fs_stats {
 	unsigned long				directories_dindex;
 	unsigned long				directories_total;
 	unsigned long				directory_refs;
+
 	unsigned long				files;
 	unsigned long				files_inodes;
 	unsigned long				files_total;
 	unsigned long				file_refs;
+
 	unsigned long				requests;
 	unsigned long				requests_total;
+
+	unsigned long				fetch_bytes;
+	unsigned long				read_bytes;
+	unsigned long				write_bytes;
 };
 
 struct fbr_fs_config {
