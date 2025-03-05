@@ -115,6 +115,12 @@ enum fbr_directory_state {
 	FBR_DIRSTATE_ERROR
 };
 
+struct fbr_directory_refcounts {
+	fbr_refcount_t				in_dindex:1;
+	fbr_refcount_t				in_lru:1;
+	fbr_refcount_t				fs;
+};
+
 RB_HEAD(fbr_filename_tree, fbr_file);
 RB_HEAD(fbr_inodes_tree, fbr_file);
 
@@ -125,7 +131,7 @@ struct fbr_directory {
 	struct fbr_path				dirname;
 
 	enum fbr_directory_state		state;
-	fbr_refcount_t				refcount;
+	struct fbr_directory_refcounts		refcounts;
 	fbr_inode_t				inode;
 
 	pthread_mutex_t				update_lock;
@@ -144,8 +150,6 @@ struct fbr_directory {
 	struct fbr_filename_tree		filename_tree;
 
 	size_t					file_count;
-
-	unsigned int				dindexed:1;
 };
 
 struct fbr_dirbuffer {

@@ -2,6 +2,8 @@ fiber_test "Fuse and fs"
 
 # Init
 
+set_timeout_sec 20
+
 sys_mkdir_tmp
 
 fs_test_fuse_mount $sys_tmpdir
@@ -34,6 +36,9 @@ sys_ls $var5 "..:dir .:dir fiber_51:file fiber_52:file fiber_53:file fiber_54:fi
 print "### TEST 2 (release root)"
 
 sleep_ms 1000
+
+fs_test_stats
+fs_test_debug
 
 fs_test_release_root 0
 

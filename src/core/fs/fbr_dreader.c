@@ -27,6 +27,7 @@ fbr_dreader_alloc(struct fbr_fs *fs, struct fbr_directory *directory)
 	return reader;
 }
 
+// NOTE: this releeses a dindex, always call after replying to fuse
 void
 fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader)
 {
