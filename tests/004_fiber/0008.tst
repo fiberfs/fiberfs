@@ -23,6 +23,9 @@ _fs_test_take_dir $var1
 
 sleep_ms 1000
 
+fs_test_stats
+fs_test_debug
+
 fs_test_release_root 0
 
 # New operations

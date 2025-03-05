@@ -307,6 +307,7 @@ _dindex_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_fs_stat_sub(&fs->stats.directories);
 }
 
+// NOTE: always release after replying to fuse
 void
 fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 {
@@ -421,6 +422,8 @@ _dindex_lru_pop(struct fbr_fs *fs)
 
 	assert_zero(pthread_mutex_unlock(&dindex->lru_lock));
 
+	// TODO can we just drop the dindex ref?
+	// The problem is that it still exists in the dindex and we drop again on insertion
 	_dindex_remove(fs, &dirname);
 }
 

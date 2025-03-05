@@ -179,6 +179,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_context_ok(ctx);
 
+	// This will fail on free
 	if (ctx->unmount) {
 		return;
 	}

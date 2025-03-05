@@ -107,10 +107,6 @@ _inodes_get_head(struct fbr_inodes *inodes, struct fbr_file *file)
 	return head;
 }
 
-
-// fuse_lookup and root_file
-// File comes from a dindex that has a reference
-// Multiple calls ok since file comes from the same dindex
 void
 fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 {
@@ -136,12 +132,6 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 	assert_zero(pthread_mutex_unlock(&head->lock));
 }
 
-// fuse_getattr and fuse_readdir
-// TODO what is the context here? Do we always have a fuse_lookup?
-// dindex should pull a reference to its file so it can get attributes
-
-// fuse_open, fuse_lookup is always done before
-// root_file also uses this, it always owns a reference
 struct fbr_file *
 fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode)
 {
@@ -173,7 +163,6 @@ fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode)
 	return file;
 }
 
-// fuse_open, called after taking a inode_ref, should always have a lookup
 void
 fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref)
 {
@@ -213,7 +202,6 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref)
 	}
 }
 
-// fuse_forget, called after fuse_lookup or fuse_create
 void
 fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 {
