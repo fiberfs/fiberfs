@@ -4,6 +4,7 @@ fiber_test "RW test"
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
+fs_test_dentry_ttl_ms 0
 
 # Operations
 

@@ -4,6 +4,7 @@ fiber_test "File reading simple"
 
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir
+fs_test_dentry_ttl_ms 0
 fs_test_fuse_init_root
 
 # Do read
