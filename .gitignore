@@ -5,7 +5,5 @@ src/build
 src/chttp_client
 src/fjson_client
 src/fiberfs_test
-src/coverage.info
-src/gcov.data
 src/report
 tests/afl_json/results

@@ -117,7 +117,8 @@ GCOVFLAGS=-fprofile-arcs -ftest-coverage --coverage
 GCOVLIBFLAGS=-lgcov
 LCOV=lcov --capture --no-external --directory ./
 LCOVHTML=genhtml
-HTMLDIR=report
+GCOV_FILE=$(BUILD)/coverage.info
+GCOV_REPORT=report
 
 # afl
 AFL_CC=afl-clang-fast
@@ -159,23 +160,19 @@ clean:		gcovclean
 		$(RM) *.so *.a
 		$(RM) chttp_client fjson_client fiberfs_test
 
-gcov:		gcov.data
-		$(GCOV) -r *.c */*.c */*/*.c
-		$(LCOV) --output-file coverage.info
-		$(LCOVHTML) coverage.info --output-directory $(HTMLDIR)
-
-gcov.data:	CFLAGS+=$(GCOVFLAGS)
-gcov.data:	LIBFLAGS+=$(GCOVLIBFLAGS)
-gcov.data:	| clean
+gcov:		CFLAGS+=$(GCOVFLAGS)
+gcov:		LIBFLAGS+=$(GCOVLIBFLAGS)
+gcov:		clean
 		$(MAKE) all CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
 		$(MAKE) -C .. check FLAGS=-vv
-		touch gcov.data
+		$(GCOV) -r *.c */*.c */*/*.c */*/*/*.c
+		$(LCOV) --output-file $(GCOV_FILE)
+		$(LCOVHTML) $(GCOV_FILE) --output-directory $(GCOV_REPORT)
 
 gcovclean:
-		$(RM) coverage.info gcov.data
-		$(RMDIR) $(HTMLDIR)
+		$(RMDIR) $(GCOV_REPORT)
 
 #afl:		export AFL_USE_ASAN=1
 #afl:		export AFL_USE_MSAN=1
-afl:		| clean
+afl:		clean
 		$(MAKE) all CC=$(AFL_CC) CFLAGS_CC="$(AFL_CFLAGS_CC)"
