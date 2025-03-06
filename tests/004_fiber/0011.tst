@@ -1,37 +1,3 @@
-fiber_test "File reading simple"
+fiber_test "id tests"
 
-# Init
-
-sys_mkdir_tmp
-fs_test_fuse_mount $sys_tmpdir
-fs_test_dentry_ttl_ms 0
-fs_test_fuse_init_root
-
-# Do read
-
-set_var1 $sys_tmpdir "/fiber_small"
-sys_stat_size $var1 100
-sys_cat_md5 $var1 7a08b07e84641703e5f2c836aa59a170
-
-# Cleanup
-
-sleep_ms 100
-fs_test_stats
-fs_test_debug
-
-fs_test_release_root
-
-sleep_ms 100
-fs_test_stats
-fs_test_debug
-
-equal $fs_test_stat_directories 0
-equal $fs_test_stat_directories_dindex 0
-equal $fs_test_stat_directory_refs 0
-equal $fs_test_stat_files 0
-equal $fs_test_stat_files_inodes 0
-equal $fs_test_stat_file_refs 0
-equal $fs_test_stat_fetch_bytes 101
-equal $fs_test_stat_read_bytes 100
-
-fuse_test_unmount
+fs_test_id_assert

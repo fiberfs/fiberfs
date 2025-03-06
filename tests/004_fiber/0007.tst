@@ -21,6 +21,15 @@ sys_ls $var1
 set_var2 $var1 "/fiber_dir13"
 sys_ls $var2
 
+set_var3 $sys_tmpdir "/fiber_dir03/fiber_dir11/fiber_dir24/fiber_dir33"
+sys_ls $var3 "..:dir .:dir fiber_41:file fiber_42:file fiber_43:file fiber_44:file fiber_dir41:dir fiber_dir42:dir fiber_dir43:dir fiber_dir44:dir"
+
+set_var4 $sys_tmpdir "/fiber_dir03/fiber_dir11/"
+sys_ls $var4
+
+set_var5 $sys_tmpdir "/fiber_dir03/fiber_dir11/fiber_dir21/fiber_dir32/fiber_dir44"
+sys_ls $var5 "..:dir .:dir fiber_51:file fiber_52:file fiber_53:file fiber_54:file"
+
 # Expire cache
 
 print "### TEST 2 (release root)"
