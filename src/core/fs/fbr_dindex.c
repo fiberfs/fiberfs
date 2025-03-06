@@ -383,8 +383,8 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
 	assert_dev(fs->store);
-	if (fs->store->directory_expired_f && !directory->expired && !fs->shutdown) {
-		fs->store->directory_expired_f(fs, directory, NULL);
+	if (fs->store->directory_expire_f && !directory->expired && !fs->shutdown) {
+		fs->store->directory_expire_f(fs, directory, NULL);
 		directory->expired = 1;
 	}
 
