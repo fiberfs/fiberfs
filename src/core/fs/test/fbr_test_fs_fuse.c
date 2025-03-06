@@ -106,7 +106,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		id = fbr_id_gen();
 
-		file->size = 100;
+		file->size = 101;
 		file->version = fbr_id_gen();
 
 		fbr_body_chunk_add(file, id, 0, 101);

@@ -200,22 +200,31 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 		if ((offset >= chunk->offset && offset < chunk_end) ||
 		    (offset < chunk->offset && offset_end >= chunk->offset)) {
 			_fio_chunk_add(fio, chunk);
-
-			if (chunk->state == FBR_CHUNK_EMPTY) {
-				// Chunk ends in offset, splicing is ok
-				if (chunk_end <= offset_end) {
-					chunk->fd_splice_ok = 1;
-				}
-
-				if (fs->store->fetch_chunk_f) {
-					fs->store->fetch_chunk_f(fs, fio->file, chunk);
-				}
-			}
 		} else if (chunk->offset > offset_end) {
 			break;
 		}
 
 		chunk = chunk->next;
+	}
+
+	for (size_t i = 0; i < fio->chunks_pos; i++) {
+		struct fbr_chunk *chunk = fio->chunks[i];
+		fbr_chunk_ok(chunk);
+
+		size_t chunk_end = chunk->offset + chunk->length;
+
+		if (chunk->state == FBR_CHUNK_EMPTY) {
+			// Single chunk fits in offset, splicing is ok
+			if (fio->chunks_pos == 1 &&
+			    chunk->offset >= offset &&
+			    chunk_end <= offset_end) {
+				chunk->fd_splice_ok = 1;
+			}
+
+			if (fs->store->fetch_chunk_f) {
+				fs->store->fetch_chunk_f(fs, fio->file, chunk);
+			}
+		}
 	}
 
 	while (!_fio_ready(fio)) {

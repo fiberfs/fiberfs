@@ -10,8 +10,8 @@ fs_test_fuse_init_root
 # Do read
 
 set_var1 $sys_tmpdir "/fiber_small"
-sys_stat_size $var1 100
-sys_cat_md5 $var1 7a08b07e84641703e5f2c836aa59a170
+sys_stat_size $var1 101
+sys_cat_md5 $var1 525cce3d8c3eaf36a756a91fcb996d59
 
 # Cleanup
 
@@ -32,6 +32,6 @@ equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
 equal $fs_test_stat_fetch_bytes 101
-equal $fs_test_stat_read_bytes 100
+equal $fs_test_stat_read_bytes 101
 
 fuse_test_unmount
