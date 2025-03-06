@@ -58,6 +58,8 @@ void fbr_fuse_reply_none(struct fbr_request *request);
 void fbr_fuse_reply_err(struct fbr_request *request, int error);
 void fbr_fuse_reply_buf(struct fbr_request *request, const char *buf, size_t size);
 void fbr_fuse_reply_iov(struct fbr_request *request, const struct iovec *iov, int count);
+void fbr_fuse_reply_data(struct fbr_request *request, struct fuse_bufvec *bufv,
+	enum fuse_buf_copy_flags flags);
 void fbr_fuse_reply_entry(struct fbr_request *request, const struct fuse_entry_param *entry);
 void fbr_fuse_reply_attr(struct fbr_request *request, const struct stat *attr,
 	double attr_timeout);

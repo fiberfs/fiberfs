@@ -31,9 +31,9 @@ _body_chunk_slab_alloc(void)
 	struct fbr_chunk_slab *slab = calloc(1, sizeof(*slab) + chunk_size);
 
 	slab->magic = FBR_CHUNK_SLAB_MAGIC;
-	slab->chunks_len = FBR_BODY_SLAB_DEFAULT_CHUNKS;
+	slab->length = FBR_BODY_SLAB_DEFAULT_CHUNKS;
 
-	for (size_t i = 0; i < slab->chunks_len; i++) {
+	for (size_t i = 0; i < slab->length; i++) {
 		slab->chunks[i].magic = FBR_CHUNK_MAGIC;
 	}
 
@@ -50,7 +50,7 @@ _body_chunk_get(struct fbr_body *body)
 	if (slab) {
 		fbr_chunk_slab_ok(slab);
 
-		for (size_t i = 0; i < slab->chunks_len; i++) {
+		for (size_t i = 0; i < slab->length; i++) {
 			fbr_chunk_ok(&slab->chunks[i]);
 			if (slab->chunks[i].state == FBR_CHUNK_NONE) {
 				return &slab->chunks[i];
@@ -60,7 +60,7 @@ _body_chunk_get(struct fbr_body *body)
 
 	slab = _body_chunk_slab_alloc();
 	fbr_chunk_slab_ok(slab);
-	assert(slab->chunks_len);
+	assert(slab->length);
 
 	slab->next = body->slabhead.next;
 	body->slabhead.next = slab;
@@ -179,13 +179,13 @@ _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 	fbr_chunk_slab_ok(slab);
 
 	if (fbr_assert_is_dev()) {
-		for (size_t i = 0; i < slab->chunks_len; i++) {
+		for (size_t i = 0; i < slab->length; i++) {
 			fbr_chunk_ok(&slab->chunks[i]);
 			assert_zero(slab->chunks[i].refcount);
 		}
 	}
 
-	size_t chunk_size = sizeof(struct fbr_chunk) * slab->chunks_len;
+	size_t chunk_size = sizeof(struct fbr_chunk) * slab->length;
 	explicit_bzero(slab, sizeof(*slab) + chunk_size);
 
 	free(slab);

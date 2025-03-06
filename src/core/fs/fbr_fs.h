@@ -64,11 +64,22 @@ struct fbr_chunk_slab {
 	unsigned int				magic;
 #define FBR_CHUNK_SLAB_MAGIC			0x68469049
 
-	unsigned int				chunks_len;
+	unsigned int				length;
 
 	struct fbr_chunk_slab			*next;
 
 	struct fbr_chunk			chunks[];
+};
+
+struct fbr_chunk_list {
+	unsigned int				magic;
+#define FBR_CHUNK_LIST_MAGIC			0x8E1FB2D4
+
+	unsigned int				capacity;
+	unsigned int				length;
+
+	// TODO call these values?
+	struct fbr_chunk			*chunks[];
 };
 
 struct fbr_body {
@@ -201,15 +212,7 @@ struct fbr_fio {
 
 	struct fbr_file				*file;
 
-	struct fbr_chunk			*_chunks[FBR_BODY_DEFAULT_CHUNKS];
-	struct fbr_chunk			**chunks;
-	size_t					chunks_pos;
-	size_t					chunks_len;
-
-	struct iovec				_iovec[FBR_BODY_DEFAULT_CHUNKS];
-	struct iovec				*iovec;
-	size_t					iovec_pos;
-	size_t					iovec_len;
+	struct fbr_chunk_list			*floating;
 };
 
 struct fbr_fs_stats {
@@ -339,10 +342,12 @@ void fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
 void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 
 struct fbr_fio *fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file);
-void fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
-	size_t size);
-void fbr_fio_iovec_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
-	size_t size);
+struct fbr_chunk_list *fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio,
+	size_t offset, size_t size);
+void fbr_fio_release_chunks(struct fbr_fio *fio, struct fbr_chunk_list *list,
+	size_t offset_end);
+struct fuse_bufvec *fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *list,
+	size_t offset, size_t size);
 void fbr_fio_free(struct fbr_fs *fs, struct fbr_fio *fio);
 
 #define fbr_fs_ok(fs)						\
@@ -379,6 +384,11 @@ void fbr_fio_free(struct fbr_fs *fs, struct fbr_fio *fio);
 {								\
 	assert(slab);						\
 	assert((slab)->magic == FBR_CHUNK_SLAB_MAGIC);		\
+}
+#define fbr_chunk_list_ok(list)					\
+{								\
+	assert(list);						\
+	assert((list)->magic == FBR_CHUNK_LIST_MAGIC);		\
 }
 #define fbr_fs_int64(obj)					\
 	((uint64_t)(obj))

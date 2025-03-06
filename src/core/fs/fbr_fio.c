@@ -8,14 +8,35 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO
-#include <stdio.h>
-
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "core/fuse/fbr_fuse_lowlevel.h"
 #include "core/store/fbr_store.h"
 
 static uint8_t _ZERO_FILL[1024 * 16];
+
+static struct fbr_chunk_list *
+_fio_chunk_list_expand(struct fbr_chunk_list *list)
+{
+	if (!list) {
+		list = malloc(sizeof(*list) + (sizeof(*list->chunks) * FBR_BODY_DEFAULT_CHUNKS));
+		assert(list);
+
+		list->magic = FBR_CHUNK_LIST_MAGIC;
+		list->capacity = FBR_BODY_DEFAULT_CHUNKS;
+		list->length = 0;
+	} else {
+		fbr_chunk_list_ok(list);
+		assert(list->capacity);
+		assert(list->capacity < FUSE_IOCTL_MAX_IOV);
+
+		list->capacity *= 2;
+
+		list = realloc(list, sizeof(*list) + (sizeof(*list->chunks) * list->capacity));
+	}
+
+	return list;
+}
 
 struct fbr_fio *
 fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
@@ -29,120 +50,63 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	fio->magic = FBR_FIO_MAGIC;
 	fio->file = file;
 
-	fio->chunks = fio->_chunks;
-	fio->chunks_len = fbr_array_len(fio->_chunks);
-
-	fio->iovec = fio->_iovec;
-	fio->iovec_len = fbr_array_len(fio->_iovec);
+	fio->floating = _fio_chunk_list_expand(NULL);
+	fbr_chunk_list_ok(fio->floating);
 
 	return fio;
 }
 
+// TODO we dont need offset...
 static void
-_fio_expand_chunks(struct fbr_fio *fio)
+_fio_release_floating(struct fbr_fio *fio, size_t offset)
 {
 	fbr_fio_ok(fio);
-	assert(fio->chunks_len);
-	assert(fio->chunks_pos < 1000 * 10);
+	fbr_chunk_list_ok(fio->floating);
 
-	if (fio->chunks_pos < fio->chunks_len) {
-		return;
-	}
+	struct fbr_chunk_list *list = fio->floating;
+	size_t keep = 0;
 
-	assert_dev(fio->chunks_pos == fio->chunks_len);
-
-	if (fio->chunks_len < FBR_BODY_SLAB_DEFAULT_CHUNKS) {
-		fio->chunks_len = FBR_BODY_SLAB_DEFAULT_CHUNKS;
-	} else {
-		fio->chunks_len *= 2;
-	}
-
-	if (fio->chunks == fio->_chunks) {
-		fio->chunks = malloc(sizeof(*fio->chunks) * fio->chunks_len);
-		assert(fio->chunks);
-
-		memcpy(fio->chunks, fio->_chunks, sizeof(fio->_chunks));
-	} else {
-		fio->chunks = realloc(fio->chunks,
-			sizeof(*fio->chunks) * fio->chunks_len);
-		assert(fio->chunks);
-	}
-}
-
-static void
-_fio_release_chunks(struct fbr_fio *fio, size_t keep_offset)
-{
-	fbr_fio_ok(fio);
-	fbr_file_ok(fio->file);
-
-	size_t keep_chunks = 0;
-
-	for (size_t i = 0; i < fio->chunks_pos; i++) {
-		struct fbr_chunk *chunk = fio->chunks[i];
+	for (size_t i = 0; i < list->length; i++) {
+		struct fbr_chunk *chunk = list->chunks[i];
 		fbr_chunk_ok(chunk);
 
 		size_t chunk_end = chunk->offset + chunk->length;
 
-		if (keep_offset && chunk_end >= keep_offset) {
-			assert_dev(chunk->offset < keep_offset);
-			assert_zero(chunk->fd_splice_ok);
-			assert_zero_dev(chunk->fd_spliced);
-
-			if (i > keep_chunks) {
-				fio->chunks[keep_chunks] = chunk;
-				fio->chunks[i] = NULL;
-			}
-
-			keep_chunks++;
+		if (offset && chunk_end > offset) {
+			list->chunks[keep] = chunk;
+			keep++;
 		} else {
 			fbr_chunk_release(chunk);
-			fio->chunks[i] = NULL;
 		}
 	}
 
-	fio->chunks_pos = keep_chunks;
+	list->length = keep;
 }
 
-static void
-_fio_chunk_add(struct fbr_fio *fio, struct fbr_chunk *chunk)
+static struct fbr_chunk_list *
+_fio_chunk_list_add(struct fbr_chunk_list *list, struct fbr_chunk *chunk)
 {
-	fbr_fio_ok(fio);
+	fbr_chunk_list_ok(list);
 	fbr_chunk_ok(chunk);
 
-	struct fbr_chunk *swap_last = NULL;
-
-	for (size_t i = 0; i < fio->chunks_pos; i++) {
-		if (fio->chunks[i] == chunk) {
-			swap_last = chunk;
-		} else if (swap_last) {
-			assert_dev(i);
-			fio->chunks[i - 1] = fio->chunks[i];
-			fio->chunks[i] = swap_last;
-		}
+	if (list->length == list->capacity) {
+		list = _fio_chunk_list_expand(list);
 	}
+	assert_dev(list->length < list->capacity);
 
-	if (swap_last) {
-		assert_zero_dev(chunk->fd_splice_ok);
-		assert_zero_dev(chunk->fd_spliced);
-		return;
-	}
+	list->chunks[list->length] = chunk;
+	list->length++;
 
-	_fio_expand_chunks(fio);
-	assert_dev(fio->chunks_pos < fio->chunks_len);
-
-	fbr_chunk_take(chunk);
-
-	fio->chunks[fio->chunks_pos] = chunk;
-	fio->chunks_pos++;
+	return list;
 }
 
 static int
-_fio_ready_error(struct fbr_fio *fio)
+_fio_ready_error(struct fbr_chunk_list *list)
 {
-	fbr_fio_ok(fio);
+	fbr_chunk_list_ok(list);
 
-	for (size_t i = 0; i < fio->chunks_pos; i++) {
-		struct fbr_chunk *chunk = fio->chunks[i];
+	for (size_t i = 0; i < list->length; i++) {
+		struct fbr_chunk *chunk = list->chunks[i];
 		fbr_chunk_ok(chunk);
 
 		if (chunk->state == FBR_CHUNK_EMPTY) {
@@ -154,12 +118,12 @@ _fio_ready_error(struct fbr_fio *fio)
 }
 
 static int
-_fio_ready(struct fbr_fio *fio)
+_fio_ready(struct fbr_chunk_list *list)
 {
-	fbr_fio_ok(fio);
+	fbr_chunk_list_ok(list);
 
-	for (size_t i = 0; i < fio->chunks_pos; i++) {
-		struct fbr_chunk *chunk = fio->chunks[i];
+	for (size_t i = 0; i < list->length; i++) {
+		struct fbr_chunk *chunk = list->chunks[i];
 		fbr_chunk_ok(chunk);
 
 		if (chunk->state != FBR_CHUNK_READY) {
@@ -170,7 +134,7 @@ _fio_ready(struct fbr_fio *fio)
 	return 1;
 }
 
-void
+struct fbr_chunk_list *
 fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
     size_t size)
 {
@@ -183,10 +147,9 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 
 	struct fbr_body *body = &fio->file->body;
 	size_t offset_end = offset + size;
+	struct fbr_chunk_list *list = _fio_chunk_list_expand(NULL);
 
 	fbr_body_LOCK(body);
-
-	_fio_release_chunks(fio, offset);
 
 	struct fbr_chunk *chunk = body->chunks;
 
@@ -199,7 +162,8 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 		// offset starts in chunk || offset ends in chunk
 		if ((offset >= chunk->offset && offset < chunk_end) ||
 		    (offset < chunk->offset && offset_end >= chunk->offset)) {
-			_fio_chunk_add(fio, chunk);
+			fbr_chunk_take(chunk);
+			list = _fio_chunk_list_add(list, chunk);
 		} else if (chunk->offset > offset_end) {
 			break;
 		}
@@ -207,15 +171,15 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 		chunk = chunk->next;
 	}
 
-	for (size_t i = 0; i < fio->chunks_pos; i++) {
-		struct fbr_chunk *chunk = fio->chunks[i];
+	for (size_t i = 0; i < list->length; i++) {
+		struct fbr_chunk *chunk = list->chunks[i];
 		fbr_chunk_ok(chunk);
 
 		size_t chunk_end = chunk->offset + chunk->length;
 
 		if (chunk->state == FBR_CHUNK_EMPTY) {
 			// Single chunk fits in offset, splicing is ok
-			if (fio->chunks_pos == 1 &&
+			if (list->length == 1 &&
 			    chunk->offset >= offset &&
 			    chunk_end <= offset_end) {
 				chunk->fd_splice_ok = 1;
@@ -227,8 +191,8 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 		}
 	}
 
-	while (!_fio_ready(fio)) {
-		if (_fio_ready_error(fio)) {
+	while (!_fio_ready(list)) {
+		if (_fio_ready_error(list)) {
 			fio->error = 1;
 			break;
 		}
@@ -236,56 +200,81 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 		pthread_cond_wait(&body->update, &body->lock);
 	}
 
+	_fio_release_floating(fio, 0);
+
 	fbr_body_UNLOCK(body);
+
+	return list;
 }
 
-static void
-_fio_iovec_expand(struct fbr_fio *fio)
+// TODO better understand what happens concurrent reads happen
+void
+fbr_fio_release_chunks(struct fbr_fio *fio, struct fbr_chunk_list *list, size_t offset_end)
 {
 	fbr_fio_ok(fio);
-	assert(fio->iovec_pos == fio->iovec_len);
-	assert(fio->iovec_len);
-	assert(fio->iovec_len < 1000 * 10);
+	fbr_file_ok(fio->file);
+	fbr_chunk_list_ok(fio->floating);
+	fbr_chunk_list_ok(list);
 
-	if (fio->iovec_len < FBR_BODY_SLAB_DEFAULT_CHUNKS) {
-		fio->iovec_len = FBR_BODY_SLAB_DEFAULT_CHUNKS;
+	fbr_body_LOCK(&fio->file->body);
+
+	for (size_t i = 0; i < list->length; i++) {
+		struct fbr_chunk *chunk = list->chunks[i];
+		fbr_chunk_ok(chunk);
+
+		list->chunks[i] = NULL;
+
+		size_t chunk_end = chunk->offset + chunk->length;
+
+		// chunk starts before offset_end and ends after
+		if (offset_end && chunk->offset < offset_end &&
+		    chunk_end > offset_end) {
+			assert_zero(chunk->fd_splice_ok);
+			assert_zero_dev(chunk->fd_spliced);
+
+			fio->floating = _fio_chunk_list_add(fio->floating, chunk);
+		} else {
+			fbr_chunk_release(chunk);
+		}
+	}
+
+	fbr_ZERO(list);
+	free(list);
+
+	fbr_body_UNLOCK(&fio->file->body);
+}
+
+static struct fuse_bufvec *
+_fio_bufvec_expand(struct fuse_bufvec *bufvec)
+{
+	if (!bufvec) {
+		bufvec = malloc(sizeof(*bufvec) +
+			(sizeof(*bufvec->buf) * FBR_BODY_DEFAULT_CHUNKS));
+		assert(bufvec);
+
+		bufvec->count = 1 + FBR_BODY_DEFAULT_CHUNKS;
+		bufvec->idx = 0;
+		bufvec->off = 0;
 	} else {
-		fio->iovec_len *= 2;
+		assert(bufvec->count);
+		assert(bufvec->count < FUSE_IOCTL_MAX_IOV);
+
+		bufvec->count *= 2;
+
+		bufvec = realloc(bufvec, sizeof(*bufvec) +
+			(sizeof(*bufvec->buf) * bufvec->count));
+		assert(bufvec);
+
+		bufvec->count++;
 	}
 
-	if (fio->iovec == fio->_iovec) {
-		fio->iovec = malloc(sizeof(*fio->iovec) * fio->iovec_len);
-		assert(fio->iovec);
-
-		memcpy(fio->iovec, fio->_iovec, sizeof(fio->_iovec));
-	} else {
-		fio->iovec = realloc(fio->iovec,
-			sizeof(*fio->iovec) * fio->iovec_len);
-		assert(fio->iovec);
-	}
-
-	assert_dev(fio->iovec_pos < fio->iovec_len);
+	return bufvec;
 }
 
-static struct iovec *
-_fio_iovec_get(struct fbr_fio *fio)
+static struct fuse_bufvec *
+_fio_bufvec_zero(struct fuse_bufvec *bufvec, size_t length)
 {
-	fbr_fio_ok(fio);
-
-	if (fio->iovec_pos == fio->iovec_len) {
-		_fio_iovec_expand(fio);
-	}
-	assert_dev(fio->iovec_pos < fio->iovec_len);
-
-	struct iovec *io = &fio->iovec[fio->iovec_pos];
-
-	return io;
-}
-
-static void
-_fio_iovec_zero(struct fbr_fio *fio, size_t length)
-{
-	fbr_fio_ok(fio);
+	assert(bufvec);
 
 	while (length) {
 		size_t zero_length = length;
@@ -293,26 +282,35 @@ _fio_iovec_zero(struct fbr_fio *fio, size_t length)
 			zero_length = sizeof(_ZERO_FILL);
 		}
 
-		struct iovec *iov = _fio_iovec_get(fio);
+		if (bufvec->idx == bufvec->count) {
+			bufvec = _fio_bufvec_expand(bufvec);
+		}
+		assert_dev(bufvec->idx < bufvec->count);
 
-		iov->iov_base = _ZERO_FILL;
-		iov->iov_len = zero_length;
+		struct fuse_buf *buf = &bufvec->buf[bufvec->idx];
+		bufvec->idx++;
 
-		fio->iovec_pos++;
+		fbr_ZERO(buf);
+
+		buf->mem = _ZERO_FILL;
+		buf->size = zero_length;
+
 		length -= zero_length;
 	}
+
+	return bufvec;
 }
 
 static struct fbr_chunk *
-_fio_find_next_chunk(struct fbr_fio *fio, size_t offset)
+_fio_find_next_chunk(struct fbr_chunk_list *list, size_t offset)
 {
-	fbr_fio_ok(fio);
+	fbr_chunk_list_ok(list);
 
 	struct fbr_chunk *closest = NULL;
 	size_t closest_distance = 0;
 
-	for (size_t i = 0; i < fio->chunks_pos; i++) {
-		struct fbr_chunk *chunk = fio->chunks[i];
+	for (size_t i = 0; i < list->length; i++) {
+		struct fbr_chunk *chunk = list->chunks[i];
 		fbr_chunk_ok(chunk);
 
 		// chunk is before or at offset
@@ -332,12 +330,12 @@ _fio_find_next_chunk(struct fbr_fio *fio, size_t offset)
 }
 
 static struct fbr_chunk *
-_fio_find_chunk(struct fbr_fio *fio, size_t offset)
+_fio_find_chunk(struct fbr_chunk_list *list, size_t offset)
 {
-	fbr_fio_ok(fio);
+	fbr_chunk_list_ok(list);
 
-	for (size_t i = 0; i < fio->chunks_pos; i++) {
-		struct fbr_chunk *chunk = fio->chunks[i];
+	for (size_t i = 0; i < list->length; i++) {
+		struct fbr_chunk *chunk = list->chunks[i];
 		fbr_chunk_ok(chunk);
 
 		size_t chunk_end = chunk->offset + chunk->length;
@@ -351,24 +349,23 @@ _fio_find_chunk(struct fbr_fio *fio, size_t offset)
 	return NULL;
 }
 
-void
-fbr_fio_iovec_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
+struct fuse_bufvec *
+fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *list, size_t offset, size_t size)
 {
 	fbr_fs_ok(fs);
-	fbr_fio_ok(fio);
-	assert(fio->iovec_len);
+	fbr_chunk_list_ok(list);
 
-	fio->iovec_pos = 0;
+	struct fuse_bufvec *bufvec = _fio_bufvec_expand(NULL);
 
 	size_t offset_end = offset + size;
 	size_t offset_pos = offset;
 
 	while (offset_pos < offset_end) {
-		struct fbr_chunk *chunk = _fio_find_chunk(fio, offset_pos);
+		struct fbr_chunk *chunk = _fio_find_chunk(list, offset_pos);
 
 		if (!chunk) {
 			// Fill with the zero page
-			chunk = _fio_find_next_chunk(fio, offset_pos);
+			chunk = _fio_find_next_chunk(list, offset_pos);
 
 			size_t zero_fill_length = offset_end - offset_pos;
 
@@ -378,7 +375,7 @@ fbr_fio_iovec_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 				zero_fill_length = chunk->offset - offset_pos;
 			}
 
-			_fio_iovec_zero(fio, zero_fill_length);
+			bufvec = _fio_bufvec_zero(bufvec, zero_fill_length);
 
 			offset_pos += zero_fill_length;
 
@@ -402,7 +399,7 @@ fbr_fio_iovec_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 			chunk_length = offset_end - offset_pos;
 		}
 
-		struct fbr_chunk *chunk_next = _fio_find_next_chunk(fio, offset_pos);
+		struct fbr_chunk *chunk_next = _fio_find_next_chunk(list, offset_pos);
 
 		if (chunk_next) {
 			fbr_chunk_ok(chunk_next);
@@ -414,13 +411,13 @@ fbr_fio_iovec_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 		}
 
 		// Can we merge into the last iovec?
-		if (chunk_offset && fio->iovec_pos) {
-			struct iovec *io_last = &fio->iovec[fio->iovec_pos - 1];
+		if (chunk_offset && bufvec->idx) {
+			struct fuse_buf *buf_last = &bufvec->buf[bufvec->idx - 1];
 
-			if (io_last->iov_base == chunk->data &&
-			    io_last->iov_len == chunk_offset) {
-				io_last->iov_len += chunk_length;
-				assert_dev(io_last->iov_len <= chunk->length);
+			if (buf_last->mem == chunk->data &&
+			    buf_last->size == chunk_offset) {
+				buf_last->size += chunk_length;
+				assert_dev(buf_last->size <= chunk->length);
 
 				offset_pos += chunk_length;
 
@@ -428,41 +425,51 @@ fbr_fio_iovec_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 			}
 		}
 
-		struct iovec *iov = _fio_iovec_get(fio);
+		if (bufvec->idx == bufvec->count) {
+			bufvec = _fio_bufvec_expand(bufvec);
+		}
+		assert_dev(bufvec->idx < bufvec->count);
 
-		iov->iov_base = chunk->data + chunk_offset;
-		iov->iov_len = chunk_length;
+		struct fuse_buf *buf = &bufvec->buf[bufvec->idx];
+		bufvec->idx++;
 
-		fio->iovec_pos++;
+		fbr_ZERO(buf);
+
+		buf->mem = chunk->data + chunk_offset;
+		buf->size = chunk_length;
+
 		offset_pos += chunk_length;
-
-		// TODO
-		assert(fio->iovec_pos <= FUSE_IOCTL_MAX_IOV);
 	}
+
+	bufvec->count = bufvec->idx;
+	bufvec->idx = 0;
 
 	assert_dev(offset_pos == offset_end);
 
 	if (fbr_assert_is_dev()) {
-		/*
-		for (size_t i = 0; i < fio->chunks_pos; i++) {
-			struct fbr_chunk *chunk = fio->chunks[i];
+		assert(fs->log);
+		///*
+		for (size_t i = 0; i < list->length; i++) {
+			struct fbr_chunk *chunk = list->chunks[i];
 			fbr_chunk_ok(chunk);
-			printf("ZZZ chunks[%zu].data = %p\n", i, (void*)chunk->data);
-			printf("ZZZ chunks[%zu].offset = %zu\n", i, chunk->offset);
-			printf("ZZZ chunks[%zu].length = %zu\n", i, chunk->length);
+			fs->log("ZZZ chunks[%zu].data = %p", i, (void*)chunk->data);
+			fs->log("ZZZ chunks[%zu].offset = %zu", i, chunk->offset);
+			fs->log("ZZZ chunks[%zu].length = %zu", i, chunk->length);
 		}
-		*/
+		//*/
 		size_t total_size = 0;
-		for (size_t i = 0; i < fio->iovec_pos; i++) {
-			struct iovec *iov = &fio->iovec[i];
-			/*
-			printf("ZZZ iovec[%zu].iov_base = %p\n", i, (void*)iov->iov_base);
-			printf("ZZZ iovec[%zu].iov_len = %zu\n", i, iov->iov_len);
-			*/
-			total_size += iov->iov_len;
+		for (size_t i = 0; i < bufvec->count; i++) {
+			struct fuse_buf *buf = &bufvec->buf[i];
+			///*
+			fs->log("ZZZ bufvec[%zu].mem = %p", i, (void*)buf->mem);
+			fs->log("ZZZ bufvec[%zu].size = %zu", i, buf->size);
+			//*/
+			total_size += buf->size;
 		}
 		assert(total_size == size);
 	}
+
+	return bufvec;
 }
 
 void
@@ -473,21 +480,14 @@ fbr_fio_free(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_file_ok(fio->file);
 
 	fbr_body_LOCK(&fio->file->body);
-
-	_fio_release_chunks(fio, 0);
-
+	_fio_release_floating(fio, 0);
 	fbr_body_UNLOCK(&fio->file->body);
+
+	assert_zero_dev(fio->floating->length);
+	free(fio->floating);
 
 	fbr_inode_release(fs, &fio->file);
 	assert_zero_dev(fio->file);
-
-	if (fio->chunks != fio->_chunks) {
-		free(fio->chunks);
-	}
-
-	if (fio->iovec != fio->_iovec) {
-		free(fio->iovec);
-	}
 
 	fbr_ZERO(fio);
 

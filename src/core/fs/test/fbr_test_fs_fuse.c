@@ -608,21 +608,24 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 		size = fio->file->size - off;
 	}
 
-	fbr_fio_pull_chunks(fs, fio, off, size);
+	struct fbr_chunk_list *chunks = fbr_fio_pull_chunks(fs, fio, off, size);
 
 	if (fio->error) {
 		fbr_fuse_reply_err(request, EIO);
 	} else {
-		fbr_fio_iovec_gen(fs, fio, off, size);
+		struct fuse_bufvec *bufvec = fbr_fio_bufvec_gen(fs, chunks, off, size);
 
 		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-			"** READ chunks: %zu io_vecs: %zu", fio->chunks_pos,
-			fio->iovec_pos);
+			"** READ chunks: %u bufvecs: %zu", chunks->length, bufvec->count);
 
-		fbr_fuse_reply_iov(request, fio->iovec, fio->iovec_pos);
+		fbr_fuse_reply_data(request, bufvec, FUSE_BUF_SPLICE_MOVE);
+
+		fbr_fio_release_chunks(fio, chunks, off + size);
+		fbr_ZERO(bufvec);
+		free(bufvec);
+
+		fbr_fs_stat_add_count(&fs->stats.read_bytes, size);
 	}
-
-	fbr_fs_stat_add_count(&fs->stats.read_bytes, size);
 }
 
 static void
