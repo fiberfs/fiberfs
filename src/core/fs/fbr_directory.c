@@ -247,9 +247,8 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 		fbr_path_get_file(&file->path, &filename);
 
 		struct fbr_file *new_file = NULL;
-		int file_expired = 0;
-		int file_changed = 0;
 		int file_deleted = 0;
+		int file_expired = 0;
 
 		if (new_directory) {
 			new_file = fbr_directory_find_file(new_directory, filename.name,
@@ -259,7 +258,7 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 				file_deleted = 1;
 			} else if (file->inode != new_file->inode) {
 				assert_dev(file->version != new_file->version);
-				file_changed = 1;
+				file_expired = 1;
 			}
 		} else {
 			assert_dev(fs->config.dentry_ttl <= 0);
@@ -274,7 +273,7 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 			ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
 				file->inode, filename.name, filename.len);
 			assert_dev(ret != -ENOSYS);
-		} else if (file_expired || file_changed) {
+		} else if (file_expired) {
 			fs->log("** FILE_EXP inode: %lu", file->inode);
 
 			ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,

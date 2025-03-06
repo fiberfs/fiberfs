@@ -23,8 +23,6 @@ fs_test_debug
 
 _fs_test_take_file $var1 
 
-# Drop and expire everything and get fresh inodes
-
 sleep_ms 100
 fs_test_stats
 fs_test_debug
@@ -34,6 +32,8 @@ equal $fs_test_stat_directories 1
 equal $fs_test_stat_directories_dindex 1
 equal $fs_test_stat_files_inodes 2
 
+# Drop and expire everything and get fresh inodes
+
 print "### TEST 2 (directory expired, new inodes)"
 
 fs_test_release_root 0
@@ -42,7 +42,7 @@ sleep_ms 100
 fs_test_stats
 fs_test_debug
 
-# Single saved inode
+# Single saved inode (and root)
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0
 equal $fs_test_stat_files 2
@@ -64,6 +64,16 @@ equal $fs_test_stat_files_inodes 3
 
 # The stale inode is forgotten after release
 _fs_test_release_file
+
+sleep_ms 100
+fs_test_stats
+fs_test_debug
+
+equal $fs_test_stat_directories 1
+equal $fs_test_stat_directories_dindex 1
+equal $fs_test_stat_files_inodes 2
+
+# Release everytihng
 fs_test_release_root
 
 sleep_ms 100
