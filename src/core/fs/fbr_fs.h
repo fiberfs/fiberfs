@@ -316,7 +316,8 @@ void fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 void fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	enum fbr_directory_state state);
 void fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory);
-struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const char *filename);
+struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
+	size_t filename_len);
 void fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_directory *new_directory);
 

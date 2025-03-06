@@ -178,7 +178,8 @@ fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 struct fbr_file *
-fbr_directory_find_file(struct fbr_directory *directory, const char *filename)
+fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
+    size_t filename_len)
 {
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
@@ -186,7 +187,7 @@ fbr_directory_find_file(struct fbr_directory *directory, const char *filename)
 
 	struct fbr_file find;
 	find.magic = FBR_FILE_MAGIC;
-	fbr_path_init_file(&find.path, filename, strlen(filename));
+	fbr_path_init_file(&find.path, filename, filename_len);
 
 	struct fbr_file *file = RB_FIND(fbr_filename_tree, &directory->filename_tree, &find);
 
@@ -238,8 +239,12 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	TAILQ_FOREACH(file, &directory->file_list, file_entry) {
 		fbr_file_ok(file);
 
+		if (!file->refcounts.inode) {
+			continue;
+		}
+
 		struct fbr_path_name filename;
-		const char *sfilename = fbr_path_get_file(&file->path, &filename);
+		fbr_path_get_file(&file->path, &filename);
 
 		struct fbr_file *new_file = NULL;
 		int file_expired = 0;
@@ -247,7 +252,8 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 		int file_deleted = 0;
 
 		if (new_directory) {
-			new_file = fbr_directory_find_file(new_directory, sfilename);
+			new_file = fbr_directory_find_file(new_directory, filename.name,
+				filename.len);
 
 			if (!new_file) {
 				file_deleted = 1;
@@ -263,10 +269,14 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 		int ret;
 
 		if (file_deleted) {
+			fs->log("** FILE_DELETE inode: %lu", file->inode);
+
 			ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
 				file->inode, filename.name, filename.len);
 			assert_dev(ret != -ENOSYS);
 		} else if (file_expired || file_changed) {
+			fs->log("** FILE_EXP inode: %lu", file->inode);
+
 			ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
 				directory->inode, filename.name, filename.len);
 			assert_dev(ret != -ENOSYS);

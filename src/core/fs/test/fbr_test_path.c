@@ -164,10 +164,10 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		assert(file2->parent_inode == inode);
 
-		struct fbr_file *f2 = fbr_directory_find_file(directory, name);
+		struct fbr_file *f2 = fbr_directory_find_file(directory, name, strlen(name));
 		assert(f2 == file);
 
-		f2 = fbr_directory_find_file(directory, name2);
+		f2 = fbr_directory_find_file(directory, name2, strlen(name2));
 		assert(f2 == file2);
 
 		// directory

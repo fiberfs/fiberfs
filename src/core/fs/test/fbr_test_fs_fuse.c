@@ -6,6 +6,7 @@
 
 #include <dirent.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -323,7 +324,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 		"** LOOKUP found directory: '%s' (inode: %lu)",
 		dirname, directory->inode);
 
-	struct fbr_file *file = fbr_directory_find_file(directory, name);
+	struct fbr_file *file = fbr_directory_find_file(directory, name, strlen(name));
 
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
