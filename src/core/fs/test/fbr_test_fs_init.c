@@ -43,6 +43,17 @@ static const struct fbr_fuse_callbacks _TEST_FS_INIT_CALLBACKS = {
 	.init = _test_fs_init
 };
 
+void __fbr_attr_printf(1)
+fbr_fs_test_logger(const char *fmt, ...)
+{
+	struct fbr_test_context *test_ctx = fbr_test_fuse_ctx();
+
+	va_list ap;
+	va_start(ap, fmt);
+	fbr_test_vlog(test_ctx, FBR_LOG_VERBOSE, fmt, ap);
+	va_end(ap);
+}
+
 void
 fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -55,6 +66,8 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
+
+	fs->log = fbr_fs_test_logger;
 
 	struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT);
 	fbr_directory_ok(root);

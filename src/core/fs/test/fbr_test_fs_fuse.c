@@ -228,24 +228,8 @@ _test_fs_chunk_gen(struct fbr_fs *fs, const struct fbr_file *file, struct fbr_ch
 	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, chunk->length);
 }
 
-static void
-_test_fs_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
-    struct fbr_directory *new_directory)
-{
-	fbr_fs_ok(fs);
-	fbr_directory_ok(directory);
-
-	const char *dirname = fbr_path_get_full(&directory->dirname, NULL);
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"** DIR_EXP inode: %lu path: '%s' new: %s", directory->inode, dirname,
-		new_directory ? "true" : "false");
-
-	fbr_directory_expire(fs, directory, new_directory);
-}
-
 static const struct fbr_store_callbacks _TEST_FS_STORE_CALLBACKS = {
-	.fetch_chunk_f = _test_fs_chunk_gen,
-	.directory_expire_f = _test_fs_directory_expire
+	.fetch_chunk_f = _test_fs_chunk_gen
 };
 
 static void
@@ -711,6 +695,12 @@ fbr_cmd_fs_test_fuse_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_ERROR(ret, "fs fuse mount failed: %s", cmd->params[0].value);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", cmd->params[0].value);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	struct fbr_fs *fs = fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	fs->log = fbr_fs_test_logger;
 }
 
 void

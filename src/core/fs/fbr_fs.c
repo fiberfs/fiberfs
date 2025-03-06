@@ -41,6 +41,7 @@ fbr_fs_alloc(void)
 	assert_dev(fs->dindex);
 
 	fs->store = &_STORE_CALLBACKS_EMPTY;
+	fs->log = fbr_fs_logger;
 
 	fbr_fs_ok(fs);
 

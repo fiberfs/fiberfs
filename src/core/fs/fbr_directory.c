@@ -81,7 +81,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 	fbr_directory_ok(directory);
 	fbr_file_ok(directory->file);
 
-	directory->stale = fbr_dindex_add(fs, directory);
+	fbr_dindex_add(fs, directory);
 
 	fbr_fs_stat_add(&fs->stats.directories);
 	fbr_fs_stat_add(&fs->stats.directories_total);
@@ -135,31 +135,27 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	assert(directory->state < FBR_DIRSTATE_OK);
 
-	directory->state = state;
-
-	assert_zero(pthread_cond_broadcast(&directory->update));
-
-	assert_zero(pthread_mutex_unlock(&directory->update_lock));
-
 	// TODO can we use stale if there is an error?
 
+	directory->state = state;
+
 	if (directory->stale) {
-		fbr_directory_ok(directory->stale);
-		assert_zero(directory->stale->stale);
-		assert_zero(directory->stale->expired);
+		struct fbr_directory *stale = directory->stale;
+		fbr_directory_ok(stale);
+		assert_zero(stale->stale);
+		assert_zero(stale->expired);
 
 		if (state == FBR_DIRSTATE_OK) {
-			assert_dev(fs->store);
-			if (fs->store->directory_expire_f) {
-				fs->store->directory_expire_f(fs, directory->stale, directory);
-			}
-
-			directory->stale->expired = 1;
+			fbr_directory_expire(fs, stale, directory);
 		}
 
 		fbr_dindex_release(fs, &directory->stale);
 		assert_zero_dev(directory->stale);
 	}
+
+	assert_zero(pthread_cond_broadcast(&directory->update));
+
+	assert_zero(pthread_mutex_unlock(&directory->update_lock));
 }
 
 void
@@ -203,4 +199,77 @@ fbr_directory_find_file(struct fbr_directory *directory, const char *filename)
 	// directory owns a reference
 
 	return file;
+}
+
+void
+fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_directory *new_directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+
+	if (new_directory) {
+		fbr_directory_ok(new_directory);
+		assert(new_directory->state == FBR_DIRSTATE_OK);
+	}
+
+	if (fs->shutdown || directory->expired || !fs->fuse_ctx) {
+		return;
+	}
+
+	fbr_fuse_context_ok(fs->fuse_ctx);
+	assert(fs->fuse_ctx->session);
+
+	// If we have a TTL, files can never be forced to expire
+	if (fs->config.dentry_ttl > 0 && !new_directory) {
+		return;
+	}
+
+	directory->expired = 1;
+
+	const char *dirname = fbr_path_get_full(&directory->dirname, NULL);
+	assert_dev(fs->log);
+	fs->log("** DIR_EXP inode: %lu path: '%s' new: %s", directory->inode, dirname,
+		new_directory ? "true" : "false");
+
+	struct fbr_file *file;
+
+	TAILQ_FOREACH(file, &directory->file_list, file_entry) {
+		fbr_file_ok(file);
+
+		struct fbr_path_name filename;
+		const char *sfilename = fbr_path_get_file(&file->path, &filename);
+
+		struct fbr_file *new_file = NULL;
+		int file_expired = 0;
+		int file_changed = 0;
+		int file_deleted = 0;
+
+		if (new_directory) {
+			new_file = fbr_directory_find_file(new_directory, sfilename);
+
+			if (!new_file) {
+				file_deleted = 1;
+			} else if (file->inode != new_file->inode) {
+				assert_dev(file->version != new_file->version);
+				file_changed = 1;
+			}
+		} else {
+			assert_dev(fs->config.dentry_ttl <= 0);
+			file_expired = 1;
+		}
+
+		int ret;
+
+		if (file_deleted) {
+			ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
+				file->inode, filename.name, filename.len);
+			assert_dev(ret != -ENOSYS);
+		} else if (file_expired || file_changed) {
+			ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
+				directory->inode, filename.name, filename.len);
+			assert_dev(ret != -ENOSYS);
+		}
+	}
 }

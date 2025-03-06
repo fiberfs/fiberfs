@@ -206,7 +206,7 @@ _dindex_get_dirhead(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	return dirhead;
 }
 
-struct fbr_directory *
+void
 fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
@@ -234,6 +234,8 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	if (existing) {
 		fbr_directory_ok(existing);
+		assert(existing->state >= FBR_DIRSTATE_OK);
+		assert_zero(existing->stale);
 		assert(existing->refcounts.fs);
 
 		assert(existing->refcounts.in_dindex);
@@ -243,9 +245,12 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 		_dindex_lru_remove(dindex, existing);
 		assert_zero_dev(existing->refcounts.in_lru);
 
-		// Caller takes a reference
+		// Directory takes a reference
 		existing->refcounts.fs++;
 		assert(existing->refcounts.fs);
+
+		assert_zero_dev(directory->stale);
+		directory->stale = existing;
 
 		fbr_fs_stat_add(&fs->stats.directory_refs);
 
@@ -257,8 +262,6 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	_dindex_lru_add(dindex, directory);
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
-
-	return existing;
 }
 
 struct fbr_directory *
@@ -382,11 +385,7 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
-	assert_dev(fs->store);
-	if (fs->store->directory_expire_f && !directory->expired && !fs->shutdown) {
-		fs->store->directory_expire_f(fs, directory, NULL);
-		directory->expired = 1;
-	}
+	fbr_directory_expire(fs, directory, NULL);
 
 	_dindex_directory_free(fs, directory);
 }

@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "fiberfs.h"
 #include "fbr_id.h"
 #include "fbr_path.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
@@ -28,6 +29,8 @@
 
 typedef unsigned long fbr_inode_t;
 typedef unsigned int fbr_refcount_t;
+
+typedef void __fbr_attr_printf(1) (fbr_log_f)(const char *fmt, ...);
 
 enum fbr_chunk_state {
 	FBR_CHUNK_NONE = 0,
@@ -244,6 +247,8 @@ struct fbr_fs {
 	struct fbr_fs_config			config;
 	struct fbr_fs_stats			stats;
 
+	fbr_log_f				*log;
+
 	unsigned int				shutdown:1;
 };
 
@@ -266,6 +271,7 @@ void fbr_fs_stat_add(unsigned long *stat);
 void fbr_fs_stat_sub_count(unsigned long *stat, unsigned long value);
 void fbr_fs_stat_sub(unsigned long *stat);
 double fbr_fs_dentry_ttl(struct fbr_fs *fs);
+void __fbr_attr_printf(1) fbr_fs_logger(const char *fmt, ...);
 
 fbr_id_t fbr_id_gen(void);
 size_t fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len);
@@ -311,9 +317,11 @@ void fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	enum fbr_directory_state state);
 void fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const char *filename);
+void fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
+	struct fbr_directory *new_directory);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
-struct fbr_directory *fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
+void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
 void fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max);

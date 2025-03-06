@@ -4,6 +4,8 @@
  *
  */
 
+#include <stdio.h>
+
 #include "fiberfs.h"
 #include "fbr_fs.h"
 
@@ -45,4 +47,13 @@ fbr_fs_dentry_ttl(struct fbr_fs *fs)
 	}
 
 	return fs->config.dentry_ttl;
+}
+
+void __fbr_attr_printf(1)
+fbr_fs_logger(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	(void)vprintf(fmt, ap);
+	va_end(ap);
 }
