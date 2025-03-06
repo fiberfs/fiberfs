@@ -85,10 +85,14 @@ _fio_release_chunks(struct fbr_fio *fio, size_t keep_offset)
 
 		if (keep_offset && chunk_end >= keep_offset) {
 			assert_dev(chunk->offset < keep_offset);
+			assert_zero(chunk->fd_splice_ok);
+			assert_zero_dev(chunk->fd_spliced);
+
 			if (i > keep_chunks) {
 				fio->chunks[keep_chunks] = chunk;
 				fio->chunks[i] = NULL;
 			}
+
 			keep_chunks++;
 		} else {
 			fbr_chunk_release(chunk);
@@ -118,6 +122,8 @@ _fio_chunk_add(struct fbr_fio *fio, struct fbr_chunk *chunk)
 	}
 
 	if (swap_last) {
+		assert_zero_dev(chunk->fd_splice_ok);
+		assert_zero_dev(chunk->fd_spliced);
 		return;
 	}
 
@@ -169,6 +175,7 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
     size_t size)
 {
 	fbr_fs_ok(fs);
+	assert_dev(fs->store);
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
@@ -195,7 +202,11 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 			_fio_chunk_add(fio, chunk);
 
 			if (chunk->state == FBR_CHUNK_EMPTY) {
-				assert_dev(fs->store);
+				// Chunk ends in offset, splicing is ok
+				if (chunk_end <= offset_end) {
+					chunk->fd_splice_ok = 1;
+				}
+
 				if (fs->store->fetch_chunk_f) {
 					fs->store->fetch_chunk_f(fs, fio->file, chunk);
 				}

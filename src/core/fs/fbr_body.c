@@ -132,10 +132,19 @@ _chunk_empty(struct fbr_chunk *chunk)
 	assert_zero(chunk->refcount);
 	assert(chunk->data);
 
-	free(chunk->data);
-	chunk->data = NULL;
+	if (chunk->fd_spliced) {
+		assert_dev(chunk->fd_splice_ok);
+		assert_zero_dev(chunk->data);
+	} else {
+		assert_dev(chunk->data);
+		free(chunk->data);
+	}
 
 	chunk->state = FBR_CHUNK_EMPTY;
+	chunk->fd_splice_ok = 0;
+	chunk->fd_spliced = 0;
+	chunk->data = NULL;
+	chunk->chttp = NULL;
 }
 
 void
@@ -153,7 +162,7 @@ fbr_chunk_release(struct fbr_chunk *chunk) {
 	assert(chunk->refcount);
 	chunk->refcount--;
 
-	if (chunk->refcount) {
+	if (chunk->refcount && !chunk->fd_spliced) {
 		return;
 	}
 

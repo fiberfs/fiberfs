@@ -207,8 +207,8 @@ _test_fs_chunk_gen(struct fbr_fs *fs, const struct fbr_file *file, struct fbr_ch
 	fbr_inode_release(fs, &parent_file);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"** FETCH chunk: offset: %zu length: %zu path: %s,%s",
-		chunk->offset, chunk->length, dirpath, filename);
+		"** FETCH chunk: offset: %zu length: %zu splice: %d path: %s,%s",
+		chunk->offset, chunk->length, chunk->fd_splice_ok, dirpath, filename);
 
 	chunk->data = malloc(chunk->length);
 	assert(chunk->data);
@@ -239,6 +239,9 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fuse_mounted(ctx);
 	fbr_fs_ok(ctx->fs);
 	assert(conn);
+
+	conn->want |= FUSE_CAP_SPLICE_WRITE;
+	conn->want |= FUSE_CAP_SPLICE_MOVE;
 
 	fbr_fs_set_store(ctx->fs, &_TEST_FS_STORE_CALLBACKS);
 
