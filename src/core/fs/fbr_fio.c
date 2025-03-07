@@ -55,34 +55,26 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	fio->floating = _fio_chunk_list_expand(NULL);
 	fbr_chunk_list_ok(fio->floating);
 
+	assert_zero(pthread_mutex_init(&fio->lock, NULL));
+
+	// Caller owns a ref
+	fio->refcount = 1;
+
 	return fio;
 }
 
-// TODO we dont need offset...
-static void
-_fio_release_floating(struct fbr_fio *fio, size_t offset)
+void
+fbr_fio_take(struct fbr_fio *fio)
 {
 	fbr_fio_ok(fio);
-	fbr_chunk_list_ok(fio->floating);
 
-	struct fbr_chunk_list *chunks = fio->floating;
-	size_t keep = 0;
+	assert_zero(pthread_mutex_lock(&fio->lock));
+	assert(fio->refcount);
 
-	for (size_t i = 0; i < chunks->length; i++) {
-		struct fbr_chunk *chunk = chunks->list[i];
-		fbr_chunk_ok(chunk);
+	fio->refcount++;
+	assert(fio->refcount);
 
-		size_t chunk_end = chunk->offset + chunk->length;
-
-		if (offset && chunk_end > offset) {
-			chunks->list[keep] = chunk;
-			keep++;
-		} else {
-			fbr_chunk_release(chunk);
-		}
-	}
-
-	chunks->length = keep;
+	assert_zero(pthread_mutex_unlock(&fio->lock));
 }
 
 static struct fbr_chunk_list *
@@ -100,6 +92,21 @@ _fio_chunk_list_add(struct fbr_chunk_list *chunks, struct fbr_chunk *chunk)
 	chunks->length++;
 
 	return chunks;
+}
+
+static int
+_fio_chunk_list_contains(struct fbr_chunk_list *chunks, struct fbr_chunk *chunk)
+{
+	fbr_chunk_list_ok(chunks);
+	fbr_chunk_ok(chunk);
+
+	for (size_t i = 0; i < chunks->length; i++) {
+		if (chunks->list[i] == chunk) {
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 static int
@@ -131,6 +138,8 @@ _fio_ready(struct fbr_chunk_list *chunks)
 		if (chunk->state != FBR_CHUNK_READY) {
 			return 0;
 		}
+
+		assert_dev(chunk->data);
 	}
 
 	return 1;
@@ -187,6 +196,8 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 				chunk->fd_splice_ok = 1;
 			}
 
+			assert_zero_dev(chunk->data);
+
 			if (fs->store->fetch_chunk_f) {
 				fs->store->fetch_chunk_f(fs, fio->file, chunk);
 			}
@@ -202,18 +213,43 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 		pthread_cond_wait(&body->update, &body->lock);
 	}
 
-	// TODO remove this
-	_fio_release_floating(fio, 0);
-
 	fbr_body_UNLOCK(body);
 
 	return chunks;
 }
 
-// TODO better understand what happens concurrent reads happen
-void
-fbr_fio_release_chunks(struct fbr_fio *fio, struct fbr_chunk_list *chunks, size_t offset_end)
+static void
+_fio_release_floating(struct fbr_fio *fio, size_t offset)
 {
+	fbr_fio_ok(fio);
+	fbr_chunk_list_ok(fio->floating);
+
+	struct fbr_chunk_list *chunks = fio->floating;
+	size_t keep = 0;
+
+	for (size_t i = 0; i < chunks->length; i++) {
+		struct fbr_chunk *chunk = chunks->list[i];
+		fbr_chunk_ok(chunk);
+		assert_dev(chunk->state == FBR_CHUNK_READY);
+
+		size_t chunk_end = chunk->offset + chunk->length;
+
+		if (offset && chunk_end > offset) {
+			chunks->list[keep] = chunk;
+			keep++;
+		} else {
+			fbr_chunk_release(chunk);
+		}
+	}
+
+	chunks->length = keep;
+}
+
+void
+fbr_fio_release_chunks(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_list *chunks,
+    size_t offset, size_t size)
+{
+	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 	fbr_chunk_list_ok(fio->floating);
@@ -221,17 +257,37 @@ fbr_fio_release_chunks(struct fbr_fio *fio, struct fbr_chunk_list *chunks, size_
 
 	fbr_body_LOCK(&fio->file->body);
 
+	size_t offset_end = offset + size;
+
+	// Try to keep more chunks around incase of slow parallel reads
+	size_t floating_end = offset;
+	size_t block_size = fbr_fs_block_size(offset) * 2;
+
+	if (floating_end > block_size) {
+		floating_end -= block_size;
+	} else {
+		floating_end = 1;
+	}
+
+	_fio_release_floating(fio, floating_end);
+
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
 
 		chunks->list[i] = NULL;
 
+		if (_fio_chunk_list_contains(fio->floating, chunk)) {
+			fbr_chunk_release(chunk);
+			continue;
+		}
+
 		size_t chunk_end = chunk->offset + chunk->length;
 
 		// chunk starts before offset_end and ends after
-		if (offset_end && chunk->offset < offset_end &&
-		    chunk_end > offset_end) {
+		if (offset_end && chunk_end > offset_end &&
+		    chunk->state == FBR_CHUNK_READY) {
+			assert(chunk->offset < offset_end);
 			assert_zero(chunk->fd_splice_ok);
 			assert_zero_dev(chunk->fd_spliced);
 
@@ -245,6 +301,19 @@ fbr_fio_release_chunks(struct fbr_fio *fio, struct fbr_chunk_list *chunks, size_
 	free(chunks);
 
 	fbr_body_UNLOCK(&fio->file->body);
+
+	if (fbr_assert_is_dev()) {
+		fbr_chunk_list_ok(fio->floating);
+		assert(fs->log);
+		///*
+		for (size_t i = 0; i < fio->floating->length; i++) {
+			struct fbr_chunk *chunk = fio->floating->list[i];
+			fbr_chunk_ok(chunk);
+			fs->log("ZZZ floating[%zu] data: %p off: %zu len: %zu", i,
+				(void*)chunk->data, chunk->offset, chunk->length);
+		}
+		//*/
+	}
 }
 
 static struct fuse_bufvec *
@@ -428,6 +497,9 @@ fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *chunks, size_t offs
 			}
 		}
 
+		assert_zero_dev(chunk->fd_spliced);
+		assert_dev(chunk->data);
+
 		if (bufvec->idx == bufvec->count) {
 			bufvec = _fio_bufvec_expand(bufvec);
 		}
@@ -440,6 +512,10 @@ fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *chunks, size_t offs
 
 		buf->mem = chunk->data + chunk_offset;
 		buf->size = chunk_length;
+
+		// Debugging
+		buf->pos = chunk_offset;
+		assert_zero_dev(buf->flags & FUSE_BUF_FD_SEEK);
 
 		offset_pos += chunk_length;
 	}
@@ -463,7 +539,8 @@ fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *chunks, size_t offs
 		for (size_t i = 0; i < bufvec->count; i++) {
 			struct fuse_buf *buf = &bufvec->buf[i];
 			///*
-			fs->log("ZZZ bufvec[%zu] mem: %p size: %zu", i, (void*)buf->mem,
+			fs->log("ZZZ bufvec[%zu] mem: %p offset: %zu size: %zu", i,
+				(void*)((char*)buf->mem - buf->pos), buf->pos,
 				buf->size);
 			//*/
 			total_size += buf->size;
@@ -475,11 +552,23 @@ fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *chunks, size_t offs
 }
 
 void
-fbr_fio_free(struct fbr_fs *fs, struct fbr_fio *fio)
+fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 {
 	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
+
+	assert_zero(pthread_mutex_lock(&fio->lock));
+
+	assert(fio->refcount);
+	fio->refcount--;
+
+	if (fio->refcount) {
+		assert_zero(pthread_mutex_unlock(&fio->lock));
+		return;
+	}
+
+	assert_zero(pthread_mutex_unlock(&fio->lock));
 
 	fbr_body_LOCK(&fio->file->body);
 	_fio_release_floating(fio, 0);
@@ -487,6 +576,8 @@ fbr_fio_free(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	assert_zero_dev(fio->floating->length);
 	free(fio->floating);
+
+	assert_zero(pthread_mutex_destroy(&fio->lock));
 
 	fbr_inode_release(fs, &fio->file);
 	assert_zero_dev(fio->file);

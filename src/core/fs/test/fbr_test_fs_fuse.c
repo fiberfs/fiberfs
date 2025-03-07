@@ -593,14 +593,16 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"READ ino: %lu size: %zu off: %ld flags: %d fh: %lu", ino, size, off, fi->flags,
+		"READ ino: %lu off: %ld size: %zu flags: %d fh: %lu", ino, off, size, fi->flags,
 		fi->fh);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
+	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
 
 	if ((size_t)off >= fio->file->size) {
 		fbr_fuse_reply_buf(request, NULL, 0);
+		fbr_fio_release(fs, fio);
 		return;
 	}
 
@@ -620,13 +622,15 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 
 		fbr_fuse_reply_data(request, bufvec, FUSE_BUF_SPLICE_MOVE);
 
-		// TODO this happens too late
-		fbr_fio_release_chunks(fio, chunks, off + size);
 		fbr_ZERO(bufvec);
 		free(bufvec);
 
 		fbr_fs_stat_add_count(&fs->stats.read_bytes, size);
 	}
+
+	fbr_fio_release_chunks(fs, fio, chunks, off, size);
+
+	fbr_fio_release(fs, fio);
 }
 
 static void
@@ -638,7 +642,7 @@ _test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 		ino, fi->flags, fi->fh);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
-	fbr_fio_free(fs, fio);
+	fbr_fio_release(fs, fio);
 
 	fbr_fuse_reply_err(request, 0);
 }

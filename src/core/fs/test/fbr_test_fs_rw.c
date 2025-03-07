@@ -102,7 +102,7 @@ _test_fs_rw_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t
 	(void)fs;
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"READ ino: %lu size: %zu off: %ld fh: %lu", ino, size, off, fi->fh);
+		"READ ino: %lu off: %ld size: %zu fh: %lu", ino, off, size, fi->fh);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_file_ok(fio->file);
@@ -120,7 +120,7 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
 	(void)fs;
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"WRITE ino: %lu size: %zu off: %ld fh: %lu", ino, size, off, fi->fh);
+		"WRITE ino: %lu off: %ld size: %zu fh: %lu", ino, off, size, fi->fh);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_file_ok(fio->file);
@@ -143,9 +143,12 @@ _test_fs_rw_write_buf(struct fbr_request *request, fuse_ino_t ino, struct fuse_b
 		"WRITE_BUF ino: %lu count: %zu off: %ld fh: %lu", ino, bufv->count, off, fi->fh);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
+	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
 
 	fbr_fuse_reply_err(request, EIO);
+
+	fbr_fio_release(fs, fio);
 
 	//fbr_fs_stat_add_count(&fs->stats.write_bytes, );
 }
@@ -171,7 +174,7 @@ _test_fs_rw_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_fil
 		ino, fi->fh);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
-	fbr_fio_free(fs, fio);
+	fbr_fio_release(fs, fio);
 
 	fbr_fuse_reply_err(request, 0);
 }

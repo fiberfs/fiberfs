@@ -57,3 +57,28 @@ fbr_fs_logger(const char *fmt, ...)
 	(void)vprintf(fmt, ap);
 	va_end(ap);
 }
+
+size_t
+fbr_fs_block_size(size_t offset)
+{
+	/*
+	 * offset range     block size
+	 *   0KB - 256KB  :   64KB
+	 * 256KB -   1MB  :  256KB
+	 *   1MB -   4MB  :  512KB
+	 *   4MB -  10MB  :    1MB
+	 *  10MB -     *  :    2MB
+	 */
+
+	if (offset <= 1024 * 256) {
+		return 1024 * 64;
+	} else if (offset <= 1024 * 1024) {
+		return 1024 * 256;
+	} else if (offset <= 1024 * 1024 * 4) {
+		return 1024 * 512;
+	} else if (offset <= 1024 * 1024 * 10) {
+		return 1024 * 1024;
+	}
+
+	return 1024 * 1024 * 2;
+}

@@ -124,6 +124,23 @@ fbr_body_UNLOCK(struct fbr_body *body)
 	assert_zero(pthread_mutex_unlock(&body->lock));
 }
 
+void
+fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_state state)
+{
+	assert(body);
+	fbr_chunk_ok(chunk);
+	assert(chunk->state == FBR_CHUNK_LOADING);
+	assert(state == FBR_CHUNK_EMPTY || state == FBR_CHUNK_READY);
+
+	fbr_body_LOCK(body);
+
+	chunk->state = state;
+
+	assert_zero(pthread_cond_broadcast(&body->update));
+
+	fbr_body_UNLOCK(body);
+}
+
 static void
 _chunk_empty(struct fbr_chunk *chunk)
 {
@@ -162,7 +179,8 @@ fbr_chunk_release(struct fbr_chunk *chunk) {
 	assert(chunk->refcount);
 	chunk->refcount--;
 
-	if (chunk->refcount && !chunk->fd_spliced) {
+	if (chunk->refcount) {
+		assert_zero(chunk->fd_spliced);
 		return;
 	}
 

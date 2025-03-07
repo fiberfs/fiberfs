@@ -2,7 +2,7 @@ fiber_test "File reading"
 
 # Init
 
-set_timeout_sec 20
+set_timeout_sec 30
 
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir

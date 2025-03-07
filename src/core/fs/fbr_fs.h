@@ -209,7 +209,11 @@ struct fbr_fio {
 	unsigned int				append:1;
 	unsigned int				truncate:1;
 
+	fbr_refcount_t				refcount;
+	pthread_mutex_t				lock;
+
 	struct fbr_file				*file;
+
 	struct fbr_chunk_list			*floating;
 };
 
@@ -276,6 +280,7 @@ void fbr_fs_stat_sub_count(unsigned long *stat, unsigned long value);
 void fbr_fs_stat_sub(unsigned long *stat);
 double fbr_fs_dentry_ttl(struct fbr_fs *fs);
 void __fbr_attr_printf(1) fbr_fs_logger(const char *fmt, ...);
+size_t fbr_fs_block_size(size_t offset);
 
 fbr_id_t fbr_id_gen(void);
 size_t fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len);
@@ -305,6 +310,8 @@ void fbr_body_init(struct fbr_body *body);
 void fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length);
 void fbr_body_LOCK(struct fbr_body *body);
 void fbr_body_UNLOCK(struct fbr_body *body);
+void fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk,
+	enum fbr_chunk_state state);
 void fbr_chunk_take(struct fbr_chunk *chunk);
 void fbr_chunk_release(struct fbr_chunk *chunk);
 void fbr_body_free(struct fbr_body *body);
@@ -340,13 +347,14 @@ void fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
 void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 
 struct fbr_fio *fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_fio_take(struct fbr_fio *fio);
 struct fbr_chunk_list *fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio,
 	size_t offset, size_t size);
-void fbr_fio_release_chunks(struct fbr_fio *fio, struct fbr_chunk_list *list,
-	size_t offset_end);
+void fbr_fio_release_chunks(struct fbr_fs *fs, struct fbr_fio *fio,
+	struct fbr_chunk_list *list, size_t offset, size_t size);
 struct fuse_bufvec *fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *list,
 	size_t offset, size_t size);
-void fbr_fio_free(struct fbr_fs *fs, struct fbr_fio *fio);
+void fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio);
 
 #define fbr_fs_ok(fs)						\
 {								\
