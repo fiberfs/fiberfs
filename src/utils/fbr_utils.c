@@ -26,3 +26,13 @@ fbr_sleep_ms(long ms)
 		errno = 0;
 	}
 }
+
+double
+fbr_get_time(void)
+{
+	struct timespec ts;
+
+        assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
+
+        return ts.tv_sec + ((double)ts.tv_nsec / (1000 * 1000 * 1000));
+}

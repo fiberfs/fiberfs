@@ -154,6 +154,7 @@ struct fbr_directory {
 	pthread_mutex_t				update_lock;
 	pthread_cond_t				update;
 
+	double					creation;
 	unsigned long				version;
 
 	// TODO we need creation date and insertion date

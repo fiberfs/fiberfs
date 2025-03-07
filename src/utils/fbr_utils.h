@@ -10,6 +10,7 @@
 #include <string.h>
 
 void fbr_sleep_ms(long ms);
+double fbr_get_time(void);
 
 #define fbr_ZERO(p)				\
 	explicit_bzero(p, sizeof(*(p)))

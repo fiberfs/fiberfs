@@ -223,6 +223,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	assert(directory->state == FBR_DIRSTATE_NONE);
 	directory->state = FBR_DIRSTATE_LOADING;
+	directory->creation = fbr_get_time();
 
 	// LRU owns this ref (fs owns root)
 	directory->refcounts.fs = 1;
@@ -234,8 +235,6 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	if (existing) {
 		fbr_directory_ok(existing);
-		assert(existing->state >= FBR_DIRSTATE_OK);
-		assert_zero(existing->stale);
 		assert(existing->refcounts.fs);
 
 		assert(existing->refcounts.in_dindex);
@@ -262,6 +261,11 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	_dindex_lru_add(dindex, directory);
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
+
+	if (existing) {
+		assert(existing->state >= FBR_DIRSTATE_OK);
+		assert_zero(existing->stale);
+	}
 }
 
 struct fbr_directory *
@@ -288,6 +292,9 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 
 	fbr_directory_ok(directory);
 	assert(directory->refcounts.fs);
+
+	// TODO DEBUGGING
+	assert_zero(fbr_directory_cmp(&find, directory));
 
 	directory->refcounts.fs++;
 	assert(directory->refcounts.fs);

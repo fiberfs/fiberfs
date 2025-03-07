@@ -46,8 +46,7 @@ _test_fs_rw_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_i
 	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"OPEN ino: %lu flags: %d fh: %lu direct: %d", ino, fi->flags, fi->fh,
-		fi->direct_io);
+		"OPEN ino: %lu flags: %d", ino, fi->flags);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -102,7 +101,7 @@ _test_fs_rw_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t
 	(void)fs;
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"READ ino: %lu off: %ld size: %zu fh: %lu", ino, off, size, fi->fh);
+		"READ ino: %lu off: %ld size: %zu", ino, off, size);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_file_ok(fio->file);
@@ -120,7 +119,7 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
 	(void)fs;
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"WRITE ino: %lu off: %ld size: %zu fh: %lu", ino, off, size, fi->fh);
+		"WRITE ino: %lu off: %ld size: %zu", ino, off, size);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_file_ok(fio->file);
@@ -140,7 +139,7 @@ _test_fs_rw_write_buf(struct fbr_request *request, fuse_ino_t ino, struct fuse_b
 	(void)fs;
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"WRITE_BUF ino: %lu count: %zu off: %ld fh: %lu", ino, bufv->count, off, fi->fh);
+		"WRITE_BUF ino: %lu count: %zu off: %ld", ino, bufv->count, off);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_take(fio);
@@ -158,9 +157,9 @@ _test_fs_rw_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 	(void)fs;
+	(void)fi;
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "FLUSH ino: %lu fh: %lu",
-		ino, fi->fh);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "FLUSH ino: %lu", ino);
 
 	fbr_fuse_reply_err(request, 0);
 }
@@ -170,8 +169,7 @@ _test_fs_rw_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_fil
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASE ino: %lu fh: %lu",
-		ino, fi->fh);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASE ino: %lu", ino);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_release(fs, fio);
@@ -185,9 +183,10 @@ _test_fs_rw_fsync(struct fbr_request *request, fuse_ino_t ino, int datasync,
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 	(void)fs;
+	(void)fi;
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "FSYNC ino: %lu datasync: %d fh: %lu",
-		ino, datasync, fi->fh);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "FSYNC ino: %lu datasync: %d",
+		ino, datasync);
 
 	fbr_fuse_reply_err(request, 0);
 }

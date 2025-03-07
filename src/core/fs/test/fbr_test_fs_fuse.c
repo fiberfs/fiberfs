@@ -37,8 +37,9 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_path_name dirname;
 	fbr_path_get_dir(&directory->dirname, &dirname);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** INIT directory: '%.*s':%zu",
-		(int)dirname.len, dirname.name, dirname.len);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
+		"** INIT inode: %lu directory: '%.*s':%zu",
+		directory->inode, (int)dirname.len, dirname.name, dirname.len);
 
 	size_t depth = 0;
 
@@ -393,7 +394,17 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname);
 	struct fbr_directory *stale_directory = NULL;
 
+	if (directory) {
+		// TODO DEBUGGING
+		struct fbr_path_name dirname2;
+		fbr_path_get_full(&directory->dirname, &dirname2);
+		assert_zero(fbr_path_name_cmp(&dirname, &dirname2));
+	}
+
 	if (directory && directory->inode != file->inode) {
+		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
+			"** OPENDIR inode: %lu mismatch dir_inode: %lu", file->inode,
+			directory->inode);
 		stale_directory = directory;
 		directory = NULL;
 	}
@@ -438,7 +449,7 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"READDIR ino: %lu size: %zu off: %ld fh: %lu", ino, size, off, fi->fh);
+		"READDIR ino: %lu size: %zu off: %ld", ino, size, off);
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 
@@ -535,8 +546,7 @@ fbr_test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino, struct 
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASEDIR ino: %lu fh: %lu",
-		ino, fi->fh);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASEDIR ino: %lu", ino);
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 
@@ -551,8 +561,7 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"OPEN ino: %lu flags: %d fh: %lu direct: %d", ino, fi->flags, fi->fh,
-		fi->direct_io);
+		"OPEN ino: %lu flags: %d", ino, fi->flags);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -593,8 +602,7 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"READ ino: %lu off: %ld size: %zu flags: %d fh: %lu", ino, off, size, fi->flags,
-		fi->fh);
+		"READ ino: %lu off: %ld size: %zu flags: %d", ino, off, size, fi->flags);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_take(fio);
@@ -638,8 +646,8 @@ _test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASE ino: %lu flags: %d fh: %lu",
-		ino, fi->flags, fi->fh);
+	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASE ino: %lu flags: %d",
+		ino, fi->flags);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_release(fs, fio);
@@ -722,6 +730,7 @@ fbr_cmd_fs_test_fuse_init_root(struct fbr_test_context *ctx, struct fbr_test_cmd
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_fuse_mounted(fuse_ctx);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
@@ -773,6 +782,7 @@ fbr_cmd_fs_test_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_fuse_mounted(fuse_ctx);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
