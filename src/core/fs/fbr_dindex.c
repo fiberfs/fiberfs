@@ -295,6 +295,9 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 
 	// TODO DEBUGGING
 	assert_zero(fbr_directory_cmp(&find, directory));
+	struct fbr_path_name dirname2;
+	fbr_path_get_dir(&directory->dirname, &dirname2);
+	assert_zero(fbr_path_name_cmp(dirname, &dirname2));
 
 	directory->refcounts.fs++;
 	assert(directory->refcounts.fs);
