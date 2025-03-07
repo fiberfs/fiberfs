@@ -620,6 +620,7 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 
 		fbr_fuse_reply_data(request, bufvec, FUSE_BUF_SPLICE_MOVE);
 
+		// TODO this happens too late
 		fbr_fio_release_chunks(fio, chunks, off + size);
 		fbr_ZERO(bufvec);
 		free(bufvec);

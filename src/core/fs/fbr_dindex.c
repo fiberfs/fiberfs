@@ -298,7 +298,12 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
-	// TODO block if directory state FBR_DIRSTATE_LOADING and wait?
+	assert(directory->state >= FBR_DIRSTATE_LOADING);
+	if (directory->state == FBR_DIRSTATE_LOADING) {
+		fbr_directory_wait_ok(fs, directory);
+	}
+
+	// TODO error...
 	assert(directory->state == FBR_DIRSTATE_OK);
 
 	return directory;

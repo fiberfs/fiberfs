@@ -78,8 +78,7 @@ struct fbr_chunk_list {
 	unsigned int				capacity;
 	unsigned int				length;
 
-	// TODO call these values?
-	struct fbr_chunk			*chunks[];
+	struct fbr_chunk			*list[];
 };
 
 struct fbr_body {
@@ -211,7 +210,6 @@ struct fbr_fio {
 	unsigned int				truncate:1;
 
 	struct fbr_file				*file;
-
 	struct fbr_chunk_list			*floating;
 };
 
