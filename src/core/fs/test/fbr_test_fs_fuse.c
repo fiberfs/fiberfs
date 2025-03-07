@@ -394,13 +394,6 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname);
 	struct fbr_directory *stale_directory = NULL;
 
-	if (directory) {
-		// TODO DEBUGGING
-		struct fbr_path_name dirname2;
-		fbr_path_get_full(&directory->dirname, &dirname2);
-		assert_zero(fbr_path_name_cmp(&dirname, &dirname2));
-	}
-
 	if (directory && directory->inode != file->inode) {
 		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
 			"** OPENDIR inode: %lu mismatch dir_inode: %lu", file->inode,

@@ -97,7 +97,7 @@ fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2
 	fbr_directory_ok(d1);
 	fbr_directory_ok(d2);
 
-	return fbr_path_cmp_dir(&d1->dirname, &d1->dirname);
+	return fbr_path_cmp_dir(&d1->dirname, &d2->dirname);
 }
 
 void
@@ -140,6 +140,7 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	// TODO can we use stale if there is an error?
 
 	directory->state = state;
+	directory->creation = fbr_get_time();
 
 	if (directory->stale) {
 		struct fbr_directory *stale = directory->stale;
@@ -234,19 +235,12 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_path_name dirname;
 	fbr_path_get_dir(&directory->dirname, &dirname);
 
-	struct fbr_path_name new_dirname;
-	if (new_directory) {
-		fbr_path_get_dir(&new_directory->dirname, &new_dirname);
-	} else {
-		fbr_path_name_init(&new_dirname, "(NULL)");
-	}
-
 	assert_dev(fs->log);
-	fs->log("** DIR_EXP inode: %lu path: '%.*s':%zu new_inode: %lu new_path: '%.*s':%zu",
+	fs->log("** DIR_EXP inode: %lu path: '%.*s':%zu new: %s new_inode: %lu",
 		directory->inode,
 		(int)dirname.len, dirname.name, dirname.len,
-		new_directory ? new_directory->inode : 0,
-		(int)new_dirname.len, new_dirname.name, new_dirname.len);
+		new_directory ? "true" : "false",
+		new_directory ? new_directory->inode : 0);
 
 	struct fbr_file *file;
 

@@ -2,9 +2,9 @@ fiber_test "Mount fs fuse and do external tests for 2 minutes"
 
 # Init
 
-skip
+skip_if_valgrind
 
-set_timeout_sec 140
+set_timeout_sec 30
 
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir
@@ -17,13 +17,15 @@ set_var1 "cd " $sys_tmpdir "; sleep 0.04; cat * */* */*/* >/dev/null 2>&1 &"
 set_var2 "cd " $sys_tmpdir "; sleep 0.02; cat * */* */*/* >/dev/null 2>&1 &"
 set_var3 "cd " $sys_tmpdir "; cat * */* */*/* >/dev/null 2>&1 || true"
 
-shell $var3
+shell $var1
+shell $var2
 
-sleep_ms 100
-
+# TODO this causes failure...
 #fs_test_release_root 0
 fs_test_stats
 fs_test_debug
+
+sleep_ms 1000
 
 print "### Done, doing cleanup"
 
