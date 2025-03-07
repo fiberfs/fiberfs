@@ -43,7 +43,7 @@ fiber:			$(TESTS_FIBER)
 
 fiberx:			$(TESTS_FIBERX)
 
-%.cht %.tst:		$(FIBERFS_TEST) FORCE
+%.cht %.tst %.tstm:	$(FIBERFS_TEST) FORCE
 			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
 
 %tstx:			$(FIBERFS_TEST) FORCE | sudo

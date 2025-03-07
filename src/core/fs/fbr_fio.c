@@ -172,7 +172,7 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 
 		// offset starts in chunk || offset ends in chunk
 		if ((offset >= chunk->offset && offset < chunk_end) ||
-		    (offset < chunk->offset && offset_end >= chunk->offset)) {
+		    (offset < chunk->offset && offset_end > chunk->offset)) {
 			fbr_chunk_take(chunk);
 			chunks = _fio_chunk_list_add(chunks, chunk);
 		} else if (chunk->offset > offset_end) {

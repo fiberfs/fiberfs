@@ -141,9 +141,12 @@ fbr_cmd_fs_test_release_root(struct fbr_test_context *ctx, struct fbr_test_cmd *
 		release_root_inode = 0;
 	}
 
-	fbr_fs_release_root(fs, release_root_inode);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root released %d", release_root_inode);
+	if (fs->root) {
+		fbr_fs_release_root(fs, release_root_inode);
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root released %d", release_root_inode);
+	} else {
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs release root skipped");
+	}
 }
 
 void
