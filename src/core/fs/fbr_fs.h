@@ -157,6 +157,7 @@ struct fbr_directory {
 	struct fbr_directory_refcounts		refcounts;
 	fbr_inode_t				inode;
 
+	pthread_mutex_t                         update_lock;
 	pthread_cond_t				update;
 
 	double					creation;
@@ -340,9 +341,6 @@ void fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_directory *new_directory);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
-struct fbr_dindex_dirhead *fbr_dindex_LOCK(struct fbr_fs *fs, struct fbr_directory *directory);
-void fbr_dindex_wait(struct fbr_dindex_dirhead *dirhead, pthread_cond_t *cond);
-void fbr_dindex_UNLOCK(struct fbr_dindex_dirhead *dirhead);
 void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	enum fbr_directory_flags flags);

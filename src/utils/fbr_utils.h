@@ -11,6 +11,8 @@
 
 void fbr_sleep_ms(long ms);
 double fbr_get_time(void);
+unsigned long fbr_safe_add(unsigned long *dest, unsigned long value);
+unsigned long fbr_safe_sub(unsigned long *dest, unsigned long value);
 
 #define fbr_ZERO(p)				\
 	explicit_bzero(p, sizeof(*(p)))
