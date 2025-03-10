@@ -65,7 +65,6 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 	directory->magic = FBR_DIRECTORY_MAGIC;
 	directory->inode = inode;
 
-	assert_zero(pthread_mutex_init(&directory->update_lock, NULL));
 	assert_zero(pthread_cond_init(&directory->update, NULL));
 	TAILQ_INIT(&directory->file_list);
 	RB_INIT(&directory->filename_tree);
@@ -133,7 +132,7 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	assert(state == FBR_DIRSTATE_OK || state == FBR_DIRSTATE_ERROR);
 
-	assert_zero(pthread_mutex_lock(&directory->update_lock));
+	struct fbr_dindex_dirhead *dirhead = fbr_dindex_LOCK(fs, directory);
 
 	fbr_directory_ok(directory);
 	assert(directory->state < FBR_DIRSTATE_OK);
@@ -143,23 +142,27 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	directory->state = state;
 	directory->creation = fbr_get_time();
 
-	if (directory->stale) {
-		struct fbr_directory *stale = directory->stale;
+	struct fbr_directory *stale = directory->stale;
+
+	if (stale) {
 		fbr_directory_ok(stale);
 		assert_zero(stale->stale);
 		assert_zero(stale->expired);
 
+		directory->stale = NULL;
+
 		if (state == FBR_DIRSTATE_OK) {
 			fbr_directory_expire(fs, stale, directory);
 		}
-
-		fbr_dindex_release(fs, &directory->stale);
-		assert_zero_dev(directory->stale);
 	}
 
 	assert_zero(pthread_cond_broadcast(&directory->update));
 
-	assert_zero(pthread_mutex_unlock(&directory->update_lock));
+	fbr_dindex_UNLOCK(dirhead);
+
+	if (stale) {
+		fbr_dindex_release(fs, &stale);
+	}
 }
 
 void
@@ -169,16 +172,16 @@ fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_directory_ok(directory);
 	assert(directory->state >= FBR_DIRSTATE_LOADING);
 
-	assert_zero(pthread_mutex_lock(&directory->update_lock));
+	struct fbr_dindex_dirhead *dirhead = fbr_dindex_LOCK(fs, directory);
 
 	while (directory->state < FBR_DIRSTATE_OK) {
-		pthread_cond_wait(&directory->update, &directory->update_lock);
+		fbr_dindex_wait(dirhead, &directory->update);
 	}
 
 	fbr_directory_ok(directory);
 	assert(directory->state >= FBR_DIRSTATE_OK);
 
-	assert_zero(pthread_mutex_unlock(&directory->update_lock));
+	fbr_dindex_UNLOCK(dirhead);
 }
 
 struct fbr_file *
@@ -213,6 +216,7 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
+	assert_zero(directory->stale);
 
 	if (new_directory) {
 		fbr_directory_ok(new_directory);
