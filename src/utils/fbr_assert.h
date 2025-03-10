@@ -36,6 +36,8 @@ void fbr_libunwind_backtrace(void);
 	}									\
 }
 
+// TODO special pthread assert
+
 #ifdef FBR_NO_ASSERT_DEV
 #define assert_dev(expr)							\
 	//assert_dev(expr)

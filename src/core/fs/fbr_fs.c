@@ -55,11 +55,13 @@ fbr_fs_set_root(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
 
-	// TODO eventually release an existing root
-	assert_zero(fs->root);
+	if (fs->root) {
+		fbr_directory_ok(fs->root);
+		fbr_dindex_release(fs, &fs->root);
+	}
+	assert_zero_dev(fs->root);
 
-	// TODO make sure this doesnt block (ie force getting stale)
-	fs->root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT);
+	fs->root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, FBR_DIRFLAGS_DONT_WAIT);
 	fbr_directory_ok(fs->root);
 }
 

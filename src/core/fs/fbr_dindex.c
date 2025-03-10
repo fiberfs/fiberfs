@@ -281,13 +281,15 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
 	if (existing) {
+		// TODO we must wait here otherwise we will allow too much concurrency
 		assert(existing->state >= FBR_DIRSTATE_OK);
 		assert_zero(existing->stale);
 	}
 }
 
 struct fbr_directory *
-fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
+fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname,
+    enum fbr_directory_flags flags)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 	assert(dirname);
@@ -300,6 +302,8 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 
 	assert_zero(pthread_mutex_lock(&dirhead->lock));
 	fbr_dindex_dirhead_ok(dirhead);
+
+	// TODO FBR_DIRFLAGS_STALE_OK
 
 	struct fbr_directory *directory = RB_FIND(fbr_dindex_tree, &dirhead->tree, &find);
 
@@ -319,6 +323,10 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 	_dindex_lru_move(fs, dindex, directory);
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
+
+	if (flags & FBR_DIRFLAGS_DONT_WAIT) {
+		return directory;
+	}
 
 	assert(directory->state >= FBR_DIRSTATE_LOADING);
 	if (directory->state == FBR_DIRSTATE_LOADING) {

@@ -22,6 +22,7 @@ struct fbr_directory *
 fbr_directory_root_alloc(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
+	// TODO
 	assert_zero(fs->root);
 
 	struct fbr_file *root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
@@ -42,6 +43,8 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 	fbr_directory_ok(root);
 	assert_dev(root->inode == FBR_INODE_ROOT);
 	assert_zero_dev(root->refcounts.in_lru);
+
+	fbr_fs_set_root(fs);
 
 	fbr_inode_release(fs, &root_file);
 	assert_zero_dev(root_file);
@@ -157,11 +160,6 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	assert_zero(pthread_cond_broadcast(&directory->update));
 
 	assert_zero(pthread_mutex_unlock(&directory->update_lock));
-
-	// TODO is this a good place for this?
-	if (directory->inode == FBR_INODE_ROOT) {
-		fbr_fs_set_root(fs);
-	}
 }
 
 void

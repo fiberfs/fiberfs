@@ -132,6 +132,12 @@ enum fbr_directory_state {
 	FBR_DIRSTATE_ERROR
 };
 
+enum fbr_directory_flags {
+	FBR_DIRFLAGS_NONE = 0,
+	FBR_DIRFLAGS_DONT_WAIT = (1 << 1),
+	FBR_DIRFLAGS_STALE_OK = (1 << 2)
+};
+
 struct fbr_directory_refcounts {
 	fbr_refcount_t				in_dindex:1;
 	fbr_refcount_t				in_lru:1;
@@ -151,6 +157,7 @@ struct fbr_directory {
 	struct fbr_directory_refcounts		refcounts;
 	fbr_inode_t				inode;
 
+	// TODO use dindex lock
 	pthread_mutex_t				update_lock;
 	pthread_cond_t				update;
 
@@ -335,7 +342,8 @@ void fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
 void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
-struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname);
+struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname,
+	enum fbr_directory_flags flags);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
 void fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max);
 void fbr_dindex_debug(struct fbr_fs *fs, fbr_dindex_debug_f *callback);
