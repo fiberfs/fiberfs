@@ -444,7 +444,9 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 
 	_dindex_UNLOCK(dirhead);
 
-	fbr_directory_expire(fs, directory, NULL);
+	if (directory->state == FBR_DIRSTATE_OK) {
+		fbr_directory_expire(fs, directory, NULL);
+	}
 
 	_dindex_directory_free(fs, directory);
 }

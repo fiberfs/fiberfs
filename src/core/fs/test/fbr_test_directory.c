@@ -38,12 +38,17 @@ _root_directory(void *arg)
 
 	while (fbr_get_time() - time_start < _TEST_DIR_MAX_TIME) {
 		unsigned long version = fbr_safe_add(&_TEST_DIR_COUNTER, 1);
+		int do_error = (random() % 10 == 0);
 
 		struct fbr_directory *root = fbr_directory_root_alloc(fs);
 
 		root->version = version;
 
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "thread_%lu: version %lu", id, version);
+		fbr_test_log(ctx, FBR_LOG_VERBOSE,
+			"thread_%lu: version %lu error: %d stale: %s stale_version: %lu",
+			id, version, do_error,
+			root->stale ? "true" : "false",
+			root->stale ? root->stale->version: 0);
 
 		char namebuf[128];
 		ssize_t ret = snprintf(namebuf, sizeof(namebuf), "file_%lu", version);
@@ -56,7 +61,12 @@ _root_directory(void *arg)
 
 		fbr_sleep_ms(random() % 50);
 
-		fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
+		if (do_error) {
+			fbr_directory_set_state(fs, root, FBR_DIRSTATE_ERROR);
+		} else {
+			fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
+		}
+
 		fbr_dindex_release(fs, &root);
 	}
 

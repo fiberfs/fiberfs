@@ -81,6 +81,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 	fbr_directory_ok(directory);
 	fbr_file_ok(directory->file);
 
+	// TODO are we inserting to early? We should reverse this and do a busyobj...?
 	fbr_dindex_add(fs, directory);
 
 	fbr_fs_stat_add(&fs->stats.directories);
@@ -130,8 +131,6 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	assert(state == FBR_DIRSTATE_OK || state == FBR_DIRSTATE_ERROR);
 
-	// TODO what to do if we have an error?
-
 	assert_zero(pthread_mutex_lock(&directory->update_lock));
 
 	fbr_directory_ok(directory);
@@ -151,6 +150,8 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 
 		if (state == FBR_DIRSTATE_OK) {
 			fbr_directory_expire(fs, stale, directory);
+		} else {
+			// TODO we expire the directory with no new version
 		}
 	}
 
