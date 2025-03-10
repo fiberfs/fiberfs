@@ -51,25 +51,29 @@ fbr_fs_alloc(void)
 }
 
 void
-fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root)
+fbr_fs_set_root(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
-	assert_zero(fs->root);
-	fbr_directory_ok(root);
 
-	fs->root = root;
+	// TODO eventually release an existing root
+	assert_zero(fs->root);
+
+	// TODO make sure this doesnt block (ie force getting stale)
+	fs->root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT);
+	fbr_directory_ok(fs->root);
 }
 
 void
 fbr_fs_release_root(struct fbr_fs *fs, int release_root_inode)
 {
 	fbr_fs_ok(fs);
-	fbr_directory_ok(fs->root);
 
 	fbr_dindex_lru_purge(fs, 0);
 
-	fbr_dindex_release(fs, &fs->root);
-	assert_zero_dev(fs->root);
+	if (fs->root) {
+		fbr_directory_ok(fs->root);
+		fbr_dindex_release(fs, &fs->root);
+	}
 
 	if (release_root_inode) {
 		fbr_inode_forget(fs, FBR_INODE_ROOT, 1);

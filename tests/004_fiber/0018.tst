@@ -1,4 +1,4 @@
-fiber_test "Mount fs fuse and do external tests for 2 minutes"
+fiber_test "Mount fs fuse and do external tests"
 
 # Init
 
@@ -20,8 +20,22 @@ set_var3 "cd " $sys_tmpdir "; cat * */* */*/* >/dev/null 2>&1 || true"
 shell $var1
 shell $var2
 
-# TODO this causes failure...
-#fs_test_release_root 0
+fs_test_release_root 0
+fs_test_stats
+fs_test_debug
+
+sleep_ms 2
+fs_test_release_root 0
+fs_test_stats
+fs_test_debug
+
+sleep_ms 3
+fs_test_release_root 0
+fs_test_stats
+fs_test_debug
+
+sleep_ms 5
+fs_test_release_root 0
 fs_test_stats
 fs_test_debug
 

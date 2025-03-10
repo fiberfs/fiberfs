@@ -56,6 +56,8 @@ fbr_fs_logger(const char *fmt, ...)
 	va_start(ap, fmt);
 	(void)vprintf(fmt, ap);
 	va_end(ap);
+
+	printf("\n");
 }
 
 size_t

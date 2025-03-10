@@ -16,6 +16,17 @@
 #include "test/fbr_test.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
+void __fbr_attr_printf(1)
+fbr_fs_test_logger(const char *fmt, ...)
+{
+	struct fbr_test_context *test_ctx = fbr_test_fuse_ctx();
+
+	va_list ap;
+	va_start(ap, fmt);
+	fbr_test_vlog(test_ctx, FBR_LOG_VERBOSE, fmt, ap);
+	va_end(ap);
+}
+
 static void
 _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
@@ -24,6 +35,8 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
+
+	fs->log = fbr_fs_test_logger;
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 
@@ -37,22 +50,13 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	(void)fbr_file_alloc(fs, root, &filename, fmode);
 
 	fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
+
+	fbr_dindex_release(fs, &root);
 }
 
 static const struct fbr_fuse_callbacks _TEST_FS_INIT_CALLBACKS = {
 	.init = _test_fs_init
 };
-
-void __fbr_attr_printf(1)
-fbr_fs_test_logger(const char *fmt, ...)
-{
-	struct fbr_test_context *test_ctx = fbr_test_fuse_ctx();
-
-	va_list ap;
-	va_start(ap, fmt);
-	fbr_test_vlog(test_ctx, FBR_LOG_VERBOSE, fmt, ap);
-	va_end(ap);
-}
 
 void
 fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
@@ -66,8 +70,6 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
-
-	fs->log = fbr_fs_test_logger;
 
 	struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT);
 	fbr_directory_ok(root);
@@ -142,12 +144,8 @@ fbr_cmd_fs_test_release_root(struct fbr_test_context *ctx, struct fbr_test_cmd *
 		release_root_inode = 0;
 	}
 
-	if (fs->root) {
-		fbr_fs_release_root(fs, release_root_inode);
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root released %d", release_root_inode);
-	} else {
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs release root skipped");
-	}
+	fbr_fs_release_root(fs, release_root_inode);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root released %d", release_root_inode);
 }
 
 void

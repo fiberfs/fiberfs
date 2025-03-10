@@ -270,7 +270,7 @@ typedef void (fbr_inodes_debug_f)(struct fbr_fs *fs, struct fbr_file *file);
 typedef void (fbr_dindex_debug_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 
 struct fbr_fs *fbr_fs_alloc(void);
-void fbr_fs_set_root(struct fbr_fs *fs, struct fbr_directory *root);
+void fbr_fs_set_root(struct fbr_fs *fs);
 void fbr_fs_release_root(struct fbr_fs *fs, int release_root_inode);
 void fbr_fs_set_store(struct fbr_fs *fs, const struct fbr_store_callbacks *store);
 void fbr_fs_free(struct fbr_fs *fs);

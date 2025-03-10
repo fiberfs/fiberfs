@@ -170,6 +170,8 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		f2 = fbr_directory_find_file(directory, name2, strlen(name2));
 		assert(f2 == file2);
 
+		fbr_dindex_release(fs, &directory);
+
 		// directory
 
 		directory = fbr_directory_alloc(fs, &dirname, inode_next);
@@ -190,6 +192,8 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+
+	fbr_dindex_release(fs, &directory);
 
 	struct fbr_path_name full;
 	fbr_path_name_init(&full, sfull);
@@ -218,10 +222,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		directory = fbr_dindex_take(fs, &dirname);
 		fbr_directory_ok(directory);
 
-		struct fbr_directory *directory_dindex = directory;
-
 		fbr_dindex_release(fs, &directory);
-		fbr_dindex_release(fs, &directory_dindex);
 
 		fbr_inode_forget(fs, inode, 2);
 

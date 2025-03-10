@@ -173,13 +173,14 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref)
 
 	struct fbr_file *file = *file_ref;
 	fbr_file_ok(file);
-	*file_ref = NULL;
 
 	struct fbr_inodes_head *head = _inodes_get_head(inodes, file);
 
 	assert_zero(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 	fbr_file_ok(file);
+
+	*file_ref = NULL;
 
 	fbr_file_release_inode_lock(fs, file);
 

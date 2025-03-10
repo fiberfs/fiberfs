@@ -43,8 +43,6 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 	assert_dev(root->inode == FBR_INODE_ROOT);
 	assert_zero_dev(root->refcounts.in_lru);
 
-	fbr_fs_set_root(fs, root);
-
 	fbr_inode_release(fs, &root_file);
 	assert_zero_dev(root_file);
 
@@ -159,6 +157,11 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	assert_zero(pthread_cond_broadcast(&directory->update));
 
 	assert_zero(pthread_mutex_unlock(&directory->update_lock));
+
+	// TODO is this a good place for this?
+	if (directory->inode == FBR_INODE_ROOT) {
+		fbr_fs_set_root(fs);
+	}
 }
 
 void
@@ -236,8 +239,12 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_path_get_dir(&directory->dirname, &dirname);
 
 	assert_dev(fs->log);
-	fs->log("** DIR_EXP inode: %lu path: '%.*s':%zu new: %s new_inode: %lu",
+	fs->log("** DIR_EXP inode: %lu refcount: %u+%u+%u path: '%.*s':%zu"
+			" new: %s new_inode: %lu",
 		directory->inode,
+		directory->refcounts.in_dindex,
+			directory->refcounts.in_lru,
+			directory->refcounts.fs,
 		(int)dirname.len, dirname.name, dirname.len,
 		new_directory ? "true" : "false",
 		new_directory ? new_directory->inode : 0);

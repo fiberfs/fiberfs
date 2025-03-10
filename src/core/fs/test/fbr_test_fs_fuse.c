@@ -165,7 +165,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 }
 
-static void
+static struct fbr_directory *
 _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_inode_t inode)
 {
 	fbr_fs_ok(fs);
@@ -173,7 +173,7 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 	assert(inode);
 
 	if (!_TEST_FS_DO_INIT) {
-		return;
+		return NULL;
 	}
 
 	struct fbr_directory *directory = NULL;
@@ -188,7 +188,11 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 		directory = fbr_directory_alloc(fs, dirname, inode);
 	}
 
+	assert(directory->state == FBR_DIRSTATE_LOADING);
+
 	_test_fs_init_contents(fs, directory);
+
+	return directory;
 }
 
 static void
@@ -302,13 +306,15 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	struct fbr_directory *stale_directory = NULL;
 
 	if (directory && directory->inode != parent_file->inode) {
+		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
+			"** LOOKUP parent: %lu mismatch dir_inode: %lu", parent_file->inode,
+			directory->inode);
 		stale_directory = directory;
 		directory = NULL;
 	}
 
 	if (!directory) {
-		_test_fs_init_directory(fs, &parent_dirname, parent_file->inode);
-		directory = fbr_dindex_take(fs, &parent_dirname);
+		directory = _test_fs_init_directory(fs, &parent_dirname, parent_file->inode);
 
 		if (!directory) {
 			fbr_fuse_reply_err(request, EIO);
@@ -403,8 +409,7 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	}
 
 	if (!directory) {
-		_test_fs_init_directory(fs, &dirname, file->inode);
-		directory = fbr_dindex_take(fs, &dirname);
+		directory = _test_fs_init_directory(fs, &dirname, file->inode);
 
 		if (!directory) {
 			fbr_fuse_reply_err(request, EIO);
@@ -727,8 +732,10 @@ fbr_cmd_fs_test_fuse_init_root(struct fbr_test_context *ctx, struct fbr_test_cmd
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
-	_test_fs_init_directory(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+	struct fbr_directory *root = _test_fs_init_directory(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
 	fbr_test_ASSERT(fs->root, "root doesnt exist");
+
+	fbr_dindex_release(fs, &root);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root initialized");
 }

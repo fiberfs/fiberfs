@@ -90,11 +90,13 @@ _dindex_fs_get(struct fbr_fs *fs)
 }
 
 static void
-_dindex_lru_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
+_dindex_lru_add(struct fbr_fs *fs, struct fbr_dindex *dindex, struct fbr_directory *directory)
 {
+	fbr_fs_ok(fs);
 	fbr_dindex_ok(dindex);
 	fbr_directory_ok(directory);
 	assert_zero(directory->refcounts.in_lru);
+	assert(directory->refcounts.fs);
 
 	if (directory->inode == FBR_INODE_ROOT) {
 		return;
@@ -106,6 +108,11 @@ _dindex_lru_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
 
 	directory->refcounts.in_lru = 1;
 
+	directory->refcounts.fs++;
+	assert(directory->refcounts.fs);
+
+	fbr_fs_stat_add(&fs->stats.directory_refs);
+
 	dindex->lru_len++;
 	assert(dindex->lru_len);
 
@@ -113,8 +120,9 @@ _dindex_lru_add(struct fbr_dindex *dindex, struct fbr_directory *directory)
 }
 
 static void
-_dindex_lru_move(struct fbr_dindex *dindex, struct fbr_directory *directory)
+_dindex_lru_move(struct fbr_fs *fs, struct fbr_dindex *dindex, struct fbr_directory *directory)
 {
+	fbr_fs_ok(fs);
 	fbr_dindex_ok(dindex);
 	fbr_directory_ok(directory);
 
@@ -134,8 +142,9 @@ _dindex_lru_move(struct fbr_dindex *dindex, struct fbr_directory *directory)
 }
 
 static void
-_dindex_lru_remove(struct fbr_dindex *dindex, struct fbr_directory *directory)
+_dindex_lru_remove(struct fbr_fs *fs, struct fbr_dindex *dindex, struct fbr_directory *directory)
 {
+	fbr_fs_ok(fs);
 	fbr_dindex_ok(dindex);
 	fbr_directory_ok(directory);
 
@@ -150,6 +159,11 @@ _dindex_lru_remove(struct fbr_dindex *dindex, struct fbr_directory *directory)
 
 	directory->refcounts.in_lru = 0;
 
+	assert(directory->refcounts.fs);
+	directory->refcounts.fs--;
+
+	fbr_fs_stat_sub(&fs->stats.directory_refs);
+
 	assert(dindex->lru_len);
 	dindex->lru_len--;
 
@@ -157,8 +171,9 @@ _dindex_lru_remove(struct fbr_dindex *dindex, struct fbr_directory *directory)
 }
 
 static struct fbr_directory *
-_dindex_lru_pop(struct fbr_dindex *dindex)
+_dindex_lru_pop(struct fbr_fs *fs, struct fbr_dindex *dindex)
 {
+	fbr_fs_ok(fs);
 	fbr_dindex_ok(dindex);
 
 	assert_zero(pthread_mutex_lock(&dindex->lru_lock));
@@ -174,6 +189,9 @@ _dindex_lru_pop(struct fbr_dindex *dindex)
 
 	TAILQ_REMOVE(&dindex->lru, directory, lru_entry);
 	directory->refcounts.in_lru = 0;
+
+	// We still own a reference but we dont own a proper lock here
+	assert(directory->refcounts.fs);
 
 	assert(dindex->lru_len);
 	dindex->lru_len--;
@@ -225,7 +243,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	directory->state = FBR_DIRSTATE_LOADING;
 	directory->creation = fbr_get_time();
 
-	// LRU owns this ref (fs owns root)
+	// Caller owns this ref
 	directory->refcounts.fs = 1;
 	directory->refcounts.in_dindex = 1;
 
@@ -241,7 +259,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, existing);
 		existing->refcounts.in_dindex = 0;
 
-		_dindex_lru_remove(dindex, existing);
+		_dindex_lru_remove(fs, dindex, existing);
 		assert_zero_dev(existing->refcounts.in_lru);
 
 		// Directory takes a reference
@@ -258,7 +276,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_fs_stat_add(&fs->stats.directories_dindex);
 	}
 
-	_dindex_lru_add(dindex, directory);
+	_dindex_lru_add(fs, dindex, directory);
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
@@ -296,9 +314,9 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname)
 	directory->refcounts.fs++;
 	assert(directory->refcounts.fs);
 
-	_dindex_lru_move(dindex, directory);
-
 	fbr_fs_stat_add(&fs->stats.directory_refs);
+
+	_dindex_lru_move(fs, dindex, directory);
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
 
@@ -364,13 +382,14 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 
 	struct fbr_directory *directory = *directory_ref;
 	fbr_directory_ok(directory);
-	*directory_ref = NULL;
 
 	struct fbr_dindex_dirhead *dirhead = _dindex_get_dirhead(dindex, directory);
 
 	assert_zero(pthread_mutex_lock(&dirhead->lock));
 	fbr_dindex_dirhead_ok(dirhead);
 	fbr_directory_ok(directory);
+
+	*directory_ref = NULL;
 
 	assert(directory->refcounts.fs);
 	directory->refcounts.fs--;
@@ -389,7 +408,6 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 		fbr_fs_stat_sub(&fs->stats.directories_dindex);
 	}
 
-	_dindex_lru_remove(dindex, directory);
 	assert_zero_dev(directory->refcounts.in_lru);
 
 	assert_zero(pthread_mutex_unlock(&dirhead->lock));
@@ -404,13 +422,13 @@ _dindex_lru_pop_release(struct fbr_fs *fs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 
-	struct fbr_directory *directory = _dindex_lru_pop(dindex);
+	struct fbr_directory *directory = _dindex_lru_pop(fs, dindex);
 
 	if (!directory) {
 		return;
 	}
 
-	// LRU owns a directory fs ref
+	// Release LRU reference
 	fbr_directory_ok(directory);
 
 	fbr_dindex_release(fs, &directory);
@@ -472,7 +490,7 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 			(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
 			directory->refcounts.in_dindex = 0;
 
-			_dindex_lru_remove(dindex, directory);
+			_dindex_lru_remove(fs, dindex, directory);
 
 			fbr_fs_stat_sub(&fs->stats.directories_dindex);
 

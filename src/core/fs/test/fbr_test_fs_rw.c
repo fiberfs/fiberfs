@@ -36,8 +36,10 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	// TODO
 	conn->want &= ~FUSE_CAP_SPLICE_READ;
 
-	struct fbr_directory *directory = fbr_directory_root_alloc(ctx->fs);
-	fbr_directory_set_state(ctx->fs, directory, FBR_DIRSTATE_OK);
+	struct fbr_directory *root = fbr_directory_root_alloc(ctx->fs);
+	fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
+
+	fbr_dindex_release(ctx->fs, &root);
 }
 
 static void
