@@ -13,13 +13,17 @@ fs_test_fuse_init_root
 
 print "### Test 1"
 
-set_var1 "cd " $sys_tmpdir "; sleep 0.04; cat * */* */*/* >/dev/null 2>&1 &"
-set_var2 "cd " $sys_tmpdir "; sleep 0.02; cat * */* */*/* >/dev/null 2>&1 &"
-set_var3 "cd " $sys_tmpdir "; cat * */* */*/* >/dev/null 2>&1 || true"
+set_var1 "cd " $sys_tmpdir "; (sleep 0.01; cat * */* */*/* >/dev/null 2>&1) &"
+set_var2 "cd " $sys_tmpdir "; (sleep 0.01; cat */* >/dev/null 2>&1) &"
+set_var3 "cd " $sys_tmpdir "; (sleep 0.01; cat */*/* >/dev/null 2>&1) &"
+set_var4 "cd " $sys_tmpdir "; (sleep 0.01; cat */*/* */* >/dev/null 2>&1) &"
 
 shell $var1
 shell $var2
+shell $var3
+shell $var4
 
+sleep_ms 12
 fs_test_release_root 0
 fs_test_stats
 fs_test_debug
