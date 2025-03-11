@@ -467,7 +467,9 @@ fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_dindex_dirhead *dirhead = _dindex_LOCK(fs, directory);
 
-	assert_zero(pthread_cond_wait(&directory->update, &dirhead->lock));
+	if (directory->state == FBR_DIRSTATE_LOADING) {
+		assert_zero(pthread_cond_wait(&directory->update, &dirhead->lock));
+	}
 
 	fbr_directory_ok(directory);
 	assert(directory->state >= FBR_DIRSTATE_OK);
