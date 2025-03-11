@@ -25,30 +25,33 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 
 	struct fbr_file *root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
 
-	assert_zero(pthread_mutex_lock(&fs->lock));
-
 	if (!root_file) {
-		// TODO mode needs to be configurable
-		root_file = fbr_file_alloc(fs, NULL, PATH_NAME_EMPTY, S_IFDIR | 0755);
-		fbr_file_ok(root_file);
-		assert_dev(root_file->inode == FBR_INODE_ROOT);
+		fbr_fs_LOCK(fs);
 
-		fbr_inode_add(fs, root_file);
+		root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
 
-		// Pull a hidden ref so this inode never disappears
-		(void)fbr_inode_take(fs, FBR_INODE_ROOT);
+		if (!root_file) {
+			assert_zero(fs->root_file);
+
+			// TODO mode needs to be configurable
+			root_file = fbr_file_alloc(fs, NULL, PATH_NAME_EMPTY, S_IFDIR | 0755);
+			fbr_file_ok(root_file);
+			assert_dev(root_file->inode == FBR_INODE_ROOT);
+
+			fbr_inode_add(fs, root_file);
+
+			fs->root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
+			fbr_file_ok(root_file);
+		}
+
+		fbr_fs_UNLOCK(fs);
 	}
-
-	assert_zero(pthread_mutex_unlock(&fs->lock));
 
 	struct fbr_directory *root = fbr_directory_alloc(fs, FBR_DIRNAME_ROOT, root_file->inode);
 	fbr_directory_ok(root);
 	assert_dev(root->inode == FBR_INODE_ROOT);
 	assert_zero_dev(root->refcounts.in_lru);
-
-	if (root->state == FBR_DIRSTATE_LOADING) {
-		fbr_fs_set_root(fs);
-	}
+	assert_dev(fs->root);
 
 	fbr_inode_release(fs, &root_file);
 	assert_zero_dev(root_file);

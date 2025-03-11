@@ -52,40 +52,37 @@ fbr_fs_alloc(void)
 	return fs;
 }
 
-// TODO can we do this internally in dindex
 void
-fbr_fs_set_root(struct fbr_fs *fs)
+fbr_fs_LOCK(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
-
 	assert_zero(pthread_mutex_lock(&fs->lock));
+}
 
-	if (fs->root) {
-		fbr_directory_ok(fs->root);
-		fbr_dindex_release(fs, &fs->root);
-	}
-	assert_zero_dev(fs->root);
-
-	fs->root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, FBR_DIRFLAGS_DONT_WAIT);
-	fbr_directory_ok(fs->root);
-
+void
+fbr_fs_UNLOCK(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
 	assert_zero(pthread_mutex_unlock(&fs->lock));
 }
 
 void
-fbr_fs_release_root(struct fbr_fs *fs, int release_root_inode)
+fbr_fs_release_all(struct fbr_fs *fs, int release_root_inode)
 {
 	fbr_fs_ok(fs);
 
 	fbr_dindex_lru_purge(fs, 0);
-
-	if (fs->root) {
-		fbr_directory_ok(fs->root);
-		fbr_dindex_release(fs, &fs->root);
-	}
+	fbr_dindex_release_root(fs);
 
 	if (release_root_inode) {
-		fbr_inode_forget(fs, FBR_INODE_ROOT, 1);
+		fbr_fs_LOCK(fs);
+
+		if (fs->root_file) {
+			fbr_inode_release(fs, &fs->root_file);
+		}
+		assert_zero_dev(fs->root_file);
+
+		fbr_fs_UNLOCK(fs);
 	}
 }
 
@@ -107,9 +104,7 @@ fbr_fs_free(struct fbr_fs *fs)
 
 	fs->shutdown = 1;
 
-	if (fs->root) {
-		fbr_fs_release_root(fs, 1);
-	}
+	fbr_fs_release_all(fs, 1);
 
 	fbr_dindex_free_all(fs);
 	fbr_inodes_free_all(fs);

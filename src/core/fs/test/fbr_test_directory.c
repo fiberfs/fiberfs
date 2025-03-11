@@ -110,7 +110,7 @@ fbr_cmd_fs_test_root_parallel(struct fbr_test_context *ctx,
 
 	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "root parallel threads exited");
 
-	fbr_fs_release_root(fs, 1);
+	fbr_fs_release_all(fs, 1);
 
 	fbr_fs_test_stats(fs);
 

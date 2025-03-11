@@ -106,6 +106,52 @@ _dindex_deref(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 static void
+_dindex_unset_root(struct fbr_fs *fs, int expire)
+{
+	fbr_fs_ok(fs);
+
+	struct fbr_directory *old_root = fs->root;
+	fbr_directory_ok(old_root);
+	assert_zero(old_root->refcounts.in_dindex);
+	assert_zero_dev(old_root->refcounts.in_lru);
+	assert(old_root->refcounts.fs);
+
+	_dindex_deref(fs, old_root);
+
+	if (!old_root->refcounts.fs) {
+		if (expire) {
+			assert_zero_dev(old_root->expired);
+			fbr_directory_expire(fs, old_root, NULL);
+		}
+
+		fbr_directory_free(fs, old_root);
+	}
+
+	fs->root = NULL;
+}
+
+static void
+_dindex_set_root(struct fbr_fs *fs, struct fbr_directory *root)
+{
+	fbr_fs_ok(fs);
+
+	if (fs->root) {
+		_dindex_unset_root(fs, 0);
+	}
+	assert_zero_dev(fs->root);
+
+	fbr_directory_ok(root);
+	assert_dev(root->inode == FBR_INODE_ROOT);
+	assert(root->refcounts.in_dindex);
+	assert_zero_dev(root->refcounts.in_lru);
+	assert(root->refcounts.fs);
+
+	_dindex_ref(fs, root);
+
+	fs->root = root;
+}
+
+static void
 _dindex_lru_add(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
@@ -114,6 +160,7 @@ _dindex_lru_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(directory->refcounts.fs);
 
 	if (directory->inode == FBR_INODE_ROOT) {
+		_dindex_set_root(fs, directory);
 		return;
 	}
 
@@ -449,11 +496,6 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	_dindex_UNLOCK(dirhead);
 
 	if (release_stale) {
-		// If this is a root inode, we need to require otherwise we immediately drop
-		if (stale->inode == FBR_INODE_ROOT) {
-			fbr_fs_set_root(fs);
-		}
-
 		fbr_dindex_release(fs, &stale);
 	}
 }
@@ -548,6 +590,34 @@ fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max)
 }
 
 void
+fbr_dindex_release_root(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
+
+	struct fbr_directory find;
+	find.magic = FBR_DIRECTORY_MAGIC;
+	fbr_path_init_dir(&find.dirname, FBR_DIRNAME_ROOT->name, FBR_DIRNAME_ROOT->len);
+
+	struct fbr_dindex_dirhead *dirhead = _dindex_LOCK(fs, &find);
+	struct fbr_directory *root = fs->root;
+
+	if (root) {
+		fbr_directory_ok(root);
+		assert(root->refcounts.in_dindex);
+		assert(root->refcounts.fs);
+
+		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, root);
+		root->refcounts.in_dindex = 0;
+
+		fbr_fs_stat_sub(&fs->stats.directories_dindex);
+
+		_dindex_unset_root(fs, 1);
+	}
+
+	_dindex_UNLOCK(dirhead);
+}
+
+void
 fbr_dindex_debug(struct fbr_fs *fs, fbr_dindex_debug_f *callback)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
@@ -576,6 +646,8 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 
+	fbr_dindex_release_root(fs);
+
 	for (size_t i = 0; i < _DINDEX_HEAD_COUNT; i++) {
 		struct fbr_dindex_dirhead *dirhead = &dindex->dirheads[i];
 		fbr_dindex_dirhead_ok(dirhead);
@@ -602,6 +674,8 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 
 		fbr_ZERO(dirhead);
 	}
+
+	assert_zero(fs->stats.directories_dindex);
 
 	assert(TAILQ_EMPTY(&dindex->lru));
 	assert_zero(dindex->lru_len);
