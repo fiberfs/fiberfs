@@ -27,8 +27,8 @@ fbr_test_convert(struct fbr_test_context *ctx)
 }
 
 void
-fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
-    const char *fmt, va_list ap)
+fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level, const char *fmt,
+    va_list ap)
 {
 	if (ctx) {
 		fbr_test_context_ok(ctx);
@@ -53,9 +53,19 @@ fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
 	printf("\n");
 }
 
+void __fbr_attr_printf(1)
+fbr_test_logs(const char *fmt, ...)
+{
+	struct fbr_test_context *ctx = fbr_test_get_ctx();
+
+	va_list ap;
+	va_start(ap, fmt);
+	fbr_test_vlog(ctx, FBR_LOG_VERBOSE, fmt, ap);
+	va_end(ap);
+}
+
 void __fbr_attr_printf(3)
-fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
-    const char *fmt, ...)
+fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);

@@ -25,6 +25,7 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 
 	struct fbr_file *root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
 
+	// TODO lock this?
 	if (!root_file) {
 		// TODO mode needs to be configurable
 		root_file = fbr_file_alloc(fs, NULL, PATH_NAME_EMPTY, S_IFDIR | 0755);
@@ -42,7 +43,9 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 	assert_dev(root->inode == FBR_INODE_ROOT);
 	assert_zero_dev(root->refcounts.in_lru);
 
-	fbr_fs_set_root(fs);
+	if (root->state == FBR_DIRSTATE_LOADING) {
+		fbr_fs_set_root(fs);
+	}
 
 	fbr_inode_release(fs, &root_file);
 	assert_zero_dev(root_file);
@@ -63,7 +66,6 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 	directory->magic = FBR_DIRECTORY_MAGIC;
 	directory->inode = inode;
 
-	assert_zero(pthread_mutex_init(&directory->update_lock, NULL));
 	assert_zero(pthread_cond_init(&directory->update, NULL));
 	TAILQ_INIT(&directory->file_list);
 	RB_INIT(&directory->filename_tree);
@@ -74,20 +76,84 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 		assert_dev(dirname->len);
 	}
 
-	// TODO what if we have directory->stale and its fresh?
-
-	directory->file = fbr_inode_take(fs, directory->inode);
-
 	fbr_directory_ok(directory);
-	fbr_file_ok(directory->file);
-
-	// TODO are we inserting to early? We should reverse this and do a busyobj...?
-	fbr_dindex_add(fs, directory);
 
 	fbr_fs_stat_add(&fs->stats.directories);
 	fbr_fs_stat_add(&fs->stats.directories_total);
 
+	while (1) {
+		struct fbr_directory *inserted = fbr_dindex_add(fs, directory);
+		fbr_directory_ok(inserted);
+
+		if (inserted == directory) {
+			assert(directory->state == FBR_DIRSTATE_LOADING);
+
+			directory->file = fbr_inode_take(fs, directory->inode);
+			fbr_file_ok(directory->file);
+
+			break;
+		}
+
+		if (inserted->state == FBR_DIRSTATE_LOADING) {
+			fbr_directory_wait_ok(fs, inserted);
+		}
+
+		if (inserted->state == FBR_DIRSTATE_OK) {
+			assert(directory->state == FBR_DIRSTATE_NONE);
+			fbr_directory_free(fs, directory);
+
+			return inserted;
+		}
+
+		assert_dev(inserted->state == FBR_DIRSTATE_ERROR);
+
+		fbr_dindex_release(fs, &inserted);
+	}
+
 	return directory;
+}
+
+void
+fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert_zero(directory->refcounts.in_dindex);
+	assert_zero(directory->refcounts.in_lru);
+
+	struct fbr_file *file, *temp;
+
+	TAILQ_FOREACH_SAFE(file, &directory->file_list, file_entry, temp) {
+		fbr_file_ok(file);
+
+		TAILQ_REMOVE(&directory->file_list, file, file_entry);
+
+		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file);
+
+		fbr_file_release_dindex(fs, &file);
+		assert_zero_dev(file);
+
+		directory->file_count--;
+	}
+
+	if (directory->file) {
+		fbr_inode_release(fs, &directory->file);
+		assert_zero_dev(directory->file);
+	}
+
+	assert(TAILQ_EMPTY(&directory->file_list));
+	assert(RB_EMPTY(&directory->filename_tree));
+	assert_zero(directory->file_count);
+
+	assert_zero(pthread_cond_destroy(&directory->update));
+
+	fbr_path_free(&directory->dirname);
+
+	fbr_ZERO(directory);
+
+	free(directory);
+
+	fbr_fs_stat_sub(&fs->stats.directories);
 }
 
 int
@@ -121,66 +187,6 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_ASSERT(!ret, "duplicate file added to directory");
 
 	directory->file_count++;
-}
-
-void
-fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
-    enum fbr_directory_state state)
-{
-	fbr_fs_ok(fs);
-	fbr_directory_ok(directory);
-	assert(state == FBR_DIRSTATE_OK || state == FBR_DIRSTATE_ERROR);
-
-	assert_zero(pthread_mutex_lock(&directory->update_lock));
-
-	fbr_directory_ok(directory);
-	assert(directory->state < FBR_DIRSTATE_OK);
-
-	directory->state = state;
-	directory->creation = fbr_get_time();
-
-	struct fbr_directory *stale = directory->stale;
-
-	if (stale) {
-		fbr_directory_ok(stale);
-		assert_zero(stale->stale);
-		assert_zero(stale->expired);
-
-		directory->stale = NULL;
-
-		if (state == FBR_DIRSTATE_OK) {
-			fbr_directory_expire(fs, stale, directory);
-		} else {
-			// TODO we expire the directory with no new version
-		}
-	}
-
-	assert_zero(pthread_cond_broadcast(&directory->update));
-
-	assert_zero(pthread_mutex_unlock(&directory->update_lock));
-
-	if (stale) {
-		fbr_dindex_release(fs, &stale);
-	}
-}
-
-void
-fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory)
-{
-	fbr_fs_ok(fs);
-	fbr_directory_ok(directory);
-	assert(directory->state >= FBR_DIRSTATE_LOADING);
-
-	assert_zero(pthread_mutex_lock(&directory->update_lock));
-
-	while (directory->state < FBR_DIRSTATE_OK) {
-		pthread_cond_wait(&directory->update, &directory->update_lock);
-	}
-
-	fbr_directory_ok(directory);
-	assert(directory->state >= FBR_DIRSTATE_OK);
-
-	assert_zero(pthread_mutex_unlock(&directory->update_lock));
 }
 
 struct fbr_file *

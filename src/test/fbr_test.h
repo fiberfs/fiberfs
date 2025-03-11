@@ -147,6 +147,7 @@ int fbr_test_is_forked(void);
 int fbr_test_is_thread(void);
 void fbr_test_force_error(void);
 void fbr_finish_ERROR(int cond, const char *msg);
+struct fbr_test_context *fbr_test_get_ctx(void);
 
 void fbr_test_cmds_init(struct fbr_test *test);
 struct fbr_test_cmdentry *fbr_test_cmds_get(struct fbr_test *test, const char *name);
@@ -165,6 +166,7 @@ struct fbr_test *fbr_test_convert(struct fbr_test_context *ctx);
 void fbr_test_skip(struct fbr_test_context *ctx);
 void fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
 	const char *fmt, va_list ap);
+void __fbr_attr_printf(1) fbr_test_logs(const char *fmt, ...);
 void __fbr_attr_printf(3) fbr_test_log(struct fbr_test_context *ctx,
 	enum fbr_test_verbocity level, const char *fmt, ...);
 void __fbr_attr_printf(2) fbr_test_warn(int condition, const char *fmt, ...);

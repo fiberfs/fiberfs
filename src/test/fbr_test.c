@@ -384,3 +384,11 @@ fbr_finish_ERROR(int cond, const char *msg)
 
 	_ERROR = 1;
 }
+
+struct fbr_test_context *
+fbr_test_get_ctx(void)
+{
+	fbr_test_ok(_TEST);
+	fbr_test_context_ok(_TEST->context);
+	return _TEST->context;
+}

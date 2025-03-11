@@ -37,8 +37,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_path_name dirname;
 	fbr_path_get_dir(&directory->dirname, &dirname);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"** INIT inode: %lu directory: '%.*s':%zu",
+	fbr_test_logs("** INIT inode: %lu directory: '%.*s':%zu",
 		directory->inode, (int)dirname.len, dirname.name, dirname.len);
 
 	size_t depth = 0;
@@ -188,9 +187,11 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 		directory = fbr_directory_alloc(fs, dirname, inode);
 	}
 
-	assert(directory->state == FBR_DIRSTATE_LOADING);
+	if (directory->state == FBR_DIRSTATE_LOADING) {
+		_test_fs_init_contents(fs, directory);
+	}
 
-	_test_fs_init_contents(fs, directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
 
 	return directory;
 }
@@ -211,8 +212,7 @@ _test_fs_chunk_gen(struct fbr_fs *fs, const struct fbr_file *file, struct fbr_ch
 
 	fbr_inode_release(fs, &parent_file);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"** FETCH chunk: offset: %zu length: %zu splice: %d path: %s,%s",
+	fbr_test_logs("** FETCH chunk: offset: %zu length: %zu splice: %d path: %s,%s",
 		chunk->offset, chunk->length, chunk->fd_splice_ok, dirpath, filename);
 
 	chunk->data = malloc(chunk->length);
@@ -259,7 +259,7 @@ fbr_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fus
 	struct fbr_fs *fs = fbr_request_fs(request);
 	(void)fi;
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "GETATTR ino: %lu", ino);
+	fbr_test_logs("GETATTR ino: %lu", ino);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -284,8 +284,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "LOOKUP parent: %lu name: %s",
-		parent, name);
+	fbr_test_logs("LOOKUP parent: %lu name: %s", parent, name);
 
 	struct fbr_file *parent_file = fbr_inode_take(fs, parent);
 
@@ -297,8 +296,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	struct fbr_path_name parent_dirname;
 	fbr_path_get_full(&parent_file->path, &parent_dirname);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"** LOOKUP found parent_file: '%.*s':%zu (inode: %lu)",
+	fbr_test_logs("** LOOKUP found parent_file: '%.*s':%zu (inode: %lu)",
 		(int)parent_dirname.len, parent_dirname.name, parent_dirname.len,
 		parent_file->inode);
 
@@ -306,8 +304,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	struct fbr_directory *stale_directory = NULL;
 
 	if (directory && directory->inode != parent_file->inode) {
-		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-			"** LOOKUP parent: %lu mismatch dir_inode: %lu", parent_file->inode,
+		fbr_test_logs("** LOOKUP parent: %lu mismatch dir_inode: %lu", parent_file->inode,
 			directory->inode);
 		stale_directory = directory;
 		directory = NULL;
@@ -330,8 +327,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	assert_zero_dev(parent_file);
 
 	const char *dirname = fbr_path_get_full(&directory->dirname, NULL);
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"** LOOKUP found directory: '%s' (inode: %lu)",
+	fbr_test_logs("** LOOKUP found directory: '%s' (inode: %lu)",
 		dirname, directory->inode);
 
 	struct fbr_file *file = fbr_directory_find_file(directory, name, strlen(name));
@@ -354,8 +350,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	assert(file->inode);
 
 	const char *filename = fbr_path_get_full(&file->path, NULL);
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"** LOOKUP found file: '%s' (inode: %lu)", filename, file->inode);
+	fbr_test_logs("** LOOKUP found file: '%s' (inode: %lu)", filename, file->inode);
 
 	struct fuse_entry_param entry;
 	fbr_ZERO(&entry);
@@ -382,7 +377,7 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "OPENDIR ino: %lu", ino);
+	fbr_test_logs("OPENDIR ino: %lu", ino);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -394,15 +389,14 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	struct fbr_path_name dirname;
 	fbr_path_get_full(&file->path, &dirname);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** OPENDIR directory: '%.*s':%zu",
+	fbr_test_logs("** OPENDIR directory: '%.*s':%zu",
 		(int)dirname.len, dirname.name, dirname.len);
 
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, FBR_DIRFLAGS_NONE);
 	struct fbr_directory *stale_directory = NULL;
 
 	if (directory && directory->inode != file->inode) {
-		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-			"** OPENDIR inode: %lu mismatch dir_inode: %lu", file->inode,
+		fbr_test_logs("** OPENDIR inode: %lu mismatch dir_inode: %lu", file->inode,
 			directory->inode);
 		stale_directory = directory;
 		directory = NULL;
@@ -446,13 +440,12 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"READDIR ino: %lu size: %zu off: %ld", ino, size, off);
+	fbr_test_logs("READDIR ino: %lu size: %zu off: %ld", ino, size, off);
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 
 	if (reader->end) {
-		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE, "READDIR return: end");
+		fbr_test_logs("READDIR return: end");
 		fbr_fuse_reply_buf(request, NULL, 0);
 		return;
 	}
@@ -502,8 +495,7 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 	}
 
 	if (dbuf.full) {
-		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE, "READDIR return: %zu",
-			dbuf.pos);
+		fbr_test_logs("READDIR return: %zu", dbuf.pos);
 		fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
 		return;
 	}
@@ -515,8 +507,7 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 
 		const char *filename = fbr_path_get_file(&file->path, NULL);
 
-		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE,
-			"READDIR filename: '%s' inode: %lu", filename, file->inode);
+		fbr_test_logs("READDIR filename: '%s' inode: %lu", filename, file->inode);
 
 		struct stat st;
 		fbr_file_attr(file, &st);
@@ -526,8 +517,7 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 		reader->position = file;
 
 		if (dbuf.full) {
-			fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE,
-				"READDIR return: %zu", dbuf.pos);
+			fbr_test_logs("READDIR return: %zu", dbuf.pos);
 			fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
 			return;
 		}
@@ -535,7 +525,7 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 
 	reader->end = 1;
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERY_VERBOSE, "READDIR return: %zu", dbuf.pos);
+	fbr_test_logs("READDIR return: %zu", dbuf.pos);
 	fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
 }
 
@@ -544,7 +534,7 @@ fbr_test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino, struct 
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASEDIR ino: %lu", ino);
+	fbr_test_logs("RELEASEDIR ino: %lu", ino);
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 
@@ -558,8 +548,7 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"OPEN ino: %lu flags: %d", ino, fi->flags);
+	fbr_test_logs("OPEN ino: %lu flags: %d", ino, fi->flags);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -576,7 +565,7 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 		fbr_inode_release(fs, &file);
 		assert_zero_dev(file);
 
-		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "** OPEN detected write");
+		fbr_test_logs("** OPEN detected write");
 
 		fbr_fuse_reply_err(request, EROFS);
 		return;
@@ -599,8 +588,7 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"READ ino: %lu off: %ld size: %zu flags: %d", ino, off, size, fi->flags);
+	fbr_test_logs("READ ino: %lu off: %ld size: %zu flags: %d", ino, off, size, fi->flags);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_take(fio);
@@ -623,8 +611,7 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 	} else {
 		struct fuse_bufvec *bufvec = fbr_fio_bufvec_gen(fs, chunks, off, size);
 
-		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-			"** READ chunks: %u bufvecs: %zu", chunks->length, bufvec->count);
+		fbr_test_logs("** READ chunks: %u bufvecs: %zu", chunks->length, bufvec->count);
 
 		fbr_fuse_reply_data(request, bufvec, FUSE_BUF_SPLICE_MOVE);
 
@@ -644,8 +631,7 @@ _test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "RELEASE ino: %lu flags: %d",
-		ino, fi->flags);
+	fbr_test_logs("RELEASE ino: %lu flags: %d", ino, fi->flags);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_release(fs, fio);
@@ -658,8 +644,7 @@ fbr_test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nl
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "FORGET ino: %lu nlookup: %lu",
-		ino, nlookup);
+	fbr_test_logs("FORGET ino: %lu nlookup: %lu", ino, nlookup);
 
 	fbr_inode_forget(fs, ino, nlookup);
 
@@ -672,11 +657,10 @@ fbr_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE, "FORGET_MULTI count: %zu", count);
+	fbr_test_logs("FORGET_MULTI count: %zu", count);
 
 	for (size_t i = 0; i < count; i++) {
-		fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-			"FORGET_MULTI ino: %lu nlookup: %lu",
+		fbr_test_logs("FORGET_MULTI ino: %lu nlookup: %lu",
 			forgets[i].ino, forgets[i].nlookup);
 
 		fbr_inode_forget(fs, forgets[i].ino, forgets[i].nlookup);
@@ -748,8 +732,7 @@ _test_fs_inodes_debug(struct fbr_fs *fs, struct fbr_file *file)
 
 	const char *fullname = fbr_path_get_full(&file->path, NULL);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"INODES debug: inode: %lu type: %s parent: %lu refcount: %u+%u path: %s",
+	fbr_test_logs("INODES debug: inode: %lu type: %s parent: %lu refcount: %u+%u path: %s",
 		file->inode,
 		fbr_file_is_dir(file) ? "dir" : fbr_file_is_file(file) ? "file" : "other",
 		file->parent_inode,
@@ -765,8 +748,7 @@ _test_fs_dindex_debug(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	const char *fullname = fbr_path_get_full(&directory->dirname, NULL);
 
-	fbr_test_log(fbr_test_fuse_ctx(), FBR_LOG_VERBOSE,
-		"DINDEX debug: inode: %lu refcount: %u+%u+%u files: %zu path: '%s'",
+	fbr_test_logs("DINDEX debug: inode: %lu refcount: %u+%u+%u files: %zu path: '%s'",
 		directory->inode,
 		directory->refcounts.in_dindex,
 			directory->refcounts.in_lru,

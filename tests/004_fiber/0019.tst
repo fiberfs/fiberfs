@@ -1,3 +1,3 @@
 fiber_test "Root directory test"
 
-fs_test_root_directory
+fs_test_root_parallel

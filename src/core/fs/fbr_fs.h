@@ -157,7 +157,6 @@ struct fbr_directory {
 	struct fbr_directory_refcounts		refcounts;
 	fbr_inode_t				inode;
 
-	pthread_mutex_t                         update_lock;
 	pthread_cond_t				update;
 
 	double					creation;
@@ -245,6 +244,7 @@ struct fbr_fs_stats {
 
 struct fbr_fs_config {
 	double					dentry_ttl;
+	double					dindex_fresh_ttl;
 };
 
 struct fbr_fs {
@@ -329,19 +329,20 @@ RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	fbr_inode_t inode);
+void fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
 void fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);
-void fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
-	enum fbr_directory_state state);
-void fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
 	size_t filename_len);
 void fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_directory *new_directory);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
-void fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
+void fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
+	enum fbr_directory_state state);
+void fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory);
+struct fbr_directory *fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	enum fbr_directory_flags flags);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);

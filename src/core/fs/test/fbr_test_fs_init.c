@@ -19,7 +19,7 @@
 void __fbr_attr_printf(1)
 fbr_fs_test_logger(const char *fmt, ...)
 {
-	struct fbr_test_context *test_ctx = fbr_test_fuse_ctx();
+	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 
 	va_list ap;
 	va_start(ap, fmt);
@@ -39,6 +39,9 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fs->log = fbr_fs_test_logger;
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
+
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_LOADING);
 
 	struct fbr_path_name filename;
 	mode_t fmode = S_IFREG | 0444;
@@ -149,13 +152,12 @@ fbr_cmd_fs_test_release_root(struct fbr_test_context *ctx, struct fbr_test_cmd *
 }
 
 void
-fbr_fs_test_stats(struct fbr_test_context *ctx, struct fbr_fs *fs)
+fbr_fs_test_stats(struct fbr_fs *fs)
 {
-	fbr_test_context_ok(ctx);
 	fbr_fs_ok(fs);
 
 #define _FS_TEST_STAT_PRINT(name)	\
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs.stats." #name ": %lu", fs->stats.name)
+	fbr_test_logs("fs.stats." #name ": %lu", fs->stats.name)
 
 	_FS_TEST_STAT_PRINT(directories);
 	_FS_TEST_STAT_PRINT(directories_dindex);
@@ -182,7 +184,7 @@ fbr_cmd_fs_test_stats(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
-	fbr_fs_test_stats(ctx, fs);
+	fbr_fs_test_stats(fs);
 }
 
 #define _FS_TEST_STAT(name)							\

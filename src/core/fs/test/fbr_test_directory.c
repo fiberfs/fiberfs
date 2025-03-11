@@ -16,36 +16,34 @@
 unsigned long _TEST_DIR_THREAD;
 unsigned long _TEST_DIR_COUNTER;
 
-struct _test_dir_holder {
-	struct fbr_test_context		*ctx;
-	struct fbr_fs			*fs;
-};
-
 static void *
-_root_directory(void *arg)
+_root_parallel(void *arg)
 {
-	struct _test_dir_holder *holder = (struct _test_dir_holder*)arg;
-	struct fbr_test_context *ctx = holder->ctx;
-	fbr_test_context_ok(ctx);
-	struct fbr_fs *fs = holder->fs;
+	struct fbr_fs *fs = (struct fbr_fs*)arg;
 	fbr_fs_ok(fs);
 
 	unsigned long id = fbr_safe_add(&_TEST_DIR_THREAD, 1);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "root thread_%lu: started", id);
+	fbr_test_logs("root thread_%lu: started", id);
 
 	double time_start = fbr_get_time();
 
 	while (fbr_get_time() - time_start < _TEST_DIR_MAX_TIME) {
+		struct fbr_directory *root = fbr_directory_root_alloc(fs);
+
+		if (root->state == FBR_DIRSTATE_OK) {
+			fbr_dindex_release(fs, &root);
+			continue;
+		}
+
 		unsigned long version = fbr_safe_add(&_TEST_DIR_COUNTER, 1);
 		int do_error = (random() % 10 == 0);
 
-		struct fbr_directory *root = fbr_directory_root_alloc(fs);
+		assert(root->state == FBR_DIRSTATE_LOADING);
 
 		root->version = version;
 
-		fbr_test_log(ctx, FBR_LOG_VERBOSE,
-			"thread_%lu: version %lu error: %d stale: %s stale_version: %lu",
+		fbr_test_logs("thread_%lu: version %lu error: %d stale: %s stale_version: %lu",
 			id, version, do_error,
 			root->stale ? "true" : "false",
 			root->stale ? root->stale->version: 0);
@@ -67,6 +65,8 @@ _root_directory(void *arg)
 			fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
 		}
 
+		fbr_sleep_ms(1);
+
 		fbr_dindex_release(fs, &root);
 	}
 
@@ -74,7 +74,7 @@ _root_directory(void *arg)
 }
 
 void
-fbr_cmd_fs_test_root_directory(struct fbr_test_context *ctx,
+fbr_cmd_fs_test_root_parallel(struct fbr_test_context *ctx,
     struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
@@ -85,15 +85,18 @@ fbr_cmd_fs_test_root_directory(struct fbr_test_context *ctx,
 	struct fbr_fs *fs = fbr_fs_alloc();
 	fbr_fs_ok(fs);
 
+	fs->log = fbr_fs_test_logger;
+
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_test_ASSERT(fs->root, "fs->root is missing");
 
-	struct _test_dir_holder holder = {ctx, fs};
 	pthread_t threads[_TEST_DIR_THREADS];
 
 	for (size_t i = 0; i < _TEST_DIR_THREADS; i++) {
-		assert_zero(pthread_create(&threads[i], NULL, _root_directory, &holder));
+		assert_zero(pthread_create(&threads[i], NULL, _root_parallel, fs));
 	}
+
+	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "setting state...");
 
 	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
 	fbr_dindex_release(fs, &root);
@@ -102,11 +105,11 @@ fbr_cmd_fs_test_root_directory(struct fbr_test_context *ctx,
 		assert_zero(pthread_join(threads[i], NULL));
 	}
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "dir test threads done");
+	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "root parallel threads exited");
 
 	fbr_fs_release_root(fs, 1);
 
-	fbr_fs_test_stats(ctx, fs);
+	fbr_fs_test_stats(fs);
 
 	fbr_test_ERROR(fs->stats.directories, "non zero");
 	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
@@ -117,5 +120,5 @@ fbr_cmd_fs_test_root_directory(struct fbr_test_context *ctx,
 
 	fbr_fs_free(fs);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "dir test done");
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "root parallel test done");
 }
