@@ -37,7 +37,7 @@ _root_parallel(void *arg)
 		}
 
 		unsigned long version = fbr_safe_add(&_TEST_DIR_COUNTER, 1);
-		int do_error = (random() % 10 == 0);
+		int do_error = (random() % 3 == 0);
 
 		assert(root->state == FBR_DIRSTATE_LOADING);
 
@@ -96,9 +96,12 @@ fbr_cmd_fs_test_root_parallel(struct fbr_test_context *ctx,
 		assert_zero(pthread_create(&threads[i], NULL, _root_parallel, fs));
 	}
 
-	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "setting state...");
+	if (random() % 8) {
+		fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
+	} else {
+		fbr_directory_set_state(fs, root, FBR_DIRSTATE_ERROR);
+	}
 
-	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
 	fbr_dindex_release(fs, &root);
 
 	for (size_t i = 0; i < _TEST_DIR_THREADS; i++) {

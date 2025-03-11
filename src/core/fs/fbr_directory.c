@@ -25,7 +25,8 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 
 	struct fbr_file *root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
 
-	// TODO lock this?
+	assert_zero(pthread_mutex_lock(&fs->lock));
+
 	if (!root_file) {
 		// TODO mode needs to be configurable
 		root_file = fbr_file_alloc(fs, NULL, PATH_NAME_EMPTY, S_IFDIR | 0755);
@@ -37,6 +38,8 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 		// Pull a hidden ref so this inode never disappears
 		(void)fbr_inode_take(fs, FBR_INODE_ROOT);
 	}
+
+	assert_zero(pthread_mutex_unlock(&fs->lock));
 
 	struct fbr_directory *root = fbr_directory_alloc(fs, FBR_DIRNAME_ROOT, root_file->inode);
 	fbr_directory_ok(root);
@@ -228,12 +231,9 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 		assert(new_directory->state == FBR_DIRSTATE_OK);
 	}
 
-	if (fs->shutdown || directory->expired || !fs->fuse_ctx) {
+	if (fs->shutdown || directory->expired) {
 		return;
 	}
-
-	fbr_fuse_context_ok(fs->fuse_ctx);
-	assert(fs->fuse_ctx->session);
 
 	// If we have a TTL, files can never be forced to expire
 	if (fs->config.dentry_ttl > 0 && !new_directory) {
@@ -255,6 +255,13 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 		(int)dirname.len, dirname.name, dirname.len,
 		new_directory ? "true" : "false",
 		new_directory ? new_directory->inode : 0);
+
+	if (!fs->fuse_ctx) {
+		return;
+	}
+
+	fbr_fuse_context_ok(fs->fuse_ctx);
+	assert(fs->fuse_ctx->session);
 
 	struct fbr_file *file;
 

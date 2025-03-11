@@ -257,6 +257,8 @@ struct fbr_fs {
 	struct fbr_fuse_context			*fuse_ctx;
 	struct fbr_directory			*root;
 
+	pthread_mutex_t				lock;
+
 	const struct fbr_store_callbacks	*store;
 
 	struct fbr_fs_config			config;

@@ -177,7 +177,6 @@ _dindex_lru_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_zero(pthread_mutex_unlock(&dindex->lru_lock));
 }
 
-// TODO take a dindex lock and do the release
 static struct fbr_directory *
 _dindex_lru_pop(struct fbr_fs *fs)
 {
@@ -450,6 +449,11 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	_dindex_UNLOCK(dirhead);
 
 	if (release_stale) {
+		// If this is a root inode, we need to require otherwise we immediately drop
+		if (stale->inode == FBR_INODE_ROOT) {
+			fbr_fs_set_root(fs);
+		}
+
 		fbr_dindex_release(fs, &stale);
 	}
 }

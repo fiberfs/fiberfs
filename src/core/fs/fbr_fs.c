@@ -40,6 +40,8 @@ fbr_fs_alloc(void)
 	assert_dev(fs->inodes);
 	assert_dev(fs->dindex);
 
+	assert_zero(pthread_mutex_init(&fs->lock, NULL));
+
 	fs->store = &_STORE_CALLBACKS_EMPTY;
 	fs->log = fbr_fs_logger;
 
@@ -55,6 +57,8 @@ fbr_fs_set_root(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
 
+	assert_zero(pthread_mutex_lock(&fs->lock));
+
 	if (fs->root) {
 		fbr_directory_ok(fs->root);
 		fbr_dindex_release(fs, &fs->root);
@@ -63,6 +67,8 @@ fbr_fs_set_root(struct fbr_fs *fs)
 
 	fs->root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, FBR_DIRFLAGS_DONT_WAIT);
 	fbr_directory_ok(fs->root);
+
+	assert_zero(pthread_mutex_unlock(&fs->lock));
 }
 
 void
@@ -106,6 +112,8 @@ fbr_fs_free(struct fbr_fs *fs)
 
 	fbr_dindex_free_all(fs);
 	fbr_inodes_free_all(fs);
+
+	assert_zero(pthread_mutex_destroy(&fs->lock));
 
 	fbr_ZERO(fs);
 
