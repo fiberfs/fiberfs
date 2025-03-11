@@ -52,6 +52,7 @@ fbr_fs_alloc(void)
 	return fs;
 }
 
+// TODO can we do this internally in dindex
 void
 fbr_fs_set_root(struct fbr_fs *fs)
 {
