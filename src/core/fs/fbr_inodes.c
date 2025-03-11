@@ -291,6 +291,8 @@ fbr_inodes_free_all(struct fbr_fs *fs)
 
 			(void)RB_REMOVE(fbr_inodes_tree, &head->tree, file);
 
+			fbr_fs_stat_sub(&fs->stats.files_inodes);
+
 			fbr_file_free(fs, file);
 		}
 
@@ -300,6 +302,8 @@ fbr_inodes_free_all(struct fbr_fs *fs)
 
 		fbr_ZERO(head);
 	}
+
+	assert_zero_dev(fs->stats.files_inodes);
 
 	fbr_ZERO(inodes);
 	free(inodes);

@@ -675,7 +675,7 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 		fbr_ZERO(dirhead);
 	}
 
-	assert_zero(fs->stats.directories_dindex);
+	assert_zero_dev(fs->stats.directories_dindex);
 
 	assert(TAILQ_EMPTY(&dindex->lru));
 	assert_zero(dindex->lru_len);
