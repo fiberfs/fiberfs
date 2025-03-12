@@ -140,8 +140,8 @@ enum fbr_directory_flags {
 };
 
 struct fbr_directory_refcounts {
-	fbr_refcount_t				in_dindex:1;
-	fbr_refcount_t				in_lru:1;
+	fbr_refcount_t				in_dindex;
+	fbr_refcount_t				in_lru;
 	fbr_refcount_t				fs;
 };
 
