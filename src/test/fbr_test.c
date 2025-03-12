@@ -177,7 +177,7 @@ fbr_test_main(int argc, char **argv)
 		return 1;
 	}
 
-	assert_zero(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
+	pt_assert(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
 	assert_zero(fbr_test_is_thread());
 
 	int ret = fbr_test_join_thread(test.thread, &test.stopped, &test.timeout_ms);

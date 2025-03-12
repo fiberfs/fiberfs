@@ -69,11 +69,11 @@ fbr_dindex_alloc(struct fbr_fs *fs)
 		dirhead->magic = FBR_DINDEX_DIRHEAD_MAGIC;
 
 		RB_INIT(&dirhead->tree);
-		assert_zero(pthread_mutex_init(&dirhead->lock, NULL));
+		pt_assert(pthread_mutex_init(&dirhead->lock, NULL));
 	}
 
 	TAILQ_INIT(&dindex->lru);
-	assert_zero(pthread_mutex_init(&dindex->lru_lock, NULL));
+	pt_assert(pthread_mutex_init(&dindex->lru_lock, NULL));
 
 	fs->dindex = dindex;
 }
@@ -160,7 +160,7 @@ _dindex_lru_add(struct fbr_fs *fs, struct fbr_directory *directory)
 		return old_root;
 	}
 
-	assert_zero(pthread_mutex_lock(&dindex->lru_lock));
+	pt_assert(pthread_mutex_lock(&dindex->lru_lock));
 
 	TAILQ_INSERT_HEAD(&dindex->lru, directory, lru_entry);
 
@@ -171,7 +171,7 @@ _dindex_lru_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	dindex->lru_len++;
 	assert(dindex->lru_len);
 
-	assert_zero(pthread_mutex_unlock(&dindex->lru_lock));
+	pt_assert(pthread_mutex_unlock(&dindex->lru_lock));
 
 	return NULL;
 }
@@ -182,10 +182,10 @@ _dindex_lru_move(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 	fbr_directory_ok(directory);
 
-	assert_zero(pthread_mutex_lock(&dindex->lru_lock));
+	pt_assert(pthread_mutex_lock(&dindex->lru_lock));
 
 	if (!directory->refcounts.in_lru) {
-		assert_zero(pthread_mutex_unlock(&dindex->lru_lock));
+		pt_assert(pthread_mutex_unlock(&dindex->lru_lock));
 		return;
 	}
 
@@ -194,7 +194,7 @@ _dindex_lru_move(struct fbr_fs *fs, struct fbr_directory *directory)
 		TAILQ_INSERT_HEAD(&dindex->lru, directory, lru_entry);
 	}
 
-	assert_zero(pthread_mutex_unlock(&dindex->lru_lock));
+	pt_assert(pthread_mutex_unlock(&dindex->lru_lock));
 }
 
 static void
@@ -203,10 +203,10 @@ _dindex_lru_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 	fbr_directory_ok(directory);
 
-	assert_zero(pthread_mutex_lock(&dindex->lru_lock));
+	pt_assert(pthread_mutex_lock(&dindex->lru_lock));
 
 	if (!directory->refcounts.in_lru) {
-		assert_zero(pthread_mutex_unlock(&dindex->lru_lock));
+		pt_assert(pthread_mutex_unlock(&dindex->lru_lock));
 		return;
 	}
 
@@ -219,7 +219,7 @@ _dindex_lru_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(dindex->lru_len);
 	dindex->lru_len--;
 
-	assert_zero(pthread_mutex_unlock(&dindex->lru_lock));
+	pt_assert(pthread_mutex_unlock(&dindex->lru_lock));
 }
 
 static struct fbr_directory *
@@ -227,10 +227,10 @@ _dindex_lru_pop(struct fbr_fs *fs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 
-	assert_zero(pthread_mutex_lock(&dindex->lru_lock));
+	pt_assert(pthread_mutex_lock(&dindex->lru_lock));
 
 	if (!dindex->lru_len) {
-		assert_zero(pthread_mutex_unlock(&dindex->lru_lock));
+		pt_assert(pthread_mutex_unlock(&dindex->lru_lock));
 		return NULL;
 	}
 
@@ -247,7 +247,7 @@ _dindex_lru_pop(struct fbr_fs *fs)
 	assert(dindex->lru_len);
 	dindex->lru_len--;
 
-	assert_zero(pthread_mutex_unlock(&dindex->lru_lock));
+	pt_assert(pthread_mutex_unlock(&dindex->lru_lock));
 
 	return directory;
 }
@@ -282,7 +282,7 @@ _dindex_LOCK(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_dindex_dirhead *dirhead = _dindex_dirhead_get(dindex, directory);
 
-	assert_zero(pthread_mutex_lock(&dirhead->lock));
+	pt_assert(pthread_mutex_lock(&dirhead->lock));
 	fbr_directory_ok(directory);
 
 	return dirhead;
@@ -292,7 +292,7 @@ static void
 _dindex_UNLOCK(struct fbr_dindex_dirhead *dirhead)
 {
 	fbr_dindex_dirhead_ok(dirhead);
-	assert_zero(pthread_mutex_unlock(&dirhead->lock));
+	pt_assert(pthread_mutex_unlock(&dirhead->lock));
 }
 
 struct fbr_directory *
@@ -435,7 +435,7 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	}
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
-		assert_zero(pthread_cond_wait(&directory->update, &dirhead->lock));
+		pt_assert(pthread_cond_wait(&directory->update, &dirhead->lock));
 	} else {
 		assert_dev(directory->state == FBR_DIRSTATE_OK);
 	}
@@ -521,7 +521,7 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 		}
 	}
 
-	assert_zero(pthread_cond_broadcast(&directory->update));
+	pt_assert(pthread_cond_broadcast(&directory->update));
 
 	_dindex_UNLOCK(dirhead);
 
@@ -544,7 +544,7 @@ fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_dindex_dirhead *dirhead = _dindex_LOCK(fs, directory);
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
-		assert_zero(pthread_cond_wait(&directory->update, &dirhead->lock));
+		pt_assert(pthread_cond_wait(&directory->update, &dirhead->lock));
 	}
 
 	fbr_directory_ok(directory);
@@ -676,7 +676,7 @@ fbr_dindex_debug(struct fbr_fs *fs, fbr_dindex_debug_f *callback)
 	for (size_t i = 0; i < _DINDEX_HEAD_COUNT; i++) {
 		struct fbr_dindex_dirhead *dirhead = &dindex->dirheads[i];
 
-		assert_zero(pthread_mutex_lock(&dirhead->lock));
+		pt_assert(pthread_mutex_lock(&dirhead->lock));
 		fbr_dindex_dirhead_ok(dirhead);
 
 		struct fbr_directory *directory;
@@ -687,7 +687,7 @@ fbr_dindex_debug(struct fbr_fs *fs, fbr_dindex_debug_f *callback)
 			callback(fs, directory);
 		}
 
-		assert_zero(pthread_mutex_unlock(&dirhead->lock));
+		pt_assert(pthread_mutex_unlock(&dirhead->lock));
 	}
 }
 
@@ -720,7 +720,7 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 
 		assert(RB_EMPTY(&dirhead->tree));
 
-		assert_zero(pthread_mutex_destroy(&dirhead->lock));
+		pt_assert(pthread_mutex_destroy(&dirhead->lock));
 
 		fbr_ZERO(dirhead);
 	}
@@ -729,7 +729,7 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 
 	assert(TAILQ_EMPTY(&dindex->lru));
 	assert_zero(dindex->lru_len);
-	assert_zero(pthread_mutex_destroy(&dindex->lru_lock));
+	pt_assert(pthread_mutex_destroy(&dindex->lru_lock));
 
 	fbr_ZERO(dindex);
 	free(dindex);

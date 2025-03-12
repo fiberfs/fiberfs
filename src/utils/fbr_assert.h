@@ -26,6 +26,8 @@ void fbr_libunwind_backtrace(void);
 	fbr_ASSERT(expr, NULL)
 #define assert_zero(expr)							\
 	fbr_ASSERT(!(expr), NULL)
+#define pt_assert(expr)								\
+	fbr_ASSERT(!(expr), NULL)
 #define fbr_ABORT(fmt, ...)							\
 	fbr_do_abort(NULL, __func__, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
 #define fbr_ASSERT(cond, fmt, ...)						\
@@ -35,8 +37,6 @@ void fbr_libunwind_backtrace(void);
 			##__VA_ARGS__);						\
 	}									\
 }
-
-// TODO special pthread assert
 
 #ifdef FBR_NO_ASSERT_DEV
 #define assert_dev(expr)							\

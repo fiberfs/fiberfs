@@ -18,7 +18,7 @@ static pthread_key_t _REQUEST_KEY;
 void
 fbr_context_request_init(void)
 {
-	assert_zero(pthread_key_create(&_REQUEST_KEY, NULL));
+	pt_assert(pthread_key_create(&_REQUEST_KEY, NULL));
 
 	_REQUEST_KEY_INIT = 1;
 }
@@ -26,7 +26,7 @@ fbr_context_request_init(void)
 void
 fbr_context_request_finish(void)
 {
-	assert_zero(pthread_key_delete(_REQUEST_KEY));
+	pt_assert(pthread_key_delete(_REQUEST_KEY));
 
 	_REQUEST_KEY_INIT = 0;
 }
@@ -50,7 +50,7 @@ fbr_request_alloc(fuse_req_t fuse_req)
 
 	fbr_request_ok(request);
 
-	assert_zero(pthread_setspecific(_REQUEST_KEY, request));
+	pt_assert(pthread_setspecific(_REQUEST_KEY, request));
 
 	struct fbr_fs *fs = request->fuse_ctx->fs;
 	fbr_fs_ok(fs);
@@ -83,7 +83,7 @@ fbr_request_free(struct fbr_request *request)
 
 	struct fbr_request *sreq = fbr_request_get();
 	assert(sreq == request);
-	assert_zero(pthread_setspecific(_REQUEST_KEY, NULL));
+	pt_assert(pthread_setspecific(_REQUEST_KEY, NULL));
 	assert_zero_dev(fbr_request_get());
 
 	struct fbr_fs *fs = request->fuse_ctx->fs;

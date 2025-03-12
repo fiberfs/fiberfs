@@ -4,6 +4,7 @@
  *
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 
 #include "fiberfs.h"
@@ -40,7 +41,7 @@ fbr_fs_alloc(void)
 	assert_dev(fs->inodes);
 	assert_dev(fs->dindex);
 
-	assert_zero(pthread_mutex_init(&fs->lock, NULL));
+	pt_assert(pthread_mutex_init(&fs->lock, NULL));
 
 	fs->store = &_STORE_CALLBACKS_EMPTY;
 	fs->log = fbr_fs_logger;
@@ -56,14 +57,14 @@ void
 fbr_fs_LOCK(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
-	assert_zero(pthread_mutex_lock(&fs->lock));
+	pt_assert(pthread_mutex_lock(&fs->lock));
 }
 
 void
 fbr_fs_UNLOCK(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
-	assert_zero(pthread_mutex_unlock(&fs->lock));
+	pt_assert(pthread_mutex_unlock(&fs->lock));
 }
 
 void
@@ -109,7 +110,7 @@ fbr_fs_free(struct fbr_fs *fs)
 	fbr_dindex_free_all(fs);
 	fbr_inodes_free_all(fs);
 
-	assert_zero(pthread_mutex_destroy(&fs->lock));
+	pt_assert(pthread_mutex_destroy(&fs->lock));
 
 	fbr_ZERO(fs);
 

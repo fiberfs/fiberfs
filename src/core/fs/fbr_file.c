@@ -4,6 +4,7 @@
  *
  */
 
+#include <pthread.h>
 #include <sys/stat.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -47,7 +48,7 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 		file->inode = FBR_INODE_ROOT;
 	}
 
-	assert_zero(pthread_mutex_init(&file->refcount_lock, NULL));
+	pt_assert(pthread_mutex_init(&file->refcount_lock, NULL));
 
 	fbr_body_init(&file->body);
 
@@ -91,7 +92,7 @@ fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 
-	assert_zero(pthread_mutex_lock(&file->refcount_lock));
+	pt_assert(pthread_mutex_lock(&file->refcount_lock));
 	fbr_file_ok(file);
 	assert(file->refcounts.dindex);
 
@@ -100,7 +101,7 @@ fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file)
 
 	fbr_fs_stat_add(&fs->stats.file_refs);
 
-	assert_zero(pthread_mutex_unlock(&file->refcount_lock));
+	pt_assert(pthread_mutex_unlock(&file->refcount_lock));
 }
 
 void
@@ -113,7 +114,7 @@ fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file **file_ref)
 	fbr_file_ok(file);
 	*file_ref = NULL;
 
-	assert_zero(pthread_mutex_lock(&file->refcount_lock));
+	pt_assert(pthread_mutex_lock(&file->refcount_lock));
 	fbr_file_ok(file);
 
 	assert(file->refcounts.dindex);
@@ -126,7 +127,7 @@ fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file **file_ref)
 		do_free = 1;
 	}
 
-	assert_zero(pthread_mutex_unlock(&file->refcount_lock));
+	pt_assert(pthread_mutex_unlock(&file->refcount_lock));
 
 	if (do_free) {
 		fbr_file_free(fs, file);
@@ -139,7 +140,7 @@ fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 
-	assert_zero(pthread_mutex_lock(&file->refcount_lock));
+	pt_assert(pthread_mutex_lock(&file->refcount_lock));
 	fbr_file_ok(file);
 
 	file->refcounts.inode++;
@@ -147,7 +148,7 @@ fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file)
 
 	fbr_fs_stat_add(&fs->stats.file_refs);
 
-	assert_zero(pthread_mutex_unlock(&file->refcount_lock));
+	pt_assert(pthread_mutex_unlock(&file->refcount_lock));
 }
 
 void
@@ -163,7 +164,7 @@ fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_refcoun
 	fbr_file_ok(file);
 	assert(refs);
 
-	assert_zero(pthread_mutex_lock(&file->refcount_lock));
+	pt_assert(pthread_mutex_lock(&file->refcount_lock));
 	fbr_file_ok(file);
 
 	assert(file->refcounts.inode >= refs);
@@ -182,7 +183,7 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 
 	fbr_body_free(&file->body);
 
-	assert_zero(pthread_mutex_destroy(&file->refcount_lock));
+	pt_assert(pthread_mutex_destroy(&file->refcount_lock));
 
 	fbr_path_free(&file->path);
 

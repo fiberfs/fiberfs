@@ -208,7 +208,7 @@ fbr_test_join_thread(pthread_t thread, volatile int *stopped,
 		}
 	}
 
-	assert_zero(pthread_join(thread, NULL));
+	pt_assert(pthread_join(thread, NULL));
 
 	return 0;
 }

@@ -25,7 +25,7 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 	fbr_ZERO(ctx);
 	ctx->magic = FBR_FUSE_CTX_MAGIC;
 
-	assert_zero(pthread_mutex_init(&ctx->mount_lock, NULL));
+	pt_assert(pthread_mutex_init(&ctx->mount_lock, NULL));
 
 	fbr_fuse_context_ok(ctx);
 }
@@ -59,7 +59,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
 
-	assert_zero(pthread_mutex_lock(&ctx->mount_lock));
+	pt_assert(pthread_mutex_lock(&ctx->mount_lock));
 
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
@@ -91,7 +91,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	fuse_opt_free_args(&fargs);
 
 	if (!ctx->session) {
-		assert_zero(pthread_mutex_unlock(&ctx->mount_lock));
+		pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 		fbr_fuse_error(ctx);
 		return 1;
 	}
@@ -105,7 +105,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	int ret = fuse_session_mount(ctx->session, path);
 
 	if (ret) {
-		assert_zero(pthread_mutex_unlock(&ctx->mount_lock));
+		pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 		fbr_fuse_error(ctx);
 		return 1;
 	}
@@ -120,19 +120,19 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	assert_zero(_FUSE_CTX);
 	_FUSE_CTX = ctx;
 
-	assert_zero(pthread_create(&ctx->loop_thread, NULL, _fuse_mount_thread, ctx));
+	pt_assert(pthread_create(&ctx->loop_thread, NULL, _fuse_mount_thread, ctx));
 
 	while (!ctx->running) {
 		fbr_sleep_ms(5);
 
 		if (ctx->exited) {
-			assert_zero(pthread_mutex_unlock(&ctx->mount_lock));
+			pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 			fbr_fuse_error(ctx);
 			return 1;
 		}
 	}
 
-	assert_zero(pthread_mutex_unlock(&ctx->mount_lock));
+	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 
 	return 0;
 }
@@ -183,17 +183,17 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_context_ok(ctx);
 
-	assert_zero(pthread_mutex_lock(&ctx->mount_lock));
+	pt_assert(pthread_mutex_lock(&ctx->mount_lock));
 	fbr_fuse_context_ok(ctx);
 
 	if (ctx->state != FBR_FUSE_MOUNTED) {
-		assert_zero(pthread_mutex_unlock(&ctx->mount_lock));
+		pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 		return;
 	}
 
 	fbr_fuse_abort(ctx);
 
-	assert_zero(pthread_join(ctx->loop_thread, NULL));
+	pt_assert(pthread_join(ctx->loop_thread, NULL));
 	assert(ctx->exited);
 	assert(ctx->session);
 
@@ -202,7 +202,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 	fbr_fs_free(ctx->fs);
 	ctx->fs = NULL;
 
-	assert_zero(pthread_mutex_unlock(&ctx->mount_lock));
+	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 }
 
 void
@@ -236,7 +236,7 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 		ctx->path = NULL;
 	}
 
-	assert_zero(pthread_mutex_destroy(&ctx->mount_lock));
+	pt_assert(pthread_mutex_destroy(&ctx->mount_lock));
 
 	fbr_ZERO(ctx);
 }

@@ -55,7 +55,7 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	fio->floating = _fio_chunk_list_expand(NULL);
 	fbr_chunk_list_ok(fio->floating);
 
-	assert_zero(pthread_mutex_init(&fio->lock, NULL));
+	pt_assert(pthread_mutex_init(&fio->lock, NULL));
 
 	// Caller owns a ref
 	fio->refcount = 1;
@@ -68,13 +68,13 @@ fbr_fio_take(struct fbr_fio *fio)
 {
 	fbr_fio_ok(fio);
 
-	assert_zero(pthread_mutex_lock(&fio->lock));
+	pt_assert(pthread_mutex_lock(&fio->lock));
 	assert(fio->refcount);
 
 	fio->refcount++;
 	assert(fio->refcount);
 
-	assert_zero(pthread_mutex_unlock(&fio->lock));
+	pt_assert(pthread_mutex_unlock(&fio->lock));
 }
 
 static struct fbr_chunk_list *
@@ -210,7 +210,7 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 			break;
 		}
 
-		pthread_cond_wait(&body->update, &body->lock);
+		pt_assert(pthread_cond_wait(&body->update, &body->lock));
 	}
 
 	fbr_body_UNLOCK(body);
@@ -558,17 +558,17 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
-	assert_zero(pthread_mutex_lock(&fio->lock));
+	pt_assert(pthread_mutex_lock(&fio->lock));
 
 	assert(fio->refcount);
 	fio->refcount--;
 
 	if (fio->refcount) {
-		assert_zero(pthread_mutex_unlock(&fio->lock));
+		pt_assert(pthread_mutex_unlock(&fio->lock));
 		return;
 	}
 
-	assert_zero(pthread_mutex_unlock(&fio->lock));
+	pt_assert(pthread_mutex_unlock(&fio->lock));
 
 	fbr_body_LOCK(&fio->file->body);
 	_fio_release_floating(fio, 0);
@@ -577,7 +577,7 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 	assert_zero_dev(fio->floating->length);
 	free(fio->floating);
 
-	assert_zero(pthread_mutex_destroy(&fio->lock));
+	pt_assert(pthread_mutex_destroy(&fio->lock));
 
 	fbr_inode_release(fs, &fio->file);
 	assert_zero_dev(fio->file);

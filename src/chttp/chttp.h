@@ -9,7 +9,7 @@
 
 // TODO
 // re-align with fbr style
-// move to fbr_assert.h
+// move to fbr_assert.h and pt_assert
 #undef assert_zero
 
 #include "memory/chttp_dpage.h"

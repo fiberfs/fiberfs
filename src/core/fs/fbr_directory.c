@@ -4,6 +4,7 @@
  *
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 
 #include "fiberfs.h"
@@ -71,7 +72,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 	directory->magic = FBR_DIRECTORY_MAGIC;
 	directory->inode = inode;
 
-	assert_zero(pthread_cond_init(&directory->update, NULL));
+	pt_assert(pthread_cond_init(&directory->update, NULL));
 	TAILQ_INIT(&directory->file_list);
 	RB_INIT(&directory->filename_tree);
 
@@ -150,7 +151,7 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(RB_EMPTY(&directory->filename_tree));
 	assert_zero(directory->file_count);
 
-	assert_zero(pthread_cond_destroy(&directory->update));
+	pt_assert(pthread_cond_destroy(&directory->update));
 
 	fbr_path_free(&directory->dirname);
 

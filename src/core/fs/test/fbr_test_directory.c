@@ -4,6 +4,7 @@
  *
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 
 #include "core/fs/fbr_fs.h"
@@ -234,13 +235,13 @@ _directory_parallel(void)
 	size_t pos = 0;
 
 	for (size_t i = 0; i < _TEST_DIR_THREADS_ALLOC; i++, pos++) {
-		assert_zero(pthread_create(&threads[pos], NULL, _dir_test_alloc, fs));
+		pt_assert(pthread_create(&threads[pos], NULL, _dir_test_alloc, fs));
 	}
 	for (size_t i = 0; i < _TEST_DIR_THREADS_READ; i++, pos++) {
-		assert_zero(pthread_create(&threads[pos], NULL, _dir_test_read, fs));
+		pt_assert(pthread_create(&threads[pos], NULL, _dir_test_read, fs));
 	}
 	for (size_t i = 0; i < _TEST_DIR_THREADS_RELEASE; i++, pos++) {
-		assert_zero(pthread_create(&threads[pos], NULL, _dir_test_release, fs));
+		pt_assert(pthread_create(&threads[pos], NULL, _dir_test_release, fs));
 	}
 
 	fbr_sleep_ms(3);
@@ -256,7 +257,7 @@ _directory_parallel(void)
 	fbr_dindex_release(fs, &directory);
 
 	for (size_t i = 0; i < fbr_array_len(threads); i++) {
-		assert_zero(pthread_join(threads[i], NULL));
+		pt_assert(pthread_join(threads[i], NULL));
 	}
 
 	if (file) {

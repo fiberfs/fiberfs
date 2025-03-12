@@ -4,6 +4,7 @@
  *
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 
 #include "fiberfs.h"
@@ -67,7 +68,7 @@ fbr_inodes_alloc(struct fbr_fs *fs)
 		head->magic = FBR_INODES_HEAD_MAGIC;
 
 		RB_INIT(&head->tree);
-		assert_zero(pthread_mutex_init(&head->lock, NULL));
+		pt_assert(pthread_mutex_init(&head->lock, NULL));
 	}
 
 	fs->inodes = inodes;
@@ -116,7 +117,7 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 
 	struct fbr_inodes_head *head = _inodes_get_head(inodes, file);
 
-	assert_zero(pthread_mutex_lock(&head->lock));
+	pt_assert(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 	fbr_file_ok(file);
 
@@ -131,7 +132,7 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 		fbr_fs_stat_add(&fs->stats.files_inodes);
 	}
 
-	assert_zero(pthread_mutex_unlock(&head->lock));
+	pt_assert(pthread_mutex_unlock(&head->lock));
 }
 
 struct fbr_file *
@@ -146,13 +147,13 @@ fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode)
 
 	struct fbr_inodes_head *head = _inodes_get_head(inodes, &find);
 
-	assert_zero(pthread_mutex_lock(&head->lock));
+	pt_assert(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 
 	struct fbr_file *file = RB_FIND(fbr_inodes_tree, &head->tree, &find);
 
 	if (!file) {
-		assert_zero(pthread_mutex_unlock(&head->lock));
+		pt_assert(pthread_mutex_unlock(&head->lock));
 		return NULL;
 	}
 
@@ -160,7 +161,7 @@ fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode)
 
 	fbr_file_ref_inode(fs, file);
 
-	assert_zero(pthread_mutex_unlock(&head->lock));
+	pt_assert(pthread_mutex_unlock(&head->lock));
 
 	return file;
 }
@@ -176,7 +177,7 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref)
 
 	struct fbr_inodes_head *head = _inodes_get_head(inodes, file);
 
-	assert_zero(pthread_mutex_lock(&head->lock));
+	pt_assert(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 	fbr_file_ok(file);
 
@@ -185,8 +186,8 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref)
 	fbr_file_release_inode_lock(fs, file);
 
 	if (file->refcounts.inode) {
-		assert_zero(pthread_mutex_unlock(&file->refcount_lock));
-		assert_zero(pthread_mutex_unlock(&head->lock));
+		pt_assert(pthread_mutex_unlock(&file->refcount_lock));
+		pt_assert(pthread_mutex_unlock(&head->lock));
 		return;
 	}
 
@@ -199,8 +200,8 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref)
 		do_free = 1;
 	}
 
-	assert_zero(pthread_mutex_unlock(&file->refcount_lock));
-	assert_zero(pthread_mutex_unlock(&head->lock));
+	pt_assert(pthread_mutex_unlock(&file->refcount_lock));
+	pt_assert(pthread_mutex_unlock(&head->lock));
 
 	if (do_free) {
 		fbr_file_free(fs, file);
@@ -220,7 +221,7 @@ fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 
 	struct fbr_inodes_head *head = _inodes_get_head(inodes, &find);
 
-	assert_zero(pthread_mutex_lock(&head->lock));
+	pt_assert(pthread_mutex_lock(&head->lock));
 	fbr_inode_head_ok(head);
 
 	struct fbr_file *file = RB_FIND(fbr_inodes_tree, &head->tree, &find);
@@ -229,8 +230,8 @@ fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 	fbr_file_forget_inode_lock(fs, file, refs);
 
 	if (file->refcounts.inode) {
-		assert_zero(pthread_mutex_unlock(&file->refcount_lock));
-		assert_zero(pthread_mutex_unlock(&head->lock));
+		pt_assert(pthread_mutex_unlock(&file->refcount_lock));
+		pt_assert(pthread_mutex_unlock(&head->lock));
 		return;
 	}
 
@@ -243,8 +244,8 @@ fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 		do_free = 1;
 	}
 
-	assert_zero(pthread_mutex_unlock(&file->refcount_lock));
-	assert_zero(pthread_mutex_unlock(&head->lock));
+	pt_assert(pthread_mutex_unlock(&file->refcount_lock));
+	pt_assert(pthread_mutex_unlock(&head->lock));
 
 	if (do_free) {
 		fbr_file_free(fs, file);
@@ -260,7 +261,7 @@ fbr_inodes_debug(struct fbr_fs *fs, fbr_inodes_debug_f *callback)
 	for (size_t i = 0; i < _INODES_HEAD_COUNT; i++) {
 		struct fbr_inodes_head *head = &inodes->heads[i];
 
-		assert_zero(pthread_mutex_lock(&head->lock));
+		pt_assert(pthread_mutex_lock(&head->lock));
 		fbr_inode_head_ok(head);
 
 		struct fbr_file *file;
@@ -271,7 +272,7 @@ fbr_inodes_debug(struct fbr_fs *fs, fbr_inodes_debug_f *callback)
 			callback(fs, file);
 		}
 
-		assert_zero(pthread_mutex_unlock(&head->lock));
+		pt_assert(pthread_mutex_unlock(&head->lock));
 	}
 }
 
@@ -298,7 +299,7 @@ fbr_inodes_free_all(struct fbr_fs *fs)
 
 		assert(RB_EMPTY(&head->tree));
 
-		assert_zero(pthread_mutex_destroy(&head->lock));
+		pt_assert(pthread_mutex_destroy(&head->lock));
 
 		fbr_ZERO(head);
 	}

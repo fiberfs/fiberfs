@@ -124,7 +124,7 @@ fbr_test_cmd_shell_bg(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	char *shell_cmd = strdup(cmd->params[0].value);
 	assert(shell_cmd);
 
-	assert_zero(pthread_create(&ctx->shell->threads[ctx->shell->thread_count - 1], NULL,
+	pt_assert(pthread_create(&ctx->shell->threads[ctx->shell->thread_count - 1], NULL,
 		_test_shell_bg, shell_cmd));
 }
 
@@ -138,7 +138,7 @@ _test_shell_waitall(struct fbr_test_shell *shell)
 
 	for (size_t i = 0; i < shell->thread_count; i++) {
 		int *ret;
-		pthread_join(shell->threads[i], (void**)&ret);
+		pt_assert(pthread_join(shell->threads[i], (void**)&ret));
 
 		assert(ret);
 

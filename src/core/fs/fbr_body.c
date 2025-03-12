@@ -16,8 +16,8 @@ fbr_body_init(struct fbr_body *body)
 {
 	assert_dev(body);
 
-	assert_zero(pthread_mutex_init(&body->lock, NULL));
-	assert_zero(pthread_cond_init(&body->update, NULL));
+	pt_assert(pthread_mutex_init(&body->lock, NULL));
+	pt_assert(pthread_cond_init(&body->update, NULL));
 
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
 		body->slabhead.chunks[i].magic = FBR_CHUNK_MAGIC;
@@ -114,14 +114,14 @@ void
 fbr_body_LOCK(struct fbr_body *body)
 {
 	assert(body);
-	assert_zero(pthread_mutex_lock(&body->lock));
+	pt_assert(pthread_mutex_lock(&body->lock));
 }
 
 void
 fbr_body_UNLOCK(struct fbr_body *body)
 {
 	assert(body);
-	assert_zero(pthread_mutex_unlock(&body->lock));
+	pt_assert(pthread_mutex_unlock(&body->lock));
 }
 
 void
@@ -136,7 +136,7 @@ fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_
 
 	chunk->state = state;
 
-	assert_zero(pthread_cond_broadcast(&body->update));
+	pt_assert(pthread_cond_broadcast(&body->update));
 
 	fbr_body_UNLOCK(body);
 }
@@ -214,8 +214,8 @@ fbr_body_free(struct fbr_body *body)
 {
 	assert_dev(body);
 
-	assert_zero(pthread_mutex_destroy(&body->lock));
-	assert_zero(pthread_cond_destroy(&body->update));
+	pt_assert(pthread_mutex_destroy(&body->lock));
+	pt_assert(pthread_cond_destroy(&body->update));
 
 	if (fbr_assert_is_dev()) {
 		for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {

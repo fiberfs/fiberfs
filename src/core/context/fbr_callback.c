@@ -4,13 +4,12 @@
  *
  */
 
+#include <stdio.h>
+
 #include "fiberfs.h"
 #include "fbr_callback.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
-
-#include <pthread.h>
-#include <stdio.h>
 
 extern struct fbr_fuse_context *_FUSE_CTX;
 
