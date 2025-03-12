@@ -142,9 +142,11 @@ _directory_parallel(void)
 		assert_zero(pthread_create(&threads[i], NULL, _alloc_parallel, fs));
 	}
 
-	if (random() % 8) {
+	if (random() % 4) {
+		fbr_test_logs("main: version %lu error: 0", version);
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	} else {
+		fbr_test_logs("main: version %lu error: 1", version);
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
 	}
 

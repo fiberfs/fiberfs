@@ -228,13 +228,14 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
 	assert_zero(directory->stale);
+	assert_zero(directory->expired);
 
 	if (new_directory) {
 		fbr_directory_ok(new_directory);
 		assert(new_directory->state == FBR_DIRSTATE_OK);
 	}
 
-	if (fs->shutdown || directory->expired) {
+	if (fs->shutdown) {
 		return;
 	}
 
@@ -305,12 +306,14 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 			ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
 				file->inode, filename.name, filename.len);
 			assert_dev(ret != -ENOSYS);
+			(void)ret;
 		} else if (file_expired) {
 			fs->log("** FILE_EXP inode: %lu", file->inode);
 
 			ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
 				directory->inode, filename.name, filename.len);
 			assert_dev(ret != -ENOSYS);
+			(void)ret;
 		}
 	}
 }
