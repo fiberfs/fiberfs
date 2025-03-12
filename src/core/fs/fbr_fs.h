@@ -163,9 +163,6 @@ struct fbr_directory {
 	double					creation;
 	unsigned long				version;
 
-	// TODO we need creation date and insertion date
-	// creation date will tell us how often to look for updates
-
 	struct fbr_file				*file;
 	struct fbr_directory			*stale;
 
