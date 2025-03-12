@@ -127,6 +127,10 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_zero(directory->refcounts.in_dindex);
 	assert_zero(directory->refcounts.in_lru);
 
+	if (directory->state == FBR_DIRSTATE_OK) {
+		fbr_directory_expire(fs, directory, NULL);
+	}
+
 	struct fbr_file *file, *temp;
 
 	TAILQ_FOREACH_SAFE(file, &directory->file_list, file_entry, temp) {
@@ -228,16 +232,15 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_OK);
+	assert_dev(directory->state == FBR_DIRSTATE_OK);
 	assert_zero(directory->stale);
-	assert_zero(directory->expired);
 
 	if (new_directory) {
 		fbr_directory_ok(new_directory);
 		assert(new_directory->state == FBR_DIRSTATE_OK);
 	}
 
-	if (fs->shutdown) {
+	if (fs->shutdown || directory->expired) {
 		return;
 	}
 
