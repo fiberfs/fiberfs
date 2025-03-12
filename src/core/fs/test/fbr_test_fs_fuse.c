@@ -725,7 +725,7 @@ fbr_cmd_fs_test_fuse_init_root(struct fbr_test_context *ctx, struct fbr_test_cmd
 }
 
 static void
-_test_fs_inodes_debug(struct fbr_fs *fs, struct fbr_file *file)
+_test_fs_inodes_debug_print(struct fbr_fs *fs, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -740,8 +740,19 @@ _test_fs_inodes_debug(struct fbr_fs *fs, struct fbr_file *file)
 		fullname);
 }
 
+void
+fbr_test_fs_inodes_debug(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
+
+	fbr_inodes_debug(fs, _test_fs_inodes_debug_print);
+
+	fbr_test_logs("debug inodes done");
+}
+
+
 static void
-_test_fs_dindex_debug(struct fbr_fs *fs, struct fbr_directory *directory)
+_test_fs_dindex_debug_print(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
@@ -758,6 +769,16 @@ _test_fs_dindex_debug(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 void
+fbr_test_fs_dindex_debug(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
+
+	fbr_dindex_debug(fs, _test_fs_dindex_debug_print);
+
+	fbr_test_logs("debug dindex done");
+}
+
+void
 fbr_cmd_fs_test_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
@@ -768,13 +789,8 @@ fbr_cmd_fs_test_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
-	fbr_inodes_debug(fs, _test_fs_inodes_debug);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "debug inodes done");
-
-	fbr_dindex_debug(fs, _test_fs_dindex_debug);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "debug dindex done");
+	fbr_test_fs_inodes_debug(fs);
+	fbr_test_fs_dindex_debug(fs);
 }
 
 void

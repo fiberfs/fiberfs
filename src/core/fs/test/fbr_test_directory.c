@@ -10,23 +10,27 @@
 #include "test/fbr_test.h"
 #include "fbr_test_fs_cmds.h"
 
-#define _TEST_DIR_THREADS		3
+#define _TEST_DIR_THREADS_ALLOC		3
+#define _TEST_DIR_THREADS_READ		3
+#define _TEST_DIR_THREADS_RELEASE	2
+#define _TEST_DIR_RELEASES		4
 #define _TEST_DIR_MAX_TIME		2.0
 
 int _TEST_ROOT;
 fbr_inode_t _TEST_INODE;
 unsigned long _TEST_DIR_THREAD;
 unsigned long _TEST_DIR_VERSION;
+double _TEST_DIR_FRESH_TTL;
 
 static void *
-_alloc_parallel(void *arg)
+_dir_test_alloc(void *arg)
 {
 	struct fbr_fs *fs = (struct fbr_fs*)arg;
 	fbr_fs_ok(fs);
 
 	unsigned long id = fbr_safe_add(&_TEST_DIR_THREAD, 1);
 
-	fbr_test_logs("root thread_%lu: started", id);
+	fbr_test_logs("alloc thread_%lu: started", id);
 
 	double time_start = fbr_get_time();
 
@@ -58,8 +62,11 @@ _alloc_parallel(void *arg)
 
 		directory->version = version;
 
-		fbr_test_logs("thread_%lu: version %lu error: %d stale: %s stale_version: %lu",
-			id, version, do_error,
+		unsigned long diff_ms = (long)((fbr_get_time() - time_start) * 1000);
+
+		fbr_test_logs("alloc thread_%lu (+%ld): version %lu error: %d "
+				"stale: %s stale_version: %lu",
+			id, diff_ms, version, do_error,
 			directory->stale ? "true" : "false",
 			directory->stale ? directory->stale->version: 0);
 
@@ -88,6 +95,91 @@ _alloc_parallel(void *arg)
 	return NULL;
 }
 
+static void *
+_dir_test_read(void *arg)
+{
+	struct fbr_fs *fs = (struct fbr_fs*)arg;
+	fbr_fs_ok(fs);
+
+	unsigned long id = fbr_safe_add(&_TEST_DIR_THREAD, 1);
+	unsigned long count = id;
+
+	fbr_test_logs("read thread_%lu: started", id);
+
+	double time_start = fbr_get_time();
+
+	while (fbr_get_time() - time_start < _TEST_DIR_MAX_TIME) {
+		struct fbr_path_name dirname;
+
+		if (_TEST_ROOT) {
+			fbr_path_name_init(&dirname, "");
+		} else {
+			assert(_TEST_INODE > FBR_INODE_ROOT);
+			fbr_path_name_init(&dirname, "random");
+		}
+
+		enum fbr_directory_flags flags = FBR_DIRFLAGS_NONE;
+
+		if (count % 4 == 1) {
+			flags = FBR_DIRFLAGS_DONT_WAIT;
+		} else if (count % 4 == 2) {
+			flags = FBR_DIRFLAGS_STALE_OK;
+		} else if (count % 4 == 3) {
+			flags = FBR_DIRFLAGS_DONT_WAIT | FBR_DIRFLAGS_STALE_OK;
+		}
+
+		struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, flags);
+
+		if (!directory) {
+			continue;
+		}
+
+		fbr_directory_ok(directory);
+
+		fbr_dindex_release(fs, &directory);
+
+		fbr_sleep_ms(random() % 5);
+
+		count++;
+	}
+
+	return NULL;
+}
+
+static void *
+_dir_test_release(void *arg)
+{
+	struct fbr_fs *fs = (struct fbr_fs*)arg;
+	fbr_fs_ok(fs);
+
+	unsigned long id = fbr_safe_add(&_TEST_DIR_THREAD, 1);
+	int count = 0;
+
+	fbr_test_logs("release thread_%lu: started", id);
+
+	double time_start = fbr_get_time();
+
+	if (_TEST_DIR_FRESH_TTL) {
+		fbr_sleep_ms((_TEST_DIR_FRESH_TTL * 1000) + 100);
+	}
+
+	while (fbr_get_time() - time_start < _TEST_DIR_MAX_TIME) {
+		long sleep_time = (long)_TEST_DIR_MAX_TIME * 2000 / _TEST_DIR_RELEASES;
+		fbr_sleep_ms(random() % sleep_time);
+
+		fbr_test_logs("release thread_%lu: releasing all!", id);
+
+		fbr_fs_release_all(fs, 0);
+
+		count++;
+		if (count == _TEST_DIR_RELEASES) {
+			break;
+		}
+	}
+
+	return NULL;
+}
+
 void
 _directory_parallel(void)
 {
@@ -95,6 +187,7 @@ _directory_parallel(void)
 	fbr_fs_ok(fs);
 
 	fs->log = fbr_fs_test_logger;
+	fs->config.dindex_fresh_ttl = _TEST_DIR_FRESH_TTL;
 
 	fbr_test_random_seed();
 
@@ -117,7 +210,7 @@ _directory_parallel(void)
 		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, "random");
 
-		struct fbr_file *file = fbr_file_alloc(fs, root, &filename, S_IFDIR);
+		file = fbr_file_alloc(fs, root, &filename, S_IFDIR);
 		assert(file->parent_inode == root->inode);
 
 		fbr_inode_add(fs, file);
@@ -136,13 +229,23 @@ _directory_parallel(void)
 
 	fbr_test_logs("INODE=%lu", directory->inode);
 
-	pthread_t threads[_TEST_DIR_THREADS];
+	pthread_t threads[_TEST_DIR_THREADS_ALLOC + _TEST_DIR_THREADS_READ +
+		_TEST_DIR_THREADS_RELEASE];
+	size_t pos = 0;
 
-	for (size_t i = 0; i < _TEST_DIR_THREADS; i++) {
-		assert_zero(pthread_create(&threads[i], NULL, _alloc_parallel, fs));
+	for (size_t i = 0; i < _TEST_DIR_THREADS_ALLOC; i++, pos++) {
+		assert_zero(pthread_create(&threads[pos], NULL, _dir_test_alloc, fs));
+	}
+	for (size_t i = 0; i < _TEST_DIR_THREADS_READ; i++, pos++) {
+		assert_zero(pthread_create(&threads[pos], NULL, _dir_test_read, fs));
+	}
+	for (size_t i = 0; i < _TEST_DIR_THREADS_RELEASE; i++, pos++) {
+		assert_zero(pthread_create(&threads[pos], NULL, _dir_test_release, fs));
 	}
 
-	if (random() % 4) {
+	fbr_sleep_ms(3);
+
+	if (random() % 2) {
 		fbr_test_logs("main: version %lu error: 0", version);
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	} else {
@@ -152,7 +255,7 @@ _directory_parallel(void)
 
 	fbr_dindex_release(fs, &directory);
 
-	for (size_t i = 0; i < _TEST_DIR_THREADS; i++) {
+	for (size_t i = 0; i < fbr_array_len(threads); i++) {
 		assert_zero(pthread_join(threads[i], NULL));
 	}
 
@@ -160,11 +263,13 @@ _directory_parallel(void)
 		fbr_inode_release(fs, &file);
 	}
 
-	fbr_test_logs("threads exited");
+	fbr_test_logs("threads exited, releasing all...");
 
 	fbr_fs_release_all(fs, 1);
 
 	fbr_fs_test_stats(fs);
+	fbr_test_fs_inodes_debug(fs);
+	fbr_test_fs_dindex_debug(fs);
 
 	fbr_test_ERROR(fs->stats.directories, "non zero");
 	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
@@ -202,4 +307,18 @@ fbr_cmd_fs_test_directory_parallel(struct fbr_test_context *ctx,
 	_directory_parallel();
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory parallel test done");
+}
+
+void
+fbr_cmd_fs_test_directory_ttl_ms(struct fbr_test_context *ctx,
+	struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	long ttl = fbr_test_parse_long(cmd->params[0].value);
+
+	_TEST_DIR_FRESH_TTL = (double)ttl / 1000;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory ttl_ms=%lf", _TEST_DIR_FRESH_TTL);
 }

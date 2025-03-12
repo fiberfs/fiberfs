@@ -40,17 +40,20 @@ fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level, const
 		}
 	}
 
+	char *prefix = "";
+
 	if (level == FBR_LOG_NONE) {
-		printf("- ");
+		prefix = "- ";
 	} else if (level == FBR_LOG_VERBOSE) {
-		printf("-- ");
+		prefix = "-- ";
 	} else if (level == FBR_LOG_VERY_VERBOSE) {
-		printf("--- ");
+		prefix = "--- ";
 	}
 
-	vprintf(fmt, ap);
+	char vbuf[4096];
+	(void)vsnprintf(vbuf, sizeof(vbuf), fmt, ap);
 
-	printf("\n");
+	printf("%s%s\n", prefix, vbuf);
 }
 
 void __fbr_attr_printf(1)

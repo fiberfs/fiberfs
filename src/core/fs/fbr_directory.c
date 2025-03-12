@@ -51,7 +51,6 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 	fbr_directory_ok(root);
 	assert_dev(root->inode == FBR_INODE_ROOT);
 	assert_zero_dev(root->refcounts.in_lru);
-	assert_dev(fs->root);
 
 	fbr_inode_release(fs, &root_file);
 	assert_zero_dev(root_file);
@@ -179,6 +178,8 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
+	assert_zero_dev(file->refcounts.dindex);
+	assert_zero_dev(file->refcounts.inode);
 
 	// directory ownership
 	file->refcounts.dindex = 1;
@@ -250,15 +251,24 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_path_get_dir(&directory->dirname, &dirname);
 
 	assert_dev(fs->log);
-	fs->log("** DIR_EXP inode: %lu refcount: %u+%u+%u path: '%.*s':%zu"
-			" new: %s new_inode: %lu",
-		directory->inode,
-		directory->refcounts.in_dindex,
-			directory->refcounts.in_lru,
-			directory->refcounts.fs,
-		(int)dirname.len, dirname.name, dirname.len,
-		new_directory ? "true" : "false",
-		new_directory ? new_directory->inode : 0);
+	if (new_directory) {
+		fs->log("** DIR_EXP inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
+				" new: true new_inode: %lu(%lu)",
+			directory->inode, directory->version,
+			directory->refcounts.in_dindex,
+				directory->refcounts.in_lru,
+				directory->refcounts.fs,
+			(int)dirname.len, dirname.name, dirname.len,
+			new_directory->inode, new_directory->version);
+	} else {
+		fs->log("** DIR_EXP inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
+				" new: false",
+			directory->inode, directory->version,
+			directory->refcounts.in_dindex,
+				directory->refcounts.in_lru,
+				directory->refcounts.fs,
+			(int)dirname.len, dirname.name, dirname.len);
+	}
 
 	if (!fs->fuse_ctx) {
 		return;

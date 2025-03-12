@@ -29,6 +29,8 @@ void fbr_test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino,
 void fbr_test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup);
 void fbr_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
 	struct fuse_forget_data *forgets);
+void fbr_test_fs_inodes_debug(struct fbr_fs *fs);
+void fbr_test_fs_dindex_debug(struct fbr_fs *fs);
 
 #endif /* FBR_TEST_FS_CMD */
 
@@ -68,6 +70,7 @@ FBR_TEST_FS_CMD(fs_test_id_assert)
 
 FBR_TEST_FS_CMD(fs_test_root_parallel)
 FBR_TEST_FS_CMD(fs_test_directory_parallel)
+FBR_TEST_FS_CMD(fs_test_directory_ttl_ms)
 
 #undef FBR_TEST_FS_CMD
 #undef FBR_TEST_FS_VAR

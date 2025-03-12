@@ -461,9 +461,12 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	if (state == FBR_DIRSTATE_ERROR) {
 		assert(directory->refcounts.fs);
 
-		assert(directory->refcounts.in_dindex);
-		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
-		directory->refcounts.in_dindex = 0;
+		if (directory->refcounts.in_dindex) {
+			(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
+			directory->refcounts.in_dindex = 0;
+
+			fbr_fs_stat_sub(&fs->stats.directories_dindex);
+		}
 
 		_dindex_lru_remove(fs, directory);
 		assert_zero_dev(directory->refcounts.in_lru);
@@ -473,12 +476,17 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 			directory->stale = NULL;
 			release_stale = 1;
 
-			assert_zero(RB_INSERT(fbr_dindex_tree, &dirhead->tree, stale));
-			stale->refcounts.in_dindex = 1;
+			struct fbr_directory *existing =
+				RB_INSERT(fbr_dindex_tree, &dirhead->tree, stale);
 
-			_dindex_lru_add(fs, stale);
-		} else {
-			fbr_fs_stat_sub(&fs->stats.directories_dindex);
+			if (existing) {
+				fbr_directory_ok(existing);
+			} else {
+				stale->refcounts.in_dindex = 1;
+				fbr_fs_stat_add(&fs->stats.directories_dindex);
+
+				_dindex_lru_add(fs, stale);
+			}
 		}
 	} else {
 		assert_dev(state == FBR_DIRSTATE_OK);

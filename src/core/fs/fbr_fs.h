@@ -135,7 +135,8 @@ enum fbr_directory_state {
 enum fbr_directory_flags {
 	FBR_DIRFLAGS_NONE = 0,
 	FBR_DIRFLAGS_DONT_WAIT = (1 << 1),
-	FBR_DIRFLAGS_STALE_OK = (1 << 2)
+	FBR_DIRFLAGS_STALE_OK = (1 << 2),
+	FBR_DIRFLAGS_BOTH = FBR_DIRFLAGS_DONT_WAIT | FBR_DIRFLAGS_STALE_OK
 };
 
 struct fbr_directory_refcounts {
