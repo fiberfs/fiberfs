@@ -3,9 +3,9 @@
  *
  */
 
-#include "test/fbr_test.h"
-
 #include <stdlib.h>
+
+#include "test/fbr_test.h"
 
 struct fbr_test_random {
 	unsigned int				magic;

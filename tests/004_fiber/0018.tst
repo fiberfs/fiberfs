@@ -2,9 +2,9 @@ fiber_test "Mount fs fuse and do external tests"
 
 # Init
 
-skip_if_valgrind
+#skip_if_valgrind
 
-set_timeout_sec 12
+set_timeout_sec 30
 
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir
@@ -13,15 +13,15 @@ fs_test_fuse_init_root
 
 print "### Test 1"
 
-set_var1 "cd " $sys_tmpdir "; (sleep 0.01; cat * */* */*/* >/dev/null 2>&1) &"
-set_var2 "cd " $sys_tmpdir "; (sleep 0.01; cat */* >/dev/null 2>&1) &"
-set_var3 "cd " $sys_tmpdir "; (sleep 0.01; cat */*/* >/dev/null 2>&1) &"
-set_var4 "cd " $sys_tmpdir "; (sleep 0.01; cat */*/* */* >/dev/null 2>&1) &"
+set_var1 "cd " $sys_tmpdir "; sleep 0.01; cat * */* */*/* >/dev/null 2>&1 || true"
+set_var2 "cd " $sys_tmpdir "; sleep 0.01; cat */* >/dev/null 2>&1 || true"
+set_var3 "cd " $sys_tmpdir "; sleep 0.01; cat */*/* >/dev/null 2>&1 || true"
+set_var4 "cd " $sys_tmpdir "; sleep 0.01; cat */*/* */* >/dev/null 2>&1 || true"
 
-shell $var1
-shell $var2
-shell $var3
-shell $var4
+shell_bg $var1
+shell_bg $var2
+shell_bg $var3
+shell_bg $var4
 
 sleep_ms 12
 fs_test_release_root 0
@@ -43,7 +43,9 @@ fs_test_release_root 0
 fs_test_stats
 fs_test_debug
 
-sleep_ms 1000
+shell_waitall
+
+sleep_ms 100
 
 print "### Done, doing cleanup"
 

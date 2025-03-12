@@ -101,40 +101,6 @@ fbr_test_cmd_set_timeout_sec(struct fbr_test_context *ctx, struct fbr_test_cmd *
 }
 
 void
-fbr_test_cmd_shell(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "shell cmd: '%s'", cmd->params[0].value);
-
-	int ret = system(cmd->params[0].value);
-
-	fbr_test_ASSERT(WIFEXITED(ret), "shell cmd failed");
-	fbr_test_ERROR(WEXITSTATUS(ret), "shell cmd returned an error");
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "shell cmd passed");
-}
-
-void
-fbr_test_cmd_skip_shell_failure(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "skip_shell cmd: '%s'", cmd->params[0].value);
-
-	int ret = system(cmd->params[0].value);
-
-	if (!WIFEXITED(ret) || WEXITSTATUS(ret)) {
-		fbr_test_skip(ctx);
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "skip_shell cmd failed");
-	} else {
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "skip_shell cmd passed");
-	}
-}
-
-void
 fbr_test_cmd_skip_if_valgrind(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);

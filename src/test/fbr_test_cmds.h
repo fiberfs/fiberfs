@@ -23,8 +23,6 @@ FBR_TEST_CMD(equal)
 FBR_TEST_CMD(not_equal)
 FBR_TEST_CMD(print)
 FBR_TEST_CMD(set_timeout_sec)
-FBR_TEST_CMD(shell)
-FBR_TEST_CMD(skip_shell_failure)
 FBR_TEST_CMD(skip_if_valgrind)
 
 FBR_TEST_CMD(random_range)
@@ -47,6 +45,11 @@ FBR_TEST_VAR(var2)
 FBR_TEST_VAR(var3)
 FBR_TEST_VAR(var4)
 FBR_TEST_VAR(var5)
+
+FBR_TEST_CMD(shell)
+FBR_TEST_CMD(shell_bg)
+FBR_TEST_CMD(shell_waitall)
+FBR_TEST_CMD(skip_shell_failure)
 
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR
