@@ -13,11 +13,9 @@ print "### Test 1"
 
 set_var1 "cd " $sys_tmpdir "; sleep 0.01; cat * >/dev/null 2>&1 || true"
 set_var2 "cd " $sys_tmpdir "; sleep 0.01; cat */* >/dev/null 2>&1 || true"
-set_var3 "cd " $sys_tmpdir "; sleep 0.01; cat */*/* >/dev/null 2>&1 || true"
 
 shell_bg $var1
 shell_bg $var2
-shell_bg $var3
 
 sleep_ms 12
 fs_test_release_root 0

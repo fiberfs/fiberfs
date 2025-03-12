@@ -2,8 +2,6 @@ fiber_test "Mount fs fuse and do external tests"
 
 # Init
 
-#skip_if_valgrind
-
 set_timeout_sec 30
 
 sys_mkdir_tmp

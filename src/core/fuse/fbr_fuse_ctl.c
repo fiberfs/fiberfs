@@ -96,6 +96,9 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 		return 1;
 	}
 
+	// TODO
+	//fuse_set_signal_handlers(ctx->session);
+
 	ctx->path = strdup(path);
 	assert(ctx->path);
 

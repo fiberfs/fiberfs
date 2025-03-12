@@ -105,10 +105,11 @@ _dindex_deref(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_fs_stat_sub(&fs->stats.directory_refs);
 }
 
-static void
+static struct fbr_directory *
 _dindex_unset_root(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
+	assert(fs->root);
 
 	struct fbr_directory *old_root = fs->root;
 	fbr_directory_ok(old_root);
@@ -118,27 +119,16 @@ _dindex_unset_root(struct fbr_fs *fs)
 
 	_dindex_deref(fs, old_root);
 
-	if (!old_root->refcounts.fs) {
-		if (old_root->state == FBR_DIRSTATE_OK) {
-			assert_zero_dev(old_root->expired);
-			fbr_directory_expire(fs, old_root, NULL);
-		}
-
-		fbr_directory_free(fs, old_root);
-	}
-
 	fs->root = NULL;
+
+	return old_root;
 }
 
 static void
 _dindex_set_root(struct fbr_fs *fs, struct fbr_directory *root)
 {
 	fbr_fs_ok(fs);
-
-	if (fs->root) {
-		_dindex_unset_root(fs);
-	}
-	assert_zero_dev(fs->root);
+	assert_zero(fs->root);
 
 	fbr_directory_ok(root);
 	assert_dev(root->inode == FBR_INODE_ROOT);
@@ -151,7 +141,7 @@ _dindex_set_root(struct fbr_fs *fs, struct fbr_directory *root)
 	fs->root = root;
 }
 
-static void
+static struct fbr_directory *
 _dindex_lru_add(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
@@ -160,8 +150,14 @@ _dindex_lru_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(directory->refcounts.fs);
 
 	if (directory->inode == FBR_INODE_ROOT) {
+		struct fbr_directory *old_root = NULL;
+		if (fs->root) {
+			old_root = _dindex_unset_root(fs);
+		}
+
 		_dindex_set_root(fs, directory);
-		return;
+
+		return old_root;
 	}
 
 	assert_zero(pthread_mutex_lock(&dindex->lru_lock));
@@ -176,6 +172,8 @@ _dindex_lru_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(dindex->lru_len);
 
 	assert_zero(pthread_mutex_unlock(&dindex->lru_lock));
+
+	return NULL;
 }
 
 static void
@@ -368,9 +366,28 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_zero(RB_INSERT(fbr_dindex_tree, &dirhead->tree, directory));
 	directory->refcounts.in_dindex = 1;
 
-	_dindex_lru_add(fs, directory);
+	int free_old_root = 0;
+	struct fbr_directory *old_root = _dindex_lru_add(fs, directory);
+
+	if (old_root) {
+		fbr_directory_ok(old_root);
+		assert_zero_dev(old_root->refcounts.in_dindex);
+
+		if (!old_root->refcounts.fs) {
+			free_old_root = 1;
+		}
+	}
 
 	_dindex_UNLOCK(dirhead);
+
+	if (free_old_root) {
+		if (old_root->state == FBR_DIRSTATE_OK) {
+			assert_zero_dev(old_root->expired);
+			fbr_directory_expire(fs, old_root, NULL);
+		}
+
+		fbr_directory_free(fs, old_root);
+	}
 
 	return directory;
 }
@@ -447,6 +464,7 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	directory->creation = fbr_get_time();
 
 	int release_stale = 0;
+	int do_expire = 0;
 	struct fbr_directory *stale = directory->stale;
 
 	if (stale) {
@@ -485,7 +503,12 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 				stale->refcounts.in_dindex = 1;
 				fbr_fs_stat_add(&fs->stats.directories_dindex);
 
-				_dindex_lru_add(fs, stale);
+				struct fbr_directory *old_root = _dindex_lru_add(fs, stale);
+
+				if(old_root) {
+					assert_dev(old_root == directory);
+					assert_dev(old_root->refcounts.fs);
+				}
 			}
 		}
 	} else {
@@ -494,14 +517,17 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 		if (stale) {
 			directory->stale = NULL;
 			release_stale = 1;
-
-			fbr_directory_expire(fs, stale, directory);
+			do_expire = 1;
 		}
 	}
 
 	assert_zero(pthread_cond_broadcast(&directory->update));
 
 	_dindex_UNLOCK(dirhead);
+
+	if (do_expire) {
+		fbr_directory_expire(fs, stale, directory);
+	}
 
 	if (release_stale) {
 		fbr_dindex_release(fs, &stale);
@@ -607,6 +633,8 @@ fbr_dindex_release_root(struct fbr_fs *fs)
 	fbr_path_init_dir(&find.dirname, FBR_DIRNAME_ROOT->name, FBR_DIRNAME_ROOT->len);
 
 	struct fbr_dindex_dirhead *dirhead = _dindex_LOCK(fs, &find);
+
+	int free_root = 0;
 	struct fbr_directory *root = fs->root;
 
 	if (root) {
@@ -619,10 +647,23 @@ fbr_dindex_release_root(struct fbr_fs *fs)
 
 		fbr_fs_stat_sub(&fs->stats.directories_dindex);
 
-		_dindex_unset_root(fs);
+		(void)_dindex_unset_root(fs);
+
+		if (!root->refcounts.fs) {
+			free_root = 1;
+		}
 	}
 
 	_dindex_UNLOCK(dirhead);
+
+	if (free_root) {
+		if (root->state == FBR_DIRSTATE_OK) {
+			assert_zero_dev(root->expired);
+			fbr_directory_expire(fs, root, NULL);
+		}
+
+		fbr_directory_free(fs, root);
+	}
 }
 
 void
