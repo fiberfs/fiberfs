@@ -639,13 +639,14 @@ fbr_dindex_release_root(struct fbr_fs *fs)
 
 	if (root) {
 		fbr_directory_ok(root);
-		assert(root->refcounts.in_dindex);
-		assert(root->refcounts.fs);
+		assert_dev(root->refcounts.fs);
 
-		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, root);
-		root->refcounts.in_dindex = 0;
+		if (root->refcounts.in_dindex) {
+			(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, root);
+			root->refcounts.in_dindex = 0;
 
-		fbr_fs_stat_sub(&fs->stats.directories_dindex);
+			fbr_fs_stat_sub(&fs->stats.directories_dindex);
+		}
 
 		(void)_dindex_unset_root(fs);
 
