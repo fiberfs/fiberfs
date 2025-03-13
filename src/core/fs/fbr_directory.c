@@ -232,7 +232,7 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert_dev(directory->state == FBR_DIRSTATE_OK);
-	assert_zero(directory->stale);
+	assert_zero(directory->previous);
 
 	if (new_directory) {
 		fbr_directory_ok(new_directory);

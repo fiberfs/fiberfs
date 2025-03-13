@@ -66,10 +66,10 @@ _dir_test_alloc(void *arg)
 		unsigned long diff_ms = (long)((fbr_get_time() - time_start) * 1000);
 
 		fbr_test_logs("alloc thread_%lu (+%ld): version %lu error: %d "
-				"stale: %s stale_version: %lu",
+				"previous: %s previous_version: %lu",
 			id, diff_ms, version, do_error,
-			directory->stale ? "true" : "false",
-			directory->stale ? directory->stale->version: 0);
+			directory->previous ? "true" : "false",
+			directory->previous ? directory->previous->version: 0);
 
 		char namebuf[128];
 		ssize_t ret = snprintf(namebuf, sizeof(namebuf), "file_%lu", version);

@@ -4,8 +4,8 @@ FIBERFS_TEST=../src/fiberfs_test
 FLAGS=-q
 TESTS=$(sort $(wildcard */*.cht */*.tst))
 TESTS_JSON=$(sort $(wildcard 003_json/*.tst))
-TESTS_FIBER=$(sort $(wildcard 004_fiber/*.tst))
-TESTS_FIBERX=$(sort $(wildcard 004_fiber/*.tstx))
+TESTS_CORE=$(sort $(wildcard 004_core/*.tst))
+TESTS_COREX=$(sort $(wildcard 004_core/*.tstx))
 PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
 GDB=gdb --args
@@ -13,7 +13,7 @@ GDB=gdb --args
 export FIBER_VALGRIND=$(PRE_EXEC)
 export FIBER_FLAGS=$(FLAGS)
 
-.PHONY: all test check FORCE valgrind verbose sudo json fiber fiberx
+.PHONY: all test check FORCE valgrind verbose sudo json core corex
 
 all:			check
 
@@ -39,9 +39,9 @@ check:			$(TESTS)
 
 json:			$(TESTS_JSON)
 
-fiber:			$(TESTS_FIBER)
+core:			$(TESTS_CORE)
 
-fiberx:			$(TESTS_FIBERX)
+corex:			$(TESTS_COREX)
 
 %.cht %.tst:		$(FIBERFS_TEST) FORCE
 			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@

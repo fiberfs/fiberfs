@@ -164,7 +164,7 @@ struct fbr_directory {
 	unsigned long				version;
 
 	struct fbr_file				*file;
-	struct fbr_directory			*stale;
+	struct fbr_directory			*previous;
 
 	RB_ENTRY(fbr_directory)			dindex_entry;
 	TAILQ_ENTRY(fbr_directory)		lru_entry;
