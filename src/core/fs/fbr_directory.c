@@ -243,17 +243,20 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	if (next) {
 		fbr_directory_ok(next);
 		assert(next->state == FBR_DIRSTATE_OK);
-
-		fbr_dindex_release(fs, &directory->next);
-		assert_zero_dev(directory->next);
 	}
 
 	if (fs->shutdown || directory->expired) {
+		if (next) {
+			fbr_dindex_release(fs, &directory->next);
+		}
 		return;
 	}
 
 	// If we have a TTL, files can never be forced to expire
 	if (fs->config.dentry_ttl > 0 && !next) {
+		if (next) {
+			fbr_dindex_release(fs, &directory->next);
+		}
 		return;
 	}
 
@@ -274,7 +277,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 			next->inode, next->version);
 	} else {
 		fs->log("** DIR_EXP inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
-				" new: false",
+				" next: false",
 			directory->inode, directory->version,
 			directory->refcounts.in_dindex,
 				directory->refcounts.in_lru,
@@ -283,6 +286,9 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	}
 
 	if (!fs->fuse_ctx) {
+		if (next) {
+			fbr_dindex_release(fs, &directory->next);
+		}
 		return;
 	}
 
@@ -337,5 +343,9 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 			assert_dev(ret != -ENOSYS);
 			(void)ret;
 		}
+	}
+
+	if (next) {
+		fbr_dindex_release(fs, &directory->next);
 	}
 }
