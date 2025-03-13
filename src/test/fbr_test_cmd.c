@@ -136,9 +136,9 @@ fbr_test_cmds_init(struct fbr_test *test)
 
 #undef FBR_TEST_FUSE_CMDS_H_INCLUDED
 #define FBR_TEST_FUSE_CMD(cmd)					\
-	_test_cmd_register(test, #cmd, &fbr_test_fuse_cmd_##cmd);
+	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
 #define FBR_TEST_FUSE_VAR(var)					\
-	_test_var_register(test, "$" #var, &fbr_test_fuse_var_##var);
+	_test_var_register(test, "$" #var, &fbr_var_##var);
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 #undef FBR_TEST_COREFS_CMDS_H_INCLUDED

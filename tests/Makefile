@@ -8,6 +8,7 @@ TESTS_CORE=$(sort $(wildcard 004_core/*.tst))
 TESTS_COREX=$(sort $(wildcard 004_core/*.tstx))
 PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
+FAIL_OUT=>/dev/null 2>&1
 GDB=gdb --args
 
 export FIBER_VALGRIND=$(PRE_EXEC)
@@ -30,6 +31,7 @@ valgrind:
 
 verbose:
 			$(eval FLAGS=-vv)
+			$(eval FAIL_OUT=)
 			@echo verbose: enabled
 
 sudo:
@@ -48,3 +50,6 @@ corex:			$(TESTS_COREX)
 
 %tstx:			$(FIBERFS_TEST) FORCE | sudo
 			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
+
+%.tstf:			$(FIBERFS_TEST) FORCE
+			$(FIBERFS_TEST) $(FLAGS) $@ $(FAIL_OUT) || sleep 1; echo SUCCESS

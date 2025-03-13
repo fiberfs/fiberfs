@@ -13,8 +13,8 @@
 #include "core/fuse/fbr_fuse.h"
 #include "core/context/fbr_callback.h"
 
-#define FBR_TEST_FUSE_CMD(cmd)		fbr_test_cmd_f fbr_test_fuse_cmd_##cmd;
-#define FBR_TEST_FUSE_VAR(var)		fbr_test_var_f fbr_test_fuse_var_##var;
+#define FBR_TEST_FUSE_CMD(cmd)		fbr_test_cmd_f fbr_cmd_##cmd;
+#define FBR_TEST_FUSE_VAR(var)		fbr_test_var_f fbr_var_##var;
 
 struct fbr_test_fuse {
 	unsigned int			magic;
@@ -37,6 +37,8 @@ FBR_TEST_FUSE_CMD(fuse_test_unmount)
 
 FBR_TEST_FUSE_CMD(fuse_test_ops_mount)
 FBR_TEST_FUSE_CMD(fuse_test_ops_unmount)
+
+FBR_TEST_FUSE_CMD(fuse_error_mount)
 
 #undef FBR_TEST_FUSE_CMD
 #undef FBR_TEST_FUSE_VAR

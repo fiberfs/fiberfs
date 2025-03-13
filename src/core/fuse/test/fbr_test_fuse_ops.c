@@ -416,20 +416,24 @@ static const struct fbr_fuse_callbacks _TEST_OPS_CALLBACKS = {
 };
 
 void
-fbr_test_fuse_cmd_fuse_test_ops_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_fuse_test_ops_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
+	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_OPS_CALLBACKS);
-	fbr_test_ERROR(ret, "Fuse mount failed: %s", cmd->params[0].value);
+	char *mount = cmd->params[0].value;
+
+	int ret = fbr_fuse_test_mount(ctx, mount, &_TEST_OPS_CALLBACKS);
+	fbr_test_ERROR(ret, "Fuse mount failed: %s", mount);
 	fbr_test_ASSERT(_TEST_OPS_FUSE_STATE == 1, "init callback failed")
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Fuse test_ops mounted: %s", cmd->params[0].value);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Fuse test_ops mounted: %s", mount);
 }
 
 void
-fbr_test_fuse_cmd_fuse_test_ops_unmount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_fuse_test_ops_unmount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
+	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_fuse_test_unmount(ctx);

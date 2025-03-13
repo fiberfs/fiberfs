@@ -57,7 +57,7 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_path_name_init(&filename, "dir1");
 	struct fbr_file *file = fbr_file_alloc(fs, root, &filename, fmode);
 
-	fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
+	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
 
 	fbr_inode_add(fs, file);
 
@@ -65,7 +65,7 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_directory_ok(dir1);
 	assert(dir1->state == FBR_DIRSTATE_LOADING);
 
-	fbr_directory_set_state(ctx->fs, dir1, FBR_DIRSTATE_OK);
+	fbr_directory_set_state(fs, dir1, FBR_DIRSTATE_OK);
 
 	fbr_inode_release(fs, &file);
 	fbr_dindex_release(fs, &dir1);
