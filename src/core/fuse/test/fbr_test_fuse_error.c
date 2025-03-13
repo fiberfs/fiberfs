@@ -4,6 +4,8 @@
  *
  */
 
+#include <string.h>
+
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
@@ -59,6 +61,15 @@ _fuse_err_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 		_test_error_CRASH();
 	}
 
+	if (ino == 100) {
+		struct stat st;
+		fbr_ZERO(&st);
+		st.st_ino = 100;
+		st.st_mode = S_IFREG | 0444;
+		fbr_fuse_reply_attr(request, &st, fbr_fs_dentry_ttl(fs));
+		return;
+	}
+
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
 	if (!file) {
@@ -100,7 +111,16 @@ _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 		_test_error_CRASH();
 	}
 
-	fbr_fuse_reply_err(request, ENOENT);
+	if (strncmp(name, "fiber", 5)) {
+		struct fuse_entry_param entry;
+		fbr_ZERO(&entry);
+		entry.ino = 100;
+		entry.attr.st_ino = 100;
+		entry.attr.st_mode = S_IFREG | 0444;
+		fbr_fuse_reply_entry(request, &entry);
+	} else {
+		fbr_fuse_reply_err(request, ENOENT);
+	}
 
 	if (!strcmp(name, "lookup3")) {
 		fs->log("** LOOKUP POST doing abort");

@@ -26,7 +26,7 @@ fbr_context_abort(void)
 	fbr_fuse_context_ok(request->fuse_ctx);
 	request->fuse_ctx->error = 1;
 
-	fbr_fuse_abort(request->fuse_ctx);
+	fuse_session_exit(request->fuse_ctx->session);
 
 	if (request->fuse_req) {
 		// TODO some calls will still hang on this (ex: read)

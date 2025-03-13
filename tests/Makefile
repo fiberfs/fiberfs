@@ -6,6 +6,7 @@ TESTS=$(sort $(wildcard */*.cht */*.tst))
 TESTS_JSON=$(sort $(wildcard 003_json/*.tst))
 TESTS_CORE=$(sort $(wildcard 004_core/*.tst))
 TESTS_COREX=$(sort $(wildcard 004_core/*.tstx))
+TESTS_ERROR=$(sort $(wildcard 005_fuse_error/*.tst*))
 PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
 FAIL_OUT=>/dev/null 2>&1
@@ -44,6 +45,8 @@ json:			$(TESTS_JSON)
 core:			$(TESTS_CORE)
 
 corex:			$(TESTS_COREX)
+
+error:			$(TESTS_ERROR)
 
 %.cht %.tst:		$(FIBERFS_TEST) FORCE
 			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@

@@ -39,6 +39,7 @@ static struct fbr_fuse_context *
 _fuse_init(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
+	assert_zero(fbr_request_get());
 
 	if (!test_ctx->test_fuse) {
 		struct fbr_test_fuse *test_fuse = malloc(sizeof(*test_fuse));
