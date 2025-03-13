@@ -253,7 +253,6 @@ struct fbr_fs {
 	struct fbr_dindex			*dindex;
 
 	struct fbr_fuse_context			*fuse_ctx;
-	struct fbr_directory			*root;
 	struct fbr_file				*root_file;
 
 	pthread_mutex_t				lock;
@@ -349,7 +348,6 @@ struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_n
 	enum fbr_directory_flags flags);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
 void fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max);
-void fbr_dindex_release_root(struct fbr_fs *fs);
 void fbr_dindex_debug(struct fbr_fs *fs, fbr_dindex_debug_f *callback);
 void fbr_dindex_free_all(struct fbr_fs *fs);
 

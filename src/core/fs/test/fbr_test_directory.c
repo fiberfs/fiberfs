@@ -203,7 +203,6 @@ _directory_parallel(void)
 	struct fbr_file *file = NULL;
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
-	fbr_test_ASSERT(fs->root, "fs->root is missing");
 
 	if (_TEST_ROOT) {
 		directory = root;

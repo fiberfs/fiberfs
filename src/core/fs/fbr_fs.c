@@ -12,17 +12,6 @@
 #include "core/context/fbr_callback.h"
 #include "core/store/fbr_store.h"
 
-/*
- * Each directory has a list of files with references
- * Each directory lives in the dindex and is controlled by the LRU
- * Each directory has a reference to its sibling inode file
- * Each file has a parent inode value
- *
- * The root directory doesnt live in the LRU, the fs owns its ref
- * It also owns its parent inode ref
- * The root inode has a hidden ref
- */
-
 static const struct fbr_store_callbacks _STORE_CALLBACKS_EMPTY;
 
 struct fbr_fs *
@@ -73,7 +62,6 @@ fbr_fs_release_all(struct fbr_fs *fs, int release_root_inode)
 	fbr_fs_ok(fs);
 
 	fbr_dindex_lru_purge(fs, 0);
-	fbr_dindex_release_root(fs);
 
 	if (release_root_inode) {
 		fbr_fs_LOCK(fs);

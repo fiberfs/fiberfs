@@ -717,8 +717,6 @@ fbr_cmd_fs_test_fuse_init_root(struct fbr_test_context *ctx, struct fbr_test_cmd
 	fbr_fs_ok(fs);
 
 	struct fbr_directory *root = _test_fs_init_directory(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
-	fbr_test_ASSERT(fs->root, "root doesnt exist");
-
 	fbr_dindex_release(fs, &root);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root initialized");

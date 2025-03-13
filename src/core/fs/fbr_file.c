@@ -30,7 +30,7 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 			fbr_path_name_init(&dirname, "");
 		}
 	} else {
-		assert_zero(fs->root);
+		assert_zero(fs->root_file);
 		assert_zero(filename->len);
 		fbr_path_name_init(&dirname, "");
 	}
