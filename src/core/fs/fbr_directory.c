@@ -50,6 +50,8 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 		fbr_fs_UNLOCK(fs);
 	}
 
+	assert_dev(fs->root_file);
+
 	struct fbr_directory *root = fbr_directory_alloc(fs, FBR_DIRNAME_ROOT, root_file->inode);
 	fbr_directory_ok(root);
 	assert_dev(root->inode == FBR_INODE_ROOT);
