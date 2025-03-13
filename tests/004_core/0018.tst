@@ -49,7 +49,7 @@ print "### Done, doing cleanup"
 
 fs_test_release_root
 
-sleep_ms 200
+sleep_ms 100
 fs_test_stats
 fs_test_debug
 

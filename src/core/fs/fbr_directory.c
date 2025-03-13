@@ -19,6 +19,8 @@ const struct fbr_path_name *FBR_DIRNAME_ROOT = &_FBR_DIRNAME_ROOT;
 
 RB_GENERATE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
 
+static void _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory);
+
 struct fbr_directory *
 fbr_directory_root_alloc(struct fbr_fs *fs)
 {
@@ -127,8 +129,11 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_zero(directory->refcounts.in_lru);
 
 	if (directory->state == FBR_DIRSTATE_OK) {
-		fbr_directory_expire(fs, directory, NULL);
+		_directory_expire(fs, directory);
 	}
+
+	assert_zero_dev(directory->previous);
+	assert_zero_dev(directory->next);
 
 	struct fbr_file *file, *temp;
 
@@ -225,18 +230,22 @@ fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
 	return file;
 }
 
-void
-fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
-    struct fbr_directory *new_directory)
+static void
+_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert_dev(directory->state == FBR_DIRSTATE_OK);
 	assert_zero(directory->previous);
 
-	if (new_directory) {
-		fbr_directory_ok(new_directory);
-		assert(new_directory->state == FBR_DIRSTATE_OK);
+	struct fbr_directory *next = directory->next;
+
+	if (next) {
+		fbr_directory_ok(next);
+		assert(next->state == FBR_DIRSTATE_OK);
+
+		fbr_dindex_release(fs, &directory->next);
+		assert_zero_dev(directory->next);
 	}
 
 	if (fs->shutdown || directory->expired) {
@@ -244,7 +253,7 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	}
 
 	// If we have a TTL, files can never be forced to expire
-	if (fs->config.dentry_ttl > 0 && !new_directory) {
+	if (fs->config.dentry_ttl > 0 && !next) {
 		return;
 	}
 
@@ -254,15 +263,15 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_path_get_dir(&directory->dirname, &dirname);
 
 	assert_dev(fs->log);
-	if (new_directory) {
+	if (next) {
 		fs->log("** DIR_EXP inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
-				" new: true new_inode: %lu(%lu)",
+				" next: true next_inode: %lu(%lu)",
 			directory->inode, directory->version,
 			directory->refcounts.in_dindex,
 				directory->refcounts.in_lru,
 				directory->refcounts.fs,
 			(int)dirname.len, dirname.name, dirname.len,
-			new_directory->inode, new_directory->version);
+			next->inode, next->version);
 	} else {
 		fs->log("** DIR_EXP inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
 				" new: false",
@@ -296,8 +305,8 @@ fbr_directory_expire(struct fbr_fs *fs, struct fbr_directory *directory,
 		int file_deleted = 0;
 		int file_expired = 0;
 
-		if (new_directory) {
-			new_file = fbr_directory_find_file(new_directory, filename.name,
+		if (next) {
+			new_file = fbr_directory_find_file(next, filename.name,
 				filename.len);
 
 			if (!new_file) {

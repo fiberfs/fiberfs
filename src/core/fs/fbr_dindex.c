@@ -303,6 +303,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 		// Existing is now previous
 		assert_dev(existing->state == FBR_DIRSTATE_OK);
 		assert_zero_dev(existing->previous);
+		assert_zero_dev(existing->next);
 
 		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, existing);
 		existing->refcounts.in_dindex = 0;
@@ -407,7 +408,6 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	directory->creation = fbr_get_time();
 
 	int release_previous = 0;
-	int do_expire = 0;
 	struct fbr_directory *previous = directory->previous;
 
 	if (previous) {
@@ -416,6 +416,7 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 		assert_zero_dev(previous->refcounts.in_dindex);
 		assert_zero_dev(previous->refcounts.in_lru);
 		assert_zero_dev(previous->previous);
+		assert_zero_dev(previous->next);
 		assert_zero_dev(previous->expired);
 	}
 
@@ -455,17 +456,16 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 		if (previous) {
 			directory->previous = NULL;
 			release_previous = 1;
-			do_expire = 1;
+
+			// Store directory as next for future invalidation
+			_dindex_ref(fs, directory);
+			previous->next = directory;
 		}
 	}
 
 	pt_assert(pthread_cond_broadcast(&directory->update));
 
 	_dindex_UNLOCK(dirhead);
-
-	if (do_expire) {
-		fbr_directory_expire(fs, previous, directory);
-	}
 
 	if (release_previous) {
 		fbr_dindex_release(fs, &previous);
