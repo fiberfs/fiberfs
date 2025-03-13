@@ -256,7 +256,7 @@ struct fbr_fs {
 	struct fbr_fs_config			config;
 	struct fbr_fs_stats			stats;
 
-	fbr_log_f				*log;
+	fbr_log_f				*logger;
 
 	unsigned int				shutdown:1;
 };
@@ -401,5 +401,7 @@ void fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio);
 }
 #define fbr_fs_int64(obj)					\
 	((uint64_t)(obj))
+#define log(fmt, ...)						\
+	logger(fmt "\n", ##__VA_ARGS__)
 
 #endif /* _FBR_FS_H_INCLUDED_ */

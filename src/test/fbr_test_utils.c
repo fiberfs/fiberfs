@@ -27,8 +27,8 @@ fbr_test_convert(struct fbr_test_context *ctx)
 }
 
 void
-fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level, const char *fmt,
-    va_list ap)
+fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level, int newline,
+    const char *fmt, va_list ap)
 {
 	if (ctx) {
 		fbr_test_context_ok(ctx);
@@ -50,10 +50,10 @@ fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level, const
 		prefix = "--- ";
 	}
 
-	char vbuf[4096];
+	char vbuf[FBR_TEST_LOG_BUFMAX];
 	(void)vsnprintf(vbuf, sizeof(vbuf), fmt, ap);
 
-	printf("%s%s\n", prefix, vbuf);
+	printf("%s%s%s", prefix, vbuf, newline ? "\n" : "");
 }
 
 void __fbr_attr_printf(1)
@@ -63,7 +63,7 @@ fbr_test_logs(const char *fmt, ...)
 
 	va_list ap;
 	va_start(ap, fmt);
-	fbr_test_vlog(ctx, FBR_LOG_VERBOSE, fmt, ap);
+	fbr_test_vlog(ctx, FBR_LOG_VERBOSE, 1, fmt, ap);
 	va_end(ap);
 }
 
@@ -72,7 +72,7 @@ fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level, const 
 {
 	va_list ap;
 	va_start(ap, fmt);
-	fbr_test_vlog(ctx, level, fmt, ap);
+	fbr_test_vlog(ctx, level, 1, fmt, ap);
 	va_end(ap);
 }
 

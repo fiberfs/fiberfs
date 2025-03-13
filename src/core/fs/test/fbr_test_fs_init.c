@@ -9,6 +9,7 @@
 #include "fiberfs.h"
 #include "core/context/fbr_callback.h"
 #include "core/fs/fbr_fs.h"
+#include "core/fs/fbr_fs_inline.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 
@@ -23,7 +24,7 @@ fbr_fs_test_logger(const char *fmt, ...)
 
 	va_list ap;
 	va_start(ap, fmt);
-	fbr_test_vlog(test_ctx, FBR_LOG_VERBOSE, fmt, ap);
+	fbr_test_vlog(test_ctx, FBR_LOG_VERBOSE, 0, fmt, ap);
 	va_end(ap);
 }
 
@@ -36,7 +37,7 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
 
-	fs->log = fbr_fs_test_logger;
+	fs->logger = fbr_fs_test_logger;
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);
@@ -275,3 +276,72 @@ _FS_TEST_STAT(requests_total)
 _FS_TEST_STAT(fetch_bytes)
 _FS_TEST_STAT(read_bytes)
 _FS_TEST_STAT(write_bytes)
+
+static void
+_test_fs_inodes_debug_print(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	const char *fullname = fbr_path_get_full(&file->path, NULL);
+
+	fbr_test_logs("INODES debug: inode: %lu type: %s parent: %lu refcount: %u+%u path: %s",
+		file->inode,
+		fbr_file_is_dir(file) ? "dir" : fbr_file_is_file(file) ? "file" : "other",
+		file->parent_inode,
+		file->refcounts.dindex, file->refcounts.inode,
+		fullname);
+}
+
+void
+fbr_test_fs_inodes_debug(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
+
+	fbr_inodes_debug(fs, _test_fs_inodes_debug_print);
+
+	fbr_test_logs("debug inodes done");
+}
+
+
+static void
+_test_fs_dindex_debug_print(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+
+	const char *fullname = fbr_path_get_full(&directory->dirname, NULL);
+
+	fbr_test_logs("DINDEX debug: inode: %lu refcount: %u+%u+%u files: %zu path: '%s'",
+		directory->inode,
+		directory->refcounts.in_dindex,
+			directory->refcounts.in_lru,
+			directory->refcounts.fs,
+		directory->file_count,
+		fullname);
+}
+
+void
+fbr_test_fs_dindex_debug(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
+
+	fbr_dindex_debug(fs, _test_fs_dindex_debug_print);
+
+	fbr_test_logs("debug dindex done");
+}
+
+void
+fbr_cmd_fs_test_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_fuse_mounted(fuse_ctx);
+	struct fbr_fs *fs = fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	fbr_test_fs_inodes_debug(fs);
+	fbr_test_fs_dindex_debug(fs);
+}

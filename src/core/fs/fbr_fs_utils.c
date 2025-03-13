@@ -52,16 +52,10 @@ fbr_fs_dentry_ttl(struct fbr_fs *fs)
 void __fbr_attr_printf(1)
 fbr_fs_logger(const char *fmt, ...)
 {
-	char vbuf[4096];
-
 	va_list ap;
 	va_start(ap, fmt);
-
-	(void)vsnprintf(vbuf, sizeof(vbuf), fmt, ap);
-
+	vprintf(fmt, ap);
 	va_end(ap);
-
-	printf("%s\n", vbuf);
 }
 
 size_t

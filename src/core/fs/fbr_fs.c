@@ -33,7 +33,7 @@ fbr_fs_alloc(void)
 	pt_assert(pthread_mutex_init(&fs->lock, NULL));
 
 	fs->store = &_STORE_CALLBACKS_EMPTY;
-	fs->log = fbr_fs_logger;
+	fs->logger = fbr_fs_logger;
 
 	fbr_fs_ok(fs);
 
@@ -89,11 +89,12 @@ void
 fbr_fs_free(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
-	assert_zero(fs->shutdown);
 
 	fs->shutdown = 1;
 
-	fbr_fs_release_all(fs, 1);
+	if (fs->root_file) {
+		fbr_inode_release(fs, &fs->root_file);
+	}
 
 	fbr_dindex_free_all(fs);
 	fbr_inodes_free_all(fs);

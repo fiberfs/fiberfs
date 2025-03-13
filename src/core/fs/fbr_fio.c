@@ -304,7 +304,7 @@ fbr_fio_release_chunks(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_
 
 	if (fbr_assert_is_dev()) {
 		fbr_chunk_list_ok(fio->floating);
-		assert(fs->log);
+		assert(fs->logger);
 		///*
 		for (size_t i = 0; i < fio->floating->length; i++) {
 			struct fbr_chunk *chunk = fio->floating->list[i];
@@ -526,7 +526,7 @@ fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *chunks, size_t offs
 	assert_dev(offset_pos == offset_end);
 
 	if (fbr_assert_is_dev()) {
-		assert(fs->log);
+		assert(fs->logger);
 		///*
 		for (size_t i = 0; i < chunks->length; i++) {
 			struct fbr_chunk *chunk = chunks->list[i];

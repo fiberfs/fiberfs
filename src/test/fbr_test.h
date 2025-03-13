@@ -23,6 +23,7 @@ enum fbr_test_verbocity {
 };
 
 #define FBR_TEST_MAX_PARAMS			16
+#define FBR_TEST_LOG_BUFMAX			4096
 
 struct fbr_test;
 struct fbr_test_sys;
@@ -166,7 +167,7 @@ char *fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot);
 struct fbr_test *fbr_test_convert(struct fbr_test_context *ctx);
 void fbr_test_skip(struct fbr_test_context *ctx);
 void fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
-	const char *fmt, va_list ap);
+	int newline, const char *fmt, va_list ap);
 void __fbr_attr_printf(1) fbr_test_logs(const char *fmt, ...);
 void __fbr_attr_printf(3) fbr_test_log(struct fbr_test_context *ctx,
 	enum fbr_test_verbocity level, const char *fmt, ...);

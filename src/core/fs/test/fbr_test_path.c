@@ -91,7 +91,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fs *fs = fbr_fs_alloc();
 	fbr_fs_ok(fs);
 
-	fs->log = fbr_fs_test_logger;
+	fs->logger = fbr_fs_test_logger;
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** ROOT");
 

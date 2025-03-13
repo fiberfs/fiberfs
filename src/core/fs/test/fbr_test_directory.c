@@ -179,7 +179,7 @@ _directory_parallel(void)
 	struct fbr_fs *fs = fbr_fs_alloc();
 	fbr_fs_ok(fs);
 
-	fs->log = fbr_fs_test_logger;
+	fs->logger = fbr_fs_test_logger;
 	fs->config.dindex_fresh_ttl = _TEST_DIR_FRESH_TTL;
 
 	fbr_test_random_seed();

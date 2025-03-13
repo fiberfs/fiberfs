@@ -580,7 +580,7 @@ void
 fbr_dindex_free_all(struct fbr_fs *fs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
-	assert_dev(fs->shutdown);
+	assert(fs->shutdown);
 
 	for (size_t i = 0; i < _DINDEX_HEAD_COUNT; i++) {
 		struct fbr_dindex_dirhead *dirhead = &dindex->dirheads[i];

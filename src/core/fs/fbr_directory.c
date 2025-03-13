@@ -265,7 +265,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_path_name dirname;
 	fbr_path_get_dir(&directory->dirname, &dirname);
 
-	assert_dev(fs->log);
+	assert_dev(fs->logger);
 	if (next) {
 		fs->log("** DIR_EXP inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
 				" next: true next_inode: %lu(%lu)",
