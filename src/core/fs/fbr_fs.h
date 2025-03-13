@@ -132,13 +132,6 @@ enum fbr_directory_state {
 	FBR_DIRSTATE_ERROR
 };
 
-enum fbr_directory_flags {
-	FBR_DIRFLAGS_NONE = 0,
-	FBR_DIRFLAGS_DONT_WAIT = (1 << 1),
-	FBR_DIRFLAGS_STALE_OK = (1 << 2),
-	FBR_DIRFLAGS_BOTH = FBR_DIRFLAGS_DONT_WAIT | FBR_DIRFLAGS_STALE_OK
-};
-
 struct fbr_directory_refcounts {
 	fbr_refcount_t				in_dindex;
 	fbr_refcount_t				in_lru;
@@ -344,7 +337,7 @@ void fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 void fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname,
-	enum fbr_directory_flags flags);
+	int wait_for_new);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
 void fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max);
 void fbr_dindex_debug(struct fbr_fs *fs, fbr_dindex_debug_f *callback);

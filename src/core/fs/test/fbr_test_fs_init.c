@@ -74,7 +74,7 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
-	struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, FBR_DIRFLAGS_NONE);
+	struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
 	fbr_directory_ok(root);
 	fbr_test_ASSERT(root->state == FBR_DIRSTATE_OK, "bad root state %d", root->state);
 

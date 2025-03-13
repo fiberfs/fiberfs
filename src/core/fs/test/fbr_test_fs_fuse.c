@@ -300,7 +300,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 		(int)parent_dirname.len, parent_dirname.name, parent_dirname.len,
 		parent_file->inode);
 
-	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname, FBR_DIRFLAGS_NONE);
+	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname, 0);
 	struct fbr_directory *stale_directory = NULL;
 
 	if (directory && directory->inode != parent_file->inode) {
@@ -392,7 +392,7 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	fbr_test_logs("** OPENDIR directory: '%.*s':%zu",
 		(int)dirname.len, dirname.name, dirname.len);
 
-	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, FBR_DIRFLAGS_NONE);
+	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 0);
 	struct fbr_directory *stale_directory = NULL;
 
 	if (directory && directory->inode != file->inode) {

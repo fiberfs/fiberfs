@@ -119,17 +119,9 @@ _dir_test_read(void *arg)
 			fbr_path_name_init(&dirname, "random");
 		}
 
-		enum fbr_directory_flags flags = FBR_DIRFLAGS_NONE;
+		int wait_for_new = random() % 2;
 
-		if (count % 4 == 1) {
-			flags = FBR_DIRFLAGS_DONT_WAIT;
-		} else if (count % 4 == 2) {
-			flags = FBR_DIRFLAGS_STALE_OK;
-		} else if (count % 4 == 3) {
-			flags = FBR_DIRFLAGS_DONT_WAIT | FBR_DIRFLAGS_STALE_OK;
-		}
-
-		struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, flags);
+		struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, wait_for_new);
 
 		if (!directory) {
 			continue;

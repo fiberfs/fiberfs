@@ -222,7 +222,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		struct fbr_path_name dirname;
 		fbr_path_get_full(&file->path, &dirname);
 
-		directory = fbr_dindex_take(fs, &dirname, FBR_DIRFLAGS_NONE);
+		directory = fbr_dindex_take(fs, &dirname, 0);
 		fbr_directory_ok(directory);
 
 		fbr_dindex_release(fs, &directory);
