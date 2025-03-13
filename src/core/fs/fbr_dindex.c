@@ -116,7 +116,6 @@ _dindex_lru_add(struct fbr_fs *fs, struct fbr_directory *directory)
 	pt_assert(pthread_mutex_lock(&dindex->lru_lock));
 
 	TAILQ_INSERT_HEAD(&dindex->lru, directory, lru_entry);
-
 	directory->refcounts.in_lru = 1;
 
 	_dindex_ref(fs, directory);
@@ -162,7 +161,6 @@ _dindex_lru_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	}
 
 	TAILQ_REMOVE(&dindex->lru, directory, lru_entry);
-
 	directory->refcounts.in_lru = 0;
 
 	_dindex_deref(fs, directory);
