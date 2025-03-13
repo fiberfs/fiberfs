@@ -36,7 +36,7 @@ equal $fs_test_stat_files_inodes 2
 
 print "### TEST 2 (directory expired, new inodes)"
 
-fs_test_release_root 0
+fs_test_release_all
 
 sleep_ms 100
 fs_test_stats
@@ -74,7 +74,7 @@ equal $fs_test_stat_directories_dindex 1
 equal $fs_test_stat_files_inodes 2
 
 # Release everytihng
-fs_test_release_root
+fs_test_release_all 1
 
 sleep_ms 100
 fs_test_stats

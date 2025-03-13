@@ -38,7 +38,7 @@ sleep_ms 100
 fs_test_stats
 fs_test_debug
 
-fs_test_release_root 0
+fs_test_release_all
 
 sleep_ms 100
 fs_test_stats
@@ -70,7 +70,7 @@ equal $fs_test_stat_directories_dindex 3
 equal $fs_test_stat_files_inodes 5
 
 _fs_test_release_dir
-fs_test_release_root
+fs_test_release_all 1
 
 sleep_ms 100
 fs_test_stats

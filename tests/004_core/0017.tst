@@ -18,22 +18,22 @@ shell_bg $var1
 shell_bg $var2
 
 sleep_ms 12
-fs_test_release_root 0
+fs_test_release_all
 fs_test_stats
 fs_test_debug
 
 sleep_ms 2
-fs_test_release_root 0
+fs_test_release_all
 fs_test_stats
 fs_test_debug
 
 sleep_ms 3
-fs_test_release_root 0
+fs_test_release_all
 fs_test_stats
 fs_test_debug
 
 sleep_ms 5
-fs_test_release_root 0
+fs_test_release_all
 fs_test_stats
 fs_test_debug
 
@@ -43,7 +43,7 @@ sleep_ms 100
 
 print "### Done, doing cleanup"
 
-fs_test_release_root
+fs_test_release_all 1
 
 sleep_ms 100
 fs_test_stats

@@ -41,7 +41,9 @@ FBR_TEST_FS_CMD(fs_test_fuse_init_root)
 
 FBR_TEST_FS_CMD(fs_test_rw_mount)
 
-FBR_TEST_FS_CMD(fs_test_release_root)
+FBR_TEST_FS_CMD(fs_test_release_all)
+FBR_TEST_FS_CMD(fs_test_lru_purge)
+FBR_TEST_FS_CMD(fs_test_assert_root)
 FBR_TEST_FS_CMD(fs_test_dentry_ttl_ms)
 FBR_TEST_FS_CMD(fs_test_stats)
 FBR_TEST_FS_CMD(fs_test_debug)

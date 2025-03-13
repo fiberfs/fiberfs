@@ -39,7 +39,6 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fs->log = fbr_fs_test_logger;
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
-
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_LOADING);
 
@@ -52,8 +51,23 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_path_name_init(&filename, "fiber2");
 	(void)fbr_file_alloc(fs, root, &filename, fmode);
 
+	fmode = S_IFDIR | 0555;
+
+	fbr_path_name_init(&filename, "dir1");
+	struct fbr_file *file = fbr_file_alloc(fs, root, &filename, fmode);
+
 	fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
 
+	fbr_inode_add(fs, file);
+
+	struct fbr_directory *dir1 = fbr_directory_alloc(fs, &filename, file->inode);
+	fbr_directory_ok(dir1);
+	assert(dir1->state == FBR_DIRSTATE_LOADING);
+
+	fbr_directory_set_state(ctx->fs, dir1, FBR_DIRSTATE_OK);
+
+	fbr_inode_release(fs, &file);
+	fbr_dindex_release(fs, &dir1);
 	fbr_dindex_release(fs, &root);
 }
 
@@ -101,6 +115,13 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert_zero_dev(root_file);
 	assert_zero_dev(root);
 
+	fbr_path_name_init(&name, "dir1");
+	struct fbr_directory *dir1 = fbr_dindex_take(fs, &name, 1);
+	fbr_directory_ok(dir1);
+	fbr_test_ASSERT(dir1->state == FBR_DIRSTATE_OK, "bad dir1 state %d", root->state);
+
+	fbr_dindex_release(fs, &dir1);
+
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_init mounted: %s", cmd->params[0].value);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_chunk)=%zu",
@@ -131,7 +152,7 @@ fbr_cmd_fs_test_dentry_ttl_ms(struct fbr_test_context *ctx, struct fbr_test_cmd 
 }
 
 void
-fbr_cmd_fs_test_release_root(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_fs_test_release_all(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_ERROR(cmd->param_count > 1, "Too many params");
 
@@ -140,16 +161,54 @@ fbr_cmd_fs_test_release_root(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
-	int release_root_inode = 1;
+	int release_root_inode = 0;
 
-	if (cmd->param_count == 1 && !strcmp(cmd->params[0].value, "0")) {
-		release_root_inode = 0;
+	if (cmd->param_count == 1 && !strcmp(cmd->params[0].value, "1")) {
+		release_root_inode = 1;
 	}
 
 	fbr_fs_release_all(fs, release_root_inode);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root released (release_root_inode=%d)",
 		release_root_inode);
+}
+
+void
+fbr_cmd_fs_test_lru_purge(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_fuse_mounted(fuse_ctx);
+	struct fbr_fs *fs = fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	long value = fbr_test_parse_long(cmd->params[0].value);
+	fbr_test_ERROR(value < 0, "lru value must be positive");
+
+	size_t lru_max = (size_t)value;
+
+	fbr_dindex_lru_purge(fs, lru_max);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs lru purged (lru_max=%zu)", lru_max);
+}
+
+void
+fbr_cmd_fs_test_assert_root(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_fuse_mounted(fuse_ctx);
+	struct fbr_fs *fs = fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
+	fbr_test_ASSERT(root, "root is missing");
+	fbr_directory_ok(root);
+	fbr_test_ASSERT(root->state == FBR_DIRSTATE_OK, "bad root state %d", root->state);
+
+	fbr_dindex_release(fs, &root);
 }
 
 void
