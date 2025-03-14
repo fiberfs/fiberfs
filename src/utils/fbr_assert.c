@@ -82,10 +82,10 @@ _dump_backtrace(void)
  *    a. The Fiber context is marked as error. This signals all Fiber threads/processes that
  *       a problem exists and they will abort themselves thru this function or
  *       exit in better way (if they care).
- *    b. fuse_session_exit() is called. This tells fuse to exit at its next opportunity.a64l
+ *    b. fuse_session_exit() is called. This tells fuse to exit at its next opportunity.
  *    c. If the fuse_req is un-replied, reply to it with an EIO.
  *    d. pthread_exit() is called. This finishes the fuse request and allows for Fiber to
- *       continue to operate normally in a error state.
+ *       continue to operate normally, albeit in a error state.
  *
  * 2. The thread/process is not a fuse request, the following happens:
  *    a. The Fiber context is marked as error. See 1.a. above.
@@ -93,8 +93,9 @@ _dump_backtrace(void)
  *       aa. fuse_session_exit() is called.
  *       bb. System umount is called on the mount (fusermount -u).
  *       cc. Wait for fuse_session_loop() to exit.
- *       dd. fuse_session_unmount() is called.a64l
- *       Note that all threads/processes will block until this process is done.
+ *       dd. fuse_session_unmount() is called.
+ *
+ *       NOTE: all non-fuse threads/processes will block here until this step is completed.
  *
  * 3. If this is a fiber_test context, the test will exit() with an error.
  *
