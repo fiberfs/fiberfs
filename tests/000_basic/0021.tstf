@@ -1,0 +1,3 @@
+chttp_test "Failure crash in thread"
+
+test_thread_crash

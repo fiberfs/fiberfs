@@ -51,6 +51,13 @@ FBR_TEST_CMD(shell_bg)
 FBR_TEST_CMD(shell_waitall)
 FBR_TEST_CMD(skip_shell_failure)
 
+FBR_TEST_CMD(test_error)
+FBR_TEST_CMD(test_thread_error)
+FBR_TEST_CMD(test_crash)
+FBR_TEST_CMD(test_thread_crash)
+FBR_TEST_CMD(test_fork_error)
+FBR_TEST_CMD(test_fork_crash)
+
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR
 

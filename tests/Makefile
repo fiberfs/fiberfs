@@ -3,12 +3,14 @@
 FIBERFS_TEST=../src/fiberfs_test
 FLAGS=-q
 TESTS=$(sort $(wildcard */*.cht */*.tst))
+TESTS_CHTTP=$(sort $(wildcard 001_http/*.cht 002_http_live/*.cht))
 TESTS_JSON=$(sort $(wildcard 003_json/*.tst))
 TESTS_CORE=$(sort $(wildcard 004_core/*.tst))
 TESTS_COREX=$(sort $(wildcard 004_core/*.tstx))
-TESTS_ERROR=$(sort $(wildcard 005_fuse_error/*.tst*))
+TESTS_ERROR=$(sort $(wildcard */*.tstf))
 PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
+FAIL_CMD=timeout 5 bash -c
 FAIL_OUT=>/dev/null 2>&1
 GDB=gdb --args
 
@@ -40,6 +42,8 @@ sudo:
 
 check:			$(TESTS)
 
+chttp:			$(TESTS_CHTTP)
+
 json:			$(TESTS_JSON)
 
 core:			$(TESTS_CORE)
@@ -55,4 +59,4 @@ error:			$(TESTS_ERROR)
 			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
 
 %.tstf:			$(FIBERFS_TEST) FORCE
-			$(FIBERFS_TEST) $(FLAGS) $@ $(FAIL_OUT) || sleep 1; echo SUCCESS
+			$(FAIL_CMD) '$(FIBERFS_TEST) $(FLAGS) $@ $(FAIL_OUT) || echo SUCCESS'

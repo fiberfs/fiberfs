@@ -1,0 +1,3 @@
+chttp_test "Failure fork crash"
+
+test_fork_crash

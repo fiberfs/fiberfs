@@ -17,7 +17,8 @@ int _ERR_STATE;
 static void
 _test_error_CRASH(void)
 {
-	int *i = NULL;
+	int *i = (int*)1;
+	i--;
 	*i = 1;
 }
 

@@ -258,44 +258,14 @@ fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 }
 
 void
-fbr_test_run_finish(struct fbr_test_context *ctx, const char *name)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test *test = fbr_test_convert(ctx);
-	assert(name && *name);
-
-	struct fbr_test_finish *finish, *temp;
-
-	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
-		assert(finish->magic == FBR_TEST_FINISH_MAGIC);
-
-		if (strcmp(finish->name, name)) {
-			continue;
-		}
-
-		TAILQ_REMOVE(&test->finish_list, finish, entry);
-
-		fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "finishing %s", finish->name);
-
-		finish->func(test->context);
-
-		fbr_ZERO(finish);
-		free(finish);
-
-		return;
-	}
-
-	fbr_test_ERROR(1, "finish task %s not found", name);
-}
-
-void
 fbr_test_run_all_finish(struct fbr_test *test)
 {
 	fbr_test_ok(test);
 	assert_zero(_ERROR);
+	assert_zero(test->finished);
 
 	_TEST = NULL;
+	test->finished = 1;
 
 	fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "shutdown");
 
@@ -319,26 +289,12 @@ fbr_test_run_all_finish(struct fbr_test *test)
 	assert(TAILQ_EMPTY(&test->finish_list));
 }
 
-void
-fbr_test_context_abort(void)
+struct fbr_test_context *
+fbr_test_get_ctx(void)
 {
-	if (!_TEST) {
-		return;
-	}
-
-	fbr_test_run_all_finish(_TEST);
-}
-
-int
-fbr_test_is_forked(void)
-{
-	if (!_TEST) {
-		return 0;
-	}
-
 	fbr_test_ok(_TEST);
-
-	return _TEST->forked;
+	fbr_test_context_ok(_TEST->context);
+	return _TEST->context;
 }
 
 int
@@ -357,6 +313,7 @@ fbr_test_is_thread(void)
 	return 0;
 }
 
+// Called from test_do_abort, attempt to gracefully exit
 void
 fbr_test_force_error(void)
 {
@@ -374,6 +331,36 @@ fbr_test_force_error(void)
 	}
 }
 
+// Called from test_do_abort, cleanup before it exits
+void
+fbr_test_cleanup(void)
+{
+	if (!_TEST) {
+		return;
+	}
+
+	fbr_test_run_all_finish(_TEST);
+}
+
+// Called from a signal, start abort process
+void
+fbr_test_context_abort(void)
+{
+	fbr_test_ABORT("Signal caught");
+}
+
+int
+fbr_test_is_forked(void)
+{
+	if (!_TEST) {
+		return 0;
+	}
+
+	fbr_test_ok(_TEST);
+
+	return _TEST->forked;
+}
+
 void
 fbr_finish_ERROR(int cond, const char *msg)
 {
@@ -384,12 +371,4 @@ fbr_finish_ERROR(int cond, const char *msg)
 	printf("ERROR: %s\n", msg);
 
 	_ERROR = 1;
-}
-
-struct fbr_test_context *
-fbr_test_get_ctx(void)
-{
-	fbr_test_ok(_TEST);
-	fbr_test_context_ok(_TEST->context);
-	return _TEST->context;
 }
