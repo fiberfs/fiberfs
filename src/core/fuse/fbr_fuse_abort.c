@@ -29,7 +29,6 @@ fbr_context_abort(void)
 	fuse_session_exit(request->fuse_ctx->session);
 
 	if (request->fuse_req) {
-		// TODO figure out right errors to send
 		fbr_fuse_reply_err(request, EIO);
 	}
 

@@ -123,6 +123,12 @@ _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 		entry.attr.st_ino = _ERR_FILE_INODE;
 		entry.attr.st_mode = S_IFREG | 0444;
 		fbr_fuse_reply_entry(request, &entry);
+
+		size_t len = strlen(name);
+		_ERR_STATE = (name[len - 2] - '0') * 10;
+		_ERR_STATE += name[len - 1] - '0';
+
+		fbr_test_logs("** LOOKUP file _ERR_STATE: %d", _ERR_STATE);
 	} else if (!
 		strncmp(name, "dir", 3)) {
 		struct fuse_entry_param entry;
@@ -146,6 +152,8 @@ _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 		} else if (name[len - 1] == '0') {
 			_ERR_STATE = 10;
 		}
+
+		fbr_test_logs("** LOOKUP dir _ERR_STATE: %d", _ERR_STATE);
 	} else {
 		fbr_fuse_reply_err(request, ENOENT);
 	}
@@ -226,6 +234,146 @@ _fuse_err_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_fi
 	}
 }
 
+static void
+_fuse_err_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
+{
+	fbr_request_ok(request);
+
+	fbr_test_logs("** OPEN ino: %lu", ino);
+
+	if (ino != _ERR_FILE_INODE) {
+		fbr_fuse_reply_err(request, ENOENT);
+		return;
+	}
+
+	if (_ERR_STATE == 11) {
+		fbr_test_logs("** OPEN PRE crashing");
+		_test_error_CRASH();
+	}
+
+	fbr_fuse_reply_open(request, fi);
+
+	if (_ERR_STATE == 12) {
+		fbr_test_logs("** OPEN POST crashing");
+		_test_error_CRASH();
+	}
+}
+
+static void
+_fuse_err_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
+    struct fuse_file_info *fi)
+{
+	fbr_request_ok(request);
+	(void)off;
+	(void)size;
+	(void)fi;
+
+	fbr_test_logs("** READ ino: %lu", ino);
+
+	if (_ERR_STATE == 13) {
+		fbr_test_logs("** READ PRE crashing");
+		_test_error_CRASH();
+	}
+
+	fbr_fuse_reply_buf(request, NULL, 0);
+
+	if (_ERR_STATE == 14) {
+		fbr_test_logs("** READ POST crashing");
+		_test_error_CRASH();
+	}
+}
+
+static void
+_fuse_err_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, size_t size,
+    off_t off, struct fuse_file_info *fi)
+{
+	fbr_request_ok(request);
+	(void)buf;
+	(void)off;
+	(void)size;
+	(void)fi;
+
+	fbr_test_logs("** WRITE ino: %lu", ino);
+
+	if (_ERR_STATE == 15) {
+		fbr_test_logs("** WRITE PRE crashing");
+		_test_error_CRASH();
+	}
+
+	fbr_fuse_reply_write(request, 0);
+
+	if (_ERR_STATE == 16) {
+		fbr_test_logs("** WRITE PRE crashing");
+		_test_error_CRASH();
+	}
+}
+
+
+static void
+_fuse_err_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
+{
+	fbr_request_ok(request);
+	(void)fi;
+
+	fbr_test_logs("** FLUSH ino: %lu", ino);
+
+	if (_ERR_STATE == 17) {
+		fbr_test_logs("** FLUSH PRE crashing");
+		_test_error_CRASH();
+	}
+
+	fbr_fuse_reply_err(request, 0);
+
+	if (_ERR_STATE == 18) {
+		fbr_test_logs("** FLUSH POST crashing");
+		_test_error_CRASH();
+	}
+}
+
+static void
+_fuse_err_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
+{
+	fbr_request_ok(request);
+	(void)fi;
+
+	fbr_test_logs("** RELEASE ino: %lu", ino);
+
+	if (_ERR_STATE == 19) {
+		fbr_test_logs("** RELEASE PRE crashing");
+		_test_error_CRASH();
+	}
+
+	fbr_fuse_reply_err(request, 0);
+
+	if (_ERR_STATE == 20) {
+		fbr_test_logs("** RELEASE POST crashing");
+		_test_error_CRASH();
+	}
+}
+
+static void
+_fuse_err_fsync(struct fbr_request *request, fuse_ino_t ino, int datasync,
+    struct fuse_file_info *fi)
+{
+	fbr_request_ok(request);
+	(void)datasync;
+	(void)fi;
+
+	fbr_test_logs("** FSYNC ino: %lu", ino);
+
+	if (_ERR_STATE == 21) {
+		fbr_test_logs("** FSYNC PRE crashing");
+		_test_error_CRASH();
+	}
+
+	fbr_fuse_reply_err(request, 0);
+
+	if (_ERR_STATE == 22) {
+		fbr_test_logs("** FSYNC POST crashing");
+		_test_error_CRASH();
+	}
+}
+
 static const struct fbr_fuse_callbacks _TEST_ERROR_CALLBACKS = {
 	.init = _test_err_init,
 
@@ -235,6 +383,13 @@ static const struct fbr_fuse_callbacks _TEST_ERROR_CALLBACKS = {
 	.opendir = _fuse_err_opendir,
 	.readdir = _fuse_err_readdir,
 	.releasedir = _fuse_err_releasedir,
+
+	.open = _fuse_err_open,
+	.read = _fuse_err_read,
+	.write = _fuse_err_write,
+	.flush = _fuse_err_flush,
+	.release = _fuse_err_release,
+	.fsync = _fuse_err_fsync,
 };
 
 void

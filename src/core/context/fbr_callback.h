@@ -64,6 +64,7 @@ void fbr_fuse_reply_entry(struct fbr_request *request, const struct fuse_entry_p
 void fbr_fuse_reply_attr(struct fbr_request *request, const struct stat *attr,
 	double attr_timeout);
 void fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_info *fi);
+void fbr_fuse_reply_write(struct fbr_request *request, size_t count);
 
 #define fbr_request_ok(request)						\
 {									\

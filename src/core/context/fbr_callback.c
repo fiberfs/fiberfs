@@ -116,3 +116,15 @@ fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_info *fi
 
 	request->fuse_req = NULL;
 }
+
+void
+fbr_fuse_reply_write(struct fbr_request *request, size_t count)
+{
+	fbr_request_ok(request);
+	assert(request->fuse_req);
+
+	int ret = fuse_reply_write(request->fuse_req, count);
+	(void)ret;
+
+	request->fuse_req = NULL;
+}

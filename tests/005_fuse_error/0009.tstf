@@ -1,4 +1,4 @@
-fiber_test "Fuse diropen post crash"
+fiber_test "Fuse dir open post crash"
 
 sys_mkdir_tmp
 

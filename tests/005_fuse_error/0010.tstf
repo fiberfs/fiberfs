@@ -1,4 +1,4 @@
-fiber_test "Fuse dirread pre crash"
+fiber_test "Fuse dir read pre crash"
 
 sys_mkdir_tmp
 
