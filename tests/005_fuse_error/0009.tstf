@@ -1,4 +1,4 @@
-fiber_test "Fuse getattr crash 2"
+fiber_test "Fuse lookup crash 2"
 
 sys_mkdir_tmp
 
