@@ -4,7 +4,7 @@
  *
  */
 
-#include "pthread.h"
+#include <pthread.h>
 
 #include "fiberfs.h"
 #include "fbr_fuse.h"
@@ -32,5 +32,6 @@ fbr_context_abort(void)
 		fbr_fuse_reply_err(request, EIO);
 	}
 
+	// TODO fuse will continue to run unless we do a bigger style exit
 	pthread_exit(NULL);
 }
