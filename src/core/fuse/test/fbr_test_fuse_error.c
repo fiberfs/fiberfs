@@ -17,6 +17,7 @@
 #define _ERR_DIR_INODE		(_ERR_FILE_INODE + 1)
 
 int _ERR_STATE;
+char _ERR_FILENAME[128];
 
 static void
 _test_error_CRASH(void)
@@ -128,7 +129,10 @@ _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 		_ERR_STATE = (name[len - 2] - '0') * 10;
 		_ERR_STATE += name[len - 1] - '0';
 
+		snprintf(_ERR_FILENAME, sizeof(_ERR_FILENAME), "%s", name);
+
 		fbr_test_logs("** LOOKUP file _ERR_STATE: %d", _ERR_STATE);
+		fbr_test_logs("** LOOKUP filename: '%s'", _ERR_FILENAME);
 	} else if (!
 		strncmp(name, "dir", 3)) {
 		struct fuse_entry_param entry;
@@ -333,7 +337,7 @@ _fuse_err_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 static void
 _fuse_err_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	struct fbr_fs *fs = fbr_request_fs(request);
 	(void)fi;
 
 	fbr_test_logs("** RELEASE ino: %lu", ino);
@@ -349,6 +353,10 @@ _fuse_err_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 		fbr_test_logs("** RELEASE POST crashing");
 		_test_error_CRASH();
 	}
+
+	int ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
+		FBR_INODE_ROOT, _ERR_FILENAME, strlen(_ERR_FILENAME));
+	assert_dev(ret != -ENOSYS);
 }
 
 static void
@@ -374,6 +382,27 @@ _fuse_err_fsync(struct fbr_request *request, fuse_ino_t ino, int datasync,
 	}
 }
 
+static void
+_fuse_err_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup)
+{
+	fbr_request_ok(request);
+	(void)nlookup;
+
+	fbr_test_logs("** FORGET ino: %lu", ino);
+
+	if (_ERR_STATE == 23) {
+		fbr_test_logs("** FORGET PRE crashing");
+		_test_error_CRASH();
+	}
+
+	fbr_fuse_reply_none(request);
+
+	if (_ERR_STATE == 24) {
+		fbr_test_logs("** FORGET POST crashing");
+		_test_error_CRASH();
+	}
+}
+
 static const struct fbr_fuse_callbacks _TEST_ERROR_CALLBACKS = {
 	.init = _test_err_init,
 
@@ -390,6 +419,8 @@ static const struct fbr_fuse_callbacks _TEST_ERROR_CALLBACKS = {
 	.flush = _fuse_err_flush,
 	.release = _fuse_err_release,
 	.fsync = _fuse_err_fsync,
+
+	.forget = _fuse_err_forget
 };
 
 void
