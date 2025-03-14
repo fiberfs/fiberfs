@@ -12,6 +12,7 @@
 
 static struct fbr_test *_TEST;
 static int _ERROR;
+static int _FINISH_DONE;
 
 static void
 _finish_test(struct fbr_test_context *ctx)
@@ -257,12 +258,14 @@ fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 	TAILQ_INSERT_HEAD(&test->finish_list, finish, entry);
 }
 
+// TODO this needs a lock, we can have concurrent aborts
 void
 fbr_test_run_all_finish(struct fbr_test *test)
 {
 	fbr_test_ok(test);
 	assert_zero(_ERROR);
 	assert_zero(test->finished);
+	assert_zero(_FINISH_DONE);
 
 	_TEST = NULL;
 	test->finished = 1;
@@ -287,6 +290,8 @@ fbr_test_run_all_finish(struct fbr_test *test)
 	}
 
 	assert(TAILQ_EMPTY(&test->finish_list));
+
+	_FINISH_DONE = 1;
 }
 
 struct fbr_test_context *
@@ -336,6 +341,10 @@ void
 fbr_test_cleanup(void)
 {
 	if (!_TEST) {
+		// If we hit this, we know someone else finished before us
+		while (!_FINISH_DONE) {
+			fbr_test_sleep_ms(25);
+		}
 		return;
 	}
 

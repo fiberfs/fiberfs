@@ -126,8 +126,11 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	while (!ctx->running) {
 		fbr_sleep_ms(5);
+		fbr_fuse_context_ok(ctx);
 
-		if (ctx->exited) {
+		if (ctx->error) {
+			return 1;
+		} else if (ctx->exited) {
 			fbr_fuse_error(ctx);
 			return 1;
 		}
@@ -196,10 +199,14 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 		pt_assert(pthread_join(ctx->loop_thread, NULL));
 		assert(ctx->exited);
 	} else {
-		ctx->exited = 1;
-	}
+		ctx->error = 1;
 
-	assert(ctx->session);
+		// Let the mount fail since we are in a non running state
+		fbr_sleep_ms(100);
+
+		assert_dev(ctx->session);
+		fuse_session_unmount(ctx->session);
+	}
 
 	ctx->state = FBR_FUSE_NONE;
 
@@ -213,6 +220,9 @@ void
 fbr_fuse_unmount_noctx(void)
 {
 	if (_FUSE_CTX) {
+		fbr_fuse_context_ok(_FUSE_CTX);
+		_FUSE_CTX->error = 1;
+
 		fbr_fuse_unmount(_FUSE_CTX);
 	}
 }

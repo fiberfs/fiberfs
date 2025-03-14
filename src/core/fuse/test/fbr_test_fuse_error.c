@@ -11,6 +11,7 @@
 #include "core/fs/fbr_fs_inline.h"
 
 #include "fbr_test_fuse_cmds.h"
+#include "core/fs/test/fbr_test_fs_cmds.h"
 
 int _ERR_STATE;
 
@@ -30,6 +31,8 @@ _test_err_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
+
+	fs->logger = fbr_fs_test_logger;
 
 	if (_ERR_STATE == 1) {
 		fs->log("** INIT doing abort");
