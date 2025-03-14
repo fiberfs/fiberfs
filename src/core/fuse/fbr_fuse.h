@@ -62,6 +62,7 @@ void fbr_fuse_error(struct fbr_fuse_context *ctx);
 	fbr_fuse_context_ok(ctx);				\
 	assert((ctx)->state == FBR_FUSE_MOUNTED);		\
 	assert_zero((ctx)->exited);				\
+	assert_zero((ctx)->error);				\
 }
 
 #endif /* _FBR_FUSE_H_INCLUDED_ */

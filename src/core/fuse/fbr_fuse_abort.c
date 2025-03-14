@@ -32,6 +32,5 @@ fbr_context_abort(void)
 		fbr_fuse_reply_err(request, EIO);
 	}
 
-	// TODO fuse will continue to run unless we do a bigger style exit
 	pthread_exit(NULL);
 }
