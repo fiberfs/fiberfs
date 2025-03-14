@@ -17,7 +17,7 @@
 
 extern void fbr_context_abort(void);
 
-static int _ASSERT_LOOP;
+static unsigned long _ASSERT_LOOP;
 
 void
 fbr_signal_catcher(int signal, siginfo_t *info, void *ucontext)
@@ -69,33 +69,74 @@ _dump_backtrace(void)
 	backtrace_symbols_fd(stack_addrs, len, STDERR_FILENO);
 }
 
+/*
+ * The abort processs is meant to allow for a clean exit of all Fiber threads/processes
+ * which will allow for a clean fuse unmount.
+ *
+ * When a single thread/process detects an error via assert()/abort() or gets a fault or
+ * external signal to exit, it dumps a backtrace and then proceeds to a context abort.
+ *
+ * The default fbr_context_abort() (see fbr_fuse_abort.c) behaves as follows:
+ *
+ * 1. If the thread is a fuse request thread, then the following steps happen:
+ *    a. The Fiber context is marked as error. This signals all Fiber threads/processes that
+ *       a problem exists and they will abort themselves thru this function or
+ *       exit in better way (if they care).
+ *    b. fuse_session_exit() is called. This tells fuse to exit at its next opportunity.a64l
+ *    c. If the fuse_req is un-replied, reply to it with an EIO.
+ *    d. pthread_exit() is called. This finishes the fuse request and allows for Fiber to
+ *       continue to operate normally in a error state.
+ *
+ * 2. The thread/process is not a fuse request, the following happens:
+ *    a. The Fiber context is marked as error. See 1.a. above.
+ *    b. Fiber starts the internal unmount process:
+ *       aa. fuse_session_exit() is called.
+ *       bb. System umount is called on the mount (fusermount -u).
+ *       cc. Wait for fuse_session_loop() to exit.
+ *       dd. fuse_session_unmount() is called.a64l
+ *       Note that all threads/processes will block until this process is done.
+ *
+ * 3. If this is a fiber_test context, the test will exit() with an error.
+ *
+ * 4. abort() is called.
+ */
+
 void __fbr_attr_printf(5) __fbr_noreturn
 fbr_do_abort(const char *assertion, const char *function, const char *file, int line,
     const char *fmt, ...)
 {
-	fprintf(stderr, "%s:%d %s(): ", file, line, function);
+	unsigned long count = fbr_safe_add(&_ASSERT_LOOP, 1);
 
-	if (assertion) {
-		fprintf(stderr, "Assertion '%s' failed\n", assertion);
+	if (count <= 3) {
+		fprintf(stderr, "%s:%d %s(): ", file, line, function);
+
+		if (assertion) {
+			fprintf(stderr, "Assertion '%s' failed\n", assertion);
+		} else {
+			fprintf(stderr, "Aborted\n");
+		}
+
+		if (fmt) {
+			va_list ap;
+			va_start(ap, fmt);
+			vfprintf(stderr, fmt, ap);
+			va_end(ap);
+			fprintf(stderr, "\n");
+		}
+
+		_dump_backtrace();
+
+		if (count == 1) {
+			// TODO get more details on this context like thread name, etc
+		}
 	} else {
-		fprintf(stderr, "Aborted\n");
-	}
+		fprintf(stderr, "NOTE: abort %lu detected (skipping backtrace)\n", count);
 
-	if (fmt) {
-		va_list ap;
-		va_start(ap, fmt);
-		vfprintf(stderr, fmt, ap);
-		va_end(ap);
-		fprintf(stderr, "\n");
+		if (count > 32) {
+			fprintf(stderr, "ERROR: too many aborts, exiting\n");
+			abort();
+		}
 	}
-
-	_dump_backtrace();
-
-	if (_ASSERT_LOOP) {
-		fprintf(stderr, "\nNOTE: Abort loop detected\n");
-		abort();
-	}
-	_ASSERT_LOOP = 1;
 
 	fbr_context_abort();
 

@@ -11,15 +11,15 @@
 #include <stdlib.h>
 
 static struct fbr_test *_TEST;
+static int _EXIT;
 static int _ERROR;
-static int _FINISH_DONE;
+pthread_mutex_t _FINISH_LOCK;
 
 static void
 _finish_test(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 	assert_zero(ctx->chttp_test);
-	assert_zero(_TEST);
 
 	struct fbr_test *test = fbr_test_convert(ctx);
 	assert(test->context == ctx);
@@ -144,6 +144,8 @@ fbr_test_main(int argc, char **argv)
 	_init_test(&test);
 	fbr_test_cmds_init(&test);
 
+	pt_assert(pthread_mutex_init(&_FINISH_LOCK, NULL));
+
 	assert_zero(_TEST);
 	_TEST = &test;
 	fbr_test_ok(_TEST);
@@ -258,17 +260,20 @@ fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 	TAILQ_INSERT_HEAD(&test->finish_list, finish, entry);
 }
 
-// TODO this needs a lock, we can have concurrent aborts
 void
 fbr_test_run_all_finish(struct fbr_test *test)
 {
+	pt_assert(pthread_mutex_lock(&_FINISH_LOCK));
+
+	if (_EXIT) {
+		pt_assert(pthread_mutex_unlock(&_FINISH_LOCK));
+		return;
+	}
+
+	_EXIT = 1;
+
 	fbr_test_ok(test);
 	assert_zero(_ERROR);
-	assert_zero(test->finished);
-	assert_zero(_FINISH_DONE);
-
-	_TEST = NULL;
-	test->finished = 1;
 
 	fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "shutdown");
 
@@ -291,12 +296,13 @@ fbr_test_run_all_finish(struct fbr_test *test)
 
 	assert(TAILQ_EMPTY(&test->finish_list));
 
-	_FINISH_DONE = 1;
+	pt_assert(pthread_mutex_unlock(&_FINISH_LOCK));
 }
 
 struct fbr_test_context *
 fbr_test_get_ctx(void)
 {
+	assert_zero(_EXIT);
 	fbr_test_ok(_TEST);
 	fbr_test_context_ok(_TEST->context);
 	return _TEST->context;
@@ -305,7 +311,7 @@ fbr_test_get_ctx(void)
 int
 fbr_test_is_thread(void)
 {
-	if (!_TEST) {
+	if (_EXIT) {
 		return 0;
 	}
 
@@ -322,7 +328,7 @@ fbr_test_is_thread(void)
 void
 fbr_test_force_error(void)
 {
-	if (!_TEST) {
+	if (_EXIT) {
 		return;
 	}
 
@@ -340,14 +346,6 @@ fbr_test_force_error(void)
 void
 fbr_test_cleanup(void)
 {
-	if (!_TEST) {
-		// If we hit this, we know someone else finished before us
-		while (!_FINISH_DONE) {
-			fbr_test_sleep_ms(25);
-		}
-		return;
-	}
-
 	fbr_test_run_all_finish(_TEST);
 }
 
@@ -361,7 +359,7 @@ fbr_test_context_abort(void)
 int
 fbr_test_is_forked(void)
 {
-	if (!_TEST) {
+	if (_EXIT) {
 		return 0;
 	}
 

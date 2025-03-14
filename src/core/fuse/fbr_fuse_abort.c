@@ -23,13 +23,14 @@ fbr_context_abort(void)
 		return;
 	}
 
-	fbr_fuse_context_ok(request->fuse_ctx);
-	request->fuse_ctx->error = 1;
-
-	fuse_session_exit(request->fuse_ctx->session);
+	if (request->fuse_ctx) {
+		request->fuse_ctx->error = 1;
+		fuse_session_exit(request->fuse_ctx->session);
+	}
 
 	if (request->fuse_req) {
-		fbr_fuse_reply_err(request, EIO);
+		fuse_reply_err(request->fuse_req, EIO);
+		request->fuse_req = NULL;
 	}
 
 	pthread_exit(NULL);

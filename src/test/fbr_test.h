@@ -134,7 +134,6 @@ struct fbr_test {
 	int					forked;
 	int					error;
 	int					skip;
-	int					finished;
 };
 
 #define FBR_TEST_DEFAULT_TIMEOUT_SEC		10

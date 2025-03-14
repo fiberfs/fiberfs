@@ -46,11 +46,9 @@ fbr_request_alloc(fuse_req_t fuse_req)
 	request->magic = FBR_REQUEST_MAGIC;
 	request->fuse_req = fuse_req;
 
-	request->fuse_ctx = fbr_fuse_callback_ctx();
-
-	fbr_request_ok(request);
-
 	pt_assert(pthread_setspecific(_REQUEST_KEY, request));
+
+	request->fuse_ctx = fbr_fuse_callback_ctx();
 
 	struct fbr_fs *fs = request->fuse_ctx->fs;
 	fbr_fs_ok(fs);

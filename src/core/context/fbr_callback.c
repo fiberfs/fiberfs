@@ -16,8 +16,7 @@ extern struct fbr_fuse_context *_FUSE_CTX;
 struct fbr_fuse_context *
 fbr_fuse_callback_ctx(void)
 {
-	fbr_fuse_mounted(_FUSE_CTX);
-
+	fbr_fuse_context_ok(_FUSE_CTX);
 	return _FUSE_CTX;
 }
 

@@ -23,9 +23,8 @@ _fuse_setup(fuse_req_t fuse_req)
 
 	request = fbr_request_alloc(fuse_req);
 	fbr_request_ok(request);
-	fbr_fuse_mounted(request->fuse_ctx);
-	assert(request->fuse_ctx->fuse_callbacks);
-	assert(request->fuse_req);
+	assert_dev(request->fuse_ctx->fuse_callbacks);
+	assert_dev(request->fuse_req);
 
 	return request;
 }
