@@ -2,4 +2,4 @@ chttp_test "Failure timeout"
 
 set_timeout_sec 1
 
-sleep_ms 7000
+sleep_ms 10000

@@ -10,7 +10,7 @@ TESTS_COREX=$(sort $(wildcard 004_core/*.tstx))
 TESTS_ERROR=$(sort $(wildcard */*.tstf))
 PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
-FAIL_CMD=timeout 3 bash -c
+FAIL_CMD=timeout 2 bash -c
 FAIL_OUT=>/dev/null 2>&1
 GDB=gdb --args
 
