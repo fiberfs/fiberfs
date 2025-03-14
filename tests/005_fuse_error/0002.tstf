@@ -1,9 +1,6 @@
 fiber_test "Fuse error mount"
 
-# This kills fuse
-skip
-
 sys_mkdir_tmp
 
-fuse_error_mount $sys_tmpdir 2
+fuse_error_mount $sys_tmpdir 1
 fuse_test_unmount

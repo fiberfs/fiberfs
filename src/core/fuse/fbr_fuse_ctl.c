@@ -120,19 +120,18 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	assert_zero(_FUSE_CTX);
 	_FUSE_CTX = ctx;
 
+	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
+
 	pt_assert(pthread_create(&ctx->loop_thread, NULL, _fuse_mount_thread, ctx));
 
 	while (!ctx->running) {
 		fbr_sleep_ms(5);
 
 		if (ctx->exited) {
-			pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 			fbr_fuse_error(ctx);
 			return 1;
 		}
 	}
-
-	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 
 	return 0;
 }
@@ -193,8 +192,13 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	fbr_fuse_abort(ctx);
 
-	pt_assert(pthread_join(ctx->loop_thread, NULL));
-	assert(ctx->exited);
+	if (ctx->running) {
+		pt_assert(pthread_join(ctx->loop_thread, NULL));
+		assert(ctx->exited);
+	} else {
+		ctx->exited = 1;
+	}
+
 	assert(ctx->session);
 
 	ctx->state = FBR_FUSE_NONE;

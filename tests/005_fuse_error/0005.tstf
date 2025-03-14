@@ -1,7 +1,7 @@
-fiber_test "Fuse getattr crash post"
+fiber_test "Fuse getattr crash pre 2"
 
 sys_mkdir_tmp
 
-fuse_error_mount $sys_tmpdir 5
+fuse_error_mount $sys_tmpdir 4
 
 fuse_test_unmount
