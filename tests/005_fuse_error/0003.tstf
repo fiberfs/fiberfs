@@ -1,4 +1,4 @@
-fiber_test "Fuse error mount"
+fiber_test "Fuse error mount crash"
 
 sys_mkdir_tmp
 

@@ -1,7 +1,10 @@
-fiber_test "Fuse getattr crash post 2"
+fiber_test "Fuse lookup post crash"
 
 sys_mkdir_tmp
 
-fuse_error_mount $sys_tmpdir 6
+fuse_error_mount $sys_tmpdir
+
+set_var1 $sys_tmpdir "/lookup2"
+sys_stat_size $var1
 
 fuse_test_unmount

@@ -1,4 +1,4 @@
-fiber_test "Fuse getattr crash pre 2"
+fiber_test "Fuse getattr crash post"
 
 sys_mkdir_tmp
 

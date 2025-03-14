@@ -13,6 +13,9 @@
 #include "fbr_test_fuse_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 
+#define _ERR_FILE_INODE		1234
+#define _ERR_DIR_INODE		(_ERR_FILE_INODE + 1)
+
 int _ERR_STATE;
 
 static void
@@ -35,14 +38,14 @@ _test_err_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fs->logger = fbr_fs_test_logger;
 
 	if (_ERR_STATE == 1) {
-		fs->log("** INIT doing abort");
+		fbr_test_logs("** INIT doing abort");
 		fbr_ABORT("Forced abort")
 	} else if (_ERR_STATE == 2) {
-		fs->log("** INIT crashing");
+		fbr_test_logs("** INIT crashing");
 		_test_error_CRASH();
 	}
 
-	fs->log("** INIT success");
+	fbr_test_logs("** INIT success");
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
@@ -58,18 +61,22 @@ _fuse_err_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 	fbr_test_logs("** GETATTR ino: %lu", ino);
 
 	if (_ERR_STATE == 3) {
-		fs->log("** GETATTR PRE doing abort");
-		fbr_ABORT("Forced abort")
-	} else if (_ERR_STATE == 4) {
-		fs->log("** GETATTR PRE crashing");
+		fbr_test_logs("** GETATTR PRE crashing");
 		_test_error_CRASH();
 	}
 
-	if (ino == 100) {
+	if (ino == _ERR_FILE_INODE) {
 		struct stat st;
 		fbr_ZERO(&st);
-		st.st_ino = 100;
+		st.st_ino = _ERR_FILE_INODE;
 		st.st_mode = S_IFREG | 0444;
+		fbr_fuse_reply_attr(request, &st, fbr_fs_dentry_ttl(fs));
+		return;
+	} else if (ino == _ERR_DIR_INODE) {
+		struct stat st;
+		fbr_ZERO(&st);
+		st.st_ino = _ERR_DIR_INODE;
+		st.st_mode = S_IFDIR | 0555;
 		fbr_fuse_reply_attr(request, &st, fbr_fs_dentry_ttl(fs));
 		return;
 	}
@@ -90,11 +97,8 @@ _fuse_err_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 
 	fbr_fuse_reply_attr(request, &st, fbr_fs_dentry_ttl(fs));
 
-	if (_ERR_STATE == 5) {
-		fs->log("** GETATTR POST doing abort");
-		fbr_ABORT("Forced abort")
-	} else if (_ERR_STATE == 6) {
-		fs->log("** GETATTR POST crashing");
+	if (_ERR_STATE == 4) {
+		fbr_test_logs("** GETATTR POST crashing");
 		_test_error_CRASH();
 	}
 }
@@ -102,35 +106,122 @@ _fuse_err_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 static void
 _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 {
-	struct fbr_fs *fs = fbr_request_fs(request);
+	fbr_request_ok(request);
 	(void)parent;
 
 	fbr_test_logs("** LOOKUP '%s'", name);
 
 	if (!strcmp(name, "lookup1")) {
-		fs->log("** LOOKUP PRE doing abort");
-		fbr_ABORT("Forced abort")
-	} else if (!strcmp(name, "lookup2")) {
-		fs->log("** LOOKUP PRE crashing");
+		fbr_test_logs("** LOOKUP PRE crashing");
 		_test_error_CRASH();
 	}
 
-	if (strncmp(name, "fiber", 5)) {
+	if (!strncmp(name, "fiber", 5)) {
 		struct fuse_entry_param entry;
 		fbr_ZERO(&entry);
-		entry.ino = 100;
-		entry.attr.st_ino = 100;
+		entry.ino = _ERR_FILE_INODE;
+		entry.attr.st_ino = _ERR_FILE_INODE;
 		entry.attr.st_mode = S_IFREG | 0444;
 		fbr_fuse_reply_entry(request, &entry);
+	} else if (!
+		strncmp(name, "dir", 3)) {
+		struct fuse_entry_param entry;
+		fbr_ZERO(&entry);
+		entry.ino = _ERR_DIR_INODE;
+		entry.attr.st_ino = _ERR_DIR_INODE;
+		entry.attr.st_mode = S_IFDIR | 0555;
+		fbr_fuse_reply_entry(request, &entry);
+
+		size_t len = strlen(name);
+		if (name[len - 1] == '5') {
+			_ERR_STATE = 5;
+		} else if (name[len - 1] == '6') {
+			_ERR_STATE = 6;
+		} else if (name[len - 1] == '7') {
+			_ERR_STATE = 7;
+		} else if (name[len - 1] == '8') {
+			_ERR_STATE = 8;
+		} else if (name[len - 1] == '9') {
+			_ERR_STATE = 9;
+		} else if (name[len - 1] == '0') {
+			_ERR_STATE = 10;
+		}
 	} else {
 		fbr_fuse_reply_err(request, ENOENT);
 	}
 
-	if (!strcmp(name, "lookup3")) {
-		fs->log("** LOOKUP POST doing abort");
-		fbr_ABORT("Forced abort")
-	} else if (!strcmp(name, "lookup4")) {
-		fs->log("** LOOKUP POST crashing");
+	if (!strcmp(name, "lookup2")) {
+		fbr_test_logs("** LOOKUP POST crashing");
+		_test_error_CRASH();
+	}
+}
+
+static void
+_fuse_err_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
+{
+	fbr_request_ok(request);
+
+	fbr_test_logs("** OPENDIR ino: %lu", ino);
+
+	if (ino != _ERR_DIR_INODE) {
+		fbr_fuse_reply_err(request, ENOENT);
+		return;
+	}
+
+	if (_ERR_STATE == 5) {
+		fbr_test_logs("** OPENDIR PRE crashing");
+		_test_error_CRASH();
+	}
+
+	fbr_fuse_reply_open(request, fi);
+
+	if (_ERR_STATE == 6) {
+		fbr_test_logs("** OPENDIR POST crashing");
+		_test_error_CRASH();
+	}
+}
+
+static void
+_fuse_err_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
+    struct fuse_file_info *fi)
+{
+	fbr_request_ok(request);
+	(void)size;
+	(void)off;
+	(void)fi;
+
+	fbr_test_logs("** READDIR ino: %lu", ino);
+
+	if (_ERR_STATE == 7) {
+		fbr_test_logs("** READDIR PRE crashing");
+		_test_error_CRASH();
+	}
+
+	fbr_fuse_reply_buf(request, NULL, 0);
+
+	if (_ERR_STATE == 8) {
+		fbr_test_logs("** READDIR POST crashing");
+		_test_error_CRASH();
+	}
+}
+
+static void
+_fuse_err_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
+{
+	fbr_request_ok(request);
+	(void)fi;
+
+	fbr_test_logs("** RELEASEDIR ino: %lu", ino);
+
+	if (_ERR_STATE == 9) {
+		fbr_test_logs("** RELEASEDIR PRE crashing");
+		_test_error_CRASH();
+	}
+
+	fbr_fuse_reply_err(request, 0);
+
+	if (_ERR_STATE == 10) {
+		fbr_test_logs("** RELEASEDIR POST crashing");
 		_test_error_CRASH();
 	}
 }
@@ -139,7 +230,11 @@ static const struct fbr_fuse_callbacks _TEST_ERROR_CALLBACKS = {
 	.init = _test_err_init,
 
 	.getattr = _fuse_err_getattr,
-	.lookup = _fuse_err_lookup
+	.lookup = _fuse_err_lookup,
+
+	.opendir = _fuse_err_opendir,
+	.readdir = _fuse_err_readdir,
+	.releasedir = _fuse_err_releasedir,
 };
 
 void
