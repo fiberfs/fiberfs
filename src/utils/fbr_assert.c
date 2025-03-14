@@ -99,7 +99,7 @@ _dump_backtrace(void)
  *
  * 3. If this is a fiber_test context, the test will exit() with an error.
  *
- * 4. abort() is called.
+ * 4. If not a fiber_test context, abort() is called.
  */
 
 void __fbr_attr_printf(5) __fbr_noreturn
@@ -108,35 +108,31 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
 {
 	unsigned long count = fbr_safe_add(&_ASSERT_LOOP, 1);
 
+	fprintf(stderr, "%s:%d %s(): ", file, line, function);
+
+	if (assertion) {
+		fprintf(stderr, "Assertion '%s' failed\n", assertion);
+	} else {
+		fprintf(stderr, "Aborted\n");
+	}
+
+	if (fmt) {
+		va_list ap;
+		va_start(ap, fmt);
+		vfprintf(stderr, fmt, ap);
+		va_end(ap);
+		fprintf(stderr, "\n");
+	}
+
 	if (count <= 3) {
-		fprintf(stderr, "%s:%d %s(): ", file, line, function);
-
-		if (assertion) {
-			fprintf(stderr, "Assertion '%s' failed\n", assertion);
-		} else {
-			fprintf(stderr, "Aborted\n");
-		}
-
-		if (fmt) {
-			va_list ap;
-			va_start(ap, fmt);
-			vfprintf(stderr, fmt, ap);
-			va_end(ap);
-			fprintf(stderr, "\n");
-		}
-
 		_dump_backtrace();
 
 		if (count == 1) {
 			// TODO get more details on this context like thread name, etc
 		}
-	} else {
-		fprintf(stderr, "NOTE: abort %lu detected (skipping backtrace)\n", count);
-
-		if (count > 32) {
-			fprintf(stderr, "ERROR: too many aborts, exiting\n");
-			abort();
-		}
+	} else if (count > 32) {
+		fprintf(stderr, "ERROR: too many aborts (%lu), exiting\n", count);
+		abort();
 	}
 
 	fbr_context_abort();
