@@ -40,9 +40,9 @@ void fbr_libunwind_backtrace(void);
 
 #ifdef FBR_NO_ASSERT_DEV
 #define assert_dev(expr)							\
-	//assert_dev(expr)
+	(void)(expr)
 #define assert_zero_dev(expr)							\
-	//assert_dev(expr)
+	(void)(expr)
 #else
 #define assert_dev(expr)							\
 	assert(expr)
