@@ -81,7 +81,7 @@ _dump_backtrace(void)
  * 1. If the thread is a fuse request thread, then the following steps happen:
  *    a. The Fiber context is marked as error. This signals all Fiber threads/processes that
  *       a problem exists and they will abort themselves thru this function or
- *       exit in better way (if they care).
+ *       exit in better way (if they care). See fbr_fuse_mounted() and fbr_request_ok().
  *    b. fuse_session_exit() is called. This tells fuse to exit at its next opportunity.
  *    c. If the fuse_req is un-replied, reply to it with an EIO.
  *    d. pthread_exit() is called. This finishes the fuse request and allows for Fiber to

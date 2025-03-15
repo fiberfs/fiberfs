@@ -68,7 +68,7 @@ fjson_context_free(struct fjson_context *ctx)
 static void
 _set_error(struct fjson_context *ctx, enum fjson_state error, const char *msg)
 {
-	fjson_context_ok(ctx);
+	assert_dev(ctx);
 	assert(error >= FJSON_STATE_ERROR);
 
 	ctx->error = 1;
@@ -104,7 +104,7 @@ _callback(struct fjson_context *ctx)
 static void
 _pop_token(struct fjson_context *ctx)
 {
-	fjson_context_ok(ctx);
+	assert_dev(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING || ctx->state == FJSON_STATE_ERROR_CALLBACK);
 	assert(ctx->tokens_pos <= FJSON_MAX_DEPTH);
 	assert(ctx->tokens_pos);
@@ -120,7 +120,7 @@ _pop_token(struct fjson_context *ctx)
 static void
 _close_token(struct fjson_context *ctx, struct fjson_token *token, int callback)
 {
-	fjson_context_ok(ctx);
+	assert_dev(ctx);
 	fjson_token_ok(token);
 
 	token->closed = 1;
@@ -158,7 +158,7 @@ fjson_get_token(struct fjson_context *ctx, size_t depth)
 static struct fjson_token *
 _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 {
-	fjson_context_ok(ctx);
+	assert_dev(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
 	assert(ctx->tokens_pos <= FJSON_MAX_DEPTH);
 
@@ -219,7 +219,7 @@ _count_escapes(const char *buf, size_t pos)
 static void
 _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
-	fjson_context_ok(ctx);
+	assert_dev(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
 	assert(ctx->pos < buf_len);
 	assert(buf);
@@ -302,7 +302,7 @@ _parse_string(struct fjson_context *ctx, const char *buf, size_t buf_len)
 static void
 _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
-	fjson_context_ok(ctx);
+	assert_dev(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
 	assert(ctx->pos < buf_len);
 	assert(buf);
@@ -473,7 +473,7 @@ _check_errors(struct fjson_context *ctx, struct fjson_token *token, enum fjson_t
 static void
 _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 {
-	fjson_context_ok(ctx);
+	assert_dev(ctx);
 	assert(ctx->state == FJSON_STATE_INDEXING);
 
 	if (buf_len == 0) {

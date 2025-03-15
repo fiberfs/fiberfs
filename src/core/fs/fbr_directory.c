@@ -336,14 +336,12 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 			ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
 				file->inode, filename.name, filename.len);
 			assert_dev(ret != -ENOSYS);
-			(void)ret;
 		} else if (file_expired) {
 			fs->log("** FILE_EXP inode: %lu", file->inode);
 
 			ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
 				directory->inode, filename.name, filename.len);
 			assert_dev(ret != -ENOSYS);
-			(void)ret;
 		}
 	}
 

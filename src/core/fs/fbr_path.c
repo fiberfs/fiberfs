@@ -40,7 +40,7 @@ static void
 _path_init(struct fbr_path *path, char *name_storage, const struct fbr_path_name *dirname,
 	const struct fbr_path_name *filename)
 {
-	assert(path);
+	assert_dev(path);
 	assert(path->layout.value == FBR_PATH_NULL);
 	assert(dirname && dirname->name);
 	assert(dirname->len <= FBR_PATH_PTR_LEN_MAX);

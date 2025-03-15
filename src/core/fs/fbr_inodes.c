@@ -94,11 +94,11 @@ fbr_inode_gen(struct fbr_fs *fs)
 	return inode_next;
 }
 
-static struct fbr_inodes_head *
+static inline struct fbr_inodes_head *
 _inodes_get_head(struct fbr_inodes *inodes, struct fbr_file *file)
 {
-	fbr_inodes_ok(inodes);
-	fbr_file_ok(file);
+	assert_dev(inodes);
+	assert_dev(file);
 
 	size_t pos = file->inode % _INODES_HEAD_COUNT;
 

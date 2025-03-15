@@ -80,8 +80,8 @@ fbr_fio_take(struct fbr_fio *fio)
 static struct fbr_chunk_list *
 _fio_chunk_list_add(struct fbr_chunk_list *chunks, struct fbr_chunk *chunk)
 {
-	fbr_chunk_list_ok(chunks);
-	fbr_chunk_ok(chunk);
+	assert_dev(chunks);
+	assert_dev(chunk);
 
 	if (chunks->length == chunks->capacity) {
 		chunks = _fio_chunk_list_expand(chunks);
@@ -97,8 +97,8 @@ _fio_chunk_list_add(struct fbr_chunk_list *chunks, struct fbr_chunk *chunk)
 static int
 _fio_chunk_list_contains(struct fbr_chunk_list *chunks, struct fbr_chunk *chunk)
 {
-	fbr_chunk_list_ok(chunks);
-	fbr_chunk_ok(chunk);
+	assert_dev(chunks);
+	assert_dev(chunk);
 
 	for (size_t i = 0; i < chunks->length; i++) {
 		if (chunks->list[i] == chunk) {
@@ -112,7 +112,7 @@ _fio_chunk_list_contains(struct fbr_chunk_list *chunks, struct fbr_chunk *chunk)
 static int
 _fio_ready_error(struct fbr_chunk_list *chunks)
 {
-	fbr_chunk_list_ok(chunks);
+	assert_dev(chunks);
 
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
@@ -129,7 +129,7 @@ _fio_ready_error(struct fbr_chunk_list *chunks)
 static int
 _fio_ready(struct fbr_chunk_list *chunks)
 {
-	fbr_chunk_list_ok(chunks);
+	assert_dev(chunks);
 
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
@@ -221,8 +221,8 @@ fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 static void
 _fio_release_floating(struct fbr_fio *fio, size_t offset)
 {
-	fbr_fio_ok(fio);
-	fbr_chunk_list_ok(fio->floating);
+	assert_dev(fio);
+	assert_dev(fio->floating);
 
 	struct fbr_chunk_list *chunks = fio->floating;
 	size_t keep = 0;
@@ -376,7 +376,7 @@ _fio_bufvec_zero(struct fuse_bufvec *bufvec, size_t length)
 static struct fbr_chunk *
 _fio_find_next_chunk(struct fbr_chunk_list *chunks, size_t offset)
 {
-	fbr_chunk_list_ok(chunks);
+	assert_dev(chunks);
 
 	struct fbr_chunk *closest = NULL;
 	size_t closest_distance = 0;
@@ -404,7 +404,7 @@ _fio_find_next_chunk(struct fbr_chunk_list *chunks, size_t offset)
 static struct fbr_chunk *
 _fio_find_chunk(struct fbr_chunk_list *chunks, size_t offset)
 {
-	fbr_chunk_list_ok(chunks);
+	assert_dev(chunks);
 
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];

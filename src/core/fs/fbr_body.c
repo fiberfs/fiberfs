@@ -144,10 +144,9 @@ fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_
 static void
 _chunk_empty(struct fbr_chunk *chunk)
 {
-	fbr_chunk_ok(chunk);
-	assert(chunk->state == FBR_CHUNK_READY);
-	assert_zero(chunk->refcount);
-	assert(chunk->data);
+	assert_dev(chunk);
+	assert_dev(chunk->state == FBR_CHUNK_READY);
+	assert_zero_dev(chunk->refcount);
 
 	if (chunk->fd_spliced) {
 		assert_dev(chunk->fd_splice_ok);
@@ -194,7 +193,7 @@ fbr_chunk_release(struct fbr_chunk *chunk) {
 static void
 _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 {
-	fbr_chunk_slab_ok(slab);
+	assert_dev(slab);
 
 	if (fbr_assert_is_dev()) {
 		for (size_t i = 0; i < slab->length; i++) {

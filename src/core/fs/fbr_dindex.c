@@ -108,8 +108,7 @@ _dindex_deref(struct fbr_fs *fs, struct fbr_directory *directory)
 static void
 _dindex_lru_add(struct fbr_fs *fs, struct fbr_directory *directory)
 {
-	struct fbr_dindex *dindex = _dindex_fs_get(fs);
-	fbr_directory_ok(directory);
+	struct fbr_dindex *dindex = fs->dindex;
 	assert_zero(directory->refcounts.in_lru);
 	assert(directory->refcounts.fs);
 
@@ -129,8 +128,7 @@ _dindex_lru_add(struct fbr_fs *fs, struct fbr_directory *directory)
 static void
 _dindex_lru_move(struct fbr_fs *fs, struct fbr_directory *directory)
 {
-	struct fbr_dindex *dindex = _dindex_fs_get(fs);
-	fbr_directory_ok(directory);
+	struct fbr_dindex *dindex = fs->dindex;
 
 	pt_assert(pthread_mutex_lock(&dindex->lru_lock));
 
@@ -150,8 +148,7 @@ _dindex_lru_move(struct fbr_fs *fs, struct fbr_directory *directory)
 static void
 _dindex_lru_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 {
-	struct fbr_dindex *dindex = _dindex_fs_get(fs);
-	fbr_directory_ok(directory);
+	struct fbr_dindex *dindex = fs->dindex;
 
 	pt_assert(pthread_mutex_lock(&dindex->lru_lock));
 
@@ -174,7 +171,7 @@ _dindex_lru_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 static struct fbr_directory *
 _dindex_lru_pop(struct fbr_fs *fs)
 {
-	struct fbr_dindex *dindex = _dindex_fs_get(fs);
+	struct fbr_dindex *dindex = fs->dindex;
 
 	pt_assert(pthread_mutex_lock(&dindex->lru_lock));
 
@@ -217,8 +214,8 @@ _dindex_lru_pop(struct fbr_fs *fs)
 static struct fbr_dindex_dirhead *
 _dindex_dirhead_get(struct fbr_dindex *dindex, struct fbr_directory *directory)
 {
-	fbr_dindex_ok(dindex);
-	fbr_directory_ok(directory);
+	assert_dev(dindex);
+	assert_dev(directory);
 
 	struct fbr_path_name dirname;
 	fbr_path_get_dir(&directory->dirname, &dirname);
@@ -240,7 +237,7 @@ _dindex_dirhead_get(struct fbr_dindex *dindex, struct fbr_directory *directory)
 static struct fbr_dindex_dirhead *
 _dindex_LOCK(struct fbr_fs *fs, struct fbr_directory *directory)
 {
-	struct fbr_dindex *dindex = _dindex_fs_get(fs);
+	struct fbr_dindex *dindex = fs->dindex;
 
 	struct fbr_dindex_dirhead *dirhead = _dindex_dirhead_get(dindex, directory);
 
@@ -524,7 +521,7 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 static void
 _dindex_lru_pop_release(struct fbr_fs *fs)
 {
-	fbr_fs_ok(fs);
+	assert_dev(fs);
 
 	struct fbr_directory *directory = _dindex_lru_pop(fs);
 
