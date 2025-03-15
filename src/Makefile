@@ -42,6 +42,13 @@ NULL=/dev/null
 TEST_TRUE= > $(NULL) 2>&1 && echo true
 TCC=$(CC) -x c - -o $(NULL)
 
+# Validate compiler (CC)
+CC_TEST_C='int main() {}'
+CC_OK=$(shell printf $(CC_TEST_C) | $(TCC) $(TEST_TRUE))
+ifneq ($(CC_OK),true)
+$(error CC=$(CC) compiler error, cannot compile)
+endif
+
 # Detect fuse3 (required)
 FUSE3_PKG=fuse3
 define FUSE3_C=
