@@ -211,10 +211,10 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	ctx->state = FBR_FUSE_NONE;
 
+	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
+
 	fbr_fs_free(ctx->fs);
 	ctx->fs = NULL;
-
-	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 }
 
 void
@@ -233,7 +233,6 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
-	assert_zero(ctx->fs);
 
 	if (ctx->running) {
 		assert(ctx->exited);
