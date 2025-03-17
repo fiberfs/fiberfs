@@ -35,6 +35,7 @@ struct fbr_request *
 fbr_request_alloc(fuse_req_t fuse_req)
 {
 	assert(fuse_req);
+	assert(_REQUEST_KEY_INIT);
 
 	struct fbr_request *request;
 

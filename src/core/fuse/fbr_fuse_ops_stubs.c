@@ -32,7 +32,7 @@ _fuse_setup(fuse_req_t fuse_req)
 static inline void
 _fuse_finish_none(struct fbr_request *request)
 {
-	fbr_request_valid(request);
+	fbr_request_ok(request);
 
 	if (request->fuse_req) {
 		fbr_fuse_reply_none(request);
@@ -44,7 +44,7 @@ _fuse_finish_none(struct fbr_request *request)
 static inline void
 _fuse_finish_error(struct fbr_request *request, int error)
 {
-	fbr_request_valid(request);
+	fbr_request_ok(request);
 
 	if (request->fuse_req) {
 		fbr_fuse_reply_err(request, error);
