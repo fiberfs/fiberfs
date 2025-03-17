@@ -118,13 +118,6 @@ _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 	}
 
 	if (!strncmp(name, "fiber", 5)) {
-		struct fuse_entry_param entry;
-		fbr_ZERO(&entry);
-		entry.ino = _ERR_FILE_INODE;
-		entry.attr.st_ino = _ERR_FILE_INODE;
-		entry.attr.st_mode = S_IFREG | 0444;
-		fbr_fuse_reply_entry(request, &entry);
-
 		size_t len = strlen(name);
 		_ERR_STATE = (name[len - 2] - '0') * 10;
 		_ERR_STATE += name[len - 1] - '0';
@@ -133,15 +126,14 @@ _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 
 		fbr_test_logs("** LOOKUP file _ERR_STATE: %d", _ERR_STATE);
 		fbr_test_logs("** LOOKUP filename: '%s'", _ERR_FILENAME);
-	} else if (!
-		strncmp(name, "dir", 3)) {
+
 		struct fuse_entry_param entry;
 		fbr_ZERO(&entry);
-		entry.ino = _ERR_DIR_INODE;
-		entry.attr.st_ino = _ERR_DIR_INODE;
-		entry.attr.st_mode = S_IFDIR | 0555;
+		entry.ino = _ERR_FILE_INODE;
+		entry.attr.st_ino = _ERR_FILE_INODE;
+		entry.attr.st_mode = S_IFREG | 0444;
 		fbr_fuse_reply_entry(request, &entry);
-
+	} else if (!strncmp(name, "dir", 3)) {
 		size_t len = strlen(name);
 		if (name[len - 1] == '5') {
 			_ERR_STATE = 5;
@@ -158,6 +150,13 @@ _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 		}
 
 		fbr_test_logs("** LOOKUP dir _ERR_STATE: %d", _ERR_STATE);
+
+		struct fuse_entry_param entry;
+		fbr_ZERO(&entry);
+		entry.ino = _ERR_DIR_INODE;
+		entry.attr.st_ino = _ERR_DIR_INODE;
+		entry.attr.st_mode = S_IFDIR | 0555;
+		fbr_fuse_reply_entry(request, &entry);
 	} else {
 		fbr_fuse_reply_err(request, ENOENT);
 	}
