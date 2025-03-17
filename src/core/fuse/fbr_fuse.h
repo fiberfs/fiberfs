@@ -31,6 +31,7 @@ struct fbr_fuse_context {
 	struct fbr_fs				*fs;
 
 	unsigned int				debug:1;
+	unsigned int				signals:1;
 
 	volatile int				running;
 	volatile int				exited;
