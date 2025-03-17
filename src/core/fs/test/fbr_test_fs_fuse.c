@@ -411,6 +411,7 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 
 		fbr_fuse_reply_err(request, ENOENT);
 
+		fbr_inode_release(fs, &file);
 		fbr_dindex_release(fs, &directory);
 
 		return;
