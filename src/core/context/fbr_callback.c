@@ -23,7 +23,7 @@ fbr_fuse_callback_ctx(void)
 void
 fbr_fuse_reply_none(struct fbr_request *request)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	assert(request->fuse_req);
 
 	fuse_reply_none(request->fuse_req);
@@ -34,7 +34,7 @@ fbr_fuse_reply_none(struct fbr_request *request)
 void
 fbr_fuse_reply_err(struct fbr_request *request, int error)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	assert(request->fuse_req);
 
 	int ret = fuse_reply_err(request->fuse_req, error);
@@ -46,7 +46,7 @@ fbr_fuse_reply_err(struct fbr_request *request, int error)
 void
 fbr_fuse_reply_buf(struct fbr_request *request, const char *buf, size_t size)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	assert(request->fuse_req);
 
 	int ret = fuse_reply_buf(request->fuse_req, buf, size);
@@ -58,7 +58,7 @@ fbr_fuse_reply_buf(struct fbr_request *request, const char *buf, size_t size)
 void
 fbr_fuse_reply_iov(struct fbr_request *request, const struct iovec *iov, int count)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	assert(request->fuse_req);
 
 	int ret = fuse_reply_iov(request->fuse_req, iov, count);
@@ -71,7 +71,7 @@ void
 fbr_fuse_reply_data(struct fbr_request *request, struct fuse_bufvec *bufv,
     enum fuse_buf_copy_flags flags)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	assert(request->fuse_req);
 
 	int ret = fuse_reply_data(request->fuse_req, bufv, flags);
@@ -83,7 +83,7 @@ fbr_fuse_reply_data(struct fbr_request *request, struct fuse_bufvec *bufv,
 void
 fbr_fuse_reply_entry(struct fbr_request *request, const struct fuse_entry_param *entry)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	assert(request->fuse_req);
 
 	int ret = fuse_reply_entry(request->fuse_req, entry);
@@ -95,7 +95,7 @@ fbr_fuse_reply_entry(struct fbr_request *request, const struct fuse_entry_param 
 void
 fbr_fuse_reply_attr(struct fbr_request *request, const struct stat *attr, double attr_timeout)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	assert(request->fuse_req);
 
 	int ret = fuse_reply_attr(request->fuse_req, attr, attr_timeout);
@@ -107,7 +107,7 @@ fbr_fuse_reply_attr(struct fbr_request *request, const struct stat *attr, double
 void
 fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	assert(request->fuse_req);
 
 	int ret = fuse_reply_open(request->fuse_req, fi);
@@ -119,7 +119,7 @@ fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_info *fi
 void
 fbr_fuse_reply_write(struct fbr_request *request, size_t count)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	assert(request->fuse_req);
 
 	int ret = fuse_reply_write(request->fuse_req, count);

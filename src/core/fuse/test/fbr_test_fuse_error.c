@@ -107,7 +107,7 @@ _fuse_err_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 static void
 _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	(void)parent;
 
 	fbr_test_logs("** LOOKUP '%s'", name);
@@ -170,7 +170,7 @@ _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 static void
 _fuse_err_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 
 	fbr_test_logs("** OPENDIR ino: %lu", ino);
 
@@ -196,7 +196,7 @@ static void
 _fuse_err_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	(void)size;
 	(void)off;
 	(void)fi;
@@ -219,7 +219,7 @@ _fuse_err_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_
 static void
 _fuse_err_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	(void)fi;
 
 	fbr_test_logs("** RELEASEDIR ino: %lu", ino);
@@ -240,7 +240,7 @@ _fuse_err_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_fi
 static void
 _fuse_err_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 
 	fbr_test_logs("** OPEN ino: %lu", ino);
 
@@ -266,7 +266,7 @@ static void
 _fuse_err_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	(void)off;
 	(void)size;
 	(void)fi;
@@ -290,7 +290,7 @@ static void
 _fuse_err_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, size_t size,
     off_t off, struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	(void)buf;
 	(void)off;
 	(void)size;
@@ -315,7 +315,7 @@ _fuse_err_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, si
 static void
 _fuse_err_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	(void)fi;
 
 	fbr_test_logs("** FLUSH ino: %lu", ino);
@@ -362,7 +362,7 @@ static void
 _fuse_err_fsync(struct fbr_request *request, fuse_ino_t ino, int datasync,
     struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	(void)datasync;
 	(void)fi;
 
@@ -384,7 +384,7 @@ _fuse_err_fsync(struct fbr_request *request, fuse_ino_t ino, int datasync,
 static void
 _fuse_err_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	(void)nlookup;
 
 	fbr_test_logs("** FORGET ino: %lu", ino);

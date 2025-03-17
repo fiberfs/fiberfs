@@ -62,7 +62,7 @@ void
 fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf, const char *name,
     struct stat *st)
 {
-	fbr_request_ok(request);
+	fbr_request_valid(request);
 	assert(dbuf);
 	assert_zero(dbuf->full);
 	assert_dev(dbuf->pos + dbuf->free == dbuf->max);

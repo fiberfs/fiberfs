@@ -79,8 +79,11 @@ fbr_request_free(struct fbr_request *request)
 	fbr_request_ok(request);
 	assert_zero(request->fuse_req);
 
-	struct fbr_request *sreq = fbr_request_get();
-	assert(sreq == request);
+	if (fbr_assert_is_dev()) {
+		struct fbr_request *sreq = fbr_request_get();
+		assert(sreq == request);
+	}
+
 	pt_assert(pthread_setspecific(_REQUEST_KEY, NULL));
 	assert_zero_dev(fbr_request_get());
 

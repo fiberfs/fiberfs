@@ -70,6 +70,10 @@ void fbr_fuse_reply_write(struct fbr_request *request, size_t count);
 {									\
 	assert(request);						\
 	assert((request)->magic == FBR_REQUEST_MAGIC);			\
+}
+#define fbr_request_valid(request)					\
+{									\
+	fbr_request_ok(request);					\
 	fbr_fuse_mounted(request->fuse_ctx);				\
 }
 
