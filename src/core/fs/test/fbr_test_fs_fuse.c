@@ -309,6 +309,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 
 		fbr_fuse_reply_err(request, ENOTDIR);
 
+		fbr_inode_release(fs, &parent_file);
 		fbr_dindex_release(fs, &directory);
 
 		return;
