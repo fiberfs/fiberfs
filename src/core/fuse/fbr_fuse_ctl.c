@@ -30,6 +30,17 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 	fbr_fuse_context_ok(ctx);
 }
 
+static void
+_fuse_error(struct fbr_fuse_context *ctx)
+{
+	assert_dev(ctx);
+
+	fbr_fuse_unmount(ctx);
+	assert_dev(ctx->state == FBR_FUSE_NONE);
+
+	ctx->error = 1;
+}
+
 static void *
 _fuse_mount_thread(void *arg)
 {
@@ -92,7 +103,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	if (!ctx->session) {
 		pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
-		fbr_fuse_error(ctx);
+		_fuse_error(ctx);
 		return 1;
 	}
 
@@ -108,7 +119,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	if (ret) {
 		pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
-		fbr_fuse_error(ctx);
+		_fuse_error(ctx);
 		return 1;
 	}
 
@@ -133,7 +144,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 			return 1;
 		} else if (ctx->exited) {
 			pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
-			fbr_fuse_error(ctx);
+			_fuse_error(ctx);
 			return 1;
 		}
 	}
@@ -152,27 +163,16 @@ fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	ctx->running = 1;
 }
 
-void
-fbr_fuse_error(struct fbr_fuse_context *ctx)
+static void
+_fuse_abort(struct fbr_fuse_context *ctx)
 {
-	fbr_fuse_context_ok(ctx);
+	assert_dev(ctx);
+	assert_dev(ctx->state == FBR_FUSE_MOUNTED);
+	assert_dev(ctx->session);
 
-	fbr_fuse_unmount(ctx);
-
-	assert(ctx->state == FBR_FUSE_NONE);
-
-	ctx->error = 1;
-}
-
-void
-fbr_fuse_abort(struct fbr_fuse_context *ctx)
-{
-	fbr_fuse_context_ok(ctx);
-
-	if (ctx->state != FBR_FUSE_MOUNTED || ctx->exited) {
+	if (ctx->exited) {
 		return;
 	}
-	assert_dev(ctx->session);
 
 	fuse_session_exit(ctx->session);
 
@@ -197,9 +197,10 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 		pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 		return;
 	}
+
 	assert_dev(ctx->session);
 
-	fbr_fuse_abort(ctx);
+	_fuse_abort(ctx);
 
 	if (ctx->running) {
 		pt_assert(pthread_join(ctx->loop_thread, NULL));
@@ -226,7 +227,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 }
 
 void
-fbr_fuse_unmount_noctx(void)
+fbr_fuse_unmount_signal(void)
 {
 	if (_FUSE_CTX) {
 		fbr_fuse_context_ok(_FUSE_CTX);

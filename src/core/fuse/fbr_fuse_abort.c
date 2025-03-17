@@ -18,7 +18,7 @@ fbr_context_abort(void)
 	struct fbr_request *request = fbr_request_get();
 
 	if (!request) {
-		fbr_fuse_unmount_noctx();
+		fbr_fuse_unmount_signal();
 		fbr_test_context_abort();
 		return;
 	}
