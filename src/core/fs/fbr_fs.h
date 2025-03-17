@@ -112,10 +112,12 @@ struct fbr_file {
 	fbr_inode_t				parent_inode;
 	unsigned long				version;
 
-	unsigned int				mode;
 	unsigned long				size;
+	unsigned int				mode;
 	unsigned int				uid;
 	unsigned int				gid;
+
+	int					expired;
 
 	TAILQ_ENTRY(fbr_file)			file_entry;
 	RB_ENTRY(fbr_file)			filename_entry;

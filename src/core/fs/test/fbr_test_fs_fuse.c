@@ -288,8 +288,14 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 
 	struct fbr_file *parent_file = fbr_inode_take(fs, parent);
 
-	if (!parent_file) {
+	if (!parent_file || parent_file->expired) {
 		fbr_fuse_reply_err(request, ENOTDIR);
+
+		if (parent_file) {
+			fbr_inode_release(fs, &parent_file);
+		}
+		assert_zero_dev(parent_file);
+
 		return;
 	}
 
@@ -391,8 +397,14 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
-	if (!file) {
+	if (!file || file->expired) {
 		fbr_fuse_reply_err(request, ENOENT);
+
+		if (file) {
+			fbr_inode_release(fs, &file);
+		}
+		assert_zero_dev(file);
+
 		return;
 	}
 
