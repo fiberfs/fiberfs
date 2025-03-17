@@ -69,39 +69,6 @@ _dump_backtrace(void)
 	backtrace_symbols_fd(stack_addrs, len, STDERR_FILENO);
 }
 
-/*
- * The abort processs is meant to allow for a clean exit of all Fiber threads/processes
- * which will allow for a clean fuse unmount.
- *
- * When a single thread/process detects an error via assert()/abort() or gets a fault or
- * external signal to exit, it dumps a backtrace and then proceeds to a context abort.
- *
- * The default fbr_context_abort() (see fbr_fuse_abort.c) behaves as follows:
- *
- * 1. If the thread is a fuse request thread, then the following steps happen:
- *    a. The Fiber context is marked as error. This signals all Fiber threads/processes that
- *       a problem exists and they will abort themselves thru this function or
- *       exit in better way (if they care). See fbr_fuse_mounted() and fbr_request_valid().
- *    b. fuse_session_exit() is called. This tells fuse to exit at its next opportunity.
- *    c. If the fuse_req is un-replied, reply to it with an EIO.
- *    d. pthread_exit() is called. This finishes the fuse request and allows for Fiber to
- *       continue to operate normally, albeit in a error state.
- *
- * 2. The thread/process is not a fuse request, the following happens:
- *    a. The Fiber context is marked as error. See 1.a. above.
- *    b. Fiber starts the internal unmount process:
- *       aa. fuse_session_exit() is called.
- *       bb. System umount is called on the mount (fusermount -u).
- *       cc. Wait for fuse_session_loop() to exit.
- *       dd. fuse_session_unmount() is called.
- *
- *       NOTE: all non-fuse threads/processes will block here until this step is completed.
- *
- * 3. If this is a fiber_test context, the test will exit() with an error.
- *
- * 4. If not a fiber_test context, abort() is called.
- */
-
 void __fbr_attr_printf(5) __fbr_noreturn
 fbr_do_abort(const char *assertion, const char *function, const char *file, int line,
     const char *fmt, ...)
