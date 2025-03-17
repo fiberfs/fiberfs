@@ -303,9 +303,18 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname, 0);
 	struct fbr_directory *stale_directory = NULL;
 
-	if (directory && directory->inode != parent_file->inode) {
-		fbr_test_logs("** LOOKUP parent: %lu mismatch dir_inode: %lu", parent_file->inode,
-			directory->inode);
+	if (directory && directory->inode > parent_file->inode) {
+		fbr_test_logs("** LOOKUP parent: %lu found newer dir_inode: %lu (return error)",
+			parent_file->inode, directory->inode);
+
+		fbr_fuse_reply_err(request, ENOTDIR);
+
+		fbr_dindex_release(fs, &directory);
+
+		return;
+	} else if (directory && directory->inode < parent_file->inode) {
+		fbr_test_logs("** LOOKUP parent: %lu mismatch dir_inode: %lu (will make new)",
+			parent_file->inode, directory->inode);
 		stale_directory = directory;
 		directory = NULL;
 	}
@@ -395,9 +404,18 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 0);
 	struct fbr_directory *stale_directory = NULL;
 
-	if (directory && directory->inode != file->inode) {
-		fbr_test_logs("** OPENDIR inode: %lu mismatch dir_inode: %lu", file->inode,
-			directory->inode);
+	if (directory && directory->inode > file->inode) {
+		fbr_test_logs("** OPENDIR inode: %lu found newer dir_inode: %lu (return error)",
+			file->inode, directory->inode);
+
+		fbr_fuse_reply_err(request, ENOENT);
+
+		fbr_dindex_release(fs, &directory);
+
+		return;
+	} else if (directory && directory->inode < file->inode) {
+		fbr_test_logs("** OPENDIR inode: %lu mismatch dir_inode: %lu (will make new)",
+			file->inode, directory->inode);
 		stale_directory = directory;
 		directory = NULL;
 	}
