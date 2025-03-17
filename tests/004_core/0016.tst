@@ -15,6 +15,8 @@ set_var1 $sys_tmpdir "/fiber_big"
 sys_stat_size $var1 1048576
 sys_cat_md5 $var1 4cf30131c206e004d37e694a53733f70
 
+sleep_ms 100
+
 equal $fs_test_stat_read_bytes 1048576
 
 print "### READ 2"
