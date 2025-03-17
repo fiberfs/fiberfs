@@ -4,7 +4,6 @@
  */
 
 #include "test/fbr_test.h"
-#include "test/fbr_test_cmds.h"
 #include "test/chttp_test_cmds.h"
 #include "compress/chttp_gzip.h"
 #include "network/chttp_tcp_pool.h"

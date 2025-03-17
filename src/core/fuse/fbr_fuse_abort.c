@@ -27,12 +27,12 @@ extern void fbr_test_context_abort(void);
  *       a problem exists and they will abort themselves thru this function or
  *       exit in better way (if they care). See fbr_fuse_mounted() and fbr_request_valid().
  *    b. fuse_session_exit() is called. This tells fuse to exit at its next opportunity.
- *    c. If the fuse_req is un-replied, reply to it with an EIO.
+ *    c. If the fuse_req is un-replied, an EIO is used as the reply.
  *    d. pthread_exit() is called. This finishes the fuse request and allows for Fiber to
  *       continue to operate normally, albeit in a error state.
  *
  * 2. The thread/process is not a fuse request, the following happens:
- *    a. The Fiber context is marked as error. See 1.a. above.
+ *    a. The Fiber context is marked as error. See 1a above.
  *    b. Fiber starts the internal unmount process:
  *       aa. fuse_session_exit() is called.
  *       bb. System umount is called on the mount (fusermount -u).

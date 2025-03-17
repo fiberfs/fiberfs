@@ -4,8 +4,8 @@
  *
  */
 
-#include "test/fbr_test.h"
-#include "test/fbr_test_cmds.h"
+#include "fbr_test.h"
+#include "commands/fbr_test_cmds.h"
 #include "test/chttp_test_cmds.h"
 #include "test/fjson_test_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
@@ -118,7 +118,7 @@ fbr_test_cmds_init(struct fbr_test *test)
 	_test_cmd_register(test, #cmd, &fbr_test_cmd_##cmd);
 #define FBR_TEST_VAR(var)					\
 	_test_var_register(test, "$" #var, &fbr_test_var_##var);
-#include "test/fbr_test_cmds.h"
+#include "commands/fbr_test_cmds.h"
 
 #undef CHTTP_TEST_CMDS_H_INCLUDED
 #define CHTTP_TEST_CMD(cmd)					\
