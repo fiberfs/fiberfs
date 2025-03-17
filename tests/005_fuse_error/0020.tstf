@@ -7,4 +7,6 @@ fuse_error_mount $sys_tmpdir
 set_var1 $sys_tmpdir "/fiber19"
 sys_cat $var1
 
+sleep_ms 100
+
 fuse_test_unmount
