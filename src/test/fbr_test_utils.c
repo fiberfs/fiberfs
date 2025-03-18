@@ -8,11 +8,13 @@
 #include <limits.h>
 #include <pthread.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
+#include "fiberfs.h"
 #include "test/fbr_test.h"
-#include "core/fuse/fbr_fuse.h"
 
 struct fbr_test *
 fbr_test_convert(struct fbr_test_context *ctx)

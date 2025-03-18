@@ -14,8 +14,11 @@
 		"C_Cpp.default.cStandard": "gnu17",
 		"C_Cpp.default.intelliSenseMode": "gcc-x64",
 		"C_Cpp.codeAnalysis.clangTidy.enabled": true,
+		"C_Cpp.codeAnalysis.clangTidy.checks.enabled": [
+			"clang-analyzer-*"
+		],
 		"C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
-			"*.DeprecatedOrUnsafeBufferHandling"
+			"clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling"
 		],
 		"C_Cpp.default.includePath": [
 			"src",
