@@ -30,15 +30,14 @@ struct fbr_path_ptr {
 	unsigned int				layout:FBR_PATH_LAYOUT_LEN;
 	unsigned int				dir_len:FBR_PATH_PTR_LEN_SIZE;
 	unsigned int				file_len:FBR_PATH_PTR_LEN_SIZE;
-	// put unused in here?
-	union {
-		const char			*value;
-	};
+
+	const char				*value;
 };
 
 struct fbr_path_embed {
 	unsigned int				layout:FBR_PATH_LAYOUT_LEN;
 	unsigned int				len:FBR_PATH_EMBED_LEN_SIZE;
+
 	char					data[FBR_PATH_EMBED_LEN];
 };
 

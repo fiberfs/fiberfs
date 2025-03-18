@@ -205,16 +205,10 @@ _test_fs_chunk_gen(struct fbr_fs *fs, const struct fbr_file *file, struct fbr_ch
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_EMPTY);
 
-	struct fbr_file *parent_file = fbr_inode_take(fs, file->parent_inode);
-	fbr_file_ok(parent_file);
+	const char *fullpath = fbr_path_get_full(&file->path, NULL);
 
-	const char *dirpath = fbr_path_get_full(&parent_file->path, NULL);
-	const char *filename = fbr_path_get_full(&file->path, NULL);
-
-	fbr_inode_release(fs, &parent_file);
-
-	fbr_test_logs("** FETCH chunk: offset: %zu length: %zu splice: %d path: %s,%s",
-		chunk->offset, chunk->length, chunk->fd_splice_ok, dirpath, filename);
+	fbr_test_logs("** FETCH chunk: offset: %zu length: %zu splice: %d path: %s",
+		chunk->offset, chunk->length, chunk->fd_splice_ok, fullpath);
 
 	chunk->data = malloc(chunk->length);
 	assert(chunk->data);
@@ -607,12 +601,6 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 		fbr_fuse_reply_err(request, EROFS);
 		return;
 	}
-
-	fbr_file_ok(file);
-	struct fbr_file *parent_file = fbr_inode_take(fs, file->parent_inode);
-	fbr_ASSERT(parent_file, "We lost the parent file");
-
-	fbr_inode_release(fs, &parent_file);
 
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
 	fbr_fio_ok(fio);

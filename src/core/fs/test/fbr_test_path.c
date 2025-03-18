@@ -52,7 +52,7 @@ fbr_cmd_fs_test_path_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 
 static void
 _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char *name,
-	enum fbr_path_layout layout, char *d, char *f, char *fp)
+	enum fbr_path_layout layout, char *d_check, char *f_check, char *fp_check)
 {
 	fbr_test_context_ok(ctx);
 	assert(path);
@@ -77,9 +77,9 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char 
 		(int)fullparent.len, fullparent.name, fullparent.len);
 
 	fbr_test_ASSERT(path->layout.value == layout, "layout isnt %d", layout);
-	fbr_test_ERROR(fbr_path_name_str_cmp(&dirname, d), "dirname isnt '%s'", d);
-	fbr_test_ERROR(strcmp(filename, f), "filename isnt '%s'", d);
-	fbr_test_ERROR(strcmp(sfullpath, fp), "fullpath isnt '%s'", fp);
+	fbr_test_ERROR(fbr_path_name_str_cmp(&dirname, d_check), "dirname isnt '%s'", d_check);
+	fbr_test_ERROR(strcmp(filename, f_check), "filename isnt '%s'", f_check);
+	fbr_test_ERROR(strcmp(sfullpath, fp_check), "fullpath isnt '%s'", fp_check);
 }
 
 void
@@ -134,7 +134,8 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		file = fbr_file_alloc(fs, directory, &filename, S_IFDIR);
 
-		_test_path_print_path(ctx, &file->path, "directory_file", layout, sdir, name, sfull);
+		_test_path_print_path(ctx, &file->path, "directory_file", layout, sdir, name,
+			sfull);
 
 		assert(file->parent_inode == inode);
 
@@ -152,8 +153,10 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		int ret = snprintf(name2, sizeof(name2), "%s.txt", name);
 		assert((size_t)ret < sizeof(name2));
 
+		strncat(sfull, ".txt", sizeof(sfull) - strlen(sfull) - 1);
+
 		layout = FBR_PATH_PTR;
-		if (strlen(name2) < 15) {
+		if (!i && strlen(name2) < 15) {
 			layout = FBR_PATH_EMBED_FILE;
 		}
 
@@ -161,7 +164,9 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		struct fbr_file *file2 = fbr_file_alloc(fs, directory, &filename, S_IFREG);
 
-		_test_path_print_path(ctx, &file2->path, "file", layout, "", name2, name2);
+		_test_path_print_path(ctx, &file2->path, "file", layout, sdir, name2, sfull);
+
+		sfull[strlen(sfull) - 4] = '\0';
 
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
@@ -186,7 +191,8 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 			layout = FBR_PATH_EMBED_DIR;
 		}
 
-		_test_path_print_path(ctx, &directory->dirname, "directory", layout, sfull, "", sfull);
+		_test_path_print_path(ctx, &directory->dirname, "directory", layout, sfull, "",
+			sfull);
 
 		if (i) {
 			strncat(sdir, "/", sizeof(sdir) - strlen(sdir) - 1);
