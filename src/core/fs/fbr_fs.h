@@ -213,6 +213,7 @@ struct fbr_fio {
 	pthread_mutex_t				lock;
 
 	struct fbr_file				*file;
+	struct fbr_file				*parent_file;
 
 	struct fbr_chunk_list			*floating;
 };

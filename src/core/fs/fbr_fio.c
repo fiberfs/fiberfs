@@ -52,6 +52,9 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	fio->magic = FBR_FIO_MAGIC;
 	fio->file = file;
 
+	fio->parent_file = fbr_inode_take(fs, file->parent_inode);
+	fbr_file_ok(fio->parent_file);
+
 	fio->floating = _fio_chunk_list_expand(NULL);
 	fbr_chunk_list_ok(fio->floating);
 
@@ -580,7 +583,7 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 	pt_assert(pthread_mutex_destroy(&fio->lock));
 
 	fbr_inode_release(fs, &fio->file);
-	assert_zero_dev(fio->file);
+	fbr_inode_release(fs, &fio->parent_file);
 
 	fbr_ZERO(fio);
 
