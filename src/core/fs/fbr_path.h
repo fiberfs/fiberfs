@@ -7,12 +7,15 @@
 #ifndef _FBR_PATH_H_INCLUDED_
 #define _FBR_PATH_H_INCLUDED_
 
-#define FBR_PATH_LAYOUT_LEN			2
-#define FBR_PATH_EMBED_LEN_SIZE			(8 - FBR_PATH_LAYOUT_LEN)
-#define FBR_PATH_EMBED_LEN_MAX			((1 << FBR_PATH_EMBED_LEN_SIZE) - 1)
-#define FBR_PATH_EMBED_LEN			(sizeof(struct fbr_path_ptr) - 1)
-#define FBR_PATH_PTR_LEN_SIZE			((sizeof(short) * 8) - FBR_PATH_LAYOUT_LEN)
-#define FBR_PATH_PTR_LEN_MAX			((1 << FBR_PATH_PTR_LEN_SIZE) - 1)
+#define FBR_PATH_LAYOUT_BITS			2
+#define FBR_PATH_LAYOUT_MAX			((1 << FBR_PATH_LAYOUT_BITS) - 1)
+#define FBR_PATH_EMBED_LEN_BITS			(8 - FBR_PATH_LAYOUT_BITS)
+#define FBR_PATH_EMBED_LEN_MAX			((1 << FBR_PATH_EMBED_LEN_BITS) - 1)
+#define FBR_PATH_EMBED_BYTES			(sizeof(struct fbr_path_ptr) - 1)
+#define FBR_PATH_PTR_LEN_BITS			((sizeof(short) * 8) - FBR_PATH_LAYOUT_BITS)
+#define FBR_PATH_PTR_LEN_MAX			((1 << FBR_PATH_PTR_LEN_BITS) - 1)
+#define FBR_PATH_PTR2_OFFSET_BITS		(sizeof(short) * 8)
+#define FBR_PATH_PTR2_OFFSET_MAX		((1 << FBR_PATH_PTR2_OFFSET_BITS) - 1)
 
 enum fbr_path_layout {
 	FBR_PATH_NULL = 0,
@@ -23,22 +26,35 @@ enum fbr_path_layout {
 };
 
 struct _fbr_path_layout {
-	unsigned int				value:FBR_PATH_LAYOUT_LEN;
+	unsigned int				value:FBR_PATH_LAYOUT_BITS;
 };
 
 struct fbr_path_ptr {
-	unsigned int				layout:FBR_PATH_LAYOUT_LEN;
-	unsigned int				dir_len:FBR_PATH_PTR_LEN_SIZE;
-	unsigned int				file_len:FBR_PATH_PTR_LEN_SIZE;
+	unsigned int				layout:FBR_PATH_LAYOUT_BITS;
+	unsigned int				dir_len:FBR_PATH_PTR_LEN_BITS;
+	unsigned int				file_len:FBR_PATH_PTR_LEN_BITS;
+
+	unsigned int				__freebits:2;
+	unsigned int				__free;
 
 	const char				*value;
 };
 
-struct fbr_path_embed {
-	unsigned int				layout:FBR_PATH_LAYOUT_LEN;
-	unsigned int				len:FBR_PATH_EMBED_LEN_SIZE;
+struct fbr_path_ptr2 {
+	unsigned int				layout:FBR_PATH_LAYOUT_BITS;
+	unsigned int				file_len:FBR_PATH_PTR_LEN_BITS;
+	unsigned short				file_offset;
 
-	char					data[FBR_PATH_EMBED_LEN];
+	unsigned int				__free;
+
+	void					*other;
+};
+
+struct fbr_path_embed {
+	unsigned int				layout:FBR_PATH_LAYOUT_BITS;
+	unsigned int				len:FBR_PATH_EMBED_LEN_BITS;
+
+	char					data[FBR_PATH_EMBED_BYTES];
 };
 
 struct fbr_path {

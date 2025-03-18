@@ -21,10 +21,9 @@ fbr_cmd_fs_test_path_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 
 	struct fbr_path *path;
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "enum FBR_PATH_LAYOUT end=%d",
-		__FBR_PATH_LAYOUT_END);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_LAYOUT_LEN=%d",
-		FBR_PATH_LAYOUT_LEN);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "enum FBR_PATH_LAYOUT end=%d", __FBR_PATH_LAYOUT_END);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_LAYOUT_BITS=%d", FBR_PATH_LAYOUT_BITS);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_LAYOUT_MAX=%d", FBR_PATH_LAYOUT_MAX);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_path_ptr)=%zu",
 		sizeof(struct fbr_path_ptr));
@@ -33,21 +32,34 @@ fbr_cmd_fs_test_path_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_path)=%zu",
 		sizeof(struct fbr_path));
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_EMBED_LEN_SIZE=%d",
-		FBR_PATH_EMBED_LEN_SIZE);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_PTR_LEN_SIZE=%zu",
-		FBR_PATH_PTR_LEN_SIZE);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_path_ptr2)=%zu",
+		sizeof(struct fbr_path_ptr2));
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_PTR2_OFFSET_BITS=%zu",
+		FBR_PATH_PTR2_OFFSET_BITS);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_PTR2_OFFSET_MAX=%d",
+		FBR_PATH_PTR2_OFFSET_MAX);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_EMBED_LEN=%zu", FBR_PATH_EMBED_LEN);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_EMBED_LEN_BITS=%d", FBR_PATH_EMBED_LEN_BITS);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_EMBED_LEN_MAX=%d", FBR_PATH_EMBED_LEN_MAX);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_PTR_LEN_BITS=%zu", FBR_PATH_PTR_LEN_BITS);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_PTR_LEN_MAX=%d", FBR_PATH_PTR_LEN_MAX);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "PATH_MAX=%d", PATH_MAX);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_EMBED_BYTES=%zu", FBR_PATH_EMBED_BYTES);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(path->embed.data)=%zu",
 		sizeof(path->embed.data));
 
-	fbr_test_ASSERT(__FBR_PATH_LAYOUT_END <= (1<<FBR_PATH_LAYOUT_LEN),
-		"FBR_PATH_LAYOUT doesnt fit in %d bits", FBR_PATH_LAYOUT_LEN);
+	fbr_test_ASSERT(__FBR_PATH_LAYOUT_END <= FBR_PATH_LAYOUT_MAX + 1,
+		"FBR_PATH_LAYOUT doesnt fit in FBR_PATH_LAYOUT_BITS");
+	fbr_test_ASSERT(FBR_PATH_EMBED_LEN_MAX >= FBR_PATH_EMBED_BYTES,
+		"FBR_PATH_EMBED_LEN_MAX is too small for FBR_PATH_EMBED_BYTES");
+	fbr_test_ASSERT(FBR_PATH_PTR_LEN_MAX >= PATH_MAX,
+		"FBR_PATH_PTR_LEN_MAX is too small for PATH_MAX");
 	fbr_test_ASSERT(sizeof(struct fbr_path_ptr) == sizeof(struct fbr_path_embed),
 		"struct fbr_path_ptr != struct fbr_path_embed");
 	fbr_test_ASSERT(sizeof(struct fbr_path) == sizeof(struct fbr_path_embed),
 		"struct fbr_path != struct fbr_path_embed");
+	fbr_test_ASSERT(sizeof(struct fbr_path_ptr) == sizeof(struct fbr_path_ptr2),
+		"struct fbr_path_ptr != struct fbr_path_ptr2");
 }
 
 static void
@@ -119,7 +131,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		// directory file
 
 		layout = FBR_PATH_PTR;
-		if (!i && strlen(name) < 15) {
+		if (!i && strlen(name) < FBR_PATH_EMBED_BYTES) {
 			layout = FBR_PATH_EMBED_FILE;
 		}
 
@@ -156,7 +168,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		strncat(sfull, ".txt", sizeof(sfull) - strlen(sfull) - 1);
 
 		layout = FBR_PATH_PTR;
-		if (!i && strlen(name2) < 15) {
+		if (!i && strlen(name2) < FBR_PATH_EMBED_BYTES) {
 			layout = FBR_PATH_EMBED_FILE;
 		}
 
@@ -187,7 +199,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		inode = inode_next;
 
 		layout = FBR_PATH_PTR;
-		if (strlen(sfull) < 15) {
+		if (strlen(sfull) < FBR_PATH_EMBED_BYTES) {
 			layout = FBR_PATH_EMBED_DIR;
 		}
 
