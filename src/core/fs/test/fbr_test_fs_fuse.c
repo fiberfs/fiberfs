@@ -27,6 +27,7 @@ static DIR *_TEST_DIR;
 static int _TEST_FD = -1;
 
 static int _TEST_FS_DO_INIT;
+static int _TEST_FS_ALLOW_CRASH;
 
 static void
 _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
@@ -285,6 +286,10 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_logs("LOOKUP parent: %lu name: %s", parent, name);
+
+	if (_TEST_FS_ALLOW_CRASH && !strcmp(name, "__CRASH")) {
+		fbr_ABORT("__CRASH triggered!");
+	}
 
 	struct fbr_file *parent_file = fbr_inode_take(fs, parent);
 
@@ -752,6 +757,17 @@ fbr_cmd_fs_test_fuse_init_root(struct fbr_test_context *ctx, struct fbr_test_cmd
 	fbr_dindex_release(fs, &root);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root initialized");
+}
+
+void
+fbr_cmd_fs_test_allow_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_TEST_FS_ALLOW_CRASH = 1;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs allow crash %d", _TEST_FS_ALLOW_CRASH);
 }
 
 void

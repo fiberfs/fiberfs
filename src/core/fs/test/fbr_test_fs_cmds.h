@@ -47,6 +47,7 @@ FBR_TEST_FS_CMD(fs_test_assert_root)
 FBR_TEST_FS_CMD(fs_test_dentry_ttl_ms)
 FBR_TEST_FS_CMD(fs_test_stats)
 FBR_TEST_FS_CMD(fs_test_debug)
+FBR_TEST_FS_CMD(fs_test_allow_crash)
 
 FBR_TEST_FS_CMD(_fs_test_take_dir)
 FBR_TEST_FS_CMD(_fs_test_release_dir)
