@@ -608,6 +608,12 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 		return;
 	}
 
+	fbr_file_ok(file);
+	struct fbr_file *parent_file = fbr_inode_take(fs, file->parent_inode);
+	fbr_ASSERT(parent_file, "We lost the parent file");
+
+	fbr_inode_release(fs, &parent_file);
+
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
 	fbr_fio_ok(fio);
 
