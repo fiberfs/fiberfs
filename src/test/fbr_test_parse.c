@@ -3,9 +3,9 @@
  *
  */
 
-#include "test/fbr_test.h"
-
 #include <stdlib.h>
+
+#include "test/fbr_test.h"
 
 enum fbr_test_quote {
 	FRB_QUOTE_NONE = 0,

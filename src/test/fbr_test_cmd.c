@@ -4,15 +4,15 @@
  *
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "fbr_test.h"
 #include "commands/fbr_test_cmds.h"
 #include "test/chttp_test_cmds.h"
 #include "test/fjson_test_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
-
-#include <stdio.h>
-#include <stdlib.h>
 
 static int _test_entry_cmp(const struct fbr_test_cmdentry *k1,
     const struct fbr_test_cmdentry *k2);

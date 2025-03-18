@@ -1,6 +1,6 @@
 # FiberFS Makefile
 
-.PHONY:	all test check valgrind FORCE
+.PHONY:	all test check valgrind
 
 all:
 		$(MAKE) -C src $@
@@ -11,7 +11,5 @@ test check:
 valgrind:
 		$(MAKE) -C tests $@ all
 
-FORCE:
-
-%:		FORCE
+%:
 		$(MAKE) -C src $@

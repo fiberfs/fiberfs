@@ -4,11 +4,11 @@
  *
  */
 
-#include "test/fbr_test.h"
-#include "test/chttp_test_cmds.h"
-
 #include <pthread.h>
 #include <stdlib.h>
+
+#include "test/fbr_test.h"
+#include "test/chttp_test_cmds.h"
 
 static struct fbr_test *_TEST;
 static int _EXIT;
