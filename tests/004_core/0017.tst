@@ -17,7 +17,11 @@ set_var2 "cd " $sys_tmpdir "; sleep 0.01; cat */* >/dev/null 2>&1 || true"
 shell_bg $var1
 shell_bg $var2
 
-sleep_ms 12
+sleep_ms 11
+fs_test_release_all
+fs_test_stats
+fs_test_debug
+
 fs_test_release_all
 fs_test_stats
 fs_test_debug
@@ -27,12 +31,6 @@ fs_test_release_all
 fs_test_stats
 fs_test_debug
 
-sleep_ms 3
-fs_test_release_all
-fs_test_stats
-fs_test_debug
-
-sleep_ms 5
 fs_test_release_all
 fs_test_stats
 fs_test_debug
