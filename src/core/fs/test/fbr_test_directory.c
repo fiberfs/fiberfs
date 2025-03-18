@@ -46,6 +46,8 @@ _dir_test_alloc(void *arg)
 			struct fbr_path_name filename;
 			fbr_path_name_init(&filename, "random");
 
+			// TODO make 2 different inodes
+
 			directory = fbr_directory_alloc(fs, &filename, _TEST_INODE);
 		}
 
@@ -214,6 +216,8 @@ _directory_parallel(void)
 		_TEST_INODE = file->inode;
 
 		directory = fbr_directory_alloc(fs, &filename, _TEST_INODE);
+
+		// TODO repeat this and get a second inode for the directory
 	}
 
 	fbr_directory_ok(directory);

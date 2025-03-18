@@ -100,6 +100,8 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 			directory->file = fbr_inode_take(fs, directory->inode);
 			fbr_file_ok(directory->file);
 
+			// TODO do we want to verify the file and directory match?
+
 			break;
 		}
 
@@ -108,13 +110,15 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 		}
 
 		if (inserted->state == FBR_DIRSTATE_OK) {
-			assert(directory->state == FBR_DIRSTATE_NONE);
-			fbr_directory_free(fs, directory);
+			if (inserted->inode == directory->inode) {
+				assert(directory->state == FBR_DIRSTATE_NONE);
+				fbr_directory_free(fs, directory);
 
-			return inserted;
+				return inserted;
+			}
+		} else {
+			assert_dev(inserted->state == FBR_DIRSTATE_ERROR);
 		}
-
-		assert_dev(inserted->state == FBR_DIRSTATE_ERROR);
 
 		fbr_dindex_release(fs, &inserted);
 	}

@@ -38,7 +38,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_path_name dirname;
 	fbr_path_get_dir(&directory->dirname, &dirname);
 
-	fbr_test_logs("** INIT inode: %lu directory: '%.*s':%zu",
+	fbr_test_logs("** INIT LOADING inode: %lu directory: '%.*s':%zu",
 		directory->inode, (int)dirname.len, dirname.name, dirname.len);
 
 	size_t depth = 0;
@@ -190,6 +190,9 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
 		_test_fs_init_contents(fs, directory);
+	} else {
+		fbr_test_logs("** INIT OK inode: %lu directory: '%.*s':%zu",
+			directory->inode, (int)dirname->len, dirname->name, dirname->len);
 	}
 
 	assert(directory->state == FBR_DIRSTATE_OK);
@@ -333,7 +336,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 			return;
 		}
 
-		assert(directory->inode = parent_file->inode);
+		assert(directory->inode == parent_file->inode);
 	}
 
 	fbr_directory_ok(directory);
@@ -441,7 +444,7 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 			return;
 		}
 
-		assert(directory->inode = file->inode);
+		assert(directory->inode == file->inode);
 	}
 
 	fbr_directory_ok(directory);
