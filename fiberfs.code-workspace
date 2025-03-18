@@ -15,10 +15,14 @@
 		"C_Cpp.default.intelliSenseMode": "gcc-x64",
 		"C_Cpp.codeAnalysis.clangTidy.enabled": true,
 		"C_Cpp.codeAnalysis.clangTidy.checks.enabled": [
-			"clang-analyzer-*"
+			"clang-analyzer-*",
+			"misc-*"
 		],
 		"C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
-			"clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling"
+			"clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling",
+			"misc-include-cleaner",
+			"misc-no-recursion",
+			"misc-static-assert"
 		],
 		"C_Cpp.default.includePath": [
 			"src",
