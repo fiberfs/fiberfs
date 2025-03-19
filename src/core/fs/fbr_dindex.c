@@ -218,7 +218,7 @@ _dindex_dirhead_get(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	assert_dev(directory);
 
 	struct fbr_path_name dirname;
-	fbr_path_get_dir(&directory->dirname, &dirname);
+	fbr_directory_name(directory, &dirname);
 	assert(dirname.name);
 
 	unsigned long hash = 5381;
@@ -339,8 +339,10 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname, int wait
 	assert(dirname);
 
 	struct fbr_directory find;
+	struct fbr_path_shared path;
 	find.magic = FBR_DIRECTORY_MAGIC;
-	fbr_path_init_dir(&find.dirname, dirname->name, dirname->len);
+	fbr_path_shared_init(&path, dirname);
+	find.path = &path;
 
 	struct fbr_dindex_dirhead *dirhead = _dindex_LOCK(fs, &find);
 

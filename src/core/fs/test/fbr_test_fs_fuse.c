@@ -36,7 +36,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_directory_ok(directory);
 
 	struct fbr_path_name dirname;
-	fbr_path_get_dir(&directory->dirname, &dirname);
+	fbr_directory_name(directory, &dirname);
 
 	fbr_test_logs("** INIT LOADING inode: %lu directory: '%.*s':%zu",
 		directory->inode, (int)dirname.len, dirname.name, dirname.len);
@@ -344,9 +344,10 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	fbr_inode_release(fs, &parent_file);
 	assert_zero_dev(parent_file);
 
-	const char *dirname = fbr_path_get_full(&directory->dirname, NULL);
+	struct fbr_path_name dirname;
+	fbr_directory_name(directory, &dirname);
 	fbr_test_logs("** LOOKUP found directory: '%s' (inode: %lu)",
-		dirname, directory->inode);
+		dirname.name, directory->inode);
 
 	size_t name_len = strlen(name);
 	struct fbr_file *file = fbr_directory_find_file(directory, name, name_len);
@@ -541,7 +542,7 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 	}
 
 	struct fbr_path_name dirname;
-	fbr_path_get_dir(&directory->dirname, &dirname);
+	fbr_directory_name(directory, &dirname);
 
 	struct fbr_file *file = reader->position;
 

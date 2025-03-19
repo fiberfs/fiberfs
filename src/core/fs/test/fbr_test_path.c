@@ -63,6 +63,26 @@ fbr_cmd_fs_test_path_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 }
 
 static void
+_test_path_print_dir(struct fbr_test_context *ctx, struct fbr_directory *directory,
+	char *d_check)
+{
+	fbr_test_context_ok(ctx);
+	fbr_directory_ok(directory);
+
+	struct fbr_path_name dirname, fullparent;
+
+	fbr_directory_name(directory, &dirname);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory dirname: '%.*s':%zu",
+		(int)dirname.len, dirname.name, dirname.len);
+
+	fbr_path_name_parent(&dirname, &fullparent);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory fullparent: '%.*s':%zu",
+		(int)fullparent.len, fullparent.name, fullparent.len);
+
+	fbr_test_ERROR(fbr_path_name_str_cmp(&dirname, d_check), "dirname isnt '%s'", d_check);
+}
+
+static void
 _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char *name,
 	enum fbr_path_layout layout, char *d_check, char *f_check, char *fp_check)
 {
@@ -115,8 +135,9 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	enum fbr_path_layout layout = FBR_PATH_EMBED_DIR;
 
+
 	_test_path_print_path(ctx, &file->path, "file", layout, "", "", "");
-	_test_path_print_path(ctx, &directory->dirname, "dir", layout, "", "", "");
+	_test_path_print_dir(ctx, directory, "");
 
 	char sdir[PATH_MAX], sfull[PATH_MAX];
 	sdir[0] = '\0';
@@ -198,13 +219,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		inode = inode_next;
 
-		layout = FBR_PATH_PTR;
-		if (strlen(sfull) < FBR_PATH_EMBED_BYTES) {
-			layout = FBR_PATH_EMBED_DIR;
-		}
-
-		_test_path_print_path(ctx, &directory->dirname, "directory", layout, sfull, "",
-			sfull);
+		_test_path_print_dir(ctx, directory, sfull);
 
 		if (i) {
 			strncat(sdir, "/", sizeof(sdir) - strlen(sdir) - 1);

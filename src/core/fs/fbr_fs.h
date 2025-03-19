@@ -28,7 +28,6 @@
 #define FBR_TTL_MAX				INT32_MAX
 
 typedef unsigned long fbr_inode_t;
-typedef unsigned int fbr_refcount_t;
 
 typedef void __fbr_attr_printf(1) (fbr_log_f)(const char *fmt, ...);
 
@@ -147,13 +146,13 @@ struct fbr_directory {
 	unsigned int				magic;
 #define FBR_DIRECTORY_MAGIC			0xADB900B1
 
-	struct fbr_path				dirname;
-
 	enum fbr_directory_state		state;
 	struct fbr_directory_refcounts		refcounts;
 	fbr_inode_t				inode;
 
 	pthread_cond_t				update;
+
+	struct fbr_path_shared			*path;
 
 	double					creation;
 	unsigned long				version;
@@ -186,13 +185,12 @@ struct fbr_dreader {
 	unsigned int				magic;
 #define FBR_DREADER_MAGIC			0xF3CFAEDF
 
-	struct fbr_directory			*directory;
-
-	struct fbr_file				*position;
-
 	unsigned int				read_dot:1;
 	unsigned int				read_dotdot:1;
 	unsigned int				end:1;
+
+	struct fbr_directory			*directory;
+	struct fbr_file				*position;
 };
 
 struct fbr_wbuffer {
@@ -244,6 +242,8 @@ struct fbr_fs {
 	unsigned int				magic;
 #define FBR_FS_MAGIC				0x150CC3D2
 
+	unsigned int				shutdown:1;
+
 	struct fbr_inodes			*inodes;
 	struct fbr_dindex			*dindex;
 
@@ -258,8 +258,6 @@ struct fbr_fs {
 	struct fbr_fs_stats			stats;
 
 	fbr_log_f				*logger;
-
-	unsigned int				shutdown:1;
 };
 
 RB_HEAD(fbr_dindex_tree, fbr_directory);
@@ -326,6 +324,7 @@ struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	fbr_inode_t inode);
 void fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory);
+void fbr_directory_name(struct fbr_directory *directory, struct fbr_path_name *result);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
 int fbr_directory_new_cmp(const struct fbr_directory *left,
 	const struct fbr_directory *right);

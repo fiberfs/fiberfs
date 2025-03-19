@@ -36,19 +36,3 @@ fbr_get_time(void)
 
         return ts.tv_sec + ((double)ts.tv_nsec / (1000 * 1000 * 1000));
 }
-
-unsigned long
-fbr_safe_add(unsigned long *dest, unsigned long value)
-{
-        assert(dest);
-
-        return __sync_add_and_fetch(dest, value);
-}
-
-unsigned long
-fbr_safe_sub(unsigned long *dest, unsigned long value)
-{
-        assert(dest);
-
-        return __sync_sub_and_fetch(dest, value);
-}

@@ -94,7 +94,7 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_ASSERT(root->state == FBR_DIRSTATE_OK, "bad root state %d", root->state);
 
 	struct fbr_path_name name;
-	fbr_path_get_dir(&root->dirname, &name);
+	fbr_directory_name(root, &name);
 
 	fbr_test_ERROR(name.len, "root dirname has length");
 	fbr_test_ASSERT(name.name, "dirname is null");
@@ -310,7 +310,8 @@ _test_fs_dindex_debug_print(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 
-	const char *fullname = fbr_path_get_full(&directory->dirname, NULL);
+	struct fbr_path_name dirname;
+	fbr_directory_name(directory, &dirname);
 
 	fbr_test_logs("DINDEX debug: inode: %lu refcount: %u+%u+%u files: %zu path: '%s'",
 		directory->inode,
@@ -318,7 +319,7 @@ _test_fs_dindex_debug_print(struct fbr_fs *fs, struct fbr_directory *directory)
 			directory->refcounts.in_lru,
 			directory->refcounts.fs,
 		directory->file_count,
-		fullname);
+		dirname.name);
 }
 
 void

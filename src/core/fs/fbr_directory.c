@@ -68,12 +68,14 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 	fbr_fs_ok(fs);
 	assert(dirname);
 
-	struct fbr_directory *directory = fbr_path_storage_alloc(sizeof(*directory),
-		offsetof(struct fbr_directory, dirname), dirname, PATH_NAME_EMPTY);
+	struct fbr_directory *directory = calloc(1, sizeof(*directory));
 	assert_dev(directory);
 
 	directory->magic = FBR_DIRECTORY_MAGIC;
 	directory->inode = inode;
+
+	directory->path = fbr_path_shared_alloc(dirname);
+	assert_dev(directory->path);
 
 	pt_assert(pthread_cond_init(&directory->update, NULL));
 	TAILQ_INIT(&directory->file_list);
@@ -185,7 +187,7 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	pt_assert(pthread_cond_destroy(&directory->update));
 
-	fbr_path_free(&directory->dirname);
+	fbr_path_shared_release(directory->path);
 
 	fbr_ZERO(directory);
 
@@ -194,13 +196,22 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_fs_stat_sub(&fs->stats.directories);
 }
 
+void
+fbr_directory_name(struct fbr_directory *directory, struct fbr_path_name *result)
+{
+	fbr_directory_ok(directory);
+	assert(result);
+
+	fbr_path_shared_name(directory->path, result);
+}
+
 int
 fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2)
 {
 	fbr_directory_ok(d1);
 	fbr_directory_ok(d2);
 
-	return fbr_path_cmp_dir(&d1->dirname, &d2->dirname);
+	return fbr_path_shared_cmp(d1->path, d2->path);
 }
 
 int
@@ -303,7 +314,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	directory->expired = 1;
 
 	struct fbr_path_name dirname;
-	fbr_path_get_dir(&directory->dirname, &dirname);
+	fbr_directory_name(directory, &dirname);
 
 	assert_dev(fs->logger);
 	if (next) {

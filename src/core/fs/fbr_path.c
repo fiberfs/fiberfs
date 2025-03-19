@@ -349,3 +349,87 @@ fbr_path_free(struct fbr_path *path)
 	assert(path);
 	fbr_ZERO(path);
 }
+
+void
+fbr_path_shared_init(struct fbr_path_shared *shared, const struct fbr_path_name *value)
+{
+	assert(shared);
+	assert(value);
+	assert(value->name);
+
+	shared->magic = FBR_PATH_SHARED_MAGIC;
+	shared->refcount = 0;
+
+	fbr_path_name_init(&shared->value, value->name);
+
+	assert_dev(strlen(shared->value.name) == shared->value.len);
+
+	fbr_path_shared_ok(shared);
+}
+
+struct fbr_path_shared *
+fbr_path_shared_alloc(const struct fbr_path_name *value)
+{
+	assert(value);
+
+	struct fbr_path_shared *shared = malloc(sizeof(*shared));
+	assert(shared);
+
+	struct fbr_path_name value_dup;
+	fbr_path_name_init(&value_dup, strdup(value->name));
+
+	fbr_path_shared_init(shared, &value_dup);
+
+	shared->refcount = 1;
+
+	return shared;
+}
+
+void
+fbr_path_shared_take(struct fbr_path_shared *shared)
+{
+	fbr_path_shared_ok(shared);
+	assert(shared->refcount);
+
+	fbr_refcount_t refs = fbr_safe_add(&shared->refcount, 1);
+	assert(refs);
+}
+
+int
+fbr_path_shared_cmp(const struct fbr_path_shared *shared1, const struct fbr_path_shared *shared2)
+{
+	fbr_path_shared_ok(shared1);
+	fbr_path_shared_ok(shared2);
+
+	return fbr_path_name_cmp(&shared1->value, &shared2->value);
+}
+
+void
+fbr_path_shared_name(struct fbr_path_shared *shared, struct fbr_path_name *result)
+{
+	fbr_path_shared_ok(shared);
+	assert(result);
+
+	result->name = shared->value.name;
+	result->len = shared->value.len;
+}
+
+void
+fbr_path_shared_release(struct fbr_path_shared *shared)
+{
+	fbr_path_shared_ok(shared);
+	assert(shared->refcount);
+
+	fbr_refcount_t refs = fbr_safe_sub(&shared->refcount, 1);
+
+	if (refs) {
+		return;
+	}
+
+	assert_dev(shared->value.name);
+	free((char*)shared->value.name);
+
+	fbr_ZERO(shared);
+
+	free(shared);
+}

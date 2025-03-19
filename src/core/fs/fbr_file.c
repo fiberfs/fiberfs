@@ -23,7 +23,7 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	struct fbr_path_name dirname;
 	if (parent) {
 		fbr_directory_ok(parent);
-		fbr_path_get_dir(&parent->dirname, &dirname);
+		fbr_directory_name(parent, &dirname);
 		assert(dirname.name);
 	} else {
 		assert_zero(fs->root_file);

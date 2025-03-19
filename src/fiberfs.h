@@ -12,4 +12,6 @@
 
 #define FIBERFS_VERSION				"0.1.0"
 
+typedef unsigned int fbr_refcount_t;
+
 #endif /* _FIBERFS_H_INCLUDED_ */
