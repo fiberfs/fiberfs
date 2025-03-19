@@ -95,12 +95,18 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 		fbr_directory_ok(inserted);
 
 		if (inserted == directory) {
-			assert(directory->state == FBR_DIRSTATE_LOADING);
+			if (directory->state == FBR_DIRSTATE_LOADING) {
+				directory->file = fbr_inode_take(fs, directory->inode);
+				fbr_file_ok(directory->file);
 
-			directory->file = fbr_inode_take(fs, directory->inode);
-			fbr_file_ok(directory->file);
-
-			// TODO do we want to verify the file and directory match?
+				if (fbr_assert_is_dev()) {
+					struct fbr_path_name filename;
+					fbr_path_get_full(&directory->file->path, &filename);
+					assert_zero(fbr_path_name_cmp(dirname, &filename));
+				}
+			} else {
+				assert_dev(inserted->state == FBR_DIRSTATE_ERROR);
+			}
 
 			break;
 		}
@@ -109,8 +115,11 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 			fbr_directory_wait_ok(fs, inserted);
 		}
 
+		int newer = fbr_directory_new_cmp(directory, inserted);
+		assert_dev(newer >= 0);
+
 		if (inserted->state == FBR_DIRSTATE_OK) {
-			if (inserted->inode == directory->inode) {
+			if (!newer) {
 				assert(directory->state == FBR_DIRSTATE_NONE);
 				fbr_directory_free(fs, directory);
 
@@ -183,6 +192,21 @@ fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2
 	fbr_directory_ok(d2);
 
 	return fbr_path_cmp_dir(&d1->dirname, &d2->dirname);
+}
+
+int
+fbr_directory_new_cmp(const struct fbr_directory *left, const struct fbr_directory *right)
+{
+	fbr_directory_ok(left);
+	fbr_directory_ok(right);
+
+	if (left->inode > right->inode) {
+		return 1;
+	} else if (left->inode < right->inode) {
+		return -1;
+	}
+
+	return 0;
 }
 
 void

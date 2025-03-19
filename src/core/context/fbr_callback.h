@@ -74,7 +74,7 @@ void fbr_fuse_reply_write(struct fbr_request *request, size_t count);
 #define fbr_request_valid(request)					\
 {									\
 	fbr_request_ok(request);					\
-	fbr_fuse_mounted(request->fuse_ctx);				\
+	fbr_fuse_mounted((request)->fuse_ctx);				\
 }
 
 #endif /* _FBR_FUSE_CALLBACK_H_INCLUDED_ */

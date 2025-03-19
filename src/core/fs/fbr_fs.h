@@ -238,7 +238,6 @@ struct fbr_fs_stats {
 
 struct fbr_fs_config {
 	double					dentry_ttl;
-	double					dindex_fresh_ttl;
 };
 
 struct fbr_fs {
@@ -328,6 +327,8 @@ struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_pa
 	fbr_inode_t inode);
 void fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
+int fbr_directory_new_cmp(const struct fbr_directory *left,
+	const struct fbr_directory *right);
 void fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);
 struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const char *filename,

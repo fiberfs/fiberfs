@@ -252,10 +252,10 @@ fbr_path_cmp_dir(const struct fbr_path *dir1, const struct fbr_path *dir2)
 	fbr_path_get_dir(dir1, &dirname1);
 	fbr_path_get_dir(dir2, &dirname2);
 
-	int diff = dirname1.len - dirname2.len;
-
-	if (diff) {
-		return diff;
+	if (dirname1.len > dirname2.len) {
+		return 1;
+	} else if (dirname1.len < dirname2.len) {
+		return -1;
 	}
 
 	assert(dirname1.name && dirname2.name);
@@ -273,10 +273,10 @@ fbr_path_cmp_file(const struct fbr_path *file1, const struct fbr_path *file2)
 	fbr_path_get_file(file1, &filename1);
 	fbr_path_get_file(file2, &filename2);
 
-	int diff = filename1.len - filename2.len;
-
-	if (diff) {
-		return diff;
+	if (filename1.len > filename2.len) {
+		return 1;
+	} else if (filename1.len < filename2.len) {
+		return -1;
 	}
 
 	assert(filename1.name && filename2.name);
@@ -312,11 +312,13 @@ fbr_path_name_cmp(const struct fbr_path_name *name1, const struct fbr_path_name 
 	assert(name1);
 	assert(name2);
 
-	int diff = name1->len - name2->len;
-
-	if (diff) {
-		return diff;
+	if (name1->len > name2->len) {
+		return 1;
+	} else if (name1->len < name2->len) {
+		return -1;
 	}
+
+	assert(name1->name && name2->name);
 
 	return strncmp(name1->name, name2->name, name1->len);
 }

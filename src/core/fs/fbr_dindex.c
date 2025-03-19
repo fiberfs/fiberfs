@@ -274,21 +274,16 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 		assert(existing->refcounts.fs);
 		assert(existing->refcounts.in_dindex);
 
-		int use_existing = 0;
+		int newer = fbr_directory_new_cmp(directory, existing);
 
-		if (existing->state == FBR_DIRSTATE_LOADING) {
-			use_existing = 1;
-		} else {
-			assert(existing->state == FBR_DIRSTATE_OK);
+		if (newer < 0) {
+			directory->state = FBR_DIRSTATE_ERROR;
+			_dindex_lru_move(fs, existing);
 
-			double now = fbr_get_time();
+			_dindex_UNLOCK(dirhead);
 
-			if (existing->creation + fs->config.dindex_fresh_ttl > now) {
-				use_existing = 1;
-			}
-		}
-
-		if (use_existing) {
+			return directory;
+		} else if (existing->state == FBR_DIRSTATE_LOADING) {
 			_dindex_ref(fs, existing);
 			_dindex_lru_move(fs, existing);
 

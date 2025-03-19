@@ -21,7 +21,6 @@ int _TEST_ROOT;
 fbr_inode_t _TEST_INODE;
 unsigned long _TEST_DIR_THREAD;
 unsigned long _TEST_DIR_VERSION;
-double _TEST_DIR_FRESH_TTL;
 
 static void *
 _dir_test_alloc(void *arg)
@@ -46,8 +45,6 @@ _dir_test_alloc(void *arg)
 			struct fbr_path_name filename;
 			fbr_path_name_init(&filename, "random");
 
-			// TODO make 2 different inodes
-
 			directory = fbr_directory_alloc(fs, &filename, _TEST_INODE);
 		}
 
@@ -55,6 +52,7 @@ _dir_test_alloc(void *arg)
 
 		if (directory->state == FBR_DIRSTATE_OK) {
 			fbr_dindex_release(fs, &directory);
+			fbr_sleep_ms(1);
 			continue;
 		}
 
@@ -154,10 +152,6 @@ _dir_test_release(void *arg)
 
 	double time_start = fbr_get_time();
 
-	if (_TEST_DIR_FRESH_TTL) {
-		fbr_sleep_ms((_TEST_DIR_FRESH_TTL * 1000) + 100);
-	}
-
 	while (fbr_get_time() - time_start < _TEST_DIR_MAX_TIME) {
 		long sleep_time = (long)_TEST_DIR_MAX_TIME * 2000 / _TEST_DIR_RELEASES;
 		fbr_sleep_ms(random() % sleep_time);
@@ -182,7 +176,6 @@ _directory_parallel(void)
 	fbr_fs_ok(fs);
 
 	fs->logger = fbr_fs_test_logger;
-	fs->config.dindex_fresh_ttl = _TEST_DIR_FRESH_TTL;
 
 	fbr_test_random_seed();
 
@@ -216,8 +209,6 @@ _directory_parallel(void)
 		_TEST_INODE = file->inode;
 
 		directory = fbr_directory_alloc(fs, &filename, _TEST_INODE);
-
-		// TODO repeat this and get a second inode for the directory
 	}
 
 	fbr_directory_ok(directory);
@@ -303,18 +294,4 @@ fbr_cmd_fs_test_directory_parallel(struct fbr_test_context *ctx,
 	_directory_parallel();
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory parallel test done");
-}
-
-void
-fbr_cmd_fs_test_directory_ttl_ms(struct fbr_test_context *ctx,
-	struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	long ttl = fbr_test_parse_long(cmd->params[0].value);
-
-	_TEST_DIR_FRESH_TTL = (double)ttl / 1000;
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory ttl_ms=%lf", _TEST_DIR_FRESH_TTL);
 }
