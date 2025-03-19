@@ -42,15 +42,66 @@ _dir_test_alloc(void *arg)
 		} else {
 			assert(_TEST_INODE > FBR_INODE_ROOT);
 
-			struct fbr_path_name filename;
-			fbr_path_name_init(&filename, "random");
+			if (random() % 4 == 0) {
+				struct fbr_directory *root = fbr_directory_root_alloc(fs);
+				fbr_directory_ok(root);
+				assert(root->inode == FBR_INODE_ROOT);
 
-			directory = fbr_directory_alloc(fs, &filename, _TEST_INODE);
+				if (root->state != FBR_DIRSTATE_LOADING) {
+					fbr_dindex_release(fs, &root);
+					fbr_sleep_ms(1);
+					continue;
+				}
+
+				struct fbr_path_name filename;
+				fbr_path_name_init(&filename, "random");
+
+				struct fbr_file *file =
+					fbr_file_alloc(fs, root, &filename, S_IFDIR);
+				assert(file->parent_inode == root->inode);
+				assert(file->inode > _TEST_INODE);
+
+				_TEST_INODE = file->inode;
+
+				fbr_inode_add(fs, file);
+
+				fbr_test_logs("INODE=%lu", file->inode);
+
+				fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
+
+				fbr_dindex_release(fs, &root);
+
+				directory = fbr_directory_alloc(fs, &filename, file->inode);
+
+				fbr_inode_release(fs, &file);
+			} else {
+				fbr_inode_t inode = _TEST_INODE;
+
+				struct fbr_file *file = fbr_inode_take(fs, inode);
+
+				if (!file) {
+					continue;
+				}
+				fbr_file_ok(file);
+
+				struct fbr_path_name filename;
+				fbr_path_name_init(&filename, "random");
+
+				directory = fbr_directory_alloc(fs, &filename, inode);
+
+				fbr_inode_release(fs, &file);
+			}
 		}
 
 		fbr_directory_ok(directory);
 
 		if (directory->state == FBR_DIRSTATE_OK) {
+			fbr_dindex_release(fs, &directory);
+			fbr_sleep_ms(1);
+			continue;
+		} else if (directory->state == FBR_DIRSTATE_ERROR) {
+			fbr_test_logs("alloc thread_%lu: got ERROR inode: %lu", id,
+				directory->inode);
 			fbr_dindex_release(fs, &directory);
 			fbr_sleep_ms(1);
 			continue;
@@ -65,10 +116,11 @@ _dir_test_alloc(void *arg)
 
 		unsigned long diff_ms = (long)((fbr_get_time() - time_start) * 1000);
 
-		fbr_test_logs("alloc thread_%lu (+%ld): version %lu error: %d "
-				"previous: %s previous_version: %lu",
-			id, diff_ms, version, do_error,
+		fbr_test_logs("alloc thread_%lu (+%ld): inode: %lu(%lu) error: %d "
+				"previous: %s previous_inode: %lu(%lu)",
+			id, diff_ms, directory->inode, version, do_error,
 			directory->previous ? "true" : "false",
+			directory->previous ? directory->previous->inode : 0,
 			directory->previous ? directory->previous->version: 0);
 
 		char namebuf[128];
@@ -187,9 +239,10 @@ _directory_parallel(void)
 	assert(version == 1);
 
 	struct fbr_directory *directory = NULL;
-	struct fbr_file *file = NULL;
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_LOADING);
 
 	if (_TEST_ROOT) {
 		directory = root;
@@ -197,7 +250,7 @@ _directory_parallel(void)
 		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, "random");
 
-		file = fbr_file_alloc(fs, root, &filename, S_IFDIR);
+		struct fbr_file *file = fbr_file_alloc(fs, root, &filename, S_IFDIR);
 		assert(file->parent_inode == root->inode);
 
 		fbr_inode_add(fs, file);
@@ -209,6 +262,8 @@ _directory_parallel(void)
 		_TEST_INODE = file->inode;
 
 		directory = fbr_directory_alloc(fs, &filename, _TEST_INODE);
+
+		fbr_inode_release(fs, &file);
 	}
 
 	fbr_directory_ok(directory);
@@ -244,10 +299,6 @@ _directory_parallel(void)
 
 	for (size_t i = 0; i < fbr_array_len(threads); i++) {
 		pt_assert(pthread_join(threads[i], NULL));
-	}
-
-	if (file) {
-		fbr_inode_release(fs, &file);
 	}
 
 	fbr_test_logs("threads exited, releasing all...");

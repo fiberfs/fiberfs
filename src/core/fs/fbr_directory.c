@@ -95,6 +95,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 		fbr_directory_ok(inserted);
 
 		if (inserted == directory) {
+			// Insert success, allow caller to begin loading
 			if (directory->state == FBR_DIRSTATE_LOADING) {
 				directory->file = fbr_inode_take(fs, directory->inode);
 				fbr_file_ok(directory->file);
@@ -105,11 +106,14 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 					assert_zero(fbr_path_name_cmp(dirname, &filename));
 				}
 			} else {
+				// Inode is too old, caller gets an error state
 				assert_dev(inserted->state == FBR_DIRSTATE_ERROR);
 			}
 
 			break;
 		}
+
+		// We got someone elses insertion
 
 		if (inserted->state == FBR_DIRSTATE_LOADING) {
 			fbr_directory_wait_ok(fs, inserted);
@@ -119,6 +123,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 		assert_dev(newer >= 0);
 
 		if (inserted->state == FBR_DIRSTATE_OK) {
+			// The insertion inodes are equal, return an ok directory
 			if (!newer) {
 				assert(directory->state == FBR_DIRSTATE_NONE);
 				fbr_directory_free(fs, directory);
@@ -126,10 +131,15 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 				return inserted;
 			}
 		} else {
+			// Someone elses insertion failed
 			assert_dev(inserted->state == FBR_DIRSTATE_ERROR);
 		}
 
+		// Try the insertion again, we have the newest inode right now
+
 		fbr_dindex_release(fs, &inserted);
+
+		assert_dev(directory->state == FBR_DIRSTATE_NONE);
 	}
 
 	return directory;

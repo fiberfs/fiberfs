@@ -277,13 +277,17 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 		int newer = fbr_directory_new_cmp(directory, existing);
 
 		if (newer < 0) {
+			// Directory inode too old
 			directory->state = FBR_DIRSTATE_ERROR;
+			_dindex_ref(fs, directory);
+
 			_dindex_lru_move(fs, existing);
 
 			_dindex_UNLOCK(dirhead);
 
 			return directory;
 		} else if (existing->state == FBR_DIRSTATE_LOADING) {
+			// Caller must wait for loading to complete
 			_dindex_ref(fs, existing);
 			_dindex_lru_move(fs, existing);
 
