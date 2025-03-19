@@ -20,12 +20,14 @@ static void
 _finish_test(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	assert_zero(ctx->chttp_test);
 
 	struct fbr_test *test = fbr_test_convert(ctx);
 	assert(test->context == ctx);
 
 	fbr_test_ok(test);
+
+	fbr_test_ok(_TEST);
+	_TEST = NULL;
 
 	fbr_test_ERROR(ctx->sys != NULL, "sys detected");
 	fbr_test_ERROR(ctx->test_fuse != NULL, "test_fuse detected");
@@ -303,7 +305,6 @@ fbr_test_run_all_finish(struct fbr_test *test)
 struct fbr_test_context *
 fbr_test_get_ctx(void)
 {
-	assert_zero(_EXIT);
 	fbr_test_ok(_TEST);
 	fbr_test_context_ok(_TEST->context);
 	return _TEST->context;
