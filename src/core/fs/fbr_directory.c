@@ -90,7 +90,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 	fbr_fs_stat_add(&fs->stats.directories);
 	fbr_fs_stat_add(&fs->stats.directories_total);
 
-	while (1) {
+	while (directory->state == FBR_DIRSTATE_NONE) {
 		struct fbr_directory *inserted = fbr_dindex_add(fs, directory);
 		fbr_directory_ok(inserted);
 
@@ -114,6 +114,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 		}
 
 		// We got someone elses insertion
+		assert_dev(directory->state == FBR_DIRSTATE_NONE);
 
 		if (inserted->state == FBR_DIRSTATE_LOADING) {
 			fbr_directory_wait_ok(fs, inserted);
@@ -135,11 +136,9 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 			assert_dev(inserted->state == FBR_DIRSTATE_ERROR);
 		}
 
-		// Try the insertion again, we have the newest inode right now
-
 		fbr_dindex_release(fs, &inserted);
 
-		assert_dev(directory->state == FBR_DIRSTATE_NONE);
+		// Try the insertion again, we have the newest inode right now
 	}
 
 	return directory;
