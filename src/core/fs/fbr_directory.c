@@ -4,6 +4,7 @@
  *
  */
 
+#include <limits.h>
 #include <pthread.h>
 #include <stdlib.h>
 
@@ -104,7 +105,9 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 
 				if (fbr_assert_is_dev()) {
 					struct fbr_path_name filename;
-					fbr_path_get_full(&directory->file->path, &filename);
+					char buf[PATH_MAX];
+					fbr_path_get_full(&directory->file->path, &filename,
+						buf, sizeof(buf));
 					assert_zero(fbr_path_name_cmp(dirname, &filename));
 				}
 			} else {

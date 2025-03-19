@@ -4,6 +4,7 @@
  *
  */
 
+#include <limits.h>
 #include <sys/types.h>
 
 #include "fiberfs.h"
@@ -283,7 +284,8 @@ _test_fs_inodes_debug_print(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 
-	const char *fullname = fbr_path_get_full(&file->path, NULL);
+	char buf[PATH_MAX];
+	const char *fullname = fbr_path_get_full(&file->path, NULL, buf, sizeof(buf));
 
 	fbr_test_logs("INODES debug: inode: %lu type: %s parent: %lu refcount: %u+%u path: %s",
 		file->inode,

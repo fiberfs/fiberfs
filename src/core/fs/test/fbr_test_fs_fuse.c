@@ -208,7 +208,8 @@ _test_fs_chunk_gen(struct fbr_fs *fs, const struct fbr_file *file, struct fbr_ch
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_EMPTY);
 
-	const char *fullpath = fbr_path_get_full(&file->path, NULL);
+	char buf[PATH_MAX];
+	const char *fullpath = fbr_path_get_full(&file->path, NULL, buf, sizeof(buf));
 
 	fbr_test_logs("** FETCH chunk: offset: %zu length: %zu splice: %d path: %s",
 		chunk->offset, chunk->length, chunk->fd_splice_ok, fullpath);
@@ -302,7 +303,8 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	}
 
 	struct fbr_path_name parent_dirname;
-	fbr_path_get_full(&parent_file->path, &parent_dirname);
+	char buf[PATH_MAX];
+	fbr_path_get_full(&parent_file->path, &parent_dirname, buf, sizeof(buf));
 
 	fbr_test_logs("** LOOKUP found parent_file: '%.*s':%zu (inode: %lu)",
 		(int)parent_dirname.len, parent_dirname.name, parent_dirname.len,
@@ -369,7 +371,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	fbr_file_ok(file);
 	assert(file->inode);
 
-	const char *fullname = fbr_path_get_full(&file->path, NULL);
+	const char *fullname = fbr_path_get_full(&file->path, NULL, buf, sizeof(buf));
 	fbr_test_logs("** LOOKUP found file: '%s' (inode: %lu)", fullname, file->inode);
 
 	struct fbr_path_name filename;
@@ -418,7 +420,8 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	}
 
 	struct fbr_path_name dirname;
-	fbr_path_get_full(&file->path, &dirname);
+	char buf[PATH_MAX];
+	fbr_path_get_full(&file->path, &dirname, buf, sizeof(buf));
 
 	fbr_test_logs("** OPENDIR directory: '%.*s':%zu",
 		(int)dirname.len, dirname.name, dirname.len);

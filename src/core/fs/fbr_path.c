@@ -5,6 +5,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "fiberfs.h"
@@ -14,36 +15,31 @@ static const struct fbr_path_name _PATH_NAME_EMPTY = {0, ""};
 const struct fbr_path_name *PATH_NAME_EMPTY = &_PATH_NAME_EMPTY;
 
 static size_t
-_path_storage_len(const struct fbr_path_name *dirname, const struct fbr_path_name *filename)
+_path_storage_len(const struct fbr_path_shared *dirname, const struct fbr_path_name *filename)
 {
 	assert(dirname);
 	assert(filename);
 
 	struct fbr_path *path;
 
-	if (dirname->len < sizeof(path->embed.data) && !filename->len) {
+	if (dirname->value.len < sizeof(path->embed.data) && !filename->len) {
 		return 0;
-	} else if (!dirname->len && filename->len < sizeof(path->embed.data)) {
+	} else if (!dirname->value.len && filename->len < sizeof(path->embed.data)) {
 		return 0;
 	}
 
 	int null = 1;
-	int slash = 0;
-	if (dirname->len && filename->len) {
-		slash = 1;
-	}
-
-	return dirname->len + slash + filename->len + null;
+	return filename->len + null;
 }
 
 static void
-_path_init(struct fbr_path *path, char *name_storage, const struct fbr_path_name *dirname,
+_path_init(struct fbr_path *path, char *name_storage, struct fbr_path_shared *dirname,
 	const struct fbr_path_name *filename)
 {
 	assert_dev(path);
 	assert(path->layout.value == FBR_PATH_NULL);
-	assert(dirname && dirname->name);
-	assert(dirname->len <= FBR_PATH_PTR_LEN_MAX);
+	assert(dirname && dirname->value.name);
+	assert(dirname->value.len <= FBR_PATH_PTR_LEN_MAX);
 	assert(filename && filename->name);
 	assert(filename->len <= FBR_PATH_PTR_LEN_MAX);
 
@@ -52,12 +48,12 @@ _path_init(struct fbr_path *path, char *name_storage, const struct fbr_path_name
 		name_storage = path->embed.data;
 
 		if (!filename->len) {
-			assert_dev(dirname->len <= FBR_PATH_EMBED_LEN_MAX);
+			assert_dev(dirname->value.len <= FBR_PATH_EMBED_LEN_MAX);
 
 			path->layout.value = FBR_PATH_EMBED_DIR;
-			path->embed.len = dirname->len;
+			path->embed.len = dirname->value.len;
 		} else {
-			assert_zero(dirname->len);
+			assert_zero(dirname->value.len);
 			assert_dev(filename->len <= FBR_PATH_EMBED_LEN_MAX);
 
 			path->layout.value = FBR_PATH_EMBED_FILE;
@@ -65,36 +61,32 @@ _path_init(struct fbr_path *path, char *name_storage, const struct fbr_path_name
 		}
 	} else {
 		assert(name_storage);
+		assert(name_storage > (char*)path);
+		assert(name_storage - (char*)path <= FBR_PATH_PTR_OFFSET_MAX);
+		assert_zero_dev(path->ptr.dirname);
 
-		path->layout.value = FBR_PATH_PTR;
-		path->ptr.value = name_storage;
-		path->ptr.dir_len = dirname->len;
+		path->layout.value = FBR_PATH_SHARED_PTR;
 		path->ptr.file_len = filename->len;
-	}
+		path->ptr.file_offset = name_storage - (char*)path;
 
-	int extra_slash = 0;
-
-	if (dirname->len) {
-		memcpy(name_storage, dirname->name, dirname->len);
-
-		if (filename->len) {
-			name_storage[dirname->len] = '/';
-			extra_slash = 1;
+		if (dirname->value.len) {
+			fbr_path_shared_take(dirname);
+			path->ptr.dirname = dirname;
 		}
 	}
 
 	if (filename->len) {
-		memcpy(name_storage + dirname->len + extra_slash, filename->name, filename->len);
+		memcpy(name_storage, filename->name, filename->len);
 	}
 
-	assert_dev(name_storage[dirname->len + extra_slash + filename->len] == '\0');
+	assert_dev(name_storage[filename->len] == '\0');
 }
 
 void *
-fbr_path_storage_alloc(size_t size, size_t path_offset, const struct fbr_path_name *dirname,
+fbr_path_storage_alloc(size_t size, size_t path_offset, struct fbr_path_shared *dirname,
     const struct fbr_path_name *filename)
 {
-	assert(dirname);
+	fbr_path_shared_ok(dirname);
 	assert(filename);
 
 	size_t storage_len = _path_storage_len(dirname, filename);
@@ -114,6 +106,7 @@ fbr_path_storage_alloc(size_t size, size_t path_offset, const struct fbr_path_na
 	return obj;
 }
 
+/*
 void
 fbr_path_init_dir(struct fbr_path *path, const char *dirname, size_t dirname_len)
 {
@@ -126,6 +119,7 @@ fbr_path_init_dir(struct fbr_path *path, const char *dirname, size_t dirname_len
 	path->ptr.dir_len = dirname_len;
 	path->ptr.value = dirname;
 }
+*/
 
 void
 fbr_path_init_file(struct fbr_path *path, const char *filename, size_t filename_len)
@@ -135,9 +129,9 @@ fbr_path_init_file(struct fbr_path *path, const char *filename, size_t filename_
 
 	fbr_ZERO(path);
 
-	path->layout.value = FBR_PATH_PTR;
-	path->ptr.file_len = filename_len;
-	path->ptr.value = filename;
+	path->layout.value = FBR_PATH_FILE_PTR;
+	path->file_ptr.file_len = filename_len;
+	path->file_ptr.value = filename;
 }
 
 void
@@ -158,12 +152,17 @@ fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir)
 		result_dir->len = 0;
 		result_dir->name = "";
 		return;
+	} else if (path->layout.value == FBR_PATH_FILE_PTR) {
+		return;
 	}
 
-	assert(path->layout.value == FBR_PATH_PTR);
+	assert(path->layout.value == FBR_PATH_SHARED_PTR);
 
-	result_dir->len = path->ptr.dir_len;
-	result_dir->name = path->ptr.value;
+	if (path->ptr.dirname) {
+		fbr_path_shared_name(path->ptr.dirname, result_dir);
+	} else {
+		fbr_path_name_init(result_dir, "");
+	}
 
 	return;
 }
@@ -185,28 +184,29 @@ fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file
 	} else if (path->layout.value == FBR_PATH_EMBED_DIR) {
 		result_file->len = 0;
 		result_file->name = "";
-		return result_file->name ;
+		return result_file->name;
 	} else if (path->layout.value == FBR_PATH_EMBED_FILE) {
 		result_file->len = path->embed.len;
 		result_file->name = path->embed.data;
-		return result_file->name ;
+		return result_file->name;
+	} else if (path->layout.value == FBR_PATH_FILE_PTR) {
+		result_file->len = path->file_ptr.file_len;
+		result_file->name = path->file_ptr.value;
+		return result_file->name;
 	}
 
-	assert(path->layout.value == FBR_PATH_PTR);
-
-	int extra_slash = 0;
-	if (path->ptr.dir_len && path->ptr.file_len) {
-		extra_slash = 1;
-	}
+	assert(path->layout.value == FBR_PATH_SHARED_PTR);
+	assert_dev(path->ptr.file_offset);
 
 	result_file->len = path->ptr.file_len;
-	result_file->name = path->ptr.value + path->ptr.dir_len + extra_slash;
+	result_file->name = (char*)path + path->ptr.file_offset;
 
 	return result_file->name;
 }
 
 const char *
-fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result)
+fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result, char *buf,
+    size_t buf_len)
 {
 	assert(path);
 
@@ -227,17 +227,37 @@ fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result)
 		result->len = path->embed.len;
 		result->name = path->embed.data;
 		return result->name;
+	} else if (path->layout.value == FBR_PATH_FILE_PTR) {
+		result->len = path->file_ptr.file_len;
+		result->name = path->file_ptr.value;
+		return result->name;
 	}
 
-	assert(path->layout.value == FBR_PATH_PTR);
+	assert(path->layout.value == FBR_PATH_SHARED_PTR);
+	assert(buf);
+	assert(buf_len);
 
-	int extra_slash = 0;
-	if (path->ptr.dir_len && path->ptr.file_len) {
-		extra_slash = 1;
+	if (path->ptr.dirname) {
+		struct fbr_path_name dirname;
+		fbr_path_shared_name(path->ptr.dirname, &dirname);
+		assert_dev(dirname.name);
+
+		assert_dev(path->ptr.file_offset);
+		char *filename = (char*)path + path->ptr.file_offset;
+
+		int ret = snprintf(buf, buf_len, "%s/%s", path->ptr.dirname->value.name,
+			filename);
+		assert(ret > 0 && (size_t)ret < buf_len);
+
+		result->len = ret;
+		result->name = buf;
+	} else {
+		assert_dev(path->ptr.file_offset);
+
+		result->len = path->ptr.file_len;
+		result->name = (char*)path + path->ptr.file_offset;
 	}
 
-	result->len = path->ptr.dir_len + extra_slash + path->ptr.file_len;
-	result->name = path->ptr.value;
 
 	return result->name;
 }
@@ -347,6 +367,13 @@ void
 fbr_path_free(struct fbr_path *path)
 {
 	assert(path);
+
+	if (path->layout.value == FBR_PATH_SHARED_PTR) {
+		if (path->ptr.dirname) {
+			fbr_path_shared_release(path->ptr.dirname);
+		}
+	}
+
 	fbr_ZERO(path);
 }
 
@@ -410,8 +437,8 @@ fbr_path_shared_name(struct fbr_path_shared *shared, struct fbr_path_name *resul
 	fbr_path_shared_ok(shared);
 	assert(result);
 
-	result->name = shared->value.name;
 	result->len = shared->value.len;
+	result->name = shared->value.name;
 }
 
 void

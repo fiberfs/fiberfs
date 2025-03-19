@@ -20,19 +20,22 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	fbr_fs_ok(fs);
 	assert(filename);
 
-	struct fbr_path_name dirname;
+	struct fbr_path_shared *dirname = NULL;
+
 	if (parent) {
 		fbr_directory_ok(parent);
-		fbr_directory_name(parent, &dirname);
-		assert(dirname.name);
+		dirname = parent->path;
 	} else {
 		assert_zero(fs->root_file);
 		assert_zero(filename->len);
-		fbr_path_name_init(&dirname, "");
+
+		struct fbr_path_shared root_dirname;
+		fbr_path_shared_init(&root_dirname, PATH_NAME_EMPTY);
+		dirname = &root_dirname;
 	}
 
 	struct fbr_file *file = fbr_path_storage_alloc(sizeof(*file),
-		offsetof(struct fbr_file, path), &dirname, filename);
+		offsetof(struct fbr_file, path), dirname, filename);
 	assert_dev(file);
 
 	file->magic = FBR_FILE_MAGIC;
@@ -41,6 +44,7 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	if (parent) {
 		file->inode = fbr_inode_gen(fs);
 	} else {
+		assert_zero_dev(dirname->refcount);
 		file->inode = FBR_INODE_ROOT;
 	}
 
