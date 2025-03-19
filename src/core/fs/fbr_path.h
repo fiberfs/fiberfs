@@ -83,8 +83,6 @@ struct fbr_path_shared {
 	struct fbr_path_name			value;
 };
 
-extern const struct fbr_path_name *PATH_NAME_EMPTY;
-
 void *fbr_path_storage_alloc(size_t size, size_t path_offset, struct fbr_path_shared *dirname,
 	const struct fbr_path_name *filename);
 void fbr_path_init_dir(struct fbr_path *path, const char *dirname, size_t dirname_len);

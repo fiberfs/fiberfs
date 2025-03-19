@@ -11,9 +11,6 @@
 #include "fiberfs.h"
 #include "fbr_path.h"
 
-static const struct fbr_path_name _PATH_NAME_EMPTY = {0, ""};
-const struct fbr_path_name *PATH_NAME_EMPTY = &_PATH_NAME_EMPTY;
-
 static size_t
 _path_storage_len(const struct fbr_path_shared *dirname, const struct fbr_path_name *filename)
 {
@@ -63,16 +60,13 @@ _path_init(struct fbr_path *path, char *name_storage, struct fbr_path_shared *di
 		assert(name_storage);
 		assert(name_storage > (char*)path);
 		assert(name_storage - (char*)path <= FBR_PATH_PTR_OFFSET_MAX);
-		assert_zero_dev(path->split_ptr.dirname);
 
 		path->layout.value = FBR_PATH_SPLIT_PTR;
 		path->split_ptr.file_len = filename->len;
 		path->split_ptr.file_offset = name_storage - (char*)path;
+		path->split_ptr.dirname = dirname;
 
-		if (dirname->value.len) {
-			fbr_path_shared_take(dirname);
-			path->split_ptr.dirname = dirname;
-		}
+		fbr_path_shared_take(dirname);
 	}
 
 	if (filename->len) {
@@ -163,11 +157,7 @@ fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir)
 
 	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
 
-	if (path->split_ptr.dirname) {
-		fbr_path_shared_name(path->split_ptr.dirname, result_dir);
-	} else {
-		fbr_path_name_init(result_dir, "");
-	}
+	fbr_path_shared_name(path->split_ptr.dirname, result_dir);
 
 	return;
 }
@@ -244,26 +234,24 @@ fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result, cha
 	}
 
 	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
+	assert_dev(path->split_ptr.dirname);
+	assert_dev(path->split_ptr.file_offset);
 	assert(buf);
 	assert(buf_len);
 
-	if (path->split_ptr.dirname) {
-		struct fbr_path_name dirname;
-		fbr_path_shared_name(path->split_ptr.dirname, &dirname);
-		assert_dev(dirname.name);
+	struct fbr_path_name dirname;
+	fbr_path_shared_name(path->split_ptr.dirname, &dirname);
 
-		assert_dev(path->split_ptr.file_offset);
+	if (dirname.len) {
+		assert_dev(dirname.name);
 		char *filename = (char*)path + path->split_ptr.file_offset;
 
-		int ret = snprintf(buf, buf_len, "%s/%s", path->split_ptr.dirname->value.name,
-			filename);
+		int ret = snprintf(buf, buf_len, "%s/%s", dirname.name, filename);
 		assert(ret > 0 && (size_t)ret < buf_len);
 
 		result->len = ret;
 		result->name = buf;
 	} else {
-		assert_dev(path->split_ptr.file_offset);
-
 		result->len = path->split_ptr.file_len;
 		result->name = (char*)path + path->split_ptr.file_offset;
 	}
@@ -379,9 +367,8 @@ fbr_path_free(struct fbr_path *path)
 	assert(path);
 
 	if (path->layout.value == FBR_PATH_SPLIT_PTR) {
-		if (path->split_ptr.dirname) {
-			fbr_path_shared_release(path->split_ptr.dirname);
-		}
+		assert_dev(path->split_ptr.dirname);
+		fbr_path_shared_release(path->split_ptr.dirname);
 	}
 
 	fbr_ZERO(path);
