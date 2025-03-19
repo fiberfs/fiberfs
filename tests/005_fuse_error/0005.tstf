@@ -4,6 +4,6 @@ sys_mkdir_tmp
 
 fuse_error_mount $sys_tmpdir 4
 
-sleep_ms 100
+sys_stat_size $sys_tmpdir
 
 fuse_test_unmount
