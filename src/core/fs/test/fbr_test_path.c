@@ -29,10 +29,10 @@ fbr_cmd_fs_test_path_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 		sizeof(struct fbr_path_embed));
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_path)=%zu",
 		sizeof(struct fbr_path));
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_path_shared_ptr)=%zu",
-		sizeof(struct fbr_path_shared_ptr));
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_path_split_ptr)=%zu",
+		sizeof(struct fbr_path_split_ptr));
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_path_file_ptr)=%zu",
-		sizeof(struct fbr_path_file_ptr));
+		sizeof(struct fbr_path_ptr));
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_EMBED_LEN_BITS=%d", FBR_PATH_EMBED_LEN_BITS);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_EMBED_LEN_MAX=%d", FBR_PATH_EMBED_LEN_MAX);
@@ -53,12 +53,12 @@ fbr_cmd_fs_test_path_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 		"FBR_PATH_EMBED_LEN_MAX is too small for FBR_PATH_EMBED_BYTES");
 	fbr_test_ASSERT(FBR_PATH_PTR_LEN_MAX >= PATH_MAX,
 		"FBR_PATH_PTR_LEN_MAX is too small for PATH_MAX");
-	fbr_test_ASSERT(sizeof(struct fbr_path_shared_ptr) == sizeof(struct fbr_path_embed),
-		"struct fbr_path_shared_ptr != struct fbr_path_embed");
+	fbr_test_ASSERT(sizeof(struct fbr_path_split_ptr) == sizeof(struct fbr_path_embed),
+		"struct fbr_path_split_ptr != struct fbr_path_embed");
 	fbr_test_ASSERT(sizeof(struct fbr_path) == sizeof(struct fbr_path_embed),
 		"struct fbr_path != struct fbr_path_embed");
-	fbr_test_ASSERT(sizeof(struct fbr_path_shared_ptr) == sizeof(struct fbr_path_file_ptr),
-		"struct fbr_path_shared_ptr != struct fbr_path_file_ptr");
+	fbr_test_ASSERT(sizeof(struct fbr_path_split_ptr) == sizeof(struct fbr_path_ptr),
+		"struct fbr_path_split_ptr != struct fbr_path_ptr");
 }
 
 static void
@@ -151,7 +151,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		// directory file
 
-		layout = FBR_PATH_SHARED_PTR;
+		layout = FBR_PATH_SPLIT_PTR;
 		if (!i && strlen(name) < FBR_PATH_EMBED_BYTES) {
 			layout = FBR_PATH_EMBED_FILE;
 		}
@@ -189,7 +189,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		strncat(sfull, ".txt", sizeof(sfull) - strlen(sfull) - 1);
 
-		layout = FBR_PATH_SHARED_PTR;
+		layout = FBR_PATH_SPLIT_PTR;
 		if (!i && strlen(name2) < FBR_PATH_EMBED_BYTES) {
 			layout = FBR_PATH_EMBED_FILE;
 		}

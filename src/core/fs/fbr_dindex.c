@@ -338,7 +338,6 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname, int wait
 	fbr_fs_ok(fs);
 	assert(dirname);
 
-	// TODO we can make a new path type for this
 	struct fbr_directory find;
 	struct fbr_path_shared path;
 	find.magic = FBR_DIRECTORY_MAGIC;

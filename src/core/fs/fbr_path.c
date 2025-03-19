@@ -63,15 +63,15 @@ _path_init(struct fbr_path *path, char *name_storage, struct fbr_path_shared *di
 		assert(name_storage);
 		assert(name_storage > (char*)path);
 		assert(name_storage - (char*)path <= FBR_PATH_PTR_OFFSET_MAX);
-		assert_zero_dev(path->ptr.dirname);
+		assert_zero_dev(path->split_ptr.dirname);
 
-		path->layout.value = FBR_PATH_SHARED_PTR;
-		path->ptr.file_len = filename->len;
-		path->ptr.file_offset = name_storage - (char*)path;
+		path->layout.value = FBR_PATH_SPLIT_PTR;
+		path->split_ptr.file_len = filename->len;
+		path->split_ptr.file_offset = name_storage - (char*)path;
 
 		if (dirname->value.len) {
 			fbr_path_shared_take(dirname);
-			path->ptr.dirname = dirname;
+			path->split_ptr.dirname = dirname;
 		}
 	}
 
@@ -106,7 +106,6 @@ fbr_path_storage_alloc(size_t size, size_t path_offset, struct fbr_path_shared *
 	return obj;
 }
 
-/*
 void
 fbr_path_init_dir(struct fbr_path *path, const char *dirname, size_t dirname_len)
 {
@@ -115,11 +114,11 @@ fbr_path_init_dir(struct fbr_path *path, const char *dirname, size_t dirname_len
 
 	fbr_ZERO(path);
 
-	path->layout.value = FBR_PATH_PTR;
-	path->ptr.dir_len = dirname_len;
+	path->layout.value = FBR_PATH_FILE_PTR;
+	path->ptr.value_len = dirname_len;
 	path->ptr.value = dirname;
 }
-*/
+
 
 void
 fbr_path_init_file(struct fbr_path *path, const char *filename, size_t filename_len)
@@ -130,8 +129,8 @@ fbr_path_init_file(struct fbr_path *path, const char *filename, size_t filename_
 	fbr_ZERO(path);
 
 	path->layout.value = FBR_PATH_FILE_PTR;
-	path->file_ptr.file_len = filename_len;
-	path->file_ptr.value = filename;
+	path->ptr.value_len = filename_len;
+	path->ptr.value = filename;
 }
 
 void
@@ -153,13 +152,19 @@ fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir)
 		result_dir->name = "";
 		return;
 	} else if (path->layout.value == FBR_PATH_FILE_PTR) {
+		result_dir->len = 0;
+		result_dir->name = "";
+		return;
+	} else if (path->layout.value == FBR_PATH_DIR_PTR) {
+		result_dir->len = path->ptr.value_len;
+		result_dir->name = path->ptr.value;
 		return;
 	}
 
-	assert(path->layout.value == FBR_PATH_SHARED_PTR);
+	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
 
-	if (path->ptr.dirname) {
-		fbr_path_shared_name(path->ptr.dirname, result_dir);
+	if (path->split_ptr.dirname) {
+		fbr_path_shared_name(path->split_ptr.dirname, result_dir);
 	} else {
 		fbr_path_name_init(result_dir, "");
 	}
@@ -190,16 +195,20 @@ fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file
 		result_file->name = path->embed.data;
 		return result_file->name;
 	} else if (path->layout.value == FBR_PATH_FILE_PTR) {
-		result_file->len = path->file_ptr.file_len;
-		result_file->name = path->file_ptr.value;
+		result_file->len = path->ptr.value_len;
+		result_file->name = path->ptr.value;
+		return result_file->name;
+	} else if (path->layout.value == FBR_PATH_DIR_PTR) {
+		result_file->len = 0;
+		result_file->name = "";
 		return result_file->name;
 	}
 
-	assert(path->layout.value == FBR_PATH_SHARED_PTR);
-	assert_dev(path->ptr.file_offset);
+	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
+	assert_dev(path->split_ptr.file_offset);
 
-	result_file->len = path->ptr.file_len;
-	result_file->name = (char*)path + path->ptr.file_offset;
+	result_file->len = path->split_ptr.file_len;
+	result_file->name = (char*)path + path->split_ptr.file_offset;
 
 	return result_file->name;
 }
@@ -227,35 +236,36 @@ fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result, cha
 		result->len = path->embed.len;
 		result->name = path->embed.data;
 		return result->name;
-	} else if (path->layout.value == FBR_PATH_FILE_PTR) {
-		result->len = path->file_ptr.file_len;
-		result->name = path->file_ptr.value;
+	} else if (path->layout.value == FBR_PATH_FILE_PTR ||
+	    path->layout.value == FBR_PATH_DIR_PTR) {
+		result->len = path->ptr.value_len;
+		result->name = path->ptr.value;
 		return result->name;
 	}
 
-	assert(path->layout.value == FBR_PATH_SHARED_PTR);
+	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
 	assert(buf);
 	assert(buf_len);
 
-	if (path->ptr.dirname) {
+	if (path->split_ptr.dirname) {
 		struct fbr_path_name dirname;
-		fbr_path_shared_name(path->ptr.dirname, &dirname);
+		fbr_path_shared_name(path->split_ptr.dirname, &dirname);
 		assert_dev(dirname.name);
 
-		assert_dev(path->ptr.file_offset);
-		char *filename = (char*)path + path->ptr.file_offset;
+		assert_dev(path->split_ptr.file_offset);
+		char *filename = (char*)path + path->split_ptr.file_offset;
 
-		int ret = snprintf(buf, buf_len, "%s/%s", path->ptr.dirname->value.name,
+		int ret = snprintf(buf, buf_len, "%s/%s", path->split_ptr.dirname->value.name,
 			filename);
 		assert(ret > 0 && (size_t)ret < buf_len);
 
 		result->len = ret;
 		result->name = buf;
 	} else {
-		assert_dev(path->ptr.file_offset);
+		assert_dev(path->split_ptr.file_offset);
 
-		result->len = path->ptr.file_len;
-		result->name = (char*)path + path->ptr.file_offset;
+		result->len = path->split_ptr.file_len;
+		result->name = (char*)path + path->split_ptr.file_offset;
 	}
 
 
@@ -368,9 +378,9 @@ fbr_path_free(struct fbr_path *path)
 {
 	assert(path);
 
-	if (path->layout.value == FBR_PATH_SHARED_PTR) {
-		if (path->ptr.dirname) {
-			fbr_path_shared_release(path->ptr.dirname);
+	if (path->layout.value == FBR_PATH_SPLIT_PTR) {
+		if (path->split_ptr.dirname) {
+			fbr_path_shared_release(path->split_ptr.dirname);
 		}
 	}
 
