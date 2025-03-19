@@ -348,7 +348,8 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	fbr_test_logs("** LOOKUP found directory: '%s' (inode: %lu)",
 		dirname, directory->inode);
 
-	struct fbr_file *file = fbr_directory_find_file(directory, name, strlen(name));
+	size_t name_len = strlen(name);
+	struct fbr_file *file = fbr_directory_find_file(directory, name, name_len);
 
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
@@ -367,8 +368,13 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	fbr_file_ok(file);
 	assert(file->inode);
 
-	const char *filename = fbr_path_get_full(&file->path, NULL);
-	fbr_test_logs("** LOOKUP found file: '%s' (inode: %lu)", filename, file->inode);
+	const char *fullname = fbr_path_get_full(&file->path, NULL);
+	fbr_test_logs("** LOOKUP found file: '%s' (inode: %lu)", fullname, file->inode);
+
+	struct fbr_path_name filename;
+	fbr_path_get_file(&file->path, &filename);
+	assert(name_len == filename.len);
+	assert_zero(strcmp(name, filename.name));
 
 	struct fuse_entry_param entry;
 	fbr_ZERO(&entry);
@@ -534,10 +540,17 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 		return;
 	}
 
+	struct fbr_path_name dirname;
+	fbr_path_get_dir(&directory->dirname, &dirname);
+
 	struct fbr_file *file = reader->position;
 
 	TAILQ_FOREACH_FROM(file, &directory->file_list, file_entry) {
 		fbr_file_ok(file);
+
+		struct fbr_path_name filedir;
+		fbr_path_get_dir(&file->path, &filedir);
+		assert_zero(fbr_path_name_cmp(&dirname, &filedir));
 
 		const char *filename = fbr_path_get_file(&file->path, NULL);
 
