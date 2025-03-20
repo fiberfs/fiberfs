@@ -139,31 +139,31 @@ fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir)
 
 	fbr_ZERO(result_dir);
 
-	if (path->layout.value == FBR_PATH_NULL) {
-		return;
-	} else if (path->layout.value == FBR_PATH_EMBED_DIR) {
-		result_dir->len = path->embed.len;
-		result_dir->name = path->embed.data;
-		return;
-	} else if (path->layout.value == FBR_PATH_EMBED_FILE) {
-		result_dir->len = 0;
-		result_dir->name = "";
-		return;
-	} else if (path->layout.value == FBR_PATH_FILE_PTR) {
-		result_dir->len = 0;
-		result_dir->name = "";
-		return;
-	} else if (path->layout.value == FBR_PATH_DIR_PTR) {
-		result_dir->len = path->ptr.value_len;
-		result_dir->name = path->ptr.value;
-		return;
+	switch (path->layout.value) {
+		case FBR_PATH_NULL:
+			return;
+		case FBR_PATH_EMBED_DIR:
+			result_dir->len = path->embed.len;
+			result_dir->name = path->embed.data;
+			return;
+		case FBR_PATH_EMBED_FILE:
+			result_dir->len = 0;
+			result_dir->name = "";
+			return;
+		case FBR_PATH_FILE_PTR:
+			result_dir->len = 0;
+			result_dir->name = "";
+			return;
+		case FBR_PATH_DIR_PTR:
+			result_dir->len = path->ptr.value_len;
+			result_dir->name = path->ptr.value;
+			return;
+		case FBR_PATH_SPLIT_PTR:
+			fbr_path_shared_name(path->split_ptr.dirname, result_dir);
+			return;
 	}
 
-	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
-
-	fbr_path_shared_name(path->split_ptr.dirname, result_dir);
-
-	return;
+	fbr_ABORT("bad path layout: %d", path->layout.value);
 }
 
 static const char *
@@ -192,32 +192,32 @@ fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file
 
 	fbr_ZERO(result_file);
 
-	if (path->layout.value == FBR_PATH_NULL) {
-		return NULL;
-	} else if (path->layout.value == FBR_PATH_EMBED_DIR) {
-		result_file->len = 0;
-		result_file->name = "";
-		return result_file->name;
-	} else if (path->layout.value == FBR_PATH_EMBED_FILE) {
-		result_file->len = path->embed.len;
-		result_file->name = path->embed.data;
-		return result_file->name;
-	} else if (path->layout.value == FBR_PATH_FILE_PTR) {
-		result_file->len = path->ptr.value_len;
-		result_file->name = path->ptr.value;
-		return result_file->name;
-	} else if (path->layout.value == FBR_PATH_DIR_PTR) {
-		result_file->len = 0;
-		result_file->name = "";
-		return result_file->name;
+	switch (path->layout.value) {
+		case FBR_PATH_NULL:
+			return NULL;
+		case FBR_PATH_EMBED_DIR:
+			result_file->len = 0;
+			result_file->name = "";
+			return result_file->name;
+		case FBR_PATH_EMBED_FILE:
+			result_file->len = path->embed.len;
+			result_file->name = path->embed.data;
+			return result_file->name;
+		case FBR_PATH_FILE_PTR:
+			result_file->len = path->ptr.value_len;
+			result_file->name = path->ptr.value;
+			return result_file->name;
+		case FBR_PATH_DIR_PTR:
+			result_file->len = 0;
+			result_file->name = "";
+			return result_file->name;
+		case FBR_PATH_SPLIT_PTR:
+			result_file->len = path->split_ptr.file_len;
+			result_file->name = _path_split_file(path);
+			return result_file->name;
 	}
 
-	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
-
-	result_file->len = path->split_ptr.file_len;
-	result_file->name = _path_split_file(path);
-
-	return result_file->name;
+	fbr_ABORT("bad path layout: %d", path->layout.value);
 }
 
 const char *
@@ -233,24 +233,26 @@ fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result, cha
 
 	fbr_ZERO(result);
 
-	if (path->layout.value == FBR_PATH_NULL) {
-		return NULL;
-	} else if (path->layout.value == FBR_PATH_EMBED_DIR) {
-		result->len = path->embed.len;
-		result->name = path->embed.data;
-		return result->name;
-	} else if (path->layout.value == FBR_PATH_EMBED_FILE) {
-		result->len = path->embed.len;
-		result->name = path->embed.data;
-		return result->name;
-	} else if (path->layout.value == FBR_PATH_FILE_PTR ||
-	    path->layout.value == FBR_PATH_DIR_PTR) {
-		result->len = path->ptr.value_len;
-		result->name = path->ptr.value;
-		return result->name;
+	switch (path->layout.value) {
+		case FBR_PATH_NULL:
+			return NULL;
+		case FBR_PATH_EMBED_DIR:
+			result->len = path->embed.len;
+			result->name = path->embed.data;
+			return result->name;
+		case FBR_PATH_EMBED_FILE:
+			result->len = path->embed.len;
+			result->name = path->embed.data;
+			return result->name;
+		case FBR_PATH_FILE_PTR:
+		case FBR_PATH_DIR_PTR:
+			result->len = path->ptr.value_len;
+			result->name = path->ptr.value;
+			return result->name;
 	}
 
-	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
+	fbr_ASSERT(path->layout.value == FBR_PATH_SPLIT_PTR, "bad path layout: %d",
+		path->layout.value);
 	assert(buf);
 	assert(buf_len);
 

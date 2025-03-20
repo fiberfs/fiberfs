@@ -21,6 +21,6 @@ double fbr_get_time(void);
 	explicit_bzero(p, sizeof(*(p)))
 
 #define fbr_array_len(array)				\
-	(sizeof(array) / sizeof(*array))
+	(sizeof(array) / sizeof(*(array)))
 
 #endif /* _FBR_UTILS_H_INCLUDED_ */

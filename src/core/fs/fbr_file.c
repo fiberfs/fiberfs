@@ -81,7 +81,13 @@ fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
 	fbr_file_ok(f1);
 	fbr_file_ok(f2);
 
-	return f1->inode - f2->inode;
+	if (f1->inode > f2->inode) {
+		return 1;
+	} else if (f1->inode < f2->inode) {
+		return -1;
+	}
+
+	return 0;
 }
 
 void
@@ -202,7 +208,7 @@ fbr_file_attr(const struct fbr_file *file, struct stat *st)
 
 	st->st_ino = file->inode;
 	st->st_mode = file->mode;
-	st->st_size = file->size;
+	st->st_size = (off_t)file->size;
 	st->st_uid = file->uid;
 	st->st_gid = file->gid;
 

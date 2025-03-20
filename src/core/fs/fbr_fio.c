@@ -35,6 +35,7 @@ _fio_chunk_list_expand(struct fbr_chunk_list *chunks)
 
 		chunks = realloc(chunks, sizeof(*chunks) +
 			(sizeof(*chunks->list) * chunks->capacity));
+		assert(chunks);
 	}
 
 	return chunks;
@@ -508,7 +509,7 @@ fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *chunks, size_t offs
 		buf->size = chunk_length;
 
 		// Debugging
-		buf->pos = chunk_offset;
+		buf->pos = (off_t)chunk_offset;
 		assert_zero_dev(buf->flags & FUSE_BUF_FD_SEEK);
 
 		offset_pos += chunk_length;
