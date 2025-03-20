@@ -102,7 +102,7 @@ void fbr_path_free(struct fbr_path *path);
 
 void fbr_path_shared_init(struct fbr_path_shared *shared, const struct fbr_path_name *value);
 struct fbr_path_shared *fbr_path_shared_alloc(const struct fbr_path_name *value);
-void fbr_path_shared_take(struct fbr_path_shared *shared);
+struct fbr_path_shared *fbr_path_shared_take(struct fbr_path_shared *shared);
 int fbr_path_shared_cmp(const struct fbr_path_shared *shared1,
 	const struct fbr_path_shared *shared2);
 void fbr_path_shared_name(struct fbr_path_shared *shared, struct fbr_path_name *result);

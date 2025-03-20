@@ -72,9 +72,7 @@ _path_init(struct fbr_path *path, char *name_storage, struct fbr_path_shared *di
 		path->layout.value = FBR_PATH_SPLIT_PTR;
 		path->split_ptr.file_len = filename->len;
 		path->split_ptr.file_offset = name_storage - (char*)path;
-		path->split_ptr.dirname = dirname;
-
-		fbr_path_shared_take(dirname);
+		path->split_ptr.dirname = fbr_path_shared_take(dirname);
 
 		memcpy(name_storage, filename->name, filename->len);
 
@@ -215,7 +213,6 @@ fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file
 	}
 
 	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
-	assert_dev(path->split_ptr.file_offset);
 
 	result_file->len = path->split_ptr.file_len;
 	result_file->name = _path_split_file(path);
@@ -402,7 +399,6 @@ fbr_path_free(struct fbr_path *path)
 	assert(path);
 
 	if (path->layout.value == FBR_PATH_SPLIT_PTR) {
-		assert_dev(path->split_ptr.dirname);
 		fbr_path_shared_release(path->split_ptr.dirname);
 	}
 
@@ -444,7 +440,7 @@ fbr_path_shared_alloc(const struct fbr_path_name *value)
 	return shared;
 }
 
-void
+struct fbr_path_shared *
 fbr_path_shared_take(struct fbr_path_shared *shared)
 {
 	fbr_path_shared_ok(shared);
@@ -452,6 +448,8 @@ fbr_path_shared_take(struct fbr_path_shared *shared)
 
 	fbr_refcount_t refs = fbr_atomic_add(&shared->refcount, 1);
 	assert(refs);
+
+	return shared;
 }
 
 int
