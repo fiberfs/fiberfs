@@ -208,7 +208,6 @@ struct fbr_fio {
 	unsigned int				truncate:1;
 
 	fbr_refcount_t				refcount;
-	pthread_mutex_t				lock;
 
 	struct fbr_file				*file;
 
