@@ -9,8 +9,8 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
-#include "core/context/fbr_callback.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
+#include "core/request/fbr_request.h"
 
 struct fbr_dreader *
 fbr_dreader_alloc(struct fbr_fs *fs, struct fbr_directory *directory)

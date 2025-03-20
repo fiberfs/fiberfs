@@ -12,11 +12,11 @@
 #include <unistd.h>
 
 #include "fiberfs.h"
-#include "core/context/fbr_callback.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
+#include "core/request/fbr_request.h"
 #include "core/store/fbr_store.h"
 
 #include "fbr_test_fs_cmds.h"

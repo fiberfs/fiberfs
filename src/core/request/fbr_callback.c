@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 #include "fiberfs.h"
-#include "fbr_callback.h"
+#include "fbr_request.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 

@@ -4,8 +4,8 @@
  *
  */
 
-#ifndef _FBR_FUSE_CALLBACK_H_INCLUDED_
-#define _FBR_FUSE_CALLBACK_H_INCLUDED_
+#ifndef _FBR_FUSE_REQUEST_H_INCLUDED_
+#define _FBR_FUSE_REQUEST_H_INCLUDED_
 
 #include "fiberfs.h"
 #include "core/fuse/fbr_fuse.h"
@@ -77,4 +77,4 @@ void fbr_fuse_reply_write(struct fbr_request *request, size_t count);
 	fbr_fuse_mounted((request)->fuse_ctx);				\
 }
 
-#endif /* _FBR_FUSE_CALLBACK_H_INCLUDED_ */
+#endif /* _FBR_FUSE_REQUEST_H_INCLUDED_ */

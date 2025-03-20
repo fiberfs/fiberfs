@@ -69,6 +69,8 @@ _path_init(struct fbr_path *path, char *name_storage, struct fbr_path_shared *di
 		fbr_path_shared_take(dirname);
 	}
 
+	// TODO we should write dir...
+
 	if (filename->len) {
 		memcpy(name_storage, filename->name, filename->len);
 	}
@@ -243,6 +245,7 @@ fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result, cha
 	fbr_path_shared_name(path->split_ptr.dirname, &dirname);
 
 	if (dirname.len) {
+		// TODO what if we have no filename?
 		assert_dev(dirname.name);
 		char *filename = (char*)path + path->split_ptr.file_offset;
 

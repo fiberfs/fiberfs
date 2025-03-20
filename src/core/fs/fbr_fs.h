@@ -17,7 +17,7 @@
 #include "fbr_id.h"
 #include "fbr_path.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
-#include "core/context/fbr_callback.h"
+#include "core/request/fbr_request.h"
 #include "data/queue.h"
 #include "data/tree.h"
 

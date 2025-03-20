@@ -11,7 +11,7 @@
 
 #include "test/fbr_test.h"
 #include "core/fuse/fbr_fuse.h"
-#include "core/context/fbr_callback.h"
+#include "core/request/fbr_request.h"
 
 #define FBR_TEST_FUSE_CMD(cmd)		fbr_test_cmd_f fbr_cmd_##cmd;
 #define FBR_TEST_FUSE_VAR(var)		fbr_test_var_f fbr_var_##var;

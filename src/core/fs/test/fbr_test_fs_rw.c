@@ -7,9 +7,9 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "core/context/fbr_callback.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
+#include "core/request/fbr_request.h"
 
 #include "core/store/fbr_store.h"
 

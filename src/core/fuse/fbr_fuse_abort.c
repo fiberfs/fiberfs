@@ -8,7 +8,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fuse.h"
-#include "core/context/fbr_callback.h"
+#include "core/request/fbr_request.h"
 
 extern void fbr_test_context_abort(void);
 

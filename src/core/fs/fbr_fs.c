@@ -9,7 +9,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
-#include "core/context/fbr_callback.h"
+#include "core/request/fbr_request.h"
 #include "core/store/fbr_store.h"
 
 static const struct fbr_store_callbacks _STORE_CALLBACKS_EMPTY;

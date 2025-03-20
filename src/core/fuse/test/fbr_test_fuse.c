@@ -12,7 +12,7 @@
 
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
-#include "core/context/fbr_callback.h"
+#include "core/request/fbr_request.h"
 
 static void
 _fuse_finish(struct fbr_test_context *test_ctx)

@@ -10,9 +10,10 @@
 
 #include "fiberfs.h"
 #include "fbr_test_fuse_cmds.h"
-#include "core/context/fbr_callback.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
+#include "core/request/fbr_request.h"
+
 #include "test/fbr_test.h"
 
 #define _TEST_OPS_FUSE_TTL_SEC		2.0
