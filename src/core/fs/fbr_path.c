@@ -49,12 +49,20 @@ _path_init(struct fbr_path *path, char *name_storage, struct fbr_path_shared *di
 
 			path->layout.value = FBR_PATH_EMBED_DIR;
 			path->embed.len = dirname->value.len;
+
+			memcpy(name_storage, dirname->value.name, dirname->value.len);
+
+			assert_dev(name_storage[dirname->value.len] == '\0');
 		} else {
 			assert_zero(dirname->value.len);
 			assert_dev(filename->len <= FBR_PATH_EMBED_LEN_MAX);
 
 			path->layout.value = FBR_PATH_EMBED_FILE;
 			path->embed.len = filename->len;
+
+			memcpy(name_storage, filename->name, filename->len);
+
+			assert_dev(name_storage[filename->len] == '\0');
 		}
 	} else {
 		assert(name_storage);
@@ -67,15 +75,11 @@ _path_init(struct fbr_path *path, char *name_storage, struct fbr_path_shared *di
 		path->split_ptr.dirname = dirname;
 
 		fbr_path_shared_take(dirname);
-	}
 
-	// TODO we should write dir...
-
-	if (filename->len) {
 		memcpy(name_storage, filename->name, filename->len);
-	}
 
-	assert_dev(name_storage[filename->len] == '\0');
+		assert_dev(name_storage[filename->len] == '\0');
+	}
 }
 
 void *
@@ -110,7 +114,7 @@ fbr_path_init_dir(struct fbr_path *path, const char *dirname, size_t dirname_len
 
 	fbr_ZERO(path);
 
-	path->layout.value = FBR_PATH_FILE_PTR;
+	path->layout.value = FBR_PATH_DIR_PTR;
 	path->ptr.value_len = dirname_len;
 	path->ptr.value = dirname;
 }
@@ -164,6 +168,20 @@ fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir)
 	return;
 }
 
+static const char *
+_path_split_file(const struct fbr_path *path)
+{
+	assert(path);
+	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
+	assert_dev(path->split_ptr.file_offset);
+
+	char *filename = (char*)path + path->split_ptr.file_offset;
+
+	assert_dev(strlen(filename) == path->split_ptr.file_len);
+
+	return filename;
+}
+
 const char *
 fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file)
 {
@@ -200,7 +218,7 @@ fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file
 	assert_dev(path->split_ptr.file_offset);
 
 	result_file->len = path->split_ptr.file_len;
-	result_file->name = (char*)path + path->split_ptr.file_offset;
+	result_file->name = _path_split_file(path);
 
 	return result_file->name;
 }
@@ -236,29 +254,43 @@ fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result, cha
 	}
 
 	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
-	assert_dev(path->split_ptr.dirname);
-	assert_dev(path->split_ptr.file_offset);
 	assert(buf);
 	assert(buf_len);
 
 	struct fbr_path_name dirname;
 	fbr_path_shared_name(path->split_ptr.dirname, &dirname);
 
+	size_t len = 0;
+	buf[0] = '\0';
+
 	if (dirname.len) {
-		// TODO what if we have no filename?
 		assert_dev(dirname.name);
-		char *filename = (char*)path + path->split_ptr.file_offset;
 
-		int ret = snprintf(buf, buf_len, "%s/%s", dirname.name, filename);
-		assert(ret > 0 && (size_t)ret < buf_len);
+		strncat(buf, dirname.name, buf_len - len - 1);
+		len += dirname.len;
+		assert(len < buf_len - 1);
 
-		result->len = ret;
-		result->name = buf;
-	} else {
-		result->len = path->split_ptr.file_len;
-		result->name = (char*)path + path->split_ptr.file_offset;
+		if (path->split_ptr.file_len) {
+			strncat(buf, "/", buf_len - len - 1);
+			len++;
+			assert(len < buf_len - 1);
+		}
+
 	}
 
+	if (path->split_ptr.file_len)
+	{
+		const char *filename = _path_split_file(path);
+
+		strncat(buf, filename, buf_len - len - 1);
+		len += path->split_ptr.file_len;
+		assert(len < buf_len - 1);
+	}
+
+	assert_dev(buf[len] == '\0');
+
+	result->len = len;
+	result->name = buf;
 
 	return result->name;
 }

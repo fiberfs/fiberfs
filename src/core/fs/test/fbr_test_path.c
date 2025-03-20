@@ -46,6 +46,10 @@ fbr_cmd_fs_test_path_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 		FBR_PATH_PTR_OFFSET_BITS);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_PATH_PTR_OFFSET_MAX=%d",
 		FBR_PATH_PTR_OFFSET_MAX);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_file)=%zu",
+		sizeof(struct fbr_file));
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_directory)=%zu",
+		sizeof(struct fbr_directory));
 
 	fbr_test_ASSERT(__FBR_PATH_LAYOUT_END <= FBR_PATH_LAYOUT_MAX + 1,
 		"FBR_PATH_LAYOUT doesnt fit in FBR_PATH_LAYOUT_BITS");
@@ -59,6 +63,10 @@ fbr_cmd_fs_test_path_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 		"struct fbr_path != struct fbr_path_embed");
 	fbr_test_ASSERT(sizeof(struct fbr_path_split_ptr) == sizeof(struct fbr_path_ptr),
 		"struct fbr_path_split_ptr != struct fbr_path_ptr");
+	fbr_test_ASSERT(FBR_PATH_PTR_OFFSET_MAX >= sizeof(struct fbr_file),
+		"FBR_PATH_PTR_OFFSET_MAX too small for file");
+	fbr_test_ASSERT(FBR_PATH_PTR_OFFSET_MAX >= sizeof(struct fbr_directory),
+		"FBR_PATH_PTR_OFFSET_MAX too small for directory");
 }
 
 static void
