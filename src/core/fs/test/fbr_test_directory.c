@@ -28,7 +28,7 @@ _dir_test_alloc(void *arg)
 	struct fbr_fs *fs = (struct fbr_fs*)arg;
 	fbr_fs_ok(fs);
 
-	unsigned long id = fbr_safe_add(&_TEST_DIR_THREAD, 1);
+	unsigned long id = fbr_atomic_add(&_TEST_DIR_THREAD, 1);
 
 	fbr_test_logs("alloc thread_%lu: started", id);
 
@@ -107,7 +107,7 @@ _dir_test_alloc(void *arg)
 			continue;
 		}
 
-		unsigned long version = fbr_safe_add(&_TEST_DIR_VERSION, 1);
+		unsigned long version = fbr_atomic_add(&_TEST_DIR_VERSION, 1);
 		int do_error = (random() % 3 == 0);
 
 		assert(directory->state == FBR_DIRSTATE_LOADING);
@@ -154,7 +154,7 @@ _dir_test_read(void *arg)
 	struct fbr_fs *fs = (struct fbr_fs*)arg;
 	fbr_fs_ok(fs);
 
-	unsigned long id = fbr_safe_add(&_TEST_DIR_THREAD, 1);
+	unsigned long id = fbr_atomic_add(&_TEST_DIR_THREAD, 1);
 	unsigned long count = id;
 
 	fbr_test_logs("read thread_%lu: started", id);
@@ -197,7 +197,7 @@ _dir_test_release(void *arg)
 	struct fbr_fs *fs = (struct fbr_fs*)arg;
 	fbr_fs_ok(fs);
 
-	unsigned long id = fbr_safe_add(&_TEST_DIR_THREAD, 1);
+	unsigned long id = fbr_atomic_add(&_TEST_DIR_THREAD, 1);
 	int count = 0;
 
 	fbr_test_logs("release thread_%lu: started", id);
@@ -235,7 +235,7 @@ _directory_parallel(void)
 	_TEST_DIR_THREAD = 0;
 	_TEST_DIR_VERSION = 0;
 
-	unsigned long version = fbr_safe_add(&_TEST_DIR_VERSION, 1);
+	unsigned long version = fbr_atomic_add(&_TEST_DIR_VERSION, 1);
 	assert(version == 1);
 
 	struct fbr_directory *directory = NULL;

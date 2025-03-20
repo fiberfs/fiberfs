@@ -73,7 +73,7 @@ void __fbr_attr_printf(5) __fbr_noreturn
 fbr_do_abort(const char *assertion, const char *function, const char *file, int line,
     const char *fmt, ...)
 {
-	unsigned long count = fbr_safe_add(&_ASSERT_LOOP, 1);
+	unsigned long count = fbr_atomic_add(&_ASSERT_LOOP, 1);
 
 	fprintf(stderr, "%s:%d %s(): ", file, line, function);
 

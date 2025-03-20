@@ -450,7 +450,7 @@ fbr_path_shared_take(struct fbr_path_shared *shared)
 	fbr_path_shared_ok(shared);
 	assert(shared->refcount);
 
-	fbr_refcount_t refs = fbr_safe_add(&shared->refcount, 1);
+	fbr_refcount_t refs = fbr_atomic_add(&shared->refcount, 1);
 	assert(refs);
 }
 
@@ -479,7 +479,7 @@ fbr_path_shared_release(struct fbr_path_shared *shared)
 	fbr_path_shared_ok(shared);
 	assert(shared->refcount);
 
-	fbr_refcount_t refs = fbr_safe_sub(&shared->refcount, 1);
+	fbr_refcount_t refs = fbr_atomic_sub(&shared->refcount, 1);
 
 	if (refs) {
 		return;

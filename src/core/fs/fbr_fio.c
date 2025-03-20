@@ -67,7 +67,7 @@ fbr_fio_take(struct fbr_fio *fio)
 	fbr_fio_ok(fio);
 	assert(fio->refcount);
 
-	fbr_refcount_t refs = fbr_safe_add(&fio->refcount, 1);
+	fbr_refcount_t refs = fbr_atomic_add(&fio->refcount, 1);
 	assert(refs);
 }
 
@@ -553,7 +553,7 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_file_ok(fio->file);
 	assert(fio->refcount);
 
-	fbr_refcount_t refs = fbr_safe_sub(&fio->refcount, 1);
+	fbr_refcount_t refs = fbr_atomic_sub(&fio->refcount, 1);
 
 	if (refs) {
 		return;
