@@ -171,7 +171,7 @@ gcov:		CFLAGS+=$(GCOVFLAGS)
 gcov:		LIBFLAGS+=$(GCOVLIBFLAGS)
 gcov:		clean
 		$(MAKE) all CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
-		$(MAKE) -C .. check FLAGS=-vv
+		$(MAKE) -C ../tests all error FLAGS=-vv
 		$(GCOV) -r *.c */*.c */*/*.c */*/*/*.c
 		$(LCOV) --output-file $(GCOV_FILE)
 		$(LCOVHTML) $(GCOV_FILE) --output-directory $(GCOV_REPORT)

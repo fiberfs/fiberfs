@@ -17,7 +17,7 @@ GDB=gdb --args
 export FIBER_VALGRIND=$(PRE_EXEC)
 export FIBER_FLAGS=$(FLAGS)
 
-.PHONY: all test check FORCE valgrind verbose sudo json core corex
+.PHONY: all test check FORCE valgrind verbose sudo json core corex error chttp
 
 all:			check
 
