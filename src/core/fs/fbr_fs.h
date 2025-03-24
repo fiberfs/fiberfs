@@ -28,6 +28,7 @@
 #define FBR_TTL_MAX				INT32_MAX
 
 typedef unsigned long fbr_inode_t;
+typedef unsigned long fbr_stats_t;
 
 typedef void __fbr_attr_printf(1) (fbr_log_f)(const char *fmt, ...);
 
@@ -215,22 +216,22 @@ struct fbr_fio {
 };
 
 struct fbr_fs_stats {
-	unsigned long				directories;
-	unsigned long				directories_dindex;
-	unsigned long				directories_total;
-	unsigned long				directory_refs;
+	fbr_stats_t				directories;
+	fbr_stats_t				directories_dindex;
+	fbr_stats_t				directories_total;
+	fbr_stats_t				directory_refs;
 
-	unsigned long				files;
-	unsigned long				files_inodes;
-	unsigned long				files_total;
-	unsigned long				file_refs;
+	fbr_stats_t				files;
+	fbr_stats_t				files_inodes;
+	fbr_stats_t				files_total;
+	fbr_stats_t				file_refs;
 
-	unsigned long				requests;
-	unsigned long				requests_total;
+	fbr_stats_t				requests;
+	fbr_stats_t				requests_total;
 
-	unsigned long				fetch_bytes;
-	unsigned long				read_bytes;
-	unsigned long				write_bytes;
+	fbr_stats_t				fetch_bytes;
+	fbr_stats_t				read_bytes;
+	fbr_stats_t				write_bytes;
 };
 
 struct fbr_fs_config {

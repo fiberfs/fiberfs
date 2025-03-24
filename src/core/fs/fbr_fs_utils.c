@@ -10,29 +10,29 @@
 #include "fbr_fs.h"
 
 void
-fbr_fs_stat_add_count(unsigned long *stat, unsigned long value)
+fbr_fs_stat_add_count(fbr_stats_t *stat, fbr_stats_t value)
 {
 	assert(stat);
 
-	(void)__sync_add_and_fetch(stat, value);
+	fbr_atomic_add(stat, value);
 }
 
 void
-fbr_fs_stat_add(unsigned long *stat)
+fbr_fs_stat_add(fbr_stats_t *stat)
 {
 	fbr_fs_stat_add_count(stat, 1);
 }
 
 void
-fbr_fs_stat_sub_count(unsigned long *stat, unsigned long value)
+fbr_fs_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value)
 {
 	assert(stat);
 
-	(void)__sync_sub_and_fetch(stat, value);
+	fbr_atomic_sub(stat, value);
 }
 
 void
-fbr_fs_stat_sub(unsigned long *stat)
+fbr_fs_stat_sub(fbr_stats_t *stat)
 {
 	fbr_fs_stat_sub_count(stat, 1);
 }

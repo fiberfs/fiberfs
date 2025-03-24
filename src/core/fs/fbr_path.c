@@ -80,6 +80,20 @@ _path_init(struct fbr_path *path, char *name_storage, struct fbr_path_shared *di
 	}
 }
 
+static const char *
+_path_split_file(const struct fbr_path *path)
+{
+	assert(path);
+	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
+	assert_dev(path->split_ptr.file_offset);
+
+	char *filename = (char*)path + path->split_ptr.file_offset;
+
+	assert_dev(strlen(filename) == path->split_ptr.file_len);
+
+	return filename;
+}
+
 void *
 fbr_path_storage_alloc(size_t size, size_t path_offset, struct fbr_path_shared *dirname,
     const struct fbr_path_name *filename)
@@ -164,20 +178,6 @@ fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir)
 	}
 
 	fbr_ABORT("bad path layout: %d", path->layout.value);
-}
-
-static const char *
-_path_split_file(const struct fbr_path *path)
-{
-	assert(path);
-	assert(path->layout.value == FBR_PATH_SPLIT_PTR);
-	assert_dev(path->split_ptr.file_offset);
-
-	char *filename = (char*)path + path->split_ptr.file_offset;
-
-	assert_dev(strlen(filename) == path->split_ptr.file_len);
-
-	return filename;
 }
 
 const char *
