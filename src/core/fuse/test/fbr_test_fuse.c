@@ -18,8 +18,7 @@ static void
 _fuse_finish(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
-	assert(test_ctx->test_fuse);
-	assert(test_ctx->test_fuse->magic == FBR_TEST_FUSE_MAGIC);
+	fbr_magic_check(test_ctx->test_fuse, FBR_TEST_FUSE_MAGIC);
 
 	struct fbr_fuse_context *fuse_ctx = &test_ctx->test_fuse->fuse_ctx;
 	fbr_fuse_context_ok(fuse_ctx);
@@ -52,7 +51,7 @@ _fuse_init(struct fbr_test_context *test_ctx)
 		fbr_test_register_finish(test_ctx, "test_fuse", _fuse_finish);
 	}
 
-	assert(test_ctx->test_fuse->magic == FBR_TEST_FUSE_MAGIC);
+	fbr_magic_check(test_ctx->test_fuse, FBR_TEST_FUSE_MAGIC);
 
 	return &test_ctx->test_fuse->fuse_ctx;
 }
@@ -106,8 +105,7 @@ struct fbr_fuse_context *
 fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
-	assert(test_ctx->test_fuse);
-	assert(test_ctx->test_fuse->magic == FBR_TEST_FUSE_MAGIC);
+	fbr_magic_check(test_ctx->test_fuse, FBR_TEST_FUSE_MAGIC);
 
 	struct fbr_fuse_context *fuse_ctx = &test_ctx->test_fuse->fuse_ctx;
 	fbr_fuse_context_ok(fuse_ctx);

@@ -35,16 +35,8 @@ struct fbr_dindex {
 	volatile size_t				lru_len;
 };
 
-#define fbr_dindex_ok(dindex)					\
-{								\
-	assert(dindex);						\
-	assert((dindex)->magic == FBR_DINDEX_MAGIC);		\
-}
-#define fbr_dindex_dirhead_ok(dirhead)				\
-{								\
-	assert(dirhead);					\
-	assert((dirhead)->magic == FBR_DINDEX_DIRHEAD_MAGIC);	\
-}
+#define fbr_dindex_ok(dindex)		fbr_magic_check(dindex, FBR_DINDEX_MAGIC)
+#define fbr_dindex_dirhead_ok(dirhead)	fbr_magic_check(dirhead, FBR_DINDEX_DIRHEAD_MAGIC)
 
 RB_GENERATE_STATIC(fbr_dindex_tree, fbr_directory, dindex_entry, fbr_directory_cmp)
 

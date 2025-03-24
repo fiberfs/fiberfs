@@ -361,46 +361,15 @@ struct fuse_bufvec *fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list 
 	size_t offset, size_t size);
 void fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio);
 
-#define fbr_fs_ok(fs)						\
-{								\
-	assert(fs);						\
-	assert((fs)->magic == FBR_FS_MAGIC);			\
-}
-#define fbr_file_ok(file)					\
-{								\
-	assert(file);						\
-	assert((file)->magic == FBR_FILE_MAGIC);		\
-}
-#define fbr_directory_ok(dir)					\
-{								\
-	assert(dir);						\
-	assert((dir)->magic == FBR_DIRECTORY_MAGIC);		\
-}
-#define fbr_dreader_ok(dreader)					\
-{								\
-	assert(dreader);					\
-	assert((dreader)->magic == FBR_DREADER_MAGIC);		\
-}
-#define fbr_fio_ok(fio)					\
-{								\
-	assert(fio);						\
-	assert((fio)->magic == FBR_FIO_MAGIC);			\
-}
-#define fbr_chunk_ok(chunk)					\
-{								\
-	assert(chunk);						\
-	assert((chunk)->magic == FBR_CHUNK_MAGIC);		\
-}
-#define fbr_chunk_slab_ok(slab)					\
-{								\
-	assert(slab);						\
-	assert((slab)->magic == FBR_CHUNK_SLAB_MAGIC);		\
-}
-#define fbr_chunk_list_ok(list)					\
-{								\
-	assert(list);						\
-	assert((list)->magic == FBR_CHUNK_LIST_MAGIC);		\
-}
+#define fbr_fs_ok(fs)			fbr_magic_check(fs, FBR_FS_MAGIC)
+#define fbr_file_ok(file)		fbr_magic_check(file, FBR_FILE_MAGIC)
+#define fbr_directory_ok(dir)		fbr_magic_check(dir, FBR_DIRECTORY_MAGIC)
+#define fbr_dreader_ok(dreader)		fbr_magic_check(dreader, FBR_DREADER_MAGIC)
+#define fbr_fio_ok(fio)			fbr_magic_check(fio, FBR_FIO_MAGIC)
+#define fbr_chunk_ok(chunk)		fbr_magic_check(chunk, FBR_CHUNK_MAGIC)
+#define fbr_chunk_slab_ok(slab)		fbr_magic_check(slab, FBR_CHUNK_SLAB_MAGIC)
+#define fbr_chunk_list_ok(list)		fbr_magic_check(list, FBR_CHUNK_LIST_MAGIC)
+
 #define fbr_fs_int64(obj)					\
 	((uint64_t)(obj))
 #define log(fmt, ...)						\

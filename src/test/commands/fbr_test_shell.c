@@ -20,8 +20,7 @@ static void
 _shell_finish(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	assert(ctx->shell);
-	assert(ctx->shell->magic == _SHELL_MAGIC);
+	fbr_magic_check(ctx->shell, _SHELL_MAGIC);
 
 	fbr_finish_ERROR(ctx->shell->thread_count, "shell_bg commands running");
 
@@ -49,7 +48,7 @@ _shell_init(struct fbr_test_context *ctx)
 		fbr_test_register_finish(ctx, "shell", _shell_finish);
 	}
 
-	assert(ctx->shell->magic == _SHELL_MAGIC);
+	fbr_magic_check(ctx->shell, _SHELL_MAGIC);
 }
 
 void
@@ -131,8 +130,7 @@ fbr_test_cmd_shell_bg(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 static int
 _test_shell_waitall(struct fbr_test_shell *shell)
 {
-	assert(shell);
-	assert(shell->magic == _SHELL_MAGIC);
+	fbr_magic_check(shell, _SHELL_MAGIC);
 
 	int error = 0;
 

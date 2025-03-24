@@ -92,7 +92,7 @@ _test_cmds_free(struct fbr_test_context *ctx)
 	struct fbr_test_cmdentry *entry, *next;
 
 	RB_FOREACH_SAFE(entry, fbr_test_tree, &test->cmd_tree, next) {
-		assert(entry->magic == FBR_TEST_ENTRY_MAGIC);
+		fbr_magic_check(entry, FBR_TEST_ENTRY_MAGIC);
 
 		RB_REMOVE(fbr_test_tree, &test->cmd_tree, entry);
 
@@ -166,7 +166,7 @@ fbr_test_cmds_get(struct fbr_test *test, const char *name)
 		return NULL;
 	}
 
-	assert(result->magic == FBR_TEST_ENTRY_MAGIC);
+	fbr_magic_check(result, FBR_TEST_ENTRY_MAGIC);
 
 	return result;
 }

@@ -21,8 +21,7 @@ static void
 _random_finish(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	assert(ctx->random);
-	assert(ctx->random->magic == _RANDOM_MAGIC);
+	fbr_magic_check(ctx->random, _RANDOM_MAGIC);
 
 	fbr_ZERO(ctx->random);
 	free(ctx->random);
@@ -50,7 +49,7 @@ _random_init(struct fbr_test_context *ctx)
 		fbr_test_random_seed();
 	}
 
-	assert(ctx->random->magic == _RANDOM_MAGIC);
+	fbr_magic_check(ctx->random, _RANDOM_MAGIC);
 }
 
 void

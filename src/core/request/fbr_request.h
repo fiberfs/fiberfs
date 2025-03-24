@@ -66,11 +66,8 @@ void fbr_fuse_reply_attr(struct fbr_request *request, const struct stat *attr,
 void fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_info *fi);
 void fbr_fuse_reply_write(struct fbr_request *request, size_t count);
 
-#define fbr_request_ok(request)						\
-{									\
-	assert(request);						\
-	assert((request)->magic == FBR_REQUEST_MAGIC);			\
-}
+#define fbr_request_ok(request)		fbr_magic_check(request, FBR_REQUEST_MAGIC)
+
 #define fbr_request_valid(request)					\
 {									\
 	fbr_request_ok(request);					\

@@ -39,14 +39,13 @@ static void
 _sys_finish(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	assert(ctx->sys);
-	assert(ctx->sys->magic == _SYS_MAGIC);
+	fbr_magic_check(ctx->sys, _SYS_MAGIC);
 
 	while (ctx->sys->dirs) {
 		struct _sys_path *entry = ctx->sys->dirs;
-		ctx->sys->dirs = entry->next;
+		fbr_magic_check(entry, _SYS_PATH_MAGIC);
 
-		assert(entry->magic == _SYS_PATH_MAGIC);
+		ctx->sys->dirs = entry->next;
 
 		fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "removing tmpdir '%s'", entry->path);
 
@@ -86,7 +85,7 @@ _sys_init(struct fbr_test_context *ctx)
 		fbr_test_random_seed();
 	}
 
-	assert(ctx->sys->magic == _SYS_MAGIC);
+	fbr_magic_check(ctx->sys, _SYS_MAGIC);
 }
 
 char *

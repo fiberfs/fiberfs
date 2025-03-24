@@ -186,21 +186,10 @@ long fbr_test_gen_random(long low, long high);
 void fbr_test_fill_random(uint8_t *buf, size_t len);
 int fbr_test_is_valgrind(void);
 
-#define fbr_test_ok(test)						\
-{									\
-	assert(test);							\
-	assert((test)->magic == FBR_TEST_MAGIC);			\
-}
-#define fbr_test_context_ok(context)					\
-{									\
-	assert(context);						\
-	assert((context)->magic == FBR_TEST_CONTEXT_MAGIC);		\
-}
-#define fbr_test_cmd_ok(cmd)						\
-{									\
-	assert(cmd);							\
-	assert((cmd)->magic == FBR_TEST_CMD_MAGIC);			\
-}
+#define fbr_test_ok(test)		fbr_magic_check(test, FBR_TEST_MAGIC)
+#define fbr_test_context_ok(context)	fbr_magic_check(context, FBR_TEST_CONTEXT_MAGIC)
+#define fbr_test_cmd_ok(cmd)		fbr_magic_check(cmd, FBR_TEST_CMD_MAGIC)
+
 #define fbr_test_ERROR(cond, fmt, ...)					\
 {									\
 	if (__builtin_expect(cond, 0)) {				\

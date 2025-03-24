@@ -51,11 +51,8 @@ void fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 void fbr_fuse_unmount(struct fbr_fuse_context *ctx);
 void fbr_fuse_unmount_signal(void);
 
-#define fbr_fuse_context_ok(ctx)				\
-{								\
-	assert(ctx);						\
-	assert((ctx)->magic == FBR_FUSE_CTX_MAGIC);		\
-}
+#define fbr_fuse_context_ok(ctx)	fbr_magic_check(ctx, FBR_FUSE_CTX_MAGIC)
+
 #define fbr_fuse_mounted(ctx)					\
 {								\
 	fbr_fuse_context_ok(ctx);				\

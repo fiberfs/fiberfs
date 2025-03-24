@@ -14,4 +14,10 @@
 
 typedef unsigned int fbr_refcount_t;
 
+#define fbr_magic_check(obj, value)				\
+{								\
+	assert(obj);						\
+	assert((obj)->magic == value);				\
+}
+
 #endif /* _FIBERFS_H_INCLUDED_ */

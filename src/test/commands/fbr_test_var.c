@@ -21,8 +21,7 @@ static void
 _var_finish(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	assert(ctx->var);
-	assert(ctx->var->magic == _VAR_MAGIC);
+	fbr_magic_check(ctx->var, _VAR_MAGIC);
 
 	for (size_t i = 0; i < _MAX_VARS; i++) {
 		if (ctx->var->vars[i]) {
@@ -54,7 +53,7 @@ _var_init(struct fbr_test_context *ctx)
 		fbr_test_register_finish(ctx, "var", _var_finish);
 	}
 
-	assert(ctx->var->magic == _VAR_MAGIC);
+	fbr_magic_check(ctx->var, _VAR_MAGIC);
 }
 
 static char *

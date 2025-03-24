@@ -108,10 +108,6 @@ int fbr_path_shared_cmp(const struct fbr_path_shared *shared1,
 void fbr_path_shared_name(struct fbr_path_shared *shared, struct fbr_path_name *result);
 void fbr_path_shared_release(struct fbr_path_shared *shared);
 
-#define fbr_path_shared_ok(shared)					\
-{									\
-	assert(shared);							\
-	assert((shared)->magic == FBR_PATH_SHARED_MAGIC);		\
-}
+#define fbr_path_shared_ok(shared)	fbr_magic_check(shared, FBR_PATH_SHARED_MAGIC)
 
 #endif /* _FBR_PATH_H_INCLUDED_ */

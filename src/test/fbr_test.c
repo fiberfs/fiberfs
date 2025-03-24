@@ -246,7 +246,7 @@ fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 	struct fbr_test_finish *finish;
 
 	TAILQ_FOREACH(finish, &test->finish_list, entry) {
-		assert(finish->magic == FBR_TEST_FINISH_MAGIC);
+		fbr_magic_check(finish, FBR_TEST_FINISH_MAGIC);
 		fbr_test_ERROR(!strcmp(finish->name, name),
 			"cannot register the same finish name twice");
 		fbr_test_ERROR(finish->func == func,
@@ -283,7 +283,7 @@ fbr_test_run_all_finish(struct fbr_test *test)
 	struct fbr_test_finish *finish, *temp;
 
 	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
-		assert(finish->magic == FBR_TEST_FINISH_MAGIC);
+		fbr_magic_check(finish, FBR_TEST_FINISH_MAGIC);
 
 		TAILQ_REMOVE(&test->finish_list, finish, entry);
 
