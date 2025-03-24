@@ -27,6 +27,7 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	//conn->max_readahead
 	//conn->max_background
 	//FUSE_CAP_POSIX_ACL
+	//FUSE_CAP_HANDLE_KILLPRIV
 
 	conn->want |= FUSE_CAP_SPLICE_WRITE;
 	conn->want |= FUSE_CAP_SPLICE_MOVE;
@@ -53,10 +54,6 @@ _test_fs_rw_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_i
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
-	if (fi->flags & O_CREAT) {
-		fbr_test_logs("** OPEN mode: create");
-	}
-
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
 		return;
@@ -79,6 +76,9 @@ _test_fs_rw_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_i
 		fbr_test_logs("** OPEN mode: read+write");
 	}
 
+	if (fi->flags & O_CREAT) {
+		fbr_test_logs("** OPEN mode: create");
+	}
 	if (fi->flags & O_APPEND) {
 		fio->append = 1;
 		fbr_test_logs("** OPEN mode: append");
@@ -90,10 +90,38 @@ _test_fs_rw_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_i
 
 	fi->fh = fbr_fs_int64(fio);
 
-	//fi->keep_cache
 	fi->keep_cache = 1;
 
 	fbr_fuse_reply_open(request, fi);
+}
+
+static void
+_test_fs_rw_create(struct fbr_request *request, fuse_ino_t parent, const char *name, mode_t mode,
+    struct fuse_file_info *fi)
+{
+	fbr_request_ok(request);
+
+	fbr_test_logs("CREATE parent: %lu name: '%s' mode: %d flags: %u", parent, name,
+		mode, fi->flags);
+
+	if (fi->flags & O_RDONLY) {
+		fbr_test_logs("** CREATE mode: read only");
+	} else {
+		assert_dev(fi->flags & O_WRONLY || fi->flags & O_RDWR);
+		fbr_test_logs("** CREATE mode: read+write");
+	}
+
+	if (fi->flags & O_CREAT) {
+		fbr_test_logs("** CREATE mode: create");
+	}
+	if (fi->flags & O_APPEND) {
+		fbr_test_logs("** CREATE mode: append");
+	}
+	if (fi->flags & O_TRUNC) {
+		fbr_test_logs("** CREATE mode: truncate");
+	}
+
+	fbr_fuse_reply_err(request, EIO);
 }
 
 static void
@@ -201,6 +229,7 @@ static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 	.releasedir = fbr_test_fs_fuse_releasedir,
 
 	.open = _test_fs_rw_open,
+	.create = _test_fs_rw_create,
 	.read = _test_fs_rw_read,
 	.write = _test_fs_rw_write,
 	.write_buf = _test_fs_rw_write_buf,
@@ -224,4 +253,10 @@ fbr_cmd_fs_test_rw_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(ret, "fs fuse mount failed: %s", mount);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", mount);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	struct fbr_fs *fs = fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	fs->logger = fbr_fs_test_logger;
 }

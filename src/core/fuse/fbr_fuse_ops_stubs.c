@@ -116,6 +116,18 @@ _fuse_ops_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	_fuse_finish_error(request, ENOSYS);
 }
 
+
+static void
+_fuse_ops_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode,
+    struct fuse_file_info *fi)
+{
+	struct fbr_request *request = _fuse_setup(req);
+
+	_fuse_ops_callback(request, create, parent, name, mode, fi);
+
+	_fuse_finish_error(request, ENOSYS);
+}
+
 static void
 _fuse_ops_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
@@ -238,6 +250,7 @@ static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.readdir = _fuse_ops_readdir,
 	.releasedir = _fuse_ops_releasedir,
 	.open = _fuse_ops_open,
+	.create = _fuse_ops_create,
 	.read = _fuse_ops_read,
 	.write = _fuse_ops_write,
 	.write_buf = _fuse_ops_write_buf,

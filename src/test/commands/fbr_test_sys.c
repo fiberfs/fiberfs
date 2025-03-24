@@ -5,6 +5,7 @@
  */
 
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
@@ -406,4 +407,41 @@ fbr_test_cmd_sys_stat_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	}
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_stat_size done %ld", st.st_size);
+}
+
+void
+fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 2);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	char *filename = cmd->params[0].value;
+	char *text = cmd->params[1].value;
+	size_t text_len = cmd->params[1].len;
+
+	int fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
+	fbr_test_ASSERT(fd >= 0, "sys_write open() failed %s (%d %s)", filename, fd,
+		strerror(errno));
+
+	ssize_t bytes;
+	size_t size = 0;
+
+	do {
+		bytes = read(fd, text + size, text_len - size);
+		fbr_test_ASSERT(bytes >= 0, "sys_write write() error %ld", bytes);
+
+		size += bytes;
+	} while (bytes > 0 && size < text_len);
+
+	assert(size == text_len);
+
+	int ret = close(fd);
+	fbr_test_ERROR(ret, "sys_write close() failed");
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_write bytes %zu", size);
 }

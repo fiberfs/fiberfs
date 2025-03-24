@@ -60,9 +60,10 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		fbr_path_name_init(&filename, name);
 
-		file = fbr_file_alloc(fs, directory, &filename, S_IFREG | 0444);
+		file = fbr_file_alloc(fs, directory, &filename);
 		fbr_file_ok(file);
 
+		file->mode = S_IFREG | 0444;
 		file->size = 1025 * 125;
 		file->version = fbr_id_gen();
 
@@ -71,9 +72,10 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		fbr_path_name_init(&filename, name);
 
-		file = fbr_file_alloc(fs, directory, &filename, S_IFREG | 0444);
+		file = fbr_file_alloc(fs, directory, &filename);
 		fbr_file_ok(file);
 
+		file->mode = S_IFREG | 0444;
 		file->size = 500;
 		file->version = fbr_id_gen();
 
@@ -82,7 +84,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		fbr_path_name_init(&filename, name);
 
-		file = fbr_file_alloc(fs, directory, &filename, S_IFREG | 0444);
+		file = fbr_file_alloc(fs, directory, &filename);
 		fbr_file_ok(file);
 
 		fbr_id_t id = fbr_id_gen();
@@ -94,6 +96,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_body_chunk_add(file, id, s * 0, s + 100);
 		fbr_body_chunk_add(file, id, s * 1, s);
 
+		file->mode = S_IFREG | 0444;
 		file->size = 1024 * 1024;
 		file->version = fbr_id_gen();
 
@@ -102,11 +105,12 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		fbr_path_name_init(&filename, name);
 
-		file = fbr_file_alloc(fs, directory, &filename, S_IFREG | 0444);
+		file = fbr_file_alloc(fs, directory, &filename);
 		fbr_file_ok(file);
 
 		id = fbr_id_gen();
 
+		file->mode = S_IFREG | 0444;
 		file->size = 101;
 		file->version = fbr_id_gen();
 
@@ -121,11 +125,12 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		fbr_path_name_init(&filename, name);
 
-		file = fbr_file_alloc(fs, directory, &filename, fmode);
+		file = fbr_file_alloc(fs, directory, &filename);
 
 		size_t chunks = (i + 1) * depth;
 		file->size = chunks * 1001;
 		file->version = fbr_id_gen();
+		file->mode = fmode;
 
 		fbr_id_t id = fbr_id_gen();
 		size_t offset = 0;
@@ -157,8 +162,9 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		fbr_path_name_init(&filename, name);
 
-		file = fbr_file_alloc(fs, directory, &filename, fmode);
+		file = fbr_file_alloc(fs, directory, &filename);
 
+		file->mode = fmode;
 		file->version = fbr_id_gen();
 	}
 
@@ -467,7 +473,6 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 
 	fi->fh = fbr_fs_int64(reader);
 
-	//fi->cache_readdir
 	fi->cache_readdir = 1;
 
 	fbr_fuse_reply_open(request, fi);
@@ -627,7 +632,6 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 
 	fi->fh = fbr_fs_int64(fio);
 
-	//fi->keep_cache
 	fi->keep_cache = 1;
 
 	fbr_fuse_reply_open(request, fi);

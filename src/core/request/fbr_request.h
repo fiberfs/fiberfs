@@ -30,6 +30,8 @@ struct fbr_fuse_callbacks {
 	void (*releasedir)(struct fbr_request *request, fuse_ino_t ino,
 		struct fuse_file_info *fi);
 	void (*open)(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
+	void (*create)(struct fbr_request *request, fuse_ino_t parent, const char *name,
+		mode_t mode, struct fuse_file_info *fi);
 	void (*read)(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
 		struct fuse_file_info *fi);
 	void (*write_buf)(struct fbr_request *request, fuse_ino_t ino, struct fuse_bufvec *bufv,

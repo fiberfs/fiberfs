@@ -173,7 +173,8 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, name);
 
-		file = fbr_file_alloc(fs, directory, &filename, S_IFDIR);
+		file = fbr_file_alloc(fs, directory, &filename);
+		file->mode = S_IFDIR;
 
 		_test_path_print_path(ctx, &file->path, "directory_file", layout, sdir, name,
 			sfull);
@@ -204,7 +205,8 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		fbr_path_name_init(&filename, name2);
 
-		struct fbr_file *file2 = fbr_file_alloc(fs, directory, &filename, S_IFREG);
+		struct fbr_file *file2 = fbr_file_alloc(fs, directory, &filename);
+		file2->mode = S_IFREG;
 
 		_test_path_print_path(ctx, &file2->path, "file", layout, sdir, name2, sfull);
 

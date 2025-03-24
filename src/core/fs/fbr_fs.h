@@ -297,7 +297,7 @@ void fbr_inodes_debug(struct fbr_fs *fs, fbr_inodes_debug_f *callback);
 void fbr_inodes_free_all(struct fbr_fs *fs);
 
 struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
-	const struct fbr_path_name *filename, mode_t mode);
+	const struct fbr_path_name *filename);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 int fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 void fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file);

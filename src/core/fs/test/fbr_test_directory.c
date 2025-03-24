@@ -57,9 +57,10 @@ _dir_test_alloc(void *arg)
 				fbr_path_name_init(&filename, "random");
 
 				struct fbr_file *file =
-					fbr_file_alloc(fs, root, &filename, S_IFDIR);
+					fbr_file_alloc(fs, root, &filename);
 				assert(file->parent_inode == root->inode);
 				assert(file->inode > _TEST_INODE);
+				file->mode = S_IFDIR;
 
 				_TEST_INODE = file->inode;
 
@@ -130,7 +131,8 @@ _dir_test_alloc(void *arg)
 		struct fbr_path_name filename;
 
 		fbr_path_name_init(&filename, namebuf);
-		(void)fbr_file_alloc(fs, directory, &filename, S_IFREG | 0444);
+		struct fbr_file *file = fbr_file_alloc(fs, directory, &filename);
+		file->mode = S_IFREG | 0444;
 
 		fbr_sleep_ms(random() % 50);
 
@@ -250,8 +252,9 @@ _directory_parallel(void)
 		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, "random");
 
-		struct fbr_file *file = fbr_file_alloc(fs, root, &filename, S_IFDIR);
+		struct fbr_file *file = fbr_file_alloc(fs, root, &filename);
 		assert(file->parent_inode == root->inode);
+		file->mode = S_IFDIR;
 
 		fbr_inode_add(fs, file);
 

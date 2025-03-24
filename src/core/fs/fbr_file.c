@@ -15,7 +15,7 @@
 
 struct fbr_file *
 fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
-    const struct fbr_path_name *filename, mode_t mode)
+    const struct fbr_path_name *filename)
 {
 	fbr_fs_ok(fs);
 	assert(filename);
@@ -37,7 +37,6 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	assert_dev(file);
 
 	file->magic = FBR_FILE_MAGIC;
-	file->mode = mode;
 
 	if (parent) {
 		file->inode = fbr_inode_gen(fs);

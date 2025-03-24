@@ -37,10 +37,12 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 		if (!root_file) {
 			assert_zero(fs->root_file);
 
-			// TODO mode needs to be configurable
-			root_file = fbr_file_alloc(fs, NULL, FBR_DIRNAME_ROOT, S_IFDIR | 0755);
+			root_file = fbr_file_alloc(fs, NULL, FBR_DIRNAME_ROOT);
 			fbr_file_ok(root_file);
 			assert_dev(root_file->inode == FBR_INODE_ROOT);
+
+			// TODO mode needs to be configurable
+			root_file->mode = S_IFDIR | 0755;
 
 			fbr_inode_add(fs, root_file);
 

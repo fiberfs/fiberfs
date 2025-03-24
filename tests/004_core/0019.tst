@@ -10,6 +10,11 @@ fs_test_dentry_ttl_ms 0
 
 sys_ls $sys_tmpdir "..:dir .:dir"
 
+sleep_ms 100
+
+set_var1 $sys_tmpdir "/test.txt"
+#sys_write $var1 "test"
+
 # Cleanup
 
 sleep_ms 100
