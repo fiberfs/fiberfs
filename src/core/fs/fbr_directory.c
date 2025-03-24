@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
@@ -43,6 +44,8 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 
 			// TODO mode needs to be configurable
 			root_file->mode = S_IFDIR | 0755;
+			root_file->uid = getuid();
+			root_file->gid = getgid();
 
 			fbr_inode_add(fs, root_file);
 

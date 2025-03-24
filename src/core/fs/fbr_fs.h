@@ -113,9 +113,9 @@ struct fbr_file {
 	unsigned long				version;
 
 	unsigned long				size;
-	unsigned int				mode;
-	unsigned int				uid;
-	unsigned int				gid;
+	mode_t					mode;
+	uid_t					uid;
+	gid_t					gid;
 
 	int					expired;
 
