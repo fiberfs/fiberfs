@@ -276,10 +276,10 @@ void fbr_fs_release_all(struct fbr_fs *fs, int release_root_inode);
 void fbr_fs_set_store(struct fbr_fs *fs, const struct fbr_store_callbacks *store);
 void fbr_fs_free(struct fbr_fs *fs);
 
-void fbr_fs_stat_add_count(unsigned long *stat, unsigned long value);
-void fbr_fs_stat_add(unsigned long *stat);
-void fbr_fs_stat_sub_count(unsigned long *stat, unsigned long value);
-void fbr_fs_stat_sub(unsigned long *stat);
+void fbr_fs_stat_add_count(fbr_stats_t *stat, fbr_stats_t value);
+void fbr_fs_stat_add(fbr_stats_t *stat);
+void fbr_fs_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value);
+void fbr_fs_stat_sub(fbr_stats_t *stat);
 double fbr_fs_dentry_ttl(struct fbr_fs *fs);
 void __fbr_attr_printf(1) fbr_fs_logger(const char *fmt, ...);
 size_t fbr_fs_block_size(size_t offset);
@@ -288,7 +288,7 @@ fbr_id_t fbr_id_gen(void);
 size_t fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len);
 
 void fbr_inodes_alloc(struct fbr_fs *fs);
-unsigned long fbr_inode_gen(struct fbr_fs *fs);
+fbr_inode_t fbr_inode_gen(struct fbr_fs *fs);
 void fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file);
 struct fbr_file *fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode);
 void fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref);

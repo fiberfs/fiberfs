@@ -13,7 +13,9 @@ sys_ls $sys_tmpdir "..:dir .:dir"
 # Cleanup
 
 sleep_ms 100
+fs_test_release_all
 
+sleep_ms 100
 fs_test_stats
 fs_test_debug
 
