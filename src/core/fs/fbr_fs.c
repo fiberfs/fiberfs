@@ -102,7 +102,6 @@ fbr_fs_free(struct fbr_fs *fs)
 	pt_assert(pthread_mutex_destroy(&fs->lock));
 
 	fbr_ZERO(fs);
-
 	free(fs);
 
 	fbr_context_request_finish();

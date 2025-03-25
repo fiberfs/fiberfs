@@ -94,6 +94,5 @@ fbr_request_free(struct fbr_request *request)
 	fbr_fs_stat_sub(&fs->stats.requests);
 
 	fbr_ZERO(request);
-
 	free(request);
 }

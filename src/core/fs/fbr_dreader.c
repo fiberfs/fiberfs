@@ -38,7 +38,6 @@ fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader)
 	assert_zero_dev(reader->directory);
 
 	fbr_ZERO(reader);
-
 	free(reader);
 }
 

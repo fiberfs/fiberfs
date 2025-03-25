@@ -571,6 +571,5 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 	assert_zero_dev(fio->file);
 
 	fbr_ZERO(fio);
-
 	free(fio);
 }

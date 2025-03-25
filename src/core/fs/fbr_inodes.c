@@ -31,8 +31,8 @@ struct fbr_inodes {
 	fbr_inode_t				next;
 };
 
-#define fbr_inodes_ok(inodes)		fbr_magic_check(inodes, FBR_INODES_MAGIC)
-#define fbr_inode_head_ok(head)		fbr_magic_check(head, FBR_INODES_HEAD_MAGIC)
+#define fbr_inodes_ok(inodes)			fbr_magic_check(inodes, FBR_INODES_MAGIC)
+#define fbr_inode_head_ok(head)			fbr_magic_check(head, FBR_INODES_HEAD_MAGIC)
 
 RB_GENERATE_STATIC(fbr_inodes_tree, fbr_file, inode_entry, fbr_file_inode_cmp)
 

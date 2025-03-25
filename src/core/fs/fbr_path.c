@@ -489,6 +489,5 @@ fbr_path_shared_release(struct fbr_path_shared *shared)
 	free((char*)shared->value.name);
 
 	fbr_ZERO(shared);
-
 	free(shared);
 }

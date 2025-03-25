@@ -13,7 +13,6 @@ void
 fbr_fs_stat_add_count(fbr_stats_t *stat, fbr_stats_t value)
 {
 	assert(stat);
-
 	fbr_atomic_add(stat, value);
 }
 
@@ -27,7 +26,6 @@ void
 fbr_fs_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value)
 {
 	assert(stat);
-
 	fbr_atomic_sub(stat, value);
 }
 

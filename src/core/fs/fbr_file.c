@@ -185,13 +185,11 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_file_ok(file);
 
 	fbr_body_free(&file->body);
+	fbr_path_free(&file->path);
 
 	pt_assert(pthread_mutex_destroy(&file->refcount_lock));
 
-	fbr_path_free(&file->path);
-
 	fbr_ZERO(file);
-
 	free(file);
 
 	fbr_fs_stat_sub(&fs->stats.files);
