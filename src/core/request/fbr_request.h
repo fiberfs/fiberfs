@@ -34,8 +34,10 @@ struct fbr_fuse_callbacks {
 		mode_t mode, struct fuse_file_info *fi);
 	void (*read)(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
 		struct fuse_file_info *fi);
+	/*
 	void (*write_buf)(struct fbr_request *request, fuse_ino_t ino, struct fuse_bufvec *bufv,
 		off_t off, struct fuse_file_info *fi);
+	*/
 	void (*write) (struct fbr_request *request, fuse_ino_t ino, const char *buf,
 		size_t size, off_t off, struct fuse_file_info *fi);
 	void (*flush)(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
@@ -66,6 +68,8 @@ void fbr_fuse_reply_entry(struct fbr_request *request, const struct fuse_entry_p
 void fbr_fuse_reply_attr(struct fbr_request *request, const struct stat *attr,
 	double attr_timeout);
 void fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_info *fi);
+void fbr_fuse_reply_create(struct fbr_request *request, const struct fuse_entry_param *e,
+    const struct fuse_file_info *fi);
 void fbr_fuse_reply_write(struct fbr_request *request, size_t count);
 
 #define fbr_request_ok(request)		fbr_magic_check(request, FBR_REQUEST_MAGIC)

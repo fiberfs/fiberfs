@@ -13,9 +13,9 @@
 #include "fiberfs.h"
 #include "fbr_fs.h"
 
-struct fbr_file *
-fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
-    const struct fbr_path_name *filename)
+static struct fbr_file *
+_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
+    const struct fbr_path_name *filename, int new)
 {
 	fbr_fs_ok(fs);
 	assert(filename);
@@ -53,9 +53,14 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	fbr_fs_stat_add(&fs->stats.files_total);
 
 	if (parent) {
-		fbr_directory_add_file(fs, parent, file);
+		if (new) {
+			assert_dev(parent->state == FBR_DIRSTATE_OK);
+			file->state = FBR_FILE_NEW;
+		} else {
+			fbr_directory_add_file(fs, parent, file);
+		}
 
-		assert(file->parent_inode);
+		file->parent_inode = parent->inode;
 	} else {
 		assert_zero(file->parent_inode);
 	}
@@ -63,6 +68,20 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	fbr_file_ok(file);
 
 	return file;
+}
+
+struct fbr_file *
+fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
+    const struct fbr_path_name *filename)
+{
+	return _file_alloc(fs, parent, filename, 0);
+}
+
+struct fbr_file *
+fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *parent,
+    const struct fbr_path_name *filename)
+{
+	return _file_alloc(fs, parent, filename, 1);
 }
 
 int

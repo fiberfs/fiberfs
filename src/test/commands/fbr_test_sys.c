@@ -432,11 +432,12 @@ fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	size_t size = 0;
 
 	do {
-		bytes = read(fd, text + size, text_len - size);
-		fbr_test_ASSERT(bytes >= 0, "sys_write write() error %ld", bytes);
+		bytes = write(fd, text + size, text_len - size);
+		fbr_test_ASSERT(bytes > 0, "sys_write write() error (%ld %s %d)",
+			bytes, strerror(errno), errno);
 
 		size += bytes;
-	} while (bytes > 0 && size < text_len);
+	} while (size < text_len);
 
 	assert(size == text_len);
 

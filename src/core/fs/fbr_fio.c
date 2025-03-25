@@ -51,6 +51,7 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	assert(fio);
 
 	fio->magic = FBR_FIO_MAGIC;
+	fio->id = fbr_id_gen();
 	fio->file = file;
 
 	fio->floating = _fio_chunk_list_expand(NULL);

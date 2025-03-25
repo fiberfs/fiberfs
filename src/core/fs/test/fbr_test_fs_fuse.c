@@ -297,7 +297,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 
 	struct fbr_file *parent_file = fbr_inode_take(fs, parent);
 
-	if (!parent_file || parent_file->expired) {
+	if (!parent_file || parent_file->state == FBR_FILE_EXPIRED) {
 		fbr_fuse_reply_err(request, ENOTDIR);
 
 		if (parent_file) {
@@ -341,6 +341,14 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 
 		if (!directory) {
 			fbr_fuse_reply_err(request, EIO);
+
+			fbr_inode_release(fs, &parent_file);
+
+			if (stale_directory) {
+				fbr_dindex_release(fs, &stale_directory);
+				assert_zero_dev(stale_directory);
+			}
+
 			return;
 		}
 
@@ -375,7 +383,6 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	}
 
 	fbr_file_ok(file);
-	assert(file->inode);
 
 	const char *fullname = fbr_path_get_full(&file->path, NULL, buf, sizeof(buf));
 	fbr_test_logs("** LOOKUP found file: '%s' (inode: %lu)", fullname, file->inode);
@@ -414,7 +421,7 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
-	if (!file || file->expired) {
+	if (!file || file->state == FBR_FILE_EXPIRED) {
 		fbr_fuse_reply_err(request, ENOENT);
 
 		if (file) {
@@ -457,6 +464,15 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 
 		if (!directory) {
 			fbr_fuse_reply_err(request, EIO);
+
+			fbr_inode_release(fs, &file);
+			assert_zero_dev(file);
+
+			if (stale_directory) {
+				fbr_dindex_release(fs, &stale_directory);
+				assert_zero_dev(stale_directory);
+			}
+
 			return;
 		}
 
@@ -471,6 +487,7 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	struct fbr_dreader *reader = fbr_dreader_alloc(fs, directory);
 	fbr_dreader_ok(reader);
 
+	assert_zero_dev(fi->fh);
 	fi->fh = fbr_fs_int64(reader);
 
 	fi->cache_readdir = 1;
@@ -630,6 +647,7 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
 	fbr_fio_ok(fio);
 
+	assert_zero_dev(fi->fh);
 	fi->fh = fbr_fs_int64(fio);
 
 	fi->keep_cache = 1;

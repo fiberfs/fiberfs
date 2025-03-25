@@ -243,6 +243,7 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
+	assert_dev(file->state == FBR_FILE_NONE);
 	assert_zero_dev(file->refcounts.dindex);
 	assert_zero_dev(file->refcounts.inode);
 
@@ -250,8 +251,6 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	file->refcounts.dindex = 1;
 
 	fbr_fs_stat_add(&fs->stats.file_refs);
-
-	file->parent_inode = directory->inode;
 
 	TAILQ_INSERT_TAIL(&directory->file_list, file, file_entry);
 
@@ -280,7 +279,7 @@ fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
 	}
 
 	fbr_file_ok(file);
-	assert_zero_dev(file->expired);
+	assert_dev(file->state != FBR_FILE_NEW);
 
 	// directory owns a reference
 
@@ -388,7 +387,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 		if (file_deleted) {
 			fs->log("** FILE_DELETE inode: %lu", file->inode);
 
-			file->expired = 1;
+			file->state = FBR_FILE_EXPIRED;
 
 			ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
 				file->inode, filename.name, filename.len);
@@ -396,7 +395,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 		} else if (file_expired) {
 			fs->log("** FILE_EXP inode: %lu", file->inode);
 
-			file->expired = 1;
+			file->state = FBR_FILE_EXPIRED;
 
 			ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
 				directory->inode, filename.name, filename.len);

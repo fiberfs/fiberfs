@@ -67,7 +67,6 @@ struct fbr_chunk_slab {
 	unsigned int				length;
 
 	struct fbr_chunk_slab			*next;
-
 	struct fbr_chunk			chunks[];
 };
 
@@ -99,9 +98,17 @@ struct fbr_file_refcounts {
 	fbr_refcount_t				inode;
 };
 
+enum fbr_file_state {
+	FBR_FILE_NONE = 0,
+	FBR_FILE_NEW,
+	FBR_FILE_EXPIRED
+};
+
 struct fbr_file {
 	unsigned int				magic;
 #define FBR_FILE_MAGIC				0x8F97F917
+
+	enum fbr_file_state			state;
 
 	struct fbr_path				path;
 
@@ -116,8 +123,6 @@ struct fbr_file {
 	mode_t					mode;
 	uid_t					uid;
 	gid_t					gid;
-
-	int					expired;
 
 	TAILQ_ENTRY(fbr_file)			file_entry;
 	RB_ENTRY(fbr_file)			filename_entry;
@@ -194,9 +199,24 @@ struct fbr_dreader {
 	struct fbr_file				*position;
 };
 
+enum fbr_wbuffer_state {
+	FBR_WBUFFER_NONE = 0,
+	FBR_WBUFFER_WRITING,
+	FBR_WBUFFER_SYNC,
+	FBR_WBUFFER_DONE
+};
+
 struct fbr_wbuffer {
 	unsigned int				magic;
 #define FBR_WBUFFER_MAGIC			0x840F2408
+
+	enum fbr_wbuffer_state			state;
+
+	uint8_t					*buf;
+	size_t					buf_len;
+	size_t					capacity;
+
+	struct fbr_wbuffer			*next;
 };
 
 struct fbr_fio {
@@ -210,9 +230,11 @@ struct fbr_fio {
 
 	fbr_refcount_t				refcount;
 
-	struct fbr_file				*file;
+	fbr_id_t				id;
 
+	struct fbr_file				*file;
 	struct fbr_chunk_list			*floating;
+	struct fbr_wbuffer			*wbuffer;
 };
 
 struct fbr_fs_stats {
@@ -297,6 +319,8 @@ void fbr_inodes_debug(struct fbr_fs *fs, fbr_inodes_debug_f *callback);
 void fbr_inodes_free_all(struct fbr_fs *fs);
 
 struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
+	const struct fbr_path_name *filename);
+struct fbr_file * fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *parent,
 	const struct fbr_path_name *filename);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 int fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2);

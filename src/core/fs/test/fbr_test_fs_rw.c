@@ -4,6 +4,7 @@
  *
  */
 
+#include <limits.h>
 #include <stdlib.h>
 
 #include "fiberfs.h"
@@ -32,10 +33,13 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	conn->want |= FUSE_CAP_SPLICE_WRITE;
 	conn->want |= FUSE_CAP_SPLICE_MOVE;
 
+	// TODO fuse said this breaks distributed append if enabled
 	conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
 
-	// TODO
+	// TODO this calls write_buf() if enabled. Doesnt work, write_buf is used
 	conn->want &= ~FUSE_CAP_SPLICE_READ;
+
+	// Note: we dont init content on demand, so directories cannot be purged in this sim
 
 	struct fbr_directory *root = fbr_directory_root_alloc(ctx->fs);
 	fbr_directory_ok(root);
@@ -70,24 +74,25 @@ _test_fs_rw_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_i
 
 	if (fi->flags & O_RDONLY) {
 		fio->read_only = 1;
-		fbr_test_logs("** OPEN mode: read only");
+		fbr_test_logs("** OPEN flags: read only");
 	} else {
 		assert_dev(fi->flags & O_WRONLY || fi->flags & O_RDWR);
-		fbr_test_logs("** OPEN mode: read+write");
+		fbr_test_logs("** OPEN flags: read+write");
 	}
 
-	if (fi->flags & O_CREAT) {
-		fbr_test_logs("** OPEN mode: create");
-	}
 	if (fi->flags & O_APPEND) {
 		fio->append = 1;
-		fbr_test_logs("** OPEN mode: append");
+		fbr_test_logs("** OPEN flags: append");
 	}
 	if (fi->flags & O_TRUNC) {
 		fio->truncate = 1;
-		fbr_test_logs("** OPEN mode: truncate");
+		fbr_test_logs("** OPEN flags: truncate");
+	}
+	if (fi->flags & O_CREAT) {
+		fbr_ABORT("O_CREAT used in OPEN?");
 	}
 
+	assert_zero_dev(fi->fh);
 	fi->fh = fbr_fs_int64(fio);
 
 	fi->keep_cache = 1;
@@ -99,29 +104,131 @@ static void
 _test_fs_rw_create(struct fbr_request *request, fuse_ino_t parent, const char *name, mode_t mode,
     struct fuse_file_info *fi)
 {
-	fbr_request_ok(request);
+	struct fbr_fs *fs = fbr_request_fs(request);
 
 	fbr_test_logs("CREATE parent: %lu name: '%s' mode: %d flags: %u", parent, name,
 		mode, fi->flags);
 
+	struct fbr_file *parent_file = fbr_inode_take(fs, parent);
+
+	if (!parent_file || parent_file->state == FBR_FILE_EXPIRED) {
+		fbr_fuse_reply_err(request, ENOTDIR);
+
+		if (parent_file) {
+			fbr_inode_release(fs, &parent_file);
+		}
+		assert_zero_dev(parent_file);
+
+		return;
+	}
+
+	struct fbr_path_name parent_dirname;
+	char buf[PATH_MAX];
+	fbr_path_get_full(&parent_file->path, &parent_dirname, buf, sizeof(buf));
+
+	fbr_test_logs("** CREATE found parent_file: '%s' (inode: %lu)",
+		parent_dirname.name, parent_file->inode);
+
+	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname, 0);
+
+	if (!directory) {
+		fbr_fuse_reply_err(request, ENOTDIR);
+
+		fbr_inode_release(fs, &parent_file);
+		return;
+	}
+
+	fbr_directory_ok(directory);
+
+	if (directory->inode != parent_file->inode) {
+		fbr_test_logs("** CREATE parent: %lu mismatch dir_inode: %lu (return error)",
+			parent_file->inode, directory->inode);
+
+		fbr_fuse_reply_err(request, ENOTDIR);
+
+		fbr_inode_release(fs, &parent_file);
+		fbr_dindex_release(fs, &directory);
+
+		return;
+	}
+
+	fbr_inode_release(fs, &parent_file);
+	assert_zero_dev(parent_file);
+
+	fbr_test_logs("** CREATE found directory inode: %lu", directory->inode);
+
+	struct fbr_path_name filename;
+	fbr_path_name_init(&filename, name);
+
+	struct fbr_file *file = fbr_file_alloc_new(fs, directory, &filename);
+
+	fbr_path_get_full(&file->path, &filename, buf, sizeof(buf));
+	fbr_test_logs("** CREATE new file: inode: %lu path: '%s'", file->inode, filename.name);
+
+	assert(file->parent_inode == directory->inode);
+	assert(file->state == FBR_FILE_NEW);
+
+	file->mode = mode;
+
+	const struct fuse_ctx *fctx = fuse_req_ctx(request->fuse_req);
+	assert(fctx);
+
+	file->uid = fctx->uid;
+	file->gid = fctx->gid;
+
+	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
+	fbr_fio_ok(fio);
+
 	if (fi->flags & O_RDONLY) {
-		fbr_test_logs("** CREATE mode: read only");
+		fbr_ABORT("O_RDONLY used in CREATE?");
 	} else {
 		assert_dev(fi->flags & O_WRONLY || fi->flags & O_RDWR);
-		fbr_test_logs("** CREATE mode: read+write");
+		fbr_test_logs("** CREATE flags: read+write");
 	}
 
-	if (fi->flags & O_CREAT) {
-		fbr_test_logs("** CREATE mode: create");
-	}
+	assert(fi->flags & O_CREAT);
+
 	if (fi->flags & O_APPEND) {
-		fbr_test_logs("** CREATE mode: append");
+		fio->append = 1;
+		fbr_test_logs("** CREATE flags: append");
 	}
 	if (fi->flags & O_TRUNC) {
-		fbr_test_logs("** CREATE mode: truncate");
+		fio->truncate = 1;
+		fbr_test_logs("** CREATE flags: truncate");
 	}
 
-	fbr_fuse_reply_err(request, EIO);
+	if (S_ISREG(mode)) {
+		fbr_test_logs("** CREATE mode: file");
+	} else if (S_ISDIR(mode)) {
+		fbr_test_logs("** CREATE mode: directory");
+	} else {
+		fbr_test_logs("** CREATE mode: other");
+
+		fbr_fuse_reply_err(request, EIO);
+
+		fbr_dindex_release(fs, &directory);
+
+		return;
+	}
+
+	assert_zero_dev(fi->fh);
+	fi->fh = fbr_fs_int64(fio);
+
+	fi->keep_cache = 1;
+
+	struct fuse_entry_param entry;
+	fbr_ZERO(&entry);
+	entry.attr_timeout = fbr_fs_dentry_ttl(fs);
+	entry.entry_timeout = fbr_fs_dentry_ttl(fs);
+	entry.ino = file->inode;
+	fbr_file_attr(file, &entry.attr);
+
+	fbr_inode_add(fs, file);
+
+	fbr_fuse_reply_create(request, &entry, fi);
+
+	fbr_dindex_release(fs, &directory);
+	assert_zero_dev(directory);
 }
 
 static void
@@ -160,25 +267,21 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
 	//fbr_fs_stat_add_count(&fs->stats.write_bytes, 0);
 }
 
+/*
 static void
 _test_fs_rw_write_buf(struct fbr_request *request, fuse_ino_t ino, struct fuse_bufvec *bufv,
 	off_t off, struct fuse_file_info *fi)
 {
-	struct fbr_fs *fs = fbr_request_fs(request);
-	(void)fs;
+	fbr_request_ok(request);
 
 	fbr_test_logs("WRITE_BUF ino: %lu count: %zu off: %ld", ino, bufv->count, off);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
-	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
 
-	fbr_fuse_reply_err(request, EIO);
-
-	fbr_fio_release(fs, fio);
-
-	//fbr_fs_stat_add_count(&fs->stats.write_bytes, );
+	fbr_fuse_reply_err(request, ENOSYS);
 }
+*/
 
 static void
 _test_fs_rw_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
@@ -232,7 +335,7 @@ static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 	.create = _test_fs_rw_create,
 	.read = _test_fs_rw_read,
 	.write = _test_fs_rw_write,
-	.write_buf = _test_fs_rw_write_buf,
+	//.write_buf = _test_fs_rw_write_buf,
 	.flush = _test_fs_rw_flush,
 	.release = _test_fs_rw_release,
 	.fsync = _test_fs_rw_fsync,

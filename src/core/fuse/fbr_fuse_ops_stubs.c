@@ -149,6 +149,7 @@ _fuse_ops_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size, of
 	_fuse_finish_error(request, EIO);
 }
 
+/*
 static void
 _fuse_ops_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off,
     struct fuse_file_info *fi)
@@ -159,6 +160,7 @@ _fuse_ops_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *bufv, of
 
 	_fuse_finish_error(request, ENOSYS);
 }
+*/
 
 static void
 _fuse_ops_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
@@ -253,7 +255,7 @@ static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.create = _fuse_ops_create,
 	.read = _fuse_ops_read,
 	.write = _fuse_ops_write,
-	.write_buf = _fuse_ops_write_buf,
+	//.write_buf = _fuse_ops_write_buf,
 	.flush = _fuse_ops_flush,
 	.release = _fuse_ops_release,
 	.fsync = _fuse_ops_fsync,
