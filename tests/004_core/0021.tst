@@ -13,11 +13,14 @@ sys_ls $sys_tmpdir "..:dir .:dir"
 sleep_ms 100
 
 set_var1 $sys_tmpdir "/test.txt"
-#sys_write $var1 "test"
+sys_write $var1 "test"
 
 # Cleanup
 
 sleep_ms 100
+fs_test_stats
+fs_test_debug
+
 fs_test_release_all
 
 sleep_ms 100

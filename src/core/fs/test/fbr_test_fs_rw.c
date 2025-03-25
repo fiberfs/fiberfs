@@ -32,12 +32,10 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	conn->want |= FUSE_CAP_SPLICE_WRITE;
 	conn->want |= FUSE_CAP_SPLICE_MOVE;
+	conn->want &= ~FUSE_CAP_SPLICE_READ;
 
 	// TODO fuse said this breaks distributed append if enabled
 	conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
-
-	// TODO this calls write_buf() if enabled. Doesnt work, write_buf is used
-	conn->want &= ~FUSE_CAP_SPLICE_READ;
 
 	// Note: we dont init content on demand, so directories cannot be purged in this sim
 
@@ -253,35 +251,47 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
     off_t off, struct fuse_file_info *fi)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
-	(void)fs;
 
 	fbr_test_logs("WRITE ino: %lu off: %ld size: %zu", ino, off, size);
+	assert(off >= 0);
+	assert(size);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
+	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
 
-	(void)buf;
+	struct fbr_wbuffer *wbuffer = fbr_wbuffer_get(fs, fio, off, size);
 
-	fbr_fuse_reply_err(request, EIO);
+	size_t written = 0;
+	while (written < size) {
+		fbr_wbuffer_ok(wbuffer);
 
-	//fbr_fs_stat_add_count(&fs->stats.write_bytes, 0);
+		assert((size_t)off >= wbuffer->offset);
+		off -= wbuffer->offset;
+
+		size_t wsize = size - written;
+		if (wsize > wbuffer->size) {
+			assert_dev(wbuffer->end == wbuffer->size);
+			wsize = wbuffer->size;
+		} else {
+			assert_dev(wbuffer->end >= wsize + off);
+		}
+
+		memcpy(wbuffer->buffer + off, buf, wsize);
+
+		off = wbuffer->offset + wbuffer->size;
+		written += wsize;
+
+		wbuffer = wbuffer->next;
+	}
+
+	assert_dev(written == size);
+	fbr_fuse_reply_write(request, written);
+
+	fbr_fio_release(fs, fio);
+
+	fbr_fs_stat_add_count(&fs->stats.write_bytes, written);
 }
-
-/*
-static void
-_test_fs_rw_write_buf(struct fbr_request *request, fuse_ino_t ino, struct fuse_bufvec *bufv,
-	off_t off, struct fuse_file_info *fi)
-{
-	fbr_request_ok(request);
-
-	fbr_test_logs("WRITE_BUF ino: %lu count: %zu off: %ld", ino, bufv->count, off);
-
-	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
-	fbr_file_ok(fio->file);
-
-	fbr_fuse_reply_err(request, ENOSYS);
-}
-*/
 
 static void
 _test_fs_rw_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
@@ -335,7 +345,6 @@ static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 	.create = _test_fs_rw_create,
 	.read = _test_fs_rw_read,
 	.write = _test_fs_rw_write,
-	//.write_buf = _test_fs_rw_write_buf,
 	.flush = _test_fs_rw_flush,
 	.release = _test_fs_rw_release,
 	.fsync = _test_fs_rw_fsync,

@@ -57,10 +57,10 @@ fbr_fs_logger(const char *fmt, ...)
 }
 
 size_t
-fbr_fs_block_size(size_t offset)
+fbr_fs_chunk_size(size_t offset)
 {
 	/*
-	 * offset range     block size
+	 * offset range     chunk size
 	 *   0KB - 256KB  :   64KB
 	 * 256KB -   1MB  :  256KB
 	 *   1MB -   4MB  :  512KB

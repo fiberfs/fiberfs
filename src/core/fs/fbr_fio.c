@@ -57,6 +57,8 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	fio->floating = _fio_chunk_list_expand(NULL);
 	fbr_chunk_list_ok(fio->floating);
 
+	pt_assert(pthread_mutex_init(&fio->wlock, NULL));
+
 	// Caller owns a ref
 	fio->refcount = 1;
 
@@ -257,10 +259,10 @@ fbr_fio_release_chunks(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_
 
 	// Try to keep more chunks around incase of slow parallel reads
 	size_t floating_end = offset;
-	size_t block_size = fbr_fs_block_size(offset) * 2;
+	size_t chunk_size = fbr_fs_chunk_size(offset) * 2;
 
-	if (floating_end > block_size) {
-		floating_end -= block_size;
+	if (floating_end > chunk_size) {
+		floating_end -= chunk_size;
 	} else {
 		floating_end = 1;
 	}
@@ -567,6 +569,20 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	assert_zero_dev(fio->floating->length);
 	free(fio->floating);
+
+	pt_assert(pthread_mutex_destroy(&fio->wlock));
+
+	struct fbr_wbuffer *wbuffer = fio->wbuffers;
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+
+		struct fbr_wbuffer *next = wbuffer->next;
+
+		fbr_ZERO(wbuffer);
+		free(wbuffer);
+
+		wbuffer = next;
+	}
 
 	fbr_inode_release(fs, &fio->file);
 	assert_zero_dev(fio->file);

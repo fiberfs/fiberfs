@@ -34,10 +34,6 @@ struct fbr_fuse_callbacks {
 		mode_t mode, struct fuse_file_info *fi);
 	void (*read)(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
 		struct fuse_file_info *fi);
-	/*
-	void (*write_buf)(struct fbr_request *request, fuse_ino_t ino, struct fuse_bufvec *bufv,
-		off_t off, struct fuse_file_info *fi);
-	*/
 	void (*write) (struct fbr_request *request, fuse_ino_t ino, const char *buf,
 		size_t size, off_t off, struct fuse_file_info *fi);
 	void (*flush)(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);

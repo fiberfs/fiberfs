@@ -212,9 +212,10 @@ struct fbr_wbuffer {
 
 	enum fbr_wbuffer_state			state;
 
-	uint8_t					*buf;
-	size_t					buf_len;
-	size_t					capacity;
+	uint8_t					*buffer;
+	size_t					offset;
+	size_t					size;
+	size_t					end;
 
 	struct fbr_wbuffer			*next;
 };
@@ -234,7 +235,9 @@ struct fbr_fio {
 
 	struct fbr_file				*file;
 	struct fbr_chunk_list			*floating;
-	struct fbr_wbuffer			*wbuffer;
+	struct fbr_wbuffer			*wbuffers;
+
+	pthread_mutex_t				wlock;
 };
 
 struct fbr_fs_stats {
@@ -304,7 +307,7 @@ void fbr_fs_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value);
 void fbr_fs_stat_sub(fbr_stats_t *stat);
 double fbr_fs_dentry_ttl(struct fbr_fs *fs);
 void __fbr_attr_printf(1) fbr_fs_logger(const char *fmt, ...);
-size_t fbr_fs_block_size(size_t offset);
+size_t fbr_fs_chunk_size(size_t offset);
 
 fbr_id_t fbr_id_gen(void);
 size_t fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len);
@@ -385,11 +388,15 @@ struct fuse_bufvec *fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list 
 	size_t offset, size_t size);
 void fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio);
 
+struct fbr_wbuffer *fbr_wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
+	size_t size);
+
 #define fbr_fs_ok(fs)			fbr_magic_check(fs, FBR_FS_MAGIC)
 #define fbr_file_ok(file)		fbr_magic_check(file, FBR_FILE_MAGIC)
 #define fbr_directory_ok(dir)		fbr_magic_check(dir, FBR_DIRECTORY_MAGIC)
 #define fbr_dreader_ok(dreader)		fbr_magic_check(dreader, FBR_DREADER_MAGIC)
 #define fbr_fio_ok(fio)			fbr_magic_check(fio, FBR_FIO_MAGIC)
+#define fbr_wbuffer_ok(wbuffer)		fbr_magic_check(wbuffer, FBR_WBUFFER_MAGIC)
 #define fbr_chunk_ok(chunk)		fbr_magic_check(chunk, FBR_CHUNK_MAGIC)
 #define fbr_chunk_slab_ok(slab)		fbr_magic_check(slab, FBR_CHUNK_SLAB_MAGIC)
 #define fbr_chunk_list_ok(list)		fbr_magic_check(list, FBR_CHUNK_LIST_MAGIC)
