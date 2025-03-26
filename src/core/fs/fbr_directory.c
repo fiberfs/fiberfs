@@ -244,13 +244,8 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
 	assert_dev(file->state == FBR_FILE_NONE);
-	assert_zero_dev(file->refcounts.dindex);
-	assert_zero_dev(file->refcounts.inode);
 
-	// directory ownership
-	file->refcounts.dindex = 1;
-
-	fbr_fs_stat_add(&fs->stats.file_refs);
+	fbr_file_ref_dindex(fs, file);
 
 	TAILQ_INSERT_TAIL(&directory->file_list, file, file_entry);
 
@@ -325,16 +320,16 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	if (next) {
 		fs->log("** DIR_EXP inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
 				" next: true next_inode: %lu(%lu)",
-			directory->inode, directory->version,
+			directory->inode, directory->generation,
 			directory->refcounts.in_dindex,
 				directory->refcounts.in_lru,
 				directory->refcounts.fs,
 			(int)dirname.len, dirname.name, dirname.len,
-			next->inode, next->version);
+			next->inode, next->generation);
 	} else {
 		fs->log("** DIR_EXP inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
 				" next: false",
-			directory->inode, directory->version,
+			directory->inode, directory->generation,
 			directory->refcounts.in_dindex,
 				directory->refcounts.in_lru,
 				directory->refcounts.fs,
@@ -374,7 +369,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 			if (!new_file) {
 				file_deleted = 1;
 			} else if (file->inode != new_file->inode) {
-				assert_dev(file->version != new_file->version);
+				assert_dev(file->generation != new_file->generation);
 				file_expired = 1;
 			}
 		} else {

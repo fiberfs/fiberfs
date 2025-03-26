@@ -17,6 +17,9 @@ sys_write $var1 "test1" "test2" "test3"
 
 equal $fs_test_stat_write_bytes 15
 
+sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
+#sys_cat $var1 "test1test2test3"
+
 # Cleanup
 
 sleep_ms 100

@@ -38,14 +38,47 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 
 	fs->log("FFF directory: '%s'", dirname.name);
 
+	// TODO we dump the directory with changes making sure we version match
+	// otherwise repeat
+
+	// Load the new directory, this is a temporary workaround
+	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
+	fbr_directory_ok(new_directory);
+	fbr_ASSERT(new_directory->state == FBR_DIRSTATE_LOADING, "new_directory isnt LOADING");
+
+	if (file->state == FBR_FILE_NEW) {
+		file->state = FBR_FILE_NONE;
+	}
+
+	new_directory->generation = directory->generation + 1;
+
+	fbr_directory_add_file(fs, new_directory, file);
+
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
 		fs->log("FFF wbuffer offset: %zu end: %zu", wbuffer->offset, wbuffer->end);
 
+		struct fbr_chunk *chunk = fbr_body_chunk_add(file, wbuffer->id, wbuffer->offset,
+			wbuffer->end);
+		fbr_chunk_ok(chunk);
+		assert(chunk->state == FBR_CHUNK_EMPTY);
+		assert(chunk->length == wbuffer->end);
+
+		chunk->data = malloc(wbuffer->end);
+		assert(chunk->data);
+
+		memcpy(chunk->data, wbuffer->buffer, wbuffer->end);
+
+		chunk->state = FBR_CHUNK_FIXED;
+
 		wbuffer = wbuffer->next;
 	}
 
+	fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
+
+	// TODO confirm releasing is ok during a flush
 	fbr_dindex_release(fs, &directory);
+	fbr_dindex_release(fs, &new_directory);
 	fbr_inode_release(fs, &parent);
 
 	return 0;
@@ -213,6 +246,9 @@ _test_fs_rw_create(struct fbr_request *request, fuse_ino_t parent, const char *n
 	file->uid = fctx->uid;
 	file->gid = fctx->gid;
 
+	// fio reference
+	fbr_inode_add(fs, file);
+
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
 	fbr_fio_ok(fio);
 
@@ -260,7 +296,9 @@ _test_fs_rw_create(struct fbr_request *request, fuse_ino_t parent, const char *n
 	entry.ino = file->inode;
 	fbr_file_attr(file, &entry.attr);
 
-	fbr_inode_add(fs, file);
+	// Dentry reference
+	struct fbr_file *dref = fbr_inode_take(fs, file->inode);
+	assert(dref == file);
 
 	fbr_fuse_reply_create(request, &entry, fi);
 

@@ -65,7 +65,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		file->mode = S_IFREG | 0444;
 		file->size = 1025 * 125;
-		file->version = fbr_id_gen();
+		file->generation = fbr_id_gen();
 
 		ret = snprintf(name, sizeof(name), "fiber_zero1");
 		assert((size_t)ret < sizeof(name));
@@ -77,7 +77,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		file->mode = S_IFREG | 0444;
 		file->size = 500;
-		file->version = fbr_id_gen();
+		file->generation = fbr_id_gen();
 
 		ret = snprintf(name, sizeof(name), "fiber_big");
 		assert((size_t)ret < sizeof(name));
@@ -98,7 +98,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		file->mode = S_IFREG | 0444;
 		file->size = 1024 * 1024;
-		file->version = fbr_id_gen();
+		file->generation = fbr_id_gen();
 
 		ret = snprintf(name, sizeof(name), "fiber_small");
 		assert((size_t)ret < sizeof(name));
@@ -112,7 +112,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		file->mode = S_IFREG | 0444;
 		file->size = 101;
-		file->version = fbr_id_gen();
+		file->generation = fbr_id_gen();
 
 		fbr_body_chunk_add(file, id, 0, 101);
 	}
@@ -129,7 +129,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		size_t chunks = (i + 1) * depth;
 		file->size = chunks * 1001;
-		file->version = fbr_id_gen();
+		file->generation = fbr_id_gen();
 		file->mode = fmode;
 
 		fbr_id_t id = fbr_id_gen();
@@ -165,7 +165,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		file = fbr_file_alloc(fs, directory, &filename);
 
 		file->mode = fmode;
-		file->version = fbr_id_gen();
+		file->generation = fbr_id_gen();
 	}
 
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);

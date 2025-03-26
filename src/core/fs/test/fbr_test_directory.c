@@ -20,7 +20,7 @@
 int _TEST_ROOT;
 fbr_inode_t _TEST_INODE;
 unsigned long _TEST_DIR_THREAD;
-unsigned long _TEST_DIR_VERSION;
+unsigned long _TEST_DIR_GENERATION;
 
 static void *
 _dir_test_alloc(void *arg)
@@ -108,24 +108,24 @@ _dir_test_alloc(void *arg)
 			continue;
 		}
 
-		unsigned long version = fbr_atomic_add(&_TEST_DIR_VERSION, 1);
+		unsigned long generation = fbr_atomic_add(&_TEST_DIR_GENERATION, 1);
 		int do_error = (random() % 3 == 0);
 
 		assert(directory->state == FBR_DIRSTATE_LOADING);
 
-		directory->version = version;
+		directory->generation = generation;
 
 		unsigned long diff_ms = (long)((fbr_get_time() - time_start) * 1000);
 
 		fbr_test_logs("alloc thread_%lu (+%ld): inode: %lu(%lu) error: %d "
 				"previous: %s previous_inode: %lu(%lu)",
-			id, diff_ms, directory->inode, version, do_error,
+			id, diff_ms, directory->inode, generation, do_error,
 			directory->previous ? "true" : "false",
 			directory->previous ? directory->previous->inode : 0,
-			directory->previous ? directory->previous->version: 0);
+			directory->previous ? directory->previous->generation: 0);
 
 		char namebuf[128];
-		ssize_t ret = snprintf(namebuf, sizeof(namebuf), "file_%lu", version);
+		ssize_t ret = snprintf(namebuf, sizeof(namebuf), "file_%lu", generation);
 		assert((size_t)ret < sizeof(namebuf));
 
 		struct fbr_path_name filename;
@@ -235,10 +235,10 @@ _directory_parallel(void)
 
 	_TEST_INODE = 0;
 	_TEST_DIR_THREAD = 0;
-	_TEST_DIR_VERSION = 0;
+	_TEST_DIR_GENERATION = 0;
 
-	unsigned long version = fbr_atomic_add(&_TEST_DIR_VERSION, 1);
-	assert(version == 1);
+	unsigned long generation = fbr_atomic_add(&_TEST_DIR_GENERATION, 1);
+	assert(generation == 1);
 
 	struct fbr_directory *directory = NULL;
 
@@ -270,7 +270,7 @@ _directory_parallel(void)
 	}
 
 	fbr_directory_ok(directory);
-	directory->version = version;
+	directory->generation = generation;
 
 	fbr_test_logs("INODE=%lu", directory->inode);
 
@@ -291,10 +291,10 @@ _directory_parallel(void)
 	fbr_sleep_ms(3);
 
 	if (random() % 2) {
-		fbr_test_logs("main: version %lu error: 0", version);
+		fbr_test_logs("main: generation %lu error: 0", generation);
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	} else {
-		fbr_test_logs("main: version %lu error: 1", version);
+		fbr_test_logs("main: generation %lu error: 1", generation);
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
 	}
 

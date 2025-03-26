@@ -118,7 +118,7 @@ struct fbr_file {
 
 	fbr_inode_t				inode;
 	fbr_inode_t				parent_inode;
-	unsigned long				version;
+	unsigned long				generation;
 
 	unsigned long				size;
 	mode_t					mode;
@@ -162,7 +162,8 @@ struct fbr_directory {
 	struct fbr_path_shared			*path;
 
 	double					creation;
-	unsigned long				version;
+	fbr_id_t				version;
+	unsigned long				generation;
 
 	struct fbr_file				*file;
 	struct fbr_directory			*previous;

@@ -355,6 +355,11 @@ fbr_test_cleanup(void)
 void
 fbr_test_context_abort(void)
 {
+	// Signal came in during cleanup, exit...
+	if (_EXIT) {
+		exit(1);
+	}
+
 	fbr_test_ABORT("Signal caught");
 }
 

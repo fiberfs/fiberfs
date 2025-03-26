@@ -116,7 +116,6 @@ fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file)
 
 	pt_assert(pthread_mutex_lock(&file->refcount_lock));
 	fbr_file_ok(file);
-	assert(file->refcounts.dindex);
 
 	file->refcounts.dindex++;
 	assert(file->refcounts.dindex);
