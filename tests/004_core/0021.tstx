@@ -1,0 +1,35 @@
+fiber_test "External test with page cache drop"
+
+skip_shell_failure "sudo -n true 2> /dev/null"
+
+# Init
+
+set_timeout_sec 20
+
+sys_mkdir_tmp
+fs_test_fuse_mount $sys_tmpdir
+fs_test_dentry_ttl_ms 0
+fs_test_fuse_init_root
+
+print "### Test"
+
+set_var1 "cd " $sys_tmpdir "; cat */* >/dev/null 2>&1 || true"
+
+shell $var1
+
+sleep_ms 100
+
+print "### Done, doing cleanup"
+
+shell "echo 2 | sudo -n tee /proc/sys/vm/drop_caches > /dev/null"
+
+sleep_ms 250
+fs_test_stats
+fs_test_debug
+
+# 1 + 4 + 4^2 == 21
+equal $fs_test_stat_directories 21
+equal $fs_test_stat_directories_dindex 21
+equal $fs_test_stat_files_inodes 21
+
+fuse_test_unmount
