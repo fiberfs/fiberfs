@@ -9,9 +9,22 @@
 #include "fiberfs.h"
 #include "fbr_fs.h"
 
-struct fbr_wbuffer *
-_wbuffer_alloc(size_t offset, size_t size)
+void
+fbr_wbuffer_init(struct fbr_fio *fio)
 {
+	fbr_fio_ok(fio);
+
+	pt_assert(pthread_mutex_init(&fio->wlock, NULL));
+	fio->id = fbr_id_gen();
+	fio->wbuffers = NULL;
+}
+
+static struct fbr_wbuffer *
+_wbuffer_alloc(struct fbr_fio *fio, size_t offset, size_t size)
+{
+	assert_dev(fio);
+	assert(size);
+
 	size_t wsize = fbr_fs_chunk_size(offset);
 	while (wsize < size) {
 		wsize *= 2;
@@ -22,6 +35,8 @@ _wbuffer_alloc(size_t offset, size_t size)
 
 	fbr_ZERO(wbuffer);
 	wbuffer->magic = FBR_WBUFFER_MAGIC;
+	wbuffer->state = FBR_WBUFFER_WRITING;
+	wbuffer->id = fio->id;
 	wbuffer->buffer = (uint8_t*)wbuffer + sizeof(*wbuffer);
 	wbuffer->offset = offset;
 	wbuffer->size = wsize;
@@ -30,9 +45,11 @@ _wbuffer_alloc(size_t offset, size_t size)
 	return wbuffer;
 }
 
-struct fbr_wbuffer *
-_wbuffer_get(struct fbr_wbuffer *head, size_t offset, size_t size)
+static struct fbr_wbuffer *
+_wbuffer_find(struct fbr_fio *fio, struct fbr_wbuffer *head, size_t offset, size_t size)
 {
+	assert_dev(fio);
+
 	struct fbr_wbuffer *wbuffer = NULL;
 	struct fbr_wbuffer *prev = NULL;
 	struct fbr_wbuffer *current = head;
@@ -43,6 +60,7 @@ _wbuffer_get(struct fbr_wbuffer *head, size_t offset, size_t size)
 		size_t current_end = current->offset + current->size;
 
 		if (offset < current->offset) {
+			assert_zero_dev(wbuffer);
 			break;
 		} else if (offset >= current->offset && offset < current_end) {
 			wbuffer = current;
@@ -54,7 +72,7 @@ _wbuffer_get(struct fbr_wbuffer *head, size_t offset, size_t size)
 	}
 
 	if (!wbuffer) {
-		wbuffer = _wbuffer_alloc(offset, size);
+		wbuffer = _wbuffer_alloc(fio, offset, size);
 		assert_dev(wbuffer);
 
 		if (prev) {
@@ -63,26 +81,30 @@ _wbuffer_get(struct fbr_wbuffer *head, size_t offset, size_t size)
 		}
 	} else {
 		assert_dev(offset >= wbuffer->offset);
-		offset -= wbuffer->offset;
-		wbuffer->end = offset + size;
-		assert_dev(wbuffer->end <= wbuffer->size);
+		size_t wbuffer_offset = offset - wbuffer->offset;
+		size_t wbuffer_end = wbuffer_offset + size;
+
+		if (wbuffer_end > wbuffer->size) {
+			wbuffer_end = wbuffer->size;
+		}
+		if (wbuffer->end < wbuffer_end) {
+			wbuffer->end = wbuffer_end;
+		}
 	}
 
 	return wbuffer;
 }
 
-struct fbr_wbuffer *
-fbr_wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
+static struct fbr_wbuffer *
+_wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
 {
 	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
 	assert(size);
 
-	pt_assert(pthread_mutex_lock(&fio->wlock));
-
 	size_t offset_end = offset + size;
 
-	struct fbr_wbuffer *wbuffer = _wbuffer_get(fio->wbuffers, offset, size);
+	struct fbr_wbuffer *wbuffer = _wbuffer_find(fio, fio->wbuffers, offset, size);
 	fbr_wbuffer_ok(wbuffer);
 
 	if (!fio->wbuffers) {
@@ -99,7 +121,7 @@ fbr_wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t si
 		size -= diff;
 		offset = current_end;
 
-		struct fbr_wbuffer *next = _wbuffer_get(current->next, offset, size);
+		struct fbr_wbuffer *next = _wbuffer_find(fio, current->next, offset, size);
 		fbr_wbuffer_ok(next);
 
 		if (!current->next) {
@@ -117,7 +139,7 @@ fbr_wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t si
 		while (current) {
 			fbr_wbuffer_ok(current);
 			///*
-			fs->log("ZZZ wbuffer[%zu] offset: %zu end: %zu size: %zu", i,
+			fs->log("WWW wbuffer[%zu] offset: %zu end: %zu size: %zu", i,
 				current->offset, current->end, current->size);
 			//*/
 			i++;
@@ -125,7 +147,72 @@ fbr_wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t si
 		}
 	}
 
+	return wbuffer;
+}
+
+size_t
+fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const char *buf,
+    size_t size)
+{
+	fbr_fs_ok(fs);
+	fbr_fio_ok(fio);
+	assert(buf);
+	assert(size);
+
+	pt_assert(pthread_mutex_lock(&fio->wlock));
+
+	struct fbr_wbuffer *wbuffer = _wbuffer_get(fs, fio, offset, size);
+
+	size_t written = 0;
+
+	while (written < size) {
+		fbr_wbuffer_ok(wbuffer);
+
+		size_t wbuffer_end = wbuffer->offset + wbuffer->size;
+		assert(offset >= wbuffer->offset);
+		assert(offset < wbuffer_end);
+
+		size_t wbuffer_offset = offset - wbuffer->offset;
+
+		size_t wsize = size - written;
+		if (wsize > wbuffer->size - wbuffer_offset) {
+			wsize = wbuffer->size - wbuffer_offset;
+		}
+
+		assert_dev(wbuffer_offset + wsize <= wbuffer->end);
+
+		memcpy(wbuffer->buffer + wbuffer_offset, buf + written, wsize);
+
+		offset = wbuffer_end;
+		written += wsize;
+
+		wbuffer = wbuffer->next;
+	}
+
+	assert_dev(written == size);
+
 	pt_assert(pthread_mutex_unlock(&fio->wlock));
 
-	return wbuffer;
+	return written;
+}
+
+void
+fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
+{
+	fbr_fs_ok(fs);
+	fbr_fio_ok(fio);
+
+	pt_assert(pthread_mutex_destroy(&fio->wlock));
+
+	struct fbr_wbuffer *wbuffer = fio->wbuffers;
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+
+		struct fbr_wbuffer *next = wbuffer->next;
+
+		fbr_ZERO(wbuffer);
+		free(wbuffer);
+
+		wbuffer = next;
+	}
 }

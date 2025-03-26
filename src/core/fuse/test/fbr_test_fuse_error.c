@@ -4,6 +4,8 @@
  *
  */
 
+// TODO we need an infinite loop error and a timeout mechanism
+
 #include <string.h>
 
 #include "fiberfs.h"

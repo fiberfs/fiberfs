@@ -217,6 +217,8 @@ struct fbr_wbuffer {
 	size_t					size;
 	size_t					end;
 
+	fbr_id_t				id;
+
 	struct fbr_wbuffer			*next;
 };
 
@@ -388,8 +390,10 @@ struct fuse_bufvec *fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list 
 	size_t offset, size_t size);
 void fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio);
 
-struct fbr_wbuffer *fbr_wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
-	size_t size);
+void fbr_wbuffer_init(struct fbr_fio *fio);
+size_t fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
+	const char *buf, size_t size);
+void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 
 #define fbr_fs_ok(fs)			fbr_magic_check(fs, FBR_FS_MAGIC)
 #define fbr_file_ok(file)		fbr_magic_check(file, FBR_FILE_MAGIC)

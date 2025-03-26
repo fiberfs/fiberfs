@@ -51,13 +51,12 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	assert(fio);
 
 	fio->magic = FBR_FIO_MAGIC;
-	fio->id = fbr_id_gen();
 	fio->file = file;
 
 	fio->floating = _fio_chunk_list_expand(NULL);
 	fbr_chunk_list_ok(fio->floating);
 
-	pt_assert(pthread_mutex_init(&fio->wlock, NULL));
+	fbr_wbuffer_init(fio);
 
 	// Caller owns a ref
 	fio->refcount = 1;
@@ -570,19 +569,7 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 	assert_zero_dev(fio->floating->length);
 	free(fio->floating);
 
-	pt_assert(pthread_mutex_destroy(&fio->wlock));
-
-	struct fbr_wbuffer *wbuffer = fio->wbuffers;
-	while (wbuffer) {
-		fbr_wbuffer_ok(wbuffer);
-
-		struct fbr_wbuffer *next = wbuffer->next;
-
-		fbr_ZERO(wbuffer);
-		free(wbuffer);
-
-		wbuffer = next;
-	}
+	fbr_wbuffer_free(fs, fio);
 
 	fbr_inode_release(fs, &fio->file);
 	assert_zero_dev(fio->file);

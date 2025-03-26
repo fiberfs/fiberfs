@@ -260,31 +260,7 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
 	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
 
-	struct fbr_wbuffer *wbuffer = fbr_wbuffer_get(fs, fio, off, size);
-
-	size_t written = 0;
-	while (written < size) {
-		fbr_wbuffer_ok(wbuffer);
-
-		assert((size_t)off >= wbuffer->offset);
-		off -= wbuffer->offset;
-
-		size_t wsize = size - written;
-		if (wsize > wbuffer->size) {
-			assert_dev(wbuffer->end == wbuffer->size);
-			wsize = wbuffer->size;
-		} else {
-			assert_dev(wbuffer->end >= wsize + off);
-		}
-
-		memcpy(wbuffer->buffer + off, buf, wsize);
-
-		off = wbuffer->offset + wbuffer->size;
-		written += wsize;
-
-		wbuffer = wbuffer->next;
-	}
-
+	size_t written = fbr_wbuffer_write(fs, fio, off, buf, size);
 	assert_dev(written == size);
 	fbr_fuse_reply_write(request, written);
 

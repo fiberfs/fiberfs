@@ -13,7 +13,9 @@ sys_ls $sys_tmpdir "..:dir .:dir"
 sleep_ms 100
 
 set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "test"
+sys_write $var1 "test1" "test2" "test3"
+
+equal $fs_test_stat_write_bytes 15
 
 # Cleanup
 

@@ -413,7 +413,7 @@ void
 fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_init(ctx);
-	fbr_test_ERROR_param_count(cmd, 2);
+	fbr_test_ERROR(cmd->param_count < 2, "Need 2 params");
 
 	if (fbr_test_can_vfork(ctx)) {
 		fbr_test_fork(ctx, cmd);
@@ -421,28 +421,35 @@ fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 	char *filename = cmd->params[0].value;
-	char *text = cmd->params[1].value;
-	size_t text_len = cmd->params[1].len;
 
 	int fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
 	fbr_test_ASSERT(fd >= 0, "sys_write open() failed %s (%d %s)", filename, fd,
 		strerror(errno));
 
-	ssize_t bytes;
-	size_t size = 0;
+	size_t total_bytes = 0;
 
-	do {
-		bytes = write(fd, text + size, text_len - size);
-		fbr_test_ASSERT(bytes > 0, "sys_write write() error (%ld %s %d)",
-			bytes, strerror(errno), errno);
+	for (size_t i = 1; i < cmd->param_count; i++) {
+		char *text = cmd->params[i].value;
+		size_t text_len = cmd->params[i].len;
 
-		size += bytes;
-	} while (size < text_len);
+		ssize_t bytes;
+		size_t size = 0;
 
-	assert(size == text_len);
+		do {
+			bytes = write(fd, text + size, text_len - size);
+			fbr_test_ASSERT(bytes > 0, "sys_write write() error (%ld %s %d)",
+				bytes, strerror(errno), errno);
+
+			size += bytes;
+		} while (size < text_len);
+
+		assert(size == text_len);
+
+		total_bytes += size;
+	}
 
 	int ret = close(fd);
 	fbr_test_ERROR(ret, "sys_write close() failed");
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_write bytes %zu", size);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_write bytes %zu", total_bytes);
 }
