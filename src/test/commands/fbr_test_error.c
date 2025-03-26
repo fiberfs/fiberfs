@@ -136,7 +136,7 @@ fbr_test_cmd_test_triple_crash(struct fbr_test_context *ctx, struct fbr_test_cmd
 	fbr_test_register_finish(ctx, "test_crash_finish", _error_finish_crash);
 
 	// Kernel doesnt allow nested signals
-	// So this thread starts with an error
+	// So this thread starts with an error since it can trigger the finish crash
 	pthread_t thread;
 	pt_assert(pthread_create(&thread, NULL, _test_thread_error, NULL));
 
