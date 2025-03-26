@@ -449,7 +449,7 @@ fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 	int ret = close(fd);
-	fbr_test_ERROR(ret, "sys_write close() failed");
+	fbr_test_ERROR(ret, "sys_write close() failed (%d %s %d)", ret, strerror(errno), errno);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_write bytes %zu", total_bytes);
 }

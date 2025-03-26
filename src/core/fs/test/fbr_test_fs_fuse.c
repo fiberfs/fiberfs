@@ -695,7 +695,6 @@ _test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off
 	}
 
 	fbr_fio_release_chunks(fs, fio, chunks, off, size);
-
 	fbr_fio_release(fs, fio);
 }
 
@@ -720,7 +719,6 @@ fbr_test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nl
 	fbr_test_logs("FORGET ino: %lu nlookup: %lu", ino, nlookup);
 
 	fbr_inode_forget(fs, ino, nlookup);
-
 	fbr_fuse_reply_none(request);
 }
 

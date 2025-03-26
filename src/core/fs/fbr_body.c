@@ -68,7 +68,7 @@ _body_chunk_get(struct fbr_body *body)
 	return &slab->chunks[0];
 }
 
-void
+struct fbr_chunk *
 fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length)
 {
 	fbr_file_ok(file);
@@ -106,8 +106,10 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 	}
 
 	file->body.chunk_ptr = chunk;
-	assert_zero(chunk->next);
-	assert_zero(chunk->data);
+	assert_zero_dev(chunk->next);
+	assert_zero_dev(chunk->data);
+
+	return chunk;
 }
 
 void
@@ -145,7 +147,7 @@ static void
 _chunk_empty(struct fbr_chunk *chunk)
 {
 	assert_dev(chunk);
-	assert_dev(chunk->state == FBR_CHUNK_READY);
+	assert_dev(chunk->state == FBR_CHUNK_READY || chunk->state == FBR_CHUNK_FIXED);
 	assert_zero_dev(chunk->refcount);
 
 	if (chunk->fd_spliced) {
@@ -185,9 +187,8 @@ fbr_chunk_release(struct fbr_chunk *chunk) {
 
 	if (chunk->state == FBR_CHUNK_READY) {
 		_chunk_empty(chunk);
+		assert_dev(chunk->state == FBR_CHUNK_EMPTY);
 	}
-
-	assert(chunk->state == FBR_CHUNK_EMPTY);
 }
 
 static void
@@ -195,10 +196,14 @@ _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 {
 	assert_dev(slab);
 
-	if (fbr_assert_is_dev()) {
-		for (size_t i = 0; i < slab->length; i++) {
-			fbr_chunk_ok(&slab->chunks[i]);
-			assert_zero(slab->chunks[i].refcount);
+	for (size_t i = 0; i < slab->length; i++) {
+		struct fbr_chunk *chunk = &slab->chunks[i];
+		fbr_chunk_ok(chunk);
+		assert_zero(chunk->refcount);
+
+		if (chunk->state == FBR_CHUNK_FIXED) {
+			_chunk_empty(chunk);
+			assert_dev(chunk->state == FBR_CHUNK_EMPTY);
 		}
 	}
 
@@ -216,10 +221,14 @@ fbr_body_free(struct fbr_body *body)
 	pt_assert(pthread_mutex_destroy(&body->lock));
 	pt_assert(pthread_cond_destroy(&body->update));
 
-	if (fbr_assert_is_dev()) {
-		for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
-			fbr_chunk_ok(&body->slabhead.chunks[i]);
-			assert_zero(body->slabhead.chunks[i].refcount);
+	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
+		struct fbr_chunk *chunk = &body->slabhead.chunks[i];
+		fbr_chunk_ok(chunk);
+		assert_zero(chunk->refcount);
+
+		if (chunk->state == FBR_CHUNK_FIXED) {
+			_chunk_empty(chunk);
+			assert_dev(chunk->state == FBR_CHUNK_EMPTY);
 		}
 	}
 

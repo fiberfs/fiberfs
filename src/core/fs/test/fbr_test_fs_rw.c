@@ -11,12 +11,49 @@
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
 #include "core/request/fbr_request.h"
-
 #include "core/store/fbr_store.h"
 
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+
+static int
+_test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	assert(wbuffer);
+
+	struct fbr_file *parent = fbr_inode_take(fs, file->parent_inode);
+	fbr_ASSERT(parent, "parent %lu missing", file->parent_inode);
+	fbr_file_ok(parent);
+
+	struct fbr_path_name dirname;
+	char buf[PATH_MAX];
+	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
+
+	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 1);
+	fbr_ASSERT(directory, "directory '%s' missing", dirname.name);
+	fbr_directory_ok(directory);
+
+	fs->log("FFF directory: '%s'", dirname.name);
+
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+		fs->log("FFF wbuffer offset: %zu end: %zu", wbuffer->offset, wbuffer->end);
+
+		wbuffer = wbuffer->next;
+	}
+
+	fbr_dindex_release(fs, &directory);
+	fbr_inode_release(fs, &parent);
+
+	return 0;
+}
+
+static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
+	.flush_wbuffer_f = _test_fs_rw_flush_wbuffers
+};
 
 static void
 _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
@@ -24,6 +61,8 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fuse_mounted(ctx);
 	fbr_fs_ok(ctx->fs);
 	assert(conn);
+
+	fbr_fs_set_store(ctx->fs, &_TEST_FS_RW_STORE_CALLBACKS);
 
 	//conn->max_readahead
 	//conn->max_background
@@ -259,13 +298,13 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
+	assert(fio->file->inode == ino);
 
 	size_t written = fbr_wbuffer_write(fs, fio, off, buf, size);
 	assert_dev(written == size);
 	fbr_fuse_reply_write(request, written);
 
 	fbr_fio_release(fs, fio);
-
 	fbr_fs_stat_add_count(&fs->stats.write_bytes, written);
 }
 
@@ -278,7 +317,16 @@ _test_fs_rw_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 
 	fbr_test_logs("FLUSH ino: %lu", ino);
 
-	fbr_fuse_reply_err(request, 0);
+	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
+	fbr_fio_take(fio);
+	fbr_file_ok(fio->file);
+	assert(fio->file->inode == ino);
+
+	int ret = fbr_wbuffer_flush(fs, fio);
+	fbr_fuse_reply_err(request, ret);
+
+	fbr_fio_release(fs, fio);
+	fbr_fs_stat_add(&fs->stats.flushes);
 }
 
 static void

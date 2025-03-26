@@ -23,10 +23,17 @@ sleep_ms 100
 fs_test_stats
 fs_test_debug
 
-fs_test_release_all
+fs_test_release_all 1
 
 sleep_ms 100
 fs_test_stats
 fs_test_debug
+
+equal $fs_test_stat_directories 0
+equal $fs_test_stat_directories_dindex 0
+equal $fs_test_stat_directory_refs 0
+equal $fs_test_stat_files 0
+equal $fs_test_stat_files_inodes 0
+equal $fs_test_stat_file_refs 0
 
 fuse_test_unmount

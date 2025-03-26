@@ -132,7 +132,7 @@ _fio_ready(struct fbr_chunk_list *chunks)
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
 
-		if (chunk->state != FBR_CHUNK_READY) {
+		if (chunk->state < FBR_CHUNK_READY) {
 			return 0;
 		}
 
@@ -227,7 +227,7 @@ _fio_release_floating(struct fbr_fio *fio, size_t offset)
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
-		assert_dev(chunk->state == FBR_CHUNK_READY);
+		assert_dev(chunk->state >= FBR_CHUNK_READY);
 
 		size_t chunk_end = chunk->offset + chunk->length;
 
@@ -454,7 +454,7 @@ fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *chunks, size_t offs
 		}
 
 		fbr_chunk_ok(chunk);
-		assert(chunk->state == FBR_CHUNK_READY);
+		assert(chunk->state >= FBR_CHUNK_READY);
 		assert(chunk->data);
 
 		size_t chunk_offset = 0;

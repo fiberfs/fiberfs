@@ -36,7 +36,8 @@ enum fbr_chunk_state {
 	FBR_CHUNK_NONE = 0,
 	FBR_CHUNK_EMPTY,
 	FBR_CHUNK_LOADING,
-	FBR_CHUNK_READY
+	FBR_CHUNK_READY,
+	FBR_CHUNK_FIXED
 };
 
 struct fbr_chunk {
@@ -259,6 +260,9 @@ struct fbr_fs_stats {
 	fbr_stats_t				fetch_bytes;
 	fbr_stats_t				read_bytes;
 	fbr_stats_t				write_bytes;
+	fbr_stats_t				store_bytes;
+
+	fbr_stats_t				flushes;
 };
 
 struct fbr_fs_config {
@@ -338,7 +342,8 @@ void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_attr(const struct fbr_file *file, struct stat *st);
 
 void fbr_body_init(struct fbr_body *body);
-void fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length);
+struct fbr_chunk *fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset,
+	size_t length);
 void fbr_body_LOCK(struct fbr_body *body);
 void fbr_body_UNLOCK(struct fbr_body *body);
 void fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk,
@@ -393,6 +398,7 @@ void fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffer_init(struct fbr_fio *fio);
 size_t fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 	const char *buf, size_t size);
+int fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 
 #define fbr_fs_ok(fs)			fbr_magic_check(fs, FBR_FS_MAGIC)

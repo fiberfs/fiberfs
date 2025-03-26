@@ -8,6 +8,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "core/store/fbr_store.h"
 
 void
 fbr_wbuffer_init(struct fbr_fio *fio)
@@ -196,15 +197,9 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 	return written;
 }
 
-void
-fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
+static void
+_wbuffer_free(struct fbr_wbuffer *wbuffer)
 {
-	fbr_fs_ok(fs);
-	fbr_fio_ok(fio);
-
-	pt_assert(pthread_mutex_destroy(&fio->wlock));
-
-	struct fbr_wbuffer *wbuffer = fio->wbuffers;
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
 
@@ -215,4 +210,43 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 
 		wbuffer = next;
 	}
+}
+
+int
+fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
+{
+	fbr_fs_ok(fs);
+	assert_dev(fs->store);
+	fbr_fio_ok(fio);
+	fbr_file_ok(fio->file);
+
+	pt_assert(pthread_mutex_lock(&fio->wlock));
+
+	struct fbr_wbuffer *wbuffers = fio->wbuffers;
+	fio->wbuffers = 0;
+	int ret = 0;
+
+	if (fs->store->flush_wbuffer_f) {
+		if (wbuffers) {
+			ret = fs->store->flush_wbuffer_f(fs, fio->file, wbuffers);
+		}
+	} else {
+		ret = EIO;
+	}
+
+	_wbuffer_free(wbuffers);
+
+	pt_assert(pthread_mutex_unlock(&fio->wlock));
+
+	return ret;
+}
+
+void
+fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
+{
+	fbr_fs_ok(fs);
+	fbr_fio_ok(fio);
+
+	pt_assert(pthread_mutex_destroy(&fio->wlock));
+	_wbuffer_free(fio->wbuffers);
 }

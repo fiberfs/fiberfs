@@ -237,6 +237,8 @@ fbr_fs_test_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(fetch_bytes);
 	_FS_TEST_STAT_PRINT(read_bytes);
 	_FS_TEST_STAT_PRINT(write_bytes);
+	_FS_TEST_STAT_PRINT(store_bytes);
+	_FS_TEST_STAT_PRINT(flushes);
 }
 
 void
@@ -280,6 +282,8 @@ _FS_TEST_STAT(requests_total)
 _FS_TEST_STAT(fetch_bytes)
 _FS_TEST_STAT(read_bytes)
 _FS_TEST_STAT(write_bytes)
+_FS_TEST_STAT(store_bytes)
+_FS_TEST_STAT(flushes)
 
 static void
 _test_fs_inodes_debug_print(struct fbr_fs *fs, struct fbr_file *file)

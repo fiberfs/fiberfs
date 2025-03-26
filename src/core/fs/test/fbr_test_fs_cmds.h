@@ -65,6 +65,8 @@ FBR_TEST_FS_VAR(fs_test_stat_file_refs)
 FBR_TEST_FS_VAR(fs_test_stat_fetch_bytes)
 FBR_TEST_FS_VAR(fs_test_stat_read_bytes)
 FBR_TEST_FS_VAR(fs_test_stat_write_bytes)
+FBR_TEST_FS_VAR(fs_test_stat_store_bytes)
+FBR_TEST_FS_VAR(fs_test_stat_flushes)
 
 FBR_TEST_FS_CMD(fs_test_path_assert)
 FBR_TEST_FS_CMD(fs_test_path)

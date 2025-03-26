@@ -12,6 +12,8 @@
 struct fbr_store_callbacks {
 	void (*fetch_chunk_f)(struct fbr_fs *fs, const struct fbr_file *file,
 		struct fbr_chunk *chunk);
+	int (*flush_wbuffer_f)(struct fbr_fs *fs, struct fbr_file *file,
+		struct fbr_wbuffer *wbuffers);
 };
 
 #endif /* _FBR_STORE_H_INCLUDED_ */
