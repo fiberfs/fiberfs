@@ -153,11 +153,11 @@ fbr_dstore_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 }
 
 static void
-_dstore_chunk(struct fbr_file *file, struct fbr_chunk *chunk, enum fbr_chunk_state state)
+_dstore_chunk_update(struct fbr_file *file, struct fbr_chunk *chunk, enum fbr_chunk_state state)
 {
 	assert_dev(file);
 	assert_dev(chunk);
-	assert(state);
+	assert(state == FBR_CHUNK_EMPTY || state == FBR_CHUNK_READY);
 
 	if (chunk->state == FBR_CHUNK_EMPTY) {
 		chunk->state = state;
@@ -198,7 +198,7 @@ fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chu
 
 	if (fd < 0) {
 		fbr_test_logs("DSTORE fetch chunk open() error");
-		_dstore_chunk(file, chunk, FBR_CHUNK_EMPTY);
+		_dstore_chunk_update(file, chunk, FBR_CHUNK_EMPTY);
 		return;
 	}
 
@@ -207,7 +207,7 @@ fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chu
 
 	if (ret || (size_t)st.st_size != chunk->length) {
 		fbr_test_logs("DSTORE fetch chunk size error");
-		_dstore_chunk(file, chunk, FBR_CHUNK_EMPTY);
+		_dstore_chunk_update(file, chunk, FBR_CHUNK_EMPTY);
 		return;
 	}
 
@@ -219,7 +219,7 @@ fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chu
 		ssize_t ret = read(fd, chunk->data + bytes, chunk->length - bytes);
 		if (ret <= 0) {
 			assert_zero(close(fd));
-			_dstore_chunk(file, chunk, FBR_CHUNK_EMPTY);
+			_dstore_chunk_update(file, chunk, FBR_CHUNK_EMPTY);
 			return;
 		}
 
@@ -230,7 +230,7 @@ fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chu
 	ret = close(fd);
 	assert_zero(ret);
 
-	_dstore_chunk(file, chunk, FBR_CHUNK_READY);
+	_dstore_chunk_update(file, chunk, FBR_CHUNK_READY);
 
 	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, bytes);
 }
