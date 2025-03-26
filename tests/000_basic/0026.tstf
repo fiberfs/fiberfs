@@ -1,0 +1,3 @@
+chttp_test "Failure triple crash"
+
+test_triple_crash

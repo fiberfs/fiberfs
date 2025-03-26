@@ -3,8 +3,6 @@
  *
  */
 
-// TODO crash during test finish
-
 #include <pthread.h>
 
 #include "test/fbr_test.h"
@@ -98,5 +96,50 @@ fbr_test_cmd_test_fork_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *
 		return;
 	}
 
+	_test_error_CRASH();
+}
+
+static void
+_error_finish_crash(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	_test_error_CRASH();
+}
+
+void
+fbr_test_cmd_test_finish_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_register_finish(ctx, "test_crash_finish", _error_finish_crash);
+}
+
+void
+fbr_test_cmd_test_double_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_register_finish(ctx, "test_crash_finish", _error_finish_crash);
+
+	_test_error_CRASH();
+}
+
+void
+fbr_test_cmd_test_triple_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_register_finish(ctx, "test_crash_finish", _error_finish_crash);
+
+	// Kernel doesnt allow nested signals
+	// So this thread starts with an error
+	pthread_t thread;
+	pt_assert(pthread_create(&thread, NULL, _test_thread_error, NULL));
+
+	// This thread always exits
 	_test_error_CRASH();
 }

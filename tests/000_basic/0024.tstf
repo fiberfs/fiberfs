@@ -1,0 +1,3 @@
+chttp_test "Failure during finish"
+
+test_finish_crash

@@ -58,6 +58,9 @@ FBR_TEST_CMD(test_crash)
 FBR_TEST_CMD(test_thread_crash)
 FBR_TEST_CMD(test_fork_error)
 FBR_TEST_CMD(test_fork_crash)
+FBR_TEST_CMD(test_finish_crash)
+FBR_TEST_CMD(test_double_crash)
+FBR_TEST_CMD(test_triple_crash)
 
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR

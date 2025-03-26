@@ -29,12 +29,12 @@ _finish_test(struct fbr_test_context *ctx)
 	fbr_test_ok(_TEST);
 	_TEST = NULL;
 
-	fbr_test_ERROR(ctx->sys != NULL, "sys detected");
-	fbr_test_ERROR(ctx->test_fuse != NULL, "test_fuse detected");
-	fbr_test_ERROR(ctx->random != NULL, "random detected");
-	fbr_test_ERROR(ctx->var != NULL, "var detected");
-	fbr_test_ERROR(ctx->shell != NULL, "shell detected");
-	fbr_test_ERROR(ctx->chttp_test != NULL, "chttp_test detected");
+	fbr_finish_ERROR(ctx->sys != NULL, "sys detected");
+	fbr_finish_ERROR(ctx->test_fuse != NULL, "test_fuse detected");
+	fbr_finish_ERROR(ctx->random != NULL, "random detected");
+	fbr_finish_ERROR(ctx->var != NULL, "var detected");
+	fbr_finish_ERROR(ctx->shell != NULL, "shell detected");
+	fbr_finish_ERROR(ctx->chttp_test != NULL, "chttp_test detected");
 
 	if (test->ft_file) {
 		fclose(test->ft_file);
