@@ -684,11 +684,15 @@ fbr_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 	if (fio->error) {
 		fbr_fuse_reply_err(request, EIO);
 	} else {
+		fbr_wbuffer_LOCK(fio);
+
 		struct fuse_bufvec *bufvec = fbr_fio_bufvec_gen(fs, chunks, off, size);
 
 		fbr_test_logs("** READ chunks: %u bufvecs: %zu", chunks->length, bufvec->count);
 
 		fbr_fuse_reply_data(request, bufvec, FUSE_BUF_SPLICE_MOVE);
+
+		fbr_wbuffer_UNLOCK(fio);
 
 		fbr_ZERO(bufvec);
 		free(bufvec);

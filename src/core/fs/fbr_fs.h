@@ -397,6 +397,8 @@ struct fuse_bufvec *fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list 
 void fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio);
 
 void fbr_wbuffer_init(struct fbr_fio *fio);
+void fbr_wbuffer_LOCK(struct fbr_fio *fio);
+void fbr_wbuffer_UNLOCK(struct fbr_fio *fio);
 size_t fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 	const char *buf, size_t size);
 int fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio);
