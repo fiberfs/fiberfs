@@ -424,6 +424,8 @@ fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *chunks, size_t offs
 	fbr_fs_ok(fs);
 	fbr_chunk_list_ok(chunks);
 
+	// TODO we need to pull from wbuffers too
+
 	struct fuse_bufvec *bufvec = _fio_bufvec_expand(NULL);
 
 	size_t offset_end = offset + size;

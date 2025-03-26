@@ -222,14 +222,20 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	pt_assert(pthread_mutex_lock(&fio->wlock));
 
+	if (!fio->wbuffers) {
+		pt_assert(pthread_mutex_unlock(&fio->wlock));
+
+		return 0;
+	}
+
+	fbr_wbuffer_ok(fio->wbuffers);
+
 	struct fbr_wbuffer *wbuffers = fio->wbuffers;
 	fio->wbuffers = 0;
 	int ret = 0;
 
 	if (fs->store->flush_wbuffer_f) {
-		if (wbuffers) {
-			ret = fs->store->flush_wbuffer_f(fs, fio->file, wbuffers);
-		}
+		ret = fs->store->flush_wbuffer_f(fs, fio->file, wbuffers);
 	} else {
 		ret = EIO;
 	}

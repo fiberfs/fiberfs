@@ -647,6 +647,8 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
 	fbr_fio_ok(fio);
 
+	fio->read_only = 1;
+
 	assert_zero_dev(fi->fh);
 	fi->fh = fbr_fs_int64(fio);
 
@@ -655,8 +657,8 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 	fbr_fuse_reply_open(request, fi);
 }
 
-static void
-_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
+void
+fbr_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
@@ -751,7 +753,7 @@ static const struct fbr_fuse_callbacks _TEST_FS_FUSE_CALLBACKS = {
 	.releasedir = fbr_test_fs_fuse_releasedir,
 
 	.open = _test_fs_fuse_open,
-	.read = _test_fs_fuse_read,
+	.read = fbr_test_fs_fuse_read,
 	.release = _test_fs_fuse_release,
 
 	.forget = fbr_test_fs_fuse_forget,

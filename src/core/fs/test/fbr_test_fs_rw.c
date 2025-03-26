@@ -71,6 +71,8 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 
 		chunk->state = FBR_CHUNK_FIXED;
 
+		file->size = wbuffer->offset + wbuffer->end;
+
 		wbuffer = wbuffer->next;
 	}
 
@@ -142,12 +144,11 @@ _test_fs_rw_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_i
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
 	fbr_fio_ok(fio);
 
-	if (fi->flags & O_RDONLY) {
+	if (fi->flags & O_WRONLY || fi->flags & O_RDWR) {
+		fbr_test_logs("** OPEN flags: read+write");
+	} else {
 		fio->read_only = 1;
 		fbr_test_logs("** OPEN flags: read only");
-	} else {
-		assert_dev(fi->flags & O_WRONLY || fi->flags & O_RDWR);
-		fbr_test_logs("** OPEN flags: read+write");
 	}
 
 	if (fi->flags & O_APPEND) {
@@ -307,23 +308,6 @@ _test_fs_rw_create(struct fbr_request *request, fuse_ino_t parent, const char *n
 }
 
 static void
-_test_fs_rw_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
-    struct fuse_file_info *fi)
-{
-	struct fbr_fs *fs = fbr_request_fs(request);
-	(void)fs;
-
-	fbr_test_logs("READ ino: %lu off: %ld size: %zu", ino, off, size);
-
-	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
-	fbr_file_ok(fio->file);
-
-	fbr_fuse_reply_err(request, EIO);
-
-	//fbr_fs_stat_add_count(&fs->stats.read_bytes, 0);
-}
-
-static void
 _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, size_t size,
     off_t off, struct fuse_file_info *fi)
 {
@@ -405,7 +389,7 @@ static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 
 	.open = _test_fs_rw_open,
 	.create = _test_fs_rw_create,
-	.read = _test_fs_rw_read,
+	.read = fbr_test_fs_fuse_read,
 	.write = _test_fs_rw_write,
 	.flush = _test_fs_rw_flush,
 	.release = _test_fs_rw_release,

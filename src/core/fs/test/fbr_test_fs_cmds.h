@@ -22,9 +22,11 @@ void fbr_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino,
 void fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name);
 void fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino,
 	struct fuse_file_info *fi);
-void fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
-	struct fuse_file_info *fi);
+void fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size,
+	off_t off, struct fuse_file_info *fi);
 void fbr_test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino,
+	struct fuse_file_info *fi);
+void fbr_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
 	struct fuse_file_info *fi);
 void fbr_test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup);
 void fbr_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
