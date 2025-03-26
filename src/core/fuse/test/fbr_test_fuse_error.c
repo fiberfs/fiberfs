@@ -4,7 +4,7 @@
  *
  */
 
-// TODO we need an infinite loop error and a timeout mechanism
+// TODO we need an infinite loop error (or thread crash) and a timeout mechanism
 
 #include <string.h>
 

@@ -23,7 +23,7 @@ struct _sys_path {
 	unsigned int			magic;
 #define _SYS_PATH_MAGIC			0x1E9B84CD
 
-	char				path[PATH_MAX + 1];
+	char				path[PATH_MAX];
 	struct _sys_path		*next;
 };
 

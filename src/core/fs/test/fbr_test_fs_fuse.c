@@ -207,7 +207,7 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 }
 
 static void
-_test_fs_chunk_gen(struct fbr_fs *fs, const struct fbr_file *file, struct fbr_chunk *chunk)
+_test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);

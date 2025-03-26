@@ -38,7 +38,7 @@ fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len)
 	fbr_id_part_t rand = id.parts.full_random;
 	fbr_id_part_t timestamp = id.parts.timestamp;
 
-	int ret = snprintf(buffer, buffer_len, "%u-%u", timestamp, rand);
+	int ret = snprintf(buffer, buffer_len, "%u%u", timestamp, rand);
 
 	if (ret < 0 || (size_t)ret >= buffer_len) {
 		return 0;

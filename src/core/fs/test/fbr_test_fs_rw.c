@@ -16,6 +16,7 @@
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+#include "core/store/test/fbr_dstore.h"
 
 static int
 _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
@@ -41,6 +42,8 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	// TODO we dump the directory with changes making sure we version match
 	// otherwise repeat
 
+	fbr_dstore_wbuffer(fs, file, wbuffer);
+
 	// Load the new directory, this is a temporary workaround
 	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
 	fbr_directory_ok(new_directory);
@@ -58,18 +61,7 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 		fbr_wbuffer_ok(wbuffer);
 		fs->log("FFF wbuffer offset: %zu end: %zu", wbuffer->offset, wbuffer->end);
 
-		struct fbr_chunk *chunk = fbr_body_chunk_add(file, wbuffer->id, wbuffer->offset,
-			wbuffer->end);
-		fbr_chunk_ok(chunk);
-		assert(chunk->state == FBR_CHUNK_EMPTY);
-		assert(chunk->length == wbuffer->end);
-
-		chunk->data = malloc(wbuffer->end);
-		assert(chunk->data);
-
-		memcpy(chunk->data, wbuffer->buffer, wbuffer->end);
-
-		chunk->state = FBR_CHUNK_FIXED;
+		fbr_body_chunk_add(file, wbuffer->id, wbuffer->offset, wbuffer->end);
 
 		file->size = wbuffer->offset + wbuffer->end;
 
@@ -78,7 +70,7 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 
 	fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 
-	// TODO confirm releasing is ok during a flush
+	// Safe to call within flush
 	fbr_dindex_release(fs, &directory);
 	fbr_dindex_release(fs, &new_directory);
 	fbr_inode_release(fs, &parent);
@@ -86,8 +78,20 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	return 0;
 }
 
+static void
+_test_fs_rw_chunk_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_chunk_ok(chunk);
+	assert(chunk->state == FBR_CHUNK_EMPTY);
+
+	fbr_dstore_fetch(fs, file, chunk);
+}
+
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
-	.flush_wbuffer_f = _test_fs_rw_flush_wbuffers
+	.flush_wbuffer_f = _test_fs_rw_flush_wbuffers,
+	.fetch_chunk_f = _test_fs_rw_chunk_fetch
 };
 
 static void
@@ -98,6 +102,8 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	assert(conn);
 
 	fbr_fs_set_store(ctx->fs, &_TEST_FS_RW_STORE_CALLBACKS);
+
+	fbr_dstore_init(fbr_test_get_ctx());
 
 	//conn->max_readahead
 	//conn->max_background

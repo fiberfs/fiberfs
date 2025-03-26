@@ -71,7 +71,7 @@ fbr_cmd_fs_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_ID_STRING_MAX=%d", FBR_ID_STRING_MAX);
 
 	char id_custom[FBR_ID_STRING_MAX];
-	int id_custom_len = snprintf(id_custom, sizeof(id_custom), "%lu-%lu",
+	int id_custom_len = snprintf(id_custom, sizeof(id_custom), "%lu%lu",
 		FBR_ID_TIMEBITS_MAX,
 		(FBR_ID_RANDBITS_MAX << FBR_ID_OTHERBITS) | FBR_ID_OTHERBITS_MAX);
 

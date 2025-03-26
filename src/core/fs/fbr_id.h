@@ -15,7 +15,7 @@
 #define FBR_ID_TIMEBITS_MAX			((1L << FBR_ID_TIMEBITS) - 1)
 #define FBR_ID_RANDBITS_MAX			((1L << FBR_ID_RANDBITS) - 1)
 #define FBR_ID_OTHERBITS_MAX			((1L << FBR_ID_OTHERBITS) - 1)
-#define FBR_ID_STRING_MAX			(21 + 1)
+#define FBR_ID_STRING_MAX			(20 + 1)
 
 typedef unsigned long fbr_id_t;
 typedef unsigned int fbr_id_part_t;

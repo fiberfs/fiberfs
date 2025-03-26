@@ -111,16 +111,21 @@ _fio_ready_error(struct fbr_chunk_list *chunks)
 {
 	assert_dev(chunks);
 
+	int error = 0;
+
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
+		assert_dev(chunk->state);
 
-		if (chunk->state == FBR_CHUNK_EMPTY) {
-			return 1;
+		if (chunk->state == FBR_CHUNK_LOADING) {
+			return 0;
+		} else if (chunk->state == FBR_CHUNK_EMPTY) {
+			error = 1;
 		}
 	}
 
-	return 0;
+	return error;
 }
 
 static int
@@ -131,6 +136,7 @@ _fio_ready(struct fbr_chunk_list *chunks)
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
+		assert_dev(chunk->state);
 
 		if (chunk->state < FBR_CHUNK_READY) {
 			return 0;
@@ -271,6 +277,7 @@ fbr_fio_release_chunks(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
+		assert_dev(chunk->state != FBR_CHUNK_LOADING);
 
 		chunks->list[i] = NULL;
 
