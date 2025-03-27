@@ -158,8 +158,8 @@ _wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
 	return wbuffer;
 }
 
-void
-fbr_wbuffer_LOCK(struct fbr_fio *fio)
+static void
+_wbuffer_LOCK(struct fbr_fio *fio)
 {
 	fbr_fio_ok(fio);
 
@@ -170,8 +170,8 @@ fbr_wbuffer_LOCK(struct fbr_fio *fio)
 	pt_assert(pthread_mutex_lock(&fio->wlock));
 }
 
-void
-fbr_wbuffer_UNLOCK(struct fbr_fio *fio)
+static void
+_wbuffer_UNLOCK(struct fbr_fio *fio)
 {
 	fbr_fio_ok(fio);
 
@@ -193,7 +193,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 	assert(buf);
 	assert(size);
 
-	fbr_wbuffer_LOCK(fio);
+	_wbuffer_LOCK(fio);
 
 	struct fbr_wbuffer *wbuffer = _wbuffer_get(fs, fio, offset, size);
 
@@ -224,8 +224,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 		wbuffer = wbuffer->next;
 	}
 
-	// TODO we are potentially writing to an existing inode
-	// We may need to make these changes visible on the inode...
+	// TODO we need to body lock and add chunks to the file
 	size_t offset_end = offset_orig + size;
 	if (fio->file->size < offset_end) {
 		fio->file->size = offset_end;
@@ -234,7 +233,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 	assert_dev(written == size);
 
-	fbr_wbuffer_UNLOCK(fio);
+	_wbuffer_UNLOCK(fio);
 
 	return written;
 }
@@ -262,10 +261,10 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
-	fbr_wbuffer_LOCK(fio);
+	_wbuffer_LOCK(fio);
 
 	if (!fio->wbuffers) {
-		fbr_wbuffer_UNLOCK(fio);
+		_wbuffer_UNLOCK(fio);
 		return 0;
 	}
 
@@ -284,7 +283,7 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	_wbuffer_free(wbuffers);
 
-	fbr_wbuffer_UNLOCK(fio);
+	_wbuffer_UNLOCK(fio);
 
 	return ret;
 }

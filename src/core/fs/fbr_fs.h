@@ -37,7 +37,7 @@ enum fbr_chunk_state {
 	FBR_CHUNK_EMPTY,
 	FBR_CHUNK_LOADING,
 	FBR_CHUNK_READY,
-	FBR_CHUNK_FIXED
+	FBR_CHUNK_WBUFFER
 };
 
 struct fbr_chunk {
@@ -79,6 +79,13 @@ struct fbr_chunk_list {
 	unsigned int				length;
 
 	struct fbr_chunk			*list[];
+};
+
+struct fbr_chunk_vector {
+	struct fbr_chunk_list			*chunks;
+	struct fuse_bufvec			*bufvec;
+	size_t					offset;
+	size_t					size;
 };
 
 struct fbr_body {
@@ -388,17 +395,13 @@ void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 
 struct fbr_fio *fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_fio_take(struct fbr_fio *fio);
-struct fbr_chunk_list *fbr_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio,
+struct fbr_chunk_vector *fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio,
 	size_t offset, size_t size);
-void fbr_fio_release_chunks(struct fbr_fs *fs, struct fbr_fio *fio,
-	struct fbr_chunk_list *list, size_t offset, size_t size);
-struct fuse_bufvec *fbr_fio_bufvec_gen(struct fbr_fs *fs, struct fbr_chunk_list *list,
-	size_t offset, size_t size);
+void fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio,
+	struct fbr_chunk_vector *vector);
 void fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio);
 
 void fbr_wbuffer_init(struct fbr_fio *fio);
-void fbr_wbuffer_LOCK(struct fbr_fio *fio);
-void fbr_wbuffer_UNLOCK(struct fbr_fio *fio);
 size_t fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 	const char *buf, size_t size);
 int fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio);

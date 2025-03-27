@@ -147,7 +147,7 @@ static void
 _chunk_empty(struct fbr_chunk *chunk)
 {
 	assert_dev(chunk);
-	assert_dev(chunk->state == FBR_CHUNK_READY || chunk->state == FBR_CHUNK_FIXED);
+	assert_dev(chunk->state == FBR_CHUNK_READY);
 	assert_zero_dev(chunk->refcount);
 
 	if (chunk->fd_spliced) {
@@ -176,6 +176,7 @@ fbr_chunk_take(struct fbr_chunk *chunk) {
 void
 fbr_chunk_release(struct fbr_chunk *chunk) {
 	fbr_chunk_ok(chunk);
+	assert_dev(chunk->state != FBR_CHUNK_LOADING);
 
 	assert(chunk->refcount);
 	chunk->refcount--;
@@ -184,6 +185,8 @@ fbr_chunk_release(struct fbr_chunk *chunk) {
 		assert_zero(chunk->fd_spliced);
 		return;
 	}
+
+	assert(chunk->state != FBR_CHUNK_LOADING);
 
 	if (chunk->state == FBR_CHUNK_READY) {
 		_chunk_empty(chunk);
@@ -199,12 +202,8 @@ _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 	for (size_t i = 0; i < slab->length; i++) {
 		struct fbr_chunk *chunk = &slab->chunks[i];
 		fbr_chunk_ok(chunk);
-		assert_zero(chunk->refcount);
-
-		if (chunk->state == FBR_CHUNK_FIXED) {
-			_chunk_empty(chunk);
-			assert_dev(chunk->state == FBR_CHUNK_EMPTY);
-		}
+		assert_zero_dev(chunk->refcount);
+		assert(chunk->state <= FBR_CHUNK_EMPTY);
 	}
 
 	size_t chunk_size = sizeof(struct fbr_chunk) * slab->length;
@@ -225,11 +224,7 @@ fbr_body_free(struct fbr_body *body)
 		struct fbr_chunk *chunk = &body->slabhead.chunks[i];
 		fbr_chunk_ok(chunk);
 		assert_zero(chunk->refcount);
-
-		if (chunk->state == FBR_CHUNK_FIXED) {
-			_chunk_empty(chunk);
-			assert_dev(chunk->state == FBR_CHUNK_EMPTY);
-		}
+		assert(chunk->state <= FBR_CHUNK_EMPTY);
 	}
 
 	while (body->slabhead.next) {

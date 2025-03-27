@@ -669,37 +669,27 @@ fbr_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
 
-	if ((size_t)off >= fio->file->size) {
-		fbr_fuse_reply_buf(request, NULL, 0);
-		fbr_fio_release(fs, fio);
-		return;
-	}
+	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, off, size);
 
-	if ((size_t)off + size > fio->file->size) {
-		size = fio->file->size - off;
-	}
-
-	struct fbr_chunk_list *chunks = fbr_fio_pull_chunks(fs, fio, off, size);
-
-	if (fio->error) {
-		fbr_fuse_reply_err(request, EIO);
+	if (!vector) {
+		if (fio->error) {
+			fbr_fuse_reply_err(request, EIO);
+		} else {
+			fbr_fuse_reply_buf(request, NULL, 0);
+		}
 	} else {
-		fbr_wbuffer_LOCK(fio);
+		fbr_chunk_list_ok(vector->chunks);
+		assert(vector->bufvec);
 
-		struct fuse_bufvec *bufvec = fbr_fio_bufvec_gen(fs, chunks, off, size);
+		fbr_test_logs("** READ chunks: %u bufvecs: %zu",
+			vector->chunks->length, vector->bufvec->count);
+		fbr_fs_stat_add_count(&fs->stats.read_bytes, vector->size);
 
-		fbr_test_logs("** READ chunks: %u bufvecs: %zu", chunks->length, bufvec->count);
-		fbr_fs_stat_add_count(&fs->stats.read_bytes, size);
+		fbr_fuse_reply_data(request, vector->bufvec, FUSE_BUF_SPLICE_MOVE);
 
-		fbr_fuse_reply_data(request, bufvec, FUSE_BUF_SPLICE_MOVE);
-
-		fbr_wbuffer_UNLOCK(fio);
-
-		fbr_ZERO(bufvec);
-		free(bufvec);
+		fbr_fio_vector_free(fs, fio, vector);
 	}
 
-	fbr_fio_release_chunks(fs, fio, chunks, off, size);
 	fbr_fio_release(fs, fio);
 }
 
