@@ -99,34 +99,43 @@ _dstore_open(const char *path)
 	return fd;
 }
 
+static void
+_dstore_chunk_path(const struct fbr_file *file, fbr_id_t id, size_t offset, char *buffer,
+    size_t buffer_len)
+{
+	assert_dev(file);
+	assert(id);
+
+	char filebuf[PATH_MAX];
+	struct fbr_path_name filepath;
+	fbr_path_get_full(&file->path, &filepath, filebuf, sizeof(filebuf));
+
+	char chunk_id[FBR_ID_STRING_MAX];
+	fbr_id_string(id, chunk_id, sizeof(chunk_id));
+
+	size_t ret = snprintf(buffer, buffer_len, "%s/%s/%s.%s.%zu",
+		_DSTORE->root,
+		_DSTORE_CHUNK_PATH,
+		filepath.name,
+		chunk_id,
+		offset);
+	assert(ret < buffer_len);
+}
+
 void
 fbr_dstore_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	assert(wbuffer);
-
-	char buf[PATH_MAX];
-	struct fbr_path_name filepath;
-	fbr_path_get_full(&file->path, &filepath, buf, sizeof(buf));
-
-	fbr_test_logs("DSTORE wbuffer file: '%s'", filepath.name);
-
-	fbr_id_t id = wbuffer->id;
-	char chunk_id[FBR_ID_STRING_MAX];
-	fbr_id_string(id, chunk_id, sizeof(chunk_id));
+	fbr_dstore_ok();
 
 	while (wbuffer) {
-		assert(wbuffer->id == id);
+		assert(!wbuffer->next || wbuffer->next->id == wbuffer->id);
 
 		char chunk_path[PATH_MAX];
-		size_t ret = snprintf(chunk_path, sizeof(chunk_path), "%s/%s/%s.%s.%zu",
-			_DSTORE->root,
-			_DSTORE_CHUNK_PATH,
-			filepath.name,
-			chunk_id,
-			wbuffer->offset);
-		assert(ret < sizeof(chunk_path));
+		_dstore_chunk_path(file, wbuffer->id, wbuffer->offset, chunk_path,
+			sizeof(chunk_path));
 
 		fbr_test_logs("DSTORE wbuffer chunk: '%s'", chunk_path);
 
@@ -134,17 +143,10 @@ fbr_dstore_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 
 		int fd = _dstore_open(chunk_path);
 
-		size_t bytes = 0;
-		while (bytes < wbuffer->end) {
-			ssize_t ret = write(fd, wbuffer->buffer + bytes, wbuffer->end - bytes);
-			assert(ret > 0);
-
-			bytes += ret;
-		}
+		size_t bytes = fbr_sys_write(fd, wbuffer->buffer, wbuffer->end);
 		assert(bytes == wbuffer->end);
 
-		ret = close(fd);
-		assert_zero(ret);
+		assert_zero(close(fd));
 
 		fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
 
@@ -173,24 +175,10 @@ fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chu
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
-
-	char buf[PATH_MAX];
-	struct fbr_path_name filepath;
-	fbr_path_get_full(&file->path, &filepath, buf, sizeof(buf));
-
-	fbr_test_logs("DSTORE fetch file: '%s'", filepath.name);
-
-	char chunk_id[FBR_ID_STRING_MAX];
-	fbr_id_string(chunk->id, chunk_id, sizeof(chunk_id));
+	fbr_dstore_ok();
 
 	char chunk_path[PATH_MAX];
-	size_t ret = snprintf(chunk_path, sizeof(chunk_path), "%s/%s/%s.%s.%zu",
-		_DSTORE->root,
-		_DSTORE_CHUNK_PATH,
-		filepath.name,
-		chunk_id,
-		chunk->offset);
-	assert(ret < sizeof(chunk_path));
+	_dstore_chunk_path(file, chunk->id, chunk->offset, chunk_path, sizeof(chunk_path));
 
 	fbr_test_logs("DSTORE fetch chunk: '%s'", chunk_path);
 
@@ -203,32 +191,28 @@ fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chu
 	}
 
 	struct stat st;
-	ret = fstat(fd, &st);
+	int ret = fstat(fd, &st);
 
 	if (ret || (size_t)st.st_size != chunk->length) {
 		fbr_test_logs("DSTORE fetch chunk size error");
 		_dstore_chunk_update(file, chunk, FBR_CHUNK_EMPTY);
+		assert_zero(close(fd));
 		return;
 	}
 
 	chunk->data = malloc(chunk->length);
 	assert(chunk->data);
 
-	size_t bytes = 0;
-	while (bytes < chunk->length) {
-		ssize_t ret = read(fd, chunk->data + bytes, chunk->length - bytes);
-		if (ret <= 0) {
-			assert_zero(close(fd));
-			_dstore_chunk_update(file, chunk, FBR_CHUNK_EMPTY);
-			return;
-		}
+	ssize_t bytes = fbr_sys_read(fd, chunk->data, chunk->length);
 
-		bytes += ret;
+	if ((size_t)bytes != chunk->length) {
+		fbr_test_logs("DSTORE read() error");
+		_dstore_chunk_update(file, chunk, FBR_CHUNK_EMPTY);
+		assert_zero(close(fd));
+		return;
 	}
-	assert(bytes == chunk->length);
 
-	ret = close(fd);
-	assert_zero(ret);
+	assert_zero(close(fd));
 
 	_dstore_chunk_update(file, chunk, FBR_CHUNK_READY);
 

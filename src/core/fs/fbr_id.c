@@ -30,7 +30,7 @@ fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len)
 {
 	assert(value);
 	assert(buffer);
-	assert(buffer_len);
+	assert(buffer_len >= FBR_ID_STRING_MAX);
 
 	struct fbr_id id;
 	id.value = value;
@@ -39,10 +39,7 @@ fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len)
 	fbr_id_part_t timestamp = id.parts.timestamp;
 
 	int ret = snprintf(buffer, buffer_len, "%u%u", timestamp, rand);
-
-	if (ret < 0 || (size_t)ret >= buffer_len) {
-		return 0;
-	}
+	assert(ret > 0 && (size_t)ret < buffer_len)
 
 	return (size_t)ret;
 }

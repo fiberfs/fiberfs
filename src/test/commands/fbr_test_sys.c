@@ -432,17 +432,7 @@ fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		char *text = cmd->params[i].value;
 		size_t text_len = cmd->params[i].len;
 
-		ssize_t bytes;
-		size_t size = 0;
-
-		do {
-			bytes = write(fd, text + size, text_len - size);
-			fbr_test_ASSERT(bytes > 0, "sys_write write() error (%ld %s %d)",
-				bytes, strerror(errno), errno);
-
-			size += bytes;
-		} while (size < text_len);
-
+		size_t size = fbr_sys_write(fd, text, text_len);
 		assert(size == text_len);
 
 		total_bytes += size;
