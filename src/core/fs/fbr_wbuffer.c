@@ -188,7 +188,6 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 {
 	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
-	fbr_file_ok(fio->file);
 	assert_zero_dev(fio->read_only);
 	assert(buf);
 	assert(size);
@@ -224,12 +223,17 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 		wbuffer = wbuffer->next;
 	}
 
-	// TODO we need to body lock and add chunks to the file
+	fbr_file_ok(fio->file);
+	fbr_body_LOCK(&fio->file->body);
+
+	// TODO write chunks to the file
 	size_t offset_end = offset_orig + size;
 	if (fio->file->size < offset_end) {
 		fio->file->size = offset_end;
 		fs->log("WWW setting file->size=%zu", fio->file->size);
 	}
+
+	fbr_body_UNLOCK(&fio->file->body);
 
 	assert_dev(written == size);
 
