@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "sys/fbr_sys.h"
 
@@ -103,6 +104,7 @@ static void
 _dstore_chunk_path(const struct fbr_file *file, fbr_id_t id, size_t offset, char *buffer,
     size_t buffer_len)
 {
+	fbr_dstore_ok();
 	assert_dev(file);
 	assert(id);
 
@@ -125,10 +127,10 @@ _dstore_chunk_path(const struct fbr_file *file, fbr_id_t id, size_t offset, char
 void
 fbr_dstore_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
+	fbr_dstore_ok();
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	assert(wbuffer);
-	fbr_dstore_ok();
 
 	while (wbuffer) {
 		assert(!wbuffer->next || wbuffer->next->id == wbuffer->id);
@@ -172,10 +174,10 @@ _dstore_chunk_update(struct fbr_file *file, struct fbr_chunk *chunk, enum fbr_ch
 void
 fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
+	fbr_dstore_ok();
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
-	fbr_dstore_ok();
 
 	char chunk_path[PATH_MAX];
 	_dstore_chunk_path(file, chunk->id, chunk->offset, chunk_path, sizeof(chunk_path));
