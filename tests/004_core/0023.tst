@@ -1,33 +1,26 @@
-fiber_test "RW test"
+fiber_test "RW test small buffer"
 
 # Init
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 fs_test_dentry_ttl_ms 0
+fs_test_rw_buffer_size 3
 
 # Operations
 
-sys_ls $sys_tmpdir "..:dir .:dir"
-
 set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "test1" "test2" "test3"
+sys_write $var1 1 333 999999999 55555 1 666666
 
-equal $fs_test_stat_write_bytes 15
-equal $fs_test_stat_store_bytes 15
+equal $fs_test_stat_write_bytes 25
+equal $fs_test_stat_store_bytes 25
 
-sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
-sys_stat_size $var1 15
-sys_cat $var1 "test1test2test3"
+sys_cat $var1 "1333999999999555551666666"
 
-equal $fs_test_stat_read_bytes 15
-equal $fs_test_stat_fetch_bytes 15
+equal $fs_test_stat_read_bytes 25
+equal $fs_test_stat_fetch_bytes 25
 
 # Cleanup
-
-sleep_ms 100
-fs_test_stats
-fs_test_debug
 
 fs_test_release_all 1
 

@@ -139,7 +139,7 @@ fbr_dstore_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 		_dstore_chunk_path(file, wbuffer->id, wbuffer->offset, chunk_path,
 			sizeof(chunk_path));
 
-		fbr_test_logs("DSTORE wbuffer chunk: '%s'", chunk_path);
+		fbr_test_logs("DSTORE wbuffer chunk: '%s':%zu", chunk_path, wbuffer->end);
 
 		_dstore_mkdirs(chunk_path);
 
@@ -216,7 +216,7 @@ fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chu
 
 	assert_zero(close(fd));
 
-	_dstore_chunk_update(file, chunk, FBR_CHUNK_READY);
-
 	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, bytes);
+
+	_dstore_chunk_update(file, chunk, FBR_CHUNK_READY);
 }

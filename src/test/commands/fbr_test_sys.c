@@ -329,7 +329,8 @@ fbr_test_cmd_sys_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		return;
 	}
 
-	fbr_test_ERROR(strcmp(result, cmd->params[1].value), "Expected result string failed");
+	fbr_test_ERROR(strcmp(result, cmd->params[1].value),
+		"Expected result string failed '%s':%zu", result, result_len);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_cat result done %s", filename);
 }

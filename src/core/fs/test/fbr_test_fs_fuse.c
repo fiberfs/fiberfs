@@ -689,6 +689,7 @@ fbr_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 		struct fuse_bufvec *bufvec = fbr_fio_bufvec_gen(fs, chunks, off, size);
 
 		fbr_test_logs("** READ chunks: %u bufvecs: %zu", chunks->length, bufvec->count);
+		fbr_fs_stat_add_count(&fs->stats.read_bytes, size);
 
 		fbr_fuse_reply_data(request, bufvec, FUSE_BUF_SPLICE_MOVE);
 
@@ -696,8 +697,6 @@ fbr_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 
 		fbr_ZERO(bufvec);
 		free(bufvec);
-
-		fbr_fs_stat_add_count(&fs->stats.read_bytes, size);
 	}
 
 	fbr_fio_release_chunks(fs, fio, chunks, off, size);

@@ -18,6 +18,8 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/store/test/fbr_dstore.h"
 
+extern int _DEBUG_WBUFFER_ALLOC_SIZE;
+
 static int
 _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
@@ -63,7 +65,7 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 
 		fbr_body_chunk_add(file, wbuffer->id, wbuffer->offset, wbuffer->end);
 
-		file->size = wbuffer->offset + wbuffer->end;
+		assert(file->size >= wbuffer->offset + wbuffer->end);
 
 		wbuffer = wbuffer->next;
 	}
@@ -330,10 +332,12 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
 
 	size_t written = fbr_wbuffer_write(fs, fio, off, buf, size);
 	assert_dev(written == size);
+
+	fbr_fs_stat_add_count(&fs->stats.write_bytes, written);
+
 	fbr_fuse_reply_write(request, written);
 
 	fbr_fio_release(fs, fio);
-	fbr_fs_stat_add_count(&fs->stats.write_bytes, written);
 }
 
 static void
@@ -423,4 +427,18 @@ fbr_cmd_fs_test_rw_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_fs_ok(fs);
 
 	fs->logger = fbr_fs_test_logger;
+}
+
+void
+fbr_cmd_fs_test_rw_buffer_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	long value = fbr_test_parse_long(cmd->params[0].value);
+	fbr_test_ASSERT(value > 0, "Buffer size needs to be greater than 0");
+
+	_DEBUG_WBUFFER_ALLOC_SIZE = value;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs buffer_size: %d", _DEBUG_WBUFFER_ALLOC_SIZE);
 }

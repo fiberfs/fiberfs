@@ -10,6 +10,8 @@
 #include "fbr_fs.h"
 #include "core/store/fbr_store.h"
 
+int _DEBUG_WBUFFER_ALLOC_SIZE;
+
 void
 fbr_wbuffer_init(struct fbr_fio *fio)
 {
@@ -27,6 +29,11 @@ _wbuffer_alloc(struct fbr_fio *fio, size_t offset, size_t size)
 	assert(size);
 
 	size_t wsize = fbr_fs_chunk_size(offset);
+
+	if (_DEBUG_WBUFFER_ALLOC_SIZE) {
+		wsize = _DEBUG_WBUFFER_ALLOC_SIZE;
+	}
+
 	while (wsize < size) {
 		wsize *= 2;
 	}
@@ -181,6 +188,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 {
 	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
+	fbr_file_ok(fio->file);
 	assert_zero_dev(fio->read_only);
 	assert(buf);
 	assert(size);
@@ -189,6 +197,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 	struct fbr_wbuffer *wbuffer = _wbuffer_get(fs, fio, offset, size);
 
+	size_t offset_orig = offset;
 	size_t written = 0;
 
 	while (written < size) {
@@ -213,6 +222,14 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 		written += wsize;
 
 		wbuffer = wbuffer->next;
+	}
+
+	// TODO we are potentially writing to an existing inode
+	// We may need to make these changes visible on the inode...
+	size_t offset_end = offset_orig + size;
+	if (fio->file->size < offset_end) {
+		fio->file->size = offset_end;
+		fs->log("WWW setting file->size=%zu", fio->file->size);
 	}
 
 	assert_dev(written == size);

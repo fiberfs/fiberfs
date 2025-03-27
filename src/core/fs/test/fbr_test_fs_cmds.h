@@ -42,6 +42,7 @@ FBR_TEST_FS_CMD(fs_test_fuse_mount)
 FBR_TEST_FS_CMD(fs_test_fuse_init_root)
 
 FBR_TEST_FS_CMD(fs_test_rw_mount)
+FBR_TEST_FS_CMD(fs_test_rw_buffer_size)
 
 FBR_TEST_FS_CMD(fs_test_release_all)
 FBR_TEST_FS_CMD(fs_test_lru_purge)
