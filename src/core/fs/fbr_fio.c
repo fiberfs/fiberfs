@@ -175,6 +175,8 @@ _fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t s
 			chunks = _fio_chunk_list_add(chunks, chunk);
 		}
 
+		// TODO break when we fill the offset range
+
 		chunk = chunk->next;
 	}
 
@@ -202,14 +204,18 @@ _fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t s
 		}
 	}
 
+	pt_assert(pthread_mutex_lock(&body->update_lock));
+
 	while (!_fio_ready(chunks)) {
 		if (_fio_ready_error(chunks)) {
 			fio->error = 1;
 			break;
 		}
 
-		pt_assert(pthread_cond_wait(&body->update, &body->lock));
+		pt_assert(pthread_cond_wait(&body->update, &body->update_lock));
 	}
+
+	pt_assert(pthread_mutex_unlock(&body->update_lock));
 
 	return chunks;
 }

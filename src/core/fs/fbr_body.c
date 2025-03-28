@@ -17,6 +17,7 @@ fbr_body_init(struct fbr_body *body)
 	assert_dev(body);
 
 	pt_assert(pthread_mutex_init(&body->lock, NULL));
+	pt_assert(pthread_mutex_init(&body->update_lock, NULL));
 	pt_assert(pthread_cond_init(&body->update, NULL));
 
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
@@ -103,7 +104,7 @@ _body_chunk_insert(struct fbr_body *body, struct fbr_chunk *chunk)
 		chunk->next = current;
 	}
 
-	// Remove overwritten chunks (we can still have unreachable chunks)
+	// Remove unreachable chunks
 
 	size_t chunk_end = chunk->offset + chunk->length;
 
@@ -120,6 +121,7 @@ _body_chunk_insert(struct fbr_body *body, struct fbr_chunk *chunk)
 				body->chunk_last = chunk;
 			}
 		} else {
+			// TODO expand the range and continue
 			break;
 		}
 
@@ -204,13 +206,13 @@ fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_
 	assert(chunk->state == FBR_CHUNK_LOADING);
 	assert(state == FBR_CHUNK_EMPTY || state == FBR_CHUNK_READY);
 
-	fbr_body_LOCK(body);
+	pt_assert(pthread_mutex_lock(&body->update_lock));
 
 	chunk->state = state;
 
 	pt_assert(pthread_cond_broadcast(&body->update));
 
-	fbr_body_UNLOCK(body);
+	pt_assert(pthread_mutex_unlock(&body->update_lock));
 }
 
 static void
@@ -288,6 +290,7 @@ fbr_body_free(struct fbr_body *body)
 	assert_dev(body);
 
 	pt_assert(pthread_mutex_destroy(&body->lock));
+	pt_assert(pthread_mutex_destroy(&body->update_lock));
 	pt_assert(pthread_cond_destroy(&body->update));
 
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {

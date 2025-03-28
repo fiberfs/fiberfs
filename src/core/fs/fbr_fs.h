@@ -90,6 +90,7 @@ struct fbr_chunk_vector {
 
 struct fbr_body {
 	pthread_mutex_t				lock;
+	pthread_mutex_t				update_lock;
 	pthread_cond_t				update;
 
 	struct {
