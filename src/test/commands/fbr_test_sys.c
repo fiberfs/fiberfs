@@ -15,9 +15,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+// assert() conflict, this must come first for now
+#include "test/chttp_test_cmds.h"
+
+#include "fiberfs.h"
 #include "sys/fbr_sys.h"
 #include "test/fbr_test.h"
-#include "test/chttp_test_cmds.h"
 
 struct _sys_path {
 	unsigned int			magic;

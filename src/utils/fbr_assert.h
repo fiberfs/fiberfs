@@ -7,7 +7,9 @@
 #ifndef _FBR_ASSERT_H_INCLUDED_
 #define _FBR_ASSERT_H_INCLUDED_
 
+#ifndef _ASSERT_H
 #define	_ASSERT_H
+#endif
 
 #define __fbr_attr_printf(fpos)							\
 	__attribute__((__format__(__printf__, (fpos), ((fpos) + 1))))
@@ -22,6 +24,8 @@ int fbr_libunwind_enabled(void);
 void fbr_libunwind_backtrace(void);
 
 #undef assert
+#undef assert_zero
+
 #define assert(expr)								\
 	fbr_ASSERT(expr, NULL)
 #define assert_zero(expr)							\

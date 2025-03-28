@@ -6,6 +6,9 @@
 #ifndef _FBR_SYS_H_INCLUDED_
 #define _FBR_SYS_H_INCLUDED_
 
+#include <stddef.h>
+#include <sys/types.h>
+
 int fbr_sys_exists(const char *path);
 int fbr_sys_isdir(const char *path);
 void fbr_sys_rmdir(const char *path);

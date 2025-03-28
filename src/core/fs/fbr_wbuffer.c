@@ -87,17 +87,6 @@ _wbuffer_find(struct fbr_fio *fio, struct fbr_wbuffer *head, size_t offset, size
 			prev->next = wbuffer;
 			wbuffer->next = current;
 		}
-	} else {
-		assert_dev(offset >= wbuffer->offset);
-		size_t wbuffer_offset = offset - wbuffer->offset;
-		size_t wbuffer_end = wbuffer_offset + size;
-
-		if (wbuffer_end > wbuffer->size) {
-			wbuffer_end = wbuffer->size;
-		}
-		if (wbuffer->end < wbuffer_end) {
-			wbuffer->end = wbuffer_end;
-		}
 	}
 
 	return wbuffer;
@@ -162,11 +151,6 @@ static void
 _wbuffer_LOCK(struct fbr_fio *fio)
 {
 	fbr_fio_ok(fio);
-
-	if (fio->read_only) {
-		return;
-	}
-
 	pt_assert(pthread_mutex_lock(&fio->wlock));
 }
 
@@ -174,11 +158,6 @@ static void
 _wbuffer_UNLOCK(struct fbr_fio *fio)
 {
 	fbr_fio_ok(fio);
-
-	if (fio->read_only) {
-		return;
-	}
-
 	pt_assert(pthread_mutex_unlock(&fio->wlock));
 }
 
@@ -213,9 +192,14 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 			wsize = wbuffer->size - wbuffer_offset;
 		}
 
-		assert_dev(wbuffer_offset + wsize <= wbuffer->end);
-
 		memcpy(wbuffer->buffer + wbuffer_offset, buf + written, wsize);
+
+		if (wbuffer->end < wbuffer_offset + wsize) {
+			wbuffer->end = wbuffer_offset + wsize;
+			// TODO extend the chunk here
+			fs->log("WWW extending wbuffer offset: %zu end: %zu",
+				wbuffer->offset, wbuffer->end);
+		}
 
 		offset = wbuffer_end;
 		written += wsize;
@@ -299,5 +283,7 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_fio_ok(fio);
 
 	pt_assert(pthread_mutex_destroy(&fio->wlock));
+
+	assert_zero_dev(fio->wbuffers);
 	_wbuffer_free(fio->wbuffers);
 }
