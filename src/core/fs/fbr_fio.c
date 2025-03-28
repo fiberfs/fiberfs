@@ -193,6 +193,8 @@ _fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t s
 			}
 
 			assert_zero_dev(chunk->data);
+			assert_zero_dev(chunk->fd_spliced);
+			assert_zero_dev(chunk->chttp_splice);
 
 			if (fs->store->fetch_chunk_f) {
 				fs->store->fetch_chunk_f(fs, fio->file, chunk);
@@ -487,8 +489,8 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 		size_t i = 0;
 		while (body) {
 			fbr_chunk_ok(body);
-			fs->log("ZZZ body[%zu] data: %p off: %zu len: %zu", i,
-				(void*)body->data, body->offset, body->length);
+			fs->log("ZZZ body[%zu] state: %d off: %zu len: %zu", i,
+				body->state, body->offset, body->length);
 			body = body->next;
 			i++;
 		}

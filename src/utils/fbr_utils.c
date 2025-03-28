@@ -10,14 +10,12 @@
 #include "fiberfs.h"
 
 void
-fbr_sleep_ms(long ms)
+fbr_sleep_ms(double ms)
 {
-	assert(ms >= 0);
-
 	struct timespec tspec, rem;
 
-	tspec.tv_sec = ms / 1000;
-	tspec.tv_nsec = (ms % 1000) * 1000 * 1000;
+	tspec.tv_sec = (time_t)(ms / 1000);
+	tspec.tv_nsec = ((time_t)(ms * 1000 * 1000)) % (1000 * 1000 * 1000);
 
 	errno = 0;
 	while (nanosleep(&tspec, &rem) && errno == EINTR) {

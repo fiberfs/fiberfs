@@ -9,7 +9,7 @@
 
 #include <string.h>
 
-void fbr_sleep_ms(long ms);
+void fbr_sleep_ms(double ms);
 double fbr_get_time(void);
 
 #define fbr_atomic_add(dest_ptr, value)			\

@@ -406,6 +406,8 @@ void fbr_wbuffer_init(struct fbr_fio *fio);
 size_t fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 	const char *buf, size_t size);
 int fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio);
+void fbr_wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file,
+	struct fbr_wbuffer *wbuffer);
 void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 
 #define fbr_fs_ok(fs)			fbr_magic_check(fs, FBR_FS_MAGIC)

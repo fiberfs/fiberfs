@@ -45,6 +45,7 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	// otherwise repeat
 
 	fbr_dstore_wbuffer(fs, file, wbuffer);
+	fbr_wbuffer_flush_chunks(fs, file, wbuffer);
 
 	// Load the new directory, this is a temporary workaround
 	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
@@ -58,17 +59,6 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	new_directory->generation = directory->generation + 1;
 
 	fbr_directory_add_file(fs, new_directory, file);
-
-	while (wbuffer) {
-		fbr_wbuffer_ok(wbuffer);
-		fs->log("FFF wbuffer offset: %zu end: %zu", wbuffer->offset, wbuffer->end);
-
-		fbr_body_chunk_add(file, wbuffer->id, wbuffer->offset, wbuffer->end);
-
-		assert(file->size >= wbuffer->offset + wbuffer->end);
-
-		wbuffer = wbuffer->next;
-	}
 
 	fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 
