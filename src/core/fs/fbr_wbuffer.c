@@ -200,16 +200,21 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 		if (wbuffer->end < wbuffer_offset + wsize) {
 			wbuffer->end = wbuffer_offset + wsize;
 
+			fs->log("WWW extending wbuffer offset: %zu end: %zu",
+				wbuffer->offset, wbuffer->end);
+
 			// Extend the file chunk
 			if (wbuffer->chunk) {
 				fbr_chunk_ok(wbuffer->chunk);
 				assert_dev(wbuffer->chunk->length < wbuffer->end);
 
+				while (wbuffer->chunk->refcount > 0) {
+					fs->log("WWW chunk draining...");
+					fbr_sleep_ms(0.1);
+				}
+
 				wbuffer->chunk->length = wbuffer->end;
 			}
-
-			fs->log("WWW extending wbuffer offset: %zu end: %zu",
-				wbuffer->offset, wbuffer->end);
 		}
 
 		if (!wbuffer->chunk) {
