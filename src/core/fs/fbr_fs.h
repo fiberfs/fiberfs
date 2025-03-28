@@ -37,6 +37,7 @@ enum fbr_chunk_state {
 	FBR_CHUNK_EMPTY,
 	FBR_CHUNK_LOADING,
 	FBR_CHUNK_READY,
+	FBR_CHUNK_SPLICED,
 	FBR_CHUNK_WBUFFER
 };
 
@@ -47,7 +48,6 @@ struct fbr_chunk {
 	enum fbr_chunk_state			state;
 
 	unsigned int				fd_splice_ok:1;
-	unsigned int				fd_spliced:1;
 
 	fbr_id_t				id;
 

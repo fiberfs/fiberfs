@@ -195,7 +195,6 @@ _fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t s
 			}
 
 			assert_zero_dev(chunk->data);
-			assert_zero_dev(chunk->fd_spliced);
 			assert_zero_dev(chunk->chttp_splice);
 
 			if (fs->store->fetch_chunk_f) {
@@ -232,7 +231,7 @@ _fio_release_floating(struct fbr_fio *fio, size_t offset)
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
-		assert_dev(chunk->state >= FBR_CHUNK_READY);
+		assert_dev(chunk->state == FBR_CHUNK_READY);
 
 		size_t chunk_end = chunk->offset + chunk->length;
 
@@ -458,7 +457,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 			}
 		}
 
-		assert_zero_dev(chunk->fd_spliced);
+		assert_dev(chunk->state != FBR_CHUNK_SPLICED);
 		assert_dev(chunk->data);
 
 		if (bufvec->idx == bufvec->count) {
@@ -580,7 +579,6 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 		    chunk->state == FBR_CHUNK_READY) {
 			assert(chunk->offset < offset_end);
 			assert_zero(chunk->fd_splice_ok);
-			assert_zero_dev(chunk->fd_spliced);
 
 			fio->floating = _fio_chunk_list_add(fio->floating, chunk);
 		} else {

@@ -204,7 +204,7 @@ fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_
 	assert(body);
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_LOADING);
-	assert(state == FBR_CHUNK_EMPTY || state == FBR_CHUNK_READY);
+	assert(state == FBR_CHUNK_EMPTY || state == FBR_CHUNK_READY || state == FBR_CHUNK_SPLICED);
 
 	pt_assert(pthread_mutex_lock(&body->update_lock));
 
@@ -219,20 +219,19 @@ static void
 _chunk_empty(struct fbr_chunk *chunk)
 {
 	assert_dev(chunk);
-	assert_dev(chunk->state == FBR_CHUNK_READY);
 	assert_zero_dev(chunk->refcount);
 
-	if (chunk->fd_spliced) {
+	if (chunk->state == FBR_CHUNK_SPLICED) {
 		assert_dev(chunk->fd_splice_ok);
 		assert_zero_dev(chunk->data);
 	} else {
+		assert_dev(chunk->state == FBR_CHUNK_READY);
 		assert_dev(chunk->data);
 		free(chunk->data);
 	}
 
 	chunk->state = FBR_CHUNK_EMPTY;
 	chunk->fd_splice_ok = 0;
-	chunk->fd_spliced = 0;
 	chunk->data = NULL;
 	chunk->chttp_splice = NULL;
 }
@@ -241,8 +240,8 @@ void
 fbr_chunk_take(struct fbr_chunk *chunk) {
 	fbr_chunk_ok(chunk);
 
-	chunk->refcount++;
-	assert(chunk->refcount);
+	fbr_refcount_t refs = fbr_atomic_add(&chunk->refcount, 1);
+	assert(refs);
 }
 
 void
@@ -251,16 +250,13 @@ fbr_chunk_release(struct fbr_chunk *chunk) {
 	assert_dev(chunk->state != FBR_CHUNK_LOADING);
 
 	assert(chunk->refcount);
-	chunk->refcount--;
+	fbr_refcount_t refs = fbr_atomic_sub(&chunk->refcount, 1);
 
-	if (chunk->refcount) {
-		assert_zero(chunk->fd_spliced);
+	if (refs) {
 		return;
 	}
 
-	assert(chunk->state != FBR_CHUNK_LOADING);
-
-	if (chunk->state == FBR_CHUNK_READY) {
+	if (chunk->state == FBR_CHUNK_READY || chunk->state == FBR_CHUNK_SPLICED) {
 		_chunk_empty(chunk);
 		assert_dev(chunk->state == FBR_CHUNK_EMPTY);
 	}
