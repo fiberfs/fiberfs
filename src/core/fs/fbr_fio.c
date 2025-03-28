@@ -173,8 +173,6 @@ _fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t s
 		    (offset < chunk->offset && offset_end > chunk->offset)) {
 			fbr_chunk_take(chunk);
 			chunks = _fio_chunk_list_add(chunks, chunk);
-		} else if (chunk->offset > offset_end) {
-			break;
 		}
 
 		chunk = chunk->next;
@@ -484,6 +482,17 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 
 	if (fbr_assert_is_dev()) {
 		assert(fs->logger);
+		///*
+		struct fbr_chunk *body = fio->file->body.chunks;
+		size_t i = 0;
+		while (body) {
+			fbr_chunk_ok(body);
+			fs->log("ZZZ body[%zu] data: %p off: %zu len: %zu", i,
+				(void*)body->data, body->offset, body->length);
+			body = body->next;
+			i++;
+		}
+		//*/
 		///*
 		for (size_t i = 0; i < chunks->length; i++) {
 			struct fbr_chunk *chunk = chunks->list[i];

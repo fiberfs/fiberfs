@@ -56,8 +56,8 @@ struct fbr_chunk {
 	fbr_refcount_t				refcount;
 
 	uint8_t					*data;
-	void					*chttp;
 
+	void					*chttp_splice;
 	struct fbr_chunk			*next;
 };
 
@@ -98,7 +98,7 @@ struct fbr_body {
 	}  slabhead;
 
 	struct fbr_chunk			*chunks;
-	struct fbr_chunk			*chunk_ptr;
+	struct fbr_chunk			*chunk_last;
 };
 
 struct fbr_file_refcounts {
@@ -228,6 +228,7 @@ struct fbr_wbuffer {
 
 	fbr_id_t				id;
 
+	struct fbr_chunk			*chunk;
 	struct fbr_wbuffer			*next;
 };
 

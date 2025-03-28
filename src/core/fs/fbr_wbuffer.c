@@ -167,6 +167,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 {
 	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
+	fbr_file_ok(fio->file);
 	assert_zero_dev(fio->read_only);
 	assert(buf);
 	assert(size);
@@ -177,6 +178,8 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 	size_t offset_orig = offset;
 	size_t written = 0;
+
+	fbr_body_LOCK(&fio->file->body);
 
 	while (written < size) {
 		fbr_wbuffer_ok(wbuffer);
@@ -196,9 +199,23 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 		if (wbuffer->end < wbuffer_offset + wsize) {
 			wbuffer->end = wbuffer_offset + wsize;
-			// TODO extend the chunk here
+
+			// Extend the file chunk
+			if (wbuffer->chunk) {
+				fbr_chunk_ok(wbuffer->chunk);
+				wbuffer->chunk->length = wbuffer->end;
+			}
+
 			fs->log("WWW extending wbuffer offset: %zu end: %zu",
 				wbuffer->offset, wbuffer->end);
+		}
+
+		if (!wbuffer->chunk && 0) {
+			assert_zero_dev(wbuffer_offset);
+
+			struct fbr_chunk *chunk = fbr_body_chunk_add(fio->file, wbuffer->id,
+				wbuffer->offset, wbuffer->end);
+			(void)chunk;
 		}
 
 		offset = wbuffer_end;
@@ -207,10 +224,6 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 		wbuffer = wbuffer->next;
 	}
 
-	fbr_file_ok(fio->file);
-	fbr_body_LOCK(&fio->file->body);
-
-	// TODO write chunks to the file
 	size_t offset_end = offset_orig + size;
 	if (fio->file->size < offset_end) {
 		fio->file->size = offset_end;

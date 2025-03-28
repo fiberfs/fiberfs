@@ -68,6 +68,65 @@ _body_chunk_get(struct fbr_body *body)
 	return &slab->chunks[0];
 }
 
+static void
+_body_chunk_insert(struct fbr_body *body, struct fbr_chunk *chunk)
+{
+	assert_dev(body);
+	assert_dev(body->chunks);
+	assert_dev(chunk);
+	assert_zero_dev(chunk->next);
+
+	struct fbr_chunk *prev = NULL;
+	struct fbr_chunk *current = body->chunks;
+
+	while (current) {
+		fbr_chunk_ok(current);
+
+		size_t current_end = current->offset + current->length;
+
+		// chunk starts before the end of current
+		if (chunk->offset <= current_end) {
+			break;
+		}
+
+		prev = current;
+		current = current->next;
+	}
+
+	assert_dev(current);
+
+	if (!prev) {
+		body->chunks = chunk;
+		chunk->next = current;
+	} else {
+		prev->next = chunk;
+		chunk->next = current;
+	}
+
+	// Remove overwritten chunks (we can still have unreachable chunks)
+
+	size_t chunk_end = chunk->offset + chunk->length;
+
+	while (current) {
+		fbr_chunk_ok(current);
+
+		size_t current_end = current->offset + current->length;
+
+		// current sits inside chunk
+		if (current->offset >= chunk->offset && current_end <= chunk_end) {
+			chunk->next = current->next;
+			if (current == body->chunk_last) {
+				assert_zero_dev(current->next);
+				body->chunk_last = chunk;
+			}
+		} else {
+			break;
+		}
+
+		current = current->next;
+	}
+}
+
 struct fbr_chunk *
 fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length)
 {
@@ -91,6 +150,7 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_NONE);
+	assert_zero_dev(chunk->next);
 
 	chunk->state = FBR_CHUNK_EMPTY;
 	chunk->id = id;
@@ -98,16 +158,26 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 	chunk->length = length;
 
 	if (!file->body.chunks) {
-		assert_zero(file->body.chunk_ptr);
+		assert_zero_dev(file->body.chunk_last);
 		file->body.chunks = chunk;
+		file->body.chunk_last = chunk;
 	} else {
-		fbr_chunk_ok(file->body.chunk_ptr);
-		file->body.chunk_ptr->next = chunk;
+		fbr_chunk_ok(file->body.chunk_last);
+
+		size_t last_end = file->body.chunk_last->offset + file->body.chunk_last->length;
+
+		// chunk starts after the end of the last
+		if (chunk->offset >= last_end) {
+			file->body.chunk_last->next = chunk;
+			file->body.chunk_last = chunk;
+		} else {
+			_body_chunk_insert(&file->body, chunk);
+		}
 	}
 
-	file->body.chunk_ptr = chunk;
-	assert_zero_dev(chunk->next);
 	assert_zero_dev(chunk->data);
+
+	fbr_chunk_ok(chunk);
 
 	return chunk;
 }
@@ -162,7 +232,7 @@ _chunk_empty(struct fbr_chunk *chunk)
 	chunk->fd_splice_ok = 0;
 	chunk->fd_spliced = 0;
 	chunk->data = NULL;
-	chunk->chttp = NULL;
+	chunk->chttp_splice = NULL;
 }
 
 void

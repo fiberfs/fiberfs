@@ -142,6 +142,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 				fbr_body_chunk_add(file, id, 500, 607);
 				fbr_body_chunk_add(file, id, 600, 500);
 				fbr_body_chunk_add(file, id, 0, 601);
+				fbr_body_chunk_add(file, id, 590, 551);
 			} else {
 				fbr_body_chunk_add(file, id, offset, 1001);
 			}
