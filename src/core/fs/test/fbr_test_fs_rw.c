@@ -52,13 +52,12 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	fbr_directory_ok(new_directory);
 	fbr_ASSERT(new_directory->state == FBR_DIRSTATE_LOADING, "new_directory isnt LOADING");
 
-	if (file->state == FBR_FILE_NEW) {
-		file->state = FBR_FILE_NONE;
-	}
-
 	new_directory->generation = directory->generation + 1;
 
-	fbr_directory_add_file(fs, new_directory, file);
+	if (file->state == FBR_FILE_NEW) {
+		file->state = FBR_FILE_NONE;
+		fbr_directory_add_file(fs, new_directory, file);
+	}
 
 	fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 

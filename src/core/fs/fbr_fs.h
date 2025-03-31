@@ -253,7 +253,7 @@ struct fbr_fio {
 	struct fbr_chunk_list			*floating;
 	struct fbr_wbuffer			*wbuffers;
 
-	pthread_mutex_t				wlock;
+	pthread_mutex_t				wbuffer_lock;
 };
 
 struct fbr_fs_stats {

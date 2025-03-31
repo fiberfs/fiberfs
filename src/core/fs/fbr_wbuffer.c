@@ -17,7 +17,7 @@ fbr_wbuffer_init(struct fbr_fio *fio)
 {
 	fbr_fio_ok(fio);
 
-	pt_assert(pthread_mutex_init(&fio->wlock, NULL));
+	pt_assert(pthread_mutex_init(&fio->wbuffer_lock, NULL));
 	fio->id = fbr_id_gen();
 	fio->wbuffers = NULL;
 }
@@ -144,14 +144,14 @@ static void
 _wbuffer_LOCK(struct fbr_fio *fio)
 {
 	fbr_fio_ok(fio);
-	pt_assert(pthread_mutex_lock(&fio->wlock));
+	pt_assert(pthread_mutex_lock(&fio->wbuffer_lock));
 }
 
 static void
 _wbuffer_UNLOCK(struct fbr_fio *fio)
 {
 	fbr_fio_ok(fio);
-	pt_assert(pthread_mutex_unlock(&fio->wlock));
+	pt_assert(pthread_mutex_unlock(&fio->wbuffer_lock));
 }
 
 size_t
@@ -234,10 +234,9 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 		fio->file->size = offset_end;
 	}
 
-	fbr_body_UNLOCK(&fio->file->body);
-
 	assert_dev(written == size);
 
+	fbr_body_UNLOCK(&fio->file->body);
 	_wbuffer_UNLOCK(fio);
 
 	return written;
@@ -334,7 +333,7 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
 
-	pt_assert(pthread_mutex_destroy(&fio->wlock));
+	pt_assert(pthread_mutex_destroy(&fio->wbuffer_lock));
 
 	assert_zero_dev(fio->wbuffers);
 	_wbuffer_free(fio->wbuffers);
