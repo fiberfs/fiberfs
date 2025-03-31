@@ -360,6 +360,8 @@ void fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk,
 	enum fbr_chunk_state state);
 void fbr_chunk_take(struct fbr_chunk *chunk);
 void fbr_chunk_release(struct fbr_chunk *chunk);
+const char *fbr_chunk_state(enum fbr_chunk_state state);
+void fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_body_free(struct fbr_body *body);
 
 RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)

@@ -242,6 +242,8 @@ fbr_chunk_take(struct fbr_chunk *chunk) {
 
 	fbr_refcount_t refs = fbr_atomic_add(&chunk->refcount, 1);
 	assert(refs);
+
+	assert_dev(refs == 1 || chunk->state == FBR_CHUNK_READY);
 }
 
 void
@@ -278,6 +280,46 @@ _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 	explicit_bzero(slab, sizeof(*slab) + chunk_size);
 
 	free(slab);
+}
+
+const char *
+fbr_chunk_state(enum fbr_chunk_state state)
+{
+	switch (state) {
+		case FBR_CHUNK_NONE:
+			return "NONE";
+		case FBR_CHUNK_EMPTY:
+			return "EMPTY";
+		case FBR_CHUNK_LOADING:
+			return "LOADING";
+		case FBR_CHUNK_READY:
+			return "READY";
+		case FBR_CHUNK_SPLICED:
+			return "SPLICE";
+		case FBR_CHUNK_WBUFFER:
+			return "WBUFFER";
+	}
+
+	return "ERROR";
+}
+
+void
+fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	assert_dev(fs->logger);
+	fbr_file_ok(file);
+
+	struct fbr_chunk *chunk = file->body.chunks;
+	size_t i = 0;
+
+	while (chunk) {
+		fbr_chunk_ok(chunk);
+		fs->log("BODY chunk[%zu] state: %s off: %zu len: %zu", i,
+			fbr_chunk_state(chunk->state), chunk->offset, chunk->length);
+		chunk = chunk->next;
+		i++;
+	}
 }
 
 void

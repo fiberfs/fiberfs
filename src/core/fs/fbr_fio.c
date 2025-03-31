@@ -61,6 +61,8 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	// Caller owns a ref
 	fio->refcount = 1;
 
+	fbr_body_debug(fs, file);
+
 	return fio;
 }
 
@@ -72,6 +74,22 @@ fbr_fio_take(struct fbr_fio *fio)
 
 	fbr_refcount_t refs = fbr_atomic_add(&fio->refcount, 1);
 	assert(refs);
+}
+
+static void
+_fio_chunk_list_debug(struct fbr_fs *fs, struct fbr_chunk_list *chunks, const char *name)
+{
+	assert_dev(fs);
+	assert_dev(fs->logger);
+	assert_dev(chunks);
+
+	for (size_t i = 0; i < chunks->length; i++) {
+		struct fbr_chunk *chunk = chunks->list[i];
+		fbr_chunk_ok(chunk);
+		fs->log("%s chunk[%zu] state: %s, data: %p off: %zu len: %zu",
+			name, i, fbr_chunk_state(chunk->state), (void*)chunk->data,
+			chunk->offset, chunk->length);
+	}
 }
 
 static struct fbr_chunk_list *
@@ -487,39 +505,17 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 
 	assert_dev(offset_pos == offset_end);
 
-	if (fbr_assert_is_dev()) {
-		assert(fs->logger);
-		///*
-		struct fbr_chunk *body = fio->file->body.chunks;
-		size_t i = 0;
-		while (body) {
-			fbr_chunk_ok(body);
-			fs->log("ZZZ body[%zu] state: %d off: %zu len: %zu", i,
-				body->state, body->offset, body->length);
-			body = body->next;
-			i++;
-		}
-		//*/
-		///*
-		for (size_t i = 0; i < chunks->length; i++) {
-			struct fbr_chunk *chunk = chunks->list[i];
-			fbr_chunk_ok(chunk);
-			fs->log("ZZZ chunks[%zu] data: %p off: %zu len: %zu", i,
-				(void*)chunk->data, chunk->offset, chunk->length);
-		}
-		//*/
-		size_t total_size = 0;
-		for (size_t i = 0; i < bufvec->count; i++) {
-			struct fuse_buf *buf = &bufvec->buf[i];
-			///*
-			fs->log("ZZZ bufvec[%zu] mem: %p offset: %zu size: %zu", i,
-				(void*)((char*)buf->mem - buf->pos), buf->pos,
-				buf->size);
-			//*/
-			total_size += buf->size;
-		}
-		assert(total_size == size);
+	_fio_chunk_list_debug(fs, vector->chunks, "CHUNKS");
+
+	size_t total_size = 0;
+	for (size_t i = 0; i < bufvec->count; i++) {
+		struct fuse_buf *buf = &bufvec->buf[i];
+		fs->log("VECTOR bufvec[%zu] mem: %p offset: %zu size: %zu", i,
+			(void*)((char*)buf->mem - buf->pos), buf->pos,
+			buf->size);
+		total_size += buf->size;
 	}
+	assert(total_size == size);
 
 	return vector;
 }
@@ -591,18 +587,8 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 
 	fbr_body_UNLOCK(&fio->file->body);
 
-	if (fbr_assert_is_dev()) {
-		fbr_chunk_list_ok(fio->floating);
-		assert(fs->logger);
-		///*
-		for (size_t i = 0; i < fio->floating->length; i++) {
-			struct fbr_chunk *chunk = fio->floating->list[i];
-			fbr_chunk_ok(chunk);
-			fs->log("ZZZ floating[%zu] data: %p off: %zu len: %zu", i,
-				(void*)chunk->data, chunk->offset, chunk->length);
-		}
-		//*/
-	}
+	fbr_chunk_list_ok(fio->floating);
+	_fio_chunk_list_debug(fs, fio->floating, "FLOATING");
 }
 
 void

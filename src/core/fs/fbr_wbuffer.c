@@ -54,8 +54,10 @@ _wbuffer_alloc(struct fbr_fio *fio, size_t offset, size_t size)
 }
 
 static struct fbr_wbuffer *
-_wbuffer_find(struct fbr_fio *fio, struct fbr_wbuffer *head, size_t offset, size_t size)
+_wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer *head,
+    size_t offset, size_t size)
 {
+	assert_dev(fs);
 	assert_dev(fio);
 
 	struct fbr_wbuffer *wbuffer = NULL;
@@ -87,6 +89,9 @@ _wbuffer_find(struct fbr_fio *fio, struct fbr_wbuffer *head, size_t offset, size
 			prev->next = wbuffer;
 			wbuffer->next = current;
 		}
+
+		fs->log("WBUFFER alloc offset: %zu end: %zu size: %zu",
+			wbuffer->offset, wbuffer->end, wbuffer->size);
 	}
 
 	return wbuffer;
@@ -101,7 +106,7 @@ _wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
 
 	size_t offset_end = offset + size;
 
-	struct fbr_wbuffer *wbuffer = _wbuffer_find(fio, fio->wbuffers, offset, size);
+	struct fbr_wbuffer *wbuffer = _wbuffer_find(fs, fio, fio->wbuffers, offset, size);
 	fbr_wbuffer_ok(wbuffer);
 
 	if (!fio->wbuffers) {
@@ -118,7 +123,7 @@ _wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
 		size -= diff;
 		offset = current_end;
 
-		struct fbr_wbuffer *next = _wbuffer_find(fio, current->next, offset, size);
+		struct fbr_wbuffer *next = _wbuffer_find(fs, fio, current->next, offset, size);
 		fbr_wbuffer_ok(next);
 
 		if (!current->next) {
@@ -129,20 +134,8 @@ _wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
 		current_end = current->offset + current->size;
 	}
 
-	if (fbr_assert_is_dev()) {
-		fbr_wbuffer_ok(fio->wbuffers);
-		size_t i = 0;
-		current = fio->wbuffers;
-		while (current) {
-			fbr_wbuffer_ok(current);
-			///*
-			fs->log("WWW wbuffer[%zu] offset: %zu end: %zu size: %zu", i,
-				current->offset, current->end, current->size);
-			//*/
-			i++;
-			current = current->next;
-		}
-	}
+	fbr_wbuffer_ok(fio->wbuffers);
+	fbr_wbuffer_ok(wbuffer);
 
 	return wbuffer;
 }
@@ -198,10 +191,10 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 		memcpy(wbuffer->buffer + wbuffer_offset, buf + written, wsize);
 
 		if (wbuffer->end < wbuffer_offset + wsize) {
-			wbuffer->end = wbuffer_offset + wsize;
+			fs->log("WBUFFER extending offset: %zu end: %zu (was: %zu)",
+				wbuffer->offset, wbuffer_offset + wsize, wbuffer->end);
 
-			fs->log("WWW extending wbuffer offset: %zu end: %zu",
-				wbuffer->offset, wbuffer->end);
+			wbuffer->end = wbuffer_offset + wsize;
 
 			// Extend the file chunk
 			if (wbuffer->chunk) {
@@ -235,8 +228,10 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 
 	if (fio->file->size < offset_end) {
+		fs->log("WBUFFER new file->size: %zu (was: %zu)",
+			offset_end, fio->file->size);
+
 		fio->file->size = offset_end;
-		fs->log("WWW setting file->size=%zu", fio->file->size);
 	}
 
 	fbr_body_UNLOCK(&fio->file->body);
@@ -317,8 +312,8 @@ fbr_wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 		assert_zero(chunk->refcount);
 		assert_dev(chunk->state == FBR_CHUNK_WBUFFER);
 
-		fs->log("WWW wbuffer chunk state: %d offset: %zu length: %zu",
-			chunk->state, chunk->offset, chunk->length);
+		fs->log("WBUFFER chunk state: %s offset: %zu length: %zu",
+			fbr_chunk_state(chunk->state), chunk->offset, chunk->length);
 
 		chunk->state = FBR_CHUNK_EMPTY;
 		chunk->data = NULL;
@@ -328,17 +323,7 @@ fbr_wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 		wbuffer = wbuffer->next;
 	}
 
-	if (fbr_assert_is_dev()) {
-		struct fbr_chunk *chunk = file->body.chunks;
-		size_t i = 0;
-		while (chunk) {
-			fbr_chunk_ok(chunk);
-			fs->log("WWW body[%zu] state: %d off: %zu len: %zu", i,
-				chunk->state, chunk->offset, chunk->length);
-			chunk = chunk->next;
-			i++;
-		}
-	}
+	fbr_body_debug(fs, file);
 
 	fbr_body_UNLOCK(&file->body);
 }
