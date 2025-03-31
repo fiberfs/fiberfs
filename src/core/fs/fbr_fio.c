@@ -395,6 +395,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	struct fbr_chunk_vector *vector = malloc(sizeof(*vector));
 	assert(vector);
 
+	vector->magic = FBR_CHUNK_VECTOR_MAGIC;
 	vector->chunks = chunks;
 	vector->bufvec = NULL;
 	vector->offset = offset;
@@ -517,6 +518,8 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	}
 	assert(total_size == size);
 
+	fbr_chunk_vector_ok(vector);
+
 	return vector;
 }
 
@@ -527,7 +530,7 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 	fbr_chunk_list_ok(fio->floating);
-	assert(vector);
+	fbr_chunk_vector_ok(vector);
 
 	struct fbr_chunk_list *chunks = vector->chunks;
 	fbr_chunk_list_ok(chunks);

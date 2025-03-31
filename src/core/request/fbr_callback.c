@@ -71,7 +71,8 @@ void
 fbr_fuse_reply_data(struct fbr_request *request, struct fuse_bufvec *bufv,
     enum fuse_buf_copy_flags flags)
 {
-	fbr_request_valid(request);
+	// Aborting here can lock fio and freeze fuse
+	fbr_request_ok(request);
 	assert(request->fuse_req);
 
 	int ret = fuse_reply_data(request->fuse_req, bufv, flags);

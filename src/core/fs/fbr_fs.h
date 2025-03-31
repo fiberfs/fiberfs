@@ -82,6 +82,9 @@ struct fbr_chunk_list {
 };
 
 struct fbr_chunk_vector {
+	unsigned int				magic;
+#define FBR_CHUNK_VECTOR_MAGIC			0xDDB1156D
+
 	struct fbr_chunk_list			*chunks;
 	struct fuse_bufvec			*bufvec;
 	size_t					offset;
@@ -422,6 +425,7 @@ void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 #define fbr_chunk_ok(chunk)		fbr_magic_check(chunk, FBR_CHUNK_MAGIC)
 #define fbr_chunk_slab_ok(slab)		fbr_magic_check(slab, FBR_CHUNK_SLAB_MAGIC)
 #define fbr_chunk_list_ok(list)		fbr_magic_check(list, FBR_CHUNK_LIST_MAGIC)
+#define fbr_chunk_vector_ok(vector)	fbr_magic_check(vector, FBR_CHUNK_VECTOR_MAGIC)
 
 #define fbr_fs_int64(obj)					\
 	((uint64_t)(obj))
