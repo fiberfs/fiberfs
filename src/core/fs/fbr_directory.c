@@ -41,6 +41,7 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 			root_file = fbr_file_alloc(fs, NULL, FBR_DIRNAME_ROOT);
 			fbr_file_ok(root_file);
 			assert_dev(root_file->inode == FBR_INODE_ROOT);
+			assert_dev(root_file->state == FBR_FILE_OK);
 
 			// TODO mode needs to be configurable
 			root_file->mode = S_IFDIR | 0755;
@@ -243,7 +244,7 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
-	assert(file->state == FBR_FILE_NEW);
+	assert(file->state == FBR_FILE_INIT);
 
 	fbr_file_ref_dindex(fs, file);
 
@@ -274,7 +275,7 @@ fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
 	}
 
 	fbr_file_ok(file);
-	assert_dev(file->state != FBR_FILE_NEW);
+	assert_dev(file->state >= FBR_FILE_OK);
 
 	// directory owns a reference
 

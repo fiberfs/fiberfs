@@ -111,8 +111,8 @@ struct fbr_file_refcounts {
 };
 
 enum fbr_file_state {
-	FBR_FILE_NONE = 0,
-	FBR_FILE_NEW,
+	FBR_FILE_INIT = 0,
+	FBR_FILE_OK,
 	FBR_FILE_EXPIRED
 };
 

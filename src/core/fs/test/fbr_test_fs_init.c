@@ -50,16 +50,19 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_path_name_init(&filename, "fiber1");
 	struct fbr_file *file = fbr_file_alloc(fs, root, &filename);
 	file->mode = fmode;
+	file->state = FBR_FILE_OK;
 
 	fbr_path_name_init(&filename, "fiber2");
 	file = fbr_file_alloc(fs, root, &filename);
 	file->mode = fmode;
+	file->state = FBR_FILE_OK;
 
 	fmode = S_IFDIR | 0555;
 
 	fbr_path_name_init(&filename, "dir1");
 	file = fbr_file_alloc(fs, root, &filename);
 	file->mode = fmode;
+	file->state = FBR_FILE_OK;
 
 	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
 
@@ -111,7 +114,7 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_ASSERT(root->file == root_file, "Bad root file");
 	fbr_test_ERROR(root_file->parent_inode, "root has a parent inode");
-	fbr_test_ERROR(root_file->state, "root_file has a state");
+	fbr_test_ASSERT(root_file->state == FBR_FILE_OK, "root_file not FBR_FILE_OK");
 	fbr_test_ERROR(name.len, "root_file name has length");
 	fbr_test_ASSERT(name.name, "filename is null");
 	fbr_test_ERROR(strcmp(name.name, ""), "root_file not empty")

@@ -54,13 +54,12 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 
 	new_directory->generation = directory->generation + 1;
 
-	if (file->state == FBR_FILE_NEW) {
+	if (file->state == FBR_FILE_INIT) {
 		fbr_directory_add_file(fs, new_directory, file);
+		file->state = FBR_FILE_OK;
 	}
 
 	fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
-
-	assert(file->state == FBR_FILE_NONE);
 
 	// Safe to call within flush
 	fbr_dindex_release(fs, &directory);
@@ -235,7 +234,7 @@ _test_fs_rw_create(struct fbr_request *request, fuse_ino_t parent, const char *n
 	fbr_test_logs("** CREATE new file: inode: %lu path: '%s'", file->inode, filename.name);
 
 	assert(file->parent_inode == directory->inode);
-	assert(file->state == FBR_FILE_NEW);
+	assert(file->state == FBR_FILE_INIT);
 
 	file->mode = mode;
 

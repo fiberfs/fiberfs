@@ -39,9 +39,9 @@ _file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	file->magic = FBR_FILE_MAGIC;
 
 	if (parent) {
-		file->state = FBR_FILE_NEW;
 		file->inode = fbr_inode_gen(fs);
 	} else {
+		file->state = FBR_FILE_OK;
 		file->inode = FBR_INODE_ROOT;
 		fbr_path_shared_release(dirname);
 	}
@@ -64,7 +64,6 @@ _file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	} else {
 		assert_zero(create);
 		assert_zero(file->parent_inode);
-		assert_dev(file->state == FBR_FILE_NONE);
 	}
 
 	fbr_file_ok(file);
