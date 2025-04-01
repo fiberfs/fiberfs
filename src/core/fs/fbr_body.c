@@ -42,7 +42,7 @@ _body_chunk_slab_alloc(void)
 }
 
 static struct fbr_chunk *
-_body_chunk_get(struct fbr_body *body)
+_body_chunk_alloc(struct fbr_body *body)
 {
 	assert_dev(body);
 
@@ -86,7 +86,7 @@ _body_chunk_insert(struct fbr_body *body, struct fbr_chunk *chunk)
 		size_t current_end = current->offset + current->length;
 
 		// chunk starts before the end of current
-		if (chunk->offset <= current_end) {
+		if (chunk->offset < current_end) {
 			break;
 		}
 
@@ -102,42 +102,6 @@ _body_chunk_insert(struct fbr_body *body, struct fbr_chunk *chunk)
 	} else {
 		prev->next = chunk;
 		chunk->next = current;
-	}
-
-	// Remove unreachable chunks (best effort)
-
-	prev = chunk;
-
-	size_t range_start = chunk->offset;
-	size_t range_end = chunk->offset + chunk->length;
-
-	while (current) {
-		fbr_chunk_ok(current);
-
-		size_t current_end = current->offset + current->length;
-
-		// current sits inside chunk range, remove it
-		if (current->offset >= range_start && current_end <= range_end) {
-			prev->next = current->next;
-			if (current == body->chunk_last) {
-				assert_zero_dev(current->next);
-				body->chunk_last = prev;
-			}
-		} else {
-			prev = current;
-			// Expand the current range
-			if (fbr_chunk_in_offset(current, range_start, range_end) ||
-			    current_end == range_start || current->offset == range_end) {
-				if (current->offset < range_start) {
-					range_start = current->offset;
-				}
-				if (current_end > range_end) {
-					range_end = current_end;
-				}
-			}
-		}
-
-		current = current->next;
 	}
 }
 
@@ -160,7 +124,7 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 	}
 
 	if (!chunk) {
-		chunk = _body_chunk_get(&file->body);
+		chunk = _body_chunk_alloc(&file->body);
 	}
 
 	fbr_chunk_ok(chunk);

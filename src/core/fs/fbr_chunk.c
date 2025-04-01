@@ -226,41 +226,23 @@ fbr_chunk_list_next(struct fbr_chunk_list *chunks, size_t offset)
 	return closest;
 }
 
-struct fbr_chunk_list *
-fbr_chunk_list_reduce(struct fbr_chunk_list *chunks, size_t offset, size_t size)
+static int
+_chunk_list_complete(struct fbr_chunk_list *chunks, size_t offset, size_t size)
 {
-	fbr_chunk_list_ok(chunks);
+	assert_dev(chunks);
 
 	size_t offset_end = offset + size;
-	struct fbr_chunk_list *reduced = fbr_chunk_list_alloc();
 
 	while (offset < offset_end) {
 		struct fbr_chunk *chunk = fbr_chunk_list_find(chunks, offset);
 		if (!chunk) {
-			break;
+			return 0;
 		}
 
-		size_t chunk_end = chunk->offset + chunk->length;
-
-		if (!fbr_chunk_list_contains(reduced, chunk)) {
-			fbr_chunk_list_add(reduced, chunk);
-		}
-
-		chunk = fbr_chunk_list_next(chunks, offset);
-		if (!chunk) {
-			break;
-		}
-
-		if (chunk->offset < chunk_end) {
-			assert_dev(chunk->offset > offset);
-			offset = chunk->offset;
-		} else {
-			assert_dev(chunk->length);
-			offset = chunk_end;
-		}
+		offset = chunk->offset + chunk->length;
 	}
 
-	return reduced;
+	return 1;
 }
 
 struct fbr_chunk_list *
@@ -271,34 +253,21 @@ fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size)
 	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
 	struct fbr_chunk *chunk = file->body.chunks;
 
-	size_t offset_end = offset + size;
-	size_t range_start = (size_t)-1;
-	size_t range_end = 0;
-
 	while (chunk) {
 		fbr_chunk_ok(chunk);
 		assert(chunk->state >= FBR_CHUNK_EMPTY);
 
 		if (fbr_chunk_in_offset(chunk, offset, size)) {
-			chunks = fbr_chunk_list_add(chunks, chunk);
 
-			size_t chunk_end = chunk->offset + chunk->length;
-
-			// Early discontiguous chunks might not be in the range...
-
-			if (fbr_chunk_in_offset(chunk, range_start, range_end) ||
-			    range_start == (size_t)-1) {
-				if (chunk->offset < range_start) {
-					range_start = chunk->offset;
-				}
-				if (chunk_end > range_end) {
-					range_end = chunk_end;
-				}
+			if (_chunk_list_complete(chunks, chunk->offset, chunk->length)) {
+				chunk = chunk->next;
+				continue;
 			}
 
-			// Offset is inside range, we are done
-			if (offset >= range_start && offset_end <= range_end) {
-				return chunks;
+			chunks = fbr_chunk_list_add(chunks, chunk);
+
+			if (_chunk_list_complete(chunks, offset, size)) {
+				break;
 			}
 		}
 
