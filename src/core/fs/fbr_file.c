@@ -15,7 +15,7 @@
 
 static struct fbr_file *
 _file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
-    const struct fbr_path_name *filename, int new)
+    const struct fbr_path_name *filename, int create)
 {
 	fbr_fs_ok(fs);
 	assert(filename);
@@ -39,6 +39,7 @@ _file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	file->magic = FBR_FILE_MAGIC;
 
 	if (parent) {
+		file->state = FBR_FILE_NEW;
 		file->inode = fbr_inode_gen(fs);
 	} else {
 		file->inode = FBR_INODE_ROOT;
@@ -53,16 +54,17 @@ _file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	fbr_fs_stat_add(&fs->stats.files_total);
 
 	if (parent) {
-		if (new) {
+		if (create) {
 			assert_dev(parent->state == FBR_DIRSTATE_OK);
-			file->state = FBR_FILE_NEW;
 		} else {
 			fbr_directory_add_file(fs, parent, file);
 		}
 
 		file->parent_inode = parent->inode;
 	} else {
+		assert_zero(create);
 		assert_zero(file->parent_inode);
+		assert_dev(file->state == FBR_FILE_NONE);
 	}
 
 	fbr_file_ok(file);

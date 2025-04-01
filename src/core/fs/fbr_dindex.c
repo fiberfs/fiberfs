@@ -384,6 +384,16 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	assert(state == FBR_DIRSTATE_OK || state == FBR_DIRSTATE_ERROR);
 
+	if (state == FBR_DIRSTATE_OK) {
+		struct fbr_file *file;
+		TAILQ_FOREACH(file, &directory->file_list, file_entry) {
+			fbr_file_ok(file);
+			if (file->state == FBR_FILE_NEW) {
+				file->state = FBR_FILE_NONE;
+			}
+		}
+	}
+
 	struct fbr_dindex_dirhead *dirhead = _dindex_LOCK(fs, directory);
 
 	fbr_directory_ok(directory);

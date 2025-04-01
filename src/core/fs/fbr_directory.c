@@ -243,7 +243,7 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
-	assert_dev(file->state == FBR_FILE_NONE);
+	assert(file->state == FBR_FILE_NEW);
 
 	fbr_file_ref_dindex(fs, file);
 

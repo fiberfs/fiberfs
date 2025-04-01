@@ -145,6 +145,7 @@ struct fbr_chunk *
 fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length)
 {
 	fbr_file_ok(file);
+	assert(file->state == FBR_FILE_NEW);
 	assert(id);
 	assert(length);
 

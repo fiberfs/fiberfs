@@ -55,11 +55,12 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	new_directory->generation = directory->generation + 1;
 
 	if (file->state == FBR_FILE_NEW) {
-		file->state = FBR_FILE_NONE;
 		fbr_directory_add_file(fs, new_directory, file);
 	}
 
 	fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
+
+	assert(file->state == FBR_FILE_NONE);
 
 	// Safe to call within flush
 	fbr_dindex_release(fs, &directory);
