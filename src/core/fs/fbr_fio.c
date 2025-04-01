@@ -93,7 +93,7 @@ _fio_ready(struct fbr_chunk_list *chunks)
 }
 
 static struct fbr_chunk_list *
-_fio_pull_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
+_fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -251,7 +251,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 		size = fio->file->size - offset;
 	}
 
-	struct fbr_chunk_list *chunks = _fio_pull_chunks(fs, fio, offset, size);
+	struct fbr_chunk_list *chunks = _fio_fetch_chunks(fs, fio, offset, size);
 	fbr_chunk_list_ok(chunks);
 
 	struct fbr_chunk_vector *vector = malloc(sizeof(*vector));
@@ -399,17 +399,6 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 
 	size_t offset = vector->offset;
 	size_t size = vector->size;
-	size_t offset_end = offset + size;
-
-	// Try to keep more chunks around incase of slow parallel reads
-	size_t floating_end = offset;
-	size_t chunk_size = fbr_fs_chunk_size(offset) * 2;
-
-	if (floating_end > chunk_size) {
-		floating_end -= chunk_size;
-	} else {
-		floating_end = 1;
-	}
 
 	if (vector->bufvec) {
 		fbr_ZERO(vector->bufvec);
@@ -419,7 +408,20 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 	fbr_ZERO(vector);
 	free(vector);
 
+	// Try to keep more chunks around incase of slow parallel reads
+	size_t offset_end = offset + size;
+	size_t floating_end = offset_end;
+	size_t chunk_size = fbr_fs_chunk_size(offset_end) * 2;
+
+	if (floating_end > chunk_size) {
+		floating_end -= chunk_size;
+	} else {
+		floating_end = 1;
+	}
+
 	_fio_release_floating(fio, floating_end);
+
+	fs->log("FLOATING end: %zu", floating_end);
 
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];

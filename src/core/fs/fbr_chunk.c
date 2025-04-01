@@ -66,11 +66,11 @@ fbr_chunk_in_offset(struct fbr_chunk *chunk, size_t offset, size_t size)
 	size_t offset_end = offset + size;
 	size_t chunk_end = chunk->offset + chunk->length;
 
-	// Offset is inside chunk
+	// offset is inside chunk
 	if (offset >= chunk->offset && offset < chunk_end) {
 		return 1;
 	}
-	// Chunk is inside offset
+	// chunk is inside offset
 	if (offset < chunk->offset && offset_end > chunk->offset) {
 		return 1;
 	}
@@ -260,6 +260,7 @@ fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size)
 		if (fbr_chunk_in_offset(chunk, offset, size)) {
 
 			if (_chunk_list_complete(chunks, chunk->offset, chunk->length)) {
+				// TODO these chunks need to be deleted from the store
 				chunk = chunk->next;
 				continue;
 			}
@@ -267,6 +268,7 @@ fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size)
 			chunks = fbr_chunk_list_add(chunks, chunk);
 
 			if (_chunk_list_complete(chunks, offset, size)) {
+				// TODO mark chunk->next and forward for deletion
 				break;
 			}
 		}

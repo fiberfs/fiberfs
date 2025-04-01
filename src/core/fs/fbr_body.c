@@ -141,13 +141,14 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 		file->body.chunks = chunk;
 		file->body.chunk_last = chunk;
 	} else {
-		fbr_chunk_ok(file->body.chunk_last);
+		struct fbr_chunk *chunk_last = file->body.chunk_last;
+		fbr_chunk_ok(chunk_last);
 
-		size_t last_end = file->body.chunk_last->offset + file->body.chunk_last->length;
+		size_t last_end = chunk_last->offset + chunk_last->length;
 
 		// chunk starts after the end of the last
 		if (chunk->offset >= last_end) {
-			file->body.chunk_last->next = chunk;
+			chunk_last->next = chunk;
 			file->body.chunk_last = chunk;
 		} else {
 			_body_chunk_insert(&file->body, chunk);
@@ -192,24 +193,6 @@ fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_
 	pt_assert(pthread_mutex_unlock(&body->update_lock));
 }
 
-static void
-_body_chunk_slab_free(struct fbr_chunk_slab *slab)
-{
-	assert_dev(slab);
-
-	for (size_t i = 0; i < slab->length; i++) {
-		struct fbr_chunk *chunk = &slab->chunks[i];
-		fbr_chunk_ok(chunk);
-		assert_zero_dev(chunk->refcount);
-		assert(chunk->state <= FBR_CHUNK_EMPTY);
-	}
-
-	size_t chunk_size = sizeof(struct fbr_chunk) * slab->length;
-	explicit_bzero(slab, sizeof(*slab) + chunk_size);
-
-	free(slab);
-}
-
 void
 fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 {
@@ -227,6 +210,24 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 		chunk = chunk->next;
 		i++;
 	}
+}
+
+static void
+_body_chunk_slab_free(struct fbr_chunk_slab *slab)
+{
+	assert_dev(slab);
+
+	for (size_t i = 0; i < slab->length; i++) {
+		struct fbr_chunk *chunk = &slab->chunks[i];
+		fbr_chunk_ok(chunk);
+		assert_zero_dev(chunk->refcount);
+		assert(chunk->state <= FBR_CHUNK_EMPTY);
+	}
+
+	size_t chunk_size = sizeof(struct fbr_chunk) * slab->length;
+	explicit_bzero(slab, sizeof(*slab) + chunk_size);
+
+	free(slab);
 }
 
 void
