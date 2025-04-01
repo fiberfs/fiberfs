@@ -104,25 +104,37 @@ _body_chunk_insert(struct fbr_body *body, struct fbr_chunk *chunk)
 		chunk->next = current;
 	}
 
-	// Remove unreachable chunks
+	// Remove unreachable chunks (best effort)
 
-	size_t chunk_end = chunk->offset + chunk->length;
+	prev = chunk;
+
+	size_t range_start = chunk->offset;
+	size_t range_end = chunk->offset + chunk->length;
 
 	while (current) {
 		fbr_chunk_ok(current);
 
 		size_t current_end = current->offset + current->length;
 
-		// current sits inside chunk
-		if (current->offset >= chunk->offset && current_end <= chunk_end) {
-			chunk->next = current->next;
+		// current sits inside chunk range, remove it
+		if (current->offset >= range_start && current_end <= range_end) {
+			prev->next = current->next;
 			if (current == body->chunk_last) {
 				assert_zero_dev(current->next);
-				body->chunk_last = chunk;
+				body->chunk_last = prev;
 			}
 		} else {
-			// TODO expand the range and continue
-			break;
+			prev = current;
+			// Expand the current range
+			if (fbr_chunk_in_offset(current, range_start, range_end) ||
+			    current_end == range_start || current->offset == range_end) {
+				if (current->offset < range_start) {
+					range_start = current->offset;
+				}
+				if (current_end > range_end) {
+					range_end = current_end;
+				}
+			}
 		}
 
 		current = current->next;
@@ -216,55 +228,6 @@ fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_
 }
 
 static void
-_chunk_empty(struct fbr_chunk *chunk)
-{
-	assert_dev(chunk);
-	assert_zero_dev(chunk->refcount);
-
-	if (chunk->state == FBR_CHUNK_SPLICED) {
-		assert_dev(chunk->fd_splice_ok);
-		assert_zero_dev(chunk->data);
-	} else {
-		assert_dev(chunk->state == FBR_CHUNK_READY);
-		assert_dev(chunk->data);
-		free(chunk->data);
-	}
-
-	chunk->state = FBR_CHUNK_EMPTY;
-	chunk->fd_splice_ok = 0;
-	chunk->data = NULL;
-	chunk->chttp_splice = NULL;
-}
-
-void
-fbr_chunk_take(struct fbr_chunk *chunk) {
-	fbr_chunk_ok(chunk);
-
-	fbr_refcount_t refs = fbr_atomic_add(&chunk->refcount, 1);
-	assert(refs);
-
-	assert_dev(refs == 1 || chunk->state == FBR_CHUNK_READY);
-}
-
-void
-fbr_chunk_release(struct fbr_chunk *chunk) {
-	fbr_chunk_ok(chunk);
-	assert_dev(chunk->state != FBR_CHUNK_LOADING);
-
-	assert(chunk->refcount);
-	fbr_refcount_t refs = fbr_atomic_sub(&chunk->refcount, 1);
-
-	if (refs) {
-		return;
-	}
-
-	if (chunk->state == FBR_CHUNK_READY || chunk->state == FBR_CHUNK_SPLICED) {
-		_chunk_empty(chunk);
-		assert_dev(chunk->state == FBR_CHUNK_EMPTY);
-	}
-}
-
-static void
 _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 {
 	assert_dev(slab);
@@ -280,27 +243,6 @@ _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 	explicit_bzero(slab, sizeof(*slab) + chunk_size);
 
 	free(slab);
-}
-
-const char *
-fbr_chunk_state(enum fbr_chunk_state state)
-{
-	switch (state) {
-		case FBR_CHUNK_NONE:
-			return "NONE";
-		case FBR_CHUNK_EMPTY:
-			return "EMPTY";
-		case FBR_CHUNK_LOADING:
-			return "LOADING";
-		case FBR_CHUNK_READY:
-			return "READY";
-		case FBR_CHUNK_SPLICED:
-			return "SPLICE";
-		case FBR_CHUNK_WBUFFER:
-			return "WBUFFER";
-	}
-
-	return "ERROR";
 }
 
 void

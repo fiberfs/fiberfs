@@ -94,7 +94,7 @@ const char *fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name 
 int fbr_path_cmp_dir(const struct fbr_path *dir1, const struct fbr_path *dir2);
 int fbr_path_cmp_file(const struct fbr_path *file1, const struct fbr_path *file2);
 
-void fbr_path_name_init(struct fbr_path_name *name, const char *str);
+struct fbr_path_name *fbr_path_name_init(struct fbr_path_name *name, const char *str);
 int fbr_path_name_str_cmp(const struct fbr_path_name *name, const char *str);
 int fbr_path_name_cmp(const struct fbr_path_name *name1, const struct fbr_path_name *name2);
 void fbr_path_name_parent(const struct fbr_path_name *name, struct fbr_path_name *result);

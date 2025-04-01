@@ -354,6 +354,24 @@ void fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_re
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_attr(const struct fbr_file *file, struct stat *st);
 
+void fbr_chunk_take(struct fbr_chunk *chunk);
+void fbr_chunk_release(struct fbr_chunk *chunk);
+int fbr_chunk_in_offset(struct fbr_chunk *chunk, size_t offset, size_t size);
+const char *fbr_chunk_state(enum fbr_chunk_state state);
+
+struct fbr_chunk_list *fbr_chunk_list_alloc(void);
+struct fbr_chunk_list *fbr_chunk_list_expand(struct fbr_chunk_list *chunks);
+void fbr_chunk_list_debug(struct fbr_fs *fs, struct fbr_chunk_list *chunks, const char *name);
+struct fbr_chunk_list *fbr_chunk_list_add(struct fbr_chunk_list *chunks,
+	struct fbr_chunk *chunk);
+int fbr_chunk_list_contains(struct fbr_chunk_list *chunks, struct fbr_chunk *chunk);
+struct fbr_chunk *fbr_chunk_list_find(struct fbr_chunk_list *chunks, size_t offset);
+struct fbr_chunk *fbr_chunk_list_next(struct fbr_chunk_list *chunks, size_t offset);
+struct fbr_chunk_list *fbr_chunk_list_reduce(struct fbr_chunk_list *chunks, size_t offset,
+	size_t size);
+struct fbr_chunk_list *fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size);
+void fbr_chunk_list_free(struct fbr_chunk_list *chunks);
+
 void fbr_body_init(struct fbr_body *body);
 struct fbr_chunk *fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset,
 	size_t length);
@@ -361,9 +379,6 @@ void fbr_body_LOCK(struct fbr_body *body);
 void fbr_body_UNLOCK(struct fbr_body *body);
 void fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk,
 	enum fbr_chunk_state state);
-void fbr_chunk_take(struct fbr_chunk *chunk);
-void fbr_chunk_release(struct fbr_chunk *chunk);
-const char *fbr_chunk_state(enum fbr_chunk_state state);
 void fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_body_free(struct fbr_body *body);
 

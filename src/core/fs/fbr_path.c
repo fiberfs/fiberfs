@@ -336,7 +336,7 @@ fbr_path_cmp_file(const struct fbr_path *file1, const struct fbr_path *file2)
 	return strncmp(filename1.name, filename2.name, filename1.len);
 }
 
-void
+struct fbr_path_name *
 fbr_path_name_init(struct fbr_path_name *name, const char *str)
 {
 	assert(name);
@@ -344,6 +344,8 @@ fbr_path_name_init(struct fbr_path_name *name, const char *str)
 
 	name->len = strlen(str);
 	name->name = str;
+
+	return name;
 }
 
 int
