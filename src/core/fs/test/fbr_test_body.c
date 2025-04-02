@@ -5,6 +5,8 @@
  */
 
 #include "core/fs/fbr_fs.h"
+#include "core/store/fbr_store.h"
+
 #include "test/fbr_test.h"
 #include "fbr_test_fs_cmds.h"
 
@@ -99,6 +101,14 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_ASSERT(_find_chunk(file, 0, 0)->id == 1, "Wrong chunk");
 	fbr_ASSERT(file->size == 1000, "Bad file size");
 
+	chunks = fbr_chunk_list_file(file, 0, file->size, &removed);
+	fbr_chunk_list_debug(fs, chunks, "  file");
+	fbr_ASSERT(chunks->length == 1, "Bad file chunks count");
+	fbr_ASSERT(chunks->list[0]->id == 1, "Wrong file chunk");
+	fbr_chunk_list_free(chunks);
+	fbr_chunk_list_debug(fs, removed, "  removed");
+	fbr_ASSERT(removed->length == 0, "Wrong removed length");
+
 	file = fbr_file_alloc(fs, root, fbr_path_name_init(&name, "file2"));
 	fbr_body_chunk_add(file, 1, 0, 1000);
 	fbr_body_chunk_add(file, 2, 0, 500);
@@ -108,12 +118,15 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(_find_chunk(file, 500, 500)->id == 3);
 	assert(file->size == 1000);
 
-	chunks = fbr_chunk_list_file(file, 0, file->size, NULL);
+	chunks = fbr_chunk_list_file(file, 0, file->size, &removed);
 	fbr_chunk_list_debug(fs, chunks, "  file");
 	assert(chunks->length == 2);
 	assert(chunks->list[0]->id == 2);
 	assert(chunks->list[1]->id == 3);
 	fbr_chunk_list_free(chunks);
+	fbr_chunk_list_debug(fs, removed, "  removed");
+	assert(removed->length == 1);
+	assert(removed->list[0]->id == 1);
 
 	file = fbr_file_alloc(fs, root, fbr_path_name_init(&name, "file3"));
 	fbr_body_chunk_add(file, 1, 0, 1000);
@@ -286,6 +299,22 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_test_body done");
 }
 
+static void
+_test_body_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_chunk_ok(chunk);
+	assert(chunk->state == FBR_CHUNK_EMPTY);
+
+	chunk->state = FBR_CHUNK_READY;
+	chunk->data = (void*)"BODY_TEST";
+}
+
+static const struct fbr_store_callbacks _TEST_BODY_STORE_CALLBACKS = {
+	.fetch_chunk_f = _test_body_chunk_gen
+};
+
 void
 fbr_cmd_fs_test_body_fio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -297,9 +326,32 @@ fbr_cmd_fs_test_body_fio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fs->logger = fbr_fs_test_logger;
 
+	fbr_fs_set_store(fs, &_TEST_BODY_STORE_CALLBACKS);
+
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_LOADING);
+
+	struct fbr_file *file;
+	struct fbr_path_name name;
+	struct fbr_fio *fio;
+	struct fbr_chunk_vector *vector;
+
+	file = fbr_file_alloc(fs, root, fbr_path_name_init(&name, "file1"));
+	fbr_body_chunk_add(file, 1, 0, 1000);
+	fbr_ASSERT(_count_chunks(file) == 1, "Bad chunk count");
+	fbr_ASSERT(_find_chunk(file, 0, 0), "Chunk missing");
+	fbr_ASSERT(_get_chunk(file, 0), "Chunk missing");
+	fbr_ASSERT(_find_chunk(file, 0, 0)->id == 1, "Wrong chunk");
+	fbr_ASSERT(file->size == 1000, "Bad file size");
+
+	fbr_inode_add(fs, file);
+	fio = fbr_fio_alloc(fs, file);
+	vector = fbr_fio_vector_gen(fs, fio, 0, file->size);
+	fbr_ASSERT(vector, "Bad vector");
+	fbr_ASSERT(!fio->error, "fio error");
+	fbr_fio_vector_free(fs, fio, vector);
+	fbr_fio_release(fs, fio);
 
 	fbr_fs_free(fs);
 

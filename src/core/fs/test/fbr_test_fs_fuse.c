@@ -230,6 +230,7 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 	fbr_test_logs("** FETCH chunk: offset: %zu length: %zu splice: %d path: %s",
 		chunk->offset, chunk->length, chunk->fd_splice_ok, fullpath);
 
+	chunk->do_free = 1;
 	chunk->data = malloc(chunk->length);
 	assert(chunk->data);
 

@@ -155,6 +155,7 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 		}
 	}
 
+	assert_zero_dev(chunk->do_free);
 	assert_zero_dev(chunk->data);
 
 	fbr_chunk_ok(chunk);

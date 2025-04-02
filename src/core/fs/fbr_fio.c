@@ -133,6 +133,7 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 
 	while (!_fio_ready(chunks)) {
 		if (_fio_ready_error(chunks)) {
+			fs->log("FIO empty chunk found, setting error");
 			fio->error = 1;
 			break;
 		}
@@ -180,7 +181,7 @@ _fio_release_floating(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset_end)
 
 		size_t chunk_end = chunk->offset + chunk->length;
 
-		if (offset_end && chunk_end > offset_end) {
+		if (offset_end && chunk_end >= offset_end) {
 			chunks->list[keep] = chunk;
 			keep++;
 		} else {
@@ -385,7 +386,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 
 	assert_dev(offset_pos == offset_end);
 
-	fbr_chunk_list_debug(fs, vector->chunks, "CHUNKS");
+	fbr_chunk_list_debug(fs, vector->chunks, "FIO");
 
 	size_t total_size = 0;
 	for (size_t i = 0; i < bufvec->count; i++) {
@@ -428,7 +429,11 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 	// Try to keep more chunks around incase of slow parallel reads
 	size_t offset_end = offset + size;
 
-	_fio_release_floating(fs, fio, offset_end);
+	if (fio->error) {
+		_fio_release_floating(fs, fio, 0);
+	} else {
+		_fio_release_floating(fs, fio, offset_end);
+	}
 
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
@@ -443,9 +448,8 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 
 		size_t chunk_end = chunk->offset + chunk->length;
 
-		// chunk starts before offset_end and ends after
-		if (offset_end && chunk_end > offset_end &&
-		    chunk->state == FBR_CHUNK_READY) {
+		// chunk ends after offset_end
+		if (chunk_end > offset_end && chunk->state == FBR_CHUNK_READY) {
 			assert(chunk->offset < offset_end);
 
 			fbr_chunk_take(chunk);
@@ -477,13 +481,14 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 		return;
 	}
 
-	fbr_body_LOCK(&fio->file->body);
-	_fio_release_floating(fs, fio, 0);
-	fbr_body_UNLOCK(&fio->file->body);
+	if (fio->floating->length) {
+		fbr_body_LOCK(&fio->file->body);
+		_fio_release_floating(fs, fio, 0);
+		fbr_body_UNLOCK(&fio->file->body);
+		assert_zero_dev(fio->floating->length);
+	}
 
-	assert_zero_dev(fio->floating->length);
 	fbr_chunk_list_free(fio->floating);
-
 	fbr_wbuffer_free(fs, fio);
 
 	fbr_inode_release(fs, &fio->file);

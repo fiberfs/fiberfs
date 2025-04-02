@@ -202,6 +202,7 @@ fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chu
 		return;
 	}
 
+	chunk->do_free = 1;
 	chunk->data = malloc(chunk->length);
 	assert(chunk->data);
 

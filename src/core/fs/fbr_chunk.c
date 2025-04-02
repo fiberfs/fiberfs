@@ -20,14 +20,17 @@ fbr_chunk_reset(struct fbr_chunk *chunk)
 		assert_dev(chunk->fd_splice_ok);
 		assert_zero_dev(chunk->data);
 	} else if (chunk->state == FBR_CHUNK_READY) {
-		assert_dev(chunk->data);
-		free(chunk->data);
+		if (chunk->do_free) {
+			assert_dev(chunk->data);
+			free(chunk->data);
+		}
 	} else {
 		return;
 	}
 
 	chunk->state = FBR_CHUNK_EMPTY;
 	chunk->fd_splice_ok = 0;
+	chunk->do_free = 0;
 	chunk->data = NULL;
 	chunk->chttp_splice = NULL;
 }
