@@ -96,6 +96,7 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_ASSERT(_find_chunk(file, 0, 0), "Chunk missing");
 	fbr_ASSERT(_get_chunk(file, 0), "Chunk missing");
 	fbr_ASSERT(_find_chunk(file, 0, 0)->id == 1, "Wrong chunk");
+	fbr_ASSERT(file->size == 1000, "Bad file size");
 
 	file = fbr_file_alloc(fs, root, fbr_path_name_init(&name, "file2"));
 	fbr_body_chunk_add(file, 1, 0, 1000);
@@ -104,8 +105,9 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(_count_chunks(file) == 3);
 	assert(_find_chunk(file, 0, 0)->id == 2);
 	assert(_find_chunk(file, 500, 500)->id == 3);
+	assert(file->size == 1000);
 
-	chunks = fbr_chunk_list_file(file, 0, 1000);
+	chunks = fbr_chunk_list_file(file, 0, file->size);
 	fbr_chunk_list_debug(fs, chunks, "  chunks");
 	assert(chunks->length == 2);
 	assert(chunks->list[0]->id == 2);
@@ -120,7 +122,7 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(_find_chunk(file, 0, 0)->id == 2);
 	assert(_find_chunk(file, 500, 500)->id == 3);
 
-	chunks = fbr_chunk_list_file(file, 0, 1000);
+	chunks = fbr_chunk_list_file(file, 0, file->size);
 	fbr_chunk_list_debug(fs, chunks, "  chunks");
 	assert(chunks->length == 2);
 	assert(chunks->list[0]->id == 2);
@@ -133,7 +135,7 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_body_chunk_add(file, 2, 0, 499);
 	assert(_count_chunks(file) == 3);
 
-	chunks = fbr_chunk_list_file(file, 0, 1000);
+	chunks = fbr_chunk_list_file(file, 0, file->size);
 	fbr_chunk_list_debug(fs, chunks, "  chunks");
 	assert(chunks->length == 3);
 	fbr_chunk_list_free(chunks);
@@ -143,8 +145,9 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_body_chunk_add(file, 2, 0, 2000);
 	assert(_count_chunks(file) == 2);
 	assert(_get_chunk(file, 0)->id == 2);
+	assert(file->size == 2000);
 
-	chunks = fbr_chunk_list_file(file, 0, 2000);
+	chunks = fbr_chunk_list_file(file, 0, file->size);
 	fbr_chunk_list_debug(fs, chunks, "  chunks");
 	assert(chunks->length == 1);
 	assert(chunks->list[0]->id == 2);
@@ -159,8 +162,9 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_body_chunk_add(file, 6, 0, 200);
 	fbr_body_chunk_add(file, 7, 600, 400);
 	assert(_count_chunks(file) == 7);
+	assert(file->size == 1000);
 
-	chunks = fbr_chunk_list_file(file, 0, 1000);
+	chunks = fbr_chunk_list_file(file, 0, file->size);
 	fbr_chunk_list_debug(fs, chunks, "  chunks");
 	assert(chunks->length == 4);
 	assert(chunks->list[0]->id == 6);
@@ -176,8 +180,9 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_body_chunk_add(file, 4, 0, 25);
 	fbr_body_chunk_add(file, 5, 75, 25);
 	assert(_count_chunks(file) == 5);
+	assert(file->size == 100);
 
-	chunks = fbr_chunk_list_file(file, 0, 100);
+	chunks = fbr_chunk_list_file(file, 0, file->size);
 	fbr_chunk_list_debug(fs, chunks, "  chunks");
 	assert(chunks->length == 4);
 	assert(chunks->list[0]->id == 4);
@@ -195,8 +200,9 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_body_chunk_add(file, 6, 500, 100);
 	fbr_body_chunk_add(file, 7, 300, 200);
 	assert(_count_chunks(file) == 7);
+	assert(file->size == 600);
 
-	chunks = fbr_chunk_list_file(file, 0, 1000);
+	chunks = fbr_chunk_list_file(file, 0, file->size);
 	fbr_chunk_list_debug(fs, chunks, "  chunks");
 	assert(chunks->length == 5);
 	assert(chunks->list[0]->id == 1);
@@ -218,8 +224,9 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(_get_chunk(file, 2)->id == 3);
 	assert(_get_chunk(file, 3)->id == 4);
 	assert(_get_chunk(file, 4)->id == 1);
+	assert(file->size == 300);
 
-	chunks = fbr_chunk_list_file(file, 0, 1000);
+	chunks = fbr_chunk_list_file(file, 0, file->size);
 	fbr_chunk_list_debug(fs, chunks, "  chunks");
 	assert(chunks->length == 1);
 	assert(chunks->list[0]->id == 5);
@@ -237,8 +244,9 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(_get_chunk(file, 2)->id == 3);
 	assert(_get_chunk(file, 3)->id == 4);
 	assert(_get_chunk(file, 4)->id == 1);
+	assert(file->size == 500);
 
-	chunks = fbr_chunk_list_file(file, 0, 1000);
+	chunks = fbr_chunk_list_file(file, 0, file->size);
 	fbr_chunk_list_debug(fs, chunks, "  chunks");
 	assert(chunks->length == 4);
 	assert(chunks->list[0]->id == 5);

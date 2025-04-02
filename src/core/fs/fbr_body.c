@@ -159,6 +159,11 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 
 	fbr_chunk_ok(chunk);
 
+	size_t chunk_end = chunk->offset + chunk->length;
+	if (file->size < chunk_end) {
+		file->size = chunk_end;
+	}
+
 	return chunk;
 }
 

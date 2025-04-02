@@ -133,7 +133,6 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		file = fbr_file_alloc(fs, directory, &filename);
 
 		size_t chunks = (i + 1) * depth;
-		file->size = chunks * 1001;
 		file->generation = fbr_id_gen();
 		file->mode = fmode;
 
@@ -153,6 +152,8 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 			}
 			offset += 1001;
 		}
+
+		file->size = chunks * 1001;
 		assert(offset == file->size);
 
 		file->state = FBR_FILE_OK;
