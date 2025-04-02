@@ -209,6 +209,9 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 		if (!wbuffer->chunk) {
 			assert_zero_dev(wbuffer_offset);
 
+			fs->log("WBUFFER new chunk offset: %zu length: %zu",
+				wbuffer->offset, wbuffer->end);
+
 			struct fbr_chunk *chunk = fbr_body_chunk_add(fio->file, wbuffer->id,
 				wbuffer->offset, wbuffer->end);
 			assert_dev(chunk);

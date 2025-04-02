@@ -39,7 +39,7 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	fbr_ASSERT(directory, "directory '%s' missing", dirname.name);
 	fbr_directory_ok(directory);
 
-	fs->log("FFF directory: '%s'", dirname.name);
+	fs->log("RW_FLUSH directory: '%s'", dirname.name);
 
 	// TODO we dump the directory with changes making sure we version match
 	// otherwise repeat
