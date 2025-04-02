@@ -12,9 +12,9 @@
 void
 fbr_chunk_reset(struct fbr_chunk *chunk)
 {
-	assert_dev(chunk);
-	assert_zero_dev(chunk->refcount);
-	assert_dev(chunk->state != FBR_CHUNK_LOADING);
+	fbr_chunk_ok(chunk);
+	assert_zero(chunk->refcount);
+	assert(chunk->state != FBR_CHUNK_LOADING);
 
 	if (chunk->state == FBR_CHUNK_SPLICED) {
 		assert_dev(chunk->fd_splice_ok);
@@ -33,7 +33,8 @@ fbr_chunk_reset(struct fbr_chunk *chunk)
 }
 
 void
-fbr_chunk_take(struct fbr_chunk *chunk) {
+fbr_chunk_take(struct fbr_chunk *chunk)
+{
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_READY);
 
@@ -42,7 +43,8 @@ fbr_chunk_take(struct fbr_chunk *chunk) {
 }
 
 void
-fbr_chunk_release(struct fbr_chunk *chunk) {
+fbr_chunk_release(struct fbr_chunk *chunk)
+{
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_READY);
 
@@ -59,7 +61,7 @@ fbr_chunk_release(struct fbr_chunk *chunk) {
 int
 fbr_chunk_in_offset(struct fbr_chunk *chunk, size_t offset, size_t size)
 {
-	assert_dev(chunk);
+	fbr_chunk_ok(chunk);
 
 	size_t offset_end = offset + size;
 	size_t chunk_end = chunk->offset + chunk->length;
@@ -130,9 +132,9 @@ fbr_chunk_list_expand(struct fbr_chunk_list *chunks)
 void
 fbr_chunk_list_debug(struct fbr_fs *fs, struct fbr_chunk_list *chunks, const char *name)
 {
-	assert_dev(fs);
+	fbr_fs_ok(fs);
 	assert_dev(fs->logger);
-	assert_dev(chunks);
+	fbr_chunk_list_ok(chunks);
 
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
@@ -146,8 +148,8 @@ fbr_chunk_list_debug(struct fbr_fs *fs, struct fbr_chunk_list *chunks, const cha
 struct fbr_chunk_list *
 fbr_chunk_list_add(struct fbr_chunk_list *chunks, struct fbr_chunk *chunk)
 {
-	assert_dev(chunks);
-	assert_dev(chunk);
+	fbr_chunk_list_ok(chunks);
+	fbr_chunk_ok(chunk);
 
 	if (chunks->length == chunks->capacity) {
 		chunks = fbr_chunk_list_expand(chunks);
@@ -163,8 +165,8 @@ fbr_chunk_list_add(struct fbr_chunk_list *chunks, struct fbr_chunk *chunk)
 int
 fbr_chunk_list_contains(struct fbr_chunk_list *chunks, struct fbr_chunk *chunk)
 {
-	assert_dev(chunks);
-	assert_dev(chunk);
+	fbr_chunk_list_ok(chunks);
+	fbr_chunk_ok(chunk);
 
 	for (size_t i = 0; i < chunks->length; i++) {
 		if (chunks->list[i] == chunk) {
@@ -178,7 +180,7 @@ fbr_chunk_list_contains(struct fbr_chunk_list *chunks, struct fbr_chunk *chunk)
 struct fbr_chunk *
 fbr_chunk_list_find(struct fbr_chunk_list *chunks, size_t offset)
 {
-	assert_dev(chunks);
+	fbr_chunk_list_ok(chunks);
 
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
@@ -199,7 +201,7 @@ fbr_chunk_list_find(struct fbr_chunk_list *chunks, size_t offset)
 struct fbr_chunk *
 fbr_chunk_list_next(struct fbr_chunk_list *chunks, size_t offset)
 {
-	assert_dev(chunks);
+	fbr_chunk_list_ok(chunks);
 
 	struct fbr_chunk *closest = NULL;
 	size_t closest_distance = 0;
@@ -244,21 +246,41 @@ _chunk_list_complete(struct fbr_chunk_list *chunks, size_t offset, size_t size)
 }
 
 struct fbr_chunk_list *
-fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size)
+fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size,
+    struct fbr_chunk_list **removed)
 {
 	fbr_file_ok(file);
+	assert_dev(size <= file->size);
 
 	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
 	struct fbr_chunk *chunk = file->body.chunks;
+	int completed = 0;
+	int do_removed = 0;
+
+	if (removed) {
+		assert(size == file->size);
+
+		if (!*removed) {
+			*removed = fbr_chunk_list_alloc();
+		} else {
+			fbr_chunk_list_ok(*removed);
+			(*removed)->length = 0;
+		}
+
+		do_removed = 1;
+	}
 
 	while (chunk) {
 		fbr_chunk_ok(chunk);
 		assert(chunk->state >= FBR_CHUNK_EMPTY);
 
-		if (fbr_chunk_in_offset(chunk, offset, size)) {
+		if (!completed && fbr_chunk_in_offset(chunk, offset, size)) {
 
 			if (_chunk_list_complete(chunks, chunk->offset, chunk->length)) {
-				// TODO these chunks need to be deleted from the store
+				if (do_removed) {
+					*removed = fbr_chunk_list_add(*removed, chunk);
+				}
+
 				chunk = chunk->next;
 				continue;
 			}
@@ -266,9 +288,14 @@ fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size)
 			chunks = fbr_chunk_list_add(chunks, chunk);
 
 			if (_chunk_list_complete(chunks, offset, size)) {
-				// TODO mark chunk->next and forward for deletion
-				break;
+				if (do_removed) {
+					completed = 1;
+				} else {
+					break;
+				}
 			}
+		} else if (do_removed) {
+			*removed = fbr_chunk_list_add(*removed, chunk);
 		}
 
 		chunk = chunk->next;
