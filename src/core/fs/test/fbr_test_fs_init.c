@@ -137,6 +137,9 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 		sizeof(struct fbr_chunk));
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_body)=%zu",
 		sizeof(struct fbr_body));
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_chunk_slab)=%zu",
+		(sizeof(struct fbr_chunk) * FBR_BODY_SLAB_DEFAULT_CHUNKS) +
+			sizeof(struct fbr_chunk_slab));
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_file)=%zu",
 		sizeof(struct fbr_file));
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(struct fbr_directory)=%zu",

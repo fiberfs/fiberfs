@@ -110,7 +110,6 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 	fbr_file_ok(file);
 	// TODO exiting file?
 	assert(file->state == FBR_FILE_INIT);
-	assert(id);
 	assert(length);
 
 	struct fbr_chunk *chunk = NULL;
@@ -191,6 +190,7 @@ fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_
 
 	switch (state) {
 		case FBR_CHUNK_EMPTY:
+		case FBR_CHUNK_LOADING:
 		case FBR_CHUNK_READY:
 		case FBR_CHUNK_SPLICED:
 			break;

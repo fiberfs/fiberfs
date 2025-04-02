@@ -54,6 +54,8 @@ struct fbr_chunk {
 
 	size_t					offset;
 	size_t					length;
+	size_t					partial;
+
 	fbr_refcount_t				refcount;
 
 	uint8_t					*data;
