@@ -426,7 +426,7 @@ _test_fetch_thread(void *arg)
 
 	fbr_test_logs("FETCH synced: %d", id);
 
-	fbr_sleep_ms(random() % 100);
+	fbr_sleep_ms(random() % 60);
 
 	fbr_chunk_update(&file->body, chunk, FBR_CHUNK_READY);
 
@@ -478,6 +478,8 @@ _test_fio_thread(void *arg)
 	assert(id < _BODY_TEST_THREADS);
 
 	fbr_test_logs("** fio_thread %d", id);
+
+	fbr_sleep_ms(random() % 40);
 
 	size_t offset = id * 1000;
 
