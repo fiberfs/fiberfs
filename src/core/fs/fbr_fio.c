@@ -256,6 +256,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
+	// TODO we lock the body while fetching
 	fbr_body_LOCK(&fio->file->body);
 
 	fio->error = 0;
