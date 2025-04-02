@@ -308,7 +308,9 @@ _test_body_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 	assert(chunk->state == FBR_CHUNK_EMPTY);
 
 	chunk->state = FBR_CHUNK_READY;
-	chunk->data = (void*)"BODY_TEST";
+	chunk->data = (void*)chunk->id;
+
+	fs->log("FETCH chunk id: %lu off: %zu len: %zu", chunk->id, chunk->offset, chunk->length);
 }
 
 static const struct fbr_store_callbacks _TEST_BODY_STORE_CALLBACKS = {
@@ -350,6 +352,25 @@ fbr_cmd_fs_test_body_fio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	vector = fbr_fio_vector_gen(fs, fio, 0, file->size);
 	fbr_ASSERT(vector, "Bad vector");
 	fbr_ASSERT(!fio->error, "fio error");
+	fbr_ASSERT(vector->bufvec, "bufvec missing");
+	fbr_ASSERT(vector->bufvec->count == 1, "Bad bufvec count");
+	fbr_fio_vector_free(fs, fio, vector);
+	fbr_fio_release(fs, fio);
+
+	file = fbr_file_alloc(fs, root, fbr_path_name_init(&name, "file2"));
+	for (size_t i = 0; i < 5; i++) {
+		fbr_body_chunk_add(file, i + 1, i * 1000, 1000);
+	}
+	assert(_count_chunks(file) == 5);
+	assert(file->size == 5000);
+
+	fbr_inode_add(fs, file);
+	fio = fbr_fio_alloc(fs, file);
+	vector = fbr_fio_vector_gen(fs, fio, 0, 1500);
+	assert(vector->bufvec->count == 2);
+	fbr_fio_vector_free(fs, fio, vector);
+	vector = fbr_fio_vector_gen(fs, fio, 1500, 2500);
+	assert(vector->bufvec->count == 3);
 	fbr_fio_vector_free(fs, fio, vector);
 	fbr_fio_release(fs, fio);
 
