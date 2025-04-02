@@ -17,7 +17,6 @@ fbr_body_init(struct fbr_body *body)
 	assert_dev(body);
 
 	pt_assert(pthread_mutex_init(&body->lock, NULL));
-	pt_assert(pthread_mutex_init(&body->update_lock, NULL));
 	pt_assert(pthread_cond_init(&body->update, NULL));
 
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
@@ -109,6 +108,7 @@ struct fbr_chunk *
 fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length)
 {
 	fbr_file_ok(file);
+	// TODO exiting file?
 	assert(file->state == FBR_FILE_INIT);
 	assert(id);
 	assert(length);
@@ -188,15 +188,23 @@ fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_
 	assert(body);
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_LOADING);
-	assert(state == FBR_CHUNK_EMPTY || state == FBR_CHUNK_READY || state == FBR_CHUNK_SPLICED);
 
-	pt_assert(pthread_mutex_lock(&body->update_lock));
+	switch (state) {
+		case FBR_CHUNK_EMPTY:
+		case FBR_CHUNK_READY:
+		case FBR_CHUNK_SPLICED:
+			break;
+		default:
+			fbr_ABORT("fbr_chunk_update() invalid state %d", state);
+	}
+
+	pt_assert(pthread_mutex_lock(&body->lock));
 
 	chunk->state = state;
 
 	pt_assert(pthread_cond_broadcast(&body->update));
 
-	pt_assert(pthread_mutex_unlock(&body->update_lock));
+	pt_assert(pthread_mutex_unlock(&body->lock));
 }
 
 void
@@ -242,7 +250,6 @@ fbr_body_free(struct fbr_body *body)
 	assert_dev(body);
 
 	pt_assert(pthread_mutex_destroy(&body->lock));
-	pt_assert(pthread_mutex_destroy(&body->update_lock));
 	pt_assert(pthread_cond_destroy(&body->update));
 
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {

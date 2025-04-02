@@ -94,7 +94,6 @@ struct fbr_chunk_vector {
 
 struct fbr_body {
 	pthread_mutex_t				lock;
-	pthread_mutex_t				update_lock;
 	pthread_cond_t				update;
 
 	struct {
@@ -355,7 +354,6 @@ void fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_re
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_attr(const struct fbr_file *file, struct stat *st);
 
-void fbr_chunk_reset(struct fbr_chunk *chunk);
 void fbr_chunk_take(struct fbr_chunk *chunk);
 void fbr_chunk_release(struct fbr_chunk *chunk);
 int fbr_chunk_in_offset(struct fbr_chunk *chunk, size_t offset, size_t size);
@@ -428,8 +426,6 @@ void fbr_wbuffer_init(struct fbr_fio *fio);
 size_t fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 	const char *buf, size_t size);
 int fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio);
-void fbr_wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file,
-	struct fbr_wbuffer *wbuffer);
 void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 
 #define fbr_fs_ok(fs)			fbr_magic_check(fs, FBR_FS_MAGIC)

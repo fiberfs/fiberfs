@@ -9,23 +9,27 @@
 #include "fiberfs.h"
 #include "fbr_fs.h"
 
-void
-fbr_chunk_reset(struct fbr_chunk *chunk)
+static void
+_chunk_reset(struct fbr_chunk *chunk)
 {
 	fbr_chunk_ok(chunk);
 	assert_zero(chunk->refcount);
 	assert(chunk->state != FBR_CHUNK_LOADING);
 
-	if (chunk->state == FBR_CHUNK_SPLICED) {
-		assert_dev(chunk->fd_splice_ok);
-		assert_zero_dev(chunk->data);
-	} else if (chunk->state == FBR_CHUNK_READY) {
-		if (chunk->do_free) {
-			assert_dev(chunk->data);
-			free(chunk->data);
-		}
-	} else {
-		return;
+	switch (chunk->state) {
+		case FBR_CHUNK_READY:
+		case FBR_CHUNK_WBUFFER:
+			if (chunk->do_free) {
+				assert_dev(chunk->data);
+				free(chunk->data);
+			}
+			break;
+		case FBR_CHUNK_SPLICED:
+			assert_dev(chunk->fd_splice_ok);
+			assert_zero_dev(chunk->data);
+			break;
+		default:
+			break;
 	}
 
 	chunk->state = FBR_CHUNK_EMPTY;
@@ -39,7 +43,7 @@ void
 fbr_chunk_take(struct fbr_chunk *chunk)
 {
 	fbr_chunk_ok(chunk);
-	assert(chunk->state == FBR_CHUNK_READY);
+	assert(chunk->state >= FBR_CHUNK_EMPTY);
 
 	fbr_refcount_t refs = fbr_atomic_add(&chunk->refcount, 1);
 	assert(refs);
@@ -49,7 +53,7 @@ void
 fbr_chunk_release(struct fbr_chunk *chunk)
 {
 	fbr_chunk_ok(chunk);
-	assert(chunk->state == FBR_CHUNK_READY);
+	assert(chunk->state >= FBR_CHUNK_EMPTY);
 
 	assert(chunk->refcount);
 	fbr_refcount_t refs = fbr_atomic_sub(&chunk->refcount, 1);
@@ -58,7 +62,7 @@ fbr_chunk_release(struct fbr_chunk *chunk)
 		return;
 	}
 
-	fbr_chunk_reset(chunk);
+	_chunk_reset(chunk);
 }
 
 int

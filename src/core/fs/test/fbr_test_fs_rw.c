@@ -45,7 +45,6 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	// otherwise repeat
 
 	fbr_dstore_wbuffer(fs, file, wbuffer);
-	fbr_wbuffer_flush_chunks(fs, file, wbuffer);
 
 	// Load the new directory, this is a temporary workaround
 	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);

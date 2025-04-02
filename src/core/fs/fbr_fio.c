@@ -108,6 +108,8 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 		fbr_chunk_ok(chunk);
 		assert_dev(chunk->length);
 
+		fbr_chunk_take(chunk);
+
 		size_t chunk_end = chunk->offset + chunk->length;
 
 		if (chunk->state == FBR_CHUNK_EMPTY) {
@@ -127,10 +129,6 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 		}
 	}
 
-	struct fbr_body *body = &fio->file->body;
-
-	pt_assert(pthread_mutex_lock(&body->update_lock));
-
 	while (!_fio_ready(chunks)) {
 		if (_fio_ready_error(chunks)) {
 			fs->log("FIO empty chunk found, setting error");
@@ -138,10 +136,8 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 			break;
 		}
 
-		pt_assert(pthread_cond_wait(&body->update, &body->update_lock));
+		pt_assert(pthread_cond_wait(&fio->file->body.update, &fio->file->body.lock));
 	}
-
-	pt_assert(pthread_mutex_unlock(&body->update_lock));
 
 	return chunks;
 }
@@ -256,7 +252,6 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
-	// TODO we lock the body while fetching
 	fbr_body_LOCK(&fio->file->body);
 
 	fio->error = 0;
@@ -272,6 +267,10 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 
 	struct fbr_chunk_list *chunks = _fio_fetch_chunks(fs, fio, offset, size);
 	fbr_chunk_list_ok(chunks);
+
+	// Note: block could be unlocked in _fio_fetch_chunks(), potential changes:
+	//  * chunk->length can increase
+	//  * file->size can change
 
 	struct fbr_chunk_vector *vector = malloc(sizeof(*vector));
 	assert(vector);
@@ -318,7 +317,6 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 
 		fbr_chunk_ok(chunk);
 		assert(chunk->state >= FBR_CHUNK_READY);
-		assert(chunk->data);
 
 		size_t chunk_offset = 0;
 		if (chunk->offset < offset_pos) {
@@ -357,8 +355,8 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 			}
 		}
 
-		assert_dev(chunk->state != FBR_CHUNK_SPLICED);
-		assert_dev(chunk->data);
+		assert(chunk->state != FBR_CHUNK_SPLICED);
+		assert(chunk->data);
 
 		if (bufvec->idx == bufvec->count) {
 			bufvec = _fio_bufvec_expand(bufvec);
@@ -444,6 +442,7 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 		chunks->list[i] = NULL;
 
 		if (fbr_chunk_list_contains(fio->floating, chunk)) {
+			fbr_chunk_release(chunk);
 			continue;
 		}
 
@@ -452,11 +451,9 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 		// chunk ends after offset_end
 		if (chunk_end > offset_end && chunk->state == FBR_CHUNK_READY) {
 			assert(chunk->offset < offset_end);
-
-			fbr_chunk_take(chunk);
 			fio->floating = fbr_chunk_list_add(fio->floating, chunk);
 		} else {
-			fbr_chunk_reset(chunk);
+			fbr_chunk_release(chunk);
 		}
 	}
 
