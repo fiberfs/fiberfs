@@ -77,6 +77,7 @@ FBR_TEST_FS_CMD(fs_test_path)
 FBR_TEST_FS_CMD(fs_test_id_assert)
 
 FBR_TEST_FS_CMD(fs_test_body)
+FBR_TEST_FS_CMD(fs_test_body_fio)
 
 FBR_TEST_FS_CMD(fs_test_root_parallel)
 FBR_TEST_FS_CMD(fs_test_directory_parallel)
