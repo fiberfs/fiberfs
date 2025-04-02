@@ -268,7 +268,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	struct fbr_chunk_list *chunks = _fio_fetch_chunks(fs, fio, offset, size);
 	fbr_chunk_list_ok(chunks);
 
-	// Note: block could be unlocked in _fio_fetch_chunks(), potential changes:
+	// Note: body could be unlocked in _fio_fetch_chunks(), potential changes:
 	//  * chunk->length can increase
 	//  * file->size can change
 
