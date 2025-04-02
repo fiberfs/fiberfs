@@ -354,6 +354,7 @@ void fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_re
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_attr(const struct fbr_file *file, struct stat *st);
 
+void fbr_chunk_reset(struct fbr_chunk *chunk);
 void fbr_chunk_take(struct fbr_chunk *chunk);
 void fbr_chunk_release(struct fbr_chunk *chunk);
 int fbr_chunk_in_offset(struct fbr_chunk *chunk, size_t offset, size_t size);

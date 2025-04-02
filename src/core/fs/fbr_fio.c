@@ -108,8 +108,6 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 		fbr_chunk_ok(chunk);
 		assert_dev(chunk->length);
 
-		fbr_chunk_take(chunk);
-
 		size_t chunk_end = chunk->offset + chunk->length;
 
 		if (chunk->state == FBR_CHUNK_EMPTY) {
@@ -431,7 +429,6 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 		chunks->list[i] = NULL;
 
 		if (fbr_chunk_list_contains(fio->floating, chunk)) {
-			fbr_chunk_release(chunk);
 			continue;
 		}
 
@@ -441,11 +438,11 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 		if (offset_end && chunk_end > offset_end &&
 		    chunk->state == FBR_CHUNK_READY) {
 			assert(chunk->offset < offset_end);
-			assert_zero(chunk->fd_splice_ok);
 
+			fbr_chunk_take(chunk);
 			fio->floating = fbr_chunk_list_add(fio->floating, chunk);
 		} else {
-			fbr_chunk_release(chunk);
+			fbr_chunk_reset(chunk);
 		}
 	}
 
