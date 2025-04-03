@@ -34,6 +34,8 @@ void fbr_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
 void fbr_test_fs_inodes_debug(struct fbr_fs *fs);
 void fbr_test_fs_dindex_debug(struct fbr_fs *fs);
 
+size_t fbr_fs_test_count_chunks(struct fbr_file *file);
+
 #endif /* FBR_TEST_FS_CMD */
 
 FBR_TEST_FS_CMD(fs_test_init_mount)
@@ -78,7 +80,8 @@ FBR_TEST_FS_CMD(fs_test_id_assert)
 
 FBR_TEST_FS_CMD(fs_test_body)
 FBR_TEST_FS_CMD(fs_test_body_fio)
-FBR_TEST_FS_CMD(fs_test_body_concurrent_fio)
+FBR_TEST_FS_CMD(fs_test_body_pfio)
+FBR_TEST_FS_CMD(fs_test_body_pfio_error)
 
 FBR_TEST_FS_CMD(fs_test_root_parallel)
 FBR_TEST_FS_CMD(fs_test_directory_parallel)
