@@ -385,10 +385,10 @@ fbr_cmd_fs_test_body_fio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 #define _BODY_TEST_THREADS 10
 
-static pthread_t _fetch_threads[_BODY_TEST_THREADS];
-static int _fio_thread_id = -1;
-static int _fetch_thread_id = -1;
-static int _fetch_calls;
+static pthread_t _FETCH_THREADS[_BODY_TEST_THREADS];
+static int _FIO_THREAD_ID = -1;
+static int _FETCH_THREAD_ID = -1;
+static int _FETCH_CALLS;
 
 struct _thread_args {
 	struct fbr_fs *fs;
@@ -414,13 +414,13 @@ _test_fetch_thread(void *arg)
 
 	chunk->data = (void*)chunk->id;
 
-	int id = fbr_atomic_add(&_fetch_thread_id, 1);
+	int id = fbr_atomic_add(&_FETCH_THREAD_ID, 1);
 	assert(id >= 0);
 	assert(id < _BODY_TEST_THREADS);
 
 	fbr_test_logs("FETCH thread: %d chunk: %lu", id, chunk->id);
 
-	while (_fetch_thread_id < _BODY_TEST_THREADS - 1) {
+	while (_FETCH_THREAD_ID < _BODY_TEST_THREADS - 1) {
 		fbr_sleep_ms(0.1);
 	}
 
@@ -446,7 +446,7 @@ _test_concurrent_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 
 	fbr_test_logs("FETCH callback: %zu chunk: %lu", id, chunk->id);
 
-	int calls = fbr_atomic_add(&_fetch_calls, 1);
+	int calls = fbr_atomic_add(&_FETCH_CALLS, 1);
 	assert(calls <= _BODY_TEST_THREADS);
 
 	chunk->state = FBR_CHUNK_LOADING;
@@ -458,7 +458,7 @@ _test_concurrent_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 	args->file = file;
 	args->chunk = chunk;
 
-	pt_assert(pthread_create(&_fetch_threads[id], NULL, _test_fetch_thread, args));
+	pt_assert(pthread_create(&_FETCH_THREADS[id], NULL, _test_fetch_thread, args));
 }
 
 static void *
@@ -473,7 +473,7 @@ _test_fio_thread(void *arg)
 
 	fbr_fio_take(fio);
 
-	int id = fbr_atomic_add(&_fio_thread_id, 1);
+	int id = fbr_atomic_add(&_FIO_THREAD_ID, 1);
 	assert(id >= 0);
 	assert(id < _BODY_TEST_THREADS);
 
@@ -551,12 +551,12 @@ fbr_cmd_fs_test_body_concurrent_fio(struct fbr_test_context *ctx, struct fbr_tes
 	for (size_t i = 0; i < _BODY_TEST_THREADS; i++) {
 		pt_assert(pthread_join(threads[i], NULL));
 	}
-	assert(_fio_thread_id == _BODY_TEST_THREADS - 1);
+	assert(_FIO_THREAD_ID == _BODY_TEST_THREADS - 1);
 
 	for (size_t i = 0; i < _BODY_TEST_THREADS; i++) {
-		pt_assert(pthread_join(_fetch_threads[i], NULL));
+		pt_assert(pthread_join(_FETCH_THREADS[i], NULL));
 	}
-	assert(_fetch_thread_id == _BODY_TEST_THREADS - 1);
+	assert(_FETCH_THREAD_ID == _BODY_TEST_THREADS - 1);
 
 	fbr_test_logs("# threads done");
 

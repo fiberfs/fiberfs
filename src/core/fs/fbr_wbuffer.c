@@ -255,7 +255,6 @@ _wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
-		assert_dev(file->size >= wbuffer->offset + wbuffer->end);
 
 		struct fbr_chunk *chunk = wbuffer->chunk;
 		fbr_chunk_ok(chunk);

@@ -126,7 +126,7 @@ fbr_chunk_list_expand(struct fbr_chunk_list *chunks)
 {
 	fbr_chunk_list_ok(chunks);
 	assert(chunks->capacity);
-	assert(chunks->capacity < FUSE_IOCTL_MAX_IOV);
+	assert(chunks->capacity < UINT32_MAX);
 
 	chunks->capacity *= 2;
 

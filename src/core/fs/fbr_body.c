@@ -45,6 +45,13 @@ _body_chunk_alloc(struct fbr_body *body)
 {
 	assert_dev(body);
 
+	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
+		fbr_chunk_ok(&body->slabhead.chunks[i]);
+		if (body->slabhead.chunks[i].state == FBR_CHUNK_NONE) {
+			return &body->slabhead.chunks[i];
+		}
+	}
+
 	struct fbr_chunk_slab *slab = body->slabhead.next;
 
 	if (slab) {
@@ -112,20 +119,7 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 	assert(file->state == FBR_FILE_INIT);
 	assert(length);
 
-	struct fbr_chunk *chunk = NULL;
-
-	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
-		fbr_chunk_ok(&file->body.slabhead.chunks[i]);
-		if (file->body.slabhead.chunks[i].state == FBR_CHUNK_NONE) {
-			chunk = &file->body.slabhead.chunks[i];
-			break;
-		}
-	}
-
-	if (!chunk) {
-		chunk = _body_chunk_alloc(&file->body);
-	}
-
+	struct fbr_chunk *chunk = _body_chunk_alloc(&file->body);
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_NONE);
 	assert_zero_dev(chunk->next);

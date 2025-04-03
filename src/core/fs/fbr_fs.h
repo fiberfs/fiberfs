@@ -148,7 +148,6 @@ struct fbr_file {
 enum fbr_directory_state {
 	FBR_DIRSTATE_NONE = 0,
 	FBR_DIRSTATE_LOADING,
-	FBR_DIRSTATE_STALE,
 	FBR_DIRSTATE_OK,
 	FBR_DIRSTATE_ERROR
 };

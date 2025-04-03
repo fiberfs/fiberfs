@@ -125,7 +125,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 		}
 
 		// We got someone elses insertion
-		assert_dev(directory->state == FBR_DIRSTATE_NONE);
+		assert(directory->state == FBR_DIRSTATE_NONE);
 
 		if (inserted->state == FBR_DIRSTATE_LOADING) {
 			fbr_directory_wait_ok(fs, inserted);
@@ -137,9 +137,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 		if (inserted->state == FBR_DIRSTATE_OK) {
 			// The insertion inodes are equal, return an ok directory
 			if (!newer) {
-				assert(directory->state == FBR_DIRSTATE_NONE);
 				fbr_directory_free(fs, directory);
-
 				return inserted;
 			}
 		} else {
@@ -151,6 +149,8 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 
 		// Try the insertion again, we have the newest inode right now
 	}
+
+	assert_dev(directory->state >= FBR_DIRSTATE_LOADING);
 
 	return directory;
 }
