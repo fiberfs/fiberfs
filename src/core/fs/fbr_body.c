@@ -176,32 +176,6 @@ fbr_body_UNLOCK(struct fbr_body *body)
 }
 
 void
-fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_state state)
-{
-	assert(body);
-	fbr_chunk_ok(chunk);
-	assert(chunk->state == FBR_CHUNK_LOADING);
-
-	switch (state) {
-		case FBR_CHUNK_EMPTY:
-		case FBR_CHUNK_LOADING:
-		case FBR_CHUNK_READY:
-		case FBR_CHUNK_SPLICED:
-			break;
-		default:
-			fbr_ABORT("fbr_chunk_update() invalid state %d", state);
-	}
-
-	pt_assert(pthread_mutex_lock(&body->lock));
-
-	chunk->state = state;
-
-	pt_assert(pthread_cond_broadcast(&body->update));
-
-	pt_assert(pthread_mutex_unlock(&body->lock));
-}
-
-void
 fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);

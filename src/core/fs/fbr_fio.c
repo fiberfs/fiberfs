@@ -50,6 +50,32 @@ fbr_fio_take(struct fbr_fio *fio)
 	assert(refs);
 }
 
+void
+fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_state state)
+{
+	assert(body);
+	fbr_chunk_ok(chunk);
+	assert(chunk->state == FBR_CHUNK_LOADING);
+
+	switch (state) {
+		case FBR_CHUNK_EMPTY:
+		case FBR_CHUNK_LOADING:
+		case FBR_CHUNK_READY:
+		case FBR_CHUNK_SPLICED:
+			break;
+		default:
+			fbr_ABORT("fbr_chunk_update() invalid state %d", state);
+	}
+
+	fbr_body_LOCK(body);
+
+	chunk->state = state;
+
+	pt_assert(pthread_cond_broadcast(&body->update));
+
+	fbr_body_UNLOCK(body);
+}
+
 static int
 _fio_ready_error(struct fbr_chunk_list *chunks)
 {

@@ -18,6 +18,8 @@ fbr_wbuffer_init(struct fbr_fio *fio)
 	fbr_fio_ok(fio);
 
 	pt_assert(pthread_mutex_init(&fio->wbuffer_lock, NULL));
+	pt_assert(pthread_cond_init(&fio->wbuffer_update, NULL));
+
 	fio->id = fbr_id_gen();
 	fio->wbuffers = NULL;
 }
@@ -47,6 +49,7 @@ _wbuffer_alloc(struct fbr_fio *fio, size_t offset, size_t size)
 	wbuffer->offset = offset;
 	wbuffer->size = wsize;
 	wbuffer->end = size;
+	wbuffer->fio = fio;
 
 	wbuffer->buffer = malloc(wsize);
 	assert(wbuffer->buffer);
@@ -287,6 +290,69 @@ _wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 	fbr_body_UNLOCK(&file->body);
 }
 
+void
+fbr_wbuffer_update(struct fbr_wbuffer *wbuffer, enum fbr_wbuffer_state state)
+{
+	fbr_wbuffer_ok(wbuffer);
+	fbr_fio_ok(wbuffer->fio);
+	assert(wbuffer->state == FBR_WBUFFER_SYNC);
+	assert(state >= FBR_WBUFFER_DONE);
+
+	_wbuffer_LOCK(wbuffer->fio);
+
+	wbuffer->state = state;
+
+	pt_assert(pthread_cond_broadcast(&wbuffer->fio->wbuffer_update));
+
+	_wbuffer_UNLOCK(wbuffer->fio);
+}
+
+static int
+_wbuffer_ready_error(struct fbr_wbuffer *wbuffer)
+{
+	assert_dev(wbuffer);
+
+	int error = 0;
+
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+		assert_dev(wbuffer->state);
+
+		switch (wbuffer->state) {
+			case FBR_WBUFFER_SYNC:
+				return 0;
+			case FBR_WBUFFER_DONE:
+				break;
+			default:
+				error = 1;
+				break;
+		}
+
+		wbuffer = wbuffer->next;
+	}
+
+	return error;
+}
+
+static int
+_wbuffer_ready(struct fbr_wbuffer *wbuffer)
+{
+	assert_dev(wbuffer);
+
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+		assert_dev(wbuffer->state);
+
+		if (wbuffer->state != FBR_WBUFFER_DONE) {
+			return 0;
+		}
+
+		wbuffer = wbuffer->next;
+	}
+
+	return 1;
+}
+
 static void
 _wbuffer_free(struct fbr_wbuffer *wbuffer)
 {
@@ -342,7 +408,19 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 		wbuffer = wbuffer->next;
 	}
 
-	// wait for all the wbuffers here
+	while (!_wbuffer_ready(fio->wbuffers)) {
+		if (_wbuffer_ready_error(fio->wbuffers)) {
+			fs->log("WBUFFER error wbuffer found, setting error");
+			if (!error) {
+				error = EIO;
+			}
+			break;
+		}
+
+		pt_assert(pthread_cond_wait(&fio->wbuffer_update, &fio->wbuffer_lock));
+	}
+
+	// TODO we unlocked, what can change?
 
 	if (fs->store->flush_wbuffers_f) {
 		int ret = fs->store->flush_wbuffers_f(fs, fio->file, fio->wbuffers);
@@ -370,6 +448,7 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_fio_ok(fio);
 
 	pt_assert(pthread_mutex_destroy(&fio->wbuffer_lock));
+	pt_assert(pthread_cond_destroy(&fio->wbuffer_update));
 
 	assert_zero_dev(fio->wbuffers);
 	_wbuffer_free(fio->wbuffers);

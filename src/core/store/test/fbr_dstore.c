@@ -135,7 +135,7 @@ _dstore_wbuffer_update(struct fbr_wbuffer *wbuffer, enum fbr_wbuffer_state state
 		return;
 	}
 
-	fbr_ABORT("TODO wbuffer signal");
+	fbr_wbuffer_update(wbuffer, state);
 }
 
 void
