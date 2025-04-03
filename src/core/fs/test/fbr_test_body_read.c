@@ -19,7 +19,7 @@ static pthread_t _FETCH_THREADS[_BODY_TEST_THREADS];
 static int _FIO_THREAD_ID;
 static int _FETCH_THREAD_ID;
 static int _FETCH_CALLS;
-static int _FETCH_ERROR_THREAD;
+static fbr_id_t _FETCH_ERROR_CHUNK_ID;
 static int _FETCH_ERRORS;
 
 struct _thread_args {
@@ -35,8 +35,10 @@ _test_thread_init(void)
 	_FIO_THREAD_ID = -1;
 	_FETCH_THREAD_ID = -1;
 	_FETCH_CALLS = 0;
-	_FETCH_ERROR_THREAD = -1;
+	_FETCH_ERROR_CHUNK_ID = 0;
 	_FETCH_ERRORS = 0;
+
+	fbr_test_random_seed();
 }
 
 static void *
@@ -72,8 +74,9 @@ _test_fetch_thread(void *arg)
 
 	fbr_sleep_ms(random() % 60);
 
-	if (id == _FETCH_ERROR_THREAD) {
-		fbr_test_logs("FETCH ERROR: %d", id);
+	if (chunk->id == _FETCH_ERROR_CHUNK_ID) {
+		fbr_test_logs("FETCH ERROR: %lu", chunk->id);
+		chunk->data = NULL;
 		fbr_chunk_update(&file->body, chunk, FBR_CHUNK_EMPTY);
 	} else {
 		fbr_chunk_update(&file->body, chunk, FBR_CHUNK_READY);
@@ -100,8 +103,13 @@ _test_concurrent_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 	// Chunk was released too early...
 	if (calls > _BODY_TEST_THREADS) {
 		fbr_test_logs("FETCH regen chunk: %lu", chunk->id);
-		chunk->data = (void*)chunk->id;
-		chunk->state = FBR_CHUNK_READY;
+		if (chunk->id == _FETCH_ERROR_CHUNK_ID) {
+			fbr_test_logs("FETCH regen chunk ERROR: %lu", chunk->id);
+			chunk->state = FBR_CHUNK_EMPTY;
+		} else {
+			chunk->data = (void*)chunk->id;
+			chunk->state = FBR_CHUNK_READY;
+		}
 		return;
 	}
 
@@ -141,7 +149,7 @@ _test_fio_thread(void *arg)
 
 	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, offset, 2000);
 
-	if (_FETCH_ERROR_THREAD >= 0 && !vector) {
+	if (_FETCH_ERROR_CHUNK_ID && !vector) {
 		fbr_atomic_add(&_FETCH_ERRORS, 1);
 		fbr_test_logs("** fio_thread %d got vector ERROR", id);
 	} else {
@@ -176,8 +184,6 @@ static void
 _test_concurrent_fio(void)
 {
 	assert(_FIO_THREAD_ID == -1);
-
-	fbr_test_random_seed();
 
 	struct fbr_fs *fs = fbr_fs_alloc();
 	fbr_fs_ok(fs);
@@ -227,7 +233,7 @@ _test_concurrent_fio(void)
 
 	assert(_FETCH_CALLS >= _BODY_TEST_THREADS);
 
-	if (_FETCH_ERROR_THREAD >= 0) {
+	if (_FETCH_ERROR_CHUNK_ID) {
 		assert(_FETCH_ERRORS);
 	}
 
@@ -235,7 +241,7 @@ _test_concurrent_fio(void)
 
 	fbr_fs_free(fs);
 
-	fbr_test_logs("fs_test_body_concurrent_fio done");
+	fbr_test_logs("fs_test_body_pfio done");
 }
 
 void
@@ -257,8 +263,10 @@ fbr_cmd_fs_test_body_pfio_error(struct fbr_test_context *ctx, struct fbr_test_cm
 
 	_test_thread_init();
 
-	_FETCH_ERROR_THREAD = 4;
-	assert(_FETCH_ERROR_THREAD < _BODY_TEST_THREADS);
+	_FETCH_ERROR_CHUNK_ID = (random() % _BODY_TEST_THREADS) + 1;
+	assert(_FETCH_ERROR_CHUNK_ID);
+
+	fbr_test_logs("fs_test_body_pfio_error: %lu", _FETCH_ERROR_CHUNK_ID);
 
 	_test_concurrent_fio();
 }
