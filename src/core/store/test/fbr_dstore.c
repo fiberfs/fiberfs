@@ -124,36 +124,45 @@ _dstore_chunk_path(const struct fbr_file *file, fbr_id_t id, size_t offset, char
 	assert(ret < buffer_len);
 }
 
+static void
+_dstore_wbuffer_update(struct fbr_wbuffer *wbuffer, enum fbr_wbuffer_state state)
+{
+	assert_dev(wbuffer);
+	assert(state >= FBR_WBUFFER_DONE);
+
+	if (wbuffer->state == FBR_WBUFFER_READY) {
+		wbuffer->state = state;
+		return;
+	}
+
+	fbr_ABORT("TODO wbuffer signal");
+}
+
 void
 fbr_dstore_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	fbr_dstore_ok();
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
-	assert(wbuffer);
+	fbr_wbuffer_ok(wbuffer);
 
-	while (wbuffer) {
-		assert(!wbuffer->next || wbuffer->next->id == wbuffer->id);
+	char chunk_path[PATH_MAX];
+	_dstore_chunk_path(file, wbuffer->id, wbuffer->offset, chunk_path, sizeof(chunk_path));
 
-		char chunk_path[PATH_MAX];
-		_dstore_chunk_path(file, wbuffer->id, wbuffer->offset, chunk_path,
-			sizeof(chunk_path));
+	fbr_test_logs("DSTORE wbuffer chunk: '%s':%zu", chunk_path, wbuffer->end);
 
-		fbr_test_logs("DSTORE wbuffer chunk: '%s':%zu", chunk_path, wbuffer->end);
+	_dstore_mkdirs(chunk_path);
 
-		_dstore_mkdirs(chunk_path);
+	int fd = _dstore_open(chunk_path);
 
-		int fd = _dstore_open(chunk_path);
+	size_t bytes = fbr_sys_write(fd, wbuffer->buffer, wbuffer->end);
+	assert(bytes == wbuffer->end);
 
-		size_t bytes = fbr_sys_write(fd, wbuffer->buffer, wbuffer->end);
-		assert(bytes == wbuffer->end);
+	assert_zero(close(fd));
 
-		assert_zero(close(fd));
+	fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
 
-		fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
-
-		wbuffer = wbuffer->next;
-	}
+	_dstore_wbuffer_update(wbuffer, FBR_WBUFFER_DONE);
 }
 
 static void

@@ -21,11 +21,24 @@
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
 static int
-_test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+_test_fs_rw_store_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
-	assert(wbuffer);
+	fbr_wbuffer_ok(wbuffer);
+	assert(wbuffer->state == FBR_WBUFFER_READY);
+
+	fbr_dstore_wbuffer(fs, file, wbuffer);
+
+	return 0;
+}
+
+static int
+_test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_wbuffer_ok(wbuffers);
 
 	struct fbr_file *parent = fbr_inode_take(fs, file->parent_inode);
 	fbr_ASSERT(parent, "parent %lu missing", file->parent_inode);
@@ -43,8 +56,6 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 
 	// TODO we dump the directory with changes making sure we version match
 	// otherwise repeat
-
-	fbr_dstore_wbuffer(fs, file, wbuffer);
 
 	// Load the new directory, this is a temporary workaround
 	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
@@ -80,7 +91,8 @@ _test_fs_rw_chunk_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 }
 
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
-	.flush_wbuffer_f = _test_fs_rw_flush_wbuffers,
+	.store_wbuffer_f = _test_fs_rw_store_wbuffer,
+	.flush_wbuffers_f = _test_fs_rw_flush_wbuffers,
 	.fetch_chunk_f = _test_fs_rw_chunk_fetch
 };
 

@@ -173,6 +173,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 	while (written < size) {
 		fbr_wbuffer_ok(wbuffer);
+		assert(wbuffer->state == FBR_WBUFFER_WRITING);
 
 		size_t wbuffer_end = wbuffer->offset + wbuffer->size;
 		assert(offset >= wbuffer->offset);
@@ -192,6 +193,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 				wbuffer->offset, wbuffer_offset + wsize, wbuffer->end);
 
 			wbuffer->end = wbuffer_offset + wsize;
+			assert_dev(wbuffer->end <= wbuffer->size);
 
 			// Extend the file chunk
 			if (wbuffer->chunk) {
@@ -220,6 +222,16 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 			fbr_chunk_take(chunk);
 
 			wbuffer->chunk = chunk;
+		}
+
+		if (wbuffer->end == wbuffer->size) {
+			wbuffer->state = FBR_WBUFFER_READY;
+			if (fs->store->store_wbuffer_f) {
+				int error = fs->store->store_wbuffer_f(fs, fio->file, wbuffer);
+				if (error) {
+					wbuffer->state = FBR_WBUFFER_ERROR;
+				}
+			}
 		}
 
 		offset = wbuffer_end;
@@ -255,6 +267,7 @@ _wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
+		assert(wbuffer->state >= FBR_WBUFFER_DONE);
 
 		struct fbr_chunk *chunk = wbuffer->chunk;
 		fbr_chunk_ok(chunk);
@@ -279,6 +292,7 @@ _wbuffer_free(struct fbr_wbuffer *wbuffer)
 {
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
+		assert(wbuffer->state != FBR_WBUFFER_SYNC);
 		assert_zero(wbuffer->buffer);
 
 		struct fbr_wbuffer *next = wbuffer->next;
@@ -308,22 +322,45 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_wbuffer_ok(fio->wbuffers);
 	assert_zero_dev(fio->read_only);
 
-	struct fbr_wbuffer *wbuffers = fio->wbuffers;
-	fio->wbuffers = 0;
-	int ret = 0;
+	struct fbr_wbuffer *wbuffer = fio->wbuffers;
+	int error = 0;
 
-	if (fs->store->flush_wbuffer_f) {
-		ret = fs->store->flush_wbuffer_f(fs, fio->file, wbuffers);
-		_wbuffer_flush_chunks(fs, fio->file, wbuffers);
-	} else {
-		ret = EIO;
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+
+		if (wbuffer->state == FBR_WBUFFER_WRITING) {
+			wbuffer->state = FBR_WBUFFER_READY;
+			if (fs->store->store_wbuffer_f) {
+				int ret = fs->store->store_wbuffer_f(fs, fio->file, wbuffer);
+				if (ret) {
+					error = ret;
+					wbuffer->state = FBR_WBUFFER_ERROR;
+				}
+			}
+		}
+
+		wbuffer = wbuffer->next;
 	}
 
-	_wbuffer_free(wbuffers);
+	// wait for all the wbuffers here
+
+	if (fs->store->flush_wbuffers_f) {
+		int ret = fs->store->flush_wbuffers_f(fs, fio->file, fio->wbuffers);
+		if (ret && !error) {
+			error = ret;
+		}
+	} else if (!error) {
+		error = EIO;
+	}
+
+	_wbuffer_flush_chunks(fs, fio->file, fio->wbuffers);
+
+	_wbuffer_free(fio->wbuffers);
+	fio->wbuffers = NULL;
 
 	_wbuffer_UNLOCK(fio);
 
-	return ret;
+	return error;
 }
 
 void

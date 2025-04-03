@@ -216,8 +216,10 @@ struct fbr_dreader {
 enum fbr_wbuffer_state {
 	FBR_WBUFFER_NONE = 0,
 	FBR_WBUFFER_WRITING,
+	FBR_WBUFFER_READY,
 	FBR_WBUFFER_SYNC,
-	FBR_WBUFFER_DONE
+	FBR_WBUFFER_DONE,
+	FBR_WBUFFER_ERROR
 };
 
 struct fbr_wbuffer {
