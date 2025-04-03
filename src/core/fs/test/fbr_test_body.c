@@ -444,10 +444,17 @@ _test_concurrent_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 	assert(chunk->id >= 1 && chunk->id <= _BODY_TEST_THREADS);
 	size_t id = chunk->id - 1;
 
-	fbr_test_logs("FETCH callback: %zu chunk: %lu", id, chunk->id);
+	fbr_test_logs("FETCH chunk: %lu", chunk->id);
 
 	int calls = fbr_atomic_add(&_FETCH_CALLS, 1);
-	assert(calls <= _BODY_TEST_THREADS);
+
+	// Chunk was released too early...
+	if (calls > _BODY_TEST_THREADS) {
+		fbr_test_logs("FETCH regen chunk: %lu", chunk->id);
+		chunk->data = (void*)chunk->id;
+		chunk->state = FBR_CHUNK_READY;
+		return;
+	}
 
 	chunk->state = FBR_CHUNK_LOADING;
 
@@ -559,6 +566,8 @@ fbr_cmd_fs_test_body_concurrent_fio(struct fbr_test_context *ctx, struct fbr_tes
 	assert(_FETCH_THREAD_ID == _BODY_TEST_THREADS - 1);
 
 	fbr_test_logs("# threads done");
+
+	assert(_FETCH_CALLS >= _BODY_TEST_THREADS);
 
 	fbr_fio_release(fs, fio);
 
