@@ -20,7 +20,7 @@
 
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
-static int
+static void
 _test_fs_rw_store_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	fbr_fs_ok(fs);
@@ -29,8 +29,6 @@ _test_fs_rw_store_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_w
 	assert(wbuffer->state == FBR_WBUFFER_READY);
 
 	fbr_dstore_wbuffer(fs, file, wbuffer);
-
-	return 0;
 }
 
 static int
@@ -330,12 +328,11 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
 	fbr_file_ok(fio->file);
 	assert(fio->file->inode == ino);
 
-	size_t written = fbr_wbuffer_write(fs, fio, off, buf, size);
-	assert_dev(written == size);
+	fbr_wbuffer_write(fs, fio, off, buf, size);
 
-	fbr_fs_stat_add_count(&fs->stats.write_bytes, written);
+	fbr_fs_stat_add_count(&fs->stats.write_bytes, size);
 
-	fbr_fuse_reply_write(request, written);
+	fbr_fuse_reply_write(request, size);
 
 	fbr_fio_release(fs, fio);
 }

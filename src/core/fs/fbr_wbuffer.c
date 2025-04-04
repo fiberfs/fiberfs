@@ -154,7 +154,7 @@ _wbuffer_UNLOCK(struct fbr_fio *fio)
 	pt_assert(pthread_mutex_unlock(&fio->wbuffer_lock));
 }
 
-size_t
+void
 fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const char *buf,
     size_t size)
 {
@@ -227,16 +227,6 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 			wbuffer->chunk = chunk;
 		}
 
-		if (wbuffer->end == wbuffer->size) {
-			wbuffer->state = FBR_WBUFFER_READY;
-			if (fs->store->store_wbuffer_f) {
-				int error = fs->store->store_wbuffer_f(fs, fio->file, wbuffer);
-				if (error) {
-					wbuffer->state = FBR_WBUFFER_ERROR;
-				}
-			}
-		}
-
 		offset = wbuffer_end;
 		written += wsize;
 
@@ -255,8 +245,6 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 	fbr_body_UNLOCK(&fio->file->body);
 	_wbuffer_UNLOCK(fio);
-
-	return written;
 }
 
 static void
@@ -397,11 +385,7 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 		if (wbuffer->state == FBR_WBUFFER_WRITING) {
 			wbuffer->state = FBR_WBUFFER_READY;
 			if (fs->store->store_wbuffer_f) {
-				int ret = fs->store->store_wbuffer_f(fs, fio->file, wbuffer);
-				if (ret) {
-					error = ret;
-					wbuffer->state = FBR_WBUFFER_ERROR;
-				}
+				fs->store->store_wbuffer_f(fs, fio->file, wbuffer);
 			}
 		}
 

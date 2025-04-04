@@ -284,7 +284,7 @@ fbr_cmd_fs_test_body_spfio(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 }
 
 void
-fbr_cmd_fs_test_body_pfio_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_fs_test_body_spfio_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);

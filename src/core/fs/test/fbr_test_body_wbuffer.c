@@ -14,20 +14,18 @@
 #include "fbr_test_fs_cmds.h"
 
 #define _BODY_TEST_THREADS 10
-#define _BODY_FILE_CHUNKS (_BODY_TEST_THREADS - 1)
 #define _BODY_WRITE_SIZE 1000
-#define _WBUFFER_ALLOC_SIZE 850;
 
 static char _BUFFER[_BODY_WRITE_SIZE];
 
-static pthread_t _STORE_THREADS[_BODY_TEST_THREADS];
+static pthread_t _STORE_THREADS[_BODY_TEST_THREADS * 3];
 static int _FIO_THREAD_ID;
 static int _STORE_THREAD_ID;
-static int _STORE_THREAD_COUNT;
-static int _STORE_CALLS;
-static int _STORE_ERROR_CHUNK_ID;
-static int _STORE_ERRORS;
+static size_t _STORE_CALLS;
+static int _STORE_ERROR_THREAD_ID;
 static int _SHARED_FIO;
+static size_t _BODY_CHUNKS;
+static size_t _WBUFFER_ALLOC_SIZE;
 
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
@@ -42,17 +40,17 @@ struct _thread_args {
 static void
 _test_thread_init(void)
 {
+	fbr_test_random_seed();
+
 	_FIO_THREAD_ID = -1;
 	_STORE_THREAD_ID = -1;
-	_STORE_THREAD_COUNT = 0;
 	_STORE_CALLS = 0;
-	_STORE_ERROR_CHUNK_ID = -1;
-	_STORE_ERRORS = 0;
+	_STORE_ERROR_THREAD_ID = -1;
 	_SHARED_FIO = 0;
+	_BODY_CHUNKS = (random() % _BODY_TEST_THREADS) + 1;
+	_WBUFFER_ALLOC_SIZE = (random() % (sizeof(_BUFFER) * 2)) + 1;
 
 	_DEBUG_WBUFFER_ALLOC_SIZE = _WBUFFER_ALLOC_SIZE;
-
-	fbr_test_random_seed();
 }
 
 static void *
@@ -69,25 +67,15 @@ _test_store_thread(void *arg)
 	fbr_wbuffer_ok(wbuffer);
 	assert(wbuffer->state == FBR_WBUFFER_SYNC);
 	assert(id >= 0);
-	assert(id < _BODY_TEST_THREADS);
-
-	int count = fbr_atomic_add(&_STORE_THREAD_COUNT, 1);
-	assert(count > 0);
-	assert(count <= _BODY_TEST_THREADS);
+	assert((size_t)id < fbr_array_len(_STORE_THREADS));
 
 	free(args);
 
+	fbr_sleep_ms(random() % 60 + 10);
+
 	fbr_test_logs("STORE thread %d wbuffer: %lu", id, wbuffer->offset);
 
-	while (_STORE_THREAD_COUNT < _BODY_TEST_THREADS) {
-		fbr_sleep_ms(0.1);
-	}
-
-	fbr_test_logs("STORE synced: %d", id);
-
-	fbr_sleep_ms(random() % 60);
-
-	if (id == _STORE_ERROR_CHUNK_ID) {
+	if (id == _STORE_ERROR_THREAD_ID) {
 		fbr_test_logs("STORE ERROR: %d", id);
 		fbr_wbuffer_update(wbuffer, FBR_WBUFFER_ERROR);
 	} else {
@@ -97,7 +85,7 @@ _test_store_thread(void *arg)
 	return NULL;
 }
 
-static int
+static void
 _test_concurrent_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	fbr_fs_ok(fs);
@@ -107,12 +95,17 @@ _test_concurrent_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuf
 
 	int id = fbr_atomic_add(&_STORE_THREAD_ID, 1);
 	assert(id >= 0);
-	assert(id < _BODY_TEST_THREADS);
+
+	if ((size_t)id >= fbr_array_len(_STORE_THREADS)) {
+		fbr_test_logs("STORE %d wbuffer offset: %lu DONE", id, wbuffer->offset);
+		wbuffer->state = FBR_WBUFFER_DONE;
+		return;
+	}
 
 	fbr_test_logs("STORE %d wbuffer offset: %lu", id, wbuffer->offset);
 
-	int calls = fbr_atomic_add(&_STORE_CALLS, 1);
-	assert(calls <= _BODY_TEST_THREADS);
+	size_t calls = fbr_atomic_add(&_STORE_CALLS, 1);
+	assert(calls <= fbr_array_len(_STORE_THREADS));
 
 	wbuffer->state = FBR_WBUFFER_SYNC;
 
@@ -125,8 +118,6 @@ _test_concurrent_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuf
 	args->id = id;
 
 	pt_assert(pthread_create(&_STORE_THREADS[id], NULL, _test_store_thread, args));
-
-	return 0;
 }
 
 static void *
@@ -160,12 +151,30 @@ _test_fio_thread(void *arg)
 
 	size_t offset = id * sizeof(_BUFFER);
 
-	size_t written = fbr_wbuffer_write(fs, fio, offset, _BUFFER, sizeof(_BUFFER));
-	assert_dev(written == sizeof(_BUFFER));
+	size_t total = 0;
+
+	while (total < sizeof(_BUFFER)) {
+		size_t remaining = sizeof(_BUFFER) - total;
+		size_t wsize = (random() % sizeof(_BUFFER)) + 1;
+		if (wsize > remaining) {
+			wsize = remaining;
+		}
+
+		fbr_test_logs("** fio_thread %d write offset: %zu size: %zu", id, offset, wsize);
+
+		fbr_wbuffer_write(fs, fio, offset + total, _BUFFER, wsize);
+
+		total += wsize;
+	}
+	assert(total == sizeof(_BUFFER));
 
 	if (!_SHARED_FIO) {
 		int ret = fbr_wbuffer_flush(fs, fio);
-		assert_zero(ret);
+		if (_STORE_ERROR_THREAD_ID >= 0) {
+			assert(ret);
+		} else {
+			assert_zero(ret);
+		}
 	}
 
 	fbr_fio_release(fs, fio);
@@ -179,6 +188,26 @@ _test_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffe
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_wbuffer_ok(wbuffers);
+
+	struct fbr_wbuffer *wbuffer = wbuffers;
+	size_t errors = 0;
+
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+		assert(wbuffer->state >= FBR_WBUFFER_DONE);
+
+		if (wbuffer->state == FBR_WBUFFER_ERROR) {
+			errors++;
+		}
+
+		wbuffer = wbuffer->next;
+	}
+
+	if (_STORE_ERROR_THREAD_ID >= 0) {
+		assert(errors);
+	} else {
+		assert_zero(errors);
+	}
 
 	return 0;
 }
@@ -209,11 +238,11 @@ _test_concurrent_fio(void)
 	struct fbr_fio *fio = NULL;
 
 	file = fbr_file_alloc(fs, root, fbr_path_name_init(&name, "file_concurrent"));
-	for (size_t i = 0; i < _BODY_FILE_CHUNKS; i++) {
+	for (size_t i = 0; i < _BODY_CHUNKS; i++) {
 		fbr_body_chunk_add(file, i + 1, i * 1000, 1000);
 	}
-	assert(fbr_fs_test_count_chunks(file) == _BODY_FILE_CHUNKS);
-	assert(file->size == 1000 * _BODY_FILE_CHUNKS);
+	assert(fbr_fs_test_count_chunks(file) == _BODY_CHUNKS);
+	assert(file->size == 1000 * _BODY_CHUNKS);
 
 	if (_SHARED_FIO) {
 		fbr_inode_add(fs, file);
@@ -236,21 +265,21 @@ _test_concurrent_fio(void)
 
 	if (_SHARED_FIO) {
 		int ret = fbr_wbuffer_flush(fs, fio);
-		assert_zero(ret);
+		if (_STORE_ERROR_THREAD_ID >= 0) {
+			assert(ret);
+		} else {
+			assert_zero(ret);
+		}
 	}
 
-	for (size_t i = 0; i < _BODY_TEST_THREADS; i++) {
+	for (int i = 0; i <= _STORE_THREAD_ID; i++) {
 		pt_assert(pthread_join(_STORE_THREADS[i], NULL));
 	}
-	assert(_STORE_THREAD_ID == _BODY_TEST_THREADS - 1);
+	assert(_STORE_THREAD_ID >= 0);
 
 	fbr_test_logs("# threads done");
 
-	assert(_STORE_CALLS == _BODY_TEST_THREADS);
-
-	if (_STORE_ERROR_CHUNK_ID >= 0) {
-		assert(_STORE_ERRORS);
-	}
+	assert(_STORE_CALLS);
 
 	if (_SHARED_FIO) {
 		fbr_fio_release(fs, fio);
@@ -262,13 +291,13 @@ _test_concurrent_fio(void)
 	struct fbr_chunk_list *chunks = fbr_chunk_list_file(file, 0, file->size, &removed);
 
 	fbr_chunk_list_debug(fs, chunks, "FILE");
-	assert(chunks->length == _BODY_TEST_THREADS);
+	assert(chunks->length);
 	for (size_t i = 0; i < chunks->length; i++) {
 		assert(chunks->list[i]->id > _BODY_TEST_THREADS);
 	}
 
 	fbr_chunk_list_debug(fs, removed, "REMOVED");
-	assert(removed->length == _BODY_FILE_CHUNKS);
+	assert(removed->length == _BODY_CHUNKS);
 	for (size_t i = 0; i < removed->length; i++) {
 		assert(removed->list[i]->id == i + 1);
 	}
@@ -306,19 +335,17 @@ fbr_cmd_fs_test_body_spwbuffer(struct fbr_test_context *ctx, struct fbr_test_cmd
 }
 
 void
-fbr_cmd_fs_test_body_pwbuffer_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_fs_test_body_spwbuffer_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	_test_thread_init();
 
-	_STORE_ERROR_CHUNK_ID = (random() % _BODY_TEST_THREADS) + 1;
-	assert(_STORE_ERROR_CHUNK_ID);
-
+	_STORE_ERROR_THREAD_ID = 0;
 	_SHARED_FIO = 1;
 
-	fbr_test_logs("fs_test_body_pwbuffer_error: %d", _STORE_ERROR_CHUNK_ID);
+	fbr_test_logs("fs_test_body_pwbuffer_error: %d", _STORE_ERROR_THREAD_ID);
 
 	_test_concurrent_fio();
 }

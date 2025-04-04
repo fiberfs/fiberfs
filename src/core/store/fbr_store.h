@@ -12,7 +12,7 @@
 struct fbr_store_callbacks {
 	void (*fetch_chunk_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_chunk *chunk);
-	int (*store_wbuffer_f)(struct fbr_fs *fs, struct fbr_file *file,
+	void (*store_wbuffer_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_wbuffer *wbuffer);
 	int (*flush_wbuffers_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_wbuffer *wbuffers);
