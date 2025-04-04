@@ -272,14 +272,13 @@ _test_concurrent_fio(void)
 		}
 	}
 
-	for (int i = 0; i <= _STORE_THREAD_ID; i++) {
+	for (size_t i = 0; i < _STORE_CALLS; i++) {
 		pt_assert(pthread_join(_STORE_THREADS[i], NULL));
 	}
 	assert(_STORE_THREAD_ID >= 0);
+	assert(_STORE_CALLS);
 
 	fbr_test_logs("# threads done");
-
-	assert(_STORE_CALLS);
 
 	if (_SHARED_FIO) {
 		fbr_fio_release(fs, fio);
