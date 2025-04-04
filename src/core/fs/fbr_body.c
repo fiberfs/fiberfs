@@ -187,8 +187,8 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 
 	while (chunk) {
 		fbr_chunk_ok(chunk);
-		fs->log("BODY chunk[%zu] state: %s off: %zu len: %zu", i,
-			fbr_chunk_state(chunk->state), chunk->offset, chunk->length);
+		fs->log("BODY chunk[%zu] state: %s off: %zu len: %zu id: %lu", i,
+			fbr_chunk_state(chunk->state), chunk->offset, chunk->length, chunk->id);
 		chunk = chunk->next;
 		i++;
 	}
