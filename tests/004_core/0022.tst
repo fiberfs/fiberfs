@@ -4,3 +4,4 @@ fs_test_body
 fs_test_body_fio
 fs_test_body_pfio_error
 fs_test_body_pfio
+fs_test_body_spfio

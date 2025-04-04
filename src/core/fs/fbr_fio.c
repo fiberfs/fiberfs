@@ -25,6 +25,8 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
 	assert(fio);
 
 	fio->magic = FBR_FIO_MAGIC;
+
+	// We release this, so caller needs to take an inode ref on this
 	fio->file = file;
 
 	fio->floating = fbr_chunk_list_alloc();

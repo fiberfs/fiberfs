@@ -21,6 +21,7 @@ static int _FETCH_THREAD_ID;
 static int _FETCH_CALLS;
 static fbr_id_t _FETCH_ERROR_CHUNK_ID;
 static int _FETCH_ERRORS;
+static int _SHARED_FIO;
 
 struct _thread_args {
 	struct fbr_fs *fs;
@@ -37,6 +38,7 @@ _test_thread_init(void)
 	_FETCH_CALLS = 0;
 	_FETCH_ERROR_CHUNK_ID = 0;
 	_FETCH_ERRORS = 0;
+	_SHARED_FIO = 0;
 
 	fbr_test_random_seed();
 }
@@ -130,12 +132,21 @@ _test_fio_thread(void *arg)
 {
 	struct _thread_args *args = (struct _thread_args*)arg;
 	struct fbr_fs *fs = args->fs;
+	struct fbr_file *file = args->file;
 	struct fbr_fio *fio = args->fio;
 
 	fbr_fs_ok(fs);
-	fbr_fio_ok(fio);
+	fbr_file_ok(file);
 
-	fbr_fio_take(fio);
+	if (!_SHARED_FIO) {
+		assert_zero(fio);
+		fbr_inode_add(fs, file);
+		fio = fbr_fio_alloc(fs, file);
+		fbr_fio_ok(fio);
+	} else {
+		fbr_fio_ok(fio);
+		fbr_fio_take(fio);
+	}
 
 	int id = fbr_atomic_add(&_FIO_THREAD_ID, 1);
 	assert(id >= 0);
@@ -198,7 +209,7 @@ _test_concurrent_fio(void)
 
 	struct fbr_file *file;
 	struct fbr_path_name name;
-	struct fbr_fio *fio;
+	struct fbr_fio *fio = NULL;
 
 	file = fbr_file_alloc(fs, root, fbr_path_name_init(&name, "file_concurrent"));
 	for (size_t i = 0; i < _BODY_TEST_THREADS; i++) {
@@ -207,11 +218,13 @@ _test_concurrent_fio(void)
 	assert(fbr_fs_test_count_chunks(file) == _BODY_TEST_THREADS);
 	assert(file->size == 1000 * _BODY_TEST_THREADS);
 
-	fbr_inode_add(fs, file);
-	fio = fbr_fio_alloc(fs, file);
+	if (_SHARED_FIO) {
+		fbr_inode_add(fs, file);
+		fio = fbr_fio_alloc(fs, file);
+	}
 
 	pthread_t threads[10];
-	struct _thread_args args = {fs, fio, NULL, NULL};
+	struct _thread_args args = {fs, fio, file, NULL};
 
 	for (size_t i = 0; i < _BODY_TEST_THREADS; i++) {
 		pt_assert(pthread_create(&threads[i], NULL, _test_fio_thread, &args));
@@ -237,7 +250,9 @@ _test_concurrent_fio(void)
 		assert(_FETCH_ERRORS);
 	}
 
-	fbr_fio_release(fs, fio);
+	if (_SHARED_FIO) {
+		fbr_fio_release(fs, fio);
+	}
 
 	fbr_fs_free(fs);
 
@@ -256,6 +271,19 @@ fbr_cmd_fs_test_body_pfio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 }
 
 void
+fbr_cmd_fs_test_body_spfio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_test_thread_init();
+
+	_SHARED_FIO = 1;
+
+	_test_concurrent_fio();
+}
+
+void
 fbr_cmd_fs_test_body_pfio_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
@@ -265,6 +293,8 @@ fbr_cmd_fs_test_body_pfio_error(struct fbr_test_context *ctx, struct fbr_test_cm
 
 	_FETCH_ERROR_CHUNK_ID = (random() % _BODY_TEST_THREADS) + 1;
 	assert(_FETCH_ERROR_CHUNK_ID);
+
+	_SHARED_FIO = 1;
 
 	fbr_test_logs("fs_test_body_pfio_error: %lu", _FETCH_ERROR_CHUNK_ID);
 
