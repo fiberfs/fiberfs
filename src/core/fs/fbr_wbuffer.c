@@ -25,20 +25,27 @@ fbr_wbuffer_init(struct fbr_fio *fio)
 }
 
 static struct fbr_wbuffer *
-_wbuffer_alloc(struct fbr_fio *fio, size_t offset, size_t size)
+_wbuffer_alloc(struct fbr_fio *fio, size_t offset, size_t size, size_t max)
 {
 	assert_dev(fio);
 	assert(size);
 
-	size_t wsize = fbr_fs_chunk_size(offset);
+	size_t wsize;
 
 	if (_DEBUG_WBUFFER_ALLOC_SIZE) {
 		wsize = _DEBUG_WBUFFER_ALLOC_SIZE;
+	} else {
+		wsize = fbr_fs_chunk_size(offset);
 	}
 
 	while (wsize < size) {
 		wsize *= 2;
 	}
+
+	if (max && wsize > max) {
+		wsize = max;
+	}
+	assert_dev(size <= wsize);
 
 	struct fbr_wbuffer *wbuffer = calloc(1, sizeof(*wbuffer));
 	assert(wbuffer);
@@ -87,7 +94,17 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 	}
 
 	if (!wbuffer) {
-		wbuffer = _wbuffer_alloc(fio, offset, size);
+		size_t max = 0;
+
+		if (current) {
+			assert_dev(current->offset > offset);
+			max = current->offset - offset;
+			if (size > max) {
+				size = max;
+			}
+		}
+
+		wbuffer = _wbuffer_alloc(fio, offset, size, max);
 		assert_dev(wbuffer);
 
 		if (prev) {
@@ -98,8 +115,9 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 
 		wbuffer->next = current;
 
-		fs->log("WBUFFER alloc offset: %zu end: %zu size: %zu",
-			wbuffer->offset, wbuffer->end, wbuffer->size);
+		fs->log("WBUFFER alloc offset: %zu end: %zu size: %zu current->offset: %zd",
+			wbuffer->offset, wbuffer->end, wbuffer->size,
+			current ? (ssize_t)current->offset : -1);
 	}
 
 	return wbuffer;
@@ -120,6 +138,9 @@ _wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
 	struct fbr_wbuffer *current = wbuffer;
 	size_t current_end = current->offset + current->size;
 
+	fbr_ASSERT(offset < current_end, "offset: %zu wbuffer->offset: %zu wbuffer->size: %zu",
+		offset, wbuffer->offset, wbuffer->size);
+
 	while (offset_end > current_end) {
 		size_t diff = current_end - offset;
 		assert_dev(diff < size);
@@ -129,6 +150,7 @@ _wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
 
 		struct fbr_wbuffer *next = _wbuffer_find(fs, fio, &current->next, offset, size);
 		fbr_wbuffer_ok(next);
+		assert_dev(current->next == next);
 
 		current = next;
 		current_end = current->offset + current->size;
@@ -174,13 +196,17 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 	fbr_body_LOCK(&fio->file->body);
 
+	int loops = 0;
+
 	while (written < size) {
 		fbr_wbuffer_ok(wbuffer);
 		assert(wbuffer->state == FBR_WBUFFER_WRITING);
 
 		size_t wbuffer_end = wbuffer->offset + wbuffer->size;
 		assert(offset >= wbuffer->offset);
-		assert(offset < wbuffer_end);
+		fbr_ASSERT(offset < wbuffer_end,
+			"offset: %zu wbuffer->offset: %zu wbuffer->size: %zu loops: %d",
+			offset, wbuffer->offset, wbuffer->size, loops++);
 
 		size_t wbuffer_offset = offset - wbuffer->offset;
 

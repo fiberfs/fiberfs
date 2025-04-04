@@ -160,7 +160,8 @@ _test_fio_thread(void *arg)
 			wsize = remaining;
 		}
 
-		fbr_test_logs("** fio_thread %d write offset: %zu size: %zu", id, offset, wsize);
+		fbr_test_logs("** fio_thread %d write offset: %zu (%zu) size: %zu",
+			id, offset, offset + total, wsize);
 
 		fbr_wbuffer_write(fs, fio, offset + total, _BUFFER, wsize);
 
