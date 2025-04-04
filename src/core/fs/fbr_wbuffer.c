@@ -138,9 +138,6 @@ _wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
 	struct fbr_wbuffer *current = wbuffer;
 	size_t current_end = current->offset + current->size;
 
-	fbr_ASSERT(offset < current_end, "offset: %zu wbuffer->offset: %zu wbuffer->size: %zu",
-		offset, wbuffer->offset, wbuffer->size);
-
 	while (offset_end > current_end) {
 		size_t diff = current_end - offset;
 		assert_dev(diff < size);
@@ -196,17 +193,13 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 	fbr_body_LOCK(&fio->file->body);
 
-	int loops = 0;
-
 	while (written < size) {
 		fbr_wbuffer_ok(wbuffer);
 		assert(wbuffer->state == FBR_WBUFFER_WRITING);
 
 		size_t wbuffer_end = wbuffer->offset + wbuffer->size;
 		assert(offset >= wbuffer->offset);
-		fbr_ASSERT(offset < wbuffer_end,
-			"offset: %zu wbuffer->offset: %zu wbuffer->size: %zu loops: %d",
-			offset, wbuffer->offset, wbuffer->size, loops++);
+		assert(offset < wbuffer_end);
 
 		size_t wbuffer_offset = offset - wbuffer->offset;
 
