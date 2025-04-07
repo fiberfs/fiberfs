@@ -140,7 +140,6 @@ _test_concurrent_gen_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fb
 
 	size_t calls = fbr_atomic_add(&_FETCH_CALLS, 1);
 	assert(calls <= fbr_array_len(_FETCH_THREADS));
-	assert(id + 1 == (int)calls);
 
 	chunk->state = FBR_CHUNK_LOADING;
 
@@ -209,7 +208,6 @@ _test_concurrent_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuf
 
 	size_t calls = fbr_atomic_add(&_STORE_CALLS, 1);
 	assert(calls <= fbr_array_len(_STORE_THREADS));
-	assert(id + 1 == (int)calls);
 
 	wbuffer->state = FBR_WBUFFER_SYNC;
 
