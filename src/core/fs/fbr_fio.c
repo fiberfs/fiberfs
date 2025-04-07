@@ -487,10 +487,10 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 
 	fbr_chunk_list_free(chunks);
 
-	fbr_body_UNLOCK(&fio->file->body);
-
 	fbr_chunk_list_ok(fio->floating);
 	fbr_chunk_list_debug(fs, fio->floating, "FLOATING");
+
+	fbr_body_UNLOCK(&fio->file->body);
 }
 
 void

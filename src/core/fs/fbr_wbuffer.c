@@ -203,6 +203,11 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 		size_t wbuffer_offset = offset - wbuffer->offset;
 
+		if (wbuffer_offset > wbuffer->end) {
+			size_t wbuffer_zero = wbuffer_offset - wbuffer->end;
+			memset(wbuffer->buffer + wbuffer->end, 0, wbuffer_zero);
+		}
+
 		size_t wsize = size - written;
 		if (wsize > wbuffer->size - wbuffer_offset) {
 			wsize = wbuffer->size - wbuffer_offset;
