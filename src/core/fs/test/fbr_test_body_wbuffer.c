@@ -71,11 +71,14 @@ _fill_buffer(size_t offset, unsigned char *buffer, size_t buffer_len)
 }
 
 static void
-_check_buffer(size_t offset, unsigned char *buffer, size_t buffer_len)
+_check_buffer(size_t offset, unsigned char *buffer, size_t buffer_len, int zero_ok)
 {
 	for (size_t i = 0; i < buffer_len; i++) {
+		if (zero_ok && !buffer[i]) {
+			continue;
+		}
 		unsigned char value = (offset + i) % UCHAR_MAX;
-		assert(buffer[i] == value || buffer[i] == 0);
+		assert(buffer[i] == value);
 	}
 }
 
@@ -335,9 +338,7 @@ _test_fio_read_thread(void *arg)
 
 		for (size_t i = 0; i < bufvec->count; i++) {
 			struct fuse_buf *buf = &bufvec->buf[i];
-
-			_check_buffer(offset + bufvec_len, buf->mem, buf->size);
-
+			_check_buffer(offset + bufvec_len, buf->mem, buf->size, 1);
 			bufvec_len += buf->size;
 		}
 		assert(offset == vector->offset);
@@ -497,11 +498,10 @@ _test_concurrent_fio(void)
 	fio = fbr_fio_alloc(fs, file);
 
 	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, 0, file->size);
-	assert(vector);
-	assert(vector->chunks);
-	assert(vector->bufvec);
+	fbr_chunk_vector_ok(vector);
 
 	chunks = vector->chunks;
+	fbr_chunk_list_ok(chunks);
 	assert(chunks->length);
 	for (size_t i = 0; i < chunks->length; i++) {
 		assert(chunks->list[i]->id > _BODY_TEST_THREADS);
@@ -509,12 +509,11 @@ _test_concurrent_fio(void)
 
 	struct fuse_bufvec *bufvec = vector->bufvec;
 	size_t bufvec_len = 0;
+	assert(bufvec);
 
 	for (size_t i = 0; i < bufvec->count; i++) {
 		struct fuse_buf *buf = &bufvec->buf[i];
-
-		_check_buffer(bufvec_len, buf->mem, buf->size);
-
+		_check_buffer(bufvec_len, buf->mem, buf->size, 0);
 		bufvec_len += buf->size;
 	}
 	assert_zero(vector->offset);
