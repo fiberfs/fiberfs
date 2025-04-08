@@ -478,6 +478,7 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 
 		// chunk ends after offset_end
 		if (chunk_end > offset_end && chunk->state == FBR_CHUNK_READY) {
+			// TODO why would we have a chunk after the offset?
 			assert(chunk->offset < offset_end);
 			fio->floating = fbr_chunk_list_add(fio->floating, chunk);
 		} else {

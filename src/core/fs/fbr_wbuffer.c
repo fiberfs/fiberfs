@@ -428,7 +428,9 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 		pt_assert(pthread_cond_wait(&fio->wbuffer_update, &fio->wbuffer_lock));
 	}
 
-	// TODO we unlocked, what can change?
+	// Note: we unlocked, potential changes:
+	//  * file->size could change
+	//  * wbuffers can be orphaned (cleanup in flush_wbuffers_f() below)
 
 	if (fs->store->flush_wbuffers_f) {
 		int ret = fs->store->flush_wbuffers_f(fs, fio->file, fio->wbuffers);
