@@ -69,35 +69,45 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 	return root;
 }
 
+static void
+_directory_init(struct fbr_fs *fs, struct fbr_directory *directory, fbr_inode_t inode)
+{
+	assert_dev(fs);
+	assert_dev(directory);
+	assert_dev(inode >= FBR_INODE_ROOT);
+
+	directory->magic = FBR_DIRECTORY_MAGIC;
+	directory->inode = inode;
+
+	pt_assert(pthread_cond_init(&directory->update, NULL));
+	TAILQ_INIT(&directory->file_list);
+	RB_INIT(&directory->filename_tree);
+
+	fbr_directory_ok(directory);
+
+	fbr_fs_stat_add(&fs->stats.directories);
+	fbr_fs_stat_add(&fs->stats.directories_total);
+}
+
 struct fbr_directory *
 fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_inode_t inode)
 {
 	fbr_fs_ok(fs);
 	assert(dirname);
 
-	struct fbr_directory *directory = calloc(1, sizeof(*directory));
-	assert_dev(directory);
-
-	directory->magic = FBR_DIRECTORY_MAGIC;
-	directory->inode = inode;
-
-	directory->path = fbr_path_shared_alloc(dirname);
-	assert_dev(directory->path);
-
-	pt_assert(pthread_cond_init(&directory->update, NULL));
-	TAILQ_INIT(&directory->file_list);
-	RB_INIT(&directory->filename_tree);
-
-	if (directory->inode == FBR_INODE_ROOT) {
+	if (inode == FBR_INODE_ROOT) {
 		assert_zero_dev(dirname->len);
 	} else {
 		assert_dev(dirname->len);
 	}
 
-	fbr_directory_ok(directory);
+	struct fbr_directory *directory = calloc(1, sizeof(*directory));
+	assert_dev(directory);
 
-	fbr_fs_stat_add(&fs->stats.directories);
-	fbr_fs_stat_add(&fs->stats.directories_total);
+	_directory_init(fs, directory, inode);
+
+	directory->path = fbr_path_shared_alloc(dirname);
+	assert_dev(directory->path);
 
 	while (directory->state == FBR_DIRSTATE_NONE) {
 		struct fbr_directory *inserted = fbr_dindex_add(fs, directory);
@@ -176,7 +186,6 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_file_ok(file);
 
 		TAILQ_REMOVE(&directory->file_list, file, file_entry);
-
 		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file);
 
 		fbr_file_release_dindex(fs, &file);
@@ -242,8 +251,9 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_LOADING);
+	assert(directory->state <= FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
+	// TODO we pull OK files from existing directories
 	assert(file->state == FBR_FILE_INIT);
 
 	fbr_file_ref_dindex(fs, file);
@@ -402,4 +412,32 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	if (next) {
 		fbr_dindex_release(fs, &directory->next);
 	}
+}
+
+struct fbr_directory *
+fbr_directory_clone(struct fbr_fs *fs, struct fbr_directory *source)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(source);
+	assert_zero_dev(source->expired);
+
+	struct fbr_directory *directory = calloc(1, sizeof(*directory));
+	assert_dev(directory);
+
+	_directory_init(fs, directory, source->inode);
+
+	directory->path = fbr_path_shared_take(source->path);
+	fbr_path_shared_ok(directory->path);
+
+	directory->generation = source->generation;
+
+	struct fbr_file *file;
+
+	TAILQ_FOREACH(file, &source->file_list, file_entry) {
+		fbr_file_ok(file);
+		fbr_directory_add_file(fs, directory, file);
+	}
+	assert_dev(directory->file_count == source->file_count);
+
+	return directory;
 }

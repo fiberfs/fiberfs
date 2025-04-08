@@ -55,6 +55,10 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	// TODO we dump the directory with changes making sure we version match
 	// otherwise repeat
 
+	struct fbr_directory *clone = fbr_directory_clone(fs, directory);
+	fbr_directory_ok(clone);
+	assert(clone->state == FBR_DIRSTATE_NONE);
+
 	// Load the new directory, this is a temporary workaround
 	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
 	fbr_directory_ok(new_directory);
@@ -73,6 +77,9 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	fbr_dindex_release(fs, &directory);
 	fbr_dindex_release(fs, &new_directory);
 	fbr_inode_release(fs, &parent);
+
+	assert_zero(clone->refcounts.fs);
+	fbr_directory_free(fs, clone);
 
 	return 0;
 }
