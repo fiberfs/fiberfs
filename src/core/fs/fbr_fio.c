@@ -127,6 +127,7 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 	assert_dev(fs->store);
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
+	assert(size);
 
 	struct fbr_chunk_list *chunks = fbr_chunk_list_file(fio->file, offset, size, NULL);
 	size_t offset_end = offset + size;

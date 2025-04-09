@@ -257,6 +257,7 @@ fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size,
     struct fbr_chunk_list **removed)
 {
 	fbr_file_ok(file);
+	assert(size);
 	assert_dev(size <= file->size);
 
 	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
@@ -282,7 +283,6 @@ fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size,
 		assert(chunk->state >= FBR_CHUNK_EMPTY);
 
 		if (!completed && fbr_chunk_in_offset(chunk, offset, size)) {
-
 			if (_chunk_list_complete(chunks, chunk->offset, chunk->length)) {
 				if (do_removed) {
 					*removed = fbr_chunk_list_add(*removed, chunk);
