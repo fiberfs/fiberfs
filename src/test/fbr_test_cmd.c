@@ -15,6 +15,8 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
 
+#define FBR_TEST_COMMAND_MAX		256
+
 static int _test_entry_cmp(const struct fbr_test_cmdentry *k1,
     const struct fbr_test_cmdentry *k2);
 
@@ -35,7 +37,7 @@ _test_cmd_alloc(struct fbr_test *test)
 	fbr_test_ok(test);
 
 	if (test->cmds_size == 0) {
-		test->cmds_size = 256;
+		test->cmds_size = FBR_TEST_COMMAND_MAX;
 		size_t size = test->cmds_size * sizeof(*test->cmds);
 		test->cmds = malloc(size);
 		assert(test->cmds);

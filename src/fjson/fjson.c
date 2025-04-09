@@ -4,12 +4,12 @@
  *
  */
 
-#include "fiberfs.h"
-#include "fjson.h"
-
 #include <errno.h>
 #include <math.h>
 #include <stdlib.h>
+
+#include "fiberfs.h"
+#include "fjson.h"
 
 struct fjson_token _FJSON_TOKEN_BAD = {
 	FJSON_TOKEN_MAGIC,

@@ -16,6 +16,7 @@
 
 #endif /* FBR_TEST_REQUEST_CMD */
 
+FBR_TEST_REQUEST_CMD(workspace_test_asserts)
 FBR_TEST_REQUEST_CMD(workspace_test)
 
 #undef FBR_TEST_REQUEST_CMD
