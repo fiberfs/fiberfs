@@ -323,9 +323,10 @@ _test_fio_read_thread(void *arg)
 	size_t count = 0;
 
 	while (!_TEST_OVER && count < 3) {
-		assert(file->size);
-		size_t offset = random() % file->size;
-		size_t length = (random() % file->size) + 1;
+		size_t file_size = file->size;
+		assert(file_size);
+		size_t offset = random() % file_size;
+		size_t length = (random() % file_size) + 1;
 
 		fbr_test_logs("** fio_read_thread %d vector: %zu/%zu", id, offset, length);
 
