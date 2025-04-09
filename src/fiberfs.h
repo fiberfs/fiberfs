@@ -13,6 +13,8 @@
 #define FIBERFS_VERSION				"0.1.0"
 
 typedef unsigned int fbr_refcount_t;
+typedef unsigned long fbr_inode_t;
+typedef unsigned long fbr_stats_t;
 
 #define fbr_magic_check(obj, value)				\
 {								\

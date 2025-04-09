@@ -210,6 +210,7 @@ fbr_workspace_ralloc(struct fbr_workspace *workspace, size_t size)
 	workspace->reserved = 0;
 
 	if (workspace->reserved_ptr) {
+		assert(size <= FBR_WORKSPACE_MIN_SIZE);
 		workspace->reserved_ptr = 0;
 		return;
 	}

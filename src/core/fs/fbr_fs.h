@@ -27,9 +27,6 @@
 #define FBR_BODY_SLAB_DEFAULT_CHUNKS		32
 #define FBR_TTL_MAX				INT32_MAX
 
-typedef unsigned long fbr_inode_t;
-typedef unsigned long fbr_stats_t;
-
 typedef void __fbr_attr_printf(1) (fbr_log_f)(const char *fmt, ...);
 
 enum fbr_chunk_state {
