@@ -63,6 +63,7 @@ fbr_workspace_reset(struct fbr_workspace *workspace)
 	workspace->pointers = NULL;
 	workspace->free = workspace->size;
 	workspace->pos = 0;
+	workspace->overflow_len = 0;
 }
 
 void
@@ -91,7 +92,6 @@ _workspace_malloc(struct fbr_workspace *workspace, size_t size)
 	ptr->next = workspace->pointers;
 
 	workspace->pointers = ptr;
-	workspace->overflow = 1;
 	workspace->overflow_len += size;
 
 	return ptr->data;
@@ -203,7 +203,6 @@ fbr_workspace_debug(struct fbr_workspace *workspace, fbr_log_f *logger)
 
 	logger("workspace.reserved=%u", workspace->reserved);
 	logger("workspace.reserved_ptr=%u", workspace->reserved_ptr);
-	logger("workspace.overflow=%u", workspace->overflow);
 	logger("workspace.size=%zu", workspace->size);
 	logger("workspace.pos=%zu", workspace->pos);
 	logger("workspace.free=%zu", workspace->free);

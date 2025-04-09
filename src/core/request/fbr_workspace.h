@@ -29,7 +29,6 @@ struct fbr_workspace {
 
 	unsigned int				reserved:1;
 	unsigned int				reserved_ptr:1;
-	unsigned int				overflow:1;
 
 	uint8_t					*data;
 	size_t					size;
