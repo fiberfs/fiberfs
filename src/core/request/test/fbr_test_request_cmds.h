@@ -19,6 +19,8 @@
 FBR_TEST_REQUEST_CMD(workspace_test_asserts)
 FBR_TEST_REQUEST_CMD(workspace_test)
 
+FBR_TEST_REQUEST_CMD(request_test)
+
 #undef FBR_TEST_REQUEST_CMD
 #undef FBR_TEST_REQUEST_VAR
 

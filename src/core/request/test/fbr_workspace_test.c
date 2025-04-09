@@ -10,7 +10,6 @@
 #include "core/request/fbr_workspace.h"
 
 #include "test/fbr_test.h"
-#include "fbr_test_request_cmds.h"
 
 void
 fbr_cmd_workspace_test_asserts(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
