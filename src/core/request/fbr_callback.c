@@ -24,7 +24,7 @@ static inline void
 _fuse_reply_check(struct fbr_request *request)
 {
 	fbr_request_ok(request);
-	if (!request->locked) {
+	if (!request->fuse_req_locked) {
 		// TODO this is better done with a global request cleanup method
 		fbr_fuse_mounted(request->fuse_ctx);
 	}

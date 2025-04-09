@@ -15,7 +15,7 @@ struct fbr_request {
 	unsigned int				magic;
 #define FBR_REQUEST_MAGIC			0xE2719F6A
 
-	unsigned int				locked:1;
+	unsigned int				fuse_req_locked:1;
 
 	fuse_req_t				fuse_req;
 	struct fbr_fuse_context			*fuse_ctx;

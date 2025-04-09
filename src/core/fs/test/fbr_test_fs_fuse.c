@@ -680,7 +680,7 @@ fbr_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
 
-	request->locked = 1;
+	request->fuse_req_locked = 1;
 
 	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, off, size);
 
