@@ -285,13 +285,18 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 
 	fio->error = 0;
 
-	if (offset >= fio->file->size) {
+	size_t file_size = fio->file->size;
+
+	if (offset >= file_size) {
 		fbr_body_UNLOCK(&fio->file->body);
 		return NULL;
 	}
-
-	if (offset + size > fio->file->size) {
-		size = fio->file->size - offset;
+	if (offset + size > file_size) {
+		size = file_size - offset;
+	}
+	if (!size) {
+		fbr_body_UNLOCK(&fio->file->body);
+		return NULL;
 	}
 
 	struct fbr_chunk_list *chunks = _fio_fetch_chunks(fs, fio, offset, size);
