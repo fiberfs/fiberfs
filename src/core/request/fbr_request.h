@@ -8,8 +8,10 @@
 #define _FBR_FUSE_REQUEST_H_INCLUDED_
 
 #include "fiberfs.h"
+#include "core/fs/fbr_id.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
+#include "data/queue.h"
 
 struct fbr_request {
 	unsigned int				magic;
@@ -17,8 +19,13 @@ struct fbr_request {
 
 	unsigned int				fuse_req_locked:1;
 
+	unsigned long				simple_id;
+	fbr_id_t				id;
+
 	fuse_req_t				fuse_req;
 	struct fbr_fuse_context			*fuse_ctx;
+
+	TAILQ_ENTRY(fbr_request)		entry;
 };
 
 struct fbr_fuse_callbacks {
@@ -55,6 +62,8 @@ struct fbr_fuse_context *fbr_fuse_callback_ctx(void);
 struct fbr_request *fbr_request_alloc(fuse_req_t fuse_req);
 struct fbr_request *fbr_request_get(void);
 void fbr_request_free(struct fbr_request *request);
+
+void fbr_request_pool_free(struct fbr_fs *fs);
 
 void fbr_fuse_reply_none(struct fbr_request *request);
 void fbr_fuse_reply_err(struct fbr_request *request, int error);

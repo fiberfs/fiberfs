@@ -267,8 +267,11 @@ struct fbr_fs_stats {
 	fbr_stats_t				files_total;
 	fbr_stats_t				file_refs;
 
-	fbr_stats_t				requests;
-	fbr_stats_t				requests_total;
+	fbr_stats_t				requests_active;
+	fbr_stats_t				requests_alloc;
+	fbr_stats_t				requests_freed;
+	fbr_stats_t				requests_recycled;
+	fbr_stats_t				requests_pooled;
 
 	fbr_stats_t				fetch_bytes;
 	fbr_stats_t				read_bytes;
