@@ -248,14 +248,13 @@ fbr_request_pool_free(struct fbr_fs *fs)
 	TAILQ_FOREACH_SAFE(request, &_REQUEST_POOL->active_list, entry, temp) {
 		fbr_request_ok(request);
 
-		fs->log("REQUEST active id: %lu (%lu) reply: %s",
+		fs->log("REQUEST active id: %u (%lu) reply: %s",
 			request->simple_id, request->id,
 			request->fuse_req ? "NO" : "YES");
 
 		if (request->fuse_req) {
-			// TODO
-			//fuse_reply_err(request->fuse_req, EIO);
-			//request->fuse_req = NULL;
+			fuse_reply_err(request->fuse_req, EIO);
+			request->fuse_req = NULL;
 		}
 
 		TAILQ_REMOVE(&_REQUEST_POOL->active_list, request, entry);

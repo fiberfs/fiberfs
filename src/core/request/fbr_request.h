@@ -19,7 +19,7 @@ struct fbr_request {
 
 	unsigned int				fuse_req_locked:1;
 
-	unsigned long				simple_id;
+	unsigned int				simple_id;
 	fbr_id_t				id;
 
 	fuse_req_t				fuse_req;
