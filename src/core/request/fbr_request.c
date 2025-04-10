@@ -180,6 +180,7 @@ fbr_request_get(void)
 	return request;
 }
 
+// Note: you only need to use this if you are off the normal execution path (assert, signal)
 fuse_req_t
 fbr_request_take_fuse_req(struct fbr_request *request)
 {

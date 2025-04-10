@@ -17,6 +17,12 @@ GDB=gdb --args
 export FIBER_VALGRIND=$(PRE_EXEC)
 export FIBER_FLAGS=$(FLAGS)
 
+FIBERFS_TEST_RULE=$(FIBERFS_TEST)
+FAST_VAR=FAST
+ifdef $(FAST_VAR)
+	FIBERFS_TEST_RULE=
+endif
+
 .PHONY: all test check FORCE valgrind verbose sudo json core corex error chttp
 
 all:			check
@@ -52,11 +58,11 @@ corex:			$(TESTS_COREX)
 
 error:			$(TESTS_ERROR)
 
-%.cht %.tst:		$(FIBERFS_TEST) FORCE
+%.cht %.tst:		$(FIBERFS_TEST_RULE) FORCE
 			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
 
-%tstx:			$(FIBERFS_TEST) FORCE | sudo
+%tstx:			$(FIBERFS_TEST_RULE) FORCE | sudo
 			$(PRE_EXEC) $(FIBERFS_TEST) $(FLAGS) $@
 
-%.tstf:			$(FIBERFS_TEST) FORCE
+%.tstf:			$(FIBERFS_TEST_RULE) FORCE
 			$(FAIL_CMD) '$(FIBERFS_TEST) $(FLAGS) $@ $(FAIL_OUT) || echo SUCCESS'
