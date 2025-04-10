@@ -63,7 +63,7 @@ struct fbr_request *fbr_request_alloc(fuse_req_t fuse_req);
 struct fbr_request *fbr_request_get(void);
 void fbr_request_free(struct fbr_request *request);
 
-void fbr_request_pool_free(struct fbr_fs *fs);
+void fbr_request_pool_shutdown(struct fbr_fs *fs);
 
 void fbr_fuse_reply_none(struct fbr_request *request);
 void fbr_fuse_reply_err(struct fbr_request *request, int error);

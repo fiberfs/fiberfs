@@ -63,6 +63,12 @@ fbr_context_abort(void)
 		fuse_session_exit(request->fuse_ctx->session);
 	}
 
+	/*
+	fuse_req_t fuse_req = request->fuse_req;
+	fuse_req_t ret = fbr_compare_swap(&request->fuse_req, fuse_req, NULL);
+
+	if (ret == fuse_req) {
+	*/
 	if (request->fuse_req) {
 		fuse_reply_err(request->fuse_req, EIO);
 		request->fuse_req = NULL;

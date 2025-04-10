@@ -202,7 +202,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	_fuse_abort(ctx);
 
-	fbr_request_pool_free(ctx->fs);
+	fbr_request_pool_shutdown(ctx->fs);
 
 	if (ctx->running) {
 		pt_assert(pthread_join(ctx->loop_thread, NULL));
