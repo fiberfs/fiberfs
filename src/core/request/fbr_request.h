@@ -21,6 +21,8 @@ struct fbr_request {
 
 	unsigned int				simple_id;
 	fbr_id_t				id;
+	const char				*name;
+	double					time_start;
 
 	fuse_req_t				fuse_req;
 	struct fbr_fuse_context			*fuse_ctx;
@@ -59,7 +61,7 @@ void fbr_context_request_finish(void);
 
 struct fbr_fuse_context *fbr_fuse_callback_ctx(void);
 
-struct fbr_request *fbr_request_alloc(fuse_req_t fuse_req);
+struct fbr_request *fbr_request_alloc(fuse_req_t fuse_req, const char *name);
 struct fbr_request *fbr_request_get(void);
 void fbr_request_free(struct fbr_request *request);
 

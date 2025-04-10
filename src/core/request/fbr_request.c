@@ -55,11 +55,32 @@ fbr_context_request_finish(void)
 	_REQUEST_KEY_INIT = 0;
 }
 
-static struct fbr_request *
-_request_pool_get(fuse_req_t fuse_req)
+static void
+_request_init(struct fbr_request *request)
 {
-	assert_dev(fuse_req);
+	assert_dev(request);
+	assert_dev(request->fuse_req);
+
+	request->time_start = fbr_get_time();
+	request->id = fbr_id_gen();
+
+	if (!request->simple_id) {
+		request->simple_id = fbr_atomic_add(&_REQUEST_POOL->id_count, 1);
+	}
+
+	if (!request->fuse_ctx) {
+		request->fuse_ctx = fbr_fuse_callback_ctx();
+	} else {
+		fbr_fuse_context_ok(request->fuse_ctx);
+	}
+}
+
+static struct fbr_request *
+_request_pool_get(fuse_req_t fuse_req, const char *name)
+{
 	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
+	assert_dev(fuse_req);
+	assert_dev(name);
 	assert_dev(_REQUEST_KEY_INIT);
 
 	pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));
@@ -74,11 +95,13 @@ _request_pool_get(fuse_req_t fuse_req)
 
 	struct fbr_request *request = TAILQ_FIRST(&_REQUEST_POOL->free_list);
 	fbr_request_ok(request);
+	assert_zero_dev(request->fuse_req);
 
 	request->fuse_req = fuse_req;
+	request->name = name;
 	pt_assert(pthread_setspecific(_REQUEST_KEY, request));
 
-	request->id = fbr_id_gen();
+	_request_init(request);
 
 	TAILQ_REMOVE(&_REQUEST_POOL->free_list, request, entry);
 	_REQUEST_POOL->free_size--;
@@ -88,7 +111,7 @@ _request_pool_get(fuse_req_t fuse_req)
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 
-	fbr_fuse_context_ok(request->fuse_ctx);
+	assert_dev(request->fuse_ctx);
 	struct fbr_fs *fs = request->fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
@@ -102,6 +125,7 @@ _request_pool_get(fuse_req_t fuse_req)
 static void
 _request_pool_active(struct fbr_request *request)
 {
+	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
 	fbr_request_ok(request);
 
 	pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));
@@ -111,7 +135,7 @@ _request_pool_active(struct fbr_request *request)
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 
-	fbr_fuse_context_ok(request->fuse_ctx);
+	assert_dev(request->fuse_ctx);
 	struct fbr_fs *fs = request->fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
@@ -120,13 +144,13 @@ _request_pool_active(struct fbr_request *request)
 }
 
 struct fbr_request *
-fbr_request_alloc(fuse_req_t fuse_req)
+fbr_request_alloc(fuse_req_t fuse_req, const char *name)
 {
 	assert(fuse_req);
 	assert(_REQUEST_KEY_INIT);
 	assert_zero_dev(fbr_request_get());
 
-	struct fbr_request *request = _request_pool_get(fuse_req);
+	struct fbr_request *request = _request_pool_get(fuse_req, name);
 
 	if (request) {
 		return request;
@@ -137,12 +161,10 @@ fbr_request_alloc(fuse_req_t fuse_req)
 
 	request->magic = FBR_REQUEST_MAGIC;
 	request->fuse_req = fuse_req;
+	request->name = name;
 	pt_assert(pthread_setspecific(_REQUEST_KEY, request));
 
-	request->simple_id = fbr_atomic_add(&_REQUEST_POOL->id_count, 1);
-	request->id = fbr_id_gen();
-	request->fuse_ctx = fbr_fuse_callback_ctx();
-
+	_request_init(request);
 	_request_pool_active(request);
 
 	return request;
@@ -173,6 +195,7 @@ _request_free(struct fbr_request *request)
 static void
 _request_pool_put(struct fbr_request *request)
 {
+	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
 	assert_dev(request);
 	assert_dev(request->fuse_ctx);
 
@@ -218,6 +241,7 @@ fbr_request_free(struct fbr_request *request)
 
 	fbr_fs_stat_sub(&fs->stats.requests_active);
 
+	request->name = NULL;
 	request->id = 0;
 
 	_request_pool_put(request);
@@ -226,6 +250,7 @@ fbr_request_free(struct fbr_request *request)
 void
 fbr_request_pool_shutdown(struct fbr_fs *fs)
 {
+	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
 	fbr_fs_ok(fs);
 
 	pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));
@@ -254,8 +279,8 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 	TAILQ_FOREACH_SAFE(request, &_REQUEST_POOL->active_list, entry, temp) {
 		fbr_request_ok(request);
 
-		fs->log("REQUEST active id: %u (%lu) replied: %s",
-			request->simple_id, request->id,
+		fs->log("REQUEST active name: %s id: %u replied: %s",
+			request->name, request->simple_id,
 			request->fuse_req ? "NO" : "YES");
 
 		// TODO fbr_compare_swap

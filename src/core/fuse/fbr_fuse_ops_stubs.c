@@ -17,11 +17,11 @@
 }
 
 static inline struct fbr_request *
-_fuse_setup(fuse_req_t fuse_req)
+_fuse_setup(fuse_req_t fuse_req, const char *name)
 {
 	struct fbr_request *request;
 
-	request = fbr_request_alloc(fuse_req);
+	request = fbr_request_alloc(fuse_req, name);
 	fbr_request_valid(request);
 	assert_dev(request->fuse_ctx->fuse_callbacks);
 	assert_dev(request->fuse_req);
@@ -89,7 +89,7 @@ _fuse_ops_destroy(void *userdata)
 static void
 _fuse_ops_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, lookup, parent, name);
 
@@ -99,7 +99,7 @@ _fuse_ops_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 static void
 _fuse_ops_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, getattr, ino, fi);
 
@@ -109,7 +109,7 @@ _fuse_ops_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 static void
 _fuse_ops_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, open, ino, fi);
 
@@ -121,7 +121,7 @@ static void
 _fuse_ops_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode,
     struct fuse_file_info *fi)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, create, parent, name, mode, fi);
 
@@ -131,7 +131,7 @@ _fuse_ops_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mod
 static void
 _fuse_ops_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, read, ino, size, off, fi);
 
@@ -142,7 +142,7 @@ static void
 _fuse_ops_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, write, ino, buf, size, off, fi);
 
@@ -152,7 +152,7 @@ _fuse_ops_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size, of
 static void
 _fuse_ops_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, flush, ino, fi);
 
@@ -162,7 +162,7 @@ _fuse_ops_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 static void
 _fuse_ops_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, release, ino, fi);
 
@@ -172,7 +172,7 @@ _fuse_ops_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 static void
 _fuse_ops_fsync(fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, fsync, ino, datasync, fi);
 
@@ -182,7 +182,7 @@ _fuse_ops_fsync(fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_i
 static void
 _fuse_ops_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, opendir, ino, fi);
 
@@ -193,7 +193,7 @@ static void
 _fuse_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, readdir, ino, size, off, fi);
 
@@ -203,7 +203,7 @@ _fuse_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 static void
 _fuse_ops_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, releasedir, ino, fi);
 
@@ -213,7 +213,7 @@ _fuse_ops_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 static void
 _fuse_ops_forget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, forget, ino, nlookup);
 
@@ -223,7 +223,7 @@ _fuse_ops_forget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
 static void
 _fuse_ops_forget_multi(fuse_req_t req, size_t count, struct fuse_forget_data *forgets)
 {
-	struct fbr_request *request = _fuse_setup(req);
+	struct fbr_request *request = _fuse_setup(req, __func__);
 
 	_fuse_ops_callback(request, forget_multi, count, forgets);
 
