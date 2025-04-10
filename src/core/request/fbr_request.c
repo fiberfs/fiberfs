@@ -62,11 +62,7 @@ _request_init(struct fbr_request *request)
 	assert_dev(request->fuse_req);
 
 	request->time_start = fbr_get_time();
-	request->id = fbr_id_gen();
-
-	if (!request->simple_id) {
-		request->simple_id = fbr_atomic_add(&_REQUEST_POOL->id_count, 1);
-	}
+	request->id = fbr_atomic_add(&_REQUEST_POOL->id_count, 1);
 
 	if (!request->fuse_ctx) {
 		request->fuse_ctx = fbr_fuse_callback_ctx();
@@ -279,8 +275,8 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 	TAILQ_FOREACH_SAFE(request, &_REQUEST_POOL->active_list, entry, temp) {
 		fbr_request_ok(request);
 
-		fs->log("REQUEST active name: %s id: %u replied: %s",
-			request->name, request->simple_id,
+		fs->log("REQUEST active name: %s id: %lu replied: %s",
+			request->name, request->id,
 			request->fuse_req ? "NO" : "YES");
 
 		// TODO fbr_compare_swap

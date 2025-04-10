@@ -139,7 +139,7 @@ _test_fs_rw_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_i
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("OPEN ino: %lu flags: %d", ino, fi->flags);
+	fbr_test_logs("OPEN req: %lu ino: %lu flags: %d", request->id, ino, fi->flags);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -190,8 +190,8 @@ _test_fs_rw_create(struct fbr_request *request, fuse_ino_t parent, const char *n
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("CREATE parent: %lu name: '%s' mode: %d flags: %u", parent, name,
-		mode, fi->flags);
+	fbr_test_logs("CREATE req: %lu parent: %lu name: '%s' mode: %d flags: %u",
+		request->id, parent, name, mode, fi->flags);
 
 	struct fbr_file *parent_file = fbr_inode_take(fs, parent);
 
@@ -326,7 +326,7 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("WRITE ino: %lu off: %ld size: %zu", ino, off, size);
+	fbr_test_logs("WRITE req: %lu ino: %lu off: %ld size: %zu", request->id, ino, off, size);
 	assert(off >= 0);
 	assert(size);
 
@@ -351,7 +351,7 @@ _test_fs_rw_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 	(void)fs;
 	(void)fi;
 
-	fbr_test_logs("FLUSH ino: %lu", ino);
+	fbr_test_logs("FLUSH req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_take(fio);
@@ -371,7 +371,7 @@ _test_fs_rw_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_fil
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("RELEASE ino: %lu", ino);
+	fbr_test_logs("RELEASE req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_release(fs, fio);
@@ -387,7 +387,7 @@ _test_fs_rw_fsync(struct fbr_request *request, fuse_ino_t ino, int datasync,
 	(void)fs;
 	(void)fi;
 
-	fbr_test_logs("FSYNC ino: %lu datasync: %d", ino, datasync);
+	fbr_test_logs("FSYNC req: %lu ino: %lu datasync: %d", request->id, ino, datasync);
 
 	fbr_fuse_reply_err(request, 0);
 }

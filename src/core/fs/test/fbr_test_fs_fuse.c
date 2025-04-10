@@ -275,7 +275,7 @@ fbr_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fus
 	struct fbr_fs *fs = fbr_request_fs(request);
 	(void)fi;
 
-	fbr_test_logs("GETATTR ino: %lu", ino);
+	fbr_test_logs("GETATTR req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -300,7 +300,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("LOOKUP parent: %lu name: %s", parent, name);
+	fbr_test_logs("LOOKUP req: %lu parent: %lu name: %s", request->id, parent, name);
 
 	if (_TEST_FS_ALLOW_CRASH && !strcmp(name, "__CRASH")) {
 		fbr_ABORT("__CRASH triggered!");
@@ -428,7 +428,7 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("OPENDIR ino: %lu", ino);
+	fbr_test_logs("OPENDIR req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -517,7 +517,8 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("READDIR ino: %lu size: %zu off: %ld", ino, size, off);
+	fbr_test_logs("READDIR req: %lu ino: %lu size: %zu off: %ld",
+		request->id, ino, size, off);
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 
@@ -618,7 +619,7 @@ fbr_test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino, struct 
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("RELEASEDIR ino: %lu", ino);
+	fbr_test_logs("RELEASEDIR req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 
@@ -632,7 +633,7 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("OPEN ino: %lu flags: %d", ino, fi->flags);
+	fbr_test_logs("OPEN req: %lu ino: %lu flags: %d", request->id, ino, fi->flags);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -674,13 +675,12 @@ fbr_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("READ ino: %lu off: %ld size: %zu flags: %d", ino, off, size, fi->flags);
+	fbr_test_logs("READ req: %lu ino: %lu off: %ld size: %zu flags: %d",
+		request->id, ino, off, size, fi->flags);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
-
-	request->fuse_req_locked = 1;
 
 	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, off, size);
 
@@ -711,7 +711,7 @@ _test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_f
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("RELEASE ino: %lu flags: %d", ino, fi->flags);
+	fbr_test_logs("RELEASE req: %lu ino: %lu flags: %d", request->id, ino, fi->flags);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_release(fs, fio);
@@ -724,7 +724,7 @@ fbr_test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nl
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("FORGET ino: %lu nlookup: %lu", ino, nlookup);
+	fbr_test_logs("FORGET req: %lu ino: %lu nlookup: %lu", request->id, ino, nlookup);
 
 	fbr_inode_forget(fs, ino, nlookup);
 	fbr_fuse_reply_none(request);
@@ -736,7 +736,7 @@ fbr_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_test_logs("FORGET_MULTI count: %zu", count);
+	fbr_test_logs("FORGET_MULTI req: %lu count: %zu", request->id, count);
 
 	for (size_t i = 0; i < count; i++) {
 		fbr_test_logs("FORGET_MULTI ino: %lu nlookup: %lu",

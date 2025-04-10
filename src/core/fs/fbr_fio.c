@@ -53,8 +53,10 @@ fbr_fio_take(struct fbr_fio *fio)
 }
 
 void
-fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_state state)
+fbr_chunk_update(struct fbr_fs *fs, struct fbr_body *body, struct fbr_chunk *chunk,
+    enum fbr_chunk_state state)
 {
+	fbr_fs_ok(fs);
 	assert(body);
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_LOADING);
@@ -69,7 +71,7 @@ fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk, enum fbr_chunk_
 			fbr_ABORT("fbr_chunk_update() invalid state %d", state);
 	}
 
-	fbr_body_LOCK(body);
+	fbr_body_LOCK(fs, body);
 
 	chunk->state = state;
 
@@ -281,7 +283,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
-	fbr_body_LOCK(&fio->file->body);
+	fbr_body_LOCK(fs, &fio->file->body);
 
 	fio->error = 0;
 
@@ -514,13 +516,8 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 		return;
 	}
 
-	if (fio->floating->length) {
-		fbr_body_LOCK(&fio->file->body);
-		_fio_release_floating(fs, fio, 0);
-		fbr_body_UNLOCK(&fio->file->body);
-		assert_zero_dev(fio->floating->length);
-	}
-
+	_fio_release_floating(fs, fio, 0);
+	assert_zero_dev(fio->floating->length);
 	fbr_chunk_list_free(fio->floating);
 	fbr_wbuffer_free(fs, fio);
 

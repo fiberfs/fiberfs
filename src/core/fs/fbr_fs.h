@@ -377,7 +377,7 @@ void fbr_chunk_list_free(struct fbr_chunk_list *chunks);
 void fbr_body_init(struct fbr_body *body);
 struct fbr_chunk *fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset,
 	size_t length);
-void fbr_body_LOCK(struct fbr_body *body);
+void fbr_body_LOCK(struct fbr_fs *fs, struct fbr_body *body);
 void fbr_body_UNLOCK(struct fbr_body *body);
 void fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_body_free(struct fbr_body *body);
@@ -420,7 +420,7 @@ struct fbr_fio *fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_fio_take(struct fbr_fio *fio);
 struct fbr_chunk_vector *fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio,
 	size_t offset, size_t size);
-void fbr_chunk_update(struct fbr_body *body, struct fbr_chunk *chunk,
+void fbr_chunk_update(struct fbr_fs *fs, struct fbr_body *body, struct fbr_chunk *chunk,
 	enum fbr_chunk_state state);
 void fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio,
 	struct fbr_chunk_vector *vector);

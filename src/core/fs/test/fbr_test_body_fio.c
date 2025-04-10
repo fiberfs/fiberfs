@@ -66,7 +66,7 @@ _test_fetch_thread(void *arg)
 
 	fbr_test_logs("FETCH thread: %d chunk: %lu", id, chunk->id);
 
-	fbr_chunk_update(&file->body, chunk, FBR_CHUNK_LOADING);
+	fbr_chunk_update(fs, &file->body, chunk, FBR_CHUNK_LOADING);
 
 	while (_FETCH_THREAD_ID < _BODY_TEST_THREADS - 1) {
 		fbr_sleep_ms(0.1);
@@ -79,9 +79,9 @@ _test_fetch_thread(void *arg)
 	if (chunk->id == _FETCH_ERROR_CHUNK_ID) {
 		fbr_test_logs("FETCH ERROR: %lu", chunk->id);
 		chunk->data = NULL;
-		fbr_chunk_update(&file->body, chunk, FBR_CHUNK_EMPTY);
+		fbr_chunk_update(fs, &file->body, chunk, FBR_CHUNK_EMPTY);
 	} else {
-		fbr_chunk_update(&file->body, chunk, FBR_CHUNK_READY);
+		fbr_chunk_update(fs, &file->body, chunk, FBR_CHUNK_READY);
 	}
 
 	return NULL;

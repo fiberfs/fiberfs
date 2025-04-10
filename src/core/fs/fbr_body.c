@@ -162,10 +162,11 @@ fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t len
 }
 
 void
-fbr_body_LOCK(struct fbr_body *body)
+fbr_body_LOCK(struct fbr_fs *fs, struct fbr_body *body)
 {
+	fbr_fs_ok(fs);
 	assert(body);
-	pt_assert(pthread_mutex_lock(&body->lock));
+	fbr_fuse_lock(fs->fuse_ctx, &body->lock);
 }
 
 void

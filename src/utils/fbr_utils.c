@@ -29,8 +29,25 @@ double
 fbr_get_time(void)
 {
 	struct timespec ts;
+	assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
 
-        assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
+	return ts.tv_sec + ((double)ts.tv_nsec / (1000 * 1000 * 1000));
+}
 
-        return ts.tv_sec + ((double)ts.tv_nsec / (1000 * 1000 * 1000));
+void
+fbr_timespec_add_clock(struct timespec *value)
+{
+	assert(value);
+
+	struct timespec now;
+	assert_zero(clock_gettime(CLOCK_REALTIME, &now));
+
+	long ns = 1000 * 1000 * 1000;
+
+	value->tv_nsec += now.tv_nsec;
+	assert_dev(value->tv_nsec / ns <= 1);
+	value->tv_sec += value->tv_nsec / ns;
+	value->tv_sec += now.tv_sec;
+	value->tv_nsec %= ns;
+	assert_dev(value->tv_nsec < ns);
 }

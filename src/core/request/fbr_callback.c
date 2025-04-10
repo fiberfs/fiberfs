@@ -24,10 +24,7 @@ static inline void
 _fuse_reply_check(struct fbr_request *request)
 {
 	fbr_request_ok(request);
-	if (!request->fuse_req_locked) {
-		// TODO see 005_fuse_error/0024.tstf
-		fbr_fuse_mounted(request->fuse_ctx);
-	}
+	fbr_fuse_mounted(request->fuse_ctx);
 	assert(request->fuse_req);
 }
 

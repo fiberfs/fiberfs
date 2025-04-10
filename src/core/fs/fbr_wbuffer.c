@@ -191,7 +191,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 	size_t offset_end = offset + size;
 	size_t written = 0;
 
-	fbr_body_LOCK(&fio->file->body);
+	fbr_body_LOCK(fs, &fio->file->body);
 
 	while (written < size) {
 		fbr_wbuffer_ok(wbuffer);
@@ -278,7 +278,7 @@ _wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 	fbr_file_ok(file);
 	assert_dev(wbuffer);
 
-	fbr_body_LOCK(&file->body);
+	fbr_body_LOCK(fs, &file->body);
 
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
