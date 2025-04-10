@@ -233,7 +233,7 @@ _dindex_LOCK(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_dindex_dirhead *dirhead = _dindex_dirhead_get(dindex, directory);
 
-	pt_assert(pthread_mutex_lock(&dirhead->lock));
+	fbr_fuse_lock(fs->fuse_ctx, &dirhead->lock);
 	fbr_directory_ok(directory);
 
 	return dirhead;

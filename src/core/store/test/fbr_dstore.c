@@ -125,8 +125,10 @@ _dstore_chunk_path(const struct fbr_file *file, fbr_id_t id, size_t offset, char
 }
 
 static void
-_dstore_wbuffer_update(struct fbr_wbuffer *wbuffer, enum fbr_wbuffer_state state)
+_dstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
+    enum fbr_wbuffer_state state)
 {
+	assert_dev(fs);
 	assert_dev(wbuffer);
 	assert(state >= FBR_WBUFFER_DONE);
 
@@ -135,7 +137,7 @@ _dstore_wbuffer_update(struct fbr_wbuffer *wbuffer, enum fbr_wbuffer_state state
 		return;
 	}
 
-	fbr_wbuffer_update(wbuffer, state);
+	fbr_wbuffer_update(fs, wbuffer, state);
 }
 
 void
@@ -162,7 +164,7 @@ fbr_dstore_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 
 	fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
 
-	_dstore_wbuffer_update(wbuffer, FBR_WBUFFER_DONE);
+	_dstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_DONE);
 }
 
 static void

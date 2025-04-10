@@ -182,9 +182,9 @@ _test_store_thread(void *arg)
 
 	if (id == _STORE_ERROR_THREAD_ID) {
 		fbr_test_logs("STORE ERROR: %d", id);
-		fbr_wbuffer_update(wbuffer, FBR_WBUFFER_ERROR);
+		fbr_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
 	} else {
-		fbr_wbuffer_update(wbuffer, FBR_WBUFFER_DONE);
+		fbr_wbuffer_update(fs, wbuffer, FBR_WBUFFER_DONE);
 	}
 
 	return NULL;

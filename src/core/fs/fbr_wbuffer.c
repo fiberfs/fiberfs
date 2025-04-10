@@ -160,10 +160,11 @@ _wbuffer_get(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
 }
 
 static void
-_wbuffer_LOCK(struct fbr_fio *fio)
+_wbuffer_LOCK(struct fbr_fs *fs, struct fbr_fio *fio)
 {
+	assert_dev(fs);
 	fbr_fio_ok(fio);
-	pt_assert(pthread_mutex_lock(&fio->wbuffer_lock));
+	fbr_fuse_lock(fs->fuse_ctx, &fio->wbuffer_lock);
 }
 
 static void
@@ -184,7 +185,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 	assert(buf);
 	assert(size);
 
-	_wbuffer_LOCK(fio);
+	_wbuffer_LOCK(fs, fio);
 
 	struct fbr_wbuffer *wbuffer = _wbuffer_get(fs, fio, offset, size);
 
@@ -303,14 +304,15 @@ _wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 }
 
 void
-fbr_wbuffer_update(struct fbr_wbuffer *wbuffer, enum fbr_wbuffer_state state)
+fbr_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer, enum fbr_wbuffer_state state)
 {
+	fbr_fs_ok(fs);
 	fbr_wbuffer_ok(wbuffer);
 	fbr_fio_ok(wbuffer->fio);
 	assert(wbuffer->state == FBR_WBUFFER_SYNC);
 	assert(state >= FBR_WBUFFER_DONE);
 
-	_wbuffer_LOCK(wbuffer->fio);
+	_wbuffer_LOCK(fs, wbuffer->fio);
 
 	wbuffer->state = state;
 
@@ -390,7 +392,7 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
-	_wbuffer_LOCK(fio);
+	_wbuffer_LOCK(fs, fio);
 
 	if (!fio->wbuffers) {
 		_wbuffer_UNLOCK(fio);

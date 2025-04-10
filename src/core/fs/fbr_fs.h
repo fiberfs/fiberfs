@@ -429,7 +429,8 @@ void fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffer_init(struct fbr_fio *fio);
 void fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 	const char *buf, size_t size);
-void fbr_wbuffer_update(struct fbr_wbuffer *wbuffer, enum fbr_wbuffer_state state);
+void fbr_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
+	enum fbr_wbuffer_state state);
 int fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 
