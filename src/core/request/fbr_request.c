@@ -180,6 +180,25 @@ fbr_request_get(void)
 	return request;
 }
 
+fuse_req_t
+fbr_request_take_fuse_req(struct fbr_request *request)
+{
+	assert(request);
+
+	fuse_req_t fuse_req = request->fuse_req;
+	if (fuse_req) {
+		fuse_req_t ret = fbr_compare_swap(&request->fuse_req, fuse_req, NULL);
+
+		if (ret == fuse_req) {
+			return fuse_req;
+		}
+
+		assert_zero_dev(ret);
+	}
+
+	return NULL;
+}
+
 static void
 _request_free(struct fbr_request *request)
 {
@@ -275,11 +294,17 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 	TAILQ_FOREACH_SAFE(request, &_REQUEST_POOL->active_list, entry, temp) {
 		fbr_request_ok(request);
 
+		fuse_req_t fuse_req = fbr_request_take_fuse_req(request);
+
 		fs->log("REQUEST active name: %s id: %lu replied: %s",
 			request->name, request->id,
-			request->fuse_req ? "NO" : "YES");
+			fuse_req ? "NO" : "YES");
 
-		// TODO fbr_compare_swap
+		if (fuse_req) {
+			fuse_reply_err(fuse_req, EIO);
+		}
+
+		assert_zero_dev(request->fuse_req);
 
 		if (request->fuse_req) {
 			fuse_reply_err(request->fuse_req, EIO);
@@ -288,17 +313,10 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 
 		TAILQ_REMOVE(&_REQUEST_POOL->active_list, request, entry);
 		_REQUEST_POOL->active_size--;
-
-		_request_free(request);
-
-		fbr_fs_stat_sub(&fs->stats.requests_active);
-		fbr_fs_stat_add(&fs->stats.requests_freed);
 	}
 
 	assert_zero(_REQUEST_POOL->active_size);
 	assert(TAILQ_EMPTY(&_REQUEST_POOL->active_list));
-	assert_zero_dev(fs->stats.requests_active);
-	assert_dev(fs->stats.requests_alloc == fs->stats.requests_freed);
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 }

@@ -60,6 +60,7 @@ struct fbr_fuse_context *fbr_fuse_callback_ctx(void);
 
 struct fbr_request *fbr_request_alloc(fuse_req_t fuse_req, const char *name);
 struct fbr_request *fbr_request_get(void);
+fuse_req_t fbr_request_take_fuse_req(struct fbr_request *request);
 void fbr_request_free(struct fbr_request *request);
 
 void fbr_request_pool_shutdown(struct fbr_fs *fs);
