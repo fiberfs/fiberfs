@@ -292,17 +292,19 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 
 		fuse_req_t fuse_req = fbr_request_take_fuse(request);
 
-		fs->log("REQUEST active name: %s id: %lu running: %s",
-			request->name, request->id,
+		fs->log("REQUEST active id: %lu name: %s running: %s",
+			request->id, request->name,
 			fuse_req ? "YES" : "NO");
 
 		if (fuse_req) {
+			fs->log("REQUEST id: %lu sending EIO", request->id);
 			fuse_reply_err(fuse_req, EIO);
 		}
 
 		assert_zero_dev(request->fuse_req);
 
 		if (request->thread) {
+			fs->log("REQUEST id: %lu sending SIGTERM", request->id);
 			pthread_kill(request->thread, SIGTERM);
 			fbr_ZERO(&request->thread);
 		}
