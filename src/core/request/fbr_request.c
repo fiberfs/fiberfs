@@ -5,6 +5,7 @@
  */
 
 #include <pthread.h>
+#include <signal.h>
 #include <stdlib.h>
 
 #include "fiberfs.h"
@@ -292,7 +293,6 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 
 	TAILQ_FOREACH_SAFE(request, &_REQUEST_POOL->active_list, entry, temp) {
 		fbr_request_ok(request);
-		assert_dev(request->thread);
 
 		fuse_req_t fuse_req = fbr_request_take_fuse(request);
 
@@ -306,12 +306,20 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 
 		assert_zero_dev(request->fuse_req);
 
+		if (request->thread) {
+			pthread_kill(request->thread, SIGTERM);
+			fbr_ZERO(&request->thread);
+		}
+
 		TAILQ_REMOVE(&_REQUEST_POOL->active_list, request, entry);
 		_REQUEST_POOL->active_size--;
+
+		fbr_fs_stat_sub(&fs->stats.requests_active);
 	}
 
 	assert_zero(_REQUEST_POOL->active_size);
 	assert(TAILQ_EMPTY(&_REQUEST_POOL->active_list));
+	assert_zero_dev(fs->stats.requests_active);
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 }

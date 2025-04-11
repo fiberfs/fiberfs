@@ -58,6 +58,8 @@ fbr_context_abort(void)
 		return;
 	}
 
+	fbr_ZERO(&request->thread);
+
 	if (request->fuse_ctx) {
 		request->fuse_ctx->error = 1;
 		fuse_session_exit(request->fuse_ctx->session);
