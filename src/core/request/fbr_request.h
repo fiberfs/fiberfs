@@ -10,7 +10,6 @@
 #include <pthread.h>
 
 #include "fiberfs.h"
-#include "core/fs/fbr_id.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "data/queue.h"

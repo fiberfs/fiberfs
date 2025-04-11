@@ -14,7 +14,6 @@
 #include <sys/types.h>
 
 #include "fiberfs.h"
-#include "fbr_id.h"
 #include "fbr_path.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "core/request/fbr_request.h"

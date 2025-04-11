@@ -8,6 +8,7 @@
 #define _FIBERFS_H_INCLUDED_
 
 #include "utils/fbr_assert.h"
+#include "utils/fbr_id.h"
 #include "utils/fbr_utils.h"
 
 #define FIBERFS_VERSION				"0.1.0"

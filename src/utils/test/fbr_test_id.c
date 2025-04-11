@@ -10,7 +10,7 @@
 #include "test/fbr_test.h"
 
 void
-fbr_cmd_fs_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
