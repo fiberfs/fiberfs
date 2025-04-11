@@ -62,7 +62,9 @@ fbr_context_abort(void)
 
 	if (request->fuse_ctx) {
 		request->fuse_ctx->error = 1;
-		fuse_session_exit(request->fuse_ctx->session);
+		if (request->fuse_ctx->session) {
+			fuse_session_exit(request->fuse_ctx->session);
+		}
 	}
 
 	fuse_req_t fuse_req = fbr_request_take_fuse(request);
