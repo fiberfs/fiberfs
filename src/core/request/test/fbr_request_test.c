@@ -63,6 +63,13 @@ fbr_cmd_request_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fs->stats.requests_active == 1);
 	assert(fs->stats.requests_pooled == 0);
 	fbr_request_take_fuse(r2);
+
+	char *buf = fbr_workspace_rbuffer(r2->workspace);
+	size_t buf_len = fbr_workspace_rlen(r2->workspace);
+	assert(buf_len >= FBR_WORKSPACE_MIN_SIZE);
+	memset(buf, 1, buf_len);
+	fbr_workspace_ralloc(r2->workspace, 0);
+
 	fbr_request_free(r2);
 
 	_debug_request_stats(fs);
@@ -104,6 +111,11 @@ _test_request_thread(void *arg)
 	fbr_request_ok(r1);
 	assert(fbr_request_get() == r1);
 
+	char *buf = fbr_workspace_rbuffer(r1->workspace);
+	size_t buf_len = fbr_workspace_rlen(r1->workspace);
+	assert(buf_len >= FBR_WORKSPACE_MIN_SIZE);
+	memset(buf, 1, buf_len);
+
 	fbr_atomic_add(&_TEST_REQUEST_THREAD_ID, 1);
 
 	while (_TEST_REQUEST_THREAD_ID < _TEST_REQUEST_THREADS * 2) {
@@ -120,6 +132,13 @@ _test_request_thread(void *arg)
 	fbr_request_ok(r2);
 	fbr_request_take_fuse(r2);
 	assert(fbr_request_get() == r2);
+
+	buf = fbr_workspace_rbuffer(r2->workspace);
+	buf_len = fbr_workspace_rlen(r2->workspace);
+	assert(buf_len >= FBR_WORKSPACE_MIN_SIZE);
+	memset(buf, 1, buf_len);
+	fbr_workspace_ralloc(r2->workspace, FBR_WORKSPACE_MIN_SIZE / 10);
+
 	fbr_request_free(r2);
 
 	assert_zero(fbr_request_get());

@@ -73,6 +73,9 @@ _request_init(struct fbr_request *request, fuse_req_t fuse_req, const char *name
 	} else {
 		fbr_fuse_context_ok(request->fuse_ctx);
 	}
+
+	assert_dev(request->workspace->free >= FBR_WORKSPACE_MIN_SIZE);
+	assert_zero_dev(request->workspace->pos);
 }
 
 static struct fbr_request *
@@ -152,10 +155,13 @@ fbr_request_alloc(fuse_req_t fuse_req, const char *name)
 		return request;
 	}
 
-	request = calloc(1, sizeof(*request));
+	size_t workspace_size = fbr_workspace_size();
+
+	request = calloc(1, sizeof(*request) + workspace_size);
 	assert(request);
 
 	request->magic = FBR_REQUEST_MAGIC;
+	request->workspace = fbr_workspace_init(request + 1, workspace_size);
 
 	_request_init(request, fuse_req, name);
 	_request_pool_active(request);
@@ -202,6 +208,9 @@ static void
 _request_free(struct fbr_request *request)
 {
 	assert_dev(request);
+
+	fbr_workspace_free(request->workspace);
+
 	fbr_ZERO(request);
 	free(request);
 }
@@ -257,6 +266,8 @@ fbr_request_free(struct fbr_request *request)
 
 	request->name = NULL;
 	request->id = 0;
+
+	fbr_workspace_reset(request->workspace);
 
 	_request_pool_put(request);
 }
