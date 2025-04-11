@@ -43,16 +43,18 @@ static pthread_key_t _REQUEST_KEY;
 void
 fbr_context_request_init(void)
 {
-	pt_assert(pthread_key_create(&_REQUEST_KEY, NULL));
+	assert_zero(_REQUEST_KEY_INIT);
 
+	pt_assert(pthread_key_create(&_REQUEST_KEY, NULL));
 	_REQUEST_KEY_INIT = 1;
 }
 
 void
 fbr_context_request_finish(void)
 {
-	pt_assert(pthread_key_delete(_REQUEST_KEY));
+	assert(_REQUEST_KEY_INIT);
 
+	pt_assert(pthread_key_delete(_REQUEST_KEY));
 	_REQUEST_KEY_INIT = 0;
 }
 

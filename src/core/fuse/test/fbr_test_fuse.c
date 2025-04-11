@@ -7,12 +7,16 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "test/fbr_test.h"
-#include "fbr_test_fuse_cmds.h"
-
+#include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "core/request/fbr_request.h"
+
+#include "test/fbr_test.h"
+#include "fbr_test_fuse_cmds.h"
+#include "core/fs/test/fbr_test_fs_cmds.h"
+
+extern struct fbr_fuse_context *_FUSE_CTX;
 
 static void
 _fuse_finish(struct fbr_test_context *test_ctx)
@@ -111,4 +115,20 @@ fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx)
 	fbr_fuse_context_ok(fuse_ctx);
 
 	return fuse_ctx;
+}
+
+struct fbr_fs *
+fbr_test_fuse_mock(struct fbr_test_context *test_ctx)
+{
+	struct fbr_fuse_context *ctx = _fuse_init(test_ctx);
+	fbr_fuse_init(ctx);
+	_FUSE_CTX = ctx;
+	assert(fbr_fuse_get_context() == ctx);
+
+	struct fbr_fs *fs = fbr_fs_alloc();
+	fbr_fs_ok(fs);
+	fs->logger = fbr_fs_test_logger;
+	ctx->fs = fs;
+
+	return fs;
 }
