@@ -45,6 +45,7 @@ struct fuse_conn_info;
 extern const struct fuse_lowlevel_ops *FBR_FUSE_OPS;
 
 void fbr_fuse_init(struct fbr_fuse_context *ctx);
+struct fbr_fuse_context *fbr_fuse_get_context(void);
 void fbr_fuse_free(struct fbr_fuse_context *ctx);
 int fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path);
 void fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);

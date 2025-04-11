@@ -30,6 +30,13 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 	fbr_fuse_context_ok(ctx);
 }
 
+struct fbr_fuse_context *
+fbr_fuse_get_context(void)
+{
+	fbr_fuse_context_ok(_FUSE_CTX);
+	return _FUSE_CTX;
+}
+
 static void
 _fuse_error(struct fbr_fuse_context *ctx)
 {

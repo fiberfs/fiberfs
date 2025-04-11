@@ -7,6 +7,8 @@
 #ifndef _FBR_FUSE_REQUEST_H_INCLUDED_
 #define _FBR_FUSE_REQUEST_H_INCLUDED_
 
+#include <pthread.h>
+
 #include "fiberfs.h"
 #include "core/fs/fbr_id.h"
 #include "core/fuse/fbr_fuse.h"
@@ -20,6 +22,7 @@ struct fbr_request {
 	unsigned long				id;
 	const char				*name;
 	double					time_start;
+	pthread_t				thread;
 
 	fuse_req_t				fuse_req;
 	struct fbr_fuse_context			*fuse_ctx;
@@ -56,11 +59,9 @@ struct fbr_fuse_callbacks {
 void fbr_context_request_init(void);
 void fbr_context_request_finish(void);
 
-struct fbr_fuse_context *fbr_fuse_callback_ctx(void);
-
 struct fbr_request *fbr_request_alloc(fuse_req_t fuse_req, const char *name);
 struct fbr_request *fbr_request_get(void);
-fuse_req_t fbr_request_take_fuse_req(struct fbr_request *request);
+fuse_req_t fbr_request_take_fuse(struct fbr_request *request);
 void fbr_request_free(struct fbr_request *request);
 
 void fbr_request_pool_shutdown(struct fbr_fs *fs);

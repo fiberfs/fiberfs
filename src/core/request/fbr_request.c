@@ -56,16 +56,20 @@ fbr_context_request_finish(void)
 }
 
 static void
-_request_init(struct fbr_request *request)
+_request_init(struct fbr_request *request, fuse_req_t fuse_req, const char *name)
 {
 	assert_dev(request);
-	assert_dev(request->fuse_req);
 
+	request->fuse_req = fuse_req;
+	pt_assert(pthread_setspecific(_REQUEST_KEY, request));
+
+	request->name = name;
 	request->time_start = fbr_get_time();
 	request->id = fbr_atomic_add(&_REQUEST_POOL->id_count, 1);
+	request->thread = pthread_self();
 
 	if (!request->fuse_ctx) {
-		request->fuse_ctx = fbr_fuse_callback_ctx();
+		request->fuse_ctx = fbr_fuse_get_context();
 	} else {
 		fbr_fuse_context_ok(request->fuse_ctx);
 	}
@@ -92,12 +96,9 @@ _request_pool_get(fuse_req_t fuse_req, const char *name)
 	struct fbr_request *request = TAILQ_FIRST(&_REQUEST_POOL->free_list);
 	fbr_request_ok(request);
 	assert_zero_dev(request->fuse_req);
+	assert_zero_dev(request->name);
 
-	request->fuse_req = fuse_req;
-	request->name = name;
-	pt_assert(pthread_setspecific(_REQUEST_KEY, request));
-
-	_request_init(request);
+	_request_init(request, fuse_req, name);
 
 	TAILQ_REMOVE(&_REQUEST_POOL->free_list, request, entry);
 	_REQUEST_POOL->free_size--;
@@ -147,7 +148,6 @@ fbr_request_alloc(fuse_req_t fuse_req, const char *name)
 	assert_zero_dev(fbr_request_get());
 
 	struct fbr_request *request = _request_pool_get(fuse_req, name);
-
 	if (request) {
 		return request;
 	}
@@ -156,11 +156,8 @@ fbr_request_alloc(fuse_req_t fuse_req, const char *name)
 	assert(request);
 
 	request->magic = FBR_REQUEST_MAGIC;
-	request->fuse_req = fuse_req;
-	request->name = name;
-	pt_assert(pthread_setspecific(_REQUEST_KEY, request));
 
-	_request_init(request);
+	_request_init(request, fuse_req, name);
 	_request_pool_active(request);
 
 	return request;
@@ -180,11 +177,10 @@ fbr_request_get(void)
 	return request;
 }
 
-// Note: you only need to use this if you are off the normal execution path (assert, signal)
 fuse_req_t
-fbr_request_take_fuse_req(struct fbr_request *request)
+fbr_request_take_fuse(struct fbr_request *request)
 {
-	assert(request);
+	fbr_request_ok(request);
 
 	fuse_req_t fuse_req = request->fuse_req;
 	if (fuse_req) {
@@ -196,6 +192,8 @@ fbr_request_take_fuse_req(struct fbr_request *request)
 
 		assert_zero_dev(ret);
 	}
+
+	assert_zero_dev(request->fuse_req);
 
 	return NULL;
 }
@@ -294,23 +292,19 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 
 	TAILQ_FOREACH_SAFE(request, &_REQUEST_POOL->active_list, entry, temp) {
 		fbr_request_ok(request);
+		assert_dev(request->thread);
 
-		fuse_req_t fuse_req = fbr_request_take_fuse_req(request);
+		fuse_req_t fuse_req = fbr_request_take_fuse(request);
 
-		fs->log("REQUEST active name: %s id: %lu replied: %s",
+		fs->log("REQUEST active name: %s id: %lu running: %s",
 			request->name, request->id,
-			fuse_req ? "NO" : "YES");
+			fuse_req ? "YES" : "NO");
 
 		if (fuse_req) {
 			fuse_reply_err(fuse_req, EIO);
 		}
 
 		assert_zero_dev(request->fuse_req);
-
-		if (request->fuse_req) {
-			fuse_reply_err(request->fuse_req, EIO);
-			request->fuse_req = NULL;
-		}
 
 		TAILQ_REMOVE(&_REQUEST_POOL->active_list, request, entry);
 		_REQUEST_POOL->active_size--;

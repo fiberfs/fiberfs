@@ -11,130 +11,105 @@
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 
-extern struct fbr_fuse_context *_FUSE_CTX;
-
-struct fbr_fuse_context *
-fbr_fuse_callback_ctx(void)
+static inline fuse_req_t
+_fuse_reply_init(struct fbr_request *request)
 {
-	fbr_fuse_context_ok(_FUSE_CTX);
-	return _FUSE_CTX;
-}
+	fbr_request_valid(request);
 
-static inline void
-_fuse_reply_check(struct fbr_request *request)
-{
-	fbr_request_ok(request);
-	fbr_fuse_mounted(request->fuse_ctx);
-	assert(request->fuse_req);
+	fuse_req_t fuse_req = fbr_request_take_fuse(request);
+	assert(fuse_req);
+	assert_zero_dev(request->fuse_req);
+
+	return fuse_req;
 }
 
 void
 fbr_fuse_reply_none(struct fbr_request *request)
 {
-	_fuse_reply_check(request);
+	fuse_req_t fuse_req = _fuse_reply_init(request);
 
-	fuse_reply_none(request->fuse_req);
-
-	request->fuse_req = NULL;
+	fuse_reply_none(fuse_req);
 }
 
 void
 fbr_fuse_reply_err(struct fbr_request *request, int error)
 {
-	_fuse_reply_check(request);
+	fuse_req_t fuse_req = _fuse_reply_init(request);
 
-	int ret = fuse_reply_err(request->fuse_req, error);
+	int ret = fuse_reply_err(fuse_req, error);
 	(void)ret;
-
-	request->fuse_req = NULL;
 }
 
 void
 fbr_fuse_reply_buf(struct fbr_request *request, const char *buf, size_t size)
 {
-	_fuse_reply_check(request);
+	fuse_req_t fuse_req = _fuse_reply_init(request);
 
-	int ret = fuse_reply_buf(request->fuse_req, buf, size);
+	int ret = fuse_reply_buf(fuse_req, buf, size);
 	(void)ret;
-
-	request->fuse_req = NULL;
 }
 
 void
 fbr_fuse_reply_iov(struct fbr_request *request, const struct iovec *iov, int count)
 {
-	_fuse_reply_check(request);
+	fuse_req_t fuse_req = _fuse_reply_init(request);
 
-	int ret = fuse_reply_iov(request->fuse_req, iov, count);
+	int ret = fuse_reply_iov(fuse_req, iov, count);
 	(void)ret;
-
-	request->fuse_req = NULL;
 }
 
 void
 fbr_fuse_reply_data(struct fbr_request *request, struct fuse_bufvec *bufv,
     enum fuse_buf_copy_flags flags)
 {
-	_fuse_reply_check(request);
+	fuse_req_t fuse_req = _fuse_reply_init(request);
 
-	int ret = fuse_reply_data(request->fuse_req, bufv, flags);
+	int ret = fuse_reply_data(fuse_req, bufv, flags);
 	(void)ret;
-
-	request->fuse_req = NULL;
 }
 
 void
 fbr_fuse_reply_entry(struct fbr_request *request, const struct fuse_entry_param *entry)
 {
-	_fuse_reply_check(request);
+	fuse_req_t fuse_req = _fuse_reply_init(request);
 
-	int ret = fuse_reply_entry(request->fuse_req, entry);
+	int ret = fuse_reply_entry(fuse_req, entry);
 	(void)ret;
-
-	request->fuse_req = NULL;
 }
 
 void
 fbr_fuse_reply_attr(struct fbr_request *request, const struct stat *attr, double attr_timeout)
 {
-	_fuse_reply_check(request);
+	fuse_req_t fuse_req = _fuse_reply_init(request);
 
-	int ret = fuse_reply_attr(request->fuse_req, attr, attr_timeout);
+	int ret = fuse_reply_attr(fuse_req, attr, attr_timeout);
 	(void)ret;
-
-	request->fuse_req = NULL;
 }
 
 void
 fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_info *fi)
 {
-	_fuse_reply_check(request);
+	fuse_req_t fuse_req = _fuse_reply_init(request);
 
-	int ret = fuse_reply_open(request->fuse_req, fi);
+	int ret = fuse_reply_open(fuse_req, fi);
 	(void)ret;
-
-	request->fuse_req = NULL;
 }
 
 void
 fbr_fuse_reply_create(struct fbr_request *request, const struct fuse_entry_param *e,
     const struct fuse_file_info *fi)
 {
-	_fuse_reply_check(request);
+	fuse_req_t fuse_req = _fuse_reply_init(request);
 
-	int ret = fuse_reply_create(request->fuse_req, e, fi);
+	int ret = fuse_reply_create(fuse_req, e, fi);
 	(void)ret;
-
-	request->fuse_req = NULL;
 }
 
 void
 fbr_fuse_reply_write(struct fbr_request *request, size_t count)
 {
-	_fuse_reply_check(request);
+	fuse_req_t fuse_req = _fuse_reply_init(request);
 
-	int ret = fuse_reply_write(request->fuse_req, count);
+	int ret = fuse_reply_write(fuse_req, count);
 	(void)ret;
-
-	request->fuse_req = NULL;
 }
