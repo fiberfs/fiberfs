@@ -14,6 +14,8 @@
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "data/queue.h"
 
+#define FBR_REQUEST_POOL_MAX_SIZE		64
+
 struct fbr_request {
 	unsigned int				magic;
 #define FBR_REQUEST_MAGIC			0xE2719F6A

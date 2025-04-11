@@ -14,8 +14,6 @@
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "data/queue.h"
 
-#define FBR_REQUEST_POOL_MAX_SIZE		64
-
 struct {
 	unsigned int				magic;
 #define _REQUEST_POOL_MAGIC			0x119D1944
@@ -28,13 +26,12 @@ struct {
 	size_t					free_size;
 	size_t					active_size;
 	unsigned long				id_count;
-	int					shutdown;
 } __REQUEST_POOL = {
 	_REQUEST_POOL_MAGIC,
 	PTHREAD_MUTEX_INITIALIZER,
 	TAILQ_HEAD_INITIALIZER(__REQUEST_POOL.free_list),
 	TAILQ_HEAD_INITIALIZER(__REQUEST_POOL.active_list),
-	0, 0, 0, 0
+	0, 0, 0
 }, *_REQUEST_POOL = &__REQUEST_POOL;
 
 static int _REQUEST_KEY_INIT;
@@ -88,7 +85,7 @@ _request_pool_get(fuse_req_t fuse_req, const char *name)
 
 	pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));
 
-	if (TAILQ_EMPTY(&_REQUEST_POOL->free_list) || _REQUEST_POOL->shutdown) {
+	if (TAILQ_EMPTY(&_REQUEST_POOL->free_list)) {
 		assert_zero_dev(_REQUEST_POOL->free_size);
 		pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 		return NULL;
@@ -226,7 +223,7 @@ _request_pool_put(struct fbr_request *request)
 	TAILQ_REMOVE(&_REQUEST_POOL->active_list, request, entry);
 	_REQUEST_POOL->active_size--;
 
-	if (_REQUEST_POOL->free_size >= FBR_REQUEST_POOL_MAX_SIZE || _REQUEST_POOL->shutdown) {
+	if (_REQUEST_POOL->free_size >= FBR_REQUEST_POOL_MAX_SIZE) {
 		pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 		_request_free(request);
 		fbr_fs_stat_add(&fs->stats.requests_freed);
@@ -272,9 +269,6 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 
 	pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));
 
-	assert_zero(_REQUEST_POOL->shutdown);
-	_REQUEST_POOL->shutdown = 1;
-
 	struct fbr_request *request, *temp;
 
 	TAILQ_FOREACH_SAFE(request, &_REQUEST_POOL->free_list, entry, temp) {
@@ -312,16 +306,7 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 			pthread_kill(request->thread, SIGTERM);
 			fbr_ZERO(&request->thread);
 		}
-
-		TAILQ_REMOVE(&_REQUEST_POOL->active_list, request, entry);
-		_REQUEST_POOL->active_size--;
-
-		fbr_fs_stat_sub(&fs->stats.requests_active);
 	}
-
-	assert_zero(_REQUEST_POOL->active_size);
-	assert(TAILQ_EMPTY(&_REQUEST_POOL->active_list));
-	assert_zero_dev(fs->stats.requests_active);
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 }
