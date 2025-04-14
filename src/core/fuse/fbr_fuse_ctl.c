@@ -205,11 +205,10 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 		return;
 	}
 
-	assert_dev(ctx->session);
-
 	_fuse_abort(ctx);
-
 	fbr_request_pool_shutdown(ctx->fs);
+
+	assert_dev(ctx->session);
 
 	if (ctx->running) {
 		pt_assert(pthread_join(ctx->loop_thread, NULL));

@@ -24,6 +24,7 @@ fbr_fs_alloc(void)
 
 	fs->magic = FBR_FS_MAGIC;
 
+	fbr_context_request_init();
 	fbr_inodes_alloc(fs);
 	fbr_dindex_alloc(fs);
 
@@ -36,8 +37,6 @@ fbr_fs_alloc(void)
 	fs->logger = fbr_fs_logger;
 
 	fbr_fs_ok(fs);
-
-	fbr_context_request_init();
 
 	return fs;
 }
@@ -96,6 +95,7 @@ fbr_fs_free(struct fbr_fs *fs)
 		fbr_inode_release(fs, &fs->root_file);
 	}
 
+	fbr_context_request_finish();
 	fbr_dindex_free_all(fs);
 	fbr_inodes_free_all(fs);
 
@@ -103,6 +103,4 @@ fbr_fs_free(struct fbr_fs *fs)
 
 	fbr_ZERO(fs);
 	free(fs);
-
-	fbr_context_request_finish();
 }
