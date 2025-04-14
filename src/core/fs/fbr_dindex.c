@@ -45,6 +45,7 @@ fbr_dindex_alloc(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
 	assert_zero(fs->dindex);
+	assert_dev(_DINDEX_HEAD_COUNT);
 
 	struct fbr_dindex *dindex;
 
@@ -52,8 +53,6 @@ fbr_dindex_alloc(struct fbr_fs *fs)
 	assert(dindex);
 
 	dindex->magic = FBR_DINDEX_MAGIC;
-
-	assert(_DINDEX_HEAD_COUNT);
 
 	for (size_t i = 0; i < _DINDEX_HEAD_COUNT; i++) {
 		struct fbr_dindex_dirhead *dirhead = &dindex->dirheads[i];
@@ -211,7 +210,7 @@ _dindex_dirhead_get(struct fbr_dindex *dindex, struct fbr_directory *directory)
 
 	struct fbr_path_name dirname;
 	fbr_directory_name(directory, &dirname);
-	assert(dirname.name);
+	assert_dev(dirname.name);
 
 	unsigned long hash = 5381;
 
