@@ -214,6 +214,34 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_fs_stat_sub(&fs->stats.files);
 }
 
+struct fbr_file_ptr_slab *
+fbr_file_ptr_slab_alloc(void)
+{
+	size_t ptrs_size = FBR_FILE_DEFAULT_PTRS * sizeof(struct fbr_file_ptr);
+	struct fbr_file_ptr_slab *ptr_slab = calloc(1, sizeof(*ptr_slab) + ptrs_size);
+	assert(ptr_slab);
+
+	ptr_slab->magic = FBR_FILE_PTR_SLAB_MAGIC;
+	ptr_slab->size = FBR_FILE_DEFAULT_PTRS;
+
+	return ptr_slab;
+}
+
+void
+fbr_file_ptr_slab_free(struct fbr_file_ptr_slab *ptr_slab)
+{
+	fbr_file_ptr_slab_ok(ptr_slab);
+
+	if (fbr_assert_is_dev()) {
+		for (size_t i = 0; i < ptr_slab->size; i++) {
+			assert_zero(ptr_slab->ptrs[i].file);
+		}
+	}
+
+	fbr_ZERO(ptr_slab);
+	free(ptr_slab);
+}
+
 void
 fbr_file_attr(const struct fbr_file *file, struct stat *st)
 {

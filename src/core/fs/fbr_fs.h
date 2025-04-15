@@ -24,6 +24,7 @@
 #define FBR_READDIR_SIZE			4096
 #define FBR_BODY_DEFAULT_CHUNKS			4
 #define FBR_BODY_SLAB_DEFAULT_CHUNKS		32
+#define FBR_FILE_DEFAULT_PTRS			32
 #define FBR_TTL_MAX				INT32_MAX
 
 enum fbr_chunk_state {
@@ -111,6 +112,15 @@ struct fbr_file_ptr {
 
 	TAILQ_ENTRY(fbr_file)			file_entry;
 	RB_ENTRY(fbr_file)			filename_entry;
+};
+
+struct fbr_file_ptr_slab {
+	unsigned int				magic;
+#define FBR_FILE_PTR_SLAB_MAGIC			0xB9477AD7
+
+	unsigned int				size;
+	struct fbr_file_ptr_slab		*next;
+	struct fbr_file_ptr			ptrs[];
 };
 
 enum fbr_file_state {
@@ -361,6 +371,8 @@ void fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_release_inode_lock(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_refcount_t refs);
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
+struct fbr_file_ptr_slab *fbr_file_ptr_slab_alloc(void);
+void fbr_file_ptr_slab_free(struct fbr_file_ptr_slab *ptr_slab);
 void fbr_file_attr(const struct fbr_file *file, struct stat *st);
 
 void fbr_chunk_take(struct fbr_chunk *chunk);
@@ -442,6 +454,7 @@ void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 
 #define fbr_fs_ok(fs)			fbr_magic_check(fs, FBR_FS_MAGIC)
 #define fbr_file_ok(file)		fbr_magic_check(file, FBR_FILE_MAGIC)
+#define fbr_file_ptr_slab_ok(slab)	fbr_magic_check(slab, FBR_FILE_PTR_SLAB_MAGIC);
 #define fbr_directory_ok(dir)		fbr_magic_check(dir, FBR_DIRECTORY_MAGIC)
 #define fbr_dreader_ok(dreader)		fbr_magic_check(dreader, FBR_DREADER_MAGIC)
 #define fbr_fio_ok(fio)			fbr_magic_check(fio, FBR_FIO_MAGIC)

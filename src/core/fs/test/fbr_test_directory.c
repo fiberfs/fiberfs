@@ -238,7 +238,7 @@ _dir_test_release(void *arg)
 	return NULL;
 }
 
-void
+static void
 _directory_parallel(void)
 {
 	struct fbr_fs *fs = fbr_fs_alloc();
