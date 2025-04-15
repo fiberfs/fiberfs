@@ -109,10 +109,10 @@ _dir_test_alloc(void *arg)
 			continue;
 		}
 
+		assert(directory->state == FBR_DIRSTATE_LOADING);
+
 		unsigned long generation = fbr_atomic_add(&_TEST_DIR_GENERATION, 1);
 		int do_error = (random() % 3 == 0);
-
-		assert(directory->state == FBR_DIRSTATE_LOADING);
 
 		directory->generation = generation;
 
@@ -135,6 +135,19 @@ _dir_test_alloc(void *arg)
 		struct fbr_file *file = fbr_file_alloc(fs, directory, &filename);
 		file->mode = S_IFREG | 0444;
 		file->state = FBR_FILE_OK;
+
+		if (directory->previous && !(random() % 4)) {
+			struct fbr_directory *previous = directory->previous;
+			fbr_directory_ok(previous);
+			assert(previous->state == FBR_DIRSTATE_OK);
+
+			TAILQ_FOREACH(file, &previous->file_list, file_entry) {
+				fbr_path_get_file(&file->path, &filename);
+				fbr_test_logs("carry over: %s", filename.name);
+
+				//fbr_directory_add_file(fs, directory, file);
+			}
+		}
 
 		fbr_sleep_ms(random() % 50);
 

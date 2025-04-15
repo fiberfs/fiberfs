@@ -11,7 +11,7 @@ LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 BUILD=build
 
-TEST_SRC:=$(wildcard test/*.c test/*/*.c */test/*.c */*/test/*.c)
+TEST_SRC:=$(shell find * -type f -name '*.c' -path '*/test/*')
 TEST_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(TEST_SRC)))
 
 CHTTP_CLIENT:=$(wildcard chttp/client/*.c)

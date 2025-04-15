@@ -106,6 +106,13 @@ struct fbr_file_refcounts {
 	fbr_refcount_t				inode;
 };
 
+struct fbr_file_ptr {
+	struct fbr_file				*file;
+
+	TAILQ_ENTRY(fbr_file)			file_entry;
+	RB_ENTRY(fbr_file)			filename_entry;
+};
+
 enum fbr_file_state {
 	FBR_FILE_INIT = 0,
 	FBR_FILE_OK,
