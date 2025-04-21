@@ -109,8 +109,6 @@ struct fbr_file_refcounts {
 
 struct fbr_file_ptr {
 	struct fbr_file				*file;
-
-	TAILQ_ENTRY(fbr_file)			file_entry;
 	RB_ENTRY(fbr_file)			filename_entry;
 };
 
@@ -149,7 +147,6 @@ struct fbr_file {
 	uid_t					uid;
 	gid_t					gid;
 
-	TAILQ_ENTRY(fbr_file)			file_entry;
 	RB_ENTRY(fbr_file)			filename_entry;
 	RB_ENTRY(fbr_file)			inode_entry;
 
@@ -194,7 +191,6 @@ struct fbr_directory {
 
 	RB_ENTRY(fbr_directory)			dindex_entry;
 	TAILQ_ENTRY(fbr_directory)		lru_entry;
-	TAILQ_HEAD(, fbr_file)			file_list;
 	struct fbr_filename_tree		filename_tree;
 
 	size_t					file_count;

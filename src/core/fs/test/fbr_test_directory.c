@@ -141,7 +141,7 @@ _dir_test_alloc(void *arg)
 			fbr_directory_ok(previous);
 			assert(previous->state == FBR_DIRSTATE_OK);
 
-			TAILQ_FOREACH(file, &previous->file_list, file_entry) {
+			RB_FOREACH(file, fbr_filename_tree, &previous->filename_tree) {
 				fbr_path_get_file(&file->path, &filename);
 				fbr_test_logs("carry over: %s", filename.name);
 

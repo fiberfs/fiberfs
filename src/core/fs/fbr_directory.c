@@ -80,7 +80,6 @@ _directory_init(struct fbr_fs *fs, struct fbr_directory *directory, fbr_inode_t 
 	directory->inode = inode;
 
 	pt_assert(pthread_cond_init(&directory->update, NULL));
-	TAILQ_INIT(&directory->file_list);
 	RB_INIT(&directory->filename_tree);
 
 	fbr_directory_ok(directory);
@@ -182,10 +181,9 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_file *file, *temp;
 
-	TAILQ_FOREACH_SAFE(file, &directory->file_list, file_entry, temp) {
+	RB_FOREACH_SAFE(file, fbr_filename_tree, &directory->filename_tree, temp) {
 		fbr_file_ok(file);
 
-		TAILQ_REMOVE(&directory->file_list, file, file_entry);
 		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file);
 
 		fbr_file_release_dindex(fs, &file);
@@ -199,7 +197,6 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 		assert_zero_dev(directory->file);
 	}
 
-	assert(TAILQ_EMPTY(&directory->file_list));
 	assert(RB_EMPTY(&directory->filename_tree));
 	assert_zero(directory->file_count);
 
@@ -257,8 +254,6 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	assert(file->state == FBR_FILE_INIT);
 
 	fbr_file_ref_dindex(fs, file);
-
-	TAILQ_INSERT_TAIL(&directory->file_list, file, file_entry);
 
 	struct fbr_file *ret = RB_INSERT(fbr_filename_tree, &directory->filename_tree, file);
 	fbr_ASSERT(!ret, "duplicate file added to directory");
@@ -359,7 +354,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_file *file;
 
-	TAILQ_FOREACH(file, &directory->file_list, file_entry) {
+	RB_FOREACH(file, fbr_filename_tree, &directory->filename_tree) {
 		fbr_file_ok(file);
 
 		if (!file->refcounts.inode) {
@@ -433,7 +428,7 @@ fbr_directory_clone(struct fbr_fs *fs, struct fbr_directory *source)
 
 	struct fbr_file *file;
 
-	TAILQ_FOREACH(file, &source->file_list, file_entry) {
+	RB_FOREACH(file, fbr_filename_tree, &source->filename_tree) {
 		fbr_file_ok(file);
 		fbr_directory_add_file(fs, directory, file);
 	}

@@ -511,6 +511,24 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	}
 }
 
+static void
+_test_fs_fuse_diradd(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
+    struct fbr_file *file)
+{
+	fbr_request_ok(request);
+	assert(dbuf);
+	fbr_file_ok(file);
+
+	const char *filename = fbr_path_get_file(&file->path, NULL);
+
+	fbr_test_logs("READDIR filename: '%s' inode: %lu", filename, file->inode);
+
+	struct stat st;
+	fbr_file_attr(file, &st);
+
+	fbr_dirbuffer_add(request, dbuf, filename, &st);
+}
+
 void
 fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
@@ -578,34 +596,50 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 		return;
 	}
 
+	struct fbr_path_name filedir;
 	struct fbr_path_name dirname;
 	fbr_directory_name(directory, &dirname);
 
-	struct fbr_file *file = reader->position;
+	struct fbr_file *file;
+	struct fbr_file *file_pos = reader->position;
 
-	TAILQ_FOREACH_FROM(file, &directory->file_list, file_entry) {
-		fbr_file_ok(file);
+	if (file_pos) {
+		RB_FOREACH_FROM(file, fbr_filename_tree, file_pos) {
+			fbr_file_ok(file);
 
-		struct fbr_path_name filedir;
-		fbr_path_get_dir(&file->path, &filedir);
-		assert_zero(fbr_path_name_cmp(&dirname, &filedir));
+			fbr_path_get_dir(&file->path, &filedir);
+			assert_zero(fbr_path_name_cmp(&dirname, &filedir));
 
-		const char *filename = fbr_path_get_file(&file->path, NULL);
+			_test_fs_fuse_diradd(request, &dbuf, file);
 
-		fbr_test_logs("READDIR filename: '%s' inode: %lu", filename, file->inode);
+			if (dbuf.full) {
+				break;
+			}
+		}
+	} else {
+		RB_FOREACH(file, fbr_filename_tree, &directory->filename_tree) {
+			fbr_file_ok(file);
 
-		struct stat st;
-		fbr_file_attr(file, &st);
+			fbr_path_get_dir(&file->path, &filedir);
+			assert_zero(fbr_path_name_cmp(&dirname, &filedir));
 
-		fbr_dirbuffer_add(request, &dbuf, filename, &st);
+			_test_fs_fuse_diradd(request, &dbuf, file);
+
+			if (dbuf.full) {
+				break;
+			}
+		}
+	}
+
+	if (dbuf.full) {
+		assert_zero_dev(reader->end);
 
 		reader->position = file;
 
-		if (dbuf.full) {
-			fbr_test_logs("READDIR return: %zu", dbuf.pos);
-			fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
-			return;
-		}
+		fbr_test_logs("READDIR return: %zu", dbuf.pos);
+		fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
+
+		return;
 	}
 
 	reader->end = 1;
