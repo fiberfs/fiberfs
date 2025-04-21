@@ -45,8 +45,8 @@ fbr_chunk_take(struct fbr_chunk *chunk)
 	fbr_chunk_ok(chunk);
 	assert(chunk->state >= FBR_CHUNK_EMPTY);
 
-	fbr_refcount_t refs = fbr_atomic_add(&chunk->refcount, 1);
-	assert(refs);
+	chunk->refcount++;
+	assert(chunk->refcount);
 }
 
 void
@@ -56,9 +56,9 @@ fbr_chunk_release(struct fbr_chunk *chunk)
 	assert(chunk->state >= FBR_CHUNK_EMPTY);
 
 	assert(chunk->refcount);
-	fbr_refcount_t refs = fbr_atomic_sub(&chunk->refcount, 1);
+	chunk->refcount--;
 
-	if (refs) {
+	if (chunk->refcount) {
 		return;
 	}
 
