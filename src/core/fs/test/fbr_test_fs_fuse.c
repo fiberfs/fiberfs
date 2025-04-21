@@ -266,6 +266,8 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	fbr_fs_set_store(ctx->fs, &_TEST_FS_STORE_CALLBACKS);
 
+	fbr_test_random_seed();
+
 	_TEST_FS_DO_INIT = 1;
 }
 
@@ -548,6 +550,11 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 
 	struct fbr_directory *directory = reader->directory;
 	fbr_directory_ok(directory);
+
+	if (random() % 2 == 0) {
+		size = (random() % 256) + 50;
+		fbr_test_logs("READDIR size: %zu", size);
+	}
 
 	struct fbr_dirbuffer dbuf;
 	fbr_dirbuffer_init(&dbuf, size);
