@@ -486,7 +486,6 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 
 		// chunk ends after offset_end
 		if (chunk_end > offset_end && chunk->state == FBR_CHUNK_READY) {
-			// TODO why would we have a chunk after the offset?
 			assert(chunk->offset < offset_end);
 			fio->floating = fbr_chunk_list_add(fio->floating, chunk);
 		} else {
@@ -516,8 +515,13 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 		return;
 	}
 
-	_fio_release_floating(fs, fio, 0);
-	assert_zero_dev(fio->floating->length);
+	if (fio->floating->length) {
+		fbr_body_LOCK(fs, &fio->file->body);
+		_fio_release_floating(fs, fio, 0);
+		fbr_body_UNLOCK(&fio->file->body);
+		assert_zero_dev(fio->floating->length);
+	}
+
 	fbr_chunk_list_free(fio->floating);
 	fbr_wbuffer_free(fs, fio);
 
