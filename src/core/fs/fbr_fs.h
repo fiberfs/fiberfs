@@ -291,6 +291,9 @@ struct fbr_fs_stats {
 	fbr_stats_t				store_bytes;
 
 	fbr_stats_t				flushes;
+
+	fbr_stats_t				chunk_slabs;
+	fbr_stats_t				file_ptr_slabs;
 };
 
 struct fbr_fs_config {
@@ -389,8 +392,8 @@ struct fbr_chunk_list *fbr_chunk_list_file(struct fbr_file *file, size_t offset,
 void fbr_chunk_list_free(struct fbr_chunk_list *chunks);
 
 void fbr_body_init(struct fbr_body *body);
-struct fbr_chunk *fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset,
-	size_t length);
+struct fbr_chunk *fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file,
+	fbr_id_t id, size_t offset, size_t length);
 void fbr_body_LOCK(struct fbr_fs *fs, struct fbr_body *body);
 void fbr_body_UNLOCK(struct fbr_body *body);
 void fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file);

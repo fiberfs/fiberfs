@@ -249,6 +249,8 @@ fbr_fs_test_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(write_bytes);
 	_FS_TEST_STAT_PRINT(store_bytes);
 	_FS_TEST_STAT_PRINT(flushes);
+	_FS_TEST_STAT_PRINT(chunk_slabs);
+	_FS_TEST_STAT_PRINT(file_ptr_slabs);
 }
 
 void

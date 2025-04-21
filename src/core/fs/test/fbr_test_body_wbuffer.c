@@ -414,7 +414,7 @@ _test_concurrent_fio(void)
 
 	file = fbr_file_alloc(fs, root, fbr_path_name_init(&name, "file_concurrent"));
 	for (size_t i = 0; i < _BODY_CHUNKS; i++) {
-		fbr_body_chunk_add(file, i + 1, i * 1000, 1000);
+		fbr_body_chunk_add(fs, file, i + 1, i * 1000, 1000);
 	}
 	assert(fbr_fs_test_count_chunks(file) == _BODY_CHUNKS);
 	assert(file->size == 1000 * _BODY_CHUNKS);

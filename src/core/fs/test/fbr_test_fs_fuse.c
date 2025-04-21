@@ -93,10 +93,10 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		size_t s = 1024 * 512;
 
-		fbr_body_chunk_add(file, id, s * 0, s);
-		fbr_body_chunk_add(file, id, 10000, 100000);
-		fbr_body_chunk_add(file, id, s * 0, s + 100);
-		fbr_body_chunk_add(file, id, s * 1, s);
+		fbr_body_chunk_add(fs, file, id, s * 0, s);
+		fbr_body_chunk_add(fs, file, id, 10000, 100000);
+		fbr_body_chunk_add(fs, file, id, s * 0, s + 100);
+		fbr_body_chunk_add(fs, file, id, s * 1, s);
 
 		file->mode = S_IFREG | 0444;
 		file->size = 1024 * 1024;
@@ -117,7 +117,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		file->size = 101;
 		file->generation = fbr_id_gen();
 
-		fbr_body_chunk_add(file, id, 0, 101);
+		fbr_body_chunk_add(fs, file, id, 0, 101);
 
 		file->state = FBR_FILE_OK;
 	}
@@ -141,14 +141,14 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		for (size_t i = 0; i < chunks; i++) {
 			if (!offset) {
 				// even length will fail checksum
-				fbr_body_chunk_add(file, id, 0, 11);
-				fbr_body_chunk_add(file, id, 0, 10);
-				fbr_body_chunk_add(file, id, 500, 607);
-				fbr_body_chunk_add(file, id, 600, 500);
-				fbr_body_chunk_add(file, id, 0, 601);
-				fbr_body_chunk_add(file, id, 590, 551);
+				fbr_body_chunk_add(fs, file, id, 0, 11);
+				fbr_body_chunk_add(fs, file, id, 0, 10);
+				fbr_body_chunk_add(fs, file, id, 500, 607);
+				fbr_body_chunk_add(fs, file, id, 600, 500);
+				fbr_body_chunk_add(fs, file, id, 0, 601);
+				fbr_body_chunk_add(fs, file, id, 590, 551);
 			} else {
-				fbr_body_chunk_add(file, id, offset, 1001);
+				fbr_body_chunk_add(fs, file, id, offset, 1001);
 			}
 			offset += 1001;
 		}

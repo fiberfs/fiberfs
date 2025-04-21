@@ -41,8 +41,9 @@ _body_chunk_slab_alloc(void)
 }
 
 static struct fbr_chunk *
-_body_chunk_alloc(struct fbr_body *body)
+_body_chunk_alloc(struct fbr_fs *fs, struct fbr_body *body)
 {
+	assert_dev(fs);
 	assert_dev(body);
 
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
@@ -71,6 +72,8 @@ _body_chunk_alloc(struct fbr_body *body)
 
 	slab->next = body->slabhead.next;
 	body->slabhead.next = slab;
+
+	fbr_fs_stat_add(&fs->stats.chunk_slabs);
 
 	return &slab->chunks[0];
 }
@@ -112,14 +115,16 @@ _body_chunk_insert(struct fbr_body *body, struct fbr_chunk *chunk)
 }
 
 struct fbr_chunk *
-fbr_body_chunk_add(struct fbr_file *file, fbr_id_t id, size_t offset, size_t length)
+fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t offset,
+    size_t length)
 {
+	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	// TODO exiting file?
 	assert(file->state == FBR_FILE_INIT);
 	assert(length);
 
-	struct fbr_chunk *chunk = _body_chunk_alloc(&file->body);
+	struct fbr_chunk *chunk = _body_chunk_alloc(fs, &file->body);
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_NONE);
 	assert_zero_dev(chunk->next);
