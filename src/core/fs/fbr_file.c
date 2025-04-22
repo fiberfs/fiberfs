@@ -224,6 +224,18 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_fs_stat_sub(&fs->stats.files);
 }
 
+static inline int
+_file_ptr_empty(struct fbr_file_ptr *file_ptr)
+{
+	assert_dev(file_ptr);
+
+	if (file_ptr->file) {
+		return 0;
+	}
+
+	return 1;
+}
+
 static struct fbr_file_ptr_slab *
 _file_ptr_slab_alloc(void)
 {
@@ -237,6 +249,17 @@ _file_ptr_slab_alloc(void)
 	return ptr_slab;
 }
 
+static void
+_file_pointer_init(struct fbr_file *file, struct fbr_file_ptr *file_ptr)
+{
+	assert_dev(file);
+	assert_dev(file_ptr);
+	assert_zero_dev(file_ptr->file);
+
+	file_ptr->file = file;
+}
+
+// Note: only use while under a directory loading state
 struct fbr_file_ptr *
 fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_file *file)
 {
@@ -244,8 +267,10 @@ fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_file_ok(file);
 
 	for (size_t i = 0; i < fbr_array_len(file->ptr_head.ptrs); i++) {
-		if (fbr_file_ptr_empty(file->ptr_head.ptrs[i])) {
-			return &file->ptr_head.ptrs[i];
+		struct fbr_file_ptr *file_ptr = &file->ptr_head.ptrs[i];
+		if (_file_ptr_empty(file_ptr)) {
+			_file_pointer_init(file, file_ptr);
+			return file_ptr;
 		}
 	}
 
@@ -255,8 +280,10 @@ fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_file *file)
 		fbr_file_ptr_slab_ok(ptr_slab);
 
 		for (size_t i = 0; i < ptr_slab->length; i++) {
-			if (fbr_file_ptr_empty(ptr_slab->ptrs[i])) {
-				return &ptr_slab->ptrs[i];
+			struct fbr_file_ptr *file_ptr = &ptr_slab->ptrs[i];
+			if (_file_ptr_empty(file_ptr)) {
+				_file_pointer_init(file, file_ptr);
+				return file_ptr;
 			}
 		}
 	}
@@ -269,7 +296,10 @@ fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_file *file)
 
 	fbr_fs_stat_add(&fs->stats.file_ptr_slabs);
 
-	return &ptr_slab->ptrs[0];
+	struct fbr_file_ptr *file_ptr = &ptr_slab->ptrs[0];
+	_file_pointer_init(file, file_ptr);
+
+	return file_ptr;
 }
 
 void
@@ -287,7 +317,7 @@ _file_ptr_slab_free(struct fbr_file_ptr_slab *ptr_slab)
 
 	if (fbr_assert_is_dev()) {
 		for (size_t i = 0; i < ptr_slab->length; i++) {
-			assert(fbr_file_ptr_empty(ptr_slab->ptrs[i]));
+			assert(_file_ptr_empty(&ptr_slab->ptrs[i]));
 		}
 	}
 
@@ -302,7 +332,7 @@ fbr_file_ptrs_free(struct fbr_file *file)
 
 	if (fbr_assert_is_dev()) {
 		for (size_t i = 0; i < fbr_array_len(file->ptr_head.ptrs); i++) {
-			assert(fbr_file_ptr_empty(file->ptr_head.ptrs[i]));
+			assert(_file_ptr_empty(&file->ptr_head.ptrs[i]));
 		}
 	}
 
