@@ -19,7 +19,7 @@
 static const struct fbr_path_name _FBR_DIRNAME_ROOT = {0, ""};
 const struct fbr_path_name *FBR_DIRNAME_ROOT = &_FBR_DIRNAME_ROOT;
 
-RB_GENERATE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
+RB_GENERATE(fbr_filename_tree, fbr_file_ptr, filename_entry, fbr_file_ptr_cmp)
 
 static void _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory);
 
@@ -179,12 +179,14 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_zero_dev(directory->previous);
 	assert_zero_dev(directory->next);
 
-	struct fbr_file *file, *temp;
+	struct fbr_file_ptr *file_ptr, *temp;
 
-	RB_FOREACH_SAFE(file, fbr_filename_tree, &directory->filename_tree, temp) {
-		fbr_file_ok(file);
+	RB_FOREACH_SAFE(file_ptr, fbr_filename_tree, &directory->filename_tree, temp) {
+		fbr_file_ptr_ok(file_ptr);
+		struct fbr_file *file = file_ptr->file;
 
-		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file);
+		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file_ptr);
+		fbr_file_ptr_free(file_ptr);
 
 		fbr_file_release_dindex(fs, &file);
 		assert_zero_dev(file);
@@ -255,8 +257,15 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	fbr_file_ref_dindex(fs, file);
 
-	struct fbr_file *ret = RB_INSERT(fbr_filename_tree, &directory->filename_tree, file);
-	fbr_ASSERT(!ret, "duplicate file added to directory");
+	struct fbr_file_ptr *file_ptr = fbr_file_ptr_get(fs, file);
+	assert_dev(file_ptr);
+	assert_zero_dev(file_ptr->file);
+
+	file_ptr->file = file;
+	fbr_file_ptr_ok(file_ptr);
+
+	file_ptr = RB_INSERT(fbr_filename_tree, &directory->filename_tree, file_ptr);
+	fbr_ASSERT(!file_ptr, "duplicate file added to directory");
 
 	directory->file_count++;
 }
@@ -272,13 +281,17 @@ fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
 	struct fbr_file find;
 	find.magic = FBR_FILE_MAGIC;
 	fbr_path_init_file(&find.path, filename, filename_len);
+	struct fbr_file_ptr find_ptr;
+	find_ptr.file = &find;
 
-	struct fbr_file *file = RB_FIND(fbr_filename_tree, &directory->filename_tree, &find);
+	struct fbr_file_ptr *file_ptr = RB_FIND(fbr_filename_tree, &directory->filename_tree,
+		&find_ptr);
 
-	if (!file) {
+	if (!file_ptr) {
 		return NULL;
 	}
 
+	struct fbr_file *file = file_ptr->file;
 	fbr_file_ok(file);
 	assert_dev(file->state >= FBR_FILE_OK);
 
@@ -352,10 +365,11 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_fuse_context_ok(fs->fuse_ctx);
 	assert(fs->fuse_ctx->session);
 
-	struct fbr_file *file;
+	struct fbr_file_ptr *file_ptr;
 
-	RB_FOREACH(file, fbr_filename_tree, &directory->filename_tree) {
-		fbr_file_ok(file);
+	RB_FOREACH(file_ptr, fbr_filename_tree, &directory->filename_tree) {
+		fbr_file_ptr_ok(file_ptr);
+		struct fbr_file *file = file_ptr->file;
 
 		if (!file->refcounts.inode) {
 			continue;
@@ -426,10 +440,12 @@ fbr_directory_clone(struct fbr_fs *fs, struct fbr_directory *source)
 
 	directory->generation = source->generation;
 
-	struct fbr_file *file;
+	struct fbr_file_ptr *file_ptr;
 
-	RB_FOREACH(file, fbr_filename_tree, &source->filename_tree) {
-		fbr_file_ok(file);
+	RB_FOREACH(file_ptr, fbr_filename_tree, &source->filename_tree) {
+		fbr_file_ptr_ok(file_ptr);
+		struct fbr_file *file = file_ptr->file;
+
 		fbr_directory_add_file(fs, directory, file);
 	}
 	assert_dev(directory->file_count == source->file_count);

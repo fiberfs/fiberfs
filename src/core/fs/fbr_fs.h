@@ -24,7 +24,8 @@
 #define FBR_READDIR_SIZE			4096
 #define FBR_BODY_DEFAULT_CHUNKS			4
 #define FBR_BODY_SLAB_DEFAULT_CHUNKS		32
-#define FBR_FILE_DEFAULT_PTRS			32
+#define FBR_FILE_DEFAULT_PTRS			3
+#define FBR_FILE_SLAB_DEFAULT_PTRS		32
 #define FBR_TTL_MAX				INT32_MAX
 
 enum fbr_chunk_state {
@@ -96,7 +97,7 @@ struct fbr_body {
 	struct {
 		struct fbr_chunk		chunks[FBR_BODY_DEFAULT_CHUNKS];
 		struct fbr_chunk_slab		*next;
-	}  slabhead;
+	}  chunk_head;
 
 	struct fbr_chunk			*chunks;
 	struct fbr_chunk			*chunk_last;
@@ -109,14 +110,14 @@ struct fbr_file_refcounts {
 
 struct fbr_file_ptr {
 	struct fbr_file				*file;
-	RB_ENTRY(fbr_file)			filename_entry;
+	RB_ENTRY(fbr_file_ptr)			filename_entry;
 };
 
 struct fbr_file_ptr_slab {
 	unsigned int				magic;
 #define FBR_FILE_PTR_SLAB_MAGIC			0xB9477AD7
 
-	unsigned int				size;
+	unsigned int				length;
 	struct fbr_file_ptr_slab		*next;
 	struct fbr_file_ptr			ptrs[];
 };
@@ -147,7 +148,11 @@ struct fbr_file {
 	uid_t					uid;
 	gid_t					gid;
 
-	RB_ENTRY(fbr_file)			filename_entry;
+	struct {
+		struct fbr_file_ptr		ptrs[FBR_FILE_DEFAULT_PTRS];
+		struct fbr_file_ptr_slab	*next;
+	}  ptr_head;
+
 	RB_ENTRY(fbr_file)			inode_entry;
 
 	struct fbr_body				body;
@@ -166,7 +171,7 @@ struct fbr_directory_refcounts {
 	fbr_refcount_t				fs;
 };
 
-RB_HEAD(fbr_filename_tree, fbr_file);
+RB_HEAD(fbr_filename_tree, fbr_file_ptr);
 RB_HEAD(fbr_inodes_tree, fbr_file);
 
 struct fbr_directory {
@@ -217,7 +222,7 @@ struct fbr_dreader {
 	unsigned int				end:1;
 
 	struct fbr_directory			*directory;
-	struct fbr_file				*position;
+	struct fbr_file_ptr			*position;
 };
 
 enum fbr_wbuffer_state {
@@ -362,6 +367,7 @@ struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	const struct fbr_path_name *filename);
 struct fbr_file * fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *parent,
 	const struct fbr_path_name *filename);
+int fbr_file_ptr_cmp(const struct fbr_file_ptr *p1, const struct fbr_file_ptr *p2);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 int fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 void fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file);
@@ -370,10 +376,10 @@ void fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_release_inode_lock(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_refcount_t refs);
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
-struct fbr_file_ptr_slab *fbr_file_ptr_slab_alloc(void);
-void fbr_file_ptr_slab_free(struct fbr_file_ptr_slab *ptr_slab);
+struct fbr_file_ptr *fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_file_ptr_free(struct fbr_file_ptr *file_ptr);
+void fbr_file_ptrs_free(struct fbr_file *file);
 void fbr_file_attr(const struct fbr_file *file, struct stat *st);
-
 void fbr_chunk_take(struct fbr_chunk *chunk);
 void fbr_chunk_release(struct fbr_chunk *chunk);
 int fbr_chunk_in_offset(struct fbr_chunk *chunk, size_t offset, size_t size);
@@ -399,7 +405,7 @@ void fbr_body_UNLOCK(struct fbr_body *body);
 void fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_body_free(struct fbr_body *body);
 
-RB_PROTOTYPE(fbr_filename_tree, fbr_file, filename_entry, fbr_file_cmp)
+RB_PROTOTYPE(fbr_filename_tree, fbr_file_ptr, filename_entry, fbr_file_ptr_cmp)
 
 struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname,
@@ -463,6 +469,13 @@ void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 #define fbr_chunk_list_ok(list)		fbr_magic_check(list, FBR_CHUNK_LIST_MAGIC)
 #define fbr_chunk_vector_ok(vector)	fbr_magic_check(vector, FBR_CHUNK_VECTOR_MAGIC)
 
+#define fbr_file_ptr_ok(file_ptr)				\
+{								\
+	assert(file_ptr);					\
+	fbr_file_ok(file_ptr->file);				\
+}
+#define fbr_file_ptr_empty(file_ptr_index)			\
+	(!(&(file_ptr_index))->file)
 #define fbr_fs_int64(obj)					\
 	((uint64_t)(obj))
 #define log(fmt, ...)						\

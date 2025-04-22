@@ -141,7 +141,12 @@ _dir_test_alloc(void *arg)
 			fbr_directory_ok(previous);
 			assert(previous->state == FBR_DIRSTATE_OK);
 
-			RB_FOREACH(file, fbr_filename_tree, &previous->filename_tree) {
+			struct fbr_file_ptr *file_ptr;
+
+			RB_FOREACH(file_ptr, fbr_filename_tree, &previous->filename_tree) {
+				fbr_file_ptr_ok(file_ptr);
+				file = file_ptr->file;
+
 				fbr_path_get_file(&file->path, &filename);
 				fbr_test_logs("carry over: %s", filename.name);
 

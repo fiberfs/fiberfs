@@ -20,7 +20,7 @@ fbr_body_init(struct fbr_body *body)
 	pt_assert(pthread_cond_init(&body->update, NULL));
 
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
-		body->slabhead.chunks[i].magic = FBR_CHUNK_MAGIC;
+		body->chunk_head.chunks[i].magic = FBR_CHUNK_MAGIC;
 	}
 }
 
@@ -47,13 +47,13 @@ _body_chunk_alloc(struct fbr_fs *fs, struct fbr_body *body)
 	assert_dev(body);
 
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
-		fbr_chunk_ok(&body->slabhead.chunks[i]);
-		if (body->slabhead.chunks[i].state == FBR_CHUNK_NONE) {
-			return &body->slabhead.chunks[i];
+		fbr_chunk_ok(&body->chunk_head.chunks[i]);
+		if (body->chunk_head.chunks[i].state == FBR_CHUNK_NONE) {
+			return &body->chunk_head.chunks[i];
 		}
 	}
 
-	struct fbr_chunk_slab *slab = body->slabhead.next;
+	struct fbr_chunk_slab *slab = body->chunk_head.next;
 
 	if (slab) {
 		fbr_chunk_slab_ok(slab);
@@ -68,10 +68,10 @@ _body_chunk_alloc(struct fbr_fs *fs, struct fbr_body *body)
 
 	slab = _body_chunk_slab_alloc();
 	fbr_chunk_slab_ok(slab);
-	assert(slab->length);
+	assert_dev(slab->length);
 
-	slab->next = body->slabhead.next;
-	body->slabhead.next = slab;
+	slab->next = body->chunk_head.next;
+	body->chunk_head.next = slab;
 
 	fbr_fs_stat_add(&fs->stats.chunk_slabs);
 
@@ -120,7 +120,7 @@ fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
-	// TODO exiting file?
+	// TODO writing to existing file?
 	assert(file->state == FBR_FILE_INIT);
 	assert(length);
 
@@ -227,17 +227,17 @@ fbr_body_free(struct fbr_body *body)
 	pt_assert(pthread_cond_destroy(&body->update));
 
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
-		struct fbr_chunk *chunk = &body->slabhead.chunks[i];
+		struct fbr_chunk *chunk = &body->chunk_head.chunks[i];
 		fbr_chunk_ok(chunk);
 		assert_zero(chunk->refcount);
 		assert(chunk->state <= FBR_CHUNK_EMPTY);
 	}
 
-	while (body->slabhead.next) {
-		struct fbr_chunk_slab *slab = body->slabhead.next;
+	while (body->chunk_head.next) {
+		struct fbr_chunk_slab *slab = body->chunk_head.next;
 		fbr_chunk_slab_ok(slab);
 
-		body->slabhead.next = slab->next;
+		body->chunk_head.next = slab->next;
 
 		_body_chunk_slab_free(slab);
 	}

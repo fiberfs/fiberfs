@@ -86,6 +86,15 @@ fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *parent,
 }
 
 int
+fbr_file_ptr_cmp(const struct fbr_file_ptr *p1, const struct fbr_file_ptr *p2)
+{
+	assert(p1);
+	assert(p2);
+
+	return fbr_file_cmp(p1->file, p2->file);
+}
+
+int
 fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2)
 {
 	fbr_file_ok(f1);
@@ -205,6 +214,7 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 
 	fbr_body_free(&file->body);
 	fbr_path_free(&file->path);
+	fbr_file_ptrs_free(file);
 
 	pt_assert(pthread_mutex_destroy(&file->refcount_lock));
 
@@ -214,32 +224,97 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_fs_stat_sub(&fs->stats.files);
 }
 
-struct fbr_file_ptr_slab *
-fbr_file_ptr_slab_alloc(void)
+static struct fbr_file_ptr_slab *
+_file_ptr_slab_alloc(void)
 {
-	size_t ptrs_size = FBR_FILE_DEFAULT_PTRS * sizeof(struct fbr_file_ptr);
+	size_t ptrs_size = FBR_FILE_SLAB_DEFAULT_PTRS * sizeof(struct fbr_file_ptr);
 	struct fbr_file_ptr_slab *ptr_slab = calloc(1, sizeof(*ptr_slab) + ptrs_size);
 	assert(ptr_slab);
 
 	ptr_slab->magic = FBR_FILE_PTR_SLAB_MAGIC;
-	ptr_slab->size = FBR_FILE_DEFAULT_PTRS;
+	ptr_slab->length = FBR_FILE_SLAB_DEFAULT_PTRS;
 
 	return ptr_slab;
 }
 
-void
-fbr_file_ptr_slab_free(struct fbr_file_ptr_slab *ptr_slab)
+struct fbr_file_ptr *
+fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_file *file)
 {
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	for (size_t i = 0; i < fbr_array_len(file->ptr_head.ptrs); i++) {
+		if (fbr_file_ptr_empty(file->ptr_head.ptrs[i])) {
+			return &file->ptr_head.ptrs[i];
+		}
+	}
+
+	struct fbr_file_ptr_slab *ptr_slab = file->ptr_head.next;
+
+	if (ptr_slab) {
+		fbr_file_ptr_slab_ok(ptr_slab);
+
+		for (size_t i = 0; i < ptr_slab->length; i++) {
+			if (fbr_file_ptr_empty(ptr_slab->ptrs[i])) {
+				return &ptr_slab->ptrs[i];
+			}
+		}
+	}
+
+	ptr_slab = _file_ptr_slab_alloc();
 	fbr_file_ptr_slab_ok(ptr_slab);
 
+	ptr_slab->next = file->ptr_head.next;
+	file->ptr_head.next = ptr_slab;
+
+	fbr_fs_stat_add(&fs->stats.file_ptr_slabs);
+
+	return &ptr_slab->ptrs[0];
+}
+
+void
+fbr_file_ptr_free(struct fbr_file_ptr *file_ptr)
+{
+	fbr_file_ptr_ok(file_ptr);
+
+	file_ptr->file = NULL;
+}
+
+static void
+_file_ptr_slab_free(struct fbr_file_ptr_slab *ptr_slab)
+{
+	assert_dev(ptr_slab);
+
 	if (fbr_assert_is_dev()) {
-		for (size_t i = 0; i < ptr_slab->size; i++) {
-			assert_zero(ptr_slab->ptrs[i].file);
+		for (size_t i = 0; i < ptr_slab->length; i++) {
+			assert(fbr_file_ptr_empty(ptr_slab->ptrs[i]));
 		}
 	}
 
 	fbr_ZERO(ptr_slab);
 	free(ptr_slab);
+}
+
+void
+fbr_file_ptrs_free(struct fbr_file *file)
+{
+	fbr_file_ok(file);
+
+	if (fbr_assert_is_dev()) {
+		for (size_t i = 0; i < fbr_array_len(file->ptr_head.ptrs); i++) {
+			assert(fbr_file_ptr_empty(file->ptr_head.ptrs[i]));
+		}
+	}
+
+	while (file->ptr_head.next) {
+		struct fbr_file_ptr_slab *ptr_slab = file->ptr_head.next;
+		fbr_file_ptr_slab_ok(ptr_slab);
+
+		file->ptr_head.next = ptr_slab->next;
+
+		_file_ptr_slab_free(ptr_slab);
+
+	}
 }
 
 void

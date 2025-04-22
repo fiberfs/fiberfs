@@ -607,12 +607,13 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 	struct fbr_path_name dirname;
 	fbr_directory_name(directory, &dirname);
 
-	struct fbr_file *file;
-	struct fbr_file *file_pos = reader->position;
+	struct fbr_file_ptr *file_ptr;
+	struct fbr_file_ptr *file_ptr_pos = reader->position;
 
-	if (file_pos) {
-		RB_FOREACH_FROM(file, fbr_filename_tree, file_pos) {
-			fbr_file_ok(file);
+	if (file_ptr_pos) {
+		RB_FOREACH_FROM(file_ptr, fbr_filename_tree, file_ptr_pos) {
+			fbr_file_ptr_ok(file_ptr);
+			struct fbr_file *file = file_ptr->file;
 
 			fbr_path_get_dir(&file->path, &filedir);
 			assert_zero(fbr_path_name_cmp(&dirname, &filedir));
@@ -624,8 +625,9 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 			}
 		}
 	} else {
-		RB_FOREACH(file, fbr_filename_tree, &directory->filename_tree) {
-			fbr_file_ok(file);
+		RB_FOREACH(file_ptr, fbr_filename_tree, &directory->filename_tree) {
+			fbr_file_ptr_ok(file_ptr);
+			struct fbr_file *file = file_ptr->file;
 
 			fbr_path_get_dir(&file->path, &filedir);
 			assert_zero(fbr_path_name_cmp(&dirname, &filedir));
@@ -641,7 +643,7 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 	if (dbuf.full) {
 		assert_zero_dev(reader->end);
 
-		reader->position = file;
+		reader->position = file_ptr;
 
 		fbr_test_logs("READDIR return: %zu", dbuf.pos);
 		fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
