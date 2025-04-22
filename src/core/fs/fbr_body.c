@@ -120,7 +120,7 @@ fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
-	// TODO writing to existing file?
+	// TODO writing to existing file? We will need body locking
 	assert(file->state == FBR_FILE_INIT);
 	assert(length);
 

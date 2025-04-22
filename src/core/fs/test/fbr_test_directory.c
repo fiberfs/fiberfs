@@ -98,6 +98,7 @@ _dir_test_alloc(void *arg)
 		fbr_directory_ok(directory);
 
 		if (directory->state == FBR_DIRSTATE_OK) {
+			fbr_sleep_ms(random() % 20);
 			fbr_dindex_release(fs, &directory);
 			fbr_sleep_ms(1);
 			continue;
@@ -136,7 +137,7 @@ _dir_test_alloc(void *arg)
 		file->mode = S_IFREG | 0444;
 		file->state = FBR_FILE_OK;
 
-		if (directory->previous && !(random() % 4)) {
+		if (directory->previous && !(random() % 2)) {
 			struct fbr_directory *previous = directory->previous;
 			fbr_directory_ok(previous);
 			assert(previous->state == FBR_DIRSTATE_OK);
@@ -148,9 +149,14 @@ _dir_test_alloc(void *arg)
 				file = file_ptr->file;
 
 				fbr_path_get_file(&file->path, &filename);
-				fbr_test_logs("carry over: %s", filename.name);
+				fbr_test_logs("carry over: %s (%lu(%lu) => %lu(%lu))"
+					" refcount: %u+%u",
+					filename.name,
+					previous->inode, previous->generation,
+					directory->inode, directory->generation,
+					file->refcounts.dindex, file->refcounts.inode);
 
-				//fbr_directory_add_file(fs, directory, file);
+				fbr_directory_add_file(fs, directory, file);
 			}
 		}
 
@@ -162,7 +168,7 @@ _dir_test_alloc(void *arg)
 			fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 		}
 
-		fbr_sleep_ms(1);
+		fbr_sleep_ms(random() % 10);
 
 		fbr_dindex_release(fs, &directory);
 	}
