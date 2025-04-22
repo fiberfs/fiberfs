@@ -46,20 +46,23 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	char buf[PATH_MAX];
 	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
 
+	// TODO start write loop
+
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 1);
 	fbr_ASSERT(directory, "directory '%s' missing", dirname.name);
 	fbr_directory_ok(directory);
 
 	fs->log("RW_FLUSH directory: '%s'", dirname.name);
 
-	// TODO we dump the directory with changes making sure we version match
-	// otherwise repeat
-
 	struct fbr_directory *clone = fbr_directory_clone(fs, directory);
 	fbr_directory_ok(clone);
 	assert(clone->state == FBR_DIRSTATE_NONE);
 
-	// Load the new directory, this is a temporary workaround
+	// TODO we dump the directory with changes making sure we version match
+	// otherwise repeat
+
+	// Use the clone here if the above store is a success, otherwise restart the write loop
+
 	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
 	fbr_directory_ok(new_directory);
 	fbr_ASSERT(new_directory->state == FBR_DIRSTATE_LOADING, "new_directory isnt LOADING");
