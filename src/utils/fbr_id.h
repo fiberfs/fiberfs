@@ -15,7 +15,12 @@
 #define FBR_ID_TIMEBITS_MAX			((1L << FBR_ID_TIMEBITS) - 1)
 #define FBR_ID_RANDBITS_MAX			((1L << FBR_ID_RANDBITS) - 1)
 #define FBR_ID_OTHERBITS_MAX			((1L << FBR_ID_OTHERBITS) - 1)
-#define FBR_ID_STRING_MAX			(20 + 1)
+#define FBR_ID_PART_CHAR_MAX			10
+#define FBR_ID_STRING_MAX			((FBR_ID_PART_CHAR_MAX * 2) + 1)
+#define _FBR_ID_STRING(value)			#value
+#define FBR_ID_STRING(value)			_FBR_ID_STRING(value)
+#define FBR_ID_PRINTF_FMT			"%u%0" \
+						FBR_ID_STRING(FBR_ID_PART_CHAR_MAX) "u"
 
 typedef unsigned long fbr_id_t;
 typedef unsigned int fbr_id_part_t;

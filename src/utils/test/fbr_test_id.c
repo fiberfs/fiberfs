@@ -53,6 +53,10 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id2_string=%s", id2_string);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id3_string=%s", id3_string);
 
+	char now[FBR_ID_PART_CHAR_MAX + 1];
+	snprintf(now, sizeof(now), "%ld", (long)fbr_get_time());
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "timestamp_=%s", now);
+
 	struct fbr_id id_max;
 	id_max.parts.timestamp = FBR_ID_TIMEBITS_MAX;
 	id_max.parts.random_parts.random = FBR_ID_RANDBITS_MAX;
@@ -78,12 +82,21 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_custom=%s", id_custom);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_custom_len=%d", id_custom_len);
 
+	char rand_max[FBR_ID_PART_CHAR_MAX + 1];
+	int rand_max_len = snprintf(rand_max, sizeof(rand_max), "%u", UINT32_MAX);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "rand_max=%s", rand_max);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "rand_max_len=%d", rand_max_len);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "UINT32_MAX=%u", UINT32_MAX);
+
 	fbr_test_ASSERT(sizeof(fbr_id_part_t) * 2 == sizeof(fbr_id_t),
 		"fbr_id_part_t * 2 != fbr_id_t");
 	fbr_test_ASSERT(sizeof(struct fbr_id_parts) == sizeof(fbr_id_t),
 		"struct fbr_id_parts != fbr_id_t");
 	fbr_test_ASSERT(sizeof(struct fbr_id) == sizeof(struct fbr_id_parts),
 		"struct fbr_id != struct fbr_id_parts");
+	fbr_test_ASSERT(FBR_ID_FULLRANDBITS == sizeof(fbr_id_part_t) * 8,
+		"FBR_ID_FULLRANDBITS != fbr_id_part_t");
 	fbr_test_ASSERT(RAND_MAX >= FBR_ID_RANDBITS_MAX, "random storage is too small");
 	fbr_test_ASSERT(fbr_id_gen(), "fbr_id_gen() is 0");
 	fbr_test_ASSERT(fbr_id_gen() != fbr_id_gen(), "fbr_id_gen() matched");
@@ -92,4 +105,5 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(id_custom_len == FBR_ID_STRING_MAX - 1, "FBR_ID_STRING_MAX wrong");
 	fbr_test_ASSERT(strcmp(id1_string, id2_string), "id1_string == id2_string");
 	fbr_test_ASSERT(strcmp(id2_string, id3_string), "id2_string == id3_string");
+	fbr_test_ASSERT(rand_max_len == FBR_ID_PART_CHAR_MAX, "FBR_ID_PART_CHAR_MAX wrong");
 }
