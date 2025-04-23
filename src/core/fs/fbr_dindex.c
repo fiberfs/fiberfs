@@ -554,7 +554,6 @@ fbr_dindex_debug(struct fbr_fs *fs, fbr_dindex_debug_f *callback)
 		fbr_dindex_dirhead_ok(dirhead);
 
 		struct fbr_directory *directory;
-
 		RB_FOREACH(directory, fbr_dindex_tree, &dirhead->tree) {
 			fbr_directory_ok(directory);
 
@@ -576,7 +575,6 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 		fbr_dindex_dirhead_ok(dirhead);
 
 		struct fbr_directory *directory, *next;
-
 		RB_FOREACH_SAFE(directory, fbr_dindex_tree, &dirhead->tree, next) {
 			fbr_directory_ok(directory);
 

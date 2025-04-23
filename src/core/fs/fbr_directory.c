@@ -180,7 +180,6 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_zero_dev(directory->next);
 
 	struct fbr_file_ptr *file_ptr, *temp;
-
 	RB_FOREACH_SAFE(file_ptr, fbr_filename_tree, &directory->filename_tree, temp) {
 		fbr_file_ptr_ok(file_ptr);
 		struct fbr_file *file = file_ptr->file;
@@ -250,7 +249,7 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
-	assert(directory->state <= FBR_DIRSTATE_LOADING);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
 
 	fbr_file_ref_dindex(fs, file);
@@ -360,7 +359,6 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(fs->fuse_ctx->session);
 
 	struct fbr_file_ptr *file_ptr;
-
 	RB_FOREACH(file_ptr, fbr_filename_tree, &directory->filename_tree) {
 		fbr_file_ptr_ok(file_ptr);
 		struct fbr_file *file = file_ptr->file;
@@ -417,32 +415,25 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	}
 }
 
-struct fbr_directory *
-fbr_directory_clone(struct fbr_fs *fs, struct fbr_directory *source)
+void
+fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_directory *source)
 {
 	fbr_fs_ok(fs);
+	fbr_directory_ok(dest);
+	assert_zero(dest->file_count);
+	assert_dev(RB_EMPTY(&dest->filename_tree));
 	fbr_directory_ok(source);
 	assert_zero_dev(source->expired);
 
-	struct fbr_directory *directory = calloc(1, sizeof(*directory));
-	assert_dev(directory);
-
-	_directory_init(fs, directory, source->inode);
-
-	directory->path = fbr_path_shared_take(source->path);
-	fbr_path_shared_ok(directory->path);
-
-	directory->generation = source->generation;
+	dest->generation = source->generation;
 
 	struct fbr_file_ptr *file_ptr;
-
 	RB_FOREACH(file_ptr, fbr_filename_tree, &source->filename_tree) {
 		fbr_file_ptr_ok(file_ptr);
 		struct fbr_file *file = file_ptr->file;
 
-		fbr_directory_add_file(fs, directory, file);
+		fbr_directory_add_file(fs, dest, file);
 	}
-	assert_dev(directory->file_count == source->file_count);
 
-	return directory;
+	assert_dev(dest->file_count == source->file_count);
 }

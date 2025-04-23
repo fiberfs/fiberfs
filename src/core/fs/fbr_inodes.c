@@ -257,7 +257,6 @@ fbr_inodes_debug(struct fbr_fs *fs, fbr_inodes_debug_f *callback)
 		fbr_inode_head_ok(head);
 
 		struct fbr_file *file;
-
 		RB_FOREACH(file, fbr_inodes_tree, &head->tree) {
 			fbr_file_ok(file);
 
@@ -279,7 +278,6 @@ fbr_inodes_free_all(struct fbr_fs *fs)
 		fbr_inode_head_ok(head);
 
 		struct fbr_file *file, *next;
-
 		RB_FOREACH_SAFE(file, fbr_inodes_tree, &head->tree, next) {
 			fbr_file_ok(file);
 
