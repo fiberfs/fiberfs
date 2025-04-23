@@ -416,7 +416,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 void
-fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_directory *source)
+fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *source, struct fbr_directory *dest)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(dest);

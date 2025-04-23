@@ -58,7 +58,7 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	fbr_directory_ok(new_directory);
 	fbr_ASSERT(new_directory->state == FBR_DIRSTATE_LOADING, "new_directory isnt LOADING");
 
-	fbr_directory_copy(fs, new_directory, directory);
+	fbr_directory_copy(fs, directory, new_directory);
 
 	new_directory->generation++;
 
