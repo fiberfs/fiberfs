@@ -419,11 +419,13 @@ void
 fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *source, struct fbr_directory *dest)
 {
 	fbr_fs_ok(fs);
+	fbr_directory_ok(source);
+	assert(source->state >= FBR_DIRSTATE_LOADING);
+	assert_zero_dev(source->expired);
 	fbr_directory_ok(dest);
+	assert(dest->state == FBR_DIRSTATE_LOADING);
 	assert_zero(dest->file_count);
 	assert_dev(RB_EMPTY(&dest->filename_tree));
-	fbr_directory_ok(source);
-	assert_zero_dev(source->expired);
 
 	dest->generation = source->generation;
 
