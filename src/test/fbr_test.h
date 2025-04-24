@@ -169,6 +169,7 @@ void fbr_test_skip(struct fbr_test_context *ctx);
 void fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level,
 	int newline, const char *fmt, va_list ap);
 void __fbr_attr_printf(1) fbr_test_logs(const char *fmt, ...);
+void __fbr_attr_printf(1) fbr_test_logs_nl(const char *fmt, ...);
 void __fbr_attr_printf(3) fbr_test_log(struct fbr_test_context *ctx,
 	enum fbr_test_verbocity level, const char *fmt, ...);
 void __fbr_attr_printf(2) fbr_test_warn(int condition, const char *fmt, ...);

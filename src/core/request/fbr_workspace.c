@@ -203,17 +203,19 @@ fbr_workspace_debug(struct fbr_workspace *workspace, fbr_log_f *logger)
 	fbr_workspace_ok(workspace);
 	assert(logger);
 
-	logger("workspace.reserved=%u", workspace->reserved);
-	logger("workspace.reserved_ptr=%u", workspace->reserved_ptr);
-	logger("workspace.size=%zu", workspace->size);
-	logger("workspace.pos=%zu", workspace->pos);
-	logger("workspace.free=%zu", workspace->free);
-	logger("workspace.overflow_len=%zu", workspace->overflow_len);
+	// TODO address the newlines with a proper logger
+
+	logger("workspace.reserved=%u\n", workspace->reserved);
+	logger("workspace.reserved_ptr=%u\n", workspace->reserved_ptr);
+	logger("workspace.size=%zu\n", workspace->size);
+	logger("workspace.pos=%zu\n", workspace->pos);
+	logger("workspace.free=%zu\n", workspace->free);
+	logger("workspace.overflow_len=%zu\n", workspace->overflow_len);
 
 	struct fbr_workspace_ptr *ptr = workspace->pointers;
 	while (ptr) {
 		fbr_magic_check(ptr, FBR_WORKSPACE_PTR_MAGIC);
-		logger("workspace.ptr.size=%zu", ptr->size);
+		logger("workspace.ptr.size=%zu\n", ptr->size);
 		ptr = ptr->next;
 	}
 }

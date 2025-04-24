@@ -87,7 +87,7 @@ fbr_cmd_workspace_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	void *buf17 = fbr_workspace_alloc(ws1, buf17_len);
 	assert(buf17);
 	memset(buf17, 1, buf17_len);
-	fbr_workspace_debug(ws1, &fbr_test_logs);
+	fbr_workspace_debug(ws1, &fbr_test_logs_nl);
 	assert(ws1->free == 24);
 	assert(ws1->overflow_len == buf14_len + buf16_len + buf17_len);
 	fbr_workspace_free(ws1);
@@ -119,7 +119,7 @@ fbr_cmd_workspace_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(ws2->pos);
 	assert(ws2->free == ws2->size);
 	assert_zero(fbr_workspace_rlen(ws2));
-	fbr_workspace_debug(ws2, &fbr_test_logs);
+	fbr_workspace_debug(ws2, &fbr_test_logs_nl);
 	fbr_workspace_free(ws2);
 
 	fbr_test_logs("*** ws3");
@@ -144,7 +144,7 @@ fbr_cmd_workspace_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	size_t buf35_len = 3300;
 	char *buf35 = fbr_workspace_alloc(ws3, buf35_len);
 	assert_zero(buf35);
-	fbr_workspace_debug(ws3, &fbr_test_logs);
+	fbr_workspace_debug(ws3, &fbr_test_logs_nl);
 
 	fbr_test_logs("*** ws3 (reset)");
 
@@ -164,7 +164,7 @@ fbr_cmd_workspace_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	size_t buf36_len = fbr_workspace_rlen(ws3);
 	assert(buf36_len >= FBR_WORKSPACE_MIN_SIZE);
 	fbr_workspace_ralloc(ws3, buf36_len);
-	fbr_workspace_debug(ws3, &fbr_test_logs);
+	fbr_workspace_debug(ws3, &fbr_test_logs_nl);
 	assert(ws3->pos == buf35_len);
 	assert(ws3->overflow_len == buf33_len + buf36_len);
 	fbr_workspace_free(ws3);

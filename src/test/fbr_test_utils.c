@@ -68,6 +68,17 @@ fbr_test_logs(const char *fmt, ...)
 	va_end(ap);
 }
 
+void __fbr_attr_printf(1)
+fbr_test_logs_nl(const char *fmt, ...)
+{
+	struct fbr_test_context *ctx = fbr_test_get_ctx();
+
+	va_list ap;
+	va_start(ap, fmt);
+	fbr_test_vlog(ctx, FBR_LOG_VERBOSE, 0, fmt, ap);
+	va_end(ap);
+}
+
 void __fbr_attr_printf(3)
 fbr_test_log(struct fbr_test_context *ctx, enum fbr_test_verbocity level, const char *fmt, ...)
 {

@@ -69,7 +69,10 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 		file->state = FBR_FILE_OK;
 	}
 
-	// TODO write to store
+	int ret = fbr_store_index(fs, new_directory);
+	if (!ret) {
+		fs->log("RW_FLUSH fbr_store_index(new_directory) failed");
+	}
 
 	fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 
