@@ -212,6 +212,8 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 			directory->inode, (int)dirname->len, dirname->name, dirname->len);
 	}
 
+	fbr_ASSERT(directory->state == FBR_DIRSTATE_OK, "directory->state: %d", directory->state);
+
 	return directory;
 }
 
