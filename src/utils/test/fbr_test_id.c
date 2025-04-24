@@ -75,9 +75,9 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_ID_STRING_MAX=%d", FBR_ID_STRING_MAX);
 
 	char id_custom[FBR_ID_STRING_MAX];
-	int id_custom_len = snprintf(id_custom, sizeof(id_custom), "%lu%lu",
-		FBR_ID_TIMEBITS_MAX,
-		(FBR_ID_RANDBITS_MAX << FBR_ID_OTHERBITS) | FBR_ID_OTHERBITS_MAX);
+	int id_custom_len = snprintf(id_custom, sizeof(id_custom), FBR_ID_PRINTF_FMT,
+		(fbr_id_part_t)FBR_ID_TIMEBITS_MAX,
+		(fbr_id_part_t)((FBR_ID_RANDBITS_MAX << FBR_ID_OTHERBITS) | FBR_ID_OTHERBITS_MAX));
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_custom=%s", id_custom);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_custom_len=%d", id_custom_len);
