@@ -14,6 +14,9 @@ void fbr_sleep_ms(double ms);
 double fbr_get_time(void);
 void fbr_timespec_add_clock(struct timespec *value);
 
+#define _FBR_STRINGIFY(_value)			#_value
+#define FBR_STRINGIFY(value)			_FBR_STRINGIFY(value)
+
 #define fbr_atomic_add(dest_ptr, value)					\
 	__sync_add_and_fetch(dest_ptr, value);
 #define fbr_atomic_sub(dest_ptr, value)					\

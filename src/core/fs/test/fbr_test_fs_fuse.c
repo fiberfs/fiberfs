@@ -34,6 +34,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
 
 	struct fbr_path_name dirname;
 	fbr_directory_name(directory, &dirname);
@@ -210,8 +211,6 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 		fbr_test_logs("** INIT OK inode: %lu directory: '%.*s':%zu",
 			directory->inode, (int)dirname->len, dirname->name, dirname->len);
 	}
-
-	assert(directory->state == FBR_DIRSTATE_OK);
 
 	return directory;
 }

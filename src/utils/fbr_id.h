@@ -7,6 +7,8 @@
 #ifndef _FBR_ID_H_INCLUDED_
 #define _FBR_ID_H_INCLUDED_
 
+#include "fbr_utils.h"
+
 #define FBR_ID_TIMEBITS				(sizeof(fbr_id_part_t) * 8)
 #define FBR_ID_RANDBITS				31 // RAND_MAX
 #define FBR_ID_ALLBITS				(FBR_ID_TIMEBITS + FBR_ID_RANDBITS)
@@ -17,10 +19,7 @@
 #define FBR_ID_OTHERBITS_MAX			((1L << FBR_ID_OTHERBITS) - 1)
 #define FBR_ID_PART_CHAR_MAX			10
 #define FBR_ID_STRING_MAX			((FBR_ID_PART_CHAR_MAX * 2) + 1)
-#define _FBR_ID_STRING(value)			#value
-#define FBR_ID_STRING(value)			_FBR_ID_STRING(value)
-#define FBR_ID_PRINTF_FMT			"%u%0" \
-						FBR_ID_STRING(FBR_ID_PART_CHAR_MAX) "u"
+#define FBR_ID_PRINTF_FMT			"%u%0" FBR_STRINGIFY(FBR_ID_PART_CHAR_MAX) "u"
 
 typedef unsigned long fbr_id_t;
 typedef unsigned int fbr_id_part_t;
