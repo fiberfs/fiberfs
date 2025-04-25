@@ -65,6 +65,68 @@ fbr_test_cmd_not_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		cmd->params[1].value);
 }
 
+static void
+_compare_values(struct fbr_test_context *ctx, const char *s1, const char *s2,
+    const char *cmd)
+{
+	fbr_test_ERROR_string(cmd);
+
+	long l1 = fbr_test_parse_long(s1);
+	long l2 = fbr_test_parse_long(s2);
+
+	int passed = 0;
+
+	if (!strcmp(cmd, "greater_than")) {
+		passed = (l1 > l2);
+	} else if (!strcmp(cmd, "greater_equal")) {
+		passed = (l1 >= l2);
+	} else if (!strcmp(cmd, "less_than")) {
+		passed = (l1 < l2);
+	} else if (!strcmp(cmd, "less_equal")) {
+		passed = (l1 <= l2);
+	}
+
+	fbr_test_ASSERT(passed, "%s: '%s','%s' FAILED", cmd, s1, s2);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s %s,%s", cmd, s1, s2);
+}
+
+void
+fbr_test_cmd_greater_than(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 2);
+
+	_compare_values(ctx, cmd->params[0].value, cmd->params[1].value, cmd->name);
+}
+
+void
+fbr_test_cmd_greater_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 2);
+
+	_compare_values(ctx, cmd->params[0].value, cmd->params[1].value, cmd->name);
+}
+
+void
+fbr_test_cmd_less_than(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 2);
+
+	_compare_values(ctx, cmd->params[0].value, cmd->params[1].value, cmd->name);
+}
+
+void
+fbr_test_cmd_less_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 2);
+
+	_compare_values(ctx, cmd->params[0].value, cmd->params[1].value, cmd->name);
+}
+
 void
 fbr_test_cmd_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
