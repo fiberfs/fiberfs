@@ -46,6 +46,15 @@ fbr_json_writer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffe
 
 	fbr_json_buffer_ok(jbuf);
 
+	struct fbr_json_buffer *current = NULL;
+
+	if (!scratch) {
+		current = json->final;
+		while (current && current->next) {
+			current = current->next;
+		}
+	}
+
 	if (buffer) {
 		assert_dev(buffer_len);
 		assert_zero_dev(jbuf->buffer_free);
@@ -53,34 +62,33 @@ fbr_json_writer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffe
 		jbuf->buffer = buffer;
 		jbuf->buffer_len = buffer_len;
 	} else {
-		jbuf->buffer = malloc(FBR_JSON_DEFAULT_BUFLEN);
+		assert_zero_dev(buffer_len);
+		buffer_len = FBR_JSON_DEFAULT_BUFLEN;
+		if (current) {
+			buffer_len = current->buffer_len * 2;
+		}
+
+		jbuf->buffer = malloc(buffer_len);
 		assert(jbuf->buffer);
 
-		jbuf->buffer_len = FBR_JSON_DEFAULT_BUFLEN;
+		jbuf->buffer_len = buffer_len;
 		jbuf->buffer_free = 1;
 
 		fbr_fs_stat_add(&fs->stats.json_buffers);
 	}
 
-	struct fbr_json_buffer *current = NULL;
-
 	if (scratch) {
-		if (!json->scratch) {
-			json->scratch = jbuf;
-			return;
-		}
-		current = json->scratch;
-	} else {
-		if (!json->final) {
-			json->final = jbuf;
-			return;
-		}
-		current = json->final;
+		assert_zero_dev(json->scratch);
+		json->scratch = jbuf;
+		return;
 	}
 
-	while (current->next) {
-		current = current->next;
+	if (!current) {
+		assert_zero_dev(json->final);
+		json->final = jbuf;
+		return;
 	}
+
 	current->next = jbuf;
 
 	return;
