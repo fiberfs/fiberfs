@@ -40,13 +40,18 @@ _json_buffer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffer,
 
 	fbr_json_buffer_ok(jbuf);
 
+	struct fbr_json_buffer **head = NULL;
 	struct fbr_json_buffer *current = NULL;
 
-	if (!scratch) {
+	if (scratch) {
+		head = &json->scratch;
+		current = json->scratch;
+	} else {
+		head = &json->final;
 		current = json->final;
-		while (current && current->next) {
-			current = current->next;
-		}
+	}
+	while (current && current->next) {
+		current = current->next;
 	}
 
 	if (buffer) {
@@ -71,25 +76,16 @@ _json_buffer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffer,
 		fbr_fs_stat_add(&fs->stats.json_buffers);
 	}
 
-	if (scratch) {
-		assert_zero_dev(json->scratch);
-		json->scratch = jbuf;
-		return;
-	}
-
 	if (!current) {
-		assert_zero_dev(json->final);
-		json->final = jbuf;
+		*head = jbuf;
 		return;
+	} else {
+		current->next = jbuf;
 	}
-
-	current->next = jbuf;
-
-	return;
 }
 
 void
-fbr_json_writer_init(struct fbr_fs *fs, struct fbr_json_writer *json)
+fbr_json_writer_init(struct fbr_fs *fs, struct fbr_json_writer *json, int want_gzip)
 {
 	fbr_fs_ok(fs);
 	assert(json);
@@ -134,6 +130,8 @@ fbr_json_writer_init(struct fbr_fs *fs, struct fbr_json_writer *json)
 	if (!json->final) {
 		_json_buffer_add(fs, json, NULL, 0, 0);
 	}
+
+	json->want_gzip = want_gzip;
 }
 
 static void
@@ -173,6 +171,128 @@ fbr_json_writer_free(struct fbr_fs *fs, struct fbr_json_writer *json)
 }
 
 static void
+_json_scratch_reset(struct fbr_json_writer *json)
+{
+	assert_dev(json);
+	assert_dev(json->scratch);
+
+	_json_buffer_free(json->scratch->next);
+
+	json->scratch->buffer_pos = 0;
+	json->scratch->next = NULL;
+}
+
+static void
+_json_buffer_append(struct fbr_json_buffer *jbuf, const char *buffer, size_t buffer_len)
+{
+	assert_dev(jbuf);
+	assert_dev(buffer);
+	assert_dev(buffer_len);
+
+	memcpy(jbuf->buffer + jbuf->buffer_pos, buffer, buffer_len);
+	jbuf->buffer_pos += buffer_len;
+
+	assert(jbuf->buffer_len >= jbuf->buffer_pos);
+}
+
+static void
+_json_copy_final(struct fbr_fs *fs, struct fbr_json_writer *json)
+{
+	assert_dev(fs);
+	assert_dev(json);
+	assert_dev(json->scratch);
+	assert_dev(json->final);
+
+	struct fbr_json_buffer *scratch = json->scratch;
+	struct fbr_json_buffer *final = json->final;
+
+	while (final->next) {
+		final = final->next;
+	}
+
+	size_t scratch_offset = 0;
+	size_t scratch_size;
+
+	while (scratch && scratch->buffer_pos) {
+		fbr_json_buffer_ok(scratch);
+		fbr_json_buffer_ok(final);
+		assert_dev(final->buffer_len >= final->buffer_pos);
+
+		size_t final_free = final->buffer_len - final->buffer_pos;
+
+		if (final_free) {
+			scratch_size = scratch->buffer_pos - scratch_offset;
+			if (scratch_size > final_free) {
+				scratch_size = final_free;
+			}
+
+			_json_buffer_append(final, scratch->buffer + scratch_offset,
+				scratch_size);
+
+			scratch_offset += scratch_size;
+			assert_dev(scratch_offset <= scratch->buffer_pos);
+		}
+
+		if (scratch_offset == scratch->buffer_pos) {
+			scratch = scratch->next;
+			scratch_offset = 0;
+			continue;
+		}
+
+		assert_dev(final->buffer_pos == final->buffer_len);
+		assert_zero_dev(final->next);
+
+		_json_buffer_add(fs, json, NULL, 0, 0);
+
+		final = final->next;
+		assert_dev(final);
+	}
+
+	_json_scratch_reset(json);
+}
+
+void
+fbr_json_writer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffer,
+    size_t buffer_len)
+{
+	fbr_fs_ok(fs);
+	assert(json);
+
+	if (!buffer) {
+		assert_zero_dev(buffer_len);
+		_json_copy_final(fs, json);
+		return;
+	}
+
+	assert(buffer);
+	assert(buffer_len);
+
+	struct fbr_json_buffer *scratch = json->scratch;
+	fbr_json_buffer_ok(scratch);
+	assert_dev(scratch->buffer_len);
+	assert_dev(scratch->buffer_len >= scratch->buffer_pos);
+	assert_zero_dev(scratch->next);
+
+	size_t scratch_free = scratch->buffer_len - scratch->buffer_pos;
+	int do_flush = 0;
+
+	if (buffer_len <= scratch_free) {
+		_json_buffer_append(scratch, buffer, buffer_len);
+	} else {
+		_json_buffer_add(fs, json, buffer, buffer_len, 1);
+		assert_dev(scratch->next);
+
+		scratch->next->buffer_pos = buffer_len;
+		do_flush = 1;
+	}
+
+	if (do_flush) {
+		// TODO compress
+		_json_copy_final(fs, json);
+	}
+}
+
+static void
 _json_buffer_debug(struct fbr_fs *fs, struct fbr_json_buffer *jbuf, const char *name)
 {
 	assert_dev(fs);
@@ -198,5 +318,6 @@ fbr_json_writer_debug(struct fbr_fs *fs, struct fbr_json_writer *json)
 	_json_buffer_debug(fs, json->scratch, "scratch");
 	_json_buffer_debug(fs, json->final, "final");
 
-	fs->log("JSON_INDEX gzipped: %d", json->gzipped);
+	fs->log("JSON_INDEX want_gzip: %d", json->want_gzip);
+	fs->log("JSON_INDEX is_gzip: %d", json->is_gzip);
 }

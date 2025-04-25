@@ -34,7 +34,8 @@ struct fbr_json_writer {
 
 	struct fbr_json_buffer			buffers[FBR_JSON_DEFAULT_BUFFERS];
 
-	unsigned int				gzipped:1;
+	unsigned int				want_gzip:1;
+	unsigned int				is_gzip:1;
 };
 
 struct fbr_store_callbacks {
@@ -48,7 +49,9 @@ struct fbr_store_callbacks {
 
 int fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory);
 
-void fbr_json_writer_init(struct fbr_fs *fs, struct fbr_json_writer *json);
+void fbr_json_writer_init(struct fbr_fs *fs, struct fbr_json_writer *json, int want_gzip);
+void fbr_json_writer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffer,
+	size_t buffer_len);
 void fbr_json_writer_free(struct fbr_fs *fs, struct fbr_json_writer *json);
 void fbr_json_writer_debug(struct fbr_fs *fs, struct fbr_json_writer *json);
 

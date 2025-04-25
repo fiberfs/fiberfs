@@ -14,7 +14,10 @@ fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_directory_ok(directory);
 
 	struct fbr_json_writer json;
-	fbr_json_writer_init(fs, &json);
+	fbr_json_writer_init(fs, &json, 1);
+
+	fbr_json_writer_add(fs, &json, "TODO", 4);
+	fbr_json_writer_add(fs, &json, NULL, 0);
 
 	fbr_json_writer_debug(fs, &json);
 
