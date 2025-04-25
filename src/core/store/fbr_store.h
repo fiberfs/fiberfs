@@ -48,10 +48,8 @@ struct fbr_store_callbacks {
 
 int fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory);
 
-void fbr_json_writer_init(struct fbr_json_writer *json);
-void fbr_json_writer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffer,
-	size_t buffer_len, int scratch);
-void fbr_json_writer_free(struct fbr_json_writer *json);
+void fbr_json_writer_init(struct fbr_fs *fs, struct fbr_json_writer *json);
+void fbr_json_writer_free(struct fbr_fs *fs, struct fbr_json_writer *json);
 void fbr_json_writer_debug(struct fbr_fs *fs, struct fbr_json_writer *json);
 
 #define fbr_json_buffer_ok(jbuf)		fbr_magic_check(jbuf, FBR_JSON_BUFFER_MAGIC)

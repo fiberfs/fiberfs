@@ -8,19 +8,13 @@
 
 #include "fiberfs.h"
 #include "fbr_store.h"
+#include "core/request/fbr_request.h"
 
-void
-fbr_json_writer_init(struct fbr_json_writer *json) {
-	assert(json);
-
-	fbr_ZERO(json);
-}
-
-void
-fbr_json_writer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffer,
+static void
+_json_buffer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffer,
     size_t buffer_len, int scratch)
 {
-	fbr_fs_ok(fs);
+	assert_dev(fs);
 	assert(json);
 
 	struct fbr_json_buffer *jbuf = NULL;
@@ -94,6 +88,54 @@ fbr_json_writer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffe
 	return;
 }
 
+void
+fbr_json_writer_init(struct fbr_fs *fs, struct fbr_json_writer *json)
+{
+	fbr_fs_ok(fs);
+	assert(json);
+
+	fbr_ZERO(json);
+
+	struct fbr_request *request = fbr_request_get();
+
+	if (request) {
+		fbr_request_ok(request);
+
+		char *buffer = fbr_workspace_alloc(request->workspace, FBR_JSON_DEFAULT_BUFLEN);
+		size_t buffer_len = FBR_JSON_DEFAULT_BUFLEN;
+
+		if (buffer) {
+			_json_buffer_add(fs, json, buffer, buffer_len, 1);
+			assert_dev(json->scratch);
+		}
+
+		buffer = fbr_workspace_rbuffer(request->workspace);
+		buffer_len = fbr_workspace_rlen(request->workspace);
+
+		if (buffer && buffer_len >= FBR_JSON_DEFAULT_BUFLEN) {
+			if (buffer_len >= FBR_JSON_DEFAULT_BUFLEN * 2) {
+				buffer_len -= FBR_JSON_DEFAULT_BUFLEN;
+			} else if (buffer_len > FBR_JSON_DEFAULT_BUFLEN) {
+				buffer_len = FBR_JSON_DEFAULT_BUFLEN;
+			}
+
+			fbr_workspace_ralloc(request->workspace, buffer_len);
+
+			_json_buffer_add(fs, json, buffer, buffer_len, 0);
+			assert_dev(json->final);
+		} else if (buffer) {
+			fbr_workspace_ralloc(request->workspace, 0);
+		}
+	}
+
+	if (!json->scratch) {
+		_json_buffer_add(fs, json, NULL, 0, 1);
+	}
+	if (!json->final) {
+		_json_buffer_add(fs, json, NULL, 0, 0);
+	}
+}
+
 static void
 _json_buffer_free(struct fbr_json_buffer *jbuf)
 {
@@ -119,7 +161,9 @@ _json_buffer_free(struct fbr_json_buffer *jbuf)
 }
 
 void
-fbr_json_writer_free(struct fbr_json_writer *json) {
+fbr_json_writer_free(struct fbr_fs *fs, struct fbr_json_writer *json)
+{
+	fbr_fs_ok(fs);
 	assert(json);
 
 	_json_buffer_free(json->scratch);
