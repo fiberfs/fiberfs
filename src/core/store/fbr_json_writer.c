@@ -11,7 +11,7 @@
 
 void
 fbr_json_writer_init(struct fbr_json_writer *json) {
-	assert_dev(json);
+	assert(json);
 
 	fbr_ZERO(json);
 }
@@ -20,8 +20,8 @@ void
 fbr_json_writer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffer,
     size_t buffer_len, int scratch)
 {
-	assert_dev(fs);
-	assert_dev(json);
+	fbr_fs_ok(fs);
+	assert(json);
 
 	struct fbr_json_buffer *jbuf = NULL;
 
@@ -112,7 +112,7 @@ _json_buffer_free(struct fbr_json_buffer *jbuf)
 
 void
 fbr_json_writer_free(struct fbr_json_writer *json) {
-	assert_dev(json);
+	assert(json);
 
 	_json_buffer_free(json->scratch);
 	_json_buffer_free(json->final);
@@ -139,7 +139,7 @@ _json_buffer_debug(struct fbr_fs *fs, struct fbr_json_buffer *jbuf, const char *
 void
 fbr_json_writer_debug(struct fbr_fs *fs, struct fbr_json_writer *json)
 {
-	assert_dev(fs);
+	fbr_fs_ok(fs);
 	assert_dev(fs->logger);
 	assert(json);
 

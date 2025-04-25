@@ -109,8 +109,6 @@ _request_pool_get(fuse_req_t fuse_req, const char *name)
 	TAILQ_INSERT_TAIL(&_REQUEST_POOL->active_list, request, entry);
 	_REQUEST_POOL->active_size++;
 
-	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
-
 	assert_dev(request->fuse_ctx);
 	struct fbr_fs *fs = request->fuse_ctx->fs;
 	fbr_fs_ok(fs);
@@ -118,6 +116,8 @@ _request_pool_get(fuse_req_t fuse_req, const char *name)
 	fbr_fs_stat_add(&fs->stats.requests_recycled);
 	fbr_fs_stat_add(&fs->stats.requests_active);
 	fbr_fs_stat_sub(&fs->stats.requests_pooled);
+
+	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 
 	return request;
 }
@@ -133,14 +133,14 @@ _request_pool_active(struct fbr_request *request)
 	TAILQ_INSERT_TAIL(&_REQUEST_POOL->active_list, request, entry);
 	_REQUEST_POOL->active_size++;
 
-	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
-
 	assert_dev(request->fuse_ctx);
 	struct fbr_fs *fs = request->fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
 	fbr_fs_stat_add(&fs->stats.requests_alloc);
 	fbr_fs_stat_add(&fs->stats.requests_active);
+
+	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 }
 
 struct fbr_request *
@@ -233,18 +233,18 @@ _request_pool_put(struct fbr_request *request)
 	_REQUEST_POOL->active_size--;
 
 	if (_REQUEST_POOL->free_size >= FBR_REQUEST_POOL_MAX_SIZE) {
+		fbr_fs_stat_add(&fs->stats.requests_freed);
 		pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 		_request_free(request);
-		fbr_fs_stat_add(&fs->stats.requests_freed);
 		return;
 	}
 
 	TAILQ_INSERT_TAIL(&_REQUEST_POOL->free_list, request, entry);
 	_REQUEST_POOL->free_size++;
 
-	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
-
 	fbr_fs_stat_add(&fs->stats.requests_pooled);
+
+	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 }
 
 void
