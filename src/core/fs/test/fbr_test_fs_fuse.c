@@ -209,9 +209,7 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 		_test_fs_init_contents(fs, directory);
 	} else if (directory->state == FBR_DIRSTATE_ERROR) {
 		fbr_dindex_release(fs, &directory);
-		directory = fbr_dindex_take(fs, dirname, 0);
-		// TODO if this fails, we just need to loop until we get a directory...
-		fbr_directory_ok(directory);
+		return NULL;
 	} else {
 		assert(directory->state == FBR_DIRSTATE_OK);
 		fbr_test_logs("** INIT OK inode: %lu directory: '%.*s':%zu",

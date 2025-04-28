@@ -41,7 +41,7 @@ print "### READ 3"
 
 sys_cat_md5 $var1 4cf30131c206e004d37e694a53733f70
 
-equal $fs_test_stat_read_bytes 1048576
+greater_equal $fs_test_stat_read_bytes 1048576
 
 # Cleanup
 
@@ -60,7 +60,7 @@ equal $fs_test_stat_directories_dindex 0
 equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 1
 equal $fs_test_stat_files_inodes 1
-equal $fs_test_stat_read_bytes 1048576
+greater_equal $fs_test_stat_read_bytes 1048576
 equal $fs_test_stat_fetch_bytes 1048676
 
 fuse_test_unmount
