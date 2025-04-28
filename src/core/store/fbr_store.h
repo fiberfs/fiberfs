@@ -50,8 +50,9 @@ struct fbr_store_callbacks {
 int fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory);
 
 void fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer, int want_gzip);
-void fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
+void fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer,
 	size_t buffer_len);
+void fbr_writer_add_ulong(struct fbr_fs *fs, struct fbr_writer *writer, unsigned long value);
 void fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer);
 void fbr_writer_debug(struct fbr_fs *fs, struct fbr_writer *writer);
 

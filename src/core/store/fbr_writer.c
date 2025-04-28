@@ -4,6 +4,7 @@
  *
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "fiberfs.h"
@@ -97,6 +98,7 @@ fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer, int want_gzip)
 	if (request) {
 		fbr_request_ok(request);
 
+		// TODO make these buffer sizes conigurable, make sure they fit in workspace
 		char *buffer = fbr_workspace_alloc(request->workspace, FBR_DEFAULT_BUFLEN);
 		size_t buffer_len = FBR_DEFAULT_BUFLEN;
 
@@ -175,11 +177,9 @@ _scratch_reset(struct fbr_writer *writer)
 {
 	assert_dev(writer);
 	assert_dev(writer->scratch);
-
-	_buffers_free(writer->scratch->next);
+	assert_zero_dev(writer->scratch->next);
 
 	writer->scratch->buffer_pos = 0;
-	writer->scratch->next = NULL;
 }
 
 static void
@@ -188,6 +188,7 @@ _buffer_append(struct fbr_buffer *fbuf, const char *buffer, size_t buffer_len)
 	assert_dev(fbuf);
 	assert_dev(buffer);
 	assert_dev(buffer_len);
+	assert(fbuf->buffer_len - fbuf->buffer_pos >= buffer_len);
 
 	memcpy(fbuf->buffer + fbuf->buffer_pos, buffer, buffer_len);
 	fbuf->buffer_pos += buffer_len;
@@ -196,7 +197,7 @@ _buffer_append(struct fbr_buffer *fbuf, const char *buffer, size_t buffer_len)
 }
 
 static void
-_add_final(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer, size_t buffer_len)
+_add_final(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, size_t buffer_len)
 {
 	assert_dev(fs);
 	assert_dev(writer);
@@ -211,6 +212,8 @@ _add_final(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer, size_t bu
 
 	size_t offset = 0;
 	size_t size;
+
+	// TODO compress
 
 	while (offset < buffer_len) {
 		fbr_buffer_ok(final);
@@ -263,7 +266,7 @@ _copy_final(struct fbr_fs *fs, struct fbr_writer *writer)
 }
 
 void
-fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
+fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer,
     size_t buffer_len)
 {
 	fbr_fs_ok(fs);
@@ -285,22 +288,48 @@ fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
 	assert_zero_dev(scratch->next);
 
 	size_t scratch_free = scratch->buffer_len - scratch->buffer_pos;
-	int do_flush = 0;
 
 	if (buffer_len <= scratch_free) {
 		_buffer_append(scratch, buffer, buffer_len);
 	} else {
-		_buffer_add(fs, writer, buffer, buffer_len, 1);
-		assert_dev(scratch->next);
-
-		scratch->next->buffer_pos = buffer_len;
-		do_flush = 1;
-	}
-
-	if (do_flush) {
-		// TODO compress
 		_copy_final(fs, writer);
+		assert_zero_dev(scratch->buffer_pos);
+
+		if (buffer_len <= scratch->buffer_len) {
+			_buffer_append(scratch, buffer, buffer_len);
+		} else {
+			_add_final(fs, writer, buffer, buffer_len);
+		}
 	}
+}
+
+void
+fbr_writer_add_ulong(struct fbr_fs *fs, struct fbr_writer *writer, unsigned long value)
+{
+	fbr_fs_ok(fs);
+	assert(writer);
+
+	struct fbr_buffer *scratch = writer->scratch;
+	fbr_buffer_ok(scratch);
+	assert_dev(scratch->buffer_len);
+	assert_dev(scratch->buffer_len >= scratch->buffer_pos);
+	assert_zero_dev(scratch->next);
+
+	size_t scratch_free = scratch->buffer_len - scratch->buffer_pos;
+
+	if (scratch_free < 32) {
+		_copy_final(fs, writer);
+
+		scratch_free = scratch->buffer_len;
+		assert_zero_dev(scratch->buffer_pos);
+		assert(scratch_free > 32);
+	}
+
+	int ret = snprintf(scratch->buffer + scratch->buffer_pos, scratch_free,
+		"%lu", value);
+	assert(ret > 0 && (size_t)ret < scratch_free);
+
+	scratch->buffer_pos += ret;
 }
 
 static void
