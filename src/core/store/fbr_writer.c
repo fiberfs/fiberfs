@@ -196,6 +196,52 @@ _buffer_append(struct fbr_buffer *fbuf, const char *buffer, size_t buffer_len)
 }
 
 static void
+_add_final(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer, size_t buffer_len)
+{
+	assert_dev(fs);
+	assert_dev(writer);
+	assert_dev(writer->final);
+	assert_dev(buffer);
+	assert_dev(buffer_len);
+
+	struct fbr_buffer *final = writer->final;
+	while (final->next) {
+		final = final->next;
+	}
+
+	size_t offset = 0;
+	size_t size;
+
+	while (offset < buffer_len) {
+		fbr_buffer_ok(final);
+		assert_dev(final->buffer_len >= final->buffer_pos);
+
+		size_t final_free = final->buffer_len - final->buffer_pos;
+
+		if (final_free) {
+			size = buffer_len - offset;
+			if (size > final_free) {
+				size = final_free;
+			}
+
+			_buffer_append(final, buffer + offset, size);
+
+			offset += size;
+			assert_dev(offset <= buffer_len);
+
+			continue;
+		}
+
+		assert_zero_dev(final->next);
+
+		_buffer_add(fs, writer, NULL, 0, 0);
+
+		final = final->next;
+		assert_dev(final);
+	}
+}
+
+static void
 _copy_final(struct fbr_fs *fs, struct fbr_writer *writer)
 {
 	assert_dev(fs);
@@ -204,48 +250,13 @@ _copy_final(struct fbr_fs *fs, struct fbr_writer *writer)
 	assert_dev(writer->final);
 
 	struct fbr_buffer *scratch = writer->scratch;
-	struct fbr_buffer *final = writer->final;
 
-	while (final->next) {
-		final = final->next;
-	}
-
-	size_t scratch_offset = 0;
-	size_t scratch_size;
-
-	while (scratch && scratch->buffer_pos) {
+	while (scratch) {
 		fbr_buffer_ok(scratch);
-		fbr_buffer_ok(final);
-		assert_dev(final->buffer_len >= final->buffer_pos);
 
-		size_t final_free = final->buffer_len - final->buffer_pos;
+		_add_final(fs, writer, scratch->buffer, scratch->buffer_pos);
 
-		if (final_free) {
-			scratch_size = scratch->buffer_pos - scratch_offset;
-			if (scratch_size > final_free) {
-				scratch_size = final_free;
-			}
-
-			_buffer_append(final, scratch->buffer + scratch_offset,
-				scratch_size);
-
-			scratch_offset += scratch_size;
-			assert_dev(scratch_offset <= scratch->buffer_pos);
-		}
-
-		if (scratch_offset == scratch->buffer_pos) {
-			scratch = scratch->next;
-			scratch_offset = 0;
-			continue;
-		}
-
-		assert_dev(final->buffer_pos == final->buffer_len);
-		assert_zero_dev(final->next);
-
-		_buffer_add(fs, writer, NULL, 0, 0);
-
-		final = final->next;
-		assert_dev(final);
+		scratch = scratch->next;
 	}
 
 	_scratch_reset(writer);
