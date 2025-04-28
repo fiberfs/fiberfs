@@ -11,12 +11,12 @@
 
 #define FBR_JSON_HEADER				"fiberfs"
 #define FBR_JSON_VERSION			1
-#define FBR_JSON_DEFAULT_BUFFERS		4
-#define FBR_JSON_DEFAULT_BUFLEN			4096
+#define FBR_DEFAULT_BUFFERS			4
+#define FBR_DEFAULT_BUFLEN			4096
 
-struct fbr_json_buffer {
+struct fbr_buffer {
 	unsigned int				magic;
-#define FBR_JSON_BUFFER_MAGIC			0xDB60ECD5
+#define FBR_BUFFER_MAGIC			0xDB60ECD5
 
 	unsigned int				buffer_free:1;
 	unsigned int				do_free:1;
@@ -25,14 +25,14 @@ struct fbr_json_buffer {
 	size_t					buffer_pos;
 	size_t					buffer_len;
 
-	struct fbr_json_buffer			*next;
+	struct fbr_buffer			*next;
 };
 
-struct fbr_json_writer {
-	struct fbr_json_buffer			*scratch;
-	struct fbr_json_buffer			*final;
+struct fbr_writer {
+	struct fbr_buffer			*scratch;
+	struct fbr_buffer			*final;
 
-	struct fbr_json_buffer			buffers[FBR_JSON_DEFAULT_BUFFERS];
+	struct fbr_buffer			buffers[FBR_DEFAULT_BUFFERS];
 
 	unsigned int				want_gzip:1;
 	unsigned int				is_gzip:1;
@@ -49,12 +49,12 @@ struct fbr_store_callbacks {
 
 int fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory);
 
-void fbr_json_writer_init(struct fbr_fs *fs, struct fbr_json_writer *json, int want_gzip);
-void fbr_json_writer_add(struct fbr_fs *fs, struct fbr_json_writer *json, char *buffer,
+void fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer, int want_gzip);
+void fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
 	size_t buffer_len);
-void fbr_json_writer_free(struct fbr_fs *fs, struct fbr_json_writer *json);
-void fbr_json_writer_debug(struct fbr_fs *fs, struct fbr_json_writer *json);
+void fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer);
+void fbr_writer_debug(struct fbr_fs *fs, struct fbr_writer *writer);
 
-#define fbr_json_buffer_ok(jbuf)		fbr_magic_check(jbuf, FBR_JSON_BUFFER_MAGIC)
+#define fbr_buffer_ok(buffer)		fbr_magic_check(buffer, FBR_BUFFER_MAGIC)
 
 #endif /* _FBR_STORE_H_INCLUDED_ */
