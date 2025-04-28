@@ -37,9 +37,6 @@
 			"-DFBR_FUSE3",
 			"-DFBR_LIBUNWIND"
 		],
-		"files.exclude": {
-			"**/*.o": true
-		},
 		"files.associations": {
 			"*.h": "c"
 		}
