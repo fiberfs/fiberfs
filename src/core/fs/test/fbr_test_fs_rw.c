@@ -86,6 +86,21 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	return 0;
 }
 
+static int
+_test_fs_rw_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_writer *writer)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert(writer);
+	assert_dev(writer->final);
+
+	fs->log("RW_STORE_INDEX '%.*s':%zu", (int)writer->final->buffer_pos, writer->final->buffer,
+		writer->final->buffer_pos);
+
+	return 1;
+}
+
 static void
 _test_fs_rw_chunk_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
@@ -100,6 +115,7 @@ _test_fs_rw_chunk_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
 	.store_wbuffer_f = _test_fs_rw_store_wbuffer,
 	.flush_wbuffers_f = _test_fs_rw_flush_wbuffers,
+	.store_index_f = _test_fs_rw_store_index,
 	.fetch_chunk_f = _test_fs_rw_chunk_fetch
 };
 

@@ -45,6 +45,8 @@ struct fbr_store_callbacks {
 		struct fbr_wbuffer *wbuffer);
 	int (*flush_wbuffers_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_wbuffer *wbuffers);
+	int (*store_index_f)(struct fbr_fs *fs, struct fbr_directory *directory,
+		struct fbr_writer *writer);
 };
 
 int fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory);

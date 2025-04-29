@@ -134,6 +134,7 @@ int
 fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
+	assert_dev(fs->store);
 	fbr_directory_ok(directory);
 
 	struct fbr_writer json;
@@ -146,10 +147,14 @@ fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_writer_add(fs, &json, NULL, 0);
 
 	fbr_writer_debug(fs, &json);
-	fs->log("ZZZ '%.*s':%zu", (int)json.final->buffer_pos, json.final->buffer,
-		json.final->buffer_pos);
+
+	int ret = 0;
+
+	if (fs->store->store_index_f) {
+		ret = fs->store->store_index_f(fs, directory, &json);
+	}
 
 	fbr_writer_free(fs, &json);
 
-	return 1;
+	return ret;
 }
