@@ -136,6 +136,7 @@ fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
 	fbr_directory_ok(directory);
+	assert_dev(directory->version);
 
 	struct fbr_writer json;
 	fbr_writer_init(fs, &json, 1);

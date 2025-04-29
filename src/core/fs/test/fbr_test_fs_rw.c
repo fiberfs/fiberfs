@@ -67,8 +67,9 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	// TODO normalize the chunks via fbr_chunk_list_file()
 
 	if (file->state == FBR_FILE_INIT) {
-		fbr_directory_add_file(fs, new_directory, file);
 		file->state = FBR_FILE_OK;
+		file->generation = 1;
+		fbr_directory_add_file(fs, new_directory, file);
 	}
 
 	int ret = fbr_store_index(fs, new_directory);
@@ -147,6 +148,7 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	struct fbr_directory *root = fbr_directory_root_alloc(ctx->fs);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_LOADING);
+	// TODO we need to write this somewhere
 	fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
 
 	fbr_dindex_release(ctx->fs, &root);
