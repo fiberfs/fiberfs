@@ -58,11 +58,13 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	fbr_directory_ok(new_directory);
 	fbr_ASSERT(new_directory->state == FBR_DIRSTATE_LOADING, "new_directory isnt LOADING");
 
-	// TODO get the directory 1 more time just incase
+	// TODO get the previous directory 1 more time just incase
 
 	fbr_directory_copy(fs, directory, new_directory);
 
 	new_directory->generation++;
+
+	// TODO normalize the chunks via fbr_chunk_list_file()
 
 	if (file->state == FBR_FILE_INIT) {
 		fbr_directory_add_file(fs, new_directory, file);
