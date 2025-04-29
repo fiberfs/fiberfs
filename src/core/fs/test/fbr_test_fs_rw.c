@@ -99,6 +99,8 @@ _test_fs_rw_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
 	fs->log("RW_STORE_INDEX '%.*s':%zu", (int)writer->final->buffer_pos, writer->final->buffer,
 		writer->final->buffer_pos);
 
+	fbr_dstore_index(fs, directory, writer);
+
 	return 1;
 }
 

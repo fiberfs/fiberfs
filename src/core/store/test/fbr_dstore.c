@@ -14,6 +14,7 @@
 
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
+#include "core/store/fbr_store.h"
 #include "sys/fbr_sys.h"
 
 #include "test/fbr_test.h"
@@ -101,12 +102,14 @@ _dstore_open(const char *path)
 }
 
 static void
-_dstore_chunk_path(const struct fbr_file *file, fbr_id_t id, size_t offset, char *buffer,
-    size_t buffer_len)
+_dstore_chunk_path(const struct fbr_file *file, fbr_id_t id, size_t offset, int metadata,
+    char *buffer, size_t buffer_len)
 {
 	fbr_dstore_ok();
 	assert_dev(file);
 	assert(id);
+	assert_dev(buffer);
+	assert_dev(buffer_len);
 
 	char filebuf[PATH_MAX];
 	struct fbr_path_name filepath;
@@ -115,9 +118,14 @@ _dstore_chunk_path(const struct fbr_file *file, fbr_id_t id, size_t offset, char
 	char chunk_id[FBR_ID_STRING_MAX];
 	fbr_id_string(id, chunk_id, sizeof(chunk_id));
 
+	char *sub_path = _DSTORE_CHUNK_PATH;
+	if (metadata) {
+		sub_path = _DSTORE_META_PATH;
+	}
+
 	size_t ret = snprintf(buffer, buffer_len, "%s/%s/%s.%s.%zu",
 		_DSTORE->root,
-		_DSTORE_CHUNK_PATH,
+		sub_path,
 		filepath.name,
 		chunk_id,
 		offset);
@@ -149,7 +157,7 @@ fbr_dstore_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 	fbr_wbuffer_ok(wbuffer);
 
 	char chunk_path[PATH_MAX];
-	_dstore_chunk_path(file, wbuffer->id, wbuffer->offset, chunk_path, sizeof(chunk_path));
+	_dstore_chunk_path(file, wbuffer->id, wbuffer->offset, 0, chunk_path, sizeof(chunk_path));
 
 	fbr_test_logs("DSTORE wbuffer chunk: '%s':%zu", chunk_path, wbuffer->end);
 
@@ -193,7 +201,7 @@ fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chu
 	fbr_chunk_ok(chunk);
 
 	char chunk_path[PATH_MAX];
-	_dstore_chunk_path(file, chunk->id, chunk->offset, chunk_path, sizeof(chunk_path));
+	_dstore_chunk_path(file, chunk->id, chunk->offset, 0, chunk_path, sizeof(chunk_path));
 
 	fbr_test_logs("DSTORE fetch chunk: '%s'", chunk_path);
 
@@ -233,4 +241,68 @@ fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chu
 	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, bytes);
 
 	_dstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
+}
+
+static void
+_dstore_index_path(const struct fbr_directory *directory, int metadata, char *buffer,
+    size_t buffer_len)
+{
+	fbr_dstore_ok();
+	assert_dev(directory);
+	assert_dev(buffer);
+	assert_dev(buffer_len);
+
+	struct fbr_path_name dirpath;
+	fbr_path_shared_name(directory->path, &dirpath);
+
+	char version[FBR_ID_STRING_MAX];
+	fbr_id_string(directory->version, version, sizeof(version));
+
+	char *sub_path = _DSTORE_CHUNK_PATH;
+	if (metadata) {
+		sub_path = _DSTORE_META_PATH;
+	}
+
+	size_t ret = snprintf(buffer, buffer_len, "%s/%s/%s.fiberfsindex.%s",
+		_DSTORE->root,
+		sub_path,
+		dirpath.name,
+		version);
+	assert(ret < buffer_len);
+}
+
+void
+fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_writer *writer)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert(writer);
+	assert_dev(writer->final);
+
+	char index_path[PATH_MAX];
+	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
+
+	fbr_test_logs("DSTORE index: '%s'", index_path);
+
+	_dstore_mkdirs(index_path);
+
+	int fd = _dstore_open(index_path);
+
+	size_t bytes = 0;
+
+	struct fbr_buffer *final = writer->final;
+	while (final) {
+		size_t written = fbr_sys_write(fd, final->buffer, final->buffer_pos);
+		assert(written == final->buffer_pos);
+
+		bytes += written;
+
+		final = final->next;
+	}
+
+	// TODO assert final size
+
+	assert_zero(close(fd));
+
+	//fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
 }
