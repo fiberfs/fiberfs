@@ -49,12 +49,12 @@ _json_body(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_body *body)
 		fbr_chunk_ok(chunk);
 		assert_dev(chunk->state >= FBR_CHUNK_EMPTY);
 
-		// i: chunk id
-		fbr_writer_add(fs, json, "{\"i\":", 5);
+		// i: chunk id (string)
+		fbr_writer_add(fs, json, "{\"i\":\"", 6);
 		fbr_writer_add_ulong(fs, json, chunk->id);
 
 		// o: chunk offset
-		fbr_writer_add(fs, json, ",\"o\":", 5);
+		fbr_writer_add(fs, json, "\",\"o\":", 6);
 		fbr_writer_add_ulong(fs, json, chunk->offset);
 
 		chunk = chunk->next;

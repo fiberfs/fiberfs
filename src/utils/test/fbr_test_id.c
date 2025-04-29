@@ -57,6 +57,13 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	snprintf(now, sizeof(now), "%ld", (long)fbr_get_time());
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "timestamp_=%s", now);
 
+	char *end;
+	double id3_double = strtod(id3_string, &end);
+	fbr_id_t id3_cast = (fbr_id_t)id3_double;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id3_double=%lf", id3_double);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id3_cast__=%lu", id3_cast);
+
 	struct fbr_id id_max;
 	id_max.parts.timestamp = FBR_ID_TIMEBITS_MAX;
 	id_max.parts.random_parts.random = FBR_ID_RANDBITS_MAX;
@@ -106,4 +113,5 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(strcmp(id1_string, id2_string), "id1_string == id2_string");
 	fbr_test_ASSERT(strcmp(id2_string, id3_string), "id2_string == id3_string");
 	fbr_test_ASSERT(rand_max_len == FBR_ID_PART_CHAR_MAX, "FBR_ID_PART_CHAR_MAX wrong");
+	fbr_test_ERROR(*end, "strtod(id_max_string) error (end)");
 }
