@@ -240,7 +240,7 @@ _dstore_metadata_read(const char *path, struct _dstore_metadata *metadata)
 	json.callback_priv = metadata;
 
 	fjson_parse(&json, buffer, bytes);
-	fbr_test_ERROR(json.error, "JSON error");
+	fbr_ASSERT(!json.error, "JSON error");
 
 	fjson_context_free(&json);
 }
