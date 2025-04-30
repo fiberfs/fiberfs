@@ -8,11 +8,13 @@
 #include <limits.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
+#include "fjson.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
 #include "sys/fbr_sys.h"
@@ -30,6 +32,13 @@ struct {
 
 	pthread_mutex_t				open_lock;
 } __DSTORE, *_DSTORE;
+
+struct _dstore_metadata {
+	fbr_id_t				etag;
+	unsigned long				size;
+	int					gzipped;
+	char					_context;
+};
 
 #define fbr_dstore_ok()				fbr_magic_check(_DSTORE, _DSTORE_MAGIC)
 
@@ -71,6 +80,7 @@ _dstore_mkdirs(char *path)
 	assert(path);
 
 	size_t path_len = strlen(path);
+	assert(path_len < PATH_MAX);
 
 	for (size_t i = 1; i < path_len; i++) {
 		if (path[i] == '/') {
@@ -84,8 +94,9 @@ _dstore_mkdirs(char *path)
 	}
 }
 
+// If-None-Match: *
 static int
-_dstore_open(const char *path)
+_dstore_open_unique(const char *path)
 {
 	assert(path);
 
@@ -99,6 +110,137 @@ _dstore_open(const char *path)
 	pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
 
 	return fd;
+}
+
+static void
+_dstore_metadata_write(char *path, struct _dstore_metadata *metadata)
+{
+	assert_dev(path);
+	assert_dev(metadata);
+
+	_dstore_mkdirs(path);
+
+	int fd = _dstore_open_unique(path);
+
+	// e: etag
+	char buf[FBR_ID_STRING_MAX];
+	fbr_id_string(metadata->etag, buf, sizeof(buf));
+
+	fbr_sys_write(fd, "{\"e\":\"", 6);
+	fbr_sys_write(fd, buf, strlen(buf));
+
+	// s: size
+	int ret = snprintf(buf, sizeof(buf), "%lu", metadata->size);
+	assert(ret > 0 && (size_t)ret < sizeof(buf));
+
+	fbr_sys_write(fd, "\",\"s\":", 6);
+	fbr_sys_write(fd, buf, strlen(buf));
+
+	// g: gzipped
+	fbr_sys_write(fd, ",\"g\":", 5);
+
+	if (metadata->gzipped) {
+		fbr_sys_write(fd, "1}", 2);
+	} else {
+		fbr_sys_write(fd, "0}", 2);
+	}
+
+	assert_zero(close(fd));
+}
+
+static int
+_json_parse(struct fjson_context *ctx, void *priv)
+{
+	fjson_context_ok(ctx);
+	assert(priv);
+
+	struct _dstore_metadata *metadata = (struct _dstore_metadata*)priv;
+
+	struct fjson_token *token = fjson_get_token(ctx, 0);
+	fjson_token_ok(token);
+
+	assert_dev(ctx->tokens_pos >= 2);
+	size_t depth = ctx->tokens_pos - 2;
+
+	if (token->type == FJSON_TOKEN_OBJECT) {
+		if (depth != 0) {
+			return 1;
+		}
+		return 0;
+	}
+
+	if (token->type == FJSON_TOKEN_LABEL) {
+		if (depth != 1 || token->svalue_len != 1) {
+			return 1;
+		}
+		metadata->_context = token->svalue[0];
+		return 0;
+	}
+	if (token->type == FJSON_TOKEN_STRING && metadata->_context == 'e') {
+		if (depth != 2) {
+			return 1;
+		}
+		metadata->etag = fbr_id_parse(token->svalue, token->svalue_len);
+		metadata->_context = '\0';
+		return 0;
+	}
+	if (token->type == FJSON_TOKEN_NUMBER) {
+		if (depth != 2) {
+			return 1;
+		}
+		if (metadata->_context == 's') {
+			if (token->dvalue < 0) {
+				return 1;
+			}
+			metadata->size = (size_t)token->dvalue;
+		} else if (metadata->_context == 'g') {
+			if (token->dvalue < 0 || token->dvalue > 1) {
+				return 1;
+			}
+			metadata->gzipped = (int)token->dvalue;
+		} else {
+			return 1;
+		}
+		metadata->_context = '\0';
+		return 0;
+	}
+
+	return 1;
+}
+
+static void
+_dstore_metadata_read(const char *path, struct _dstore_metadata *metadata)
+{
+	assert_dev(path);
+	assert_dev(metadata);
+
+	fbr_ZERO(metadata);
+
+	int fd = open(path, O_RDONLY);
+
+	if (fd < 0) {
+		fbr_test_logs("DSTORE metadata open(%s) error", path);
+		return;
+	}
+
+	char buffer[1024];
+
+	ssize_t bytes = fbr_sys_read(fd, buffer, sizeof(buffer));
+	assert(bytes > 0 && (size_t)bytes < sizeof(buffer) - 1);
+
+	assert_zero(close(fd));
+
+	buffer[bytes] = '\0';
+
+	struct fjson_context json;
+	fjson_context_init(&json);
+	json.callback = &_json_parse;
+	json.callback_priv = metadata;
+
+	fjson_parse(&json, buffer, bytes);
+	fbr_test_ERROR(json.error, "JSON error");
+
+	fjson_context_free(&json);
 }
 
 static void
@@ -163,12 +305,20 @@ fbr_dstore_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 
 	_dstore_mkdirs(chunk_path);
 
-	int fd = _dstore_open(chunk_path);
+	int fd = _dstore_open_unique(chunk_path);
 
 	size_t bytes = fbr_sys_write(fd, wbuffer->buffer, wbuffer->end);
 	assert(bytes == wbuffer->end);
 
 	assert_zero(close(fd));
+
+	struct _dstore_metadata metadata;
+	fbr_ZERO(&metadata);
+	metadata.etag = wbuffer->id;
+	metadata.size = wbuffer->end;
+
+	_dstore_chunk_path(file, wbuffer->id, wbuffer->offset, 1, chunk_path, sizeof(chunk_path));
+	_dstore_metadata_write(chunk_path, &metadata);
 
 	fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
 
@@ -238,6 +388,14 @@ fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chu
 
 	assert_zero(close(fd));
 
+	struct _dstore_metadata metadata;
+	_dstore_chunk_path(file, chunk->id, chunk->offset, 1, chunk_path, sizeof(chunk_path));
+	_dstore_metadata_read(chunk_path, &metadata);
+
+	fbr_ASSERT(metadata.etag == chunk->id, "%lu != %lu", metadata.etag, chunk->id);
+	fbr_ASSERT(metadata.size == chunk->length, "%lu != %lu", metadata.size, chunk->length);
+	fbr_ASSERT(!metadata.gzipped, "metadata.gzipped exists");
+
 	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, bytes);
 
 	_dstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
@@ -286,7 +444,7 @@ fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_
 
 	_dstore_mkdirs(index_path);
 
-	int fd = _dstore_open(index_path);
+	int fd = _dstore_open_unique(index_path);
 
 	size_t bytes = 0;
 
@@ -304,5 +462,5 @@ fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_
 
 	assert_zero(close(fd));
 
-	//fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
+	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, bytes);
 }

@@ -86,14 +86,13 @@ _buffer_add(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
 }
 
 void
-fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer, int want_gzip)
+fbr_writer_init(struct fbr_fs *fs, struct fbr_request *request, struct fbr_writer *writer,
+    int want_gzip)
 {
 	fbr_fs_ok(fs);
 	assert(writer);
 
 	fbr_ZERO(writer);
-
-	struct fbr_request *request = fbr_request_get();
 
 	if (request) {
 		fbr_request_ok(request);

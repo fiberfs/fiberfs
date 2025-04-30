@@ -19,6 +19,7 @@
 #include "core/request/fbr_request.h"
 #include "data/queue.h"
 #include "data/tree.h"
+#include "utils/fbr_id.h"
 
 #define FBR_INODE_ROOT				FUSE_ROOT_ID
 #define FBR_READDIR_SIZE			4096
@@ -294,6 +295,7 @@ struct fbr_fs_stats {
 	fbr_stats_t				read_bytes;
 	fbr_stats_t				write_bytes;
 	fbr_stats_t				store_bytes;
+	fbr_stats_t				store_index_bytes;
 
 	fbr_stats_t				flushes;
 
@@ -351,9 +353,6 @@ void fbr_fs_stat_sub(fbr_stats_t *stat);
 double fbr_fs_dentry_ttl(struct fbr_fs *fs);
 void __fbr_attr_printf(1) fbr_fs_logger(const char *fmt, ...);
 size_t fbr_fs_chunk_size(size_t offset);
-
-fbr_id_t fbr_id_gen(void);
-size_t fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len);
 
 void fbr_inodes_alloc(struct fbr_fs *fs);
 fbr_inode_t fbr_inode_gen(struct fbr_fs *fs);

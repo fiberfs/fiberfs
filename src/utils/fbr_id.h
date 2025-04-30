@@ -42,4 +42,8 @@ struct fbr_id {
 	};
 };
 
+fbr_id_t fbr_id_gen(void);
+size_t fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len);
+fbr_id_t fbr_id_parse(const char *buffer, size_t buffer_len);
+
 #endif /* _FBR_ID_H_INCLUDED_ */

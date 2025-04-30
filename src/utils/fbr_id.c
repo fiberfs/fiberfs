@@ -4,6 +4,8 @@
  *
  */
 
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -42,4 +44,69 @@ fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len)
 	assert(ret > 0 && (size_t)ret < buffer_len)
 
 	return (size_t)ret;
+}
+
+fbr_id_t
+fbr_id_parse(const char *buffer, size_t buffer_len)
+{
+	assert(buffer);
+
+	if (buffer_len == 0 || buffer_len >= FBR_ID_STRING_MAX) {
+		return 0;
+	}
+
+	char part[FBR_ID_PART_CHAR_MAX + 1];
+	size_t offset = 0;
+	size_t len = buffer_len;
+
+	if (buffer_len > FBR_ID_PART_CHAR_MAX) {
+		offset = buffer_len - FBR_ID_PART_CHAR_MAX;
+		len = FBR_ID_PART_CHAR_MAX;
+	}
+
+	assert(len < sizeof(part));
+	memcpy(part, buffer + offset, len);
+	part[len] = '\0';
+
+	if (strlen(part) != len) {
+		return 0;
+	}
+
+	char *end;
+	errno = 0;
+	unsigned long rand = strtoul(part, &end, 10);
+
+	if (rand > UINT_MAX || errno == ERANGE || *end != '\0') {
+		return 0;
+	}
+
+	struct fbr_id id;
+	fbr_ZERO(&id);
+	id.parts.full_random = rand;
+
+	if (buffer_len > FBR_ID_PART_CHAR_MAX) {
+		len = buffer_len - FBR_ID_PART_CHAR_MAX;
+		assert(len < sizeof(part));
+		memcpy(part, buffer, len);
+		part[len] = '\0';
+	} else {
+		len = 1;
+		part[0] = '0';
+		part[1] = '\0';
+	}
+
+	if (strlen(part) != len) {
+		return 0;
+	}
+
+	errno = 0;
+	unsigned long timestamp = strtoul(part, &end, 10);
+
+	if (timestamp > FBR_ID_TIMEBITS_MAX || errno == ERANGE || *end != '\0') {
+		return 0;
+	}
+
+	id.parts.timestamp = timestamp;
+
+	return id.value;
 }

@@ -57,6 +57,14 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	snprintf(now, sizeof(now), "%ld", (long)fbr_get_time());
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "timestamp_=%s", now);
 
+	fbr_id_t id1_parsed = fbr_id_parse(id1_string, strlen(id1_string));
+	fbr_id_t id2_parsed = fbr_id_parse(id2_string, strlen(id2_string));
+	fbr_id_t id3_parsed = fbr_id_parse(id3_string, strlen(id3_string));
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id1_parsed=%lu", id1_parsed);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id2_parsed=%lu", id2_parsed);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id3_parsed=%lu", id3_parsed);
+
 	char *end;
 	double id3_double = strtod(id3_string, &end);
 	fbr_id_t id3_cast = (fbr_id_t)id3_double;
@@ -114,4 +122,7 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(strcmp(id2_string, id3_string), "id2_string == id3_string");
 	fbr_test_ASSERT(rand_max_len == FBR_ID_PART_CHAR_MAX, "FBR_ID_PART_CHAR_MAX wrong");
 	fbr_test_ERROR(*end, "strtod(id_max_string) error (end)");
+	fbr_test_ASSERT(id1 == id1_parsed, "id1 != id1_parsed");
+	fbr_test_ASSERT(id2 == id2_parsed, "id2 != id2_parsed");
+	fbr_test_ASSERT(id3 == id3_parsed, "id3 != id3_parsed");
 }
