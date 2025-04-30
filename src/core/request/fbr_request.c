@@ -298,6 +298,10 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 	assert(TAILQ_EMPTY(&_REQUEST_POOL->free_list));
 	assert_zero_dev(fs->stats.requests_pooled);
 
+	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
+		fbr_sleep_ms(100);
+	}
+
 	TAILQ_FOREACH_SAFE(request, &_REQUEST_POOL->active_list, entry, temp) {
 		fbr_request_ok(request);
 

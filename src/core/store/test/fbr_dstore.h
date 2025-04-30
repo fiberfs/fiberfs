@@ -8,6 +8,7 @@
 #define _FBR_DSTORE_H_INCLUDED_
 
 struct fbr_test_context;
+struct fbr_fs;
 struct fbr_file;
 struct fbr_wbuffer;
 struct fbr_chunk;
