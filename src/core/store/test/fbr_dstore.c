@@ -166,9 +166,11 @@ _json_parse(struct fjson_context *ctx, void *priv)
 		if (depth != 0) {
 			return 1;
 		}
+		if (token->closed && token->length != 3) {
+			return 1;
+		}
 		return 0;
 	}
-
 	if (token->type == FJSON_TOKEN_LABEL) {
 		if (depth != 1 || token->svalue_len != 1) {
 			return 1;
@@ -194,7 +196,7 @@ _json_parse(struct fjson_context *ctx, void *priv)
 			}
 			metadata->size = (size_t)token->dvalue;
 		} else if (metadata->_context == 'g') {
-			if (token->dvalue < 0 || token->dvalue > 1) {
+			if (token->dvalue != 0 && token->dvalue != 1) {
 				return 1;
 			}
 			metadata->gzipped = (int)token->dvalue;
