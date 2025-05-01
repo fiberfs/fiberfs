@@ -459,10 +459,16 @@ _dstore_index_path(const struct fbr_directory *directory, int metadata, char *bu
 		sub_path = _DSTORE_META_PATH;
 	}
 
-	size_t ret = snprintf(buffer, buffer_len, "%s/%s/%s.fiberfsindex.%s",
+	char *root_sep = "";
+	if (dirpath.len) {
+		root_sep = "/";
+	}
+
+	size_t ret = snprintf(buffer, buffer_len, "%s/%s/%s%s.fiberfsindex.%s",
 		_DSTORE->root,
 		sub_path,
 		dirpath.name,
+		root_sep,
 		version);
 	assert(ret < buffer_len);
 }
@@ -510,4 +516,89 @@ fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_
 	_dstore_metadata_write(index_path, &metadata);
 
 	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, bytes);
+}
+
+static void
+_dstore_root_path(struct fbr_path_name *dirpath, int metadata, char *buffer, size_t buffer_len)
+{
+	fbr_dstore_ok();
+	assert_dev(dirpath);
+	assert_dev(buffer);
+	assert_dev(buffer_len);
+
+	char *sub_path = _DSTORE_CHUNK_PATH;
+	if (metadata) {
+		sub_path = _DSTORE_META_PATH;
+	}
+
+	char *root_sep = "";
+	if (dirpath->len) {
+		root_sep = "/";
+	}
+
+	size_t ret = snprintf(buffer, buffer_len, "%s/%s/%s%s.fiberfsroot",
+		_DSTORE->root,
+		sub_path,
+		dirpath->name,
+		root_sep);
+	assert(ret < buffer_len);
+}
+
+int
+fbr_dstore_root(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t existing)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert_dev(directory->version);
+
+	char root_path[PATH_MAX];
+	struct _dstore_metadata metadata;
+	struct fbr_path_name dirpath;
+	fbr_path_shared_name(directory->path, &dirpath);
+
+	_dstore_root_path(&dirpath, 1, root_path, sizeof(root_path));
+
+	fbr_test_logs("DSTORE root metadata: '%s'", root_path);
+
+	pt_assert(pthread_mutex_lock(&_DSTORE->open_lock));
+
+	if (existing) {
+		_dstore_metadata_read(root_path, &metadata);
+
+		if (metadata.etag != existing) {
+			pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
+
+			fbr_test_logs("DSTORE root mismatch, want %lu, found %lu", existing,
+				metadata.etag);
+
+			return EIO;
+		} else {
+			fbr_test_logs("DSTORE root passed: %lu", existing);
+		}
+	}
+
+	fbr_ZERO(&metadata);
+	metadata.etag = directory->version;
+
+	_dstore_metadata_write(root_path, &metadata);
+
+	_dstore_root_path(&dirpath, 0, root_path, sizeof(root_path));
+
+	fbr_test_logs("DSTORE root: '%s'", root_path);
+
+	char json_buf[128];
+	size_t json_len = fbr_root_json(directory->version, json_buf, sizeof(json_buf));
+
+	fbr_test_logs("DSTORE root json: '%s':%zu", json_buf, json_len);
+
+	int fd = open(root_path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+
+	size_t bytes = fbr_sys_write(fd, json_buf, json_len);
+	assert(bytes == json_len);
+
+	assert_zero(close(fd));
+
+	pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
+
+	return 0;
 }

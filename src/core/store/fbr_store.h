@@ -57,6 +57,7 @@ struct fbr_store_callbacks {
 
 int fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_directory *previous);
+size_t fbr_root_json(fbr_id_t version, char *buffer, size_t buffer_len);
 
 void fbr_writer_init(struct fbr_fs *fs, struct fbr_request *request,
 	struct fbr_writer *writer, int want_gzip);

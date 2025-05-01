@@ -78,18 +78,19 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	}
 
 	int ret = fbr_store_index(fs, new_directory, previous);
-	if (!ret) {
+	if (ret) {
 		fs->log("RW_FLUSH fbr_store_index(new_directory) failed");
+		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
+	} else {
+		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 	}
-
-	fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 
 	// Safe to call within flush
 	fbr_dindex_release(fs, &directory);
 	fbr_dindex_release(fs, &new_directory);
 	fbr_inode_release(fs, &parent);
 
-	return 0;
+	return ret;
 }
 
 static int
@@ -100,14 +101,22 @@ _test_fs_rw_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	fbr_writer_ok(writer);
 	assert_dev(writer->final);
-	fbr_directory_ok(previous);
 
 	fs->log("RW_STORE_INDEX '%.*s':%zu", (int)writer->final->buffer_pos, writer->final->buffer,
 		writer->final->buffer_pos);
 
 	fbr_dstore_index(fs, directory, writer);
 
-	return 1;
+	fbr_id_t previous_version = 0;
+	if (previous) {
+		fbr_directory_ok(previous);
+		assert(previous->version);
+		previous_version = previous->version;
+	}
+
+	int ret = fbr_dstore_root(fs, directory, previous_version);
+
+	return ret;
 }
 
 static void
@@ -135,6 +144,8 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fs_ok(ctx->fs);
 	assert(conn);
 
+	ctx->fs->logger = fbr_fs_test_logger;
+
 	fbr_fs_set_store(ctx->fs, &_TEST_FS_RW_STORE_CALLBACKS);
 
 	fbr_dstore_init(fbr_test_get_ctx());
@@ -156,8 +167,17 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	struct fbr_directory *root = fbr_directory_root_alloc(ctx->fs);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_LOADING);
-	// TODO we need to write this somewhere
-	fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
+
+	root->generation = 1;
+
+	int ret = fbr_store_index(ctx->fs, root, NULL);
+	if (ret) {
+		ctx->fs->log("INIT fbr_store_index(root) failed");
+		fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_ERROR);
+		ctx->error = 1;
+	} else {
+		fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
+	}
 
 	fbr_dindex_release(ctx->fs, &root);
 }
@@ -454,12 +474,6 @@ fbr_cmd_fs_test_rw_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(ret, "fs fuse mount failed: %s", mount);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", mount);
-
-	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
-	struct fbr_fs *fs = fuse_ctx->fs;
-	fbr_fs_ok(fs);
-
-	fs->logger = fbr_fs_test_logger;
 }
 
 void

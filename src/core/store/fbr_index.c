@@ -4,6 +4,8 @@
  *
  */
 
+#include <stdio.h>
+
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "data/tree.h"
@@ -82,8 +84,8 @@ _json_file(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file)
 
 	fbr_writer_add(fs, json, filename.name, filename.len);
 
-	// g: file generation
-	fbr_writer_add(fs, json, "\",\"g\":", 6);
+	// j: file generation
+	fbr_writer_add(fs, json, "\",\"j\":", 6);
 	fbr_writer_add_ulong(fs, json, file->generation);
 
 	// s: file size
@@ -108,6 +110,8 @@ _json_directory(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_directory
 	// g: generation
 	fbr_writer_add(fs, json, "\"g\":", 4);
 	fbr_writer_add_ulong(fs, json, directory->generation);
+
+	// f: files array
 	fbr_writer_add(fs, json, ",\"f\":[", 6);
 
 	struct fbr_file_ptr *file_ptr;
@@ -135,8 +139,6 @@ fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 	assert_dev(fs->store);
 	fbr_directory_ok(directory);
 	assert_dev(directory->version);
-	fbr_directory_ok(previous);
-	assert_dev(previous->version);
 
 	struct fbr_request *request = fbr_request_get();
 
@@ -151,7 +153,7 @@ fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 
 	fbr_writer_debug(fs, &json);
 
-	int ret = 0;
+	int ret = EIO;
 
 	if (fs->store->store_index_f) {
 		ret = fs->store->store_index_f(fs, directory, &json, previous);
@@ -160,4 +162,24 @@ fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 	fbr_writer_free(fs, &json);
 
 	return ret;
+}
+
+size_t
+fbr_root_json(fbr_id_t version, char *buffer, size_t buffer_len)
+{
+	assert(buffer);
+	assert(buffer_len >= 50);
+
+	char version_str[FBR_ID_STRING_MAX];
+	fbr_id_string(version, version_str, sizeof(version_str));
+
+	// fiberfs: version header
+	// v: index version
+	int ret = snprintf(buffer, buffer_len, "{\"%s\":%s,\"v\":\"%s\"}",
+		FBR_JSON_HEADER,
+		FBR_STRINGIFY(FBR_JSON_VERSION),
+		version_str);
+	assert(ret > 0 && (size_t)ret < buffer_len);
+
+	return (size_t)ret;
 }
