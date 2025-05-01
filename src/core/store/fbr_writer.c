@@ -334,12 +334,38 @@ fbr_writer_add_ulong(struct fbr_fs *fs, struct fbr_writer *writer, unsigned long
 
 		scratch_free = scratch->buffer_len;
 		assert_zero_dev(scratch->buffer_pos);
-		assert(scratch_free > 32);
+		assert(scratch_free >= 32);
 	}
 
 	int ret = snprintf(scratch->buffer + scratch->buffer_pos, scratch_free,
 		"%lu", value);
 	assert(ret > 0 && (size_t)ret < scratch_free);
+
+	scratch->buffer_pos += ret;
+}
+
+void
+fbr_writer_add_id(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t id)
+{
+	fbr_fs_ok(fs);
+	fbr_writer_ok(writer);
+
+	struct fbr_buffer *scratch = writer->scratch;
+	fbr_buffer_ok(scratch);
+	assert_dev(scratch->buffer_len);
+	assert_dev(scratch->buffer_len >= scratch->buffer_pos);
+
+	size_t scratch_free = scratch->buffer_len - scratch->buffer_pos;
+
+	if (scratch_free < FBR_ID_STRING_MAX) {
+		_copy_final(fs, writer);
+
+		scratch_free = scratch->buffer_len;
+		assert_zero_dev(scratch->buffer_pos);
+		assert(scratch_free >= FBR_ID_STRING_MAX);
+	}
+
+	size_t ret = fbr_id_string(id, scratch->buffer + scratch->buffer_pos, scratch_free);
 
 	scratch->buffer_pos += ret;
 }

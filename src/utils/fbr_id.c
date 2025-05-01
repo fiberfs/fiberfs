@@ -28,17 +28,17 @@ fbr_id_gen(void)
 }
 
 size_t
-fbr_id_string(fbr_id_t value, char *buffer, size_t buffer_len)
+fbr_id_string(fbr_id_t id, char *buffer, size_t buffer_len)
 {
-	assert(value);
+	assert(id);
 	assert(buffer);
 	assert(buffer_len >= FBR_ID_STRING_MAX);
 
-	struct fbr_id id;
-	id.value = value;
+	struct fbr_id _id;
+	_id.value = id;
 
-	fbr_id_part_t rand = id.parts.full_random;
-	fbr_id_part_t timestamp = id.parts.timestamp;
+	fbr_id_part_t rand = _id.parts.full_random;
+	fbr_id_part_t timestamp = _id.parts.timestamp;
 
 	int ret = snprintf(buffer, buffer_len, FBR_ID_PRINTF_FMT, timestamp, rand);
 	assert(ret > 0 && (size_t)ret < buffer_len)
