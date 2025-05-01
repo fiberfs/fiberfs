@@ -90,9 +90,7 @@ fbr_id_parse(const char *buffer, size_t buffer_len)
 		memcpy(part, buffer, len);
 		part[len] = '\0';
 	} else {
-		len = 1;
-		part[0] = '0';
-		part[1] = '\0';
+		return id.value;
 	}
 
 	if (strlen(part) != len) {

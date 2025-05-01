@@ -9,6 +9,26 @@
 #include "core/fs/fbr_fs.h"
 #include "test/fbr_test.h"
 
+static fbr_id_t
+_id_random(void)
+{
+	struct fbr_id id;
+	id.parts.timestamp = (random() * random() ) % FBR_ID_TIMEBITS_MAX;
+	id.parts.random_parts.random = random() % FBR_ID_RANDBITS_MAX;
+	id.parts.random_parts.other = random() & FBR_ID_OTHERBITS_MAX;
+
+	return id.value;
+}
+
+static void
+_id_cast(fbr_id_t id)
+{
+	char id_string[FBR_ID_STRING_MAX];
+	fbr_id_string(id, id_string, sizeof(id_string));
+	fbr_id_t id_cast = fbr_id_parse(id_string, strlen(id_string));
+	fbr_test_ASSERT(id == id_cast, "cast test failed %lu != %lu", id, id_cast);
+}
+
 void
 fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -125,4 +145,31 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(id1 == id1_parsed, "id1 != id1_parsed");
 	fbr_test_ASSERT(id2 == id2_parsed, "id2 != id2_parsed");
 	fbr_test_ASSERT(id3 == id3_parsed, "id3 != id3_parsed");
+
+	struct fbr_id id_rand1;
+	fbr_ZERO(&id_rand1);
+	id_rand1.parts.random_parts.random = random() % FBR_ID_RANDBITS_MAX;
+	id_rand1.parts.random_parts.other = random() & FBR_ID_OTHERBITS_MAX;
+	char id_rand1_string[FBR_ID_STRING_MAX];
+	fbr_id_string(id_rand1.value, id_rand1_string, sizeof(id_rand1_string));
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_rand1_string=%s", id_rand1_string);
+	_id_cast(id_rand1.value);
+
+	struct fbr_id id_rand2;
+	fbr_ZERO(&id_rand2);
+	id_rand2.parts.timestamp = (random() * random() ) % FBR_ID_TIMEBITS_MAX;
+	char id_rand2_string[FBR_ID_STRING_MAX];
+	fbr_id_string(id_rand2.value, id_rand2_string, sizeof(id_rand2_string));
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_rand2_string=%s", id_rand2_string);
+	_id_cast(id_rand2.value);
+
+	_id_cast(1);
+	_id_cast(-1);
+	_id_cast(random() % 1000);
+	_id_cast(random() % 1000000);
+	_id_cast(random());
+
+	for (size_t i = 0; i < 10; i++) {
+		_id_cast(_id_random());
+	}
 }
