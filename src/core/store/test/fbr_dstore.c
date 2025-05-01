@@ -518,6 +518,30 @@ fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_
 	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, bytes);
 }
 
+void
+fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+
+	char index_path[PATH_MAX];
+	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
+
+	fbr_test_logs("DSTORE DELETE index: '%s'", index_path);
+
+	pt_assert(pthread_mutex_lock(&_DSTORE->open_lock));
+
+	int ret = unlink(index_path);
+	assert_zero(ret);
+
+	_dstore_index_path(directory, 1, index_path, sizeof(index_path));
+
+	ret = unlink(index_path);
+	assert_zero(ret);
+
+	pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
+}
+
 static void
 _dstore_root_path(struct fbr_path_name *dirpath, int metadata, char *buffer, size_t buffer_len)
 {

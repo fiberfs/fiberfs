@@ -116,6 +116,12 @@ _test_fs_rw_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	int ret = fbr_dstore_root(fs, directory, previous_version);
 
+	if (ret) {
+		fbr_dstore_index_delete(fs, directory);
+	} else if (previous) {
+		fbr_dstore_index_delete(fs, previous);
+	}
+
 	return ret;
 }
 
