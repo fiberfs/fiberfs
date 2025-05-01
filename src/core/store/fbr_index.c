@@ -16,12 +16,10 @@ _json_header(struct fbr_fs *fs, struct fbr_writer *json)
 	assert_dev(json);
 
 	// fiberfs: version header
-	fbr_writer_add(fs, json, "{\"", 2);
-	fbr_writer_add(fs, json, FBR_JSON_HEADER, sizeof(FBR_JSON_HEADER) - 1);
-	fbr_writer_add(fs, json, "\":", 2);
-	fbr_writer_add(fs, json, FBR_STRINGIFY(FBR_JSON_VERSION),
-		sizeof(FBR_STRINGIFY(FBR_JSON_VERSION)) - 1);
-	fbr_writer_add(fs, json, ",", 1);
+	fbr_writer_add(fs, json,
+		"{\"" FBR_JSON_HEADER "\":" FBR_STRINGIFY(FBR_JSON_VERSION) ",",
+		2 + (sizeof(FBR_JSON_HEADER) - 1) + 2 +
+			(sizeof(FBR_STRINGIFY(FBR_JSON_VERSION)) - 1) + 1);
 }
 
 static void

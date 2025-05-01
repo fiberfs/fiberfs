@@ -436,7 +436,7 @@ fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
-	assert(writer);
+	fbr_writer_ok(writer);
 	assert_dev(writer->final);
 
 	char index_path[PATH_MAX];

@@ -29,6 +29,9 @@ struct fbr_buffer {
 };
 
 struct fbr_writer {
+	unsigned int				magic;
+#define FBR_WRITER_MAGIC			0xDE0ACCD3
+
 	struct fbr_buffer			*scratch;
 	struct fbr_buffer			*final;
 
@@ -60,5 +63,6 @@ void fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer);
 void fbr_writer_debug(struct fbr_fs *fs, struct fbr_writer *writer);
 
 #define fbr_buffer_ok(buffer)		fbr_magic_check(buffer, FBR_BUFFER_MAGIC)
+#define fbr_writer_ok(writer)		fbr_magic_check(writer, FBR_WRITER_MAGIC)
 
 #endif /* _FBR_STORE_H_INCLUDED_ */
