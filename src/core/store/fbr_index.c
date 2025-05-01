@@ -129,12 +129,14 @@ _json_directory(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_directory
 }
 
 int
-fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory)
+fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_directory *previous)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
 	fbr_directory_ok(directory);
 	assert_dev(directory->version);
+	fbr_directory_ok(previous);
+	assert_dev(previous->version);
 
 	struct fbr_request *request = fbr_request_get();
 
@@ -152,7 +154,7 @@ fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory)
 	int ret = 0;
 
 	if (fs->store->store_index_f) {
-		ret = fs->store->store_index_f(fs, directory, &json);
+		ret = fs->store->store_index_f(fs, directory, &json, previous);
 	}
 
 	fbr_writer_free(fs, &json);

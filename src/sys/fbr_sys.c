@@ -53,18 +53,18 @@ fbr_sys_isdir(const char *path)
 }
 
 static int
-_sys_rmdir_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+_sys_rmdir_cb(const char *filename, const struct stat *stat, int flag, struct FTW *info)
 {
-	(void)sb;
-	(void)ftwbuf;
+	(void)stat;
+	(void)info;
 
-	switch (typeflag) {
+	switch (flag) {
 		case FTW_F:
 		case FTW_SL:
-			(void)unlink(fpath);
+			(void)unlink(filename);
 			break;
 		case FTW_DP:
-			(void)rmdir(fpath);
+			(void)rmdir(filename);
 			break;
 		default:
 			break;
@@ -77,6 +77,12 @@ void
 fbr_sys_rmdir(const char *path)
 {
 	(void)nftw(path, _sys_rmdir_cb, 64, FTW_DEPTH | FTW_MOUNT | FTW_PHYS);
+}
+
+int
+fbr_sys_nftw(const char *path, fbr_nftw_func_t func)
+{
+	return nftw(path, func, 64, FTW_DEPTH | FTW_MOUNT | FTW_PHYS);
 }
 
 size_t

@@ -5,6 +5,7 @@
  */
 
 #include <errno.h>
+#include <ftw.h>
 #include <limits.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -74,6 +75,41 @@ fbr_dstore_init(struct fbr_test_context *ctx)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "dstore root: %s", _DSTORE->root);
 }
 
+static int
+_dstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct FTW *info)
+{
+	(void)stat;
+	(void)info;
+
+	switch (flag) {
+		case FTW_F:
+		case FTW_SL:
+			fbr_test_logs("DSTORE_DEBUG file: %s", filename);
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+static void
+_dstore_debug(void)
+{
+	fbr_dstore_ok();
+
+	fbr_sys_nftw(_DSTORE->root, _dstore_debug_cb);
+}
+
+void
+fbr_cmd_dstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_dstore_debug();
+}
+
 static void
 _dstore_mkdirs(char *path)
 {
@@ -120,7 +156,7 @@ _dstore_metadata_write(char *path, struct _dstore_metadata *metadata)
 
 	_dstore_mkdirs(path);
 
-	int fd = _dstore_open_unique(path);
+	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 
 	// e: etag
 	char buf[FBR_ID_STRING_MAX];
@@ -460,9 +496,18 @@ fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_
 		final = final->next;
 	}
 
-	// TODO assert final size
+	assert(bytes == writer->bytes);
 
 	assert_zero(close(fd));
+
+	struct _dstore_metadata metadata;
+	fbr_ZERO(&metadata);
+	metadata.etag = directory->version;
+	metadata.size = writer->raw_bytes;
+	metadata.gzipped = writer->is_gzip;
+
+	_dstore_index_path(directory, 1, index_path, sizeof(index_path));
+	_dstore_metadata_write(index_path, &metadata);
 
 	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, bytes);
 }

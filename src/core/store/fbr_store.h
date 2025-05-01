@@ -37,6 +37,9 @@ struct fbr_writer {
 
 	struct fbr_buffer			buffers[FBR_DEFAULT_BUFFERS];
 
+	size_t					raw_bytes;
+	size_t					bytes;
+
 	unsigned int				want_gzip:1;
 	unsigned int				is_gzip:1;
 };
@@ -49,10 +52,11 @@ struct fbr_store_callbacks {
 	int (*flush_wbuffers_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_wbuffer *wbuffers);
 	int (*store_index_f)(struct fbr_fs *fs, struct fbr_directory *directory,
-		struct fbr_writer *writer);
+		struct fbr_writer *writer, struct fbr_directory *previous);
 };
 
-int fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory);
+int fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
+	struct fbr_directory *previous);
 
 void fbr_writer_init(struct fbr_fs *fs, struct fbr_request *request,
 	struct fbr_writer *writer, int want_gzip);

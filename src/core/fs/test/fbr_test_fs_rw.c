@@ -72,7 +72,12 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 		fbr_directory_add_file(fs, new_directory, file);
 	}
 
-	int ret = fbr_store_index(fs, new_directory);
+	struct fbr_directory *previous = new_directory->previous;
+	if (!previous) {
+		previous = directory;
+	}
+
+	int ret = fbr_store_index(fs, new_directory, previous);
 	if (!ret) {
 		fs->log("RW_FLUSH fbr_store_index(new_directory) failed");
 	}
@@ -89,12 +94,13 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 
 static int
 _test_fs_rw_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
-    struct fbr_writer *writer)
+    struct fbr_writer *writer, struct fbr_directory *previous)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
-	assert(writer);
+	fbr_writer_ok(writer);
 	assert_dev(writer->final);
+	fbr_directory_ok(previous);
 
 	fs->log("RW_STORE_INDEX '%.*s':%zu", (int)writer->final->buffer_pos, writer->final->buffer,
 		writer->final->buffer_pos);

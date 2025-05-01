@@ -221,6 +221,8 @@ _add_final(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, siz
 	assert_dev(buffer);
 	assert_dev(buffer_len);
 
+	writer->raw_bytes += buffer_len;
+
 	struct fbr_buffer *final = writer->final;
 	while (final->next) {
 		final = final->next;
@@ -258,6 +260,9 @@ _add_final(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, siz
 		final = final->next;
 		assert_dev(final);
 	}
+
+	// TODO final bytes here
+	writer->bytes += buffer_len;
 }
 
 static void

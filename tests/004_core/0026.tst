@@ -29,6 +29,8 @@ sleep_ms 200
 fs_test_stats
 fs_test_debug
 
+dstore_debug
+
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0
 equal $fs_test_stat_directory_refs 0
