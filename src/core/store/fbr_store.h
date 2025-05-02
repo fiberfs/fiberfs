@@ -32,10 +32,12 @@ struct fbr_writer {
 	unsigned int				magic;
 #define FBR_WRITER_MAGIC			0xDE0ACCD3
 
-	struct fbr_buffer			*scratch;
-	struct fbr_buffer			*final;
+	struct fbr_buffer			*pre_buffer;
+	struct fbr_buffer			*buffers;
 
-	struct fbr_buffer			buffers[FBR_DEFAULT_BUFFERS];
+	struct fbr_buffer			buffer_slab[FBR_DEFAULT_BUFFERS];
+
+	struct fbr_workspace			*workspace;
 
 	size_t					raw_bytes;
 	size_t					bytes;
@@ -59,8 +61,9 @@ int fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_directory *previous);
 size_t fbr_root_json(fbr_id_t version, char *buffer, size_t buffer_len);
 
-void fbr_writer_init(struct fbr_fs *fs, struct fbr_request *request,
-	struct fbr_writer *writer, int want_gzip);
+void fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer,
+	struct fbr_request *request, int want_gzip);
+void fbr_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer);
 void fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer,
 	size_t buffer_len);
 void fbr_writer_add_ulong(struct fbr_fs *fs, struct fbr_writer *writer, unsigned long value);

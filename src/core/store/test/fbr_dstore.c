@@ -479,7 +479,7 @@ fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	fbr_writer_ok(writer);
-	assert_dev(writer->final);
+	assert_dev(writer->buffers);
 
 	char index_path[PATH_MAX];
 	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
@@ -492,14 +492,16 @@ fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_
 
 	size_t bytes = 0;
 
-	struct fbr_buffer *final = writer->final;
-	while (final) {
-		size_t written = fbr_sys_write(fd, final->buffer, final->buffer_pos);
-		assert(written == final->buffer_pos);
+	struct fbr_buffer *fbuf = writer->buffers;
+	while (fbuf) {
+		if (fbuf->buffer_pos) {
+			size_t written = fbr_sys_write(fd, fbuf->buffer, fbuf->buffer_pos);
+			assert(written == fbuf->buffer_pos);
 
-		bytes += written;
+			bytes += written;
+		}
 
-		final = final->next;
+		fbuf = fbuf->next;
 	}
 
 	assert(bytes == writer->bytes);

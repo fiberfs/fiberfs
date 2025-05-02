@@ -143,13 +143,13 @@ fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 	struct fbr_request *request = fbr_request_get();
 
 	struct fbr_writer json;
-	fbr_writer_init(fs, request, &json, 1);
+	fbr_writer_init(fs, &json, request, 1);
 
 	_json_header(fs, &json);
 	_json_directory(fs, &json, directory);
 	_json_footer(fs, &json);
 
-	fbr_writer_add(fs, &json, NULL, 0);
+	fbr_writer_flush(fs, &json);
 
 	fbr_writer_debug(fs, &json);
 

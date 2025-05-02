@@ -100,10 +100,10 @@ _test_fs_rw_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	fbr_writer_ok(writer);
-	assert_dev(writer->final);
+	assert_dev(writer->buffers);
 
-	fs->log("RW_STORE_INDEX '%.*s':%zu", (int)writer->final->buffer_pos, writer->final->buffer,
-		writer->final->buffer_pos);
+	fs->log("RW_STORE_INDEX '%.*s':%zu", (int)writer->buffers->buffer_pos,
+		writer->buffers->buffer, writer->buffers->buffer_pos);
 
 	fbr_dstore_index(fs, directory, writer);
 
