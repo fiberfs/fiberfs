@@ -354,7 +354,7 @@ _dstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 }
 
 void
-fbr_dstore_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+fbr_dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	fbr_dstore_ok();
 	fbr_fs_ok(fs);
@@ -406,7 +406,7 @@ _dstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 }
 
 void
-fbr_dstore_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
 	fbr_dstore_ok();
 	fbr_fs_ok(fs);
@@ -499,7 +499,7 @@ _dstore_index_path(const struct fbr_directory *directory, int metadata, char *bu
 }
 
 void
-fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_writer *writer)
+fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_writer *writer)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
@@ -582,7 +582,7 @@ _dstore_root_path(struct fbr_path_name *dirpath, int metadata, char *buffer, siz
 }
 
 int
-fbr_dstore_root(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t existing)
+fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t existing)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
@@ -626,7 +626,7 @@ fbr_dstore_root(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t exi
 	char json_buf[128];
 	struct fbr_writer json;
 	fbr_writer_init_buffer(fs, &json, json_buf, sizeof(json_buf));
-	fbr_root_json(fs, &json, directory->version);
+	fbr_root_json_gen(fs, &json, directory->version);
 
 	fbr_test_logs("DSTORE root json: '%.*s':%zu", (int)json.buffers->buffer_pos,
 		json.buffers->buffer, json.buffers->buffer_pos);
@@ -644,4 +644,41 @@ fbr_dstore_root(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t exi
 	fbr_writer_free(fs, &json);
 
 	return 0;
+}
+
+fbr_id_t
+fbr_dstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
+{
+	fbr_fs_ok(fs);
+	assert(dirpath);
+
+	char root_path[PATH_MAX];
+	_dstore_root_path(dirpath, 0, root_path, sizeof(root_path));
+
+	fbr_test_logs("DSTORE root read: '%s'", root_path);
+
+	int fd = open(root_path, O_RDONLY);
+
+	if (fd < 0) {
+		fbr_test_logs("DSTORE root read open() error");
+		return 0;
+	}
+
+	char json_buf[128];
+	ssize_t bytes = fbr_sys_read(fd, json_buf, sizeof(json_buf));
+	assert(bytes > 0 && (size_t)bytes < sizeof(json_buf));
+
+	assert_zero(close(fd));
+
+	struct _dstore_metadata metadata;
+	_dstore_root_path(dirpath, 1, root_path, sizeof(root_path));
+	_dstore_metadata_read(root_path, &metadata);
+
+	json_buf[bytes] = '\0';
+	fbr_test_logs("DSTORE root json: '%s'", json_buf);
+
+	fbr_id_t version = fbr_root_json_parse(fs, json_buf, bytes);
+	fbr_ASSERT(metadata.etag == version, "%lu != %lu", metadata.etag, version);
+
+	return version;
 }

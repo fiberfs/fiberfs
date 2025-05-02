@@ -28,7 +28,7 @@ _test_fs_rw_store_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_w
 	fbr_wbuffer_ok(wbuffer);
 	assert(wbuffer->state == FBR_WBUFFER_READY);
 
-	fbr_dstore_wbuffer(fs, file, wbuffer);
+	fbr_dstore_wbuffer_write(fs, file, wbuffer);
 }
 
 static int
@@ -105,7 +105,7 @@ _test_fs_rw_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
 	fs->log("RW_STORE_INDEX '%.*s':%zu", (int)writer->buffers->buffer_pos,
 		writer->buffers->buffer, writer->buffers->buffer_pos);
 
-	fbr_dstore_index(fs, directory, writer);
+	fbr_dstore_index_write(fs, directory, writer);
 
 	fbr_id_t previous_version = 0;
 	if (previous) {
@@ -114,7 +114,7 @@ _test_fs_rw_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
 		previous_version = previous->version;
 	}
 
-	int ret = fbr_dstore_root(fs, directory, previous_version);
+	int ret = fbr_dstore_root_write(fs, directory, previous_version);
 
 	if (ret) {
 		fbr_dstore_index_delete(fs, directory);
@@ -133,7 +133,7 @@ _test_fs_rw_chunk_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_EMPTY);
 
-	fbr_dstore_fetch(fs, file, chunk);
+	fbr_dstore_chunk_read(fs, file, chunk);
 }
 
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
@@ -184,6 +184,14 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	} else {
 		fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
 	}
+
+	struct fbr_path_name dirpath;
+	fbr_path_shared_name(root->path, &dirpath);
+	fbr_id_t root_id = fbr_dstore_root_read(ctx->fs, &dirpath);
+
+	ctx->fs->log("INIT fbr_dstore_root_read(): %lu", root_id);
+	fbr_ASSERT(root_id == root->version, "root version mismatch, found %lu, expected %lu",
+		root_id, root->version);
 
 	fbr_dindex_release(ctx->fs, &root);
 }

@@ -5,11 +5,43 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "fiberfs.h"
+#include "fjson.h"
 #include "core/fs/fbr_fs.h"
 #include "data/tree.h"
 #include "fbr_store.h"
+
+struct _root_parser {
+	unsigned int			magic;
+#define _ROOT_PARSER_MAGIC		0xA7D2947E
+	char				_context;
+	fbr_id_t			root_version;
+};
+
+static int
+_json_header_peek(const char *json_buf, size_t json_buf_len)
+{
+	assert_dev(json_buf);
+
+	//           111
+	// 0123456789012 (len=13)
+	// {"fiberfs":1,
+
+	if (json_buf_len < 13) {
+		return -1;
+	}
+
+	if (!strncmp(json_buf, "{\"fiberfs\":", 11) && json_buf[12] == ',') {
+		char version = json_buf[11] - '0';
+		if (version >= 0 && version <= 9) {
+			return version;
+		}
+	}
+
+	return -1;
+}
 
 static void
 _json_header(struct fbr_fs *fs, struct fbr_writer *json)
@@ -165,7 +197,7 @@ fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 }
 
 void
-fbr_root_json(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version)
+fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version)
 {
 	fbr_fs_ok(fs);
 	fbr_writer_ok(writer);
@@ -181,4 +213,68 @@ fbr_root_json(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version)
 	fbr_writer_flush(fs, writer);
 
 	fbr_writer_debug(fs, writer);
+}
+
+static int
+_root_parse(struct fjson_context *ctx, void *priv)
+{
+	fjson_context_ok(ctx);
+	assert(priv);
+
+	struct _root_parser *root_parser = priv;
+	fbr_magic_check(root_parser, _ROOT_PARSER_MAGIC);
+
+	struct fjson_token *token = fjson_get_token(ctx, 0);
+	fjson_token_ok(token);
+
+	assert_dev(ctx->tokens_pos >= 2);
+	size_t depth = ctx->tokens_pos - 2;
+
+	if (token->type == FJSON_TOKEN_LABEL) {
+		if (depth == 1 && token->svalue_len == 1) {
+			root_parser->_context = token->svalue[0];
+			return 0;
+		}
+	} else if (token->type == FJSON_TOKEN_STRING) {
+		if (root_parser->_context == 'v' && depth == 2) {
+			root_parser->root_version = fbr_id_parse(token->svalue, token->svalue_len);
+		}
+	}
+
+	root_parser->_context = 0;
+
+	return 0;
+}
+
+fbr_id_t
+fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len)
+{
+	fbr_fs_ok(fs);
+	assert(json_buf);
+	assert(json_buf_len);
+
+	int json_version = _json_header_peek(json_buf, json_buf_len);
+	fs->log("INDEX json version: %d", json_version);
+
+	if (json_version < 1) {
+		return 0;
+	}
+
+	struct _root_parser root_parser = {_ROOT_PARSER_MAGIC, 0, 0};
+
+	struct fjson_context json;
+	fjson_context_init(&json);
+	json.callback = &_root_parse;
+	json.callback_priv = &root_parser;
+
+	fjson_parse(&json, json_buf, json_buf_len);
+	assert(root_parser.magic == _ROOT_PARSER_MAGIC);
+
+	if (json.error) {
+		root_parser.root_version = 0;
+	}
+
+	fjson_context_free(&json);
+
+	return root_parser.root_version;
 }
