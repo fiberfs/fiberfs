@@ -17,6 +17,10 @@ _id_random(void)
 	id.parts.random_parts.random = random() % FBR_ID_RANDBITS_MAX;
 	id.parts.random_parts.other = random() & FBR_ID_OTHERBITS_MAX;
 
+	if (!id.value) {
+		return 1;
+	}
+
 	return id.value;
 }
 
