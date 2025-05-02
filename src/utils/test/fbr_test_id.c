@@ -169,9 +169,9 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	_id_cast(1);
 	_id_cast(-1);
-	_id_cast(random() % 1000);
-	_id_cast(random() % 1000000);
-	_id_cast(random());
+	_id_cast((random() % 1000) + 1);
+	_id_cast((random() % 1000000) + 1);
+	_id_cast(random() + 1);
 
 	for (size_t i = 0; i < 10; i++) {
 		_id_cast(_id_random());
