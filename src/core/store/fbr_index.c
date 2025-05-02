@@ -164,22 +164,21 @@ fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 	return ret;
 }
 
-size_t
-fbr_root_json(fbr_id_t version, char *buffer, size_t buffer_len)
+void
+fbr_root_json(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version)
 {
-	assert(buffer);
-	assert(buffer_len >= 50);
+	fbr_fs_ok(fs);
+	fbr_writer_ok(writer);
+	assert(version);
 
-	char version_str[FBR_ID_STRING_MAX];
-	fbr_id_string(version, version_str, sizeof(version_str));
+	_json_header(fs, writer);
 
-	// fiberfs: version header
-	// v: index version
-	int ret = snprintf(buffer, buffer_len, "{\"%s\":%s,\"v\":\"%s\"}",
-		FBR_JSON_HEADER,
-		FBR_STRINGIFY(FBR_JSON_VERSION),
-		version_str);
-	assert(ret > 0 && (size_t)ret < buffer_len);
+	// v: index_version
+	fbr_writer_add(fs, writer, "\"v\":\"", 5);
+	fbr_writer_add_id(fs, writer, version);
+	fbr_writer_add(fs, writer, "\"}", 2);
 
-	return (size_t)ret;
+	fbr_writer_flush(fs, writer);
+
+	fbr_writer_debug(fs, writer);
 }

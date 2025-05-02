@@ -15,6 +15,7 @@ sys_write $var1 1 333 999999999 55555 1 666666
 equal $fs_test_stat_write_bytes 25
 equal $fs_test_stat_store_bytes 25
 greater_than $fs_test_stat_store_index_bytes 0
+greater_than $fs_test_stat_store_root_bytes 0
 
 sys_cat $var1 "1333999999999555551666666"
 

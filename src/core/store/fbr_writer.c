@@ -184,6 +184,20 @@ fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer, struct fbr_request
 	fbr_writer_ok(writer);
 }
 
+void
+fbr_writer_init_buffer(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
+    size_t buffer_len)
+{
+	fbr_fs_ok(fs);
+	assert(writer);
+	assert(buffer);
+	assert(buffer_len);
+
+	_writer_init(writer);
+
+	_buffer_extend(fs, writer, buffer, buffer_len, 0);
+}
+
 static void
 _buffers_free(struct fbr_buffer *fbuf)
 {

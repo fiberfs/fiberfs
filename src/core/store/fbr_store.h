@@ -59,10 +59,12 @@ struct fbr_store_callbacks {
 
 int fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_directory *previous);
-size_t fbr_root_json(fbr_id_t version, char *buffer, size_t buffer_len);
+void fbr_root_json(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);
 
 void fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer,
 	struct fbr_request *request, int want_gzip);
+void fbr_writer_init_buffer(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
+	size_t buffer_len);
 void fbr_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer);
 void fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer,
 	size_t buffer_len);

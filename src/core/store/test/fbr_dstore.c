@@ -149,6 +149,31 @@ _dstore_open_unique(const char *path)
 }
 
 static void
+_dstore_writer(int fd, struct fbr_writer *writer)
+{
+	assert_dev(fd >= 0);
+	assert_dev(writer);
+
+	size_t bytes = 0;
+
+	struct fbr_buffer *fbuf = writer->buffers;
+	while (fbuf) {
+		fbr_buffer_ok(fbuf);
+
+		if (fbuf->buffer_pos) {
+			size_t written = fbr_sys_write(fd, fbuf->buffer, fbuf->buffer_pos);
+			assert(written == fbuf->buffer_pos);
+
+			bytes += written;
+		}
+
+		fbuf = fbuf->next;
+	}
+
+	assert(bytes == writer->bytes);
+}
+
+static void
 _dstore_metadata_write(char *path, struct _dstore_metadata *metadata)
 {
 	assert_dev(path);
@@ -490,21 +515,7 @@ fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_
 
 	int fd = _dstore_open_unique(index_path);
 
-	size_t bytes = 0;
-
-	struct fbr_buffer *fbuf = writer->buffers;
-	while (fbuf) {
-		if (fbuf->buffer_pos) {
-			size_t written = fbr_sys_write(fd, fbuf->buffer, fbuf->buffer_pos);
-			assert(written == fbuf->buffer_pos);
-
-			bytes += written;
-		}
-
-		fbuf = fbuf->next;
-	}
-
-	assert(bytes == writer->bytes);
+	_dstore_writer(fd, writer);
 
 	assert_zero(close(fd));
 
@@ -517,7 +528,7 @@ fbr_dstore_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_
 	_dstore_index_path(directory, 1, index_path, sizeof(index_path));
 	_dstore_metadata_write(index_path, &metadata);
 
-	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, bytes);
+	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, writer->bytes);
 }
 
 void
@@ -613,18 +624,24 @@ fbr_dstore_root(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t exi
 	fbr_test_logs("DSTORE root: '%s'", root_path);
 
 	char json_buf[128];
-	size_t json_len = fbr_root_json(directory->version, json_buf, sizeof(json_buf));
+	struct fbr_writer json;
+	fbr_writer_init_buffer(fs, &json, json_buf, sizeof(json_buf));
+	fbr_root_json(fs, &json, directory->version);
 
-	fbr_test_logs("DSTORE root json: '%s':%zu", json_buf, json_len);
+	fbr_test_logs("DSTORE root json: '%.*s':%zu", (int)json.buffers->buffer_pos,
+		json.buffers->buffer, json.buffers->buffer_pos);
 
 	int fd = open(root_path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 
-	size_t bytes = fbr_sys_write(fd, json_buf, json_len);
-	assert(bytes == json_len);
+	_dstore_writer(fd, &json);
 
 	assert_zero(close(fd));
 
 	pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
+
+	fbr_fs_stat_add_count(&fs->stats.store_root_bytes, json.bytes);
+
+	fbr_writer_free(fs, &json);
 
 	return 0;
 }
