@@ -60,6 +60,7 @@ struct fbr_index_parser {
 	char				context;
 	enum fbr_index_location		location;
 
+	struct fbr_fs			*fs;
 	struct fbr_directory		*directory;
 	struct fbr_file			*file;
 };
@@ -84,7 +85,8 @@ int fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 void fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);
 fbr_id_t fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len);
 void fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
-void fbr_index_parser_init(struct fbr_index_parser *parser, struct fbr_directory *directory);
+void fbr_index_parser_init(struct fbr_fs *fs, struct fbr_index_parser *parser,
+	struct fbr_directory *directory);
 void fbr_index_parser_free(struct fbr_index_parser *parser);
 int fbr_index_parse_json(struct fjson_context *ctx, void *priv);
 

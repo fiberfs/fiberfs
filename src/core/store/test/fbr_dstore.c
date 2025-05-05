@@ -574,7 +574,7 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_test_logs("DSTORE index json: '%s'", json_buf);
 
 	struct fbr_index_parser parser;
-	fbr_index_parser_init(&parser, directory);
+	fbr_index_parser_init(fs, &parser, directory);
 
 	struct fjson_context json;
 	fjson_context_init(&json);

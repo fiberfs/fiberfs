@@ -333,14 +333,17 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 void
-fbr_index_parser_init(struct fbr_index_parser *parser, struct fbr_directory *directory)
+fbr_index_parser_init(struct fbr_fs *fs, struct fbr_index_parser *parser,
+    struct fbr_directory *directory)
 {
+	fbr_fs_ok(fs);
 	assert(parser);
 	fbr_directory_ok(directory);
 
 	fbr_ZERO(parser);
 
 	parser->magic = FBR_INDEX_PARSER_MAGIC;
+	parser->fs = fs;
 	parser->directory = directory;
 
 	fbr_index_parser_ok(parser);
@@ -363,43 +366,60 @@ _parser_match(struct fbr_index_parser *parser, enum fbr_index_location location,
 	return 0;
 }
 
-int
-fbr_index_parse_json(struct fjson_context *ctx, void *priv)
+static int
+_index_parse_chunk(struct fbr_index_parser *parser, struct fjson_token *token, size_t depth)
 {
-	fjson_context_ok(ctx);
-	assert(priv);
-
-	struct fbr_index_parser *parser = priv;
-	fbr_index_parser_ok(parser);
+	assert_dev(parser);
 	assert_dev(parser->directory);
+	assert_dev(token);
+	assert_dev(depth > 0);
 
-	struct fbr_directory *directory = parser->directory;
-	//struct fbr_directory *previous = directory->previous;
+	return 0;
+}
 
-	struct fjson_token *token = fjson_get_token(ctx, 0);
-	fjson_token_ok(token);
-
-	assert_dev(ctx->tokens_pos >= 2);
-	size_t depth = ctx->tokens_pos - 2;
+static int
+_index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, size_t depth)
+{
+	assert_dev(parser);
+	assert_dev(parser->directory);
+	assert_dev(token);
+	assert_dev(depth > 0);
 
 	switch (token->type) {
-		case FJSON_TOKEN_OBJECT:
-			if (depth == 0 && parser->location == FBR_INDEX_LOC_NONE) {
-				parser->location = FBR_INDEX_LOC_DIRECTORY;
+		case FJSON_TOKEN_STRING:
+			if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'n')) {
+				parser->fs->log("INDEX_PARSE n='%.*s'", (int)token->svalue_len,
+					token->svalue);
 			}
-
 			break;
-		case FJSON_TOKEN_LABEL:
-			if (token->svalue_len == 1) {
-				parser->context = token->svalue[0];
-			} else {
-				parser->context = 0;
-			}
+		default:
+			break;
+	}
 
-			return 0;
+	return 0;
+}
+
+static int
+_index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *token, size_t depth)
+{
+	assert_dev(parser);
+	assert_dev(parser->fs);
+	assert_dev(parser->directory);
+	assert_dev(token);
+	assert_dev(depth > 0);
+
+	struct fbr_directory *directory = parser->directory;
+
+	switch (token->type) {
 		case FJSON_TOKEN_ARRAY:
+		case FJSON_TOKEN_OBJECT:
 			if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'f')) {
-				parser->location = FBR_INDEX_LOC_FILE;
+				if (token->closed) {
+					parser->location = FBR_INDEX_LOC_DIRECTORY;
+				} else {
+					parser->location = FBR_INDEX_LOC_FILE;
+				}
+				return 0;
 			}
 			break;
 		case FJSON_TOKEN_NUMBER:
@@ -410,14 +430,68 @@ fbr_index_parse_json(struct fjson_context *ctx, void *priv)
 			break;
 		case FJSON_TOKEN_STRING:
 			if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'n')) {
-				// TODO start here
+				parser->fs->log("INDEX_PARSE n='%.*s'", (int)token->svalue_len,
+					token->svalue);
 			}
 			break;
 		default:
 			break;
 	}
 
-	parser->context = 0;
-
 	return 0;
+}
+
+int
+fbr_index_parse_json(struct fjson_context *ctx, void *priv)
+{
+	fjson_context_ok(ctx);
+	assert(priv);
+
+	struct fbr_index_parser *parser = priv;
+	fbr_index_parser_ok(parser);
+	assert_dev(parser->fs);
+	assert_dev(parser->directory);
+
+	struct fjson_token *token = fjson_get_token(ctx, 0);
+	fjson_token_ok(token);
+
+	assert_dev(ctx->tokens_pos >= 2);
+	size_t depth = ctx->tokens_pos - 2;
+
+	switch (token->type) {
+		case FJSON_TOKEN_OBJECT:
+			if (depth == 0) {
+				if (token->closed) {
+					parser->location = FBR_INDEX_LOC_NONE;
+				} else {
+					parser->location = FBR_INDEX_LOC_DIRECTORY;
+				}
+				return 0;
+			}
+			break;
+		case FJSON_TOKEN_LABEL:
+			if (token->svalue_len == 1) {
+				parser->context = token->svalue[0];
+			} else {
+				parser->context = 0;
+			}
+
+			return 0;
+		default:
+			break;
+	}
+
+	switch (parser->location) {
+		case FBR_INDEX_LOC_DIRECTORY:
+			return _index_parse_directory(parser, token, depth);
+		case FBR_INDEX_LOC_FILE:
+			return _index_parse_file(parser, token, depth);
+		case FBR_INDEX_LOC_CHUNK:
+			return _index_parse_chunk(parser, token, depth);
+		case FBR_INDEX_LOC_NONE:
+			break;
+
+	}
+
+	return 1;
 }
