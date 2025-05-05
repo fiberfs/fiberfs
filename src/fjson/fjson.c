@@ -404,6 +404,8 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	}
 
 	token->dvalue = value;
+	token->svalue = &buf[start];
+	token->svalue_len = ctx->pos - start;
 
 	_callback(ctx);
 

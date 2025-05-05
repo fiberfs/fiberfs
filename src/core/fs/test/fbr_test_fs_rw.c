@@ -125,22 +125,12 @@ _test_fs_rw_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	return ret;
 }
 
-static void
-_test_fs_rw_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
-{
-	fbr_fs_ok(fs);
-	fbr_file_ok(file);
-	fbr_chunk_ok(chunk);
-	assert(chunk->state == FBR_CHUNK_EMPTY);
-
-	fbr_dstore_chunk_read(fs, file, chunk);
-}
-
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
+	.chunk_read_f = fbr_dstore_chunk_read,
 	.wbuffer_write_f = _test_fs_rw_wbuffer_write,
 	.wbuffers_flush_f = _test_fs_rw_wbuffers_flush,
 	.index_write_f = _test_fs_rw_index_write,
-	.chunk_read_f = _test_fs_rw_chunk_read,
+	.index_read_f = fbr_dstore_index_read,
 	.root_read_f = fbr_dstore_root_read
 };
 
@@ -173,7 +163,8 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_LOADING);
 
-	root->generation = 1;
+	root->generation++;
+	assert(root->generation == 1);
 
 	int ret = fbr_index_write(ctx->fs, root, NULL);
 	if (ret) {

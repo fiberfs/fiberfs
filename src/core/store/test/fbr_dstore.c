@@ -418,6 +418,7 @@ fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
+	assert(chunk->state == FBR_CHUNK_EMPTY);
 
 	char chunk_path[PATH_MAX];
 	_dstore_chunk_path(file, chunk->id, chunk->offset, 0, chunk_path, sizeof(chunk_path));
@@ -536,6 +537,63 @@ fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	_dstore_metadata_write(index_path, &metadata);
 
 	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, writer->bytes);
+}
+
+int
+fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+
+	char index_path[PATH_MAX];
+	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
+
+	fbr_test_logs("DSTORE index read: '%s'", index_path);
+
+	int fd = open(index_path, O_RDONLY);
+
+	if (fd < 0) {
+		fbr_test_logs("DSTORE index read open() error");
+		return 1;
+	}
+
+	// TODO use a reader and we need to peek too...
+	char json_buf[1024];
+	ssize_t bytes = fbr_sys_read(fd, json_buf, sizeof(json_buf));
+	assert(bytes > 0 && (size_t)bytes < sizeof(json_buf));
+
+	assert_zero(close(fd));
+
+	struct _dstore_metadata metadata;
+	_dstore_index_path(directory, 1, index_path, sizeof(index_path));
+	_dstore_metadata_read(index_path, &metadata);
+	fbr_ASSERT(metadata.etag == directory->version, "%lu != %lu", metadata.etag,
+		directory->version);
+
+	json_buf[bytes] = '\0';
+	fbr_test_logs("DSTORE index json: '%s'", json_buf);
+
+	struct fbr_index_parser parser;
+	fbr_index_parser_init(&parser, directory);
+
+	struct fjson_context json;
+	fjson_context_init(&json);
+	json.callback = &fbr_index_parse_json;
+	json.callback_priv = &parser;
+
+	fjson_parse(&json, json_buf, bytes);
+	assert(parser.magic == FBR_INDEX_PARSER_MAGIC);
+
+	int ret = 0;
+
+	if (json.error) {
+		ret = 1;
+	}
+
+	fjson_context_free(&json);
+	fbr_index_parser_free(&parser);
+
+	return ret;
 }
 
 void

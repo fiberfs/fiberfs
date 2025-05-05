@@ -46,6 +46,24 @@ struct fbr_writer {
 	unsigned int				is_gzip:1;
 };
 
+enum fbr_index_location {
+	FBR_INDEX_LOC_NONE = 0,
+	FBR_INDEX_LOC_DIRECTORY,
+	FBR_INDEX_LOC_FILE,
+	FBR_INDEX_LOC_CHUNK
+};
+
+struct fbr_index_parser {
+	unsigned int			magic;
+#define FBR_INDEX_PARSER_MAGIC		0xE8AC86B7
+
+	char				context;
+	enum fbr_index_location		location;
+
+	struct fbr_directory		*directory;
+	struct fbr_file			*file;
+};
+
 struct fbr_store_callbacks {
 	void (*chunk_read_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_chunk *chunk);
@@ -55,14 +73,20 @@ struct fbr_store_callbacks {
 		struct fbr_wbuffer *wbuffers);
 	int (*index_write_f)(struct fbr_fs *fs, struct fbr_directory *directory,
 		struct fbr_writer *writer, struct fbr_directory *previous);
+	int (*index_read_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 	fbr_id_t (*root_read_f)(struct fbr_fs *fs, struct fbr_path_name *dirpath);
 };
+
+struct fjson_context;
 
 int fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_directory *previous);
 void fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);
 fbr_id_t fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len);
 void fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
+void fbr_index_parser_init(struct fbr_index_parser *parser, struct fbr_directory *directory);
+void fbr_index_parser_free(struct fbr_index_parser *parser);
+int fbr_index_parse_json(struct fjson_context *ctx, void *priv);
 
 void fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer,
 	struct fbr_request *request, int want_gzip);
@@ -78,5 +102,6 @@ void fbr_writer_debug(struct fbr_fs *fs, struct fbr_writer *writer);
 
 #define fbr_buffer_ok(buffer)		fbr_magic_check(buffer, FBR_BUFFER_MAGIC)
 #define fbr_writer_ok(writer)		fbr_magic_check(writer, FBR_WRITER_MAGIC)
+#define fbr_index_parser_ok(parser)	fbr_magic_check(parser, FBR_INDEX_PARSER_MAGIC)
 
 #endif /* _FBR_STORE_H_INCLUDED_ */

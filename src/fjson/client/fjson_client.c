@@ -38,7 +38,8 @@ _json_print(struct fjson_context *ctx, void *priv)
 		token->seperated, token->closed);
 
 	if (token->type == FJSON_TOKEN_NUMBER) {
-		printf("  dvalue=%lf\n", token->dvalue);
+		printf("  dvalue=%lf (%.*s:%zu)\n", token->dvalue, (int)token->svalue_len,
+			token->svalue, token->svalue_len);
 	} else if (token->type == FJSON_TOKEN_STRING || token->type == FJSON_TOKEN_LABEL) {
 		printf("  svalue=%.*s:%zu\n", (int)token->svalue_len, token->svalue,
 			token->svalue_len);

@@ -18,7 +18,7 @@
 struct _root_parser {
 	unsigned int			magic;
 #define _ROOT_PARSER_MAGIC		0xA7D2947E
-	char				_context;
+	char				context;
 	fbr_id_t			root_version;
 };
 
@@ -182,6 +182,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 	assert_dev(fs->store);
 	fbr_directory_ok(directory);
 	assert_dev(directory->version);
+	assert_dev(directory->generation);
 
 	struct fbr_request *request = fbr_request_get();
 
@@ -243,16 +244,16 @@ _root_parse(struct fjson_context *ctx, void *priv)
 
 	if (token->type == FJSON_TOKEN_LABEL) {
 		if (depth == 1 && token->svalue_len == 1) {
-			root_parser->_context = token->svalue[0];
+			root_parser->context = token->svalue[0];
 			return 0;
 		}
 	} else if (token->type == FJSON_TOKEN_STRING) {
-		if (root_parser->_context == 'v' && depth == 2) {
+		if (root_parser->context == 'v' && depth == 2) {
 			root_parser->root_version = fbr_id_parse(token->svalue, token->svalue_len);
 		}
 	}
 
-	root_parser->_context = 0;
+	root_parser->context = 0;
 
 	return 0;
 }
@@ -267,7 +268,7 @@ fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len
 	int json_version = _json_header_peek(json_buf, json_buf_len);
 	fs->log("INDEX json version: %d", json_version);
 
-	if (json_version < 1) {
+	if (json_version < 1 || json_version >= 10) {
 		return 0;
 	}
 
@@ -297,20 +298,126 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_dev(fs->store);
 	fbr_directory_ok(directory);
 	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
+	assert_zero_dev(directory->generation);
 
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
-	fbr_id_t directory_version = 0;
+	fbr_id_t version = 0;
 
 	if (fs->store->root_read_f) {
-		directory_version = fs->store->root_read_f(fs, &dirpath);
+		version = fs->store->root_read_f(fs, &dirpath);
 	}
 
-	if (directory_version == 0) {
+	if (version == 0) {
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
 		return;
 	}
 
-	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+	directory->version = version;
+
+	int ret = 1;
+
+	if (fs->store->index_read_f) {
+		ret = fs->store->index_read_f(fs, directory);
+	}
+
+	if (ret) {
+		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+		return;
+	}
+
+	assert_dev(directory->generation);
+
+	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+}
+
+void
+fbr_index_parser_init(struct fbr_index_parser *parser, struct fbr_directory *directory)
+{
+	assert(parser);
+	fbr_directory_ok(directory);
+
+	fbr_ZERO(parser);
+
+	parser->magic = FBR_INDEX_PARSER_MAGIC;
+	parser->directory = directory;
+
+	fbr_index_parser_ok(parser);
+}
+
+void
+fbr_index_parser_free(struct fbr_index_parser *parser)
+{
+	fbr_index_parser_ok(parser);
+	fbr_ZERO(parser);
+}
+
+static inline int
+_parser_match(struct fbr_index_parser *parser, enum fbr_index_location location, char context)
+{
+	if (parser->location == location && parser->context == context) {
+		return 1;
+	}
+
+	return 0;
+}
+
+int
+fbr_index_parse_json(struct fjson_context *ctx, void *priv)
+{
+	fjson_context_ok(ctx);
+	assert(priv);
+
+	struct fbr_index_parser *parser = priv;
+	fbr_index_parser_ok(parser);
+	assert_dev(parser->directory);
+
+	struct fbr_directory *directory = parser->directory;
+	//struct fbr_directory *previous = directory->previous;
+
+	struct fjson_token *token = fjson_get_token(ctx, 0);
+	fjson_token_ok(token);
+
+	assert_dev(ctx->tokens_pos >= 2);
+	size_t depth = ctx->tokens_pos - 2;
+
+	switch (token->type) {
+		case FJSON_TOKEN_OBJECT:
+			if (depth == 0 && parser->location == FBR_INDEX_LOC_NONE) {
+				parser->location = FBR_INDEX_LOC_DIRECTORY;
+			}
+
+			break;
+		case FJSON_TOKEN_LABEL:
+			if (token->svalue_len == 1) {
+				parser->context = token->svalue[0];
+			} else {
+				parser->context = 0;
+			}
+
+			return 0;
+		case FJSON_TOKEN_ARRAY:
+			if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'f')) {
+				parser->location = FBR_INDEX_LOC_FILE;
+			}
+			break;
+		case FJSON_TOKEN_NUMBER:
+			if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'g')) {
+				// TODO parse this as a long
+				directory->generation = (unsigned long)token->dvalue;
+			}
+			break;
+		case FJSON_TOKEN_STRING:
+			if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'n')) {
+				// TODO start here
+			}
+			break;
+		default:
+			break;
+	}
+
+	parser->context = 0;
+
+	return 0;
 }

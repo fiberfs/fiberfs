@@ -11,6 +11,9 @@ fs_test_dentry_ttl_ms 0
 set_var1 $sys_tmpdir "/test.txt"
 sys_write $var1 "test6"
 
+#fs_test_release_all
+sleep_ms 100
+
 sys_cat $var1 "test6"
 
 # Cleanup
