@@ -32,7 +32,7 @@ struct fbr_writer {
 	unsigned int				magic;
 #define FBR_WRITER_MAGIC			0xDE0ACCD3
 
-	struct fbr_buffer			*pre_buffer;
+	struct fbr_buffer			*buffer;
 	struct fbr_buffer			*output;
 
 	struct fbr_buffer			buffer_slab[FBR_DEFAULT_BUFFERS];
