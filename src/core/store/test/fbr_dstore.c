@@ -98,7 +98,13 @@ _dstore_debug(void)
 {
 	fbr_dstore_ok();
 
-	fbr_sys_nftw(_DSTORE->root, _dstore_debug_cb);
+	char path[PATH_MAX];
+	size_t ret = snprintf(path, sizeof(path), "%s/%s",
+		_DSTORE->root,
+		_DSTORE_CHUNK_PATH);
+	assert(ret < sizeof(path));
+
+	fbr_sys_nftw(path, _dstore_debug_cb);
 }
 
 void

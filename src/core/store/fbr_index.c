@@ -4,7 +4,9 @@
  *
  */
 
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "fiberfs.h"
@@ -33,14 +35,23 @@ _json_header_peek(const char *json_buf, size_t json_buf_len)
 		return -1;
 	}
 
-	if (!strncmp(json_buf, "{\"fiberfs\":", 11) && json_buf[12] == ',') {
-		char version = json_buf[11] - '0';
-		if (version >= 0 && version <= 9) {
-			return version;
-		}
+	if (strncmp(json_buf, "{\"fiberfs\":", 11)) {
+		return -1;
 	}
 
-	return -1;
+	errno = 0;
+
+	char *end;
+	long version = strtol(&json_buf[11], &end, 10);
+
+	if (errno || version < 0 || version > INT32_MAX) {
+		return -1;
+	}
+	if (*end != ',' && *end != '}') {
+		return -1;
+	}
+
+	return version;
 }
 
 static void
