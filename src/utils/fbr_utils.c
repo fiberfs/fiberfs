@@ -5,6 +5,8 @@
  */
 
 #include <errno.h>
+#include <limits.h>
+#include <stdlib.h>
 #include <time.h>
 
 #include "fiberfs.h"
@@ -50,4 +52,20 @@ fbr_timespec_add_clock(struct timespec *value)
 	value->tv_sec += now.tv_sec;
 	value->tv_nsec %= ns;
 	assert_dev(value->tv_nsec < ns);
+}
+
+unsigned long
+fbr_test_parse_ulong(const char *str, size_t length)
+{
+	assert(str);
+	assert(length);
+
+	char *end;
+	unsigned long ret = strtol(str, &end, 10);
+
+	if ((ret == ULONG_MAX && errno == ERANGE ) || end != str + length) {
+		return 0;
+	}
+
+	return ret;
 }

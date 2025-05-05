@@ -404,8 +404,8 @@ fbr_index_parse_json(struct fjson_context *ctx, void *priv)
 			break;
 		case FJSON_TOKEN_NUMBER:
 			if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'g')) {
-				// TODO parse this as a long
-				directory->generation = (unsigned long)token->dvalue;
+				directory->generation = fbr_test_parse_ulong(token->svalue,
+					token->svalue_len);
 			}
 			break;
 		case FJSON_TOKEN_STRING:
