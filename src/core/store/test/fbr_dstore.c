@@ -480,7 +480,7 @@ _dstore_index_path(const struct fbr_directory *directory, int metadata, char *bu
 	assert_dev(buffer_len);
 
 	struct fbr_path_name dirpath;
-	fbr_path_shared_name(directory->path, &dirpath);
+	fbr_directory_name(directory, &dirpath);
 
 	char version[FBR_ID_STRING_MAX];
 	fbr_id_string(directory->version, version, sizeof(version));
@@ -505,7 +505,8 @@ _dstore_index_path(const struct fbr_directory *directory, int metadata, char *bu
 }
 
 void
-fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_writer *writer)
+fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_writer *writer)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
@@ -597,7 +598,7 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 	char root_path[PATH_MAX];
 	struct _dstore_metadata metadata;
 	struct fbr_path_name dirpath;
-	fbr_path_shared_name(directory->path, &dirpath);
+	fbr_directory_name(directory, &dirpath);
 
 	_dstore_root_path(&dirpath, 1, root_path, sizeof(root_path));
 

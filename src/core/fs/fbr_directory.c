@@ -211,7 +211,7 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 void
-fbr_directory_name(struct fbr_directory *directory, struct fbr_path_name *result)
+fbr_directory_name(const struct fbr_directory *directory, struct fbr_path_name *result)
 {
 	fbr_directory_ok(directory);
 	assert(result);

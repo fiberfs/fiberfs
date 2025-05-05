@@ -47,14 +47,15 @@ struct fbr_writer {
 };
 
 struct fbr_store_callbacks {
-	void (*fetch_chunk_f)(struct fbr_fs *fs, struct fbr_file *file,
+	void (*chunk_read_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_chunk *chunk);
-	void (*store_wbuffer_f)(struct fbr_fs *fs, struct fbr_file *file,
+	void (*wbuffer_write_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_wbuffer *wbuffer);
-	int (*flush_wbuffers_f)(struct fbr_fs *fs, struct fbr_file *file,
+	int (*wbuffers_flush_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_wbuffer *wbuffers);
-	int (*store_index_f)(struct fbr_fs *fs, struct fbr_directory *directory,
+	int (*index_write_f)(struct fbr_fs *fs, struct fbr_directory *directory,
 		struct fbr_writer *writer, struct fbr_directory *previous);
+	fbr_id_t (*root_read_f)(struct fbr_fs *fs, struct fbr_path_name *dirpath);
 };
 
 int fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory,

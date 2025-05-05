@@ -412,7 +412,7 @@ struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	fbr_inode_t inode);
 void fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory);
-void fbr_directory_name(struct fbr_directory *directory, struct fbr_path_name *result);
+void fbr_directory_name(const struct fbr_directory *directory, struct fbr_path_name *result);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
 int fbr_directory_new_cmp(const struct fbr_directory *left,
 	const struct fbr_directory *right);

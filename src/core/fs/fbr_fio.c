@@ -154,8 +154,8 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 			assert_zero_dev(chunk->data);
 			assert_zero_dev(chunk->chttp_splice);
 
-			if (fs->store->fetch_chunk_f) {
-				fs->store->fetch_chunk_f(fs, fio->file, chunk);
+			if (fs->store->chunk_read_f) {
+				fs->store->chunk_read_f(fs, fio->file, chunk);
 			}
 		}
 	}

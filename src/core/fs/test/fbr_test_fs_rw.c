@@ -21,7 +21,7 @@
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
 static void
-_test_fs_rw_store_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+_test_fs_rw_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -32,7 +32,7 @@ _test_fs_rw_store_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_w
 }
 
 static int
-_test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers)
+_test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -94,7 +94,7 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 }
 
 static int
-_test_fs_rw_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
+_test_fs_rw_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
     struct fbr_writer *writer, struct fbr_directory *previous)
 {
 	fbr_fs_ok(fs);
@@ -126,7 +126,7 @@ _test_fs_rw_store_index(struct fbr_fs *fs, struct fbr_directory *directory,
 }
 
 static void
-_test_fs_rw_chunk_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+_test_fs_rw_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -137,10 +137,11 @@ _test_fs_rw_chunk_fetch(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 }
 
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
-	.store_wbuffer_f = _test_fs_rw_store_wbuffer,
-	.flush_wbuffers_f = _test_fs_rw_flush_wbuffers,
-	.store_index_f = _test_fs_rw_store_index,
-	.fetch_chunk_f = _test_fs_rw_chunk_fetch
+	.wbuffer_write_f = _test_fs_rw_wbuffer_write,
+	.wbuffers_flush_f = _test_fs_rw_wbuffers_flush,
+	.index_write_f = _test_fs_rw_index_write,
+	.chunk_read_f = _test_fs_rw_chunk_read,
+	.root_read_f = fbr_dstore_root_read
 };
 
 static void
@@ -184,7 +185,7 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	}
 
 	struct fbr_path_name dirpath;
-	fbr_path_shared_name(root->path, &dirpath);
+	fbr_directory_name(root, &dirpath);
 	fbr_id_t root_id = fbr_dstore_root_read(ctx->fs, &dirpath);
 
 	ctx->fs->log("INIT fbr_dstore_root_read(): %lu", root_id);

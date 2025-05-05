@@ -198,8 +198,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 
 	int ret = EIO;
 
-	if (fs->store->store_index_f) {
-		ret = fs->store->store_index_f(fs, directory, &json, previous);
+	if (fs->store->index_write_f) {
+		ret = fs->store->index_write_f(fs, directory, &json, previous);
 	}
 
 	fbr_writer_free(fs, &json);
@@ -297,6 +297,20 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_dev(fs->store);
 	fbr_directory_ok(directory);
 	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
+
+	struct fbr_path_name dirpath;
+	fbr_directory_name(directory, &dirpath);
+
+	fbr_id_t directory_version = 0;
+
+	if (fs->store->root_read_f) {
+		directory_version = fs->store->root_read_f(fs, &dirpath);
+	}
+
+	if (directory_version == 0) {
+		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+		return;
+	}
 
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
 }

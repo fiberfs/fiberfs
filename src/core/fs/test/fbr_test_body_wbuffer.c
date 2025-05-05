@@ -387,9 +387,9 @@ _test_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffe
 }
 
 static const struct fbr_store_callbacks _TEST_WBUFFER_CALLBACKS = {
-	.fetch_chunk_f = _test_concurrent_gen_wbuffer,
-	.store_wbuffer_f = _test_concurrent_store,
-	.flush_wbuffers_f = _test_flush_wbuffers
+	.chunk_read_f = _test_concurrent_gen_wbuffer,
+	.wbuffer_write_f = _test_concurrent_store,
+	.wbuffers_flush_f = _test_flush_wbuffers
 };
 
 static void

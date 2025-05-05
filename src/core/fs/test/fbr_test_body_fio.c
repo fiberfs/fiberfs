@@ -188,7 +188,7 @@ _test_fio_thread(void *arg)
 }
 
 static const struct fbr_store_callbacks _TEST_CONCURRENT_CALLBACKS = {
-	.fetch_chunk_f = _test_concurrent_gen
+	.chunk_read_f = _test_concurrent_gen
 };
 
 static void

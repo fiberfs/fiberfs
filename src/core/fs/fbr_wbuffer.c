@@ -410,8 +410,8 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 
 		if (wbuffer->state == FBR_WBUFFER_WRITING) {
 			wbuffer->state = FBR_WBUFFER_READY;
-			if (fs->store->store_wbuffer_f) {
-				fs->store->store_wbuffer_f(fs, fio->file, wbuffer);
+			if (fs->store->wbuffer_write_f) {
+				fs->store->wbuffer_write_f(fs, fio->file, wbuffer);
 			}
 		}
 
@@ -432,10 +432,10 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	// Note: we unlocked, potential changes:
 	//  * file->size could change
-	//  * wbuffers can be orphaned (cleanup in flush_wbuffers_f() below)
+	//  * wbuffers can be orphaned (cleanup in wbuffers_flush_f() below)
 
-	if (fs->store->flush_wbuffers_f) {
-		int ret = fs->store->flush_wbuffers_f(fs, fio->file, fio->wbuffers);
+	if (fs->store->wbuffers_flush_f) {
+		int ret = fs->store->wbuffers_flush_f(fs, fio->file, fio->wbuffers);
 		if (ret && !error) {
 			error = ret;
 		}

@@ -321,7 +321,7 @@ _test_body_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 }
 
 static const struct fbr_store_callbacks _TEST_BODY_STORE_CALLBACKS = {
-	.fetch_chunk_f = _test_body_chunk_gen
+	.chunk_read_f = _test_body_chunk_gen
 };
 
 void
