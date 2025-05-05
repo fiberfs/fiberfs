@@ -12,21 +12,21 @@
 #include "core/request/fbr_request.h"
 
 static void
-_buffer_workspace_release(struct fbr_writer *writer)
+_output_workspace_release(struct fbr_writer *writer)
 {
 	assert_dev(writer);
 	assert_dev(writer->workspace);
-	assert_dev(writer->buffers)
-	assert_zero_dev(writer->buffers->next);
+	assert_dev(writer->output)
+	assert_zero_dev(writer->output->next);
 
-	fbr_workspace_ralloc(writer->workspace, writer->buffers->buffer_pos);
+	fbr_workspace_ralloc(writer->workspace, writer->output->buffer_pos);
 
-	writer->buffers->buffer_len = writer->buffers->buffer_pos;
+	writer->output->buffer_len = writer->output->buffer_pos;
 	writer->workspace = NULL;
 }
 
 static void
-_buffer_extend(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
+_writer_extend(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
     size_t buffer_len, int pre_buffer)
 {
 	assert_dev(fs);
@@ -40,11 +40,11 @@ _buffer_extend(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
 		head = &writer->pre_buffer;
 		current = writer->pre_buffer;
 	} else {
-		head = &writer->buffers;
-		current = writer->buffers;
+		head = &writer->output;
+		current = writer->output;
 
 		if (current && writer->workspace) {
-			_buffer_workspace_release(writer);
+			_output_workspace_release(writer);
 		}
 	}
 	while (current && current->next) {
@@ -150,7 +150,7 @@ fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer, struct fbr_request
 			buffer_len = FBR_DEFAULT_BUFLEN;
 
 			if (buffer) {
-				_buffer_extend(fs, writer, buffer, buffer_len, 1);
+				_writer_extend(fs, writer, buffer, buffer_len, 1);
 				assert_dev(writer->pre_buffer);
 			}
 		}
@@ -167,18 +167,18 @@ fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer, struct fbr_request
 
 			writer->workspace = request->workspace;
 
-			_buffer_extend(fs, writer, buffer, buffer_len, 0);
-			assert_dev(writer->buffers);
+			_writer_extend(fs, writer, buffer, buffer_len, 0);
+			assert_dev(writer->output);
 		} else if (buffer) {
 			fbr_workspace_ralloc(request->workspace, 0);
 		}
 	}
 
 	if (!writer->pre_buffer && want_gzip) {
-		_buffer_extend(fs, writer, NULL, 0, 1);
+		_writer_extend(fs, writer, NULL, 0, 1);
 	}
-	if (!writer->buffers) {
-		_buffer_extend(fs, writer, NULL, 0, 0);
+	if (!writer->output) {
+		_writer_extend(fs, writer, NULL, 0, 0);
 	}
 
 	fbr_writer_ok(writer);
@@ -195,7 +195,7 @@ fbr_writer_init_buffer(struct fbr_fs *fs, struct fbr_writer *writer, char *buffe
 
 	_writer_init(writer);
 
-	_buffer_extend(fs, writer, buffer, buffer_len, 0);
+	_writer_extend(fs, writer, buffer, buffer_len, 0);
 }
 
 static void
@@ -234,7 +234,7 @@ fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer)
 	}
 
 	_buffers_free(writer->pre_buffer);
-	_buffers_free(writer->buffers);
+	_buffers_free(writer->output);
 
 	fbr_ZERO(writer);
 }
@@ -254,18 +254,18 @@ _buffer_append(struct fbr_buffer *fbuf, const char *buffer, size_t buffer_len)
 }
 
 static void
-_buffers_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, size_t buffer_len)
+_output_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, size_t buffer_len)
 {
 	assert_dev(fs);
 	assert_dev(writer);
-	assert_dev(writer->buffers);
+	assert_dev(writer->output);
 	assert_dev(buffer);
 	assert_dev(buffer_len);
 
-	struct fbr_buffer *fbuf = writer->buffers;
-	while (fbuf->next) {
+	struct fbr_buffer *output = writer->output;
+	while (output->next) {
 		assert_zero_dev(writer->workspace);
-		fbuf = fbuf->next;
+		output = output->next;
 	}
 
 	size_t offset = 0;
@@ -276,10 +276,10 @@ _buffers_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, s
 	}
 
 	while (offset < buffer_len) {
-		fbr_buffer_ok(fbuf);
-		assert_dev(fbuf->buffer_len >= fbuf->buffer_pos);
+		fbr_buffer_ok(output);
+		assert_dev(output->buffer_len >= output->buffer_pos);
 
-		size_t fbuf_free = fbuf->buffer_len - fbuf->buffer_pos;
+		size_t fbuf_free = output->buffer_len - output->buffer_pos;
 
 		if (fbuf_free) {
 			size = buffer_len - offset;
@@ -287,7 +287,7 @@ _buffers_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, s
 				size = fbuf_free;
 			}
 
-			_buffer_append(fbuf, buffer + offset, size);
+			_buffer_append(output, buffer + offset, size);
 
 			offset += size;
 			assert_dev(offset <= buffer_len);
@@ -295,12 +295,12 @@ _buffers_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, s
 			continue;
 		}
 
-		assert_zero_dev(fbuf->next);
+		assert_zero_dev(output->next);
 
-		_buffer_extend(fs, writer, NULL, 0, 0);
+		_writer_extend(fs, writer, NULL, 0, 0);
 
-		fbuf = fbuf->next;
-		assert_dev(fbuf);
+		output = output->next;
+		assert_dev(output);
 	}
 
 	// TODO final bytes here
@@ -315,8 +315,8 @@ _buffer_get(struct fbr_writer *writer)
 	struct fbr_buffer *fbuf = writer->pre_buffer;
 
 	if (!fbuf) {
-		assert_dev(writer->buffers);
-		fbuf = writer->buffers;
+		assert_dev(writer->output);
+		fbuf = writer->output;
 	}
 
 	while (fbuf->next) {
@@ -335,13 +335,13 @@ fbr_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer)
 {
 	assert_dev(fs);
 	assert_dev(writer);
-	assert_dev(writer->buffers);
+	assert_dev(writer->output);
 
 	if (writer->pre_buffer) {
 		fbr_buffer_ok(writer->pre_buffer);
 
 		if (writer->pre_buffer->buffer_pos) {
-			_buffers_add(fs, writer, writer->pre_buffer->buffer,
+			_output_add(fs, writer, writer->pre_buffer->buffer,
 				writer->pre_buffer->buffer_pos);
 
 			writer->pre_buffer->buffer_pos = 0;
@@ -349,12 +349,12 @@ fbr_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer)
 	}
 
 	if (writer->workspace) {
-		_buffer_workspace_release(writer);
+		_output_workspace_release(writer);
 	}
 
 	writer->bytes = 0;
 
-	struct fbr_buffer *fbuf = writer->buffers;
+	struct fbr_buffer *fbuf = writer->output;
 	while (fbuf) {
 		fbr_buffer_ok(fbuf);
 		writer->bytes += fbuf->buffer_pos;
@@ -373,7 +373,7 @@ _flush_extend(struct fbr_fs *fs, struct fbr_writer *writer)
 	struct fbr_buffer *fbuf = writer->pre_buffer;
 
 	if (!fbuf) {
-		_buffer_extend(fs, writer, NULL, 0, 0);
+		_writer_extend(fs, writer, NULL, 0, 0);
 		fbuf = _buffer_get(writer);
 	}
 
@@ -407,7 +407,7 @@ fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer,
 		if (buffer_len <= fbuf->buffer_len) {
 			_buffer_append(fbuf, buffer, buffer_len);
 		} else {
-			_buffers_add(fs, writer, buffer, buffer_len);
+			_output_add(fs, writer, buffer, buffer_len);
 		}
 	}
 
@@ -490,7 +490,7 @@ fbr_writer_debug(struct fbr_fs *fs, struct fbr_writer *writer)
 	fbr_writer_ok(writer);
 
 	_buffer_debug(fs, writer->pre_buffer, "pre_buffer");
-	_buffer_debug(fs, writer->buffers, "buffers");
+	_buffer_debug(fs, writer->output, "output");
 
 	fs->log("WRITER raw_bytes: %zu", writer->raw_bytes);
 	fs->log("WRITER bytes: %zu", writer->bytes);

@@ -162,18 +162,18 @@ _dstore_writer(int fd, struct fbr_writer *writer)
 
 	size_t bytes = 0;
 
-	struct fbr_buffer *fbuf = writer->buffers;
-	while (fbuf) {
-		fbr_buffer_ok(fbuf);
+	struct fbr_buffer *output = writer->output;
+	while (output) {
+		fbr_buffer_ok(output);
 
-		if (fbuf->buffer_pos) {
-			size_t written = fbr_sys_write(fd, fbuf->buffer, fbuf->buffer_pos);
-			assert(written == fbuf->buffer_pos);
+		if (output->buffer_pos) {
+			size_t written = fbr_sys_write(fd, output->buffer, output->buffer_pos);
+			assert(written == output->buffer_pos);
 
 			bytes += written;
 		}
 
-		fbuf = fbuf->next;
+		output = output->next;
 	}
 
 	assert(bytes == writer->bytes);
@@ -510,7 +510,7 @@ fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struc
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	fbr_writer_ok(writer);
-	assert_dev(writer->buffers);
+	assert_dev(writer->output);
 
 	char index_path[PATH_MAX];
 	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
@@ -634,8 +634,8 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 	fbr_writer_init_buffer(fs, &json, json_buf, sizeof(json_buf));
 	fbr_root_json_gen(fs, &json, directory->version);
 
-	fbr_test_logs("DSTORE root json: '%.*s':%zu", (int)json.buffers->buffer_pos,
-		json.buffers->buffer, json.buffers->buffer_pos);
+	fbr_test_logs("DSTORE root json: '%.*s':%zu", (int)json.output->buffer_pos,
+		json.output->buffer, json.output->buffer_pos);
 
 	int fd = open(root_path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 
