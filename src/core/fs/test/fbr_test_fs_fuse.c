@@ -189,10 +189,6 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 	assert(dirname);
 	assert(inode);
 
-	if (!_TEST_FS_DO_INIT) {
-		return NULL;
-	}
-
 	struct fbr_directory *directory = NULL;
 
 	if (inode == FBR_INODE_ROOT) {
@@ -203,6 +199,10 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 		assert(dirname->len);
 
 		directory = fbr_directory_alloc(fs, dirname, inode);
+	}
+
+	if (!_TEST_FS_DO_INIT) {
+		fbr_index_read(fs, directory);
 	}
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {

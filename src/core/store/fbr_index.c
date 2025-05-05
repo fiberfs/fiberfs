@@ -176,7 +176,7 @@ _json_directory(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_directory
 }
 
 int
-fbr_store_index(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_directory *previous)
+fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_directory *previous)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -288,4 +288,15 @@ fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len
 	fjson_context_free(&json);
 
 	return root_parser.root_version;
+}
+
+void
+fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	assert_dev(fs->store);
+	fbr_directory_ok(directory);
+	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
+
+	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
 }

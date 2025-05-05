@@ -77,9 +77,9 @@ _test_fs_rw_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 		previous = directory;
 	}
 
-	int ret = fbr_store_index(fs, new_directory, previous);
+	int ret = fbr_index_write(fs, new_directory, previous);
 	if (ret) {
-		fs->log("RW_FLUSH fbr_store_index(new_directory) failed");
+		fs->log("RW_FLUSH fbr_index_write(new_directory) failed");
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
 	} else {
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
@@ -168,17 +168,15 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	// TODO fuse said this breaks distributed append if enabled
 	conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
 
-	// Note: we dont init content on demand, so directories cannot be purged in this sim
-
 	struct fbr_directory *root = fbr_directory_root_alloc(ctx->fs);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_LOADING);
 
 	root->generation = 1;
 
-	int ret = fbr_store_index(ctx->fs, root, NULL);
+	int ret = fbr_index_write(ctx->fs, root, NULL);
 	if (ret) {
-		ctx->fs->log("INIT fbr_store_index(root) failed");
+		ctx->fs->log("INIT fbr_index_write(root) failed");
 		fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_ERROR);
 		ctx->error = 1;
 	} else {
