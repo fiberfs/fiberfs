@@ -359,20 +359,83 @@ fbr_index_parser_free(struct fbr_index_parser *parser)
 static inline int
 _parser_match(struct fbr_index_parser *parser, enum fbr_index_location location, char context)
 {
-	if (parser->location == location && parser->context == context) {
+	if (parser->location == location && parser->context[parser->location] == context) {
 		return 1;
 	}
 
 	return 0;
 }
 
-static int
-_index_parse_chunk(struct fbr_index_parser *parser, struct fjson_token *token, size_t depth)
+static const char *
+_index_parse_loc(struct fbr_index_parser *parser)
 {
 	assert_dev(parser);
+
+	switch (parser->location) {
+		case FBR_INDEX_LOC_NONE:
+			return "NONE";
+		case FBR_INDEX_LOC_DIRECTORY:
+			return "DIRECTORY";
+		case FBR_INDEX_LOC_FILE:
+			return "FILE";
+		case FBR_INDEX_LOC_BODY:
+			return "BODY";
+		default:
+			break;
+	}
+
+	return "ERROR";
+}
+
+static void
+_index_parse_debug(struct fbr_index_parser *parser, struct fjson_token *token, size_t depth)
+{
+	assert_dev(parser);
+	assert_dev(parser->fs);
+	assert_dev(token);
+
+	parser->fs->log("INDEX_PARSER location: %s context: %c", _index_parse_loc(parser),
+		parser->context[parser->location] ? parser->context[parser->location] : '-');
+
+	parser->fs->log("  token: %s length: %u depth: %zu sep: %d closed: %d",
+		fjson_token_name(token->type), token->length, depth,
+		token->seperated, token->closed);
+
+	if (token->type == FJSON_TOKEN_NUMBER) {
+		parser->fs->log("  dvalue=%lf (%.*s:%zu)", token->dvalue, (int)token->svalue_len,
+			token->svalue, token->svalue_len);
+	} else if (token->type == FJSON_TOKEN_STRING || token->type == FJSON_TOKEN_LABEL) {
+		parser->fs->log("  svalue=%.*s:%zu", (int)token->svalue_len, token->svalue,
+			token->svalue_len);
+	}
+}
+
+static int
+_index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, size_t depth)
+{
+	assert_dev(parser);
+	assert_dev(parser->fs);
 	assert_dev(parser->directory);
 	assert_dev(token);
-	assert_dev(depth > 0);
+	assert_dev(depth >= 5);
+
+	_index_parse_debug(parser, token, depth);
+
+	switch (token->type) {
+		case FJSON_TOKEN_OBJECT:
+			if (token->closed && depth == 6) {
+				parser->fs->log("INDEX_PARSER body DONE");
+			}
+			break;
+		case FJSON_TOKEN_ARRAY:
+			if (token->closed && depth == 5) {
+				parser->location = FBR_INDEX_LOC_FILE;
+				assert_dev(parser->context[parser->location] == 'b');
+			}
+			break;
+		default:
+			break;
+	}
 
 	return 0;
 }
@@ -381,15 +444,33 @@ static int
 _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, size_t depth)
 {
 	assert_dev(parser);
+	assert_dev(parser->fs);
 	assert_dev(parser->directory);
 	assert_dev(token);
-	assert_dev(depth > 0);
+	assert_dev(depth >= 2);
+
+	_index_parse_debug(parser, token, depth);
 
 	switch (token->type) {
 		case FJSON_TOKEN_STRING:
 			if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'n')) {
-				parser->fs->log("INDEX_PARSE n='%.*s'", (int)token->svalue_len,
-					token->svalue);
+				parser->fs->log("INDEX_PARSER file NEW: '%.*s'",
+					(int)token->svalue_len, token->svalue);
+			}
+			break;
+		case FJSON_TOKEN_OBJECT:
+			if (token->closed && depth == 3) {
+				parser->fs->log("INDEX_PARSER file DONE");
+			}
+			break;
+		case FJSON_TOKEN_ARRAY:
+			if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'b')) {
+				if (!token->closed && depth == 5) {
+					parser->location = FBR_INDEX_LOC_BODY;
+				}
+			} else if (token->closed && depth == 2) {
+				parser->location = FBR_INDEX_LOC_DIRECTORY;
+				assert_dev(parser->context[parser->location] == 'f');
 			}
 			break;
 		default:
@@ -406,32 +487,24 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 	assert_dev(parser->fs);
 	assert_dev(parser->directory);
 	assert_dev(token);
-	assert_dev(depth > 0);
+	assert_dev(depth >= 2);
+
+	_index_parse_debug(parser, token, depth);
 
 	struct fbr_directory *directory = parser->directory;
 
 	switch (token->type) {
 		case FJSON_TOKEN_ARRAY:
-		case FJSON_TOKEN_OBJECT:
 			if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'f')) {
-				if (token->closed) {
-					parser->location = FBR_INDEX_LOC_DIRECTORY;
-				} else {
+				if (!token->closed && depth == 2) {
 					parser->location = FBR_INDEX_LOC_FILE;
 				}
-				return 0;
 			}
 			break;
 		case FJSON_TOKEN_NUMBER:
 			if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'g')) {
 				directory->generation = fbr_test_parse_ulong(token->svalue,
 					token->svalue_len);
-			}
-			break;
-		case FJSON_TOKEN_STRING:
-			if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'n')) {
-				parser->fs->log("INDEX_PARSE n='%.*s'", (int)token->svalue_len,
-					token->svalue);
 			}
 			break;
 		default:
@@ -461,24 +534,30 @@ fbr_index_parse_json(struct fjson_context *ctx, void *priv)
 	switch (token->type) {
 		case FJSON_TOKEN_OBJECT:
 			if (depth == 0) {
-				if (token->closed) {
-					parser->location = FBR_INDEX_LOC_NONE;
-				} else {
+				if (!token->closed) {
 					parser->location = FBR_INDEX_LOC_DIRECTORY;
+				} else {
+					parser->location = FBR_INDEX_LOC_NONE;
+					parser->fs->log("INDEX_PARSER COMPLETED");
 				}
 				return 0;
 			}
 			break;
 		case FJSON_TOKEN_LABEL:
 			if (token->svalue_len == 1) {
-				parser->context = token->svalue[0];
+				parser->context[parser->location] = token->svalue[0];
 			} else {
-				parser->context = 0;
+				parser->context[parser->location] = 0;
 			}
-
 			return 0;
 		default:
 			break;
+	}
+
+	if (token->closed) {
+		parser->context[parser->location] = 0;
+	} else if (!parser->context[parser->location]) {
+		return 0;
 	}
 
 	switch (parser->location) {
@@ -486,12 +565,14 @@ fbr_index_parse_json(struct fjson_context *ctx, void *priv)
 			return _index_parse_directory(parser, token, depth);
 		case FBR_INDEX_LOC_FILE:
 			return _index_parse_file(parser, token, depth);
-		case FBR_INDEX_LOC_CHUNK:
-			return _index_parse_chunk(parser, token, depth);
-		case FBR_INDEX_LOC_NONE:
+		case FBR_INDEX_LOC_BODY:
+			return _index_parse_body(parser, token, depth);
+		default:
 			break;
 
 	}
+
+	parser->fs->log("INDEX_PARSER root error");
 
 	return 1;
 }

@@ -50,14 +50,15 @@ enum fbr_index_location {
 	FBR_INDEX_LOC_NONE = 0,
 	FBR_INDEX_LOC_DIRECTORY,
 	FBR_INDEX_LOC_FILE,
-	FBR_INDEX_LOC_CHUNK
+	FBR_INDEX_LOC_BODY,
+	__FBR_INDEX_LOC_SIZE
 };
 
 struct fbr_index_parser {
 	unsigned int			magic;
 #define FBR_INDEX_PARSER_MAGIC		0xE8AC86B7
 
-	char				context;
+	char				context[__FBR_INDEX_LOC_SIZE];
 	enum fbr_index_location		location;
 
 	struct fbr_fs			*fs;
