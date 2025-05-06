@@ -5,16 +5,17 @@ fiber_test "Directory read test"
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 fs_test_dentry_ttl_ms 0
+fs_test_rw_buffer_size 3
 
 # Operations
 
 set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "test6"
+sys_write $var1 "tes" "t6" "789"
 
 #fs_test_release_all
 sleep_ms 100
 
-sys_cat $var1 "test6"
+sys_cat $var1 "test6789"
 
 # Cleanup
 
