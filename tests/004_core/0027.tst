@@ -9,13 +9,17 @@ fs_test_rw_buffer_size 3
 
 # Operations
 
-set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "tes" "t6" "789"
+set_var1 $sys_tmpdir "/test1.txt"
+sys_write $var1 "test11" "1one"
+
+set_var2 $sys_tmpdir "/test2.txt"
+sys_write $var2 "tes" "t22" "2two" "444" "TWO"
 
 fs_test_release_all
 sleep_ms 100
 
-sys_cat $var1 "test6789"
+sys_cat $var1 "test111one"
+sys_cat $var2 "test222two444TWO"
 
 # Cleanup
 
