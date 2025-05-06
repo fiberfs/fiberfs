@@ -100,6 +100,10 @@ _json_body(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_body *body)
 		fbr_writer_add(fs, json, "\",\"o\":", 6);
 		fbr_writer_add_ulong(fs, json, chunk->offset);
 
+		// l: chunk length
+		fbr_writer_add(fs, json, ",\"l\":", 5);
+		fbr_writer_add_ulong(fs, json, chunk->length);
+
 		chunk = chunk->next;
 
 		if (chunk) {
@@ -138,6 +142,14 @@ _json_file(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file)
 	// m: file mode
 	fbr_writer_add(fs, json, ",\"m\":", 5);
 	fbr_writer_add_ulong(fs, json, file->mode);
+
+	// u: uid
+	fbr_writer_add(fs, json, ",\"u\":", 5);
+	fbr_writer_add_ulong(fs, json, file->uid);
+
+	// p: gid
+	fbr_writer_add(fs, json, ",\"p\":", 5);
+	fbr_writer_add_ulong(fs, json, file->gid);
 
 	_json_body(fs, json, &file->body);
 
@@ -419,12 +431,36 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 	assert_dev(token);
 	assert_dev(depth >= 5);
 
+	if (!parser->file) {
+		return 0;
+	}
+
 	_index_parse_debug(parser, token, depth);
 
+	struct fbr_fs *fs = parser->fs;
+	struct fbr_file *file = parser->file;
+
 	switch (token->type) {
+		case FJSON_TOKEN_STRING:
+		case FJSON_TOKEN_NUMBER:
+			if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'i')) {
+				parser->chunk.id = fbr_id_parse(token->svalue, token->svalue_len);
+			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'o')) {
+				parser->chunk.offset = fbr_parse_ulong(token->svalue,
+					token->svalue_len);
+			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'l')) {
+				parser->chunk.length = fbr_parse_ulong(token->svalue,
+					token->svalue_len);
+			}
+			break;
 		case FJSON_TOKEN_OBJECT:
 			if (token->closed && depth == 6) {
-				parser->fs->log("INDEX_PARSER body DONE");
+				if (parser->chunk.id && parser->chunk.length) {
+					fbr_body_chunk_add(fs, file, parser->chunk.id,
+						parser->chunk.offset, parser->chunk.length);
+					fs->log("INDEX_PARSER body DONE");
+				}
+				fbr_ZERO(&parser->chunk);
 			}
 			break;
 		case FJSON_TOKEN_ARRAY:
@@ -440,6 +476,98 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 	return 0;
 }
 
+static void
+_index_parse_file_alloc(struct fbr_index_parser *parser, const char *filename, size_t filename_len)
+{
+	assert_dev(parser);
+	assert_dev(parser->fs);
+	assert_dev(parser->directory);
+	assert_zero_dev(parser->file);
+	assert_dev(filename);
+	assert_dev(filename_len);
+
+	struct fbr_fs *fs = parser->fs;
+	struct fbr_directory *directory = parser->directory;
+
+	fs->log("INDEX_PARSER file ALLOC: '%.*s'", (int)filename_len, filename);
+
+	struct fbr_path_name filepath;
+	filepath.len = filename_len;
+	filepath.name = filename;
+
+	parser->file = fbr_file_alloc(fs, directory, &filepath);
+	assert_dev(parser->file);
+	assert_dev(parser->file->state == FBR_FILE_INIT);
+}
+
+static void
+_index_parse_file_new(struct fbr_index_parser *parser, const char *filename, size_t filename_len)
+{
+	assert_dev(parser);
+	assert_dev(parser->fs);
+	assert_dev(parser->directory);
+	assert_zero_dev(parser->file);
+	assert_dev(filename);
+
+	if (!filename_len) {
+		return;
+	}
+
+	struct fbr_fs *fs = parser->fs;
+	struct fbr_directory *directory = parser->directory;
+	struct fbr_directory *previous = directory->previous;
+
+	if (previous) {
+		parser->file = fbr_directory_find_file(previous, filename, filename_len);
+	}
+
+	if (!parser->file) {
+		_index_parse_file_alloc(parser, filename, filename_len);
+	} else {
+		assert_dev(parser->file->state >= FBR_FILE_OK);
+		fs->log("INDEX_PARSER file EXISTING: '%.*s'", (int)filename_len, filename);
+	}
+}
+
+static void
+_index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *token)
+{
+	assert_dev(parser);
+	assert_dev(token);
+
+	if (!parser->file) {
+		return;
+	}
+
+	struct fbr_fs *fs = parser->fs;
+	struct fbr_directory *directory = parser->directory;
+	struct fbr_file *file = parser->file;
+
+	unsigned long generation = fbr_parse_ulong(token->svalue, token->svalue_len);
+
+	if (!generation || file->generation != generation) {
+		if (file->state == FBR_FILE_INIT) {
+			assert_zero_dev(file->generation);
+			file->generation = generation;
+		} else  {
+			assert_dev(file->generation);
+			parser->file = NULL;
+
+			struct fbr_path_name filename;
+			fbr_path_get_file(&file->path, &filename);
+
+			_index_parse_file_alloc(parser, filename.name, filename.len);
+		}
+	} else {
+		assert_dev(file->state >= FBR_FILE_OK);
+
+		fs->log("INDEX_PARSER existing file matched, adding");
+
+		fbr_directory_add_file(fs, directory, file);
+		parser->file = NULL;
+	}
+}
+
 static int
 _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, size_t depth)
 {
@@ -451,22 +579,58 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 
 	_index_parse_debug(parser, token, depth);
 
+	struct fbr_fs *fs = parser->fs;
+	struct fbr_directory *directory = parser->directory;
+	struct fbr_file *file = parser->file;
+
 	switch (token->type) {
 		case FJSON_TOKEN_STRING:
+		case FJSON_TOKEN_NUMBER:
 			if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'n')) {
-				parser->fs->log("INDEX_PARSER file NEW: '%.*s'",
-					(int)token->svalue_len, token->svalue);
+				_index_parse_file_new(parser, token->svalue, token->svalue_len);
+			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'j')) {
+				_index_parse_generation(parser, token);
+			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 's')) {
+				if (file) {
+					file->size = fbr_parse_ulong(token->svalue,
+						token->svalue_len);
+				}
+			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'm')) {
+				if (file) {
+					file->mode = (mode_t)token->dvalue;
+				}
+			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'u')) {
+				if (file) {
+					file->uid = (mode_t)token->dvalue;
+				}
+			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'p')) {
+				if (file) {
+					file->gid = (mode_t)token->dvalue;
+				}
 			}
 			break;
 		case FJSON_TOKEN_OBJECT:
 			if (token->closed && depth == 3) {
-				parser->fs->log("INDEX_PARSER file DONE");
+				if (file && file->state == FBR_FILE_INIT) {
+					file->state = FBR_FILE_OK;
+					fs->log("INDEX_PARSER file DONE (%lu %lu %u)",
+						file->generation, file->size, file->mode);
+					fbr_body_debug(fs, file);
+				} else if (file) {
+					assert_dev(file->state >= FBR_FILE_OK);
+					fbr_directory_add_file(fs, directory, file);
+					fs->log("INDEX_PARSER existing DONE (no gen)");
+				}
+				parser->file = NULL;
 			}
 			break;
 		case FJSON_TOKEN_ARRAY:
 			if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'b')) {
 				if (!token->closed && depth == 5) {
 					parser->location = FBR_INDEX_LOC_BODY;
+					assert_zero_dev(parser->chunk.id);
+					assert_zero_dev(parser->chunk.offset);
+					assert_zero_dev(parser->chunk.length);
 				}
 			} else if (token->closed && depth == 2) {
 				parser->location = FBR_INDEX_LOC_DIRECTORY;
@@ -503,7 +667,7 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 			break;
 		case FJSON_TOKEN_NUMBER:
 			if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'g')) {
-				directory->generation = fbr_test_parse_ulong(token->svalue,
+				directory->generation = fbr_parse_ulong(token->svalue,
 					token->svalue_len);
 			}
 			break;

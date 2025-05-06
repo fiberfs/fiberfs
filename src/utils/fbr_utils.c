@@ -55,7 +55,7 @@ fbr_timespec_add_clock(struct timespec *value)
 }
 
 unsigned long
-fbr_test_parse_ulong(const char *str, size_t length)
+fbr_parse_ulong(const char *str, size_t length)
 {
 	assert(str);
 	assert(length);

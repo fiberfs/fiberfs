@@ -64,6 +64,12 @@ struct fbr_index_parser {
 	struct fbr_fs			*fs;
 	struct fbr_directory		*directory;
 	struct fbr_file			*file;
+
+	struct {
+		fbr_id_t		id;
+		size_t			offset;
+		size_t			length;
+	} chunk;
 };
 
 struct fbr_store_callbacks {

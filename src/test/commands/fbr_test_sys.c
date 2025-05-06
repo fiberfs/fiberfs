@@ -293,7 +293,8 @@ fbr_test_cmd_sys_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 	int fd = open(filename, O_RDONLY);
-	fbr_test_ASSERT(fd >= 0, "open() failed %s %d", filename, fd);
+	fbr_test_ASSERT(fd >= 0, "open() failed (%s %d %d %s)", filename, fd, errno,
+		strerror(errno));
 
 	char result[1025];
 	size_t result_len = 0;

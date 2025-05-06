@@ -12,7 +12,7 @@ fs_test_rw_buffer_size 3
 set_var1 $sys_tmpdir "/test.txt"
 sys_write $var1 "tes" "t6" "789"
 
-#fs_test_release_all
+fs_test_release_all
 sleep_ms 100
 
 sys_cat $var1 "test6789"
