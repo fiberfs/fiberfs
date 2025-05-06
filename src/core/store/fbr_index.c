@@ -406,8 +406,13 @@ _index_parse_debug(struct fbr_index_parser *parser, struct fjson_token *token, s
 	assert_dev(parser->fs);
 	assert_dev(token);
 
-	parser->fs->log("INDEX_PARSER location: %s context: %c", _index_parse_loc(parser),
-		parser->context[parser->location] ? parser->context[parser->location] : '-');
+	size_t location = parser->location;
+	assert_dev(location);
+
+	parser->fs->log("INDEX_PARSER location: %s context: %c (prev: %c)",
+		_index_parse_loc(parser),
+		parser->context[location] ? parser->context[location] : '-',
+		parser->context[location - 1] ? parser->context[location - 1] : '-');
 
 	parser->fs->log("  token: %s length: %u depth: %zu sep: %d closed: %d",
 		fjson_token_name(token->type), token->length, depth,
@@ -454,7 +459,8 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 			}
 			break;
 		case FJSON_TOKEN_OBJECT:
-			if (token->closed && depth == 6) {
+			if (token->closed && depth == 6 &&
+			    parser->context[FBR_INDEX_LOC_FILE] == 'b') {
 				if (parser->chunk.id && parser->chunk.length) {
 					fbr_body_chunk_add(fs, file, parser->chunk.id,
 						parser->chunk.offset, parser->chunk.length);
@@ -464,9 +470,10 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 			}
 			break;
 		case FJSON_TOKEN_ARRAY:
-			if (token->closed && depth == 5) {
+			if (token->closed && depth == 5 &&
+			    parser->context[FBR_INDEX_LOC_FILE] == 'b') {
 				parser->location = FBR_INDEX_LOC_FILE;
-				assert_dev(parser->context[parser->location] == 'b');
+
 			}
 			break;
 		default:
@@ -632,9 +639,9 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 					assert_zero_dev(parser->chunk.offset);
 					assert_zero_dev(parser->chunk.length);
 				}
-			} else if (token->closed && depth == 2) {
+			} else if (token->closed && depth == 2 &&
+			    parser->context[FBR_INDEX_LOC_DIRECTORY] == 'f') {
 				parser->location = FBR_INDEX_LOC_DIRECTORY;
-				assert_dev(parser->context[parser->location] == 'f');
 			}
 			break;
 		default:
@@ -656,6 +663,7 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 	_index_parse_debug(parser, token, depth);
 
 	struct fbr_directory *directory = parser->directory;
+	struct fbr_directory *previous = directory->previous;
 
 	switch (token->type) {
 		case FJSON_TOKEN_ARRAY:
@@ -669,6 +677,10 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 			if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'g')) {
 				directory->generation = fbr_parse_ulong(token->svalue,
 					token->svalue_len);
+
+				if (previous && previous->generation == directory->generation) {
+					return 1;
+				}
 			}
 			break;
 		default:
