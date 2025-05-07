@@ -317,6 +317,7 @@ fbr_test_parse_cmd(struct fbr_test *test)
 			fbr_test_ASSERT(buf, "variable %s is null", var);
 
 			cmd->params[i].value = buf;
+			cmd->params[i].variable = var;
 			cmd->params[i].len = strlen(buf);
 			cmd->params[i].v_const = 1;
 		}

@@ -11,6 +11,9 @@
 
 #include "test/fbr_test.h"
 
+static char TEST_COUNTER_STR[32];
+static unsigned int TEST_COUNTER_VALUE;
+
 void
 fbr_test_cmd_fiber_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -44,11 +47,48 @@ fbr_test_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_cmd_ok(cmd);
 	fbr_test_ERROR(cmd->param_count != 2, "need 2 parameters");
 
-	int ret = strcmp(cmd->params[0].value, cmd->params[1].value);
+	int ret;
+	size_t retries = 0;
 
-	fbr_test_ERROR(ret, "not equal '%s' != '%s'", cmd->params[0].value, cmd->params[1].value);
+	char *v1 = cmd->params[0].value;
+	char *v2 = cmd->params[1].value;
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "equal '%s'", cmd->params[0].value);
+	do {
+		ret = strcmp(v1, v2);
+
+		if (!ret) {
+			break;
+		} else if (!cmd->params[0].variable && !cmd->params[1].variable) {
+			break;
+		} else {
+			fbr_test_log(ctx, FBR_LOG_VERBOSE, "not equal '%s' != '%s', retry...",
+				v1, v2);
+		}
+
+		retries++;
+		fbr_test_sleep_ms(200 * retries);
+
+		struct fbr_test_cmdentry *cmd_entry;
+
+		if (cmd->params[0].variable) {
+			cmd_entry = fbr_test_cmds_get(ctx->test, cmd->params[0].variable);
+			assert(cmd_entry);
+			assert(cmd_entry->is_var && cmd_entry->var_func);
+			v1 = cmd_entry->var_func(ctx);
+			assert(v1);
+		}
+		if (cmd->params[1].variable) {
+			cmd_entry = fbr_test_cmds_get(ctx->test, cmd->params[1].variable);
+			assert(cmd_entry);
+			assert(cmd_entry->is_var && cmd_entry->var_func);
+			v2 = cmd_entry->var_func(ctx);
+			assert(v2);
+		}
+	} while (retries < 3);
+
+	fbr_test_ERROR(ret, "not equal '%s' != '%s'", v1, v2);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "equal '%s'", v1);
 }
 
 void
@@ -174,4 +214,16 @@ fbr_test_cmd_skip_if_valgrind(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	} else {
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "valgrind not detected");
 	}
+}
+
+char *
+fbr_test_var_test_counter(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	fbr_atomic_add(&TEST_COUNTER_VALUE, 1);
+
+	snprintf(TEST_COUNTER_STR, sizeof(TEST_COUNTER_STR), "%u", TEST_COUNTER_VALUE);
+
+	return TEST_COUNTER_STR;
 }

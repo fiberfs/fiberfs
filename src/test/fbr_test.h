@@ -49,6 +49,8 @@ struct fbr_test_param {
 	char					*value;
 	size_t					len;
 
+	char					*variable;
+
 	unsigned int				v_const:1;
 };
 

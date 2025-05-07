@@ -66,6 +66,8 @@ FBR_TEST_CMD(test_finish_crash)
 FBR_TEST_CMD(test_double_crash)
 FBR_TEST_CMD(test_triple_crash)
 
+FBR_TEST_VAR(test_counter)
+
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR
 
