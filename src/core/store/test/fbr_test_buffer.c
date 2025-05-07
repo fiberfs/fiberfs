@@ -81,13 +81,17 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fuse_req_t fuse_req = (fuse_req_t)1;
 	struct fbr_request *r1 = fbr_request_alloc(fuse_req, __func__);
 	fbr_request_ok(r1);
+	r1->not_fuse = 1;
+	fbr_request_take_fuse(r1);
 
 	struct fbr_writer writer2;
 	fbr_writer_init(fs, &writer2, r1, 0);
 	fbr_writer_debug(fs, &writer2);
-	bytes = 2000;
-	assert(bytes <= sizeof(one_buffer));
-	fbr_writer_add(fs, &writer2, one_buffer, bytes);
+	bytes = 0;
+	for (size_t i = 0; i < 1; i++) {
+		fbr_writer_add(fs, &writer2, one_buffer, sizeof(one_buffer));
+		bytes += sizeof(one_buffer);
+	}
 	fbr_writer_flush(fs, &writer2);
 	fbr_writer_debug(fs, &writer2);
 	fbr_test_ASSERT(writer2.raw_bytes == bytes, "writer2 raw_bytes mismatch");
@@ -107,7 +111,6 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_ASSERT(fs->stats.buffers == 0, "buffer mismatch");
 
-	fbr_request_take_fuse(r1);
 	fbr_request_free(r1);
 	fbr_request_pool_shutdown(fs);
 	fbr_fs_free(fs);

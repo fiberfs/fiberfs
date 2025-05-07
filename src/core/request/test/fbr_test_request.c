@@ -42,6 +42,7 @@ fbr_cmd_request_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_request *r1 = fbr_request_alloc(fuse_req, __func__);
 	fbr_request_ok(r1);
+	r1->not_fuse = 1;
 	assert(fbr_request_get() == r1);
 	assert(fs->stats.requests_active == 1);
 	assert(fs->stats.requests_pooled == 0);
@@ -60,6 +61,7 @@ fbr_cmd_request_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_request *r2 = fbr_request_alloc(fuse_req, __func__);
 	fbr_request_ok(r2);
+	r2->not_fuse = 1;
 	assert(fs->stats.requests_active == 1);
 	assert(fs->stats.requests_pooled == 0);
 	fbr_request_take_fuse(r2);
@@ -109,6 +111,7 @@ _test_request_thread(void *arg)
 
 	struct fbr_request *r1 = fbr_request_alloc(fuse_req, __func__);
 	fbr_request_ok(r1);
+	r1->not_fuse = 1;
 	assert(fbr_request_get() == r1);
 
 	char *buf = fbr_workspace_rbuffer(r1->workspace);
@@ -130,6 +133,7 @@ _test_request_thread(void *arg)
 
 	struct fbr_request *r2 = fbr_request_alloc(fuse_req, __func__);
 	fbr_request_ok(r2);
+	r2->not_fuse = 1;
 	fbr_request_take_fuse(r2);
 	assert(fbr_request_get() == r2);
 
@@ -199,6 +203,7 @@ fbr_cmd_request_test_active(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 
 	struct fbr_request *r1 = fbr_request_alloc(fuse_req, __func__);
 	fbr_request_ok(r1);
+	r1->not_fuse = 1;
 	assert(fbr_request_get() == r1);
 	fbr_request_take_fuse(r1);
 	fbr_ZERO(&r1->thread);

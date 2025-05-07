@@ -21,6 +21,8 @@ struct fbr_request {
 	unsigned int				magic;
 #define FBR_REQUEST_MAGIC			0xE2719F6A
 
+	int					not_fuse;
+
 	unsigned long				id;
 	const char				*name;
 	double					time_start;

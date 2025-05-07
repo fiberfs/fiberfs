@@ -52,7 +52,7 @@ fbr_context_abort(void)
 {
 	struct fbr_request *request = fbr_request_get();
 
-	if (!request) {
+	if (!request || request->not_fuse) {
 		fbr_fuse_unmount_signal();
 		fbr_test_context_abort();
 		return;

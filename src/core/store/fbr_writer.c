@@ -20,6 +20,7 @@ _output_workspace_release(struct fbr_writer *writer)
 	assert_zero_dev(writer->output->next);
 
 	fbr_workspace_ralloc(writer->workspace, writer->output->buffer_pos);
+	assert(writer->output->buffer_pos);
 
 	writer->output->buffer_len = writer->output->buffer_pos;
 	writer->workspace = NULL;
@@ -281,8 +282,8 @@ _buffer_get(struct fbr_writer *writer)
 	return output;
 }
 
-void
-fbr_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer)
+static void
+_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer, int release)
 {
 	assert_dev(fs);
 	assert_dev(writer);
@@ -300,7 +301,7 @@ fbr_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer)
 		}
 	}
 
-	if (writer->workspace) {
+	if (writer->workspace && release) {
 		_output_workspace_release(writer);
 	}
 
@@ -314,19 +315,28 @@ fbr_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer)
 	}
 }
 
+void
+fbr_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer)
+{
+	_writer_flush(fs, writer, 1);
+}
+
 static struct fbr_buffer *
 _flush_extend(struct fbr_fs *fs, struct fbr_writer *writer)
 {
 	assert_dev(fs);
 	assert_dev(writer);
 
-	fbr_writer_flush(fs, writer);
+	_writer_flush(fs, writer, 0);
 
 	struct fbr_buffer *output = writer->buffer;
 
 	if (!output) {
-		_writer_extend(fs, writer, NULL, 0, 0);
 		output = _buffer_get(writer);
+		if (output->buffer_pos) {
+			_writer_extend(fs, writer, NULL, 0, 0);
+			output = _buffer_get(writer);
+		}
 	}
 
 	fbr_buffer_ok(output);
