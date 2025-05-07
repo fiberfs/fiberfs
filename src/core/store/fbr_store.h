@@ -112,6 +112,12 @@ void fbr_index_parser_init(struct fbr_fs *fs, struct fbr_index_parser *parser,
 void fbr_index_parser_free(struct fbr_index_parser *parser);
 int fbr_index_parse_json(struct fjson_context *ctx, void *priv);
 
+void fbr_buffer_init(struct fbr_fs *fs, struct fbr_buffer *fbuf, char *buffer,
+	size_t buffer_len);
+void fbr_buffer_append(struct fbr_buffer *output, const char *buffer, size_t buffer_len);
+void fbr_buffers_free(struct fbr_buffer *buffer);
+void fbr_buffer_debug(struct fbr_fs *fs, struct fbr_buffer *fbuf, const char *name);
+
 void fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer,
 	struct fbr_request *request, int want_gzip);
 void fbr_writer_init_buffer(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
@@ -124,11 +130,9 @@ void fbr_writer_add_id(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t id
 void fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer);
 void fbr_writer_debug(struct fbr_fs *fs, struct fbr_writer *writer);
 
-void fbr_buffers_free(struct fbr_buffer *buffer);
-void fbr_buffer_append(struct fbr_buffer *output, const char *buffer, size_t buffer_len);
-
 void fbr_reader_init(struct fbr_fs *fs, struct fbr_reader *reader,
 	struct fbr_request *request, int is_gzip);
+struct fbr_buffer *fbr_reader_buffer_get(struct fbr_reader *reader);
 void fbr_reader_free(struct fbr_fs *fs, struct fbr_reader *reader);
 
 #define fbr_buffer_ok(buffer)		fbr_magic_check(buffer, FBR_BUFFER_MAGIC)

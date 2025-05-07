@@ -32,9 +32,54 @@ fbr_reader_init(struct fbr_fs *fs, struct fbr_reader *reader, struct fbr_request
 
 	if (request) {
 		fbr_request_ok(request);
+
+		char *buffer;
+		size_t buffer_len;
+
+		if (is_gzip) {
+			// TODO make these buffer sizes conigurable
+			buffer = fbr_workspace_alloc(request->workspace, FBR_DEFAULT_BUFLEN);
+			buffer_len = FBR_DEFAULT_BUFLEN;
+
+			if (buffer) {
+				reader->buffer = &reader->_buffer;
+				fbr_buffer_init(fs, reader->buffer, buffer, buffer_len);
+			}
+		}
+
+		// TODO configurable
+		buffer = fbr_workspace_alloc(request->workspace, FBR_DEFAULT_BUFLEN * 2);
+		buffer_len = FBR_DEFAULT_BUFLEN * 2;
+
+		if (buffer) {
+			reader->input = &reader->_input;
+			fbr_buffer_init(fs, reader->input, buffer, buffer_len);
+		}
+	}
+
+	if (!reader->buffer && is_gzip) {
+		reader->buffer = &reader->_buffer;
+		fbr_buffer_init(fs, reader->buffer, NULL, FBR_DEFAULT_BUFLEN);
+	}
+	if (!reader->input) {
+		reader->input = &reader->_input;
+		fbr_buffer_init(fs, reader->input, NULL, FBR_DEFAULT_BUFLEN * 2);
 	}
 
 	fbr_reader_ok(reader);
+}
+
+struct fbr_buffer *
+fbr_reader_buffer_get(struct fbr_reader *reader)
+{
+	fbr_reader_ok(reader);
+	assert_dev(reader->input);
+
+	if (reader->buffer) {
+		return reader->buffer;
+	}
+
+	return reader->input;
 }
 
 void

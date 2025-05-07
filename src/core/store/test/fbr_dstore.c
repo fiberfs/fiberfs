@@ -73,6 +73,8 @@ fbr_dstore_init(struct fbr_test_context *ctx)
 	fbr_test_register_finish(ctx, "dstore", _dstore_finish);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "dstore root: %s", _DSTORE->root);
+
+	fbr_test_random_seed();
 }
 
 static int
@@ -546,6 +548,13 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_directory_ok(directory);
 
 	char index_path[PATH_MAX];
+	_dstore_index_path(directory, 1, index_path, sizeof(index_path));
+
+	struct _dstore_metadata metadata;
+	_dstore_metadata_read(index_path, &metadata);
+	fbr_ASSERT(metadata.etag == directory->version, "%lu != %lu", metadata.etag,
+		directory->version);
+
 	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
 
 	fbr_test_logs("DSTORE index read: '%s'", index_path);
@@ -557,31 +566,46 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		return 1;
 	}
 
-	// TODO use a reader and we need to peek too...
-	char json_buf[1024];
-	ssize_t bytes = fbr_sys_read(fd, json_buf, sizeof(json_buf));
-	assert(bytes > 0 && (size_t)bytes < sizeof(json_buf));
+	struct fbr_request *request = fbr_request_get();
 
-	assert_zero(close(fd));
-
-	struct _dstore_metadata metadata;
-	_dstore_index_path(directory, 1, index_path, sizeof(index_path));
-	_dstore_metadata_read(index_path, &metadata);
-	fbr_ASSERT(metadata.etag == directory->version, "%lu != %lu", metadata.etag,
-		directory->version);
-
-	json_buf[bytes] = '\0';
-	fbr_test_logs("DSTORE index json: '%s'", json_buf);
+	struct fbr_reader reader;
+	fbr_reader_init(fs, &reader, request, 0);
 
 	struct fbr_index_parser parser;
 	fbr_index_parser_init(fs, &parser, directory);
+	struct fbr_buffer *fbuf = fbr_reader_buffer_get(&reader);
 
 	struct fjson_context json;
 	fjson_context_init(&json);
 	json.callback = &fbr_index_parse_json;
 	json.callback_priv = &parser;
 
-	fjson_parse(&json, json_buf, bytes);
+	ssize_t bytes;
+
+	do {
+		size_t buffer_free = fbuf->buffer_len - fbuf->buffer_pos;
+		size_t buffer_len = (random() % 10) + 1;
+		assert(buffer_len <= buffer_free);
+
+		bytes = fbr_sys_read(fd, fbuf->buffer + fbuf->buffer_pos, buffer_len);
+		if (bytes < 0) {
+			break;
+		}
+
+		fbuf->buffer_pos += bytes;
+		assert_dev(fbuf->buffer_pos <= fbuf->buffer_len);
+
+		fbr_test_logs("DSTORE index json: '%.*s'", (int)fbuf->buffer_pos, fbuf->buffer);
+
+		fjson_parse_partial(&json, fbuf->buffer, fbuf->buffer_pos);
+
+		fbuf->buffer_pos = fjson_shift(&json, fbuf->buffer, fbuf->buffer_pos,
+			fbuf->buffer_len);
+	} while (bytes > 0);
+
+	assert_zero(close(fd));
+
+	fjson_parse(&json, fbuf->buffer, fbuf->buffer_pos);
 	assert(parser.magic == FBR_INDEX_PARSER_MAGIC);
 
 	int ret = 0;

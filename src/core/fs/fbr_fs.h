@@ -302,7 +302,7 @@ struct fbr_fs_stats {
 
 	fbr_stats_t				chunk_slabs;
 	fbr_stats_t				file_ptr_slabs;
-	fbr_stats_t				write_buffers;
+	fbr_stats_t				buffers;
 };
 
 struct fbr_fs_config {
