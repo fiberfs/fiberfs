@@ -252,10 +252,7 @@ _dir_test_release(void *arg)
 static void
 _directory_parallel(void)
 {
-	struct fbr_fs *fs = fbr_fs_alloc();
-	fbr_fs_ok(fs);
-
-	fs->logger = fbr_fs_test_logger;
+	struct fbr_fs *fs = fbr_test_fs_alloc();
 
 	fbr_test_random_seed();
 
@@ -335,7 +332,7 @@ _directory_parallel(void)
 
 	fbr_fs_release_all(fs, 1);
 
-	fbr_fs_test_stats(fs);
+	fbr_test_fs_stats(fs);
 	fbr_test_fs_inodes_debug(fs);
 	fbr_test_fs_dindex_debug(fs);
 

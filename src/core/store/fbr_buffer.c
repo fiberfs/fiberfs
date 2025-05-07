@@ -75,12 +75,15 @@ fbr_buffer_debug(struct fbr_fs *fs, struct fbr_buffer *fbuf, const char *name)
 {
 	fbr_fs_ok(fs);
 
+	size_t i = 0;
+
 	while (fbuf) {
 		fbr_buffer_ok(fbuf);
 
-		fs->log("WRITER %s pos: %zu len: %zu buf_free: %d free: %d", name,
+		fs->log("WRITER %s.%zu pos: %zu len: %zu buf_free: %d free: %d", name, i,
 			fbuf->buffer_pos, fbuf->buffer_len, fbuf->buffer_free, fbuf->do_free);
 
 		fbuf = fbuf->next;
+		i++;
 	}
 }

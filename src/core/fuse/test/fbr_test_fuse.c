@@ -125,9 +125,7 @@ fbr_test_fuse_mock(struct fbr_test_context *test_ctx)
 	_FUSE_CTX = ctx;
 	assert(fbr_fuse_get_context() == ctx);
 
-	struct fbr_fs *fs = fbr_fs_alloc();
-	fbr_fs_ok(fs);
-	fs->logger = fbr_fs_test_logger;
+	struct fbr_fs *fs = fbr_test_fs_alloc();
 	ctx->fs = fs;
 
 	return fs;

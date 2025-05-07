@@ -19,7 +19,7 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 void __fbr_attr_printf(1)
-fbr_fs_test_logger(const char *fmt, ...)
+fbr_test_fs_logger(const char *fmt, ...)
 {
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 
@@ -38,7 +38,7 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
 
-	fs->logger = fbr_fs_test_logger;
+	fs->logger = fbr_test_fs_logger;
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);
@@ -224,7 +224,7 @@ fbr_cmd_fs_test_assert_root(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 }
 
 void
-fbr_fs_test_stats(struct fbr_fs *fs)
+fbr_test_fs_stats(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
 
@@ -266,7 +266,7 @@ fbr_cmd_fs_test_stats(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
-	fbr_fs_test_stats(fs);
+	fbr_test_fs_stats(fs);
 }
 
 #define _FS_TEST_STAT(name)							\
@@ -372,4 +372,15 @@ fbr_cmd_fs_test_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_fs_inodes_debug(fs);
 	fbr_test_fs_dindex_debug(fs);
+}
+
+struct fbr_fs *
+fbr_test_fs_alloc(void)
+{
+	struct fbr_fs *fs = fbr_fs_alloc();
+	fbr_fs_ok(fs);
+
+	fs->logger = fbr_test_fs_logger;
+
+	return fs;
 }

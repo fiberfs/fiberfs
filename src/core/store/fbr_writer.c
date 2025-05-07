@@ -429,6 +429,7 @@ fbr_writer_debug(struct fbr_fs *fs, struct fbr_writer *writer)
 	fbr_buffer_debug(fs, writer->buffer, "buffer");
 	fbr_buffer_debug(fs, writer->output, "output");
 
+	fs->log("WRITER workspace: %s", writer->workspace ? "true" : "false");
 	fs->log("WRITER raw_bytes: %zu", writer->raw_bytes);
 	fs->log("WRITER bytes: %zu", writer->bytes);
 	fs->log("WRITER want_gzip: %d", writer->want_gzip);

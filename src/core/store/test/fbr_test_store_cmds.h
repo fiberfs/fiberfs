@@ -16,6 +16,8 @@
 
 #endif /* FBR_TEST_STORE_CMD */
 
+FBR_TEST_STORE_CMD(writer_test)
+
 FBR_TEST_STORE_CMD(dstore_debug)
 
 #undef FBR_TEST_STORE_CMD

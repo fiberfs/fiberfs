@@ -33,7 +33,7 @@ _count_chunks(struct fbr_file *file)
 }
 
 size_t
-fbr_fs_test_count_chunks(struct fbr_file *file)
+fbr_test_fs_count_chunks(struct fbr_file *file)
 {
 	return _count_chunks(file);
 }
@@ -85,10 +85,7 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_fs_alloc();
-	fbr_fs_ok(fs);
-
-	fs->logger = fbr_fs_test_logger;
+	struct fbr_fs *fs = fbr_test_fs_alloc();
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);
@@ -330,10 +327,7 @@ fbr_cmd_fs_test_body_fio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_fs_alloc();
-	fbr_fs_ok(fs);
-
-	fs->logger = fbr_fs_test_logger;
+	struct fbr_fs *fs = fbr_test_fs_alloc();
 
 	fbr_fs_set_store(fs, &_TEST_BODY_STORE_CALLBACKS);
 

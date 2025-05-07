@@ -831,7 +831,7 @@ fbr_cmd_fs_test_fuse_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
-	fs->logger = fbr_fs_test_logger;
+	fs->logger = fbr_test_fs_logger;
 }
 
 void

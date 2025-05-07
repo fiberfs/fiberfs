@@ -15,8 +15,8 @@
 #define FBR_TEST_FS_CMD(cmd)		fbr_test_cmd_f fbr_cmd_##cmd;
 #define FBR_TEST_FS_VAR(var)		fbr_test_var_f fbr_var_##var;
 
-void __fbr_attr_printf(1) fbr_fs_test_logger(const char *fmt, ...);
-void fbr_fs_test_stats(struct fbr_fs *fs);
+void __fbr_attr_printf(1) fbr_test_fs_logger(const char *fmt, ...);
+void fbr_test_fs_stats(struct fbr_fs *fs);
 void fbr_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino,
 	struct fuse_file_info *fi);
 void fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name);
@@ -33,8 +33,9 @@ void fbr_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
 	struct fuse_forget_data *forgets);
 void fbr_test_fs_inodes_debug(struct fbr_fs *fs);
 void fbr_test_fs_dindex_debug(struct fbr_fs *fs);
+struct fbr_fs * fbr_test_fs_alloc(void);
 
-size_t fbr_fs_test_count_chunks(struct fbr_file *file);
+size_t fbr_test_fs_count_chunks(struct fbr_file *file);
 
 #endif /* FBR_TEST_FS_CMD */
 
