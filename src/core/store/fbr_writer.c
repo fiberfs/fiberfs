@@ -16,7 +16,7 @@ _output_workspace_release(struct fbr_writer *writer)
 {
 	assert_dev(writer);
 	assert_dev(writer->workspace);
-	assert_dev(writer->output)
+	assert_dev(writer->output);
 	assert_zero_dev(writer->output->next);
 
 	fbr_workspace_ralloc(writer->workspace, writer->output->buffer_pos);
@@ -197,8 +197,8 @@ fbr_writer_init_buffer(struct fbr_fs *fs, struct fbr_writer *writer, char *buffe
 	_writer_extend(fs, writer, buffer, buffer_len, 0);
 }
 
-static void
-_buffers_free(struct fbr_buffer *fbuf)
+void
+fbr_buffers_free(struct fbr_buffer *fbuf)
 {
 	while (fbuf) {
 		fbr_buffer_ok(fbuf);
@@ -233,14 +233,14 @@ fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer)
 		assert_zero_dev(writer->buffer->next);
 	}
 
-	_buffers_free(writer->buffer);
-	_buffers_free(writer->output);
+	fbr_buffers_free(writer->buffer);
+	fbr_buffers_free(writer->output);
 
 	fbr_ZERO(writer);
 }
 
-static void
-_buffer_append(struct fbr_buffer *output, const char *buffer, size_t buffer_len)
+void
+fbr_buffer_append(struct fbr_buffer *output, const char *buffer, size_t buffer_len)
 {
 	assert_dev(output);
 	assert_dev(buffer);
@@ -287,7 +287,7 @@ _output_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, si
 				size = output_free;
 			}
 
-			_buffer_append(output, buffer + offset, size);
+			fbr_buffer_append(output, buffer + offset, size);
 
 			offset += size;
 			assert_dev(offset <= buffer_len);
@@ -399,14 +399,14 @@ fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer,
 	size_t output_free = output->buffer_len - output->buffer_pos;
 
 	if (buffer_len <= output_free) {
-		_buffer_append(output, buffer, buffer_len);
+		fbr_buffer_append(output, buffer, buffer_len);
 	} else {
 		output = _flush_extend(fs, writer);
 		assert_dev(output);
 		assert_zero_dev(output->buffer_pos);
 
 		if (buffer_len <= output->buffer_len) {
-			_buffer_append(output, buffer, buffer_len);
+			fbr_buffer_append(output, buffer, buffer_len);
 		} else {
 			_output_add(fs, writer, buffer, buffer_len);
 		}

@@ -46,6 +46,21 @@ struct fbr_writer {
 	unsigned int				is_gzip:1;
 };
 
+struct fbr_reader {
+	unsigned int				magic;
+#define FBR_READER_MAGIC			0x33939170
+
+	struct fbr_buffer			*buffer;
+	struct fbr_buffer			*input;
+	struct fbr_buffer			_buffer;
+	struct fbr_buffer			_input;
+
+	size_t					raw_bytes;
+	size_t					bytes;
+
+	unsigned int				was_gzip:1;
+};
+
 enum fbr_index_location {
 	FBR_INDEX_LOC_NONE = 0,
 	FBR_INDEX_LOC_DIRECTORY,
@@ -109,8 +124,16 @@ void fbr_writer_add_id(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t id
 void fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer);
 void fbr_writer_debug(struct fbr_fs *fs, struct fbr_writer *writer);
 
+void fbr_buffers_free(struct fbr_buffer *buffer);
+void fbr_buffer_append(struct fbr_buffer *output, const char *buffer, size_t buffer_len);
+
+void fbr_reader_init(struct fbr_fs *fs, struct fbr_reader *reader,
+	struct fbr_request *request, int is_gzip);
+void fbr_reader_free(struct fbr_fs *fs, struct fbr_reader *reader);
+
 #define fbr_buffer_ok(buffer)		fbr_magic_check(buffer, FBR_BUFFER_MAGIC)
 #define fbr_writer_ok(writer)		fbr_magic_check(writer, FBR_WRITER_MAGIC)
+#define fbr_reader_ok(writer)		fbr_magic_check(writer, FBR_READER_MAGIC)
 #define fbr_index_parser_ok(parser)	fbr_magic_check(parser, FBR_INDEX_PARSER_MAGIC)
 
 #endif /* _FBR_STORE_H_INCLUDED_ */
