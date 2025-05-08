@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "fiberfs.h"
+#include "fbr_dstore.h"
 #include "fjson.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
@@ -645,6 +646,35 @@ fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 	pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
 }
 
+int
+fbr_dstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_writer *writer, struct fbr_directory *previous)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	fbr_writer_ok(writer);
+	assert_dev(writer->output);
+
+	fbr_dstore_index_write(fs, directory, writer);
+
+	fbr_id_t previous_version = 0;
+	if (previous) {
+		fbr_directory_ok(previous);
+		assert(previous->version);
+		previous_version = previous->version;
+	}
+
+	int ret = fbr_dstore_root_write(fs, directory, previous_version);
+
+	if (ret) {
+		fbr_dstore_index_delete(fs, directory);
+	} else if (previous) {
+		fbr_dstore_index_delete(fs, previous);
+	}
+
+	return ret;
+}
+
 static void
 _dstore_root_path(struct fbr_path_name *dirpath, int metadata, char *buffer, size_t buffer_len)
 {
@@ -684,8 +714,6 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 	fbr_directory_name(directory, &dirpath);
 
 	_dstore_root_path(&dirpath, 1, root_path, sizeof(root_path));
-
-	fbr_test_logs("DSTORE root metadata: '%s'", root_path);
 
 	pt_assert(pthread_mutex_lock(&_DSTORE->open_lock));
 

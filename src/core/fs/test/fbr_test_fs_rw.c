@@ -94,43 +94,11 @@ _test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	return ret;
 }
 
-static int
-_test_fs_rw_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
-    struct fbr_writer *writer, struct fbr_directory *previous)
-{
-	fbr_fs_ok(fs);
-	fbr_directory_ok(directory);
-	fbr_writer_ok(writer);
-	assert_dev(writer->output);
-
-	fs->log("RW_STORE_INDEX '%.*s':%zu", (int)writer->output->buffer_pos,
-		writer->output->buffer, writer->output->buffer_pos);
-
-	fbr_dstore_index_write(fs, directory, writer);
-
-	fbr_id_t previous_version = 0;
-	if (previous) {
-		fbr_directory_ok(previous);
-		assert(previous->version);
-		previous_version = previous->version;
-	}
-
-	int ret = fbr_dstore_root_write(fs, directory, previous_version);
-
-	if (ret) {
-		fbr_dstore_index_delete(fs, directory);
-	} else if (previous) {
-		fbr_dstore_index_delete(fs, previous);
-	}
-
-	return ret;
-}
-
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
 	.chunk_read_f = fbr_dstore_chunk_read,
 	.wbuffer_write_f = _test_fs_rw_wbuffer_write,
 	.wbuffers_flush_f = _test_fs_rw_wbuffers_flush,
-	.index_write_f = _test_fs_rw_index_write,
+	.index_write_f = fbr_dstore_index_root_write,
 	.index_read_f = fbr_dstore_index_read,
 	.root_read_f = fbr_dstore_root_read
 };

@@ -235,8 +235,6 @@ fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version
 	fbr_writer_add(fs, writer, "\"}", 2);
 
 	fbr_writer_flush(fs, writer);
-
-	fbr_writer_debug(fs, writer);
 }
 
 static int
