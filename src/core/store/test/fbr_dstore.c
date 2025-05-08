@@ -616,6 +616,7 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	fjson_context_free(&json);
 	fbr_index_parser_free(&parser);
+	fbr_reader_free(fs, &reader);
 
 	return ret;
 }
