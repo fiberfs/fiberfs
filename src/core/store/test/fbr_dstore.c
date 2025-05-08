@@ -32,7 +32,7 @@ struct {
 
 	const char				*root;
 
-	pthread_mutex_t				open_lock;
+	pthread_mutex_t				lock;
 } __DSTORE, *_DSTORE;
 
 struct _dstore_metadata {
@@ -50,7 +50,7 @@ _dstore_finish(struct fbr_test_context *ctx)
 	fbr_test_context_ok(ctx);
 	fbr_dstore_ok();
 
-	pt_assert(pthread_mutex_destroy(&_DSTORE->open_lock));
+	pt_assert(pthread_mutex_destroy(&_DSTORE->lock));
 
 	fbr_ZERO(&_DSTORE);
 }
@@ -65,7 +65,7 @@ fbr_dstore_init(struct fbr_test_context *ctx)
 	__DSTORE.magic = _DSTORE_MAGIC;
 	__DSTORE.root = fbr_test_mkdir_tmp(ctx, NULL);
 
-	pt_assert(pthread_mutex_init(&__DSTORE.open_lock, NULL));
+	pt_assert(pthread_mutex_init(&__DSTORE.lock, NULL));
 
 	_DSTORE = &__DSTORE;
 
@@ -76,6 +76,20 @@ fbr_dstore_init(struct fbr_test_context *ctx)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "dstore root: %s", _DSTORE->root);
 
 	fbr_test_random_seed();
+}
+
+static void
+_dstore_LOCK()
+{
+	fbr_dstore_ok();
+	pt_assert(pthread_mutex_lock(&_DSTORE->lock));
+}
+
+static void
+_dstore_UNLOCK()
+{
+	fbr_dstore_ok();
+	pt_assert(pthread_mutex_unlock(&_DSTORE->lock));
 }
 
 static int
@@ -150,14 +164,14 @@ _dstore_open_unique(const char *path)
 {
 	assert(path);
 
-	pt_assert(pthread_mutex_lock(&_DSTORE->open_lock));
+	_dstore_LOCK();
 
 	fbr_ASSERT(!fbr_sys_exists(path), "chunk exists: %s", path);
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	assert(fd >= 0);
 
-	pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
+	_dstore_UNLOCK();
 
 	return fd;
 }
@@ -636,7 +650,7 @@ fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	fbr_test_logs("DSTORE DELETE index: '%s'", index_path);
 
-	pt_assert(pthread_mutex_lock(&_DSTORE->open_lock));
+	_dstore_LOCK();
 
 	int ret = unlink(index_path);
 	assert_zero(ret);
@@ -646,7 +660,7 @@ fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 	ret = unlink(index_path);
 	assert_zero(ret);
 
-	pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
+	_dstore_UNLOCK();
 }
 
 int
@@ -718,12 +732,12 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 
 	_dstore_root_path(&dirpath, 1, root_path, sizeof(root_path));
 
-	pt_assert(pthread_mutex_lock(&_DSTORE->open_lock));
+	_dstore_LOCK();
 
 	_dstore_metadata_read(root_path, &metadata);
 
 	if (metadata.etag != existing) {
-		pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
+		_dstore_UNLOCK();
 
 		fbr_test_logs("DSTORE root mismatch, want %lu, found %lu", existing,
 			metadata.etag);
@@ -756,7 +770,7 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 
 	assert_zero(close(fd));
 
-	pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
+	_dstore_UNLOCK();
 
 	fbr_fs_stat_add_count(&fs->stats.store_root_bytes, json.bytes);
 
@@ -776,6 +790,8 @@ fbr_dstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 
 	fbr_test_logs("DSTORE root read: '%s'", root_path);
 
+	_dstore_LOCK();
+
 	int fd = open(root_path, O_RDONLY);
 
 	if (fd < 0) {
@@ -788,6 +804,8 @@ fbr_dstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	assert(bytes > 0 && (size_t)bytes < sizeof(json_buf));
 
 	assert_zero(close(fd));
+
+	_dstore_UNLOCK();
 
 	struct _dstore_metadata metadata;
 	_dstore_root_path(dirpath, 1, root_path, sizeof(root_path));
