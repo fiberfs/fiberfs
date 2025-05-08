@@ -23,7 +23,7 @@
 
 #include "test/fbr_test.h"
 
-#define _DSTORE_CHUNK_PATH			"chunks"
+#define _DSTORE_DATA_PATH			"data"
 #define _DSTORE_META_PATH			"meta"
 
 struct {
@@ -96,15 +96,20 @@ _dstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 	return 0;
 }
 
-static void
-_dstore_debug(void)
+void
+fbr_dstore_debug(int show_meta)
 {
 	fbr_dstore_ok();
+
+	if (show_meta) {
+		fbr_sys_nftw(_DSTORE->root, _dstore_debug_cb);
+		return;
+	}
 
 	char path[PATH_MAX];
 	size_t ret = snprintf(path, sizeof(path), "%s/%s",
 		_DSTORE->root,
-		_DSTORE_CHUNK_PATH);
+		_DSTORE_DATA_PATH);
 	assert(ret < sizeof(path));
 
 	fbr_sys_nftw(path, _dstore_debug_cb);
@@ -116,7 +121,7 @@ fbr_cmd_dstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	_dstore_debug();
+	fbr_dstore_debug(0);
 }
 
 static void
@@ -332,7 +337,7 @@ _dstore_chunk_path(const struct fbr_file *file, fbr_id_t id, size_t offset, int 
 	char chunk_id[FBR_ID_STRING_MAX];
 	fbr_id_string(id, chunk_id, sizeof(chunk_id));
 
-	char *sub_path = _DSTORE_CHUNK_PATH;
+	char *sub_path = _DSTORE_DATA_PATH;
 	if (metadata) {
 		sub_path = _DSTORE_META_PATH;
 	}
@@ -489,7 +494,7 @@ _dstore_index_path(const struct fbr_directory *directory, int metadata, char *bu
 	char version[FBR_ID_STRING_MAX];
 	fbr_id_string(directory->version, version, sizeof(version));
 
-	char *sub_path = _DSTORE_CHUNK_PATH;
+	char *sub_path = _DSTORE_DATA_PATH;
 	if (metadata) {
 		sub_path = _DSTORE_META_PATH;
 	}
@@ -596,8 +601,6 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbuf->buffer_pos += bytes;
 		assert_dev(fbuf->buffer_pos <= fbuf->buffer_len);
 
-		fbr_test_logs("DSTORE index json: '%.*s'", (int)fbuf->buffer_pos, fbuf->buffer);
-
 		fjson_parse_partial(&json, fbuf->buffer, fbuf->buffer_pos);
 
 		fbuf->buffer_pos = fjson_shift(&json, fbuf->buffer, fbuf->buffer_pos,
@@ -683,7 +686,7 @@ _dstore_root_path(struct fbr_path_name *dirpath, int metadata, char *buffer, siz
 	assert_dev(buffer);
 	assert_dev(buffer_len);
 
-	char *sub_path = _DSTORE_CHUNK_PATH;
+	char *sub_path = _DSTORE_DATA_PATH;
 	if (metadata) {
 		sub_path = _DSTORE_META_PATH;
 	}
@@ -717,19 +720,17 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 
 	pt_assert(pthread_mutex_lock(&_DSTORE->open_lock));
 
-	if (existing) {
-		_dstore_metadata_read(root_path, &metadata);
+	_dstore_metadata_read(root_path, &metadata);
 
-		if (metadata.etag != existing) {
-			pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
+	if (metadata.etag != existing) {
+		pt_assert(pthread_mutex_unlock(&_DSTORE->open_lock));
 
-			fbr_test_logs("DSTORE root mismatch, want %lu, found %lu", existing,
-				metadata.etag);
+		fbr_test_logs("DSTORE root mismatch, want %lu, found %lu", existing,
+			metadata.etag);
 
-			return EIO;
-		} else {
-			fbr_test_logs("DSTORE root passed: %lu", existing);
-		}
+		return EIO;
+	} else {
+		fbr_test_logs("DSTORE root passed: %lu", existing);
 	}
 
 	fbr_ZERO(&metadata);

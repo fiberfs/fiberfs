@@ -55,7 +55,7 @@ _json_header_peek(const char *json_buf, size_t json_buf_len)
 }
 
 static void
-_json_header(struct fbr_fs *fs, struct fbr_writer *json)
+_json_header_gen(struct fbr_fs *fs, struct fbr_writer *json)
 {
 	assert_dev(fs);
 	assert_dev(json);
@@ -68,7 +68,7 @@ _json_header(struct fbr_fs *fs, struct fbr_writer *json)
 }
 
 static void
-_json_footer(struct fbr_fs *fs, struct fbr_writer *json)
+_json_footer_gen(struct fbr_fs *fs, struct fbr_writer *json)
 {
 	assert_dev(fs);
 	assert_dev(json);
@@ -77,7 +77,7 @@ _json_footer(struct fbr_fs *fs, struct fbr_writer *json)
 }
 
 static void
-_json_body(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_body *body)
+_json_body_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_body *body)
 {
 	assert_dev(fs);
 	assert_dev(json);
@@ -92,12 +92,18 @@ _json_body(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_body *body)
 		fbr_chunk_ok(chunk);
 		assert_dev(chunk->state >= FBR_CHUNK_EMPTY);
 
-		// i: chunk id (string)
-		fbr_writer_add(fs, json, "{\"i\":\"", 6);
-		fbr_writer_add_id(fs, json, chunk->id);
+		// i: chunk id (string, optional)
+		if (chunk->id) {
+			fbr_writer_add(fs, json, "{\"i\":\"", 6);
+			fbr_writer_add_id(fs, json, chunk->id);
+		}
 
 		// o: chunk offset
-		fbr_writer_add(fs, json, "\",\"o\":", 6);
+		if (chunk->id) {
+			fbr_writer_add(fs, json, "\",\"o\":", 6);
+		} else {
+			fbr_writer_add(fs, json, "{\"o\":", 5);
+		}
 		fbr_writer_add_ulong(fs, json, chunk->offset);
 
 		// l: chunk length
@@ -117,7 +123,7 @@ _json_body(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_body *body)
 }
 
 static void
-_json_file(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file)
+_json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file)
 {
 	assert_dev(fs);
 	assert_dev(json);
@@ -151,13 +157,13 @@ _json_file(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file)
 	fbr_writer_add(fs, json, ",\"p\":", 5);
 	fbr_writer_add_ulong(fs, json, file->gid);
 
-	_json_body(fs, json, &file->body);
+	_json_body_gen(fs, json, &file->body);
 
 	fbr_writer_add(fs, json, "}", 1);
 }
 
 static void
-_json_directory(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_directory *directory)
+_json_directory_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_directory *directory)
 {
 	assert_dev(fs);
 	assert_dev(json);
@@ -179,7 +185,7 @@ _json_directory(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_directory
 			fbr_writer_add(fs, json, ",", 1);
 		}
 
-		_json_file(fs, json, file);
+		_json_file_gen(fs, json, file);
 
 		comma = 1;
 	}
@@ -201,9 +207,9 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 	struct fbr_writer json;
 	fbr_writer_init(fs, &json, request, 1);
 
-	_json_header(fs, &json);
-	_json_directory(fs, &json, directory);
-	_json_footer(fs, &json);
+	_json_header_gen(fs, &json);
+	_json_directory_gen(fs, &json, directory);
+	_json_footer_gen(fs, &json);
 
 	fbr_writer_flush(fs, &json);
 
@@ -227,7 +233,7 @@ fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version
 	fbr_writer_ok(writer);
 	assert(version);
 
-	_json_header(fs, writer);
+	_json_header_gen(fs, writer);
 
 	// v: index_version
 	fbr_writer_add(fs, writer, "\"v\":\"", 5);
@@ -438,7 +444,7 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 		return 0;
 	}
 
-	_index_parse_debug(parser, token, depth);
+	//_index_parse_debug(parser, token, depth);
 
 	struct fbr_fs *fs = parser->fs;
 	struct fbr_file *file = parser->file;
@@ -459,10 +465,12 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 		case FJSON_TOKEN_OBJECT:
 			if (token->closed && depth == 6 &&
 			    parser->context[FBR_INDEX_LOC_FILE] == 'b') {
-				if (parser->chunk.id && parser->chunk.length) {
-					fbr_body_chunk_add(fs, file, parser->chunk.id,
-						parser->chunk.offset, parser->chunk.length);
-					fs->log("INDEX_PARSER body DONE");
+				if (parser->chunk.length) {
+					struct fbr_chunk *chunk = fbr_body_chunk_add(fs,
+						file, parser->chunk.id, parser->chunk.offset,
+						parser->chunk.length);
+					fs->log("INDEX_PARSER chunk DONE (%lu %zu %zu)",
+						chunk->id, chunk->offset, chunk->length);
 				}
 				fbr_ZERO(&parser->chunk);
 			}
@@ -471,7 +479,6 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 			if (token->closed && depth == 5 &&
 			    parser->context[FBR_INDEX_LOC_FILE] == 'b') {
 				parser->location = FBR_INDEX_LOC_FILE;
-
 			}
 			break;
 		default:
@@ -582,7 +589,7 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 	assert_dev(token);
 	assert_dev(depth >= 2);
 
-	_index_parse_debug(parser, token, depth);
+	//_index_parse_debug(parser, token, depth);
 
 	struct fbr_fs *fs = parser->fs;
 	struct fbr_directory *directory = parser->directory;
@@ -658,7 +665,7 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 	assert_dev(token);
 	assert_dev(depth >= 2);
 
-	_index_parse_debug(parser, token, depth);
+	//_index_parse_debug(parser, token, depth);
 
 	struct fbr_directory *directory = parser->directory;
 	struct fbr_directory *previous = directory->previous;
@@ -693,6 +700,7 @@ fbr_index_parse_json(struct fjson_context *ctx, void *priv)
 {
 	fjson_context_ok(ctx);
 	assert(priv);
+	(void)_index_parse_debug;
 
 	struct fbr_index_parser *parser = priv;
 	fbr_index_parser_ok(parser);
