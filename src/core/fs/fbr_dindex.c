@@ -443,6 +443,8 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 			release_previous = 1;
 
 			// Store directory as next for future invalidation
+			// Note we do this even if we have a dentry_ttl, which causes all
+			// generations of directories to be held on the oldest one
 			_dindex_ref(fs, directory);
 			previous->next = directory;
 		}

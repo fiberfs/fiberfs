@@ -347,8 +347,7 @@ _directory_parallel(void)
 }
 
 void
-fbr_cmd_fs_test_root_parallel(struct fbr_test_context *ctx,
-    struct fbr_test_cmd *cmd)
+fbr_cmd_fs_test_root_parallel(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -361,8 +360,7 @@ fbr_cmd_fs_test_root_parallel(struct fbr_test_context *ctx,
 }
 
 void
-fbr_cmd_fs_test_directory_parallel(struct fbr_test_context *ctx,
-    struct fbr_test_cmd *cmd)
+fbr_cmd_fs_test_directory_parallel(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -372,4 +370,80 @@ fbr_cmd_fs_test_directory_parallel(struct fbr_test_context *ctx,
 	_directory_parallel();
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory parallel test done");
+}
+
+void
+fbr_cmd_fs_test_directory_release(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fs *fs = fbr_test_fs_alloc();
+	fbr_fs_ok(fs);
+
+	fbr_test_logs("*** alloc root");
+
+	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(directory);
+	assert_zero(directory->previous);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
+	directory->generation = 1;
+	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+	fbr_dindex_release(fs, &directory);
+
+	fbr_test_logs("*** alloc dir1");
+
+	// We hold onto dir1
+	struct fbr_directory *dir1 = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(dir1);
+	fbr_directory_ok(dir1->previous);
+	assert(dir1->state == FBR_DIRSTATE_LOADING);
+	dir1->generation = dir1->previous->generation + 1;
+	fbr_directory_set_state(fs, dir1, FBR_DIRSTATE_OK);
+
+	fbr_test_logs("*** alloc 100 new generations");
+
+	for (size_t i = 0; i < 100; i++) {
+		directory = fbr_directory_root_alloc(fs);
+		fbr_directory_ok(directory);
+		fbr_directory_ok(directory->previous);
+		assert(directory->state == FBR_DIRSTATE_LOADING);
+		directory->generation = directory->previous->generation + 1;
+		assert(directory->generation == i + 3);
+		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+		fbr_dindex_release(fs, &directory);
+	}
+
+	fbr_test_logs("*** releasing all");
+
+	fbr_fs_release_all(fs, 0);
+
+	fbr_test_logs("*** directories: %zu", fs->stats.directories);
+	assert(fs->stats.directories == 101);
+
+	fbr_test_logs("*** releasing dir1");
+
+	fbr_dindex_release(fs, &dir1);
+
+	fbr_test_logs("*** directories: %zu", fs->stats.directories);
+	assert_zero(fs->stats.directories);
+
+	fbr_test_logs("*** cleanup");
+
+	fbr_fs_release_all(fs, 1);
+
+	fbr_test_fs_stats(fs);
+	fbr_test_fs_inodes_debug(fs);
+	fbr_test_fs_dindex_debug(fs);
+
+	fbr_test_ERROR(fs->stats.directories, "non zero");
+	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
+	fbr_test_ERROR(fs->stats.directory_refs, "non zero");
+	fbr_test_ERROR(fs->stats.files, "non zero");
+	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
+	fbr_test_ERROR(fs->stats.file_refs, "non zero");
+
+	fbr_fs_free(fs);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory release test done");
 }

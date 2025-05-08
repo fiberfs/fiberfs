@@ -93,6 +93,7 @@ FBR_TEST_FS_CMD(fs_test_body_spwbuffer_error)
 
 FBR_TEST_FS_CMD(fs_test_root_parallel)
 FBR_TEST_FS_CMD(fs_test_directory_parallel)
+FBR_TEST_FS_CMD(fs_test_directory_release)
 
 #undef FBR_TEST_FS_CMD
 #undef FBR_TEST_FS_VAR
