@@ -19,6 +19,8 @@
 FBR_TEST_STORE_CMD(writer_test)
 FBR_TEST_STORE_CMD(reader_test)
 
+FBR_TEST_STORE_CMD(index_test)
+
 FBR_TEST_STORE_CMD(dstore_debug)
 
 #undef FBR_TEST_STORE_CMD

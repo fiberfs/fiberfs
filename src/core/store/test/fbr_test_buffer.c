@@ -58,6 +58,7 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("*** writer1");
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
+	fbr_fs_ok(fs);
 
 	struct fbr_writer writer1;
 	fbr_writer_init(fs, &writer1, NULL, 0);
@@ -143,6 +144,7 @@ fbr_cmd_reader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("*** reader1");
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
+	fbr_fs_ok(fs);
 
 	struct fbr_reader reader1;
 	fbr_reader_init(fs, &reader1, NULL, 0);
