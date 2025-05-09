@@ -52,14 +52,14 @@ _test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	fbr_ASSERT(directory, "directory '%s' missing", dirname.name);
 	fbr_directory_ok(directory);
 
+	// Note that wait_for_new can return an error if no changes were found...
+	// If we dont have a directory, use the below LOADING state to load the index
+
 	fs->log("RW_FLUSH directory: '%s'", dirname.name);
 
 	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
 	fbr_directory_ok(new_directory);
 	fbr_ASSERT(new_directory->state == FBR_DIRSTATE_LOADING, "new_directory isnt LOADING");
-
-	// TODO get the previous directory 1 more time just incase
-	// Note that wait_for_new can return an error if no changes were found...
 
 	fbr_directory_copy(fs, directory, new_directory);
 
