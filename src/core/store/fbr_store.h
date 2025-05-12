@@ -7,6 +7,7 @@
 #ifndef _FBR_STORE_H_INCLUDED_
 #define _FBR_STORE_H_INCLUDED_
 
+#include "compress/chttp_gzip.h"
 #include "core/fs/fbr_fs.h"
 
 #define FBR_JSON_HEADER				"fiberfs"
@@ -38,12 +39,14 @@ struct fbr_writer {
 	struct fbr_buffer			buffer_slab[FBR_DEFAULT_BUFFERS];
 
 	struct fbr_workspace			*workspace;
+	struct chttp_gzip			gzip;
 
 	size_t					raw_bytes;
 	size_t					bytes;
 
 	unsigned int				want_gzip:1;
 	unsigned int				is_gzip:1;
+	unsigned int				error:1;
 };
 
 struct fbr_reader {
@@ -51,9 +54,9 @@ struct fbr_reader {
 #define FBR_READER_MAGIC			0x33939170
 
 	struct fbr_buffer			*buffer;
-	struct fbr_buffer			*input;
+	struct fbr_buffer			*output;
 	struct fbr_buffer			_buffer;
-	struct fbr_buffer			_input;
+	struct fbr_buffer			_output;
 
 	size_t					raw_bytes;
 	size_t					bytes;
@@ -132,7 +135,6 @@ void fbr_writer_debug(struct fbr_fs *fs, struct fbr_writer *writer);
 
 void fbr_reader_init(struct fbr_fs *fs, struct fbr_reader *reader,
 	struct fbr_request *request, int is_gzip);
-struct fbr_buffer *fbr_reader_buffer_get(struct fbr_reader *reader);
 void fbr_reader_free(struct fbr_fs *fs, struct fbr_reader *reader);
 
 #define fbr_buffer_ok(buffer)		fbr_magic_check(buffer, FBR_BUFFER_MAGIC)

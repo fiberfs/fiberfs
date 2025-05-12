@@ -52,8 +52,8 @@ fbr_reader_init(struct fbr_fs *fs, struct fbr_reader *reader, struct fbr_request
 		buffer_len = FBR_DEFAULT_BUFLEN * 2;
 
 		if (buffer) {
-			reader->input = &reader->_input;
-			fbr_buffer_init(fs, reader->input, buffer, buffer_len);
+			reader->output = &reader->_output;
+			fbr_buffer_init(fs, reader->output, buffer, buffer_len);
 		}
 	}
 
@@ -61,25 +61,12 @@ fbr_reader_init(struct fbr_fs *fs, struct fbr_reader *reader, struct fbr_request
 		reader->buffer = &reader->_buffer;
 		fbr_buffer_init(fs, reader->buffer, NULL, FBR_DEFAULT_BUFLEN);
 	}
-	if (!reader->input) {
-		reader->input = &reader->_input;
-		fbr_buffer_init(fs, reader->input, NULL, FBR_DEFAULT_BUFLEN * 2);
+	if (!reader->output) {
+		reader->output = &reader->_output;
+		fbr_buffer_init(fs, reader->output, NULL, FBR_DEFAULT_BUFLEN * 2);
 	}
 
 	fbr_reader_ok(reader);
-}
-
-struct fbr_buffer *
-fbr_reader_buffer_get(struct fbr_reader *reader)
-{
-	fbr_reader_ok(reader);
-	assert_dev(reader->input);
-
-	if (reader->buffer) {
-		return reader->buffer;
-	}
-
-	return reader->input;
 }
 
 void
@@ -89,7 +76,7 @@ fbr_reader_free(struct fbr_fs *fs, struct fbr_reader *reader)
 	fbr_reader_ok(reader);
 
 	fbr_buffers_free(reader->buffer);
-	fbr_buffers_free(reader->input);
+	fbr_buffers_free(reader->output);
 
 	fbr_ZERO(reader);
 }

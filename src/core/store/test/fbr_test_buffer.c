@@ -148,7 +148,7 @@ fbr_cmd_reader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_reader reader1;
 	fbr_reader_init(fs, &reader1, NULL, 0);
-	struct fbr_buffer *fbuf = fbr_reader_buffer_get(&reader1);
+	struct fbr_buffer *fbuf = reader1.output;
 	assert(fbuf->buffer_len <= sizeof(_ONE_BUFFER));
 	fbr_buffer_append(fbuf, _ONE_BUFFER, fbuf->buffer_len);
 	int ret = memcmp(fbuf->buffer, _ONE_BUFFER, fbuf->buffer_pos);
@@ -173,7 +173,7 @@ fbr_cmd_reader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_reader reader2;
 	fbr_reader_init(fs, &reader2, r1, 0);
-	fbuf = fbr_reader_buffer_get(&reader2);
+	fbuf = reader2.output;
 	assert(fbuf->buffer_len <= sizeof(_ONE_BUFFER));
 	fbr_buffer_append(fbuf, _ONE_BUFFER, fbuf->buffer_len);
 	ret = memcmp(fbuf->buffer, _ONE_BUFFER, fbuf->buffer_pos);

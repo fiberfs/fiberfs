@@ -217,7 +217,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 
 	int ret = EIO;
 
-	if (fs->store->index_write_f) {
+	if (fs->store->index_write_f && !json.error) {
 		ret = fs->store->index_write_f(fs, directory, &json, previous);
 	}
 

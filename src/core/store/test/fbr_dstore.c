@@ -17,6 +17,7 @@
 #include "fiberfs.h"
 #include "fbr_dstore.h"
 #include "fjson.h"
+#include "compress/chttp_gzip.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
 #include "sys/fbr_sys.h"
@@ -535,11 +536,12 @@ fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_ok(directory);
 	fbr_writer_ok(writer);
 	assert_dev(writer->output);
+	assert_zero_dev(writer->error);
 
 	char index_path[PATH_MAX];
 	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
 
-	fbr_test_logs("DSTORE index: '%s'", index_path);
+	fbr_test_logs("DSTORE index: '%s' %s", index_path, writer->is_gzip ? "GZIP" : "");
 
 	_dstore_mkdirs(index_path);
 
@@ -577,7 +579,7 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
 
-	fbr_test_logs("DSTORE index read: '%s'", index_path);
+	fbr_test_logs("DSTORE index read: '%s' %s", index_path, metadata.gzipped ? "GZIP" : "");
 
 	int fd = open(index_path, O_RDONLY);
 
@@ -589,52 +591,101 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_request *request = fbr_request_get();
 
 	struct fbr_reader reader;
-	fbr_reader_init(fs, &reader, request, 0);
+	fbr_reader_init(fs, &reader, request, metadata.gzipped);
+	struct fbr_buffer *output = reader.output;
+	fbr_buffer_ok(output);
 
 	struct fbr_index_parser parser;
 	fbr_index_parser_init(fs, &parser, directory);
-	struct fbr_buffer *fbuf = fbr_reader_buffer_get(&reader);
 
 	struct fjson_context json;
 	fjson_context_init(&json);
 	json.callback = &fbr_index_parse_json;
 	json.callback_priv = &parser;
 
-	ssize_t bytes;
+	struct chttp_gzip gzip;
+	if (metadata.gzipped) {
+		chttp_gzip_inflate_init(&gzip);
+	}
+
+	ssize_t bytes = 0;
 
 	do {
-		size_t buffer_free = fbuf->buffer_len - fbuf->buffer_pos;
-		size_t buffer_len = (random() % 10) + 1;
-		assert(buffer_len <= buffer_free);
+		if (metadata.gzipped) {
+			struct fbr_buffer *gbuffer = reader.buffer;
+			fbr_buffer_ok(gbuffer);
 
-		bytes = fbr_sys_read(fd, fbuf->buffer + fbuf->buffer_pos, buffer_len);
-		if (bytes < 0) {
-			break;
+			gbuffer->buffer_pos = 0;
+			ssize_t gbytes = fbr_sys_read(fd, gbuffer->buffer, gbuffer->buffer_len);
+			if (gbytes < 0) {
+				break;
+			}
+
+			size_t output_free = output->buffer_len - output->buffer_pos;
+			size_t written;
+
+			gzip.status = chttp_zlib_flate(&gzip,
+				(unsigned char *)gbuffer->buffer, gbytes,
+				(unsigned char *)output->buffer + output->buffer_pos, output_free,
+				&written, (gbytes == 0));
+
+			if (gzip.status == CHTTP_GZIP_ERROR) {
+				break;
+			}
+
+			bytes = written;
+
+			output->buffer_pos += bytes;
+			assert_dev(output->buffer_pos <= output->buffer_len);
+
+			if (gzip.status == CHTTP_GZIP_DONE) {
+				bytes = 0;
+			}
+		} else {
+			assert_zero_dev(reader.buffer);
+
+			size_t output_free = output->buffer_len - output->buffer_pos;
+			size_t output_len = (random() % 10) + 1;
+			assert(output_len <= output_free);
+
+			bytes = fbr_sys_read(fd, output->buffer + output->buffer_pos, output_len);
+			if (bytes < 0) {
+				break;
+			}
+
+			output->buffer_pos += bytes;
+			assert_dev(output->buffer_pos <= output->buffer_len);
 		}
 
-		fbuf->buffer_pos += bytes;
-		assert_dev(fbuf->buffer_pos <= fbuf->buffer_len);
+		fjson_parse_partial(&json, output->buffer, output->buffer_pos);
 
-		fjson_parse_partial(&json, fbuf->buffer, fbuf->buffer_pos);
-
-		fbuf->buffer_pos = fjson_shift(&json, fbuf->buffer, fbuf->buffer_pos,
-			fbuf->buffer_len);
+		output->buffer_pos = fjson_shift(&json, output->buffer, output->buffer_pos,
+			output->buffer_len);
 	} while (bytes > 0);
 
 	assert_zero(close(fd));
 
-	fjson_parse(&json, fbuf->buffer, fbuf->buffer_pos);
+	if (metadata.gzipped) {
+		fbr_ASSERT(gzip.status == CHTTP_GZIP_DONE, "gzip.status: %d", gzip.status);
+	}
+
+	fjson_parse(&json, output->buffer, output->buffer_pos);
 	assert(parser.magic == FBR_INDEX_PARSER_MAGIC);
 
 	int ret = 0;
 
 	if (json.error) {
+		fbr_test_logs("DSTORE index read json error");
 		ret = 1;
 	}
 
 	fjson_context_free(&json);
 	fbr_index_parser_free(&parser);
 	fbr_reader_free(fs, &reader);
+
+	if (metadata.gzipped) {
+		chttp_gzip_free(&gzip);
+	}
 
 	return ret;
 }
