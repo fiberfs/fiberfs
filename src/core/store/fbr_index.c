@@ -204,6 +204,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 
 	struct fbr_request *request = fbr_request_get();
 
+	// TODO make gzip a param
 	struct fbr_writer json;
 	fbr_writer_init(fs, &json, request, 1);
 
