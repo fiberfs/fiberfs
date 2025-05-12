@@ -316,7 +316,8 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	}
 
 	// If we have a TTL, files can never be forced to expire
-	if (fs->config.dentry_ttl > 0 && !next) {
+	if (fs->config.dentry_ttl > 0) {
+		assert_zero_dev(next);
 		return;
 	}
 
@@ -382,7 +383,6 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 				file_expired = 1;
 			}
 		} else {
-			assert_dev(fs->config.dentry_ttl <= 0);
 			file_expired = 1;
 		}
 

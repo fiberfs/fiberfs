@@ -372,14 +372,16 @@ fbr_cmd_fs_test_directory_parallel(struct fbr_test_context *ctx, struct fbr_test
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory parallel test done");
 }
 
-void
-fbr_cmd_fs_test_directory_release(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+static void
+_directory_release(int ttl)
 {
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
-
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
+
+	if (ttl) {
+		fbr_test_logs("*** ttl ENABLED");
+		fs->config.dentry_ttl = 1000;
+	}
 
 	fbr_test_logs("*** alloc root");
 
@@ -419,7 +421,12 @@ fbr_cmd_fs_test_directory_release(struct fbr_test_context *ctx, struct fbr_test_
 	fbr_fs_release_all(fs, 0);
 
 	fbr_test_logs("*** directories: %zu", fs->stats.directories);
-	assert(fs->stats.directories == 101);
+
+	if (ttl) {
+		assert(fs->stats.directories == 1);
+	} else {
+		assert(fs->stats.directories == 101);
+	}
 
 	fbr_test_logs("*** releasing dir1");
 
@@ -445,5 +452,23 @@ fbr_cmd_fs_test_directory_release(struct fbr_test_context *ctx, struct fbr_test_
 
 	fbr_fs_free(fs);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory release test done");
+	fbr_test_logs("directory release test done (ttl: %d)", ttl);
+}
+
+void
+fbr_cmd_fs_test_directory_release(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_directory_release(0);
+}
+
+void
+fbr_cmd_fs_test_directory_release_ttl(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_directory_release(1);
 }

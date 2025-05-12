@@ -1,0 +1,4 @@
+fiber_test "Directory release"
+
+fs_test_directory_release
+fs_test_directory_release_ttl
