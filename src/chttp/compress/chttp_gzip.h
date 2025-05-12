@@ -20,6 +20,7 @@ enum chttp_gzip_status {
 #else
 struct chttp_gzip {
 	int error;
+	int status;
 };
 #endif
 

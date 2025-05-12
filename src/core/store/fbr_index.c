@@ -11,6 +11,7 @@
 
 #include "fiberfs.h"
 #include "fjson.h"
+#include "compress/chttp_gzip.h"
 #include "core/fs/fbr_fs.h"
 #include "data/tree.h"
 #include "fbr_store.h"
@@ -205,8 +206,13 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 	struct fbr_request *request = fbr_request_get();
 
 	// TODO make gzip a param
+	int gzip = 0;
+	if (chttp_gzip_enabled()) {
+		gzip = 1;
+	}
+
 	struct fbr_writer json;
-	fbr_writer_init(fs, &json, request, 1);
+	fbr_writer_init(fs, &json, request, gzip);
 
 	_json_header_gen(fs, &json);
 	_json_directory_gen(fs, &json, directory);
