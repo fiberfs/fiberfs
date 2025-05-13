@@ -616,12 +616,16 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 			struct fbr_buffer *gbuffer = reader.buffer;
 			fbr_buffer_ok(gbuffer);
 
+			// TODO fix me
+
 			gbuffer->buffer_pos = 0;
 			ssize_t gbytes = 0;
 
 			assert(gzip.status <= FBR_GZIP_DONE);
 			if (gzip.status == FBR_GZIP_DONE) {
 				gbytes = fbr_sys_read(fd, gbuffer->buffer, gbuffer->buffer_len);
+			} else {
+				bytes = 1;
 			}
 
 			if (gbytes < 0 || (!gbytes && gzip.status == FBR_GZIP_DONE)) {
@@ -629,6 +633,7 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 			}
 
 			bytes_in += gbytes;
+			bytes += gbytes;
 
 			unsigned char *input = (unsigned char *)gbuffer->buffer;
 			size_t output_free = output->buffer_len - output->buffer_pos;
@@ -645,10 +650,11 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 				break;
 			}
 
-			bytes = written;
-			output->buffer_pos += bytes;
-			bytes_out += bytes;
+			output->buffer_pos += written;
+			bytes_out += written;
 			assert_dev(output->buffer_pos <= output->buffer_len);
+
+			bytes += written;
 		} else {
 			assert_zero_dev(reader.buffer);
 
@@ -701,9 +707,7 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_gzip_free(&gzip);
 	}
 
-	if (!ret) {
-		fbr_test_logs("DSTORE index read bytes in: %zu out: %zu", bytes_in, bytes_out);
-	}
+	fbr_test_logs("DSTORE index read bytes in: %zu out: %zu", bytes_in, bytes_out);
 
 	return ret;
 }
