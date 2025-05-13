@@ -241,7 +241,7 @@ _output_compress(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffe
 		if (output_free) {
 			size_t written;
 
-			gzip->status = fbr_gzip_flate(gzip,
+			fbr_gzip_flate(gzip,
 				(const unsigned char *)buffer, buffer_len,
 				(unsigned char *)output->buffer + output->buffer_pos, output_free,
 				&written, final);

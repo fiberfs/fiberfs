@@ -29,7 +29,7 @@ struct fbr_gzip *fbr_gzip_inflate_alloc(void);
 struct fbr_gzip *fbr_gzip_deflate_alloc(void);
 void fbr_gzip_inflate_init(struct fbr_gzip *gzip);
 void fbr_gzip_deflate_init(struct fbr_gzip *gzip);
-enum fbr_gzip_status fbr_gzip_flate(struct fbr_gzip *gzip, const void *input,
+void fbr_gzip_flate(struct fbr_gzip *gzip, const void *input,
 	size_t input_len, void *output, size_t output_len, size_t *written, int finish);
 void fbr_gzip_free(void *gzip_priv);
 

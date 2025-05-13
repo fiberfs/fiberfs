@@ -29,7 +29,7 @@ struct fbr_zlib {
 
 	enum fbr_zlib_type		type;
 	int				status;
-	int				state;
+	int				zstate;
 
 	unsigned int			do_free:1;
 

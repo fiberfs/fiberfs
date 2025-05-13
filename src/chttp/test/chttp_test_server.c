@@ -794,7 +794,6 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 	size_t body_len;
 	int do_gzip = 0;
 	struct fbr_gzip gzip;
-	enum fbr_gzip_status gret;
 
 	_server_ok(server);
 	chttp_context_ok(server->chttp);
@@ -829,9 +828,9 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 			do_gzip = 1;
 			fbr_gzip_deflate_init(&gzip);
 
-			gret = fbr_gzip_flate(&gzip, body, body_len, gzip_buf, sizeof(gzip_buf),
+			fbr_gzip_flate(&gzip, body, body_len, gzip_buf, sizeof(gzip_buf),
 				&body_len, 1);
-			assert(gret == FBR_GZIP_DONE);
+			assert(gzip.status == FBR_GZIP_DONE);
 			assert(body_len > 0);
 
 			body = gzip_buf;

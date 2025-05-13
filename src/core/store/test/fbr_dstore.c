@@ -624,7 +624,7 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 			size_t output_free = output->buffer_len - output->buffer_pos;
 			size_t written;
 
-			gzip.status = fbr_gzip_flate(&gzip,
+			fbr_gzip_flate(&gzip,
 				(unsigned char *)gbuffer->buffer, gbytes,
 				(unsigned char *)output->buffer + output->buffer_pos, output_free,
 				&written, (gbytes == 0));

@@ -99,16 +99,16 @@ fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t input_l
 
 	*written = 0;
 
-	if (zlib->state == Z_STREAM_END) {
+	if (zlib->zstate == Z_STREAM_END) {
 		if (input) {
 			return FBR_GZIP_ERROR;
 		}
 		return FBR_GZIP_DONE;
-	} else if (zlib->state == Z_BUF_ERROR) {
+	} else if (zlib->zstate == Z_BUF_ERROR) {
 		if (output_len <= zlib->zs.avail_out && !input) {
 			return FBR_GZIP_ERROR;
 		}
-	} else if (zlib->state != Z_OK) {
+	} else if (zlib->zstate != Z_OK) {
 		return FBR_GZIP_ERROR;
 	}
 
@@ -128,10 +128,10 @@ fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t input_l
 	{
 		case FBR_ZLIB_INFLATE:
 			assert_zero(finish);
-			zlib->state = inflate(&zlib->zs, Z_NO_FLUSH);
+			zlib->zstate = inflate(&zlib->zs, Z_NO_FLUSH);
 			break;
 		case FBR_ZLIB_DEFLATE:
-			zlib->state = deflate(&zlib->zs, finish ? Z_FINISH : Z_NO_FLUSH);
+			zlib->zstate = deflate(&zlib->zs, finish ? Z_FINISH : Z_NO_FLUSH);
 			break;
 		default:
 			fbr_ABORT("bad zlib flate type");
@@ -150,7 +150,7 @@ fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t input_l
 	assert(*written < output_len);
 	assert(zlib->zs.avail_out);
 
-	switch (zlib->state)
+	switch (zlib->zstate)
 	{
 		case Z_BUF_ERROR:
 			if (zlib->zs.avail_in) {
@@ -222,7 +222,7 @@ chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t ou
 	assert(zlib->status <= FBR_GZIP_DONE);
 
 	if (zlib->status == FBR_GZIP_MORE_BUFFER) {
-		zlib->status = fbr_zlib_flate(zlib, NULL, 0, output, output_len, &written, 0);
+		fbr_gzip_flate(zlib, NULL, 0, output, output_len, &written, 0);
 
 		if (zlib->status >= FBR_GZIP_ERROR) {
 			chttp_error(ctx, CHTTP_ERR_GZIP);
@@ -247,7 +247,7 @@ chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t ou
 		return 0;
 	}
 
-	zlib->status = fbr_zlib_flate(zlib, zlib->buffer, read, output, output_len, &written, 0);
+	fbr_gzip_flate(zlib, zlib->buffer, read, output, output_len, &written, 0);
 
 	if (zlib->status >= FBR_GZIP_ERROR) {
 		chttp_error(ctx, CHTTP_ERR_GZIP);
@@ -295,7 +295,7 @@ chttp_zlib_send_chunk(struct fbr_zlib *zlib, struct chttp_addr *addr, const unsi
 		assert(max_chunklen);
 		assert(zlib->buffer_len > max_chunklen + 2);
 
-		zlib->status = fbr_zlib_flate(zlib, inbuf, inlen, zlib->buffer + max_chunklen,
+		fbr_gzip_flate(zlib, inbuf, inlen, zlib->buffer + max_chunklen,
 			zlib->buffer_len - max_chunklen - 2, &written, final);
 
 		if (zlib->status == FBR_GZIP_ERROR) {
