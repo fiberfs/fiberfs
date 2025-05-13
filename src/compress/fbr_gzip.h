@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2024 chttp
+ * Copyright (c) 2024-2025 FiberFS
  *
  */
 
-#ifndef _CHTTP_GZIP_H_INCLUDED_
-#define _CHTTP_GZIP_H_INCLUDED_
+#ifndef _FBR_GZIP_H_INCLUDED_
+#define _FBR_GZIP_H_INCLUDED_
 
 #include <stddef.h>
 
@@ -41,4 +41,4 @@ enum chttp_gzip_status chttp_gzip_flate(struct chttp_gzip *gzip, const void *inp
 void chttp_gzip_send_chunk(struct chttp_gzip *gzip, struct chttp_addr *addr,
 	const void *input, size_t input_len);
 
-#endif /* _CHTTP_GZIP_H_INCLUDED_ */
+#endif /* _FBR_GZIP_H_INCLUDED_ */

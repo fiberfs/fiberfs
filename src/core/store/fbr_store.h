@@ -7,7 +7,7 @@
 #ifndef _FBR_STORE_H_INCLUDED_
 #define _FBR_STORE_H_INCLUDED_
 
-#include "compress/chttp_gzip.h"
+#include "compress/fbr_gzip.h"
 #include "core/fs/fbr_fs.h"
 
 #define FBR_JSON_HEADER				"fiberfs"

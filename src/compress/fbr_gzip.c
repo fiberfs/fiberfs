@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2024 chttp
+ * Copyright (c) 2024-2025 FiberFS
  *
  */
 
+#include "fiberfs.h"
 #include "chttp.h"
-#include "chttp_gzip.h"
+#include "fbr_gzip.h"
 #include "gzip_zlib.h"
 
 int

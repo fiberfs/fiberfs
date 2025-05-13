@@ -3,11 +3,12 @@
  *
  */
 
+#include "fiberfs.h"
 #include "chttp.h"
 
 #ifdef CHTTP_ZLIB
 
-#include "chttp_gzip.h"
+#include "fbr_gzip.h"
 #include "gzip_zlib.h"
 #include "network/chttp_network.h"
 

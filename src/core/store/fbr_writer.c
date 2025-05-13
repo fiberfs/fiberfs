@@ -9,7 +9,7 @@
 
 #include "fiberfs.h"
 #include "fbr_store.h"
-#include "compress/chttp_gzip.h"
+#include "compress/fbr_gzip.h"
 #include "core/request/fbr_request.h"
 
 static void

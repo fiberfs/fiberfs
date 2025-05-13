@@ -4,7 +4,7 @@
  */
 
 #include "chttp.h"
-#include "compress/chttp_gzip.h"
+#include "compress/fbr_gzip.h"
 
 #include <errno.h>
 #include <limits.h>

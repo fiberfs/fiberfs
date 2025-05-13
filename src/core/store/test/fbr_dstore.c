@@ -17,7 +17,7 @@
 #include "fiberfs.h"
 #include "fbr_dstore.h"
 #include "fjson.h"
-#include "compress/chttp_gzip.h"
+#include "compress/fbr_gzip.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
 #include "sys/fbr_sys.h"
