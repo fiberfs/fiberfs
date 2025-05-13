@@ -64,10 +64,11 @@ fbr_gzip_deflate_alloc(void)
 
 void
 fbr_gzip_flate(struct fbr_gzip *gzip, const void *input, size_t input_len, void *output,
-    size_t output_len, size_t *written, int finish)
+    size_t output_len, size_t *written, int finish_deflate)
 {
 #ifdef FBR_ZLIB
-	gzip->status = fbr_zlib_flate(gzip, input, input_len, output, output_len, written, finish);
+	gzip->status = fbr_zlib_flate(gzip, input, input_len, output, output_len, written,
+		finish_deflate);
 	return;
 #else
 	(void)gzip;
@@ -76,7 +77,7 @@ fbr_gzip_flate(struct fbr_gzip *gzip, const void *input, size_t input_len, void 
 	(void)output;
 	(void)output_len;
 	(void)written;
-	(void)finish;
+	(void)finish_deflate;
 	fbr_ABORT("gzip not configured")
 	return;
 #endif

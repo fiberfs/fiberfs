@@ -210,24 +210,24 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 		gzip = 1;
 	}
 
-	struct fbr_writer json;
-	fbr_writer_init(fs, &json, request, gzip);
+	struct fbr_writer json_gen;
+	fbr_writer_init(fs, &json_gen, request, gzip);
 
-	_json_header_gen(fs, &json);
-	_json_directory_gen(fs, &json, directory);
-	_json_footer_gen(fs, &json);
+	_json_header_gen(fs, &json_gen);
+	_json_directory_gen(fs, &json_gen, directory);
+	_json_footer_gen(fs, &json_gen);
 
-	fbr_writer_flush(fs, &json);
+	fbr_writer_flush(fs, &json_gen);
 
-	fbr_writer_debug(fs, &json);
+	fbr_writer_debug(fs, &json_gen);
 
 	int ret = EIO;
 
-	if (fs->store->index_write_f && !json.error) {
-		ret = fs->store->index_write_f(fs, directory, &json, previous);
+	if (fs->store->index_write_f && !json_gen.error) {
+		ret = fs->store->index_write_f(fs, directory, &json_gen, previous);
 	}
 
-	fbr_writer_free(fs, &json);
+	fbr_writer_free(fs, &json_gen);
 
 	return ret;
 }
@@ -472,11 +472,8 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 			if (token->closed && depth == 6 &&
 			    parser->context[FBR_INDEX_LOC_FILE] == 'b') {
 				if (parser->chunk.length) {
-					struct fbr_chunk *chunk = fbr_body_chunk_add(fs,
-						file, parser->chunk.id, parser->chunk.offset,
-						parser->chunk.length);
-					fs->log("INDEX_PARSER chunk DONE (%lu %zu %zu)",
-						chunk->id, chunk->offset, chunk->length);
+					fbr_body_chunk_add(fs, file, parser->chunk.id,
+						parser->chunk.offset, parser->chunk.length);
 				}
 				fbr_ZERO(&parser->chunk);
 			}
@@ -507,7 +504,7 @@ _index_parse_file_alloc(struct fbr_index_parser *parser, const char *filename, s
 	struct fbr_fs *fs = parser->fs;
 	struct fbr_directory *directory = parser->directory;
 
-	fs->log("INDEX_PARSER file ALLOC: '%.*s'", (int)filename_len, filename);
+	//fs->log("INDEX_PARSER file ALLOC: '%.*s'", (int)filename_len, filename);
 
 	struct fbr_path_name filepath;
 	filepath.len = filename_len;
@@ -631,9 +628,7 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 			if (token->closed && depth == 3) {
 				if (file && file->state == FBR_FILE_INIT) {
 					file->state = FBR_FILE_OK;
-					fs->log("INDEX_PARSER file DONE (%lu %lu %u)",
-						file->generation, file->size, file->mode);
-					fbr_body_debug(fs, file);
+					//fbr_body_debug(fs, file);
 				} else if (file) {
 					assert_dev(file->state >= FBR_FILE_OK);
 					fbr_directory_add_file(fs, directory, file);
@@ -726,7 +721,10 @@ fbr_index_parse_json(struct fjson_context *ctx, void *priv)
 					parser->location = FBR_INDEX_LOC_DIRECTORY;
 				} else {
 					parser->location = FBR_INDEX_LOC_NONE;
-					parser->fs->log("INDEX_PARSER COMPLETED");
+
+					struct fbr_directory *directory = parser->directory;
+					parser->fs->log("INDEX_PARSER COMPLETED (%zu files)",
+						directory->file_count);
 				}
 				return 0;
 			}

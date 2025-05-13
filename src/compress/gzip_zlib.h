@@ -43,7 +43,7 @@ void fbr_zlib_inflate_init(struct fbr_zlib *zlib);
 void fbr_zlib_deflate_init(struct fbr_zlib *zlib);
 struct fbr_zlib *fbr_zlib_alloc(enum fbr_zlib_type type);
 int fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t input_len,
-	unsigned char *output, size_t output_len, size_t *written, int finish);
+	unsigned char *output, size_t output_len, size_t *written, int finish_deflate);
 void fbr_zlib_free(struct fbr_zlib *zlib);
 
 struct chttp_context;

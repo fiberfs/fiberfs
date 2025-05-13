@@ -3,6 +3,9 @@
  *
  */
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "fiberfs.h"
 #include "chttp.h"
 
@@ -11,9 +14,6 @@
 #include "fbr_gzip.h"
 #include "gzip_zlib.h"
 #include "network/chttp_network.h"
-
-#include <stdlib.h>
-#include <string.h>
 
 #define fbr_zlib_ok(zlib)	fbr_magic_check(zlib, FBR_ZLIB_MAGIC)
 
@@ -90,7 +90,7 @@ fbr_zlib_alloc(enum fbr_zlib_type type)
 
 int
 fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t input_len,
-    unsigned char *output, size_t output_len, size_t *written, int finish)
+    unsigned char *output, size_t output_len, size_t *written, int finish_deflate)
 {
 	fbr_zlib_ok(zlib);
 	assert(output);
@@ -127,11 +127,11 @@ fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t input_l
 	switch (zlib->type)
 	{
 		case FBR_ZLIB_INFLATE:
-			assert_zero(finish);
+			assert_zero(finish_deflate);
 			zlib->zstate = inflate(&zlib->zs, Z_NO_FLUSH);
 			break;
 		case FBR_ZLIB_DEFLATE:
-			zlib->zstate = deflate(&zlib->zs, finish ? Z_FINISH : Z_NO_FLUSH);
+			zlib->zstate = deflate(&zlib->zs, finish_deflate ? Z_FINISH : Z_NO_FLUSH);
 			break;
 		default:
 			fbr_ABORT("bad zlib flate type");

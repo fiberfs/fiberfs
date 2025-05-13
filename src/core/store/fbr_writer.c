@@ -253,6 +253,9 @@ _output_compress(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffe
 			assert_dev(written <= output_free);
 			output->buffer_pos += written;
 			assert(output->buffer_len >= output->buffer_pos);
+
+			buffer = NULL;
+			buffer_len = 0;
 		} else {
 			assert_zero_dev(output->next);
 
