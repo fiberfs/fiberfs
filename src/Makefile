@@ -25,7 +25,7 @@ FJSON_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FJSON_CLIENT)))
 FJSON_SRC:=$(wildcard fjson/*.c)
 FJSON_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FJSON_SRC)))
 
-UTILS_SRC=$(wildcard utils/*.c)
+UTILS_SRC=$(wildcard utils/*.c compress/*.c)
 UTILS_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(UTILS_SRC)))
 
 ALL_SOURCE:=$(shell find * -type f -name '*.c')
@@ -148,8 +148,8 @@ fiberfs_test:	libchttp.a libfjson.a $(TEST_OBJS) $(OBJS)
 libfiberfs.so:	$(OBJS) libchttp.a libfjson.a
 		$(CC) $(LDFLAGS) -o $@ $(OBJS) libchttp.a libfjson.a
 
-libchttp.a:	$(CHTTP_OBJS)
-		ar cr $@ $(CHTTP_OBJS)
+libchttp.a:	$(CHTTP_OBJS) $(UTILS_OBJS)
+		ar cr $@ $(CHTTP_OBJS) $(UTILS_OBJS)
 
 libfjson.a:	$(FJSON_OBJS) $(UTILS_OBJS)
 		ar cr $@ $(FJSON_OBJS) $(UTILS_OBJS)
