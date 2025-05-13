@@ -52,13 +52,15 @@ fbr_test_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	char *v1 = cmd->params[0].value;
 	char *v2 = cmd->params[1].value;
+	char *v1_var = cmd->params[0].variable;
+	char *v2_var = cmd->params[1].variable;
 
 	do {
 		ret = strcmp(v1, v2);
 
 		if (!ret) {
 			break;
-		} else if (!cmd->params[0].variable && !cmd->params[1].variable) {
+		} else if (!v1_var && !v2_var) {
 			break;
 		} else {
 			fbr_test_log(ctx, FBR_LOG_VERBOSE, "not equal '%s' != '%s', retry...",
@@ -68,20 +70,12 @@ fbr_test_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		retries++;
 		fbr_test_sleep_ms(200 * retries);
 
-		struct fbr_test_cmdentry *cmd_entry;
-
-		if (cmd->params[0].variable) {
-			cmd_entry = fbr_test_cmds_get(ctx->test, cmd->params[0].variable);
-			assert(cmd_entry);
-			assert(cmd_entry->is_var && cmd_entry->var_func);
-			v1 = cmd_entry->var_func(ctx);
+		if (v1_var) {
+			v1 = fbr_test_read_var(ctx->test, v1_var);
 			assert(v1);
 		}
-		if (cmd->params[1].variable) {
-			cmd_entry = fbr_test_cmds_get(ctx->test, cmd->params[1].variable);
-			assert(cmd_entry);
-			assert(cmd_entry->is_var && cmd_entry->var_func);
-			v2 = cmd_entry->var_func(ctx);
+		if (v2_var) {
+			v2 = fbr_test_read_var(ctx->test, v2_var);
 			assert(v2);
 		}
 	} while (retries < 3);

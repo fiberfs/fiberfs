@@ -158,6 +158,7 @@ struct fbr_test_cmdentry *fbr_test_cmds_get(struct fbr_test *test, const char *n
 
 void fbr_test_unescape(struct fbr_test_param *param);
 int fbr_test_readline(struct fbr_test *test, size_t append_len);
+char *fbr_test_read_var(struct fbr_test *test, const char *variable);
 void fbr_test_parse_cmd(struct fbr_test *test);
 
 void fbr_test_fork(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd);

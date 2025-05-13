@@ -222,6 +222,21 @@ _match_quote(char *buf, size_t pos)
 	return quote;
 }
 
+char *
+fbr_test_read_var(struct fbr_test *test, const char *variable)
+{
+	fbr_test_ok(test);
+	assert(variable);
+
+	struct fbr_test_cmdentry *cmd_entry = fbr_test_cmds_get(test, variable);
+	if (!cmd_entry || !cmd_entry->is_var || !cmd_entry->var_func) {
+		return NULL;
+	}
+
+	char *value = cmd_entry->var_func(test->context);
+	return value;
+}
+
 void
 fbr_test_parse_cmd(struct fbr_test *test)
 {
@@ -297,29 +312,25 @@ fbr_test_parse_cmd(struct fbr_test *test)
 	}
 
 	for (i = 0; i < cmd->param_count; i++) {
-		// TODO remove
-		assert(cmd->params[i].value);
-		assert(cmd->params[i].len == strlen(cmd->params[i].value));
+		assert_dev(cmd->params[i].value);
+		assert_dev(cmd->params[i].len == strlen(cmd->params[i].value));
 
 		if (cmd->params[i].value[0] == '$' && cmd->params[i].value[1] == '$') {
 			cmd->params[i].value += 1;
 		} else if (cmd->params[i].value[0] == '$') {
 			char *var = cmd->params[i].value;
 
+			cmd->params[i].variable = var;
+			cmd->params[i].v_const = 1;
+
 			fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "Var: %s", var);
 
-			struct fbr_test_cmdentry *cmd_entry = fbr_test_cmds_get(test, var);
-			fbr_test_ERROR(!cmd_entry || !cmd_entry->is_var,
-				"variable %s not found (line %zu)", var, fbr_test_line_pos(test));
-			assert(cmd_entry->var_func);
-
-			buf = cmd_entry->var_func(test->context);
-			fbr_test_ASSERT(buf, "variable %s is null", var);
+			buf = fbr_test_read_var(test, var);
+			fbr_test_ASSERT(buf, "variable %s not found (line %zu)",
+				var, fbr_test_line_pos(test));
 
 			cmd->params[i].value = buf;
-			cmd->params[i].variable = var;
 			cmd->params[i].len = strlen(buf);
-			cmd->params[i].v_const = 1;
 		}
 
 		fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "Arg: %s",
