@@ -9,16 +9,15 @@
 
 // TODO
 // re-align with fbr style
-// move to fbr_assert.h and pt_assert
-#undef assert_zero
+// move to pt_assert
 
-#include "memory/chttp_dpage.h"
-#include "network/chttp_network.h"
-
-#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+
+#include "memory/chttp_dpage.h"
+#include "network/chttp_network.h"
+#include "utils/fbr_assert.h"
 
 #define CHTTP_VERSION			"0.3.0"
 
@@ -162,8 +161,6 @@ void chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *
 double chttp_get_time(void);
 size_t chttp_make_chunk(char *buffer, unsigned int buffer_len);
 
-#define assert_zero(expr)						\
-	assert(!(expr))
 #define chttp_context_ok(ctx)						\
 	do {								\
 		assert(ctx);						\
