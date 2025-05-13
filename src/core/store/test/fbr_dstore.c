@@ -617,17 +617,20 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 			gbuffer->buffer_pos = 0;
 			ssize_t gbytes = fbr_sys_read(fd, gbuffer->buffer, gbuffer->buffer_len);
-			if (gbytes < 0) {
+			if (gbytes < 0 || (!gbytes && gzip.status == FBR_GZIP_DONE)) {
 				break;
 			}
 
 			size_t output_free = output->buffer_len - output->buffer_pos;
 			size_t written;
+			int finish = 0;
+			if (gbytes == 0) {
+				finish = 1;
+			}
 
-			fbr_gzip_flate(&gzip,
-				(unsigned char *)gbuffer->buffer, gbytes,
+			fbr_gzip_flate(&gzip, (unsigned char *)gbuffer->buffer, gbytes,
 				(unsigned char *)output->buffer + output->buffer_pos, output_free,
-				&written, (gbytes == 0));
+				&written, finish);
 
 			if (gzip.status == FBR_GZIP_ERROR) {
 				break;
@@ -637,10 +640,6 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 			output->buffer_pos += bytes;
 			assert_dev(output->buffer_pos <= output->buffer_len);
-
-			if (gzip.status == FBR_GZIP_DONE) {
-				bytes = 0;
-			}
 		} else {
 			assert_zero_dev(reader.buffer);
 
@@ -661,18 +660,21 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		output->buffer_pos = fjson_shift(&json, output->buffer, output->buffer_pos,
 			output->buffer_len);
-	} while (bytes > 0);
+	} while (bytes > 0 && !json.error);
 
 	assert_zero(close(fd));
 
+	int ret = 0;
+
 	if (metadata.gzipped) {
-		fbr_ASSERT(gzip.status == FBR_GZIP_DONE, "gzip.status: %d", gzip.status);
+		if (gzip.status != FBR_GZIP_DONE) {
+			fbr_test_logs("DSTORE index read gzip error");
+			ret = 1;
+		}
 	}
 
 	fjson_parse(&json, output->buffer, output->buffer_pos);
 	assert(parser.magic == FBR_INDEX_PARSER_MAGIC);
-
-	int ret = 0;
 
 	if (json.error) {
 		fbr_test_logs("DSTORE index read json error");
