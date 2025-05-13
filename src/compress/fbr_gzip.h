@@ -8,37 +8,38 @@
 
 #include <stddef.h>
 
-enum chttp_gzip_status {
-	CHTTP_GZIP_MORE_BUFFER = -1,
-	CHTTP_GZIP_DONE = 0,
-	CHTTP_GZIP_ERROR = 1
+enum fbr_gzip_status {
+	FBR_GZIP_MORE_BUFFER = -1,
+	FBR_GZIP_DONE = 0,
+	FBR_GZIP_ERROR = 1
 };
 
-#ifdef CHTTP_ZLIB
+#ifdef FBR_ZLIB
 #include "gzip_zlib.h"
-#define chttp_gzip chttp_zlib
+#define fbr_gzip fbr_zlib
 #else
-struct chttp_gzip {
+struct fbr_gzip {
 	int error;
 	int status;
 };
 #endif
 
+int fbr_gzip_enabled(void);
+struct fbr_gzip *fbr_gzip_inflate_alloc(void);
+struct fbr_gzip *fbr_gzip_deflate_alloc(void);
+void fbr_gzip_inflate_init(struct fbr_gzip *gzip);
+void fbr_gzip_deflate_init(struct fbr_gzip *gzip);
+enum fbr_gzip_status fbr_gzip_flate(struct fbr_gzip *gzip, const void *input,
+	size_t input_len, void *output, size_t output_len, size_t *written, int finish);
+void fbr_gzip_free(void *gzip_priv);
+
 struct chttp_context;
 struct chttp_addr;
 
-int chttp_gzip_enabled(void);
-struct chttp_gzip *chttp_gzip_inflate_alloc(void);
-struct chttp_gzip *chttp_gzip_deflate_alloc(void);
-void chttp_gzip_inflate_init(struct chttp_gzip *gzip);
-void chttp_gzip_deflate_init(struct chttp_gzip *gzip);
-void chttp_gzip_free(void *gzip_priv);
 size_t chttp_gzip_read_body(struct chttp_context *ctx, void *output, size_t output_len);
-void chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip,
+void chttp_gzip_register(struct chttp_context *ctx, struct fbr_gzip *gzip,
 	void *buffer, size_t buffer_len);
-enum chttp_gzip_status chttp_gzip_flate(struct chttp_gzip *gzip, const void *input,
-	size_t input_len, void *output, size_t output_len, size_t *written, int finish);
-void chttp_gzip_send_chunk(struct chttp_gzip *gzip, struct chttp_addr *addr,
+void chttp_gzip_send_chunk(struct fbr_gzip *gzip, struct chttp_addr *addr,
 	const void *input, size_t input_len);
 
 #endif /* _FBR_GZIP_H_INCLUDED_ */

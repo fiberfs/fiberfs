@@ -33,7 +33,7 @@
 		],
 		"C_Cpp.default.compilerArgs": [
 			"-DCHTTP_OPENSSL",
-			"-DCHTTP_ZLIB",
+			"-DFBR_ZLIB",
 			"-DFBR_FUSE3",
 			"-DFBR_LIBUNWIND"
 		],

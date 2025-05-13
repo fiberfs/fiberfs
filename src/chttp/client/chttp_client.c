@@ -18,7 +18,7 @@ main(int argc, char **argv)
 	char ctx_buf[2000], ctx_buf2[CHTTP_CTX_SIZE + 1];
 	char body_buf[100], gzip_buf[200];
 	size_t body_len;
-	struct chttp_gzip gzip;
+	struct fbr_gzip gzip;
 
 	(void)argc;
 	(void)argv;
@@ -128,7 +128,7 @@ main(int argc, char **argv)
 	chttp_send(context);
 	chttp_receive(context);
 	chttp_context_debug(context);
-	chttp_gzip_inflate_init(&gzip);
+	fbr_gzip_inflate_init(&gzip);
 	chttp_gzip_register(context, &gzip, gzip_buf, sizeof(gzip_buf));
 	do {
 		body_len = chttp_body_read(context, body_buf, sizeof(body_buf));
@@ -141,4 +141,10 @@ main(int argc, char **argv)
 	chttp_tls_free();
 
 	return (0);
+}
+
+// Required for fiber asserting
+void
+fbr_context_abort(void)
+{
 }

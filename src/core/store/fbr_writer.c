@@ -204,7 +204,7 @@ fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer)
 	fbr_buffers_free(writer->output);
 
 	if (writer->is_gzip) {
-		chttp_gzip_free(&writer->gzip);
+		fbr_gzip_free(&writer->gzip);
 	}
 
 	fbr_ZERO(writer);
@@ -225,7 +225,7 @@ _output_compress(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffe
 		return;
 	}
 
-	struct chttp_gzip *gzip = &writer->gzip;
+	struct fbr_gzip *gzip = &writer->gzip;
 	struct fbr_buffer *output = writer->output;
 	while (output->next) {
 		assert_zero_dev(writer->workspace);
@@ -241,12 +241,12 @@ _output_compress(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffe
 		if (output_free) {
 			size_t written;
 
-			gzip->status = chttp_gzip_flate(gzip,
+			gzip->status = fbr_gzip_flate(gzip,
 				(const unsigned char *)buffer, buffer_len,
 				(unsigned char *)output->buffer + output->buffer_pos, output_free,
 				&written, final);
 
-			if (gzip->status == CHTTP_GZIP_ERROR) {
+			if (gzip->status == FBR_GZIP_ERROR) {
 				writer->error = 1;
 				return;
 			}
@@ -262,9 +262,9 @@ _output_compress(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffe
 			output = output->next;
 			assert_dev(output);
 		}
-	} while (gzip->status == CHTTP_GZIP_MORE_BUFFER);
+	} while (gzip->status == FBR_GZIP_MORE_BUFFER);
 
-	assert_dev(gzip->status == CHTTP_GZIP_DONE);
+	assert_dev(gzip->status == FBR_GZIP_DONE);
 }
 
 static void
@@ -277,9 +277,9 @@ _output_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, si
 	assert_dev(buffer);
 	assert_dev(buffer_len);
 
-	if (writer->want_gzip && chttp_gzip_enabled()) {
+	if (writer->want_gzip && fbr_gzip_enabled()) {
 		if (!writer->is_gzip) {
-			chttp_gzip_deflate_init(&writer->gzip);
+			fbr_gzip_deflate_init(&writer->gzip);
 			writer->is_gzip = 1;
 		}
 

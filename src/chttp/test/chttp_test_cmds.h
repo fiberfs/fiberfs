@@ -24,7 +24,7 @@ struct chttp_test_context {
 	struct chttp_test_server	*server;
 	struct chttp_test_dns		*dns;
 	struct chttp_test_tcp_pool	*tcp_pool;
-	struct chttp_gzip		*gzip;
+	struct fbr_gzip		*gzip;
 	char				gzip_buf[CHTTP_TEST_GZIP_BUFLEN];
 
 	char				md5_server[CHTTP_TEST_MD5_BUFLEN];

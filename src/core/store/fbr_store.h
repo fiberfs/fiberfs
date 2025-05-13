@@ -39,7 +39,7 @@ struct fbr_writer {
 	struct fbr_buffer			buffer_slab[FBR_DEFAULT_BUFFERS];
 
 	struct fbr_workspace			*workspace;
-	struct chttp_gzip			gzip;
+	struct fbr_gzip			gzip;
 
 	size_t					raw_bytes;
 	size_t					bytes;

@@ -251,7 +251,7 @@ _gzip_finish(struct fbr_test_context *ctx)
 	chttp_test_context_ok(ctx->chttp_test);
 	assert(ctx->chttp_test->gzip);
 
-	chttp_gzip_free(ctx->chttp_test->gzip);
+	fbr_gzip_free(ctx->chttp_test->gzip);
 
 	ctx->chttp_test->gzip = NULL;
 }
@@ -720,7 +720,7 @@ chttp_test_cmd_server_body_match(struct fbr_test_context *ctx, struct fbr_test_c
 	struct chttp_test_server *server;
 	char body[1024], gzip_buf[1024];
 	size_t body_len, read_len;
-	struct chttp_gzip *gzip;
+	struct fbr_gzip *gzip;
 
 	server = _server_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
@@ -732,8 +732,8 @@ chttp_test_cmd_server_body_match(struct fbr_test_context *ctx, struct fbr_test_c
 
 	chttp_context_ok(server->chttp);
 
-	if (server->chttp->gzip && chttp_gzip_enabled()) {
-		gzip = chttp_gzip_inflate_alloc();
+	if (server->chttp->gzip && fbr_gzip_enabled()) {
+		gzip = fbr_gzip_inflate_alloc();
 		chttp_gzip_register(server->chttp, gzip, gzip_buf, sizeof(gzip_buf));
 	}
 
@@ -793,8 +793,8 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 	char *reason, *body, gzip_buf[1024];
 	size_t body_len;
 	int do_gzip = 0;
-	struct chttp_gzip gzip;
-	enum chttp_gzip_status gret;
+	struct fbr_gzip gzip;
+	enum fbr_gzip_status gret;
 
 	_server_ok(server);
 	chttp_context_ok(server->chttp);
@@ -827,16 +827,16 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 			assert(body_len < sizeof(gzip_buf));
 
 			do_gzip = 1;
-			chttp_gzip_deflate_init(&gzip);
+			fbr_gzip_deflate_init(&gzip);
 
-			gret = chttp_gzip_flate(&gzip, body, body_len, gzip_buf, sizeof(gzip_buf),
+			gret = fbr_gzip_flate(&gzip, body, body_len, gzip_buf, sizeof(gzip_buf),
 				&body_len, 1);
-			assert(gret == CHTTP_GZIP_DONE);
+			assert(gret == FBR_GZIP_DONE);
 			assert(body_len > 0);
 
 			body = gzip_buf;
 
-			chttp_gzip_free(&gzip);
+			fbr_gzip_free(&gzip);
 		}
 	}
 
@@ -971,7 +971,7 @@ chttp_test_cmd_server_enable_gzip(struct fbr_test_context *ctx, struct fbr_test_
 		return;
 	}
 
-	ctx->chttp_test->gzip = chttp_gzip_deflate_alloc();
+	ctx->chttp_test->gzip = fbr_gzip_deflate_alloc();
 	assert(ctx->chttp_test->gzip);
 
 	chttp_gzip_register(NULL, ctx->chttp_test->gzip, ctx->chttp_test->gzip_buf,
@@ -1111,7 +1111,7 @@ chttp_test_cmd_server_send_random_body(struct fbr_test_context *ctx, struct fbr_
 	long bodylen, chunklen;
 	size_t sent, send_size, partial, len;
 	size_t chunks, subchunks;
-	struct chttp_gzip gzip;
+	struct fbr_gzip gzip;
 	uint8_t buf[8192];
 	int do_gzip;
 
@@ -1147,7 +1147,7 @@ chttp_test_cmd_server_send_random_body(struct fbr_test_context *ctx, struct fbr_
 	}
 
 	if (do_gzip) {
-		chttp_gzip_deflate_init(&gzip);
+		fbr_gzip_deflate_init(&gzip);
 		chttp_gzip_register(NULL, &gzip, ctx->chttp_test->gzip_buf,
 			sizeof(ctx->chttp_test->gzip_buf));
 
@@ -1219,7 +1219,7 @@ chttp_test_cmd_server_send_random_body(struct fbr_test_context *ctx, struct fbr_
 
 	if (do_gzip) {
 		chttp_gzip_send_chunk(&gzip, &server->addr, NULL, 0);
-		chttp_gzip_free(&gzip);
+		fbr_gzip_free(&gzip);
 	}
 
 	if (chunklen) {

@@ -315,7 +315,7 @@ void
 chttp_test_cmd_chttp_send_body_chunkgzip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_context *chttp;
-	struct chttp_gzip gzip;
+	struct fbr_gzip gzip;
 	char buf[1024];
 
 	chttp = _test_context_ok(ctx);
@@ -323,7 +323,7 @@ chttp_test_cmd_chttp_send_body_chunkgzip(struct fbr_test_context *ctx, struct fb
 	assert(chttp->state == CHTTP_STATE_SENT);
 	chttp_addr_connected(&chttp->addr);
 
-	chttp_gzip_deflate_init(&gzip);
+	fbr_gzip_deflate_init(&gzip);
 	chttp_gzip_register(NULL, &gzip, buf, sizeof(buf));
 
 	chttp_gzip_send_chunk(&gzip, &chttp->addr, cmd->params[0].value,
@@ -331,7 +331,7 @@ chttp_test_cmd_chttp_send_body_chunkgzip(struct fbr_test_context *ctx, struct fb
 	chttp_gzip_send_chunk(&gzip, &chttp->addr, NULL, 0);
 	chttp_tcp_send(&chttp->addr, "0\r\n\r\n", 5);
 
-	chttp_gzip_free(&gzip);
+	fbr_gzip_free(&gzip);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "request body sent chunked gzip");
 }
@@ -494,7 +494,7 @@ _test_body_match(struct fbr_test_context *ctx, const char *expected, int sub, si
 	struct chttp_context *chttp;
 	char *body, gzip_buf[4096];
 	size_t read, body_len, old_size, calls;
-	struct chttp_gzip *gzip;
+	struct fbr_gzip *gzip;
 
 	chttp = _test_context_ok(ctx);
 	fbr_test_ERROR(chttp->state != CHTTP_STATE_BODY, "chttp no body found");
@@ -507,8 +507,8 @@ _test_body_match(struct fbr_test_context *ctx, const char *expected, int sub, si
 		size = 1024;
 	}
 
-	if (chttp->gzip && chttp_gzip_enabled()) {
-		gzip = chttp_gzip_inflate_alloc();
+	if (chttp->gzip && fbr_gzip_enabled()) {
+		gzip = fbr_gzip_inflate_alloc();
 		chttp_gzip_register(chttp, gzip, gzip_buf, sizeof(gzip_buf));
 	}
 
@@ -608,7 +608,7 @@ chttp_test_cmd_chttp_body_md5(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	struct chttp_test_md5 md5;
 	uint8_t buf[8192];
 	size_t body_len, len, calls;
-	struct chttp_gzip *gzip;
+	struct fbr_gzip *gzip;
 	char gzip_buf[4096];
 
 	chttp = _test_context_ok(ctx);
@@ -620,8 +620,8 @@ chttp_test_cmd_chttp_body_md5(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	body_len = 0;
 	calls = 0;
 
-	if (chttp->gzip && chttp_gzip_enabled()) {
-		gzip = chttp_gzip_inflate_alloc();
+	if (chttp->gzip && fbr_gzip_enabled()) {
+		gzip = fbr_gzip_inflate_alloc();
 		chttp_gzip_register(chttp, gzip, gzip_buf, sizeof(gzip_buf));
 	}
 

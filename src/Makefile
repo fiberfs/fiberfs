@@ -82,7 +82,7 @@ endif
 # Detect zlib (ZLIB=false to disable)
 ZLIB_PKG=zlib
 ZLIB_C='\#include <zlib.h>\n int main() {zlibVersion();}'
-ZLIB_CFLAGS=-DCHTTP_ZLIB
+ZLIB_CFLAGS=-DFBR_ZLIB
 ZLIB_LIB=-lz
 ZLIB=$(shell printf $(ZLIB_C) | $(TCC) $(ZLIB_LIB) $(TEST_TRUE))
 ifeq ($(ZLIB),true)

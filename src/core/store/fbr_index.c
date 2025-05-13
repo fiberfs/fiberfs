@@ -207,7 +207,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 
 	// TODO make gzip a param
 	int gzip = 0;
-	if (chttp_gzip_enabled()) {
+	if (fbr_gzip_enabled()) {
 		gzip = 1;
 	}
 

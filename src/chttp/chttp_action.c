@@ -243,7 +243,7 @@ chttp_finish(struct chttp_context *ctx)
 	}
 
 	if (ctx->gzip_priv) {
-		chttp_gzip_free(ctx->gzip_priv);
+		fbr_gzip_free(ctx->gzip_priv);
 		ctx->gzip_priv = NULL;
 	}
 

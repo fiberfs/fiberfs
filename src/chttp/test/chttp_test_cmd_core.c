@@ -120,7 +120,7 @@ chttp_test_cmd_gzip_or_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 	assert(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	if (chttp_gzip_enabled()) {
+	if (fbr_gzip_enabled()) {
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "gzip is supported");
 		return;
 	} else {
