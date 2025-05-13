@@ -307,6 +307,7 @@ struct fbr_fs_stats {
 
 struct fbr_fs_config {
 	double					dentry_ttl;
+	unsigned int				gzip_index:1;
 };
 
 struct fbr_fs {

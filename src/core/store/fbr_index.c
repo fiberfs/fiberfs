@@ -205,9 +205,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 
 	struct fbr_request *request = fbr_request_get();
 
-	// TODO make gzip a param
 	int gzip = 0;
-	if (fbr_gzip_enabled()) {
+	if (fs->config.gzip_index && fbr_gzip_enabled()) {
 		gzip = 1;
 	}
 

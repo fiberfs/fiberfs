@@ -9,10 +9,21 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "compress/fbr_gzip.h"
 #include "core/request/fbr_request.h"
 #include "core/store/fbr_store.h"
 
 static const struct fbr_store_callbacks _STORE_CALLBACKS_EMPTY;
+
+void
+_fs_config_init(struct fbr_fs *fs)
+{
+	assert_dev(fs);
+
+	if (fbr_gzip_enabled()) {
+		fs->config.gzip_index = 1;
+	}
+}
 
 struct fbr_fs *
 fbr_fs_alloc(void)
@@ -35,6 +46,8 @@ fbr_fs_alloc(void)
 
 	fs->store = &_STORE_CALLBACKS_EMPTY;
 	fs->logger = fbr_fs_logger;
+
+	_fs_config_init(fs);
 
 	fbr_fs_ok(fs);
 
