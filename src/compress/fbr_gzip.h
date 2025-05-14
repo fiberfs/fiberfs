@@ -19,7 +19,6 @@ enum fbr_gzip_status {
 #define fbr_gzip fbr_zlib
 #else
 struct fbr_gzip {
-	int error;
 	int status;
 };
 #endif
