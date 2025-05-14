@@ -456,10 +456,6 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 	assert_dev(token);
 	assert_dev(depth >= 5);
 
-	if (!_file_editable(parser->file)) {
-		return 0;
-	}
-
 	//_index_parse_debug(parser, token, depth);
 
 	struct fbr_fs *fs = parser->fs;
@@ -468,6 +464,9 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 	switch (token->type) {
 		case FJSON_TOKEN_STRING:
 		case FJSON_TOKEN_NUMBER:
+			if (!_file_editable(file)) {
+				return 0;
+			}
 			if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'i')) {
 				parser->chunk.id = fbr_id_parse(token->svalue, token->svalue_len);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'o')) {
@@ -482,6 +481,7 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 			if (token->closed && depth == 6 &&
 			    parser->context[FBR_INDEX_LOC_FILE] == 'b') {
 				if (parser->chunk.length) {
+					assert_dev(_file_editable(file));
 					fbr_body_chunk_add(fs, file, parser->chunk.id,
 						parser->chunk.offset, parser->chunk.length);
 				}
@@ -538,7 +538,6 @@ _index_parse_file_new(struct fbr_index_parser *parser, const char *filename, siz
 		return;
 	}
 
-	struct fbr_fs *fs = parser->fs;
 	struct fbr_directory *directory = parser->directory;
 	struct fbr_directory *previous = directory->previous;
 
@@ -550,7 +549,6 @@ _index_parse_file_new(struct fbr_index_parser *parser, const char *filename, siz
 		_index_parse_file_alloc(parser, filename, filename_len);
 	} else {
 		assert_dev(parser->file->state >= FBR_FILE_OK);
-		fs->log("INDEX_PARSER file EXISTING: '%.*s'", (int)filename_len, filename);
 	}
 }
 
@@ -583,13 +581,15 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 
 			_index_parse_file_alloc(parser, filename.name, filename.len);
 		}
+
+		parser->files_new++;
 	} else {
 		assert_dev(file->state >= FBR_FILE_OK);
 
-		fs->log("INDEX_PARSER existing file matched, adding");
-
 		fbr_directory_add_file(fs, directory, file);
 		parser->file = NULL;
+
+		parser->files_existing++;
 	}
 }
 
@@ -643,7 +643,7 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 					// TODO think about this case
 					assert_dev(file->state >= FBR_FILE_OK);
 					fbr_directory_add_file(fs, directory, file);
-					fs->log("INDEX_PARSER existing DONE (no gen)");
+					fs->log("INDEX_PARSER existing no gen found");
 				}
 				parser->file = NULL;
 			}
@@ -736,8 +736,9 @@ fbr_index_parse_json(struct fjson_context *ctx, void *priv)
 					struct fbr_directory *directory = parser->directory;
 					fbr_directory_ok(directory);
 
-					parser->fs->log("INDEX_PARSER COMPLETED (%zu files)",
-						directory->file_count);
+					parser->fs->log("INDEX_PARSER COMPLETED "
+						"(%zu files [%u+%u])", directory->file_count,
+						parser->files_existing, parser->files_new);
 				}
 				return 0;
 			}

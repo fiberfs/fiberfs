@@ -34,25 +34,33 @@ struct {
 	0, 0, 0
 }, *_REQUEST_POOL = &__REQUEST_POOL;
 
-static int _REQUEST_KEY_INIT;
+static unsigned int _REQUEST_KEY_COUNT;
 static pthread_key_t _REQUEST_KEY;
 
 void
 fbr_context_request_init(void)
 {
-	assert_zero(_REQUEST_KEY_INIT);
+	unsigned int key_count = fbr_atomic_add(&_REQUEST_KEY_COUNT, 1);
+	assert(key_count);
+
+	if (key_count > 1) {
+		return;
+	}
 
 	pt_assert(pthread_key_create(&_REQUEST_KEY, NULL));
-	_REQUEST_KEY_INIT = 1;
 }
 
 void
 fbr_context_request_finish(void)
 {
-	assert(_REQUEST_KEY_INIT);
+	assert(_REQUEST_KEY_COUNT);
+	unsigned int key_count = fbr_atomic_sub(&_REQUEST_KEY_COUNT, 1);
+
+	if (key_count) {
+		return;
+	}
 
 	pt_assert(pthread_key_delete(_REQUEST_KEY));
-	_REQUEST_KEY_INIT = 0;
 }
 
 static void
@@ -84,7 +92,7 @@ _request_pool_get(fuse_req_t fuse_req, const char *name)
 	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
 	assert_dev(fuse_req);
 	assert_dev(name);
-	assert_dev(_REQUEST_KEY_INIT);
+	assert_dev(_REQUEST_KEY_COUNT);
 
 	pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));
 
@@ -147,7 +155,7 @@ struct fbr_request *
 fbr_request_alloc(fuse_req_t fuse_req, const char *name)
 {
 	assert(fuse_req);
-	assert(_REQUEST_KEY_INIT);
+	assert(_REQUEST_KEY_COUNT);
 	assert_zero_dev(fbr_request_get());
 
 	struct fbr_request *request = _request_pool_get(fuse_req, name);
@@ -174,7 +182,7 @@ fbr_request_get(void)
 {
 	struct fbr_request *request = pthread_getspecific(_REQUEST_KEY);
 
-	if (!request || !_REQUEST_KEY_INIT) {
+	if (!request || !_REQUEST_KEY_COUNT) {
 		return NULL;
 	}
 
@@ -253,7 +261,7 @@ fbr_request_free(struct fbr_request *request)
 	fbr_request_ok(request);
 	fbr_fuse_context_ok(request->fuse_ctx);
 	assert_zero(request->fuse_req);
-	assert(_REQUEST_KEY_INIT);
+	assert(_REQUEST_KEY_COUNT);
 
 	assert_dev(fbr_request_get() == request);
 	pt_assert(pthread_setspecific(_REQUEST_KEY, NULL));

@@ -88,6 +88,9 @@ struct fbr_index_parser {
 		size_t			offset;
 		size_t			length;
 	} chunk;
+
+	unsigned int			files_new;
+	unsigned int			files_existing;
 };
 
 struct fbr_store_callbacks {

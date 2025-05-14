@@ -21,6 +21,7 @@ FBR_TEST_STORE_CMD(reader_test)
 
 FBR_TEST_STORE_CMD(index_test)
 FBR_TEST_STORE_CMD(index_large_test)
+FBR_TEST_STORE_CMD(index_2fs_test)
 
 FBR_TEST_STORE_CMD(dstore_debug)
 
