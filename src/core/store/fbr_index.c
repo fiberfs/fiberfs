@@ -388,6 +388,16 @@ _parser_match(struct fbr_index_parser *parser, enum fbr_index_location location,
 	return 0;
 }
 
+static inline int
+_file_editable(struct fbr_file *file)
+{
+	if (file && file->state == FBR_FILE_INIT) {
+		return 1;
+	}
+
+	return 0;
+}
+
 static const char *
 _index_parse_loc(struct fbr_index_parser *parser)
 {
@@ -446,7 +456,7 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 	assert_dev(token);
 	assert_dev(depth >= 5);
 
-	if (!parser->file) {
+	if (!_file_editable(parser->file)) {
 		return 0;
 	}
 
@@ -606,21 +616,21 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'j')) {
 				_index_parse_generation(parser, token);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 's')) {
-				if (file) {
+				if (_file_editable(file)) {
 					file->size = fbr_parse_ulong(token->svalue,
 						token->svalue_len);
 				}
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'm')) {
-				if (file) {
+				if (_file_editable(file)) {
 					file->mode = (mode_t)token->dvalue;
 				}
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'u')) {
-				if (file) {
-					file->uid = (mode_t)token->dvalue;
+				if (_file_editable(file)) {
+					file->uid = (uid_t)token->dvalue;
 				}
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'p')) {
-				if (file) {
-					file->gid = (mode_t)token->dvalue;
+				if (_file_editable(file)) {
+					file->gid = (uid_t)token->dvalue;
 				}
 			}
 			break;
@@ -630,6 +640,7 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 					file->state = FBR_FILE_OK;
 					//fbr_body_debug(fs, file);
 				} else if (file) {
+					// TODO think about this case
 					assert_dev(file->state >= FBR_FILE_OK);
 					fbr_directory_add_file(fs, directory, file);
 					fs->log("INDEX_PARSER existing DONE (no gen)");
@@ -723,6 +734,8 @@ fbr_index_parse_json(struct fjson_context *ctx, void *priv)
 					parser->location = FBR_INDEX_LOC_NONE;
 
 					struct fbr_directory *directory = parser->directory;
+					fbr_directory_ok(directory);
+
 					parser->fs->log("INDEX_PARSER COMPLETED (%zu files)",
 						directory->file_count);
 				}
