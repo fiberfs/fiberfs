@@ -97,6 +97,7 @@ _index_validate_directory(struct fbr_directory *directory, int verbose)
 	assert_dev(directory);
 
 	char filename[100];
+	size_t chunk_count = 0;
 
 	for (size_t i = 0; i < directory->file_count; i++) {
 		int ret = snprintf(filename, sizeof(filename), "file_%zu", i);
@@ -130,6 +131,8 @@ _index_validate_directory(struct fbr_directory *directory, int verbose)
 
 			chunk_size += chunk->length;
 			chunk = chunk->next;
+
+			chunk_count++;
 		}
 
 		assert(chunk_size == file->size);
@@ -143,7 +146,7 @@ _index_validate_directory(struct fbr_directory *directory, int verbose)
 		}
 	}
 
-	fbr_test_logs("  * Valid files: %zu", directory->file_count);
+	fbr_test_logs("  * Valid files: %zu chunks: %zu", directory->file_count, chunk_count);
 }
 
 void
