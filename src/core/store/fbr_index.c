@@ -200,6 +200,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
 	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
 	assert_dev(directory->version);
 	assert_dev(directory->generation);
 

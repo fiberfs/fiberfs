@@ -882,10 +882,10 @@ fbr_dstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	_dstore_root_path(dirpath, 1, root_path, sizeof(root_path));
 	_dstore_metadata_read(root_path, &metadata);
 
+	_dstore_UNLOCK();
+
 	fbr_id_t version = fbr_root_json_parse(fs, json_buf, bytes);
 	fbr_ASSERT(metadata.etag == version, "%lu != %lu", metadata.etag, version);
-
-	_dstore_UNLOCK();
 
 	fbr_test_logs("DSTORE read root: %lu", version);
 

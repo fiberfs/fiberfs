@@ -95,9 +95,11 @@ static void
 _index_validate_directory(struct fbr_directory *directory, int verbose)
 {
 	assert_dev(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
 
 	char filename[100];
 	size_t chunk_count = 0;
+	size_t byte_count = 0;
 
 	for (size_t i = 0; i < directory->file_count; i++) {
 		int ret = snprintf(filename, sizeof(filename), "file_%zu", i);
@@ -136,7 +138,7 @@ _index_validate_directory(struct fbr_directory *directory, int verbose)
 		}
 
 		assert(chunk_size == file->size);
-
+		byte_count += file->size;
 
 		const char *filepath = fbr_path_get_file(&file->path, NULL);
 		assert_zero(strcmp(filepath, filename));
@@ -146,7 +148,8 @@ _index_validate_directory(struct fbr_directory *directory, int verbose)
 		}
 	}
 
-	fbr_test_logs("  * Valid files: %zu chunks: %zu", directory->file_count, chunk_count);
+	fbr_test_logs("  * Valid files: %zu chunks: %zu bytes: %zu", directory->file_count,
+		chunk_count, byte_count);
 }
 
 void
@@ -171,7 +174,6 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	directory->generation = 1;
 	_index_add_file(fs, directory, 1);
 	_index_add_file(fs, directory, 1);
-	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
 	fbr_test_logs("*** Storing index (gen %lu)", directory->generation);
 
@@ -179,6 +181,8 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	int ret = fbr_index_write(fs, directory, NULL);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
+
+	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
 	_index_request_finish();
 	fbr_dindex_release(fs, &directory);
@@ -405,7 +409,6 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	for (size_t i = 0; i < MAX_FILES; i++) {
 		_index_add_file(fs, directory, 0);
 	}
-	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
 	fbr_test_logs("*** Allocated %zu files", directory->file_count);
 	assert(directory->file_count == MAX_FILES);
@@ -416,6 +419,8 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	int ret = fbr_index_write(fs, directory, NULL);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
+
+	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
 	_index_request_finish();
 	fbr_dindex_release(fs, &directory);
@@ -487,12 +492,13 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_index_add_file(fs_1, dir_fs1, 1);
 	_index_add_file(fs_1, dir_fs1, 1);
 	_index_add_file(fs_1, dir_fs1, 1);
-	fbr_directory_set_state(fs_1, dir_fs1, FBR_DIRSTATE_OK);
 
 	fbr_test_logs("*** Storing dir_fs1 (gen %lu)", dir_fs1->generation);
 
 	int ret = fbr_index_write(fs_1, dir_fs1, NULL);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
+
+	fbr_directory_set_state(fs_1, dir_fs1, FBR_DIRSTATE_OK);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
