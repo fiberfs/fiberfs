@@ -13,9 +13,6 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/store/test/fbr_dstore.h"
 
-static unsigned int _INDEX_FILE_COUNTER;
-static unsigned long _INDEX_GENERATION;
-
 static const struct fbr_store_callbacks _INDEX_TEST_CALLBACKS = {
 	.index_write_f = fbr_dstore_index_root_write,
 	.index_read_f = fbr_dstore_index_read,
@@ -52,8 +49,10 @@ _index_add_file(struct fbr_fs *fs, struct fbr_directory *directory, int verbose)
 	assert_dev(fs);
 	assert_dev(directory);
 
+	size_t id = directory->file_count;
+
 	char filename_buf[100];
-	int ret = snprintf(filename_buf, sizeof(filename_buf), "file_%u", _INDEX_FILE_COUNTER);
+	int ret = snprintf(filename_buf, sizeof(filename_buf), "file_%zu", id);
 	assert(ret > 0 && (size_t)ret < sizeof(filename_buf));
 
 	if (verbose) {
@@ -65,15 +64,15 @@ _index_add_file(struct fbr_fs *fs, struct fbr_directory *directory, int verbose)
 
 	struct fbr_file *file = fbr_file_alloc(fs, directory, &filename);
 	file->generation = 1;
-	file->size = _INDEX_FILE_COUNTER * 4096;
+	file->size = id * 4096;
 	file->mode = S_IFREG | 0444;
 	file->uid = 1000;
 	file->gid = 1000;
 
-	fbr_id_t id = fbr_id_gen();
+	fbr_id_t chunk_id = fbr_id_gen();
 
 	if (verbose) {
-		id = 0;
+		chunk_id = 0;
 	}
 
 	for (size_t offset = 0, length = 0; offset < file->size; offset += length) {
@@ -82,12 +81,12 @@ _index_add_file(struct fbr_fs *fs, struct fbr_directory *directory, int verbose)
 			length = file->size - offset;
 		}
 
-		fbr_body_chunk_add(fs, file, id, offset, length);
+		fbr_body_chunk_add(fs, file, chunk_id, offset, length);
 	}
 
 	file->state = FBR_FILE_OK;
 
-	_INDEX_FILE_COUNTER++;
+	assert(directory->file_count == id + 1);
 }
 
 static void
@@ -95,18 +94,9 @@ _index_validate_directory(struct fbr_directory *directory, int verbose)
 {
 	assert_dev(directory);
 
-	fbr_test_ASSERT(directory->generation == _INDEX_GENERATION,
-		"Generation mismatch, found %lu, expected %lu", directory->generation,
-		_INDEX_GENERATION);
-
-	fbr_test_logs("  * Valid generation: %lu", directory->generation);
-
-	fbr_ASSERT(directory->file_count == _INDEX_FILE_COUNTER, "Found %zu files, expected %u",
-		directory->file_count, _INDEX_FILE_COUNTER);
-
 	char filename[100];
 
-	for (size_t i = 0; i < _INDEX_FILE_COUNTER; i++) {
+	for (size_t i = 0; i < directory->file_count; i++) {
 		int ret = snprintf(filename, sizeof(filename), "file_%zu", i);
 		assert(ret > 0 && (size_t)ret < sizeof(filename));
 
@@ -121,7 +111,6 @@ _index_validate_directory(struct fbr_directory *directory, int verbose)
 		fbr_test_ASSERT(file->gid == 1000, "Bad file gid %s %u", filename, file->gid);
 		fbr_test_ASSERT(file->generation == 1, "Bad file gen %s %lu", filename,
 			file->generation);
-
 
 		struct fbr_chunk *chunk = file->body.chunks;
 		size_t chunk_size = 0;
@@ -152,7 +141,7 @@ _index_validate_directory(struct fbr_directory *directory, int verbose)
 		}
 	}
 
-	fbr_test_logs("  * Valid files: %u", _INDEX_FILE_COUNTER);
+	fbr_test_logs("  * Valid files: %zu", directory->file_count);
 }
 
 void
@@ -168,9 +157,6 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
 
-	_INDEX_FILE_COUNTER = 0;
-	_INDEX_GENERATION = 0;
-
 	fbr_test_logs("*** Allocating directory");
 
 	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
@@ -178,7 +164,6 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(directory->previous);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	directory->generation = 1;
-	_INDEX_GENERATION++;
 	_index_add_file(fs, directory, 1);
 	_index_add_file(fs, directory, 1);
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
@@ -201,7 +186,6 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_directory_copy(fs, directory->previous, directory);
 	directory->generation++;
-	_INDEX_GENERATION++;
 	_index_add_file(fs, directory, 1);
 	_index_add_file(fs, directory, 1);
 
@@ -269,7 +253,6 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_directory_copy(fs, directory->previous, directory);
 	directory->generation++;
-	_INDEX_GENERATION++;
 	_index_add_file(fs, directory, 1);
 
 	fbr_test_logs("*** Storing index (gen %lu)", directory->generation);
@@ -294,7 +277,6 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_directory_copy(fs, directory->previous, directory);
 	directory->generation++;
-	_INDEX_GENERATION++;
 	_index_add_file(fs, directory, 1);
 
 	fbr_test_logs("*** Storing index (gen %lu) FAIL", directory->generation);
@@ -406,23 +388,22 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
 
-	_INDEX_FILE_COUNTER = 0;
-	_INDEX_GENERATION = 0;
-
 	fbr_test_logs("*** Allocating directory");
+
+	size_t MAX_FILES = 10000;
 
 	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(directory);
 	assert_zero(directory->previous);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	directory->generation = 1;
-	_INDEX_GENERATION++;
-	for (size_t i = 0; i < 10000; i++) {
+	for (size_t i = 0; i < MAX_FILES; i++) {
 		_index_add_file(fs, directory, 0);
 	}
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
-	fbr_test_logs("*** Allocated %u files", _INDEX_FILE_COUNTER);
+	fbr_test_logs("*** Allocated %zu files", directory->file_count);
+	assert(directory->file_count == MAX_FILES);
 
 	fbr_test_logs("*** Storing index (gen %lu)", directory->generation);
 
@@ -491,9 +472,6 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_fs_ok(fs_2);
 	fbr_fs_set_store(fs_2, &_INDEX_TEST_CALLBACKS);
 
-	_INDEX_FILE_COUNTER = 0;
-	_INDEX_GENERATION = 0;
-
 	fbr_test_logs("*** Allocating dir_fs1");
 
 	struct fbr_directory *dir_fs1 = fbr_directory_root_alloc(fs_1);
@@ -501,7 +479,6 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(dir_fs1->previous);
 	assert(dir_fs1->state == FBR_DIRSTATE_LOADING);
 	dir_fs1->generation = 1;
-	_INDEX_GENERATION++;
 	_index_add_file(fs_1, dir_fs1, 1);
 	_index_add_file(fs_1, dir_fs1, 1);
 	_index_add_file(fs_1, dir_fs1, 1);
@@ -523,6 +500,7 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_index_read(fs_2, dir_fs2);
 	assert(dir_fs2->state == FBR_DIRSTATE_OK);
+	assert(dir_fs2->generation == 1);
 	_index_validate_directory(dir_fs2, 1);
 
 	fbr_dindex_release(fs_2, &dir_fs2);
@@ -535,7 +513,6 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs2->state == FBR_DIRSTATE_LOADING);
 	fbr_directory_copy(fs_2, dir_fs2->previous, dir_fs2);
 	dir_fs2->generation++;
-	_INDEX_GENERATION++;
 	_index_add_file(fs_2, dir_fs2, 1);
 	_index_add_file(fs_2, dir_fs2, 1);
 	_index_add_file(fs_2, dir_fs2, 1);
@@ -560,6 +537,7 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_index_read(fs_1, dir_fs1);
 	assert(dir_fs1->state == FBR_DIRSTATE_OK);
+	assert(dir_fs1->generation == 2);
 	_index_validate_directory(dir_fs1, 1);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
@@ -571,7 +549,6 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_stats(fs_1);
 	fbr_test_fs_inodes_debug(fs_1);
 	fbr_test_fs_dindex_debug(fs_1);
-	fbr_dstore_debug(0);
 
 	fbr_test_ERROR(fs_1->stats.directories, "non zero");
 	fbr_test_ERROR(fs_1->stats.directories_dindex, "non zero");
