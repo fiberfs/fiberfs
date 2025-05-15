@@ -16,6 +16,7 @@
 #define FBR_TEST_FS_VAR(var)		fbr_test_var_f fbr_var_##var;
 
 void __fbr_attr_printf(1) fbr_test_fs_logger(const char *fmt, ...);
+void __fbr_attr_printf(1) fbr_test_fs_logger_null(const char *fmt, ...);
 void fbr_test_fs_stats(struct fbr_fs *fs);
 void fbr_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino,
 	struct fuse_file_info *fi);

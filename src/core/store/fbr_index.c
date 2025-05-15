@@ -695,7 +695,9 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 				directory->generation = fbr_parse_ulong(token->svalue,
 					token->svalue_len);
 
-				if (previous && previous->generation == directory->generation) {
+				if (previous && previous->generation == directory->generation &&
+				    previous->version == directory->version) {
+					parser->fs->log("INDEX_PARSER directory matches previous");
 					return 1;
 				}
 			}

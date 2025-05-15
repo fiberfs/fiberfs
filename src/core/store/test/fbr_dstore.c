@@ -446,12 +446,12 @@ fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	char chunk_path[PATH_MAX];
 	_dstore_chunk_path(file, chunk->id, chunk->offset, 0, chunk_path, sizeof(chunk_path));
 
-	fbr_test_logs("DSTORE fetch chunk: '%s'", chunk_path);
+	fbr_test_logs("DSTORE read chunk: '%s'", chunk_path);
 
 	int fd = open(chunk_path, O_RDONLY);
 
 	if (fd < 0) {
-		fbr_test_logs("DSTORE fetch chunk open() error");
+		fbr_test_logs("DSTORE read chunk open() error");
 		_dstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		return;
 	}
@@ -460,7 +460,7 @@ fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	int ret = fstat(fd, &st);
 
 	if (ret || (size_t)st.st_size != chunk->length) {
-		fbr_test_logs("DSTORE fetch chunk size error");
+		fbr_test_logs("DSTORE read chunk size error");
 		_dstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		assert_zero(close(fd));
 		return;
@@ -541,7 +541,7 @@ fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	char index_path[PATH_MAX];
 	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
 
-	fbr_test_logs("DSTORE index: '%s' %s", index_path, writer->is_gzip ? "GZIP" : "");
+	fbr_test_logs("DSTORE write index: '%s' %s", index_path, writer->is_gzip ? "GZIP" : "");
 
 	_dstore_mkdirs(index_path);
 
@@ -579,12 +579,12 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
 
-	fbr_test_logs("DSTORE index read: '%s' %s", index_path, metadata.gzipped ? "GZIP" : "");
+	fbr_test_logs("DSTORE read index: '%s' %s", index_path, metadata.gzipped ? "GZIP" : "");
 
 	int fd = open(index_path, O_RDONLY);
 
 	if (fd < 0) {
-		fbr_test_logs("DSTORE index read open() error");
+		fbr_test_logs("DSTORE read index open() error");
 		return 1;
 	}
 
@@ -689,12 +689,12 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	if (metadata.gzipped) {
 		if (gzip.status != FBR_GZIP_DONE) {
-			fbr_test_logs("DSTORE index read gzip error");
+			fbr_test_logs("DSTORE read index gzip error");
 			ret = 1;
 		}
 	}
 	if (json.error) {
-		fbr_test_logs("DSTORE index read json error");
+		fbr_test_logs("DSTORE read index json error");
 		ret = 1;
 	}
 
@@ -706,7 +706,7 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_gzip_free(&gzip);
 	}
 
-	fbr_test_logs("DSTORE index read bytes in: %zu out: %zu", bytes_in, bytes_out);
+	fbr_test_logs("DSTORE read index bytes in: %zu out: %zu", bytes_in, bytes_out);
 
 	return ret;
 }
@@ -826,15 +826,12 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 
 	_dstore_root_path(&dirpath, 0, root_path, sizeof(root_path));
 
-	fbr_test_logs("DSTORE root: '%s'", root_path);
-
 	char json_buf[128];
 	struct fbr_writer json;
 	fbr_writer_init_buffer(fs, &json, json_buf, sizeof(json_buf));
 	fbr_root_json_gen(fs, &json, directory->version);
 
-	fbr_test_logs("DSTORE root json: '%.*s':%zu", (int)json.output->buffer_pos,
-		json.output->buffer, json.output->buffer_pos);
+	fbr_test_logs("DSTORE write root: %lu previous: %lu", directory->version, existing);
 
 	int fd = open(root_path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 
@@ -860,8 +857,6 @@ fbr_dstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	char root_path[PATH_MAX];
 	_dstore_root_path(dirpath, 0, root_path, sizeof(root_path));
 
-	fbr_test_logs("DSTORE root read: '%s'", root_path);
-
 	_dstore_LOCK();
 
 	int fd = open(root_path, O_RDONLY);
@@ -873,7 +868,7 @@ fbr_dstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 
 	char json_buf[128];
 	ssize_t bytes = fbr_sys_read(fd, json_buf, sizeof(json_buf));
-	assert(bytes > 0 && (size_t)bytes < sizeof(json_buf));
+	assert(bytes > 0 && (size_t)bytes <= sizeof(json_buf));
 
 	assert_zero(close(fd));
 
@@ -883,11 +878,10 @@ fbr_dstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	_dstore_root_path(dirpath, 1, root_path, sizeof(root_path));
 	_dstore_metadata_read(root_path, &metadata);
 
-	json_buf[bytes] = '\0';
-	fbr_test_logs("DSTORE root json: '%s'", json_buf);
-
 	fbr_id_t version = fbr_root_json_parse(fs, json_buf, bytes);
 	fbr_ASSERT(metadata.etag == version, "%lu != %lu", metadata.etag, version);
+
+	fbr_test_logs("DSTORE read root: %lu", version);
 
 	return version;
 }

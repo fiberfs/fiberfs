@@ -4,6 +4,8 @@
  *
  */
 
+#include <pthread.h>
+
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
@@ -576,6 +578,104 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_2->stats.file_refs, "non zero");
 
 	fbr_fs_free(fs_2);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "index_2fs_test done");
+}
+
+#define _THREADS_MAX 4
+static size_t _THREAD_COUNT;
+
+void *
+_index_thread(void *arg)
+{
+	assert_zero(arg);
+
+	struct fbr_fs *fs = fbr_test_fs_alloc();
+	fbr_fs_ok(fs);
+	fs->logger = fbr_test_fs_logger_null;
+	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
+
+	size_t thread_id = fbr_atomic_add(&_THREAD_COUNT, 1);
+	fbr_test_logs("*** thread %zu running", thread_id);
+	while (_THREAD_COUNT < _THREADS_MAX) {
+		fbr_sleep_ms(0.1);
+	}
+	assert(_THREAD_COUNT == _THREADS_MAX);
+
+	// Allocate a root
+
+	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(directory);
+	assert_zero(directory->previous);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
+	directory->generation = 1;
+	_index_add_file(fs, directory, 1);
+	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+
+	int ret = fbr_index_write(fs, directory, NULL);
+
+	fbr_test_logs("*** Storing index thread: %zu generation: %lu result: %d", thread_id,
+		directory->generation, ret);
+
+	// Read root if you didnt allocate it
+	if (ret) {
+		fbr_dindex_release(fs, &directory);
+
+		directory = fbr_directory_root_alloc(fs);
+		fbr_directory_ok(directory);
+		fbr_directory_ok(directory->previous);
+		assert(directory->previous->generation == 1);
+		assert(directory->state == FBR_DIRSTATE_LOADING);
+
+		fbr_index_read(fs, directory);
+		assert(directory->state == FBR_DIRSTATE_OK);
+
+		fbr_test_logs("*** Reading index thread: %zu generation: %lu", thread_id,
+			directory->generation);
+	} else {
+		fbr_sleep_ms(1);
+	}
+
+	_index_validate_directory(directory, 0);
+
+	fbr_dindex_release(fs, &directory);
+
+	fbr_fs_release_all(fs, 1);
+	fbr_test_ERROR(fs->stats.directories, "non zero");
+	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
+	fbr_test_ERROR(fs->stats.directory_refs, "non zero");
+	fbr_test_ERROR(fs->stats.files, "non zero");
+	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
+	fbr_test_ERROR(fs->stats.file_refs, "non zero");
+	fbr_fs_free(fs);
+
+	return NULL;
+}
+
+void
+fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_dstore_init(ctx);
+
+	pthread_t threads[_THREADS_MAX];
+	_THREAD_COUNT = 0;
+
+	for (size_t i = 0; i < _THREADS_MAX; i++) {
+		pt_assert(pthread_create(&threads[i], NULL, _index_thread, NULL));
+	}
+
+	fbr_test_logs("*** threads created: %d", _THREADS_MAX);
+
+	for (size_t i = 0; i < _THREADS_MAX; i++) {
+		pt_assert(pthread_join(threads[i], NULL));
+	}
+
+	fbr_test_logs("*** all threads joined");
+
+	fbr_dstore_debug(0);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "index_2fs_test done");
 }

@@ -29,6 +29,12 @@ fbr_test_fs_logger(const char *fmt, ...)
 	va_end(ap);
 }
 
+void __fbr_attr_printf(1)
+fbr_test_fs_logger_null(const char *fmt, ...)
+{
+	(void)fmt;
+}
+
 static void
 _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
