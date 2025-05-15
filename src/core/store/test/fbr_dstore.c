@@ -575,8 +575,12 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct _dstore_metadata metadata;
 	_dstore_metadata_read(index_path, &metadata);
-	fbr_ASSERT(metadata.etag == directory->version, "%lu != %lu", metadata.etag,
-		directory->version);
+
+	if (metadata.etag != directory->version) {
+		fbr_test_logs("DSTORE read index metadata etag found: %lu, expected: %lu",
+			metadata.etag, directory->version);
+		return 1;
+	}
 
 	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
 
@@ -874,14 +878,14 @@ fbr_dstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 
 	assert_zero(close(fd));
 
-	_dstore_UNLOCK();
-
 	struct _dstore_metadata metadata;
 	_dstore_root_path(dirpath, 1, root_path, sizeof(root_path));
 	_dstore_metadata_read(root_path, &metadata);
 
 	fbr_id_t version = fbr_root_json_parse(fs, json_buf, bytes);
 	fbr_ASSERT(metadata.etag == version, "%lu != %lu", metadata.etag, version);
+
+	_dstore_UNLOCK();
 
 	fbr_test_logs("DSTORE read root: %lu", version);
 
