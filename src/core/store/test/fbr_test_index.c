@@ -186,7 +186,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_directory_ok(directory);
 	fbr_directory_ok(directory->previous);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
-	fbr_directory_copy(fs, directory->previous, directory);
+	fbr_directory_copy(fs, directory, directory->previous);
 	directory->generation++;
 	_index_add_file(fs, directory, 1);
 	_index_add_file(fs, directory, 1);
@@ -253,7 +253,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_directory_ok(directory->previous);
 	assert(directory->previous == old_directory)
 	assert(directory->state == FBR_DIRSTATE_LOADING);
-	fbr_directory_copy(fs, directory->previous, directory);
+	fbr_directory_copy(fs, directory, directory->previous);
 	directory->generation++;
 	_index_add_file(fs, directory, 1);
 
@@ -277,7 +277,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_directory_ok(directory->previous);
 	assert(directory->previous != old_directory)
 	assert(directory->state == FBR_DIRSTATE_LOADING);
-	fbr_directory_copy(fs, directory->previous, directory);
+	fbr_directory_copy(fs, directory, directory->previous);
 	directory->generation++;
 	_index_add_file(fs, directory, 1);
 
@@ -513,7 +513,7 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_directory_ok(dir_fs2);
 	fbr_directory_ok(dir_fs2->previous);
 	assert(dir_fs2->state == FBR_DIRSTATE_LOADING);
-	fbr_directory_copy(fs_2, dir_fs2->previous, dir_fs2);
+	fbr_directory_copy(fs_2, dir_fs2, dir_fs2->previous);
 	dir_fs2->generation++;
 	_index_add_file(fs_2, dir_fs2, 1);
 	_index_add_file(fs_2, dir_fs2, 1);
@@ -602,51 +602,67 @@ _index_thread(void *arg)
 	}
 	assert(_THREAD_COUNT == _THREADS_MAX);
 
-	// Allocate a root
+	unsigned long generation = 0;
 
-	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
-	fbr_directory_ok(directory);
-	assert_zero(directory->previous);
-	assert(directory->state == FBR_DIRSTATE_LOADING);
-	directory->generation = 1;
-	_index_add_file(fs, directory, 1);
-	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+	// Modify write/read loop
 
-	int ret = fbr_index_write(fs, directory, NULL);
-
-	fbr_test_logs("*** Storing index thread: %zu generation: %lu result: %d", thread_id,
-		directory->generation, ret);
-
-	// Read root if you didnt allocate it
-	if (ret) {
-		fbr_dindex_release(fs, &directory);
-
-		directory = fbr_directory_root_alloc(fs);
+	while (generation < 10) {
+		struct fbr_directory *directory = fbr_directory_root_alloc(fs);
 		fbr_directory_ok(directory);
-		fbr_directory_ok(directory->previous);
-		assert(directory->previous->generation == 1);
 		assert(directory->state == FBR_DIRSTATE_LOADING);
 
-		fbr_index_read(fs, directory);
-		assert(directory->state == FBR_DIRSTATE_OK);
+		if (!directory->previous) {
+			directory->generation = 1;
+		} else {
+			fbr_directory_ok(directory->previous);
+			fbr_directory_copy(fs, directory, directory->previous);
+			directory->generation++;
+		}
 
-		fbr_test_logs("*** Reading index thread: %zu generation: %lu", thread_id,
-			directory->generation);
-	} else {
-		fbr_sleep_ms(1);
+		_index_add_file(fs, directory, 0);
+		assert(directory->generation == directory->file_count);
+
+		int ret = fbr_index_write(fs, directory, directory->previous);
+
+		fbr_test_logs("*** Storing index thread: %zu generation: %lu result: %d",
+			thread_id, directory->generation, ret);
+
+		// Read root if you didnt allocate it
+		if (ret) {
+			fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+			fbr_dindex_release(fs, &directory);
+
+			directory = fbr_directory_root_alloc(fs);
+			fbr_directory_ok(directory);
+			assert(directory->state == FBR_DIRSTATE_LOADING);
+
+			fbr_index_read(fs, directory);
+			assert(directory->state == FBR_DIRSTATE_OK);
+
+			fbr_test_logs("*** Reading index thread: %zu generation: %lu",
+				thread_id, directory->generation);
+		} else {
+			fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+			fbr_sleep_ms(5);
+		}
+
+		_index_validate_directory(directory, 0);
+		assert(directory->generation == directory->file_count);
+
+		generation = directory->generation;
+
+		fbr_dindex_release(fs, &directory);
 	}
 
-	_index_validate_directory(directory, 0);
-
-	fbr_dindex_release(fs, &directory);
-
 	fbr_fs_release_all(fs, 1);
+
 	fbr_test_ERROR(fs->stats.directories, "non zero");
 	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
 	fbr_test_ERROR(fs->stats.directory_refs, "non zero");
 	fbr_test_ERROR(fs->stats.files, "non zero");
 	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
+
 	fbr_fs_free(fs);
 
 	return NULL;
@@ -676,6 +692,35 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_test_logs("*** all threads joined");
 
 	fbr_dstore_debug(0);
+
+	struct fbr_fs *fs = fbr_test_fs_alloc();
+	fbr_fs_ok(fs);
+	fs->logger = fbr_test_fs_logger_null;
+	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
+
+	fbr_test_logs("*** Final read and validation");
+
+	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
+
+	fbr_index_read(fs, directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+
+	_index_validate_directory(directory, 0);
+	assert(directory->generation == directory->file_count);
+
+	fbr_dindex_release(fs, &directory);
+	fbr_fs_release_all(fs, 1);
+
+	fbr_test_ERROR(fs->stats.directories, "non zero");
+	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
+	fbr_test_ERROR(fs->stats.directory_refs, "non zero");
+	fbr_test_ERROR(fs->stats.files, "non zero");
+	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
+	fbr_test_ERROR(fs->stats.file_refs, "non zero");
+
+	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "index_2fs_test done");
 }
