@@ -14,9 +14,10 @@
 static inline fuse_req_t
 _fuse_reply_init(struct fbr_request *request)
 {
-	fbr_request_valid(request);
+	fbr_request_ok(request);
 
 	fuse_req_t fuse_req = fbr_request_take_fuse(request);
+	fbr_request_valid(request);
 	assert(fuse_req);
 	assert_zero_dev(request->fuse_req);
 
