@@ -633,13 +633,17 @@ _index_thread(void *arg)
 		// Read root if you didnt allocate it
 		if (ret) {
 			fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
-			fbr_dindex_release(fs, &directory);
 
-			directory = fbr_directory_root_alloc(fs);
-			fbr_directory_ok(directory);
-			assert(directory->state == FBR_DIRSTATE_LOADING);
+			do {
+				fbr_dindex_release(fs, &directory);
 
-			fbr_index_read(fs, directory);
+				directory = fbr_directory_root_alloc(fs);
+				fbr_directory_ok(directory);
+				assert(directory->state == FBR_DIRSTATE_LOADING);
+
+				fbr_index_read(fs, directory);
+			} while (directory->state == FBR_DIRSTATE_ERROR);
+
 			assert(directory->state == FBR_DIRSTATE_OK);
 
 			fbr_test_logs("*** Reading index thread: %zu generation: %lu",

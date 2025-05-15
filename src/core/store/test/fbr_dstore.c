@@ -311,7 +311,8 @@ _dstore_metadata_read(const char *path, struct _dstore_metadata *metadata)
 	int fd = open(path, O_RDONLY);
 
 	if (fd < 0) {
-		fbr_test_logs("DSTORE metadata open(%s) error", path);
+		fbr_test_logs("DSTORE metadata open(%s) error %d %d %s", path, fd, errno,
+			strerror(errno));
 		return;
 	}
 
@@ -584,7 +585,8 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	int fd = open(index_path, O_RDONLY);
 
 	if (fd < 0) {
-		fbr_test_logs("DSTORE read index open() error");
+		fbr_test_logs("DSTORE read index open(%s) error %d %d %s", index_path, fd, errno,
+			strerror(errno));
 		return 1;
 	}
 
