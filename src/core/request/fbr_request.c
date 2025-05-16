@@ -308,6 +308,11 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 
 	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
 		fbr_sleep_ms(100);
+
+		if (fs->fuse_ctx) {
+			fbr_fuse_context_ok(fs->fuse_ctx);
+			fs->fuse_ctx->error = 1;
+		}
 	}
 
 	TAILQ_FOREACH_SAFE(request, &_REQUEST_POOL->active_list, entry, temp) {
