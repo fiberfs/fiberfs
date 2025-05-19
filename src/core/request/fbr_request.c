@@ -275,6 +275,8 @@ fbr_request_free(struct fbr_request *request)
 	request->name = NULL;
 	request->id = 0;
 
+	fbr_ZERO(&request->thread);
+
 	fbr_workspace_reset(request->workspace);
 
 	_request_pool_put(request);
@@ -285,6 +287,10 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 {
 	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
 	fbr_fs_ok(fs);
+
+	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
+		fbr_sleep_ms(100);
+	}
 
 	pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));
 
@@ -305,12 +311,6 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 	assert_zero(_REQUEST_POOL->free_size);
 	assert(TAILQ_EMPTY(&_REQUEST_POOL->free_list));
 	assert_zero_dev(fs->stats.requests_pooled);
-
-	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
-		pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
-		fbr_sleep_ms(100);
-		pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));
-	}
 
 	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
 		if (fs->fuse_ctx) {
