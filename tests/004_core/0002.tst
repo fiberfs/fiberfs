@@ -9,4 +9,6 @@ sys_ls $sys_tmpdir "..:dir .:dir fiber1:file fiber2:file fiber3:file fiber4:dir 
 set_var1 $sys_tmpdir "/fiber4"
 sys_ls $var1 "..:dir .:dir fiber41:file fiber42:file fiber43:file"
 
+sleep_ms 200
+
 fuse_test_ops_unmount
