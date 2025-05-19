@@ -307,8 +307,12 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 	assert_zero_dev(fs->stats.requests_pooled);
 
 	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
+		pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 		fbr_sleep_ms(100);
+		pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));
+	}
 
+	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
 		if (fs->fuse_ctx) {
 			fbr_fuse_context_ok(fs->fuse_ctx);
 			fs->fuse_ctx->error = 1;
