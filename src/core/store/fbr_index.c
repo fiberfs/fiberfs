@@ -202,7 +202,8 @@ _json_directory_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_direc
 }
 
 int
-fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_directory *previous)
+fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_directory *previous,
+    struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -210,6 +211,11 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	assert_dev(directory->version);
 	assert_dev(directory->generation);
+
+	if (file) {
+		fbr_file_ok(file);
+		assert_dev(directory->file_count);
+	}
 
 	struct fbr_request *request = fbr_request_get();
 

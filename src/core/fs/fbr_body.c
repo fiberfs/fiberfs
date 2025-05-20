@@ -106,11 +106,11 @@ _body_chunk_insert(struct fbr_body *body, struct fbr_chunk *chunk)
 	assert_dev(current);
 
 	if (!prev) {
+		chunk->next = current;
 		body->chunks = chunk;
-		chunk->next = current;
 	} else {
-		prev->next = chunk;
 		chunk->next = current;
+		prev->next = chunk;
 	}
 }
 

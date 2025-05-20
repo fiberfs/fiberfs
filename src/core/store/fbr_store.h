@@ -109,7 +109,7 @@ struct fbr_store_callbacks {
 struct fjson_context;
 
 int fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
-	struct fbr_directory *previous);
+	struct fbr_directory *previous, struct fbr_file *file);
 void fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);
 fbr_id_t fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len);
 void fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory);

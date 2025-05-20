@@ -80,7 +80,7 @@ _test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 
 	// TODO pass in the target file so we can ignore other writes?
 
-	int ret = fbr_index_write(fs, new_directory, previous);
+	int ret = fbr_index_write(fs, new_directory, previous, file);
 	if (ret) {
 		fs->log("RW_FLUSH fbr_index_write(new_directory) failed");
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
@@ -137,7 +137,7 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	root->generation++;
 	assert(root->generation == 1);
 
-	int ret = fbr_index_write(ctx->fs, root, NULL);
+	int ret = fbr_index_write(ctx->fs, root, NULL, NULL);
 	if (ret) {
 		ctx->fs->log("INIT fbr_index_write(root) failed");
 		fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_ERROR);
