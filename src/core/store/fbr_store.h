@@ -39,7 +39,10 @@ struct fbr_writer {
 	struct fbr_buffer			buffer_slab[FBR_DEFAULT_BUFFERS];
 
 	struct fbr_workspace			*workspace;
-	struct fbr_gzip			gzip;
+	struct fbr_gzip				gzip;
+
+	void					*priv1;
+	void					*priv2;
 
 	size_t					raw_bytes;
 	size_t					bytes;
@@ -73,28 +76,30 @@ enum fbr_index_location {
 };
 
 struct fbr_index_parser {
-	unsigned int			magic;
-#define FBR_INDEX_PARSER_MAGIC		0xE8AC86B7
+	unsigned int				magic;
+#define FBR_INDEX_PARSER_MAGIC			0xE8AC86B7
 
-	char				context[__FBR_INDEX_LOC_SIZE];
-	enum fbr_index_location		location;
+	char					context[__FBR_INDEX_LOC_SIZE];
+	enum fbr_index_location			location;
 
-	struct fbr_fs			*fs;
-	struct fbr_directory		*directory;
-	struct fbr_file			*file;
+	struct fbr_fs				*fs;
+	struct fbr_directory			*directory;
+	struct fbr_file				*file;
 
 	struct {
-		fbr_id_t		id;
-		size_t			offset;
-		size_t			length;
+		fbr_id_t			id;
+		size_t				offset;
+		size_t				length;
 	} chunk;
 
-	unsigned int			files_new;
-	unsigned int			files_existing;
+	unsigned int				files_new;
+	unsigned int				files_existing;
 };
 
 struct fbr_store_callbacks {
 	void (*chunk_read_f)(struct fbr_fs *fs, struct fbr_file *file,
+		struct fbr_chunk *chunk);
+	void (*chunk_delete_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_chunk *chunk);
 	void (*wbuffer_write_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_wbuffer *wbuffer);
@@ -109,7 +114,7 @@ struct fbr_store_callbacks {
 struct fjson_context;
 
 int fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
-	struct fbr_directory *previous, struct fbr_file *file);
+	struct fbr_directory *previous, struct fbr_file *modified);
 void fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);
 fbr_id_t fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len);
 void fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory);

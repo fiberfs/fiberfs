@@ -397,6 +397,7 @@ struct fbr_chunk *fbr_chunk_list_find(struct fbr_chunk_list *chunks, size_t offs
 struct fbr_chunk *fbr_chunk_list_next(struct fbr_chunk_list *chunks, size_t offset);
 struct fbr_chunk_list *fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size,
 	struct fbr_chunk_list **removed);
+void fbr_chunk_list_file_set(struct fbr_file *file, struct fbr_chunk_list *chunks);
 void fbr_chunk_list_free(struct fbr_chunk_list *chunks);
 
 void fbr_body_init(struct fbr_body *body);

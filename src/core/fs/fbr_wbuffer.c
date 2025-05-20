@@ -288,9 +288,12 @@ _wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 		struct fbr_chunk *chunk = wbuffer->chunk;
 		fbr_chunk_ok(chunk);
 		assert_dev(chunk->state == FBR_CHUNK_WBUFFER);
+		assert_dev(chunk->data);
 
 		fs->log("WBUFFER chunk state: %s offset: %zu length: %zu",
 			fbr_chunk_state(chunk->state), chunk->offset, chunk->length);
+
+		chunk->state = FBR_CHUNK_READY;
 
 		fbr_chunk_release(chunk);
 		wbuffer->buffer = NULL;

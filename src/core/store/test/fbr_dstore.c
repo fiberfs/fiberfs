@@ -442,6 +442,7 @@ fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
+	assert(chunk->id);
 	assert(chunk->state == FBR_CHUNK_EMPTY);
 
 	char chunk_path[PATH_MAX];
@@ -493,6 +494,32 @@ fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, bytes);
 
 	_dstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
+}
+
+void
+fbr_dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_chunk_ok(chunk);
+	assert(chunk->id);
+
+	char chunk_path[PATH_MAX];
+	_dstore_chunk_path(file, chunk->id, chunk->offset, 0, chunk_path, sizeof(chunk_path));
+
+	fbr_test_logs("DSTORE DELETE chunk: '%s'", chunk_path);
+
+	_dstore_LOCK();
+
+	int ret = unlink(chunk_path);
+	assert_zero(ret);
+
+	_dstore_chunk_path(file, chunk->id, chunk->offset, 1, chunk_path, sizeof(chunk_path));
+
+	ret = unlink(chunk_path);
+	assert_zero(ret);
+
+	_dstore_UNLOCK();
 }
 
 static void

@@ -65,8 +65,6 @@ _test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 
 	new_directory->generation++;
 
-	// TODO normalize the chunks via fbr_chunk_list_file() (this will be seen by all writers)
-
 	if (file->state == FBR_FILE_INIT) {
 		file->state = FBR_FILE_OK;
 		file->generation = 1;
@@ -77,8 +75,6 @@ _test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	if (!previous) {
 		previous = directory;
 	}
-
-	// TODO pass in the target file so we can ignore other writes?
 
 	int ret = fbr_index_write(fs, new_directory, previous, file);
 	if (ret) {
@@ -98,6 +94,7 @@ _test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
 	.chunk_read_f = fbr_dstore_chunk_read,
+	.chunk_delete_f = fbr_dstore_chunk_delete,
 	.wbuffer_write_f = _test_fs_rw_wbuffer_write,
 	.wbuffers_flush_f = _test_fs_rw_wbuffers_flush,
 	.index_write_f = fbr_dstore_index_root_write,
