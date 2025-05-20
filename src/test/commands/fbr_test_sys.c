@@ -448,3 +448,44 @@ fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_write bytes %zu", total_bytes);
 }
+
+void
+fbr_test_cmd_sys_write_seek(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR(cmd->param_count < 3, "Need 3 params");
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	char *filename = cmd->params[0].value;
+	long seek_pos = fbr_test_parse_long(cmd->params[1].value);
+	fbr_test_ASSERT(seek_pos >= 0, "Bad seek_pos");
+
+	int fd = open(filename, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	fbr_test_ASSERT(fd >= 0, "sys_write_seek open() failed %s (%d %s)", filename, fd,
+		strerror(errno));
+
+	off_t offset = lseek(fd, seek_pos, SEEK_SET);
+	fbr_test_ASSERT(offset == seek_pos, "lseek() error");
+
+	size_t total_bytes = 0;
+
+	for (size_t i = 2; i < cmd->param_count; i++) {
+		char *text = cmd->params[i].value;
+		size_t text_len = cmd->params[i].len;
+
+		size_t size = fbr_sys_write(fd, text, text_len);
+		assert(size == text_len);
+
+		total_bytes += size;
+	}
+
+	int ret = close(fd);
+	fbr_test_ERROR(ret, "sys_write_seek close() failed (%d %s %d)", ret,
+		strerror(errno), errno);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_write_seek bytes %zu", total_bytes);
+}

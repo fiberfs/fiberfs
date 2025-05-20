@@ -212,6 +212,7 @@ _test_concurrent_fio(void)
 	for (size_t i = 0; i < _BODY_TEST_THREADS; i++) {
 		fbr_body_chunk_add(fs, file, i + 1, i * 1000, 1000);
 	}
+	file->state = FBR_FILE_OK;
 	assert(fbr_test_fs_count_chunks(file) == _BODY_TEST_THREADS);
 	assert(file->size == 1000 * _BODY_TEST_THREADS);
 

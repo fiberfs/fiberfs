@@ -114,15 +114,13 @@ _body_chunk_insert(struct fbr_body *body, struct fbr_chunk *chunk)
 	}
 }
 
-struct fbr_chunk *
-fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t offset,
-    size_t length)
+static struct fbr_chunk *
+_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t offset,
+    size_t length, int append)
 {
-	fbr_fs_ok(fs);
-	fbr_file_ok(file);
-	// TODO writing to existing file? We will need body locking
-	assert(file->state == FBR_FILE_INIT);
-	assert(length);
+	assert_dev(fs);
+	assert_dev(file);
+	assert_dev(length);
 
 	struct fbr_chunk *chunk = _body_chunk_alloc(fs, &file->body);
 	fbr_chunk_ok(chunk);
@@ -145,7 +143,7 @@ fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t
 		size_t last_end = chunk_last->offset + chunk_last->length;
 
 		// chunk starts after the end of the last
-		if (chunk->offset >= last_end) {
+		if (chunk->offset >= last_end || append) {
 			chunk_last->next = chunk;
 			file->body.chunk_last = chunk;
 		} else {
@@ -166,6 +164,30 @@ fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t
 	return chunk;
 }
 
+// Note: if file->state == FBR_FILE_OK, must have body->lock
+struct fbr_chunk *
+fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t offset,
+    size_t length)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	assert(length);
+
+	return _body_chunk_add(fs, file, id, offset, length, 0);
+}
+
+struct fbr_chunk *
+fbr_body_chunk_append(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t offset,
+    size_t length)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	assert(file->state == FBR_FILE_INIT);
+	assert(length);
+
+	return _body_chunk_add(fs, file, id, offset, length, 1);
+}
+
 void
 fbr_body_LOCK(struct fbr_fs *fs, struct fbr_body *body)
 {
@@ -181,6 +203,7 @@ fbr_body_UNLOCK(struct fbr_body *body)
 	pt_assert(pthread_mutex_unlock(&body->lock));
 }
 
+// Note: recommended to have body->lock
 void
 fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 {

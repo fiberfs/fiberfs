@@ -87,6 +87,11 @@ _json_body_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_body *body
 	// b: body chunks
 	fbr_writer_add(fs, json, ",\"b\":[", 6);
 
+	// TODO we will pick up tangential writes which might not have a written chunk
+	// Need to skip FBR_CHUNK_WBUFFER which arent part of the flush
+
+	fbr_body_LOCK(fs, body);
+
 	struct fbr_chunk *chunk = body->chunks;
 
 	while (chunk) {
@@ -119,6 +124,8 @@ _json_body_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_body *body
 			fbr_writer_add(fs, json, "}", 1);
 		}
 	}
+
+	fbr_body_UNLOCK(body);
 
 	fbr_writer_add(fs, json, "]", 1);
 }
@@ -483,7 +490,7 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 			    parser->context[FBR_INDEX_LOC_FILE] == 'b') {
 				if (parser->chunk.length) {
 					assert_dev(_file_editable(file));
-					fbr_body_chunk_add(fs, file, parser->chunk.id,
+					fbr_body_chunk_append(fs, file, parser->chunk.id,
 						parser->chunk.offset, parser->chunk.length);
 				}
 				fbr_ZERO(&parser->chunk);

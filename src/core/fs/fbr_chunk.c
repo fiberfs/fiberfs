@@ -252,11 +252,13 @@ _chunk_list_complete(struct fbr_chunk_list *chunks, size_t offset, size_t size)
 	return 1;
 }
 
+// Note: must have body->lock
 struct fbr_chunk_list *
 fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size,
     struct fbr_chunk_list **removed)
 {
 	fbr_file_ok(file);
+	assert(file->state >= FBR_FILE_OK);
 	assert(size);
 	assert_dev(size <= file->size);
 
