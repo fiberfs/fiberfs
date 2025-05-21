@@ -32,6 +32,7 @@ static size_t _BODY_CHUNKS;
 static size_t _WBUFFER_ALLOC_SIZE;
 
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
+extern void fbr_wbuffers_free(struct fbr_wbuffer *wbuffers);
 
 struct _thread_args {
 	struct fbr_fs *fs;
@@ -226,6 +227,41 @@ _test_concurrent_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuf
 	pt_assert(pthread_create(&_STORE_THREADS[id], NULL, _test_store_thread, args));
 }
 
+static int
+_test_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_wbuffer_ok(wbuffers);
+
+	struct fbr_wbuffer *wbuffer = wbuffers;
+	size_t errors = 0;
+
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+		if (_STORE_ERROR_THREAD_ID >= 0) {
+			assert(wbuffer->state == FBR_WBUFFER_WRITING ||
+				wbuffer->state == FBR_WBUFFER_DONE);
+		} else {
+			assert(wbuffer->state == FBR_WBUFFER_DONE);
+		}
+
+		if (wbuffer->state == FBR_WBUFFER_WRITING) {
+			errors++;
+		}
+
+		wbuffer = wbuffer->next;
+	}
+
+	if (_STORE_ERROR_THREAD_ID >= 0) {
+		assert(errors);
+	} else {
+		assert_zero(errors);
+	}
+
+	return 0;
+}
+
 static void *
 _test_fio_thread(void *arg)
 {
@@ -283,6 +319,9 @@ _test_fio_thread(void *arg)
 		int ret = fbr_wbuffer_flush(fs, fio);
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
+			_test_flush_wbuffers(fs, file, fio->wbuffers);
+			fbr_wbuffers_free(fio->wbuffers);
+			fio->wbuffers = NULL;
 		} else {
 			assert_zero(ret);
 		}
@@ -356,36 +395,6 @@ _test_fio_read_thread(void *arg)
 	return NULL;
 }
 
-static int
-_test_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers)
-{
-	fbr_fs_ok(fs);
-	fbr_file_ok(file);
-	fbr_wbuffer_ok(wbuffers);
-
-	struct fbr_wbuffer *wbuffer = wbuffers;
-	size_t errors = 0;
-
-	while (wbuffer) {
-		fbr_wbuffer_ok(wbuffer);
-		assert(wbuffer->state >= FBR_WBUFFER_DONE);
-
-		if (wbuffer->state == FBR_WBUFFER_ERROR) {
-			errors++;
-		}
-
-		wbuffer = wbuffer->next;
-	}
-
-	if (_STORE_ERROR_THREAD_ID >= 0) {
-		assert(errors);
-	} else {
-		assert_zero(errors);
-	}
-
-	return 0;
-}
-
 static const struct fbr_store_callbacks _TEST_WBUFFER_CALLBACKS = {
 	.chunk_read_f = _test_concurrent_gen_wbuffer,
 	.wbuffer_write_f = _test_concurrent_store,
@@ -451,6 +460,9 @@ _test_concurrent_fio(void)
 		int ret = fbr_wbuffer_flush(fs, fio);
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
+			_test_flush_wbuffers(fs, file, fio->wbuffers);
+			fbr_wbuffers_free(fio->wbuffers);
+			fio->wbuffers = NULL;
 		} else {
 			assert_zero(ret);
 		}

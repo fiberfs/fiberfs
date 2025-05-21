@@ -404,9 +404,13 @@ _test_fs_rw_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_fil
 	fbr_test_logs("RELEASE req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
+
+	// Flush incase we hit a previous flush error
+	int ret = fbr_wbuffer_flush(fs, fio);
+
 	fbr_fio_release(fs, fio);
 
-	fbr_fuse_reply_err(request, 0);
+	fbr_fuse_reply_err(request, ret);
 }
 
 static void
