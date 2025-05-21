@@ -10,6 +10,7 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 
 int
 fbr_libunwind_enabled(void)
@@ -22,7 +23,7 @@ fbr_libunwind_enabled(void)
 }
 
 void
-fbr_libunwind_backtrace(void)
+fbr_libunwind_backtrace(char **stack_syms, int len)
 {
 #ifdef FBR_LIBUNWIND
 	fprintf(stderr, "\nStack symbols:\n");
@@ -32,6 +33,8 @@ fbr_libunwind_backtrace(void)
 
 	unw_getcontext(&context);
 	unw_init_local(&cursor, &context);
+
+	int i = 0;
 
 	while (unw_step(&cursor) > 0) {
 		char symbol[256];
@@ -44,6 +47,24 @@ fbr_libunwind_backtrace(void)
 		} else {
 			fprintf(stderr, "  [unknown]\n");
 		}
+
+		if (i < len && strncmp(stack_syms[i], "/lib", 4)) {
+			for (size_t j = 0; stack_syms[i][j]; j++) {
+				if (stack_syms[i][j] == '(') {
+					stack_syms[i][j] = ' ';
+				} else if (stack_syms[i][j] == ')') {
+					stack_syms[i][j] = '\0';
+					break;
+				}
+			}
+
+			fprintf(stderr, "    addr2line -spfe %s\n", stack_syms[i]);
+		}
+
+		i++;
 	}
+#else
+	(void)stack_syms;
+	(void)len;
 #endif
 }

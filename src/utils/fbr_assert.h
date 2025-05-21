@@ -21,7 +21,7 @@ int fbr_assert_is_dev(void);
 void __fbr_attr_printf(5) __fbr_noreturn fbr_do_abort(const char *assertion,
 	const char *function, const char *file, int line, const char *fmt, ...);
 int fbr_libunwind_enabled(void);
-void fbr_libunwind_backtrace(void);
+void fbr_libunwind_backtrace(char **stack_syms, int len);
 
 #undef assert
 #undef assert_zero
