@@ -330,28 +330,35 @@ fbr_chunks_file_get(struct fbr_file *file, size_t offset, size_t size,
 
 // Note: must have body->lock
 void
-fbr_chunks_file_set(struct fbr_file *file, struct fbr_chunk_list *chunks)
+fbr_chunks_file_prune(struct fbr_file *file, struct fbr_chunk_list *remove)
 {
 	fbr_file_ok(file);
-	fbr_chunk_list_ok(chunks);
+	fbr_chunk_list_ok(remove);
 
-	if (!chunks->length) {
-		file->body.chunks = NULL;
-		file->body.chunk_last = NULL;
-
+	if (!remove->length || !file->body.chunks) {
 		return;
 	}
 
-	struct fbr_chunk *prev = chunks->list[0];
-	fbr_chunk_ok(prev);
-	file->body.chunks = prev;
+	struct fbr_chunk *chunk = file->body.chunks;
+	struct fbr_chunk *prev = NULL;
 
-	for (size_t i = 1; i < chunks->length; i++) {
-		struct fbr_chunk *chunk = chunks->list[i];
+	while (chunk) {
 		fbr_chunk_ok(chunk);
 
-		prev->next = chunk;
+		if (fbr_chunk_list_contains(remove, chunk)) {
+			if (prev) {
+				prev->next = chunk->next;
+			} else {
+				file->body.chunks = chunk->next;
+			}
+
+			chunk = chunk->next;
+
+			continue;
+		}
+
 		prev = chunk;
+		chunk = chunk->next;
 	}
 
 	file->body.chunk_last = prev;

@@ -435,6 +435,8 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	fbr_body_LOCK(fs, &fio->file->body);
 
+	// TODO do we still flush if we have an error?
+
 	if (fs->store->wbuffers_flush_f) {
 		int ret = fs->store->wbuffers_flush_f(fs, fio->file, fio->wbuffers);
 		if (ret && !error) {

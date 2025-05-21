@@ -41,9 +41,6 @@ struct fbr_writer {
 	struct fbr_workspace			*workspace;
 	struct fbr_gzip				gzip;
 
-	void					*priv1;
-	void					*priv2;
-
 	size_t					raw_bytes;
 	size_t					bytes;
 
@@ -122,8 +119,9 @@ struct fbr_store_callbacks {
 
 struct fjson_context;
 
-void fbr_index_data_init(struct fbr_index_data *index_data, struct fbr_directory *directory,
-	struct fbr_directory *previous, struct fbr_file *file, struct fbr_wbuffer *wbuffers);
+void fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
+	struct fbr_directory *directory, struct fbr_directory *previous,
+	struct fbr_file *file, struct fbr_wbuffer *wbuffers);
 void fbr_index_data_free(struct fbr_index_data *index_data);
 int fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data);
 void fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);

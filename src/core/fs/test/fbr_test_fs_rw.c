@@ -77,7 +77,7 @@ _test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	}
 
 	struct fbr_index_data index_data;
-	fbr_index_data_init(&index_data, new_directory, previous, file, wbuffers);
+	fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers);
 
 	int ret = fbr_index_write(fs, &index_data);
 	if (ret) {
@@ -140,7 +140,7 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	assert(root->generation == 1);
 
 	struct fbr_index_data index_data;
-	fbr_index_data_init(&index_data, root, NULL, NULL, NULL);
+	fbr_index_data_init(NULL, &index_data, root, NULL, NULL, NULL);
 
 	int ret = fbr_index_write(ctx->fs, &index_data);
 	if (ret) {
