@@ -279,8 +279,6 @@ _wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 	fbr_file_ok(file);
 	assert_dev(wbuffer);
 
-	fbr_body_LOCK(fs, &file->body);
-
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
 		assert(wbuffer->state >= FBR_WBUFFER_DONE);
@@ -302,8 +300,6 @@ _wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 	}
 
 	fbr_body_debug(fs, file);
-
-	fbr_body_UNLOCK(&file->body);
 }
 
 void
@@ -437,6 +433,8 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 	//  * file->size could change
 	//  * wbuffers can be orphaned (cleanup in wbuffers_flush_f() below)
 
+	fbr_body_LOCK(fs, &fio->file->body);
+
 	if (fs->store->wbuffers_flush_f) {
 		int ret = fs->store->wbuffers_flush_f(fs, fio->file, fio->wbuffers);
 		if (ret && !error) {
@@ -447,6 +445,8 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	_wbuffer_flush_chunks(fs, fio->file, fio->wbuffers);
+
+	fbr_body_UNLOCK(&fio->file->body);
 
 	_wbuffer_free(fio->wbuffers);
 	fio->wbuffers = NULL;

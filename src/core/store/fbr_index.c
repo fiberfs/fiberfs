@@ -251,12 +251,36 @@ _json_directory_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_direc
 	fbr_writer_add(fs, json, "]", 1);
 }
 
+void
+fbr_index_data_init(struct fbr_index_data *index_data, struct fbr_directory *directory,
+    struct fbr_directory *previous, struct fbr_file *file, struct fbr_wbuffer *wbuffers)
+{
+	assert(index_data);
+	fbr_directory_ok(directory);
+
+	fbr_ZERO(index_data);
+
+	index_data->directory = directory;
+	index_data->previous = previous;
+	index_data->file = file;
+	index_data->wbuffers = wbuffers;
+}
+
+void
+fbr_index_data_free(struct fbr_index_data *index_data)
+{
+	assert(index_data);
+	fbr_ZERO(index_data);
+}
+
 int
-fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_directory *previous,
-    struct fbr_file *modified)
+fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
+	assert(index_data);
+
+	struct fbr_directory *directory = index_data->directory;
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	assert_dev(directory->version);
@@ -272,15 +296,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 	struct fbr_writer json_gen;
 	fbr_writer_init(fs, &json_gen, request, gzip);
 
-	if (modified) {
-		fbr_file_ok(modified);
-		assert_dev(directory->file_count);
-
-		fbr_body_LOCK(fs, &modified->body);
-	}
-
 	_json_header_gen(fs, &json_gen);
-	_json_directory_gen(fs, &json_gen, directory, modified);
+	_json_directory_gen(fs, &json_gen, directory, index_data->file);
 	_json_footer_gen(fs, &json_gen);
 
 	fbr_writer_flush(fs, &json_gen);
@@ -290,17 +307,17 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 	int ret = EIO;
 
 	if (fs->store->index_write_f && !json_gen.error) {
-		ret = fs->store->index_write_f(fs, directory, &json_gen, previous);
+		ret = fs->store->index_write_f(fs, directory, &json_gen, index_data->previous);
 	}
 
-	if (modified) {
+	if (index_data->file) {
 		struct fbr_chunk_list *chunks = json_gen.priv1;
 		fbr_chunk_list_ok(chunks);
 		struct fbr_chunk_list *removed = json_gen.priv2;
 		fbr_chunk_list_ok(removed);
 
 		if (!ret) {
-			fbr_chunk_list_file_set(modified, chunks);
+			fbr_chunk_list_file_set(index_data->file, chunks);
 
 			for (size_t i = 0; i < removed->length; i++) {
 				struct fbr_chunk *chunk = removed->list[i];
@@ -311,7 +328,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 				}
 
 				if (fs->store->chunk_delete_f) {
-					fs->store->chunk_delete_f(fs, modified, chunk);
+					fs->store->chunk_delete_f(fs, index_data->file, chunk);
 				}
 			}
 		} else {
@@ -320,8 +337,6 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_d
 
 		fbr_chunk_list_free(chunks);
 		fbr_chunk_list_free(removed);
-
-		fbr_body_UNLOCK(&modified->body);
 	}
 
 	fbr_writer_free(fs, &json_gen);

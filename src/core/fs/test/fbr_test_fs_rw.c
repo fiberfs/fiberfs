@@ -76,13 +76,18 @@ _test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 		previous = directory;
 	}
 
-	int ret = fbr_index_write(fs, new_directory, previous, file);
+	struct fbr_index_data index_data;
+	fbr_index_data_init(&index_data, new_directory, previous, file, wbuffers);
+
+	int ret = fbr_index_write(fs, &index_data);
 	if (ret) {
 		fs->log("RW_FLUSH fbr_index_write(new_directory) failed");
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
 	} else {
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 	}
+
+	fbr_index_data_free(&index_data);
 
 	// Safe to call within flush
 	fbr_dindex_release(fs, &directory);
@@ -134,7 +139,10 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	root->generation++;
 	assert(root->generation == 1);
 
-	int ret = fbr_index_write(ctx->fs, root, NULL, NULL);
+	struct fbr_index_data index_data;
+	fbr_index_data_init(&index_data, root, NULL, NULL, NULL);
+
+	int ret = fbr_index_write(ctx->fs, &index_data);
 	if (ret) {
 		ctx->fs->log("INIT fbr_index_write(root) failed");
 		fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_ERROR);
@@ -142,6 +150,8 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	} else {
 		fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
 	}
+
+	fbr_index_data_free(&index_data);
 
 	struct fbr_path_name dirpath;
 	fbr_directory_name(root, &dirpath);

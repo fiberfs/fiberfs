@@ -181,8 +181,11 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	_index_request_start();
 
-	int ret = fbr_index_write(fs, directory, NULL, NULL);
+	struct fbr_index_data index_data;
+	fbr_index_data_init(&index_data, directory, NULL, NULL, NULL);
+	int ret = fbr_index_write(fs, &index_data);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
+	fbr_index_data_free(&index_data);
 
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
@@ -206,8 +209,10 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fs->config.gzip_index = 0;
 
-	ret = fbr_index_write(fs, directory, directory->previous, NULL);
+	fbr_index_data_init(&index_data, directory, directory->previous, NULL, NULL);
+	ret = fbr_index_write(fs, &index_data);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
+	fbr_index_data_free(&index_data);
 
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 1);
@@ -270,8 +275,10 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	_index_request_start();
 
-	ret = fbr_index_write(fs, directory, directory->previous, file);
+	fbr_index_data_init(&index_data, directory, directory->previous, file, NULL);
+	ret = fbr_index_write(fs, &index_data);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
+	fbr_index_data_free(&index_data);
 
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 1);
@@ -294,9 +301,11 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	_index_request_start();
 
-	ret = fbr_index_write(fs, directory, old_directory, NULL);
+	fbr_index_data_init(&index_data, directory, old_directory, NULL, NULL);
+	ret = fbr_index_write(fs, &index_data);
 	fbr_test_ASSERT(ret, "fbr_index_write() did NOT fail");
 	assert(directory->state == FBR_DIRSTATE_LOADING);
+	fbr_index_data_free(&index_data);
 
 	_index_request_finish();
 
@@ -304,9 +313,11 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	_index_request_start();
 
-	ret = fbr_index_write(fs, directory, NULL, NULL);
+	fbr_index_data_init(&index_data, directory, NULL, NULL, NULL);
+	ret = fbr_index_write(fs, &index_data);
 	fbr_test_ASSERT(ret, "fbr_index_write() did NOT fail");
 	assert(directory->state == FBR_DIRSTATE_LOADING);
+	fbr_index_data_free(&index_data);
 
 	_index_request_finish();
 
@@ -315,8 +326,10 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_index_request_start();
 
 	fbr_directory_ok(directory->previous);
-	ret = fbr_index_write(fs, directory, directory->previous, NULL);
+	fbr_index_data_init(&index_data, directory, directory->previous, NULL, NULL);
+	ret = fbr_index_write(fs, &index_data);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
+	fbr_index_data_free(&index_data);
 
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 1);
@@ -419,8 +432,11 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	_index_request_start();
 
-	int ret = fbr_index_write(fs, directory, NULL, NULL);
+	struct fbr_index_data index_data;
+	fbr_index_data_init(&index_data, directory, NULL, NULL, NULL);
+	int ret = fbr_index_write(fs, &index_data);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
+	fbr_index_data_free(&index_data);
 
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
@@ -497,8 +513,11 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** Storing dir_fs1 (gen %lu)", dir_fs1->generation);
 
-	int ret = fbr_index_write(fs_1, dir_fs1, NULL, NULL);
+	struct fbr_index_data index_data;
+	fbr_index_data_init(&index_data, dir_fs1, NULL, NULL, NULL);
+	int ret = fbr_index_write(fs_1, &index_data);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
+	fbr_index_data_free(&index_data);
 
 	fbr_directory_set_state(fs_1, dir_fs1, FBR_DIRSTATE_OK);
 
@@ -532,8 +551,10 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** Storing dir_fs2 (gen %lu)", dir_fs2->generation);
 
-	ret = fbr_index_write(fs_2, dir_fs2, dir_fs2->previous, NULL);
+	fbr_index_data_init(&index_data, dir_fs2, dir_fs2->previous, NULL, NULL);
+	ret = fbr_index_write(fs_2, &index_data);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
+	fbr_index_data_free(&index_data);
 
 	fbr_directory_set_state(fs_2, dir_fs2, FBR_DIRSTATE_OK);
 	_index_validate_directory(dir_fs2, 1);
@@ -633,7 +654,10 @@ _index_thread(void *arg)
 		struct fbr_file *file = _index_add_file(fs, directory, 0);
 		assert(directory->generation == directory->file_count);
 
-		int ret = fbr_index_write(fs, directory, directory->previous, file);
+		struct fbr_index_data index_data;
+		fbr_index_data_init(&index_data, directory, directory->previous, file, NULL);
+		int ret = fbr_index_write(fs, &index_data);
+		fbr_index_data_free(&index_data);
 
 		fbr_test_logs("*** Storing index thread: %zu generation: %lu result: %d",
 			thread_id, directory->generation, ret);

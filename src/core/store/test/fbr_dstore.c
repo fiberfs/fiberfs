@@ -512,7 +512,7 @@ fbr_dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 	_dstore_LOCK();
 
 	int ret = unlink(chunk_path);
-	assert_zero(ret);
+	fbr_test_ERROR(ret, "unlink() failed %d %d %s", ret, errno, strerror(errno));
 
 	_dstore_chunk_path(file, chunk->id, chunk->offset, 1, chunk_path, sizeof(chunk_path));
 

@@ -96,6 +96,15 @@ struct fbr_index_parser {
 	unsigned int				files_existing;
 };
 
+struct fbr_index_data {
+	struct fbr_directory			*directory;
+	struct fbr_directory			*previous;
+	struct fbr_file				*file;
+	struct fbr_wbuffer			*wbuffers;
+	struct fbr_chunk_list			*chunks;
+	struct fbr_chunk_list			*removed;
+};
+
 struct fbr_store_callbacks {
 	void (*chunk_read_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_chunk *chunk);
@@ -113,8 +122,10 @@ struct fbr_store_callbacks {
 
 struct fjson_context;
 
-int fbr_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
-	struct fbr_directory *previous, struct fbr_file *modified);
+void fbr_index_data_init(struct fbr_index_data *index_data, struct fbr_directory *directory,
+	struct fbr_directory *previous, struct fbr_file *file, struct fbr_wbuffer *wbuffers);
+void fbr_index_data_free(struct fbr_index_data *index_data);
+int fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data);
 void fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);
 fbr_id_t fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len);
 void fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
