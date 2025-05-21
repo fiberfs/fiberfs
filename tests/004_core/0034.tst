@@ -14,6 +14,8 @@ print "### CREATE"
 set_var1 $sys_tmpdir "/test.txt"
 sys_write $var1 "123" "4" "567" "89012" "345" "6" "7890"
 
+equal $fs_test_stat_store_chunks 7
+
 sleep_ms 100
 
 print "### WRITE"
@@ -49,5 +51,6 @@ equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
+equal $fs_test_stat_store_chunks 8
 
 fuse_test_unmount

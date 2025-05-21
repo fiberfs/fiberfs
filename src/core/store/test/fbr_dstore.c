@@ -414,6 +414,7 @@ fbr_dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	_dstore_metadata_write(chunk_path, &metadata);
 
 	fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
+	fbr_fs_stat_add(&fs->stats.store_chunks);
 
 	_dstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_DONE);
 }
@@ -518,6 +519,8 @@ fbr_dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 
 	ret = unlink(chunk_path);
 	assert_zero(ret);
+
+	fbr_fs_stat_sub(&fs->stats.store_chunks);
 
 	_dstore_UNLOCK();
 }

@@ -381,9 +381,8 @@ _wbuffer_ready(struct fbr_wbuffer *wbuffer)
 }
 
 void
-fbr_wbuffers_free(struct fbr_wbuffer *wbuffers)
+fbr_wbuffers_free(struct fbr_wbuffer *wbuffer)
 {
-	struct fbr_wbuffer *wbuffer = wbuffers;
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
 		assert(wbuffer->state != FBR_WBUFFER_SYNC);
@@ -401,6 +400,48 @@ fbr_wbuffers_free(struct fbr_wbuffer *wbuffers)
 
 		wbuffer = next;
 	}
+}
+
+static void
+_wbuffer_truncate(struct fbr_fs *fs, struct fbr_file *file)
+{
+	assert_dev(fs);
+	assert_dev(file);
+
+	struct fbr_chunk *chunk = file->body.chunks;
+	struct fbr_chunk *prev = NULL;
+
+	if (!chunk) {
+		return;
+	}
+
+	fs->log("WBUFFER doing truncate");
+
+	while (chunk) {
+		fbr_chunk_ok(chunk);
+
+		if (chunk->state != FBR_CHUNK_WBUFFER) {
+			if (prev) {
+				prev->next = chunk->next;
+			} else {
+				file->body.chunks = chunk->next;
+			}
+
+			if (fs->store->chunk_delete_f && chunk->id) {
+				fs->store->chunk_delete_f(fs, file, chunk);
+			}
+
+			chunk = chunk->next;
+
+			continue;
+		}
+
+		prev = chunk;
+		chunk = chunk->next;
+	}
+
+	file->body.chunk_last = prev;
+
 }
 
 int
@@ -477,6 +518,11 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	fbr_body_LOCK(fs, &fio->file->body);
 
+	if (fio->truncate) {
+		_wbuffer_truncate(fs, fio->file);
+		fio->truncate = 0;
+	}
+
 	if (fs->store->wbuffers_flush_f) {
 		int ret = fs->store->wbuffers_flush_f(fs, fio->file, fio->wbuffers);
 		if (ret && !error) {
@@ -530,4 +576,5 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	assert_zero_dev(fio->wbuffers);
 	fbr_wbuffers_free(fio->wbuffers);
+	fio->wbuffers = NULL;
 }
