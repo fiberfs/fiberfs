@@ -111,11 +111,8 @@ _json_body_modified_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_f
 	assert_dev(json);
 	assert_dev(file);
 
-	// b: body chunks
-	fbr_writer_add(fs, json, ",\"b\":[", 6);
-
 	struct fbr_chunk_list *removed = NULL;
-	struct fbr_chunk_list *chunks = fbr_chunk_list_file(file, 0, file->size, &removed);
+	struct fbr_chunk_list *chunks = fbr_chunks_file_get(file, 0, file->size, &removed, NULL);
 	fbr_chunk_list_ok(chunks);
 	json->priv1 = chunks;
 
@@ -132,8 +129,6 @@ _json_body_modified_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_f
 
 		_json_chunk_gen(fs, json, chunk);
 	}
-
-	fbr_writer_add(fs, json, "]", 1);
 }
 
 static void
@@ -142,9 +137,6 @@ _json_body_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_body *body
 	assert_dev(fs);
 	assert_dev(json);
 	assert_dev(body);
-
-	// b: body chunks
-	fbr_writer_add(fs, json, ",\"b\":[", 6);
 
 	fbr_body_LOCK(fs, body);
 
@@ -170,8 +162,6 @@ _json_body_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_body *body
 	}
 
 	fbr_body_UNLOCK(body);
-
-	fbr_writer_add(fs, json, "]", 1);
 }
 
 static void
@@ -210,13 +200,20 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	fbr_writer_add(fs, json, ",\"p\":", 5);
 	fbr_writer_add_ulong(fs, json, file->gid);
 
-	if (file == modified) {
-		_json_body_modified_gen(fs, json, modified);
-	} else {
-		_json_body_gen(fs, json, &file->body);
-	}
+	if (file->body.chunks) {
+		// b: body chunks
+		fbr_writer_add(fs, json, ",\"b\":[", 6);
 
-	fbr_writer_add(fs, json, "}", 1);
+		if (file == modified) {
+			_json_body_modified_gen(fs, json, modified);
+		} else {
+			_json_body_gen(fs, json, &file->body);
+		}
+
+		fbr_writer_add(fs, json, "]}", 2);
+	} else {
+		fbr_writer_add(fs, json, "}", 1);
+	}
 }
 
 static void
@@ -310,14 +307,14 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 		ret = fs->store->index_write_f(fs, directory, &json_gen, index_data->previous);
 	}
 
-	if (index_data->file) {
+	if (index_data->file && json_gen.priv1) {
 		struct fbr_chunk_list *chunks = json_gen.priv1;
 		fbr_chunk_list_ok(chunks);
 		struct fbr_chunk_list *removed = json_gen.priv2;
 		fbr_chunk_list_ok(removed);
 
 		if (!ret) {
-			fbr_chunk_list_file_set(index_data->file, chunks);
+			fbr_chunks_file_set(index_data->file, chunks);
 
 			for (size_t i = 0; i < removed->length; i++) {
 				struct fbr_chunk *chunk = removed->list[i];

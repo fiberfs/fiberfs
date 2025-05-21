@@ -456,6 +456,25 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 	return error;
 }
 
+int
+fbr_wbuffer_has_chunk(struct fbr_wbuffer *wbuffers, struct fbr_chunk *chunk)
+{
+	fbr_chunk_ok(chunk);
+
+	struct fbr_wbuffer *wbuffer = wbuffers;
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+
+		if (wbuffer->chunk == chunk) {
+			return 1;
+		}
+
+		wbuffer = wbuffer->next;
+	}
+
+	return 0;
+}
+
 void
 fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 {

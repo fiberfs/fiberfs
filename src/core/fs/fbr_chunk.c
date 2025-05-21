@@ -254,8 +254,8 @@ _chunk_list_complete(struct fbr_chunk_list *chunks, size_t offset, size_t size)
 
 // Note: must have body->lock
 struct fbr_chunk_list *
-fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size,
-    struct fbr_chunk_list **removed)
+fbr_chunks_file_get(struct fbr_file *file, size_t offset, size_t size,
+    struct fbr_chunk_list **removed, struct fbr_wbuffer *wbuffers)
 {
 	fbr_file_ok(file);
 	assert(file->state >= FBR_FILE_OK);
@@ -265,11 +265,6 @@ fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size,
 	struct fbr_chunk *chunk = file->body.chunks;
 	int completed = 0;
 	int do_removed = 0;
-
-	if (!size) {
-		assert_zero_dev(offset);
-		completed = 1;
-	}
 
 	if (removed) {
 		assert(size == file->size);
@@ -284,9 +279,25 @@ fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size,
 		do_removed = 1;
 	}
 
+	if (!size) {
+		assert_zero_dev(offset);
+		completed = 1;
+
+		if (!do_removed) {
+			return chunks;
+		}
+	}
+
 	while (chunk) {
 		fbr_chunk_ok(chunk);
 		assert(chunk->state >= FBR_CHUNK_EMPTY);
+
+		if (wbuffers && chunk->state == FBR_CHUNK_WBUFFER) {
+			if (!fbr_wbuffer_has_chunk(wbuffers, chunk)) {
+				chunk = chunk->next;
+				continue;
+			}
+		}
 
 		if (!completed && fbr_chunk_in_offset(chunk, offset, size)) {
 			if (_chunk_list_complete(chunks, chunk->offset, chunk->length)) {
@@ -319,7 +330,7 @@ fbr_chunk_list_file(struct fbr_file *file, size_t offset, size_t size,
 
 // Note: must have body->lock
 void
-fbr_chunk_list_file_set(struct fbr_file *file, struct fbr_chunk_list *chunks)
+fbr_chunks_file_set(struct fbr_file *file, struct fbr_chunk_list *chunks)
 {
 	fbr_file_ok(file);
 	fbr_chunk_list_ok(chunks);

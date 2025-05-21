@@ -475,7 +475,7 @@ _test_concurrent_fio(void)
 	assert(file->size == _BODY_TEST_THREADS * _BODY_WRITE_SIZE);
 
 	struct fbr_chunk_list *removed = NULL;
-	struct fbr_chunk_list *chunks = fbr_chunk_list_file(file, 0, file->size, &removed);
+	struct fbr_chunk_list *chunks = fbr_chunks_file_get(file, 0, file->size, &removed, NULL);
 
 	fbr_chunk_list_debug(fs, chunks, "FILE");
 	assert(chunks->length);
