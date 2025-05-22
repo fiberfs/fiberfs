@@ -20,13 +20,13 @@ fbr_wbuffer_init(struct fbr_fio *fio)
 	pt_assert(pthread_mutex_init(&fio->wbuffer_lock, NULL));
 	pt_assert(pthread_cond_init(&fio->wbuffer_update, NULL));
 
-	fio->id = fbr_id_gen();
 	fio->wbuffers = NULL;
 }
 
 static struct fbr_wbuffer *
-_wbuffer_alloc(struct fbr_fio *fio, size_t offset, size_t size, size_t max)
+_wbuffer_alloc(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size, size_t max)
 {
+	assert_dev(fs);
 	assert_dev(fio);
 	assert(size);
 
@@ -52,7 +52,7 @@ _wbuffer_alloc(struct fbr_fio *fio, size_t offset, size_t size, size_t max)
 
 	wbuffer->magic = FBR_WBUFFER_MAGIC;
 	wbuffer->state = FBR_WBUFFER_WRITING;
-	wbuffer->id = fio->id;
+	wbuffer->id = fbr_id_gen();
 	wbuffer->offset = offset;
 	wbuffer->size = wsize;
 	wbuffer->end = size;
@@ -60,6 +60,8 @@ _wbuffer_alloc(struct fbr_fio *fio, size_t offset, size_t size, size_t max)
 
 	wbuffer->buffer = malloc(wsize);
 	assert(wbuffer->buffer);
+
+	fbr_fs_stat_add(&fs->stats.wbuffers);
 
 	return wbuffer;
 }
@@ -104,7 +106,7 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 			}
 		}
 
-		wbuffer = _wbuffer_alloc(fio, offset, size, max);
+		wbuffer = _wbuffer_alloc(fs, fio, offset, size, max);
 		assert_dev(wbuffer);
 
 		if (prev) {

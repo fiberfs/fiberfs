@@ -264,8 +264,6 @@ struct fbr_fio {
 
 	fbr_refcount_t				refcount;
 
-	fbr_id_t				id;
-
 	struct fbr_file				*file;
 	struct fbr_chunk_list			*floating;
 	struct fbr_wbuffer			*wbuffers;
@@ -301,6 +299,7 @@ struct fbr_fs_stats {
 
 	fbr_stats_t				flushes;
 
+	fbr_stats_t				wbuffers;
 	fbr_stats_t				chunk_slabs;
 	fbr_stats_t				file_ptr_slabs;
 	fbr_stats_t				buffers;
