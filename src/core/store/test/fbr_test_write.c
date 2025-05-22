@@ -4,6 +4,8 @@
  *
  */
 
+#include <pthread.h>
+
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
@@ -24,23 +26,107 @@ static const struct fbr_store_callbacks _WRITE_CALLBACKS = {
 	.root_read_f = fbr_dstore_root_read
 };
 
+struct _write_args {
+	struct fbr_fs *fs;
+	struct fbr_file *file;
+	struct fbr_fio *fio;
+};
+
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
-static size_t _WBUFFER_SIZE;
-static size_t _FILE_SIZE;
+#define _WBUFFER_SIZE		250
+#define _FILE_SIZE		(10 * 1000)
+#define _THREADS		10
+
+static size_t _THREAD_COUNT;
 
 static void
 _init(void)
 {
-	_WBUFFER_SIZE = 250;
-	_FILE_SIZE = 10 * 1000;
+	assert_zero(_FILE_SIZE % _WBUFFER_SIZE);
+	assert_zero(_FILE_SIZE % _THREADS);
+
+	_THREAD_COUNT = 0;
+}
+
+static void
+_buffer_check(size_t offset, unsigned char *buffer, size_t buffer_len)
+{
+	for (size_t i = 0; i < buffer_len; i++) {
+		size_t pos = offset + i;
+		unsigned char byte = (pos / 100);
+		byte += (pos % 100);
+		fbr_test_ASSERT(buffer[i] == byte, "offset: %zu i: %zu found: %u expected: %u",
+			offset, i, buffer[i], byte);
+	}
+}
+
+static void
+_buffer_init(size_t offset, unsigned char *buffer, size_t buffer_len)
+{
+	for (size_t i = 0; i < buffer_len; i++) {
+		size_t pos = offset + i;
+		unsigned char byte = (pos / 100);
+		byte += (pos % 100);
+		buffer[i] = byte;
+	}
+}
+
+static void *
+_write_thread(void *arg)
+{
+	struct _write_args *args = arg;
+	struct fbr_fs *fs = args->fs;
+	struct fbr_file *file = args->file;
+	struct fbr_fio *fio = args->fio;
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	assert_zero(fio);
+
+	fbr_test_index_request_start();
+
+	size_t id = fbr_atomic_add(&_THREAD_COUNT, 1);
+	size_t size = _FILE_SIZE / _THREADS;
+	size_t offset = (id - 1) * size;
+
+	while (_THREAD_COUNT < _THREADS) {
+		fbr_sleep_ms(0.1);
+	}
+	assert(_THREAD_COUNT == _THREADS);
+
+	fbr_test_logs(" ** Thread %zu running (%zu/%zu)", id, offset, size);
+
+	fbr_inode_add(fs, file);
+	fio = fbr_fio_alloc(fs, file);
+
+	char buffer[100];
+	assert_zero(_FILE_SIZE % sizeof(buffer));
+	memset(buffer, 0, sizeof(buffer));
+
+	size_t pos = 0;
+
+	while (pos < size) {
+		_buffer_init(offset + pos, (unsigned char*)buffer, sizeof(buffer));
+		fbr_wbuffer_write(fs, fio, offset + pos, buffer, sizeof(buffer));
+		pos += sizeof(buffer);
+	}
+	assert(pos == size);
+
+	int ret = fbr_wbuffer_flush(fs, fio);
+	assert_zero(ret);
+
+	fbr_fio_release(fs, fio);
+
+	fbr_test_index_request_finish();
+
+	fbr_test_logs(" ** Thread %zu done", id);
+
+	return NULL;
 }
 
 static void
 _write_test(void)
 {
-	assert_zero(_FILE_SIZE % _WBUFFER_SIZE);
-
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 
 	fbr_dstore_init(test_ctx);
@@ -103,8 +189,54 @@ _write_test(void)
 	assert_zero(ret);
 
 	fbr_fio_release(fs, fio);
-
 	fbr_test_index_request_finish();
+
+	fbr_dstore_debug(0);
+	assert(fs->stats.store_chunks > _FILE_SIZE / _WBUFFER_SIZE);
+
+	fbr_test_logs("*** Starting write threads");
+
+	assert_zero(_THREAD_COUNT);
+	pthread_t threads[_THREADS];
+	struct _write_args args = {fs, file, NULL};
+
+	for (size_t i = 0; i < fbr_array_len(threads); i++) {
+		pt_assert(pthread_create(&threads[i], NULL, _write_thread, &args));
+	}
+
+	fbr_test_logs("*** Threads created");
+
+	for (size_t i = 0; i < fbr_array_len(threads); i++) {
+		pt_assert(pthread_join(threads[i], NULL));
+	}
+	assert(_THREAD_COUNT == _THREADS);
+	assert(file->size == _FILE_SIZE);
+
+	fbr_test_logs("*** Validation");
+
+	fbr_test_index_request_start();
+
+	fbr_inode_add(fs, file);
+	fio = fbr_fio_alloc(fs, file);
+
+	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, 0, file->size);
+	assert(vector);
+	assert(vector->chunks);
+	assert(vector->bufvec);
+
+	struct fuse_bufvec *bufvec = vector->bufvec;
+	size_t bufvec_len = 0;
+
+	for (size_t i = 0; i < bufvec->count; i++) {
+		struct fuse_buf *buf = &bufvec->buf[i];
+		_buffer_check(bufvec_len, buf->mem, buf->size);
+		bufvec_len += buf->size;
+	}
+	assert(bufvec_len == vector->size);
+
+	fbr_fio_vector_free(fs, fio, vector);
+	fbr_test_index_request_finish();
+	fbr_fio_release(fs, fio);
 
 	fbr_test_logs("*** Cleanup");
 
@@ -121,6 +253,7 @@ _write_test(void)
 	fbr_test_ERROR(fs->stats.files, "non zero");
 	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
+	fbr_test_ASSERT(fs->stats.store_chunks == _FILE_SIZE / _WBUFFER_SIZE, "mismatch");
 
 	fbr_request_pool_shutdown(fs);
 	fbr_fs_free(fs);

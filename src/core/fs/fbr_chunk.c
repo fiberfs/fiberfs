@@ -101,6 +101,8 @@ fbr_chunk_state(enum fbr_chunk_state state)
 			return "SPLICE";
 		case FBR_CHUNK_WBUFFER:
 			return "WBUFFER";
+		case __FBR_CHUNK_STATE_SIZE:
+			break;
 	}
 
 	return "ERROR";

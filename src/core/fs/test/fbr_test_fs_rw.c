@@ -379,8 +379,6 @@ _test_fs_rw_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 	fbr_file_ok(fio->file);
 	assert(fio->file->inode == ino);
 
-	fbr_fs_stat_add(&fs->stats.flushes);
-
 	int ret = fbr_wbuffer_flush(fs, fio);
 	fbr_fuse_reply_err(request, ret);
 

@@ -5,6 +5,7 @@
  */
 
 #include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -363,15 +364,43 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 	assert_dev(fs->logger);
 	fbr_file_ok(file);
 
+	if (!fbr_assert_is_dev()) {
+		return;
+	}
+
 	struct fbr_chunk *chunk = file->body.chunks;
-	size_t i = 0;
+	size_t count = 0;
+	size_t state[__FBR_CHUNK_STATE_SIZE];
+	memset(state, 0, sizeof(state));
 
 	while (chunk) {
 		fbr_chunk_ok(chunk);
-		fs->log("BODY chunk[%zu] state: %s off: %zu len: %zu id: %lu", i,
-			fbr_chunk_state(chunk->state), chunk->offset, chunk->length, chunk->id);
+		assert(chunk->state < __FBR_CHUNK_STATE_SIZE);
+
+		if (count < 3) {
+			fs->log("BODY chunk[%zu] state: %s off: %zu len: %zu id: %lu", count,
+				fbr_chunk_state(chunk->state), chunk->offset, chunk->length,
+				chunk->id);
+		}
+
+		count++;
+		state[chunk->state]++;
 		chunk = chunk->next;
-		i++;
+	}
+
+	char buffer[500];
+	buffer[0] = '\0';
+
+	for (size_t i = 0; i < fbr_array_len(state); i++) {
+		strncat(buffer, " ", sizeof(buffer) - strlen(buffer) - 1);
+		strncat(buffer, fbr_chunk_state(i), sizeof(buffer) - strlen(buffer) - 1);
+		strncat(buffer, ": ", sizeof(buffer) - strlen(buffer) - 1);
+		size_t len = strlen(buffer);
+		snprintf(buffer + len, sizeof(buffer) - len, "%zu", state[i]);
+	}
+
+	if (count > 3) {
+		fs->log("BODY ... chunks: %zu%s", count, buffer);
 	}
 }
 

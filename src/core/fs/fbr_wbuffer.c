@@ -419,6 +419,8 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 		return 0;
 	}
 
+	fbr_fs_stat_add(&fs->stats.flushes);
+
 	fbr_wbuffer_ok(fio->wbuffers);
 	assert_zero_dev(fio->read_only);
 

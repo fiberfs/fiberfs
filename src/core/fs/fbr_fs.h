@@ -35,7 +35,8 @@ enum fbr_chunk_state {
 	FBR_CHUNK_LOADING,
 	FBR_CHUNK_READY,
 	FBR_CHUNK_SPLICED,
-	FBR_CHUNK_WBUFFER
+	FBR_CHUNK_WBUFFER,
+	__FBR_CHUNK_STATE_SIZE
 };
 
 struct fbr_chunk {
