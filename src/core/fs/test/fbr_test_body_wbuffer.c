@@ -228,11 +228,13 @@ _test_concurrent_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuf
 }
 
 static int
-_test_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers)
+_test_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
+    enum fbr_index_flags flags)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_wbuffer_ok(wbuffers);
+	assert_zero(flags);
 
 	struct fbr_wbuffer *wbuffer = wbuffers;
 	size_t errors = 0;
@@ -319,7 +321,7 @@ _test_fio_thread(void *arg)
 		int ret = fbr_wbuffer_flush(fs, fio);
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
-			_test_flush_wbuffers(fs, file, fio->wbuffers);
+			_test_flush_wbuffers(fs, file, fio->wbuffers, 0);
 			fbr_wbuffers_free(fio->wbuffers);
 			fio->wbuffers = NULL;
 		} else {
@@ -460,7 +462,7 @@ _test_concurrent_fio(void)
 		int ret = fbr_wbuffer_flush(fs, fio);
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
-			_test_flush_wbuffers(fs, file, fio->wbuffers);
+			_test_flush_wbuffers(fs, file, fio->wbuffers, 0);
 			fbr_wbuffers_free(fio->wbuffers);
 			fio->wbuffers = NULL;
 		} else {

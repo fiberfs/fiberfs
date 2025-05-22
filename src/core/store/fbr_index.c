@@ -251,7 +251,7 @@ _json_directory_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_index
 void
 fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
     struct fbr_directory *directory, struct fbr_directory *previous, struct fbr_file *file,
-    struct fbr_wbuffer *wbuffers)
+    struct fbr_wbuffer *wbuffers, enum fbr_index_flags flags)
 {
 	assert(index_data);
 	fbr_directory_ok(directory);
@@ -268,8 +268,14 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		fbr_wbuffer_ok(wbuffers);
 		fbr_file_ok(file);
 
-		index_data->chunks = fbr_chunks_file_get(file, 0, file->size,
-			&index_data->removed, wbuffers);
+		if (flags & FBR_INDEX_FILE_TRUNCATE) {
+			fs->log("INDEX TRUNCATE flagged");
+			index_data->chunks = fbr_wbuffer_chunks(wbuffers);
+			index_data->removed = fbr_chunks_file_all(file, 0);
+		} else {
+			index_data->chunks = fbr_chunks_file_get(file, 0, file->size,
+				&index_data->removed, wbuffers);
+		}
 	}
 }
 

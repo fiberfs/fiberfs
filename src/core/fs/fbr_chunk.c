@@ -341,6 +341,33 @@ fbr_chunks_file_get(struct fbr_file *file, size_t offset, size_t size,
 }
 
 // Note: must have body->lock
+struct fbr_chunk_list *
+fbr_chunks_file_all(struct fbr_file *file, int include_wbuffers)
+{
+	fbr_file_ok(file);
+	assert(file->state >= FBR_FILE_OK);
+
+	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
+	struct fbr_chunk *chunk = file->body.chunks;
+
+	while (chunk) {
+		fbr_chunk_ok(chunk);
+		assert(chunk->state >= FBR_CHUNK_EMPTY);
+
+		if (!include_wbuffers && chunk->state == FBR_CHUNK_WBUFFER) {
+			chunk = chunk->next;
+			continue;
+		}
+
+		chunks = fbr_chunk_list_add(chunks, chunk);
+
+		chunk = chunk->next;
+	}
+
+	return chunks;
+}
+
+// Note: must have body->lock
 void
 fbr_chunks_file_prune(struct fbr_file *file, struct fbr_chunk_list *remove)
 {
