@@ -21,8 +21,8 @@ static const struct fbr_store_callbacks _INDEX_TEST_CALLBACKS = {
 	.root_read_f = fbr_dstore_root_read
 };
 
-static void
-_index_request_start(void)
+void
+fbr_test_index_request_start(void)
 {
 	assert_zero(fbr_request_get());
 
@@ -36,8 +36,8 @@ _index_request_start(void)
 	request->not_fuse = 1;
 }
 
-static void
-_index_request_finish(void)
+void
+fbr_test_index_request_finish(void)
 {
 	struct fbr_request *request = fbr_request_get();
 	assert(request);
@@ -179,7 +179,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** Storing index (gen %lu)", directory->generation);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	struct fbr_index_data index_data;
 	fbr_index_data_init(NULL, &index_data, directory, NULL, NULL, NULL, FBR_INDEX_NONE);
@@ -189,7 +189,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Making changes v1");
@@ -205,7 +205,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** Storing index (gen %lu)", directory->generation);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	fs->config.gzip_index = 0;
 
@@ -218,7 +218,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 1);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
 
 	fs->config.gzip_index = 1;
@@ -234,13 +234,13 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(directory->previous);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	fbr_index_read(fs, directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 1);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Loading index again");
@@ -250,12 +250,12 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_directory_ok(directory->previous);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	fbr_index_read(fs, directory);
 	assert(directory->state == FBR_DIRSTATE_ERROR);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Making changes v2");
@@ -274,7 +274,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** Storing index (gen %lu)", directory->generation);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	fbr_index_data_init(fs, &index_data, directory, directory->previous, file, NULL,
 		FBR_INDEX_NONE);
@@ -285,7 +285,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 1);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Making changes v3");
@@ -301,7 +301,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** Storing index (gen %lu) FAIL", directory->generation);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	fbr_index_data_init(NULL, &index_data, directory, old_directory, NULL, NULL,
 		FBR_INDEX_NONE);
@@ -310,11 +310,11 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_index_data_free(&index_data);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 
 	fbr_test_logs("*** Storing index (gen %lu) FAIL v2", directory->generation);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	fbr_index_data_init(NULL, &index_data, directory, NULL, NULL, NULL, FBR_INDEX_NONE);
 	ret = fbr_index_write(fs, &index_data);
@@ -322,11 +322,11 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_index_data_free(&index_data);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 
 	fbr_test_logs("*** Storing index (gen %lu) RETRY", directory->generation);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	fbr_directory_ok(directory->previous);
 	fbr_index_data_init(NULL, &index_data, directory, directory->previous, NULL, NULL,
@@ -338,7 +338,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 1);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Releasing directory v2");
@@ -352,12 +352,12 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_directory_ok(directory->previous); // We are olding old_directory...
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	fbr_index_read(fs, directory);
 	assert(directory->state == FBR_DIRSTATE_ERROR);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
 	fbr_dindex_release(fs, &old_directory);
 
@@ -372,13 +372,13 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(directory->previous);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	fbr_index_read(fs, directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 1);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Cleanup");
@@ -434,7 +434,7 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** Storing index (gen %lu)", directory->generation);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	struct fbr_index_data index_data;
 	fbr_index_data_init(NULL, &index_data, directory, NULL, NULL, NULL, FBR_INDEX_NONE);
@@ -444,7 +444,7 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Releasing directory");
@@ -458,13 +458,13 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(directory->previous);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 
-	_index_request_start();
+	fbr_test_index_request_start();
 
 	fbr_index_read(fs, directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 0);
 
-	_index_request_finish();
+	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Cleanup");

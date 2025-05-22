@@ -149,10 +149,6 @@ fbr_test_main(int argc, char **argv)
 
 	pt_assert(pthread_mutex_init(&_FINISH_LOCK, NULL));
 
-	assert_zero(_TEST);
-	_TEST = &test;
-	fbr_test_ok(_TEST);
-
 	test.prog_name = argv[0];
 
 	for (int i = 1; i < argc; i++) {
@@ -182,6 +178,10 @@ fbr_test_main(int argc, char **argv)
 		_usage(1);
 		return 1;
 	}
+
+	assert_zero(_TEST);
+	_TEST = &test;
+	fbr_test_ok(_TEST);
 
 	pt_assert(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
 	assert_zero(fbr_test_is_thread());

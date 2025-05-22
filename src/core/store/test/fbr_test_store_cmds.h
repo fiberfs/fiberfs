@@ -14,6 +14,9 @@
 #define FBR_TEST_STORE_CMD(cmd)	fbr_test_cmd_f fbr_cmd_##cmd;
 #define FBR_TEST_STORE_VAR(var)	fbr_test_var_f fbr_var_##var;
 
+void fbr_test_index_request_start(void);
+void fbr_test_index_request_finish(void);
+
 #endif /* FBR_TEST_STORE_CMD */
 
 FBR_TEST_STORE_CMD(writer_test)
