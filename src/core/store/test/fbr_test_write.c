@@ -144,9 +144,9 @@ _write_test(void)
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	directory->generation = 1;
 
-	struct fbr_path_name name;
-	fbr_path_name_init(&name, "file_write_store");
-	struct fbr_file *file = fbr_file_alloc(fs, directory, &name);
+	struct fbr_path_name filename;
+	fbr_path_name_init(&filename, "file_write_store");
+	struct fbr_file *file = fbr_file_alloc(fs, directory, &filename);
 	file->state = FBR_FILE_OK;
 
 	fbr_test_index_request_start();
@@ -211,6 +211,30 @@ _write_test(void)
 	}
 	assert(_THREAD_COUNT == _THREADS);
 	assert(file->size == _FILE_SIZE);
+
+	fbr_test_logs("*** Load index");
+
+	fbr_fs_release_all(fs, 0);
+
+	directory = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(directory);
+	assert_zero(directory->previous);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
+
+	fbr_test_index_request_start();
+
+	fbr_index_read(fs, directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+	assert(directory->file_count == 1);
+
+	file = fbr_directory_find_file(directory, filename.name, filename.len);
+	fbr_file_ok(file);
+
+	fbr_test_logs("*** directory->generation: %lu", directory->generation);
+	assert(directory->generation == fs->stats.flushes + 1);
+
+	fbr_test_index_request_finish();
+	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Validation");
 
