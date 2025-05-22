@@ -541,6 +541,8 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	fbr_body_UNLOCK(&fio->file->body);
 
+	assert_zero_dev(fio->truncate);
+
 	_wbuffer_UNLOCK(fio);
 
 	return error;
