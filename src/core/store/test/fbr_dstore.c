@@ -390,6 +390,7 @@ fbr_dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_wbuffer_ok(wbuffer);
+	assert(wbuffer->state == FBR_WBUFFER_READY);
 
 	char chunk_path[PATH_MAX];
 	_dstore_chunk_path(file, wbuffer->id, wbuffer->offset, 0, chunk_path, sizeof(chunk_path));

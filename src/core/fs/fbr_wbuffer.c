@@ -477,7 +477,7 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_body_LOCK(fs, &file->body);
 
 	enum fbr_index_flags flags = FBR_INDEX_NONE;
-	if (fio->truncate && file->body.chunks) {
+	if (fio->truncate) {
 		flags |= FBR_INDEX_FILE_TRUNCATE;
 	}
 

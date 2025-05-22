@@ -20,20 +20,9 @@
 
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
-static void
-_test_fs_rw_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
-{
-	fbr_fs_ok(fs);
-	fbr_file_ok(file);
-	fbr_wbuffer_ok(wbuffer);
-	assert(wbuffer->state == FBR_WBUFFER_READY);
-
-	fbr_dstore_wbuffer_write(fs, file, wbuffer);
-}
-
-static int
-_test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-    enum fbr_index_flags flags)
+int
+fbr_test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file,
+    struct fbr_wbuffer *wbuffers, enum fbr_index_flags flags)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -102,8 +91,8 @@ _test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
 	.chunk_read_f = fbr_dstore_chunk_read,
 	.chunk_delete_f = fbr_dstore_chunk_delete,
-	.wbuffer_write_f = _test_fs_rw_wbuffer_write,
-	.wbuffers_flush_f = _test_fs_rw_wbuffers_flush,
+	.wbuffer_write_f = fbr_dstore_wbuffer_write,
+	.wbuffers_flush_f = fbr_test_fs_rw_wbuffers_flush,
 	.index_write_f = fbr_dstore_index_root_write,
 	.index_read_f = fbr_dstore_index_read,
 	.root_read_f = fbr_dstore_root_read

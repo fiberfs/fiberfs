@@ -4,6 +4,7 @@
  *
  */
 
+#include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
 

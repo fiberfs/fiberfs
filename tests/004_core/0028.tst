@@ -1,4 +1,4 @@
-fiber_test "Reader/writer/buffer tests"
+fiber_test "Directory release"
 
-writer_test
-reader_test
+fs_test_directory_release
+fs_test_directory_release_ttl

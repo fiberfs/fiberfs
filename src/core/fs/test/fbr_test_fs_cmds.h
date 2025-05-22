@@ -10,6 +10,8 @@
 #ifndef FBR_TEST_FS_CMD
 
 #include "core/fs/fbr_fs.h"
+#include "core/store/fbr_store.h"
+
 #include "test/fbr_test.h"
 
 #define FBR_TEST_FS_CMD(cmd)		fbr_test_cmd_f fbr_cmd_##cmd;
@@ -37,6 +39,9 @@ void fbr_test_fs_dindex_debug(struct fbr_fs *fs);
 struct fbr_fs * fbr_test_fs_alloc(void);
 
 size_t fbr_test_fs_count_chunks(struct fbr_file *file);
+
+int fbr_test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file,
+    struct fbr_wbuffer *wbuffers, enum fbr_index_flags flags);
 
 #endif /* FBR_TEST_FS_CMD */
 
