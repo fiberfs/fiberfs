@@ -108,7 +108,13 @@ _write_thread(void *arg)
 	while (pos < size) {
 		_buffer_init(offset + pos, (unsigned char*)buffer, sizeof(buffer));
 		fbr_wbuffer_write(fs, fio, offset + pos, buffer, sizeof(buffer));
+
 		pos += sizeof(buffer);
+
+		if (pos == size / 2) {
+			int ret = fbr_wbuffer_flush(fs, fio);
+			assert_zero(ret);
+		}
 	}
 	assert(pos == size);
 
