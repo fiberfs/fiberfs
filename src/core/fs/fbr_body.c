@@ -188,6 +188,158 @@ fbr_body_chunk_append(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, siz
 	return _body_chunk_add(fs, file, id, offset, length, 1);
 }
 
+// Note: must have body->lock
+void
+fbr_body_chunk_prune(struct fbr_file *file, struct fbr_chunk_list *remove)
+{
+	fbr_file_ok(file);
+	assert(file->state >= FBR_FILE_OK);
+	fbr_chunk_list_ok(remove);
+
+	if (!remove->length || !file->body.chunks) {
+		return;
+	}
+
+	struct fbr_chunk *chunk = file->body.chunks;
+	struct fbr_chunk *prev = NULL;
+
+	while (chunk) {
+		fbr_chunk_ok(chunk);
+
+		if (fbr_chunk_list_contains(remove, chunk)) {
+			if (prev) {
+				prev->next = chunk->next;
+			} else {
+				file->body.chunks = chunk->next;
+			}
+
+			chunk = chunk->next;
+
+			continue;
+		}
+
+		prev = chunk;
+		chunk = chunk->next;
+	}
+
+	file->body.chunk_last = prev;
+}
+
+// Note: must have body->lock
+struct fbr_chunk_list *
+fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
+    struct fbr_chunk_list **removed, struct fbr_wbuffer *wbuffers)
+{
+	fbr_file_ok(file);
+	assert(file->state >= FBR_FILE_OK);
+	assert_dev(size <= file->size);
+
+	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
+	struct fbr_chunk *chunk = file->body.chunks;
+	int completed = 0;
+	int do_removed = 0;
+
+	if (removed) {
+		assert(size == file->size);
+
+		if (!*removed) {
+			*removed = fbr_chunk_list_alloc();
+		} else {
+			fbr_chunk_list_ok(*removed);
+			(*removed)->length = 0;
+		}
+
+		do_removed = 1;
+	}
+
+	if (!size) {
+		assert_zero_dev(offset);
+		completed = 1;
+
+		if (!do_removed) {
+			return chunks;
+		}
+	}
+
+	while (chunk) {
+		fbr_chunk_ok(chunk);
+		assert(chunk->state >= FBR_CHUNK_EMPTY);
+
+		if (wbuffers && chunk->state == FBR_CHUNK_WBUFFER) {
+			if (!fbr_wbuffer_has_chunk(wbuffers, chunk)) {
+				chunk = chunk->next;
+				continue;
+			}
+		}
+
+		if (!completed && fbr_chunk_in_offset(chunk, offset, size)) {
+			if (fbr_chunk_list_complete(chunks, chunk->offset, chunk->length)) {
+				if (do_removed) {
+					*removed = fbr_chunk_list_add(*removed, chunk);
+				}
+
+				chunk = chunk->next;
+				continue;
+			}
+
+			chunks = fbr_chunk_list_add(chunks, chunk);
+
+			if (fbr_chunk_list_complete(chunks, offset, size)) {
+				if (do_removed) {
+					completed = 1;
+				} else {
+					break;
+				}
+			}
+		} else if (do_removed) {
+			*removed = fbr_chunk_list_add(*removed, chunk);
+		}
+
+		chunk = chunk->next;
+	}
+
+	if (fbr_assert_is_dev() && wbuffers) {
+		struct fbr_wbuffer *wbuffer = wbuffers;
+		while (wbuffer) {
+			assert_dev(wbuffer->chunk);
+			assert_dev(fbr_chunk_list_contains(chunks, wbuffer->chunk));
+			if (do_removed) {
+				assert_zero_dev(fbr_chunk_list_contains(*removed, wbuffer->chunk));
+			}
+			wbuffer = wbuffer->next;
+		}
+	}
+
+	return chunks;
+}
+
+// Note: must have body->lock
+struct fbr_chunk_list *
+fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers)
+{
+	fbr_file_ok(file);
+	assert(file->state >= FBR_FILE_OK);
+
+	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
+	struct fbr_chunk *chunk = file->body.chunks;
+
+	while (chunk) {
+		fbr_chunk_ok(chunk);
+		assert(chunk->state >= FBR_CHUNK_EMPTY);
+
+		if (!include_wbuffers && chunk->state == FBR_CHUNK_WBUFFER) {
+			chunk = chunk->next;
+			continue;
+		}
+
+		chunks = fbr_chunk_list_add(chunks, chunk);
+
+		chunk = chunk->next;
+	}
+
+	return chunks;
+}
+
 void
 fbr_body_LOCK(struct fbr_fs *fs, struct fbr_body *body)
 {
