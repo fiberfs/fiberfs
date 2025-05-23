@@ -39,6 +39,7 @@ extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 #define _THREADS		10
 
 static size_t _THREAD_COUNT;
+static int _SHARED_FIO;
 
 static void
 _init(void)
@@ -47,6 +48,7 @@ _init(void)
 	assert_zero(_FILE_SIZE % _THREADS);
 
 	_THREAD_COUNT = 0;
+	_SHARED_FIO = 0;
 }
 
 static void
@@ -81,7 +83,6 @@ _write_thread(void *arg)
 	struct fbr_fio *fio = args->fio;
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
-	assert_zero(fio);
 
 	fbr_test_index_request_start();
 
@@ -96,8 +97,14 @@ _write_thread(void *arg)
 
 	fbr_test_logs(" ** Thread %zu running (%zu/%zu)", id, offset, size);
 
-	fbr_inode_add(fs, file);
-	fio = fbr_fio_alloc(fs, file);
+	if (_SHARED_FIO) {
+		assert(fio);
+		fbr_fio_take(fio);
+	} else {
+		assert_zero(fio);
+		fbr_inode_add(fs, file);
+		fio = fbr_fio_alloc(fs, file);
+	}
 
 	char buffer[100];
 	assert_zero(_FILE_SIZE % sizeof(buffer));
@@ -174,6 +181,11 @@ _write_test(void)
 
 	fbr_inode_add(fs, file);
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
+	struct fbr_fio *shared_fio = NULL;
+	if (_SHARED_FIO) {
+		shared_fio = fio;
+		fbr_fio_take(shared_fio);
+	}
 
 	char buffer[100];
 	assert_zero(_FILE_SIZE % sizeof(buffer));
@@ -204,7 +216,7 @@ _write_test(void)
 
 	assert_zero(_THREAD_COUNT);
 	pthread_t threads[_THREADS];
-	struct _write_args args = {fs, file, NULL};
+	struct _write_args args = {fs, file, shared_fio};
 
 	for (size_t i = 0; i < fbr_array_len(threads); i++) {
 		pt_assert(pthread_create(&threads[i], NULL, _write_thread, &args));
@@ -217,6 +229,13 @@ _write_test(void)
 	}
 	assert(_THREAD_COUNT == _THREADS);
 	assert(file->size == _FILE_SIZE);
+
+	fbr_test_logs("*** Threads done");
+
+	if (_SHARED_FIO) {
+		assert(shared_fio);
+		fbr_fio_release(fs, shared_fio);
+	}
 
 	fbr_test_logs("*** Load index");
 
@@ -283,7 +302,13 @@ _write_test(void)
 	fbr_test_ERROR(fs->stats.files, "non zero");
 	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
-	fbr_test_ASSERT(fs->stats.store_chunks == _FILE_SIZE / _WBUFFER_SIZE, "mismatch");
+	if (_SHARED_FIO) {
+		fbr_test_ASSERT(fs->stats.store_chunks >= _FILE_SIZE / _WBUFFER_SIZE,
+			"mismatch %lu %d", fs->stats.store_chunks, _FILE_SIZE / _WBUFFER_SIZE);
+	} else {
+		fbr_test_ASSERT(fs->stats.store_chunks == _FILE_SIZE / _WBUFFER_SIZE,
+			"mismatch %lu %d", fs->stats.store_chunks, _FILE_SIZE / _WBUFFER_SIZE);
+	}
 
 	fbr_request_pool_shutdown(fs);
 	fbr_fs_free(fs);
@@ -296,6 +321,21 @@ fbr_cmd_store_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	_init();
+
+	_write_test();
+
+	fbr_test_logs("store_write done");
+}
+
+void
+fbr_cmd_store_write_shared(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_init();
+
+	_SHARED_FIO = 1;
 
 	_write_test();
 
