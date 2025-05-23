@@ -135,7 +135,7 @@ _test_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 {
 	fbr_request_valid(request);
 
-	fbr_test_logs("LOOKUP parent: %lu name: %s", parent, name);
+	fbr_test_logs("LOOKUP req: %lu parent: %lu name: %s", request->id, parent, name);
 
 	struct stat st_attr;
 	int ret = _test_stat(parent, &st_attr);
@@ -166,7 +166,7 @@ _test_ops_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 	fbr_request_valid(request);
 	(void)fi;
 
-	fbr_test_logs("GETATTR ino: %lu", ino);
+	fbr_test_logs("GETATTR req: %lu ino: %lu", request->id, ino);
 
 	struct stat st_attr;
 	int ret = _test_stat(ino, &st_attr);
@@ -184,7 +184,7 @@ _test_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 {
 	fbr_request_valid(request);
 
-	fbr_test_logs("OPENDIR ino: %lu", ino);
+	fbr_test_logs("OPENDIR req: %lu ino: %lu", request->id, ino);
 
 	struct stat st_attr;
 	int ret = _test_stat(ino, &st_attr);
@@ -207,7 +207,8 @@ _test_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_
 	fbr_request_valid(request);
 	assert(request->fuse_req);
 
-	fbr_test_logs("READDIR ino: %lu size: %zu off: %ld fh: %lu", ino, size, off, fi->fh);
+	fbr_test_logs("READDIR req: %lu ino: %lu size: %zu off: %ld fh: %lu", request->id, ino,
+		size, off, fi->fh);
 
 	struct stat st_attr;
 	int ret = _test_stat(ino, &st_attr);
@@ -293,7 +294,7 @@ _test_ops_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_fi
 {
 	fbr_request_valid(request);
 
-	fbr_test_logs("RELEASEDIR ino: %lu fh: %lu", ino, fi->fh);
+	fbr_test_logs("RELEASEDIR req: %lu ino: %lu fh: %lu", request->id, ino, fi->fh);
 
 	fbr_fuse_reply_err(request, 0);
 }
@@ -303,8 +304,8 @@ _test_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_inf
 {
 	fbr_request_valid(request);
 
-	fbr_test_logs("OPEN ino: %lu flags: %d fh: %lu direct: %d", ino, fi->flags, fi->fh,
-		fi->direct_io);
+	fbr_test_logs("OPEN req: %lu ino: %lu flags: %d fh: %lu direct: %d", request->id, ino,
+		fi->flags, fi->fh, fi->direct_io);
 
 	struct stat st_attr;
 	int ret = _test_stat(ino, &st_attr);
@@ -332,7 +333,7 @@ _test_ops_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t o
 {
 	fbr_request_valid(request);
 
-	fbr_test_logs("READ ino: %lu size: %zu off: %ld flags: %d fh: %lu",
+	fbr_test_logs("READ req: %lu ino: %lu size: %zu off: %ld flags: %d fh: %lu", request->id,
 		ino, size, off, fi->flags, fi->fh);
 
 	struct stat st_attr;
@@ -364,7 +365,8 @@ _test_ops_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 {
 	fbr_request_valid(request);
 
-	fbr_test_logs("RELEASE ino: %lu flags: %d fh: %lu", ino, fi->flags, fi->fh);
+	fbr_test_logs("RELEASE req: %lu ino: %lu flags: %d fh: %lu", request->id, ino, fi->flags,
+		fi->fh);
 
 	fbr_fuse_reply_err(request, 0);
 }
@@ -374,7 +376,8 @@ _test_ops_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 {
 	fbr_request_valid(request);
 
-	fbr_test_logs("FLUSH ino: %lu flags: %d fh: %lu", ino, fi->flags, fi->fh);
+	fbr_test_logs("FLUSH req: %lu ino: %lu flags: %d fh: %lu", request->id, ino, fi->flags,
+		fi->fh);
 
 	fbr_fuse_reply_err(request, 0);
 }
@@ -384,7 +387,7 @@ _test_ops_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup)
 {
 	fbr_request_valid(request);
 
-	fbr_test_logs("FORGET ino: %lu nlookup: %lu", ino, nlookup);
+	fbr_test_logs("FORGET req: %lu ino: %lu nlookup: %lu", request->id, ino, nlookup);
 
 	fbr_fuse_reply_none(request);
 }
@@ -395,7 +398,7 @@ _test_ops_forget_multi(struct fbr_request *request, size_t count, struct fuse_fo
 	fbr_request_valid(request);
 	(void)forgets;
 
-	fbr_test_logs("FORGET_MULTI count: %zu", count);
+	fbr_test_logs("FORGET_MULTI req: %lu count: %zu", request->id, count);
 
 	fbr_fuse_reply_none(request);
 }
