@@ -1,0 +1,5 @@
+fiber_test "wbuffer tests"
+
+fs_test_body_spwbuffer_error
+fs_test_body_pwbuffer
+fs_test_body_spwbuffer
