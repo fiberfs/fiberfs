@@ -16,16 +16,6 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/store/test/fbr_dstore.h"
 
-static const struct fbr_store_callbacks _WRITE_CALLBACKS = {
-	.chunk_read_f = fbr_dstore_chunk_read,
-	.chunk_delete_f = fbr_dstore_chunk_delete,
-	.wbuffer_write_f = fbr_dstore_wbuffer_write,
-	.wbuffers_flush_f = fbr_test_fs_rw_wbuffers_flush,
-	.index_write_f = fbr_dstore_index_root_write,
-	.index_read_f = fbr_dstore_index_read,
-	.root_read_f = fbr_dstore_root_read
-};
-
 struct _write_args {
 	struct fbr_fs *fs;
 	struct fbr_file *file;
@@ -73,6 +63,29 @@ _buffer_init(size_t offset, unsigned char *buffer, size_t buffer_len)
 		buffer[i] = byte;
 	}
 }
+
+static void
+_write_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+{
+	fbr_dstore_wbuffer_write(fs, file, wbuffer);
+}
+
+static int
+_write_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_writer *writer, struct fbr_directory *previous)
+{
+	return fbr_dstore_index_root_write(fs, directory, writer, previous);
+}
+
+static const struct fbr_store_callbacks _WRITE_CALLBACKS = {
+	.chunk_read_f = fbr_dstore_chunk_read,
+	.chunk_delete_f = fbr_dstore_chunk_delete,
+	.wbuffer_write_f = _write_wbuffer,
+	.wbuffers_flush_f = fbr_test_fs_rw_wbuffers_flush,
+	.index_write_f = _write_index_root,
+	.index_read_f = fbr_dstore_index_read,
+	.root_read_f = fbr_dstore_root_read
+};
 
 static void *
 _write_thread(void *arg)
