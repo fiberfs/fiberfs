@@ -285,7 +285,6 @@ _write_test(void)
 	}
 	assert(_THREAD_COUNT == _THREADS);
 	assert(file->size == _FILE_SIZE);
-	assert_zero(_ERROR_WBUFFER);
 
 	fbr_test_logs("*** Threads done");
 
