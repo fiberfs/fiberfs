@@ -299,6 +299,7 @@ struct fbr_fs_stats {
 	fbr_stats_t				store_chunks;
 
 	fbr_stats_t				flushes;
+	fbr_stats_t				flush_errors;
 
 	fbr_stats_t				wbuffers;
 	fbr_stats_t				chunk_slabs;

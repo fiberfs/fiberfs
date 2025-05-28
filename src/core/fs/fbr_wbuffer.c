@@ -456,9 +456,10 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	if (error) {
+		fbr_fs_stat_add(&fs->stats.flush_errors);
+
 		// Cleanup and keep the fio intact so we can potentially flush again and correct
 		wbuffer = fio->wbuffers;
-
 		while (wbuffer) {
 			fbr_wbuffer_ok(wbuffer);
 			assert_dev(wbuffer->state >= FBR_WBUFFER_DONE);
@@ -487,10 +488,10 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	if (fs->store->wbuffers_flush_f) {
 		int ret = fs->store->wbuffers_flush_f(fs, file, fio->wbuffers, flags);
-		if (ret && !error) {
+		if (ret) {
 			error = ret;
 		}
-	} else if (!error) {
+	} else {
 		error = EIO;
 	}
 
@@ -500,6 +501,8 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 		fbr_wbuffers_free(fio->wbuffers);
 		fio->wbuffers = NULL;
 		fio->truncate = 0;
+	} else {
+		fbr_fs_stat_add(&fs->stats.flush_errors);
 	}
 
 	fbr_body_UNLOCK(&file->body);

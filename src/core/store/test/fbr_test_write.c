@@ -5,6 +5,7 @@
  */
 
 #include <pthread.h>
+#include <stdlib.h>
 
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
@@ -30,6 +31,7 @@ extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
 static size_t _THREAD_COUNT;
 static int _SHARED_FIO;
+static size_t _ERROR_WBUFFER;
 
 static void
 _init(void)
@@ -39,6 +41,9 @@ _init(void)
 
 	_THREAD_COUNT = 0;
 	_SHARED_FIO = 0;
+	_ERROR_WBUFFER = 0;
+
+	fbr_test_random_seed();
 }
 
 static void
@@ -67,6 +72,17 @@ _buffer_init(size_t offset, unsigned char *buffer, size_t buffer_len)
 static void
 _write_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
+	fbr_wbuffer_ok(wbuffer);
+	assert(wbuffer->state == FBR_WBUFFER_READY);
+
+	if (_ERROR_WBUFFER && !(random() % 3)) {
+		fbr_test_logs("*** ERROR WBUFFER offset: %zu id: %lu",
+			wbuffer->offset, wbuffer->id);
+		fbr_atomic_sub(&_ERROR_WBUFFER, 1);
+		wbuffer->state = FBR_WBUFFER_ERROR;
+		return;
+	}
+
 	fbr_dstore_wbuffer_write(fs, file, wbuffer);
 }
 
@@ -96,6 +112,11 @@ _write_thread(void *arg)
 	struct fbr_fio *fio = args->fio;
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
+
+	int error_mode = 0;
+	if (_ERROR_WBUFFER) {
+		error_mode = 1;
+	}
 
 	fbr_test_index_request_start();
 
@@ -133,13 +154,26 @@ _write_thread(void *arg)
 
 		if (pos == size / 2) {
 			int ret = fbr_wbuffer_flush(fs, fio);
-			assert_zero(ret);
+			if (error_mode && ret) {
+				fbr_test_logs("ERROR FLUSH thread %zu", id);
+			} else {
+				assert_zero(ret);
+			}
 		}
 	}
 	assert(pos == size);
 
-	int ret = fbr_wbuffer_flush(fs, fio);
-	assert_zero(ret);
+	fbr_sleep_ms(0.2);
+
+	int ret;
+	do {
+		ret = fbr_wbuffer_flush(fs, fio);
+		if (error_mode && ret) {
+			fbr_test_logs("ERROR FLUSH thread %zu", id);
+		} else {
+			assert_zero(ret);
+		}
+	} while (ret);
 
 	fbr_fio_release(fs, fio);
 
@@ -162,6 +196,13 @@ _write_test(void)
 	fbr_fs_set_store(fs, &_WRITE_CALLBACKS);
 
 	_DEBUG_WBUFFER_ALLOC_SIZE = _WBUFFER_SIZE;
+
+	size_t __ERROR_WBUFFER = _ERROR_WBUFFER;
+	int error_mode = 0;
+	if (_ERROR_WBUFFER) {
+		error_mode = 1;
+		_ERROR_WBUFFER = 0;
+	}
 
 	fbr_test_logs("*** Allocating root directory");
 
@@ -227,6 +268,8 @@ _write_test(void)
 
 	fbr_test_logs("*** Starting write threads");
 
+	_ERROR_WBUFFER = __ERROR_WBUFFER;
+
 	assert_zero(_THREAD_COUNT);
 	pthread_t threads[_THREADS];
 	struct _write_args args = {fs, file, shared_fio};
@@ -242,6 +285,7 @@ _write_test(void)
 	}
 	assert(_THREAD_COUNT == _THREADS);
 	assert(file->size == _FILE_SIZE);
+	assert_zero(_ERROR_WBUFFER);
 
 	fbr_test_logs("*** Threads done");
 
@@ -269,7 +313,11 @@ _write_test(void)
 	fbr_file_ok(file);
 
 	fbr_test_logs("*** directory->generation: %lu", directory->generation);
-	assert(directory->generation == fs->stats.flushes + 1);
+	if (error_mode) {
+		assert(directory->generation < fs->stats.flushes + 1);
+	} else {
+		assert(directory->generation == fs->stats.flushes + 1);
+	}
 
 	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
@@ -323,6 +371,11 @@ _write_test(void)
 			"mismatch %lu %d", fs->stats.store_chunks, _FILE_SIZE / _WBUFFER_SIZE);
 	}
 
+	if (error_mode) {
+		fbr_test_logs("*** ERRORS %zu", __ERROR_WBUFFER);
+		fbr_test_ASSERT(fs->stats.flush_errors, "zero");
+	}
+
 	fbr_request_pool_shutdown(fs);
 	fbr_fs_free(fs);
 }
@@ -352,5 +405,20 @@ fbr_cmd_store_write_shared(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	_write_test();
 
-	fbr_test_logs("store_write done");
+	fbr_test_logs("store_write_shared done");
+}
+
+void
+fbr_cmd_store_write_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_init();
+
+	_ERROR_WBUFFER = 3;
+
+	_write_test();
+
+	fbr_test_logs("store_write_error done");
 }
