@@ -91,9 +91,12 @@ FBR_TEST_FS_CMD(fs_test_path)
 
 FBR_TEST_FS_CMD(fs_test_body)
 FBR_TEST_FS_CMD(fs_test_body_fio)
+FBR_TEST_FS_CMD(fs_test_body_hole)
+
 FBR_TEST_FS_CMD(fs_test_body_pfio)
 FBR_TEST_FS_CMD(fs_test_body_spfio)
 FBR_TEST_FS_CMD(fs_test_body_spfio_error)
+
 FBR_TEST_FS_CMD(fs_test_body_pwbuffer)
 FBR_TEST_FS_CMD(fs_test_body_spwbuffer)
 FBR_TEST_FS_CMD(fs_test_body_spwbuffer_error)

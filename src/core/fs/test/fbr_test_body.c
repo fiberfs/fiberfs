@@ -464,3 +464,80 @@ fbr_cmd_fs_test_body_fio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_test_body_fio done");
 }
+
+void
+fbr_cmd_fs_test_body_hole(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fs *fs = fbr_test_fs_alloc();
+
+	struct fbr_directory *root = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_LOADING);
+
+	struct fbr_path_name name;
+	struct fbr_file *file;
+	struct fbr_fio *fio;
+
+	file = fbr_file_alloc(fs, root, fbr_path_name_init(&name, "file1"));
+	file->state = FBR_FILE_OK;
+	fbr_ASSERT(_count_chunks(file) == 0, "Bad chunk count");
+	fbr_ASSERT(file->size == 0, "Bad file size");
+
+	fbr_inode_add(fs, file);
+	fio = fbr_fio_alloc(fs, file);
+
+	char buffer[1000];
+	memset(buffer, 1, sizeof(buffer));
+
+	fbr_wbuffer_write(fs, fio, 30000, buffer, sizeof(buffer));
+
+	for (size_t i = 0; i < 128; i++) {
+		if (i % 2) {
+			continue;
+		}
+
+		fbr_wbuffer_write(fs, fio, i * sizeof(buffer), buffer,
+			sizeof(buffer));
+	}
+
+	int ret = fbr_wbuffer_flush(fs, fio);
+	assert(ret);
+
+	size_t count = 0;
+	size_t allocs = 0;
+
+	struct fbr_wbuffer *wbuffer = fio->wbuffers;
+	while (wbuffer) {
+		assert(wbuffer->state == FBR_WBUFFER_WRITING);
+		assert(wbuffer->buffer);
+		assert(wbuffer->end == 1000);
+		assert(wbuffer->size >= wbuffer->end);
+
+		count++;
+		if (!wbuffer->split) {
+			allocs++;
+		}
+
+		int ret = memcmp(wbuffer->buffer, buffer, wbuffer->end);
+		assert_zero(ret);
+
+		wbuffer = wbuffer->next;
+	}
+
+	fbr_test_logs("HOLE count: %zu", count);
+	fbr_test_logs("HOLE allocs: %zu", allocs);
+
+	assert(count == 64);
+	assert(allocs == 3);
+
+	fbr_wbuffers_free(fio->wbuffers);
+	fio->wbuffers = NULL;
+
+	fbr_fio_release(fs, fio);
+	fbr_fs_free(fs);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_test_body_hole done");
+}

@@ -24,7 +24,27 @@ fbr_wbuffer_init(struct fbr_fio *fio)
 }
 
 static struct fbr_wbuffer *
-_wbuffer_alloc(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size, size_t max)
+_wbuffer_alloc(struct fbr_fs *fs, struct fbr_fio *fio)
+{
+	assert_dev(fs);
+	assert_dev(fio);
+
+	struct fbr_wbuffer *wbuffer = calloc(1, sizeof(*wbuffer));
+	assert(wbuffer);
+
+	wbuffer->magic = FBR_WBUFFER_MAGIC;
+	wbuffer->state = FBR_WBUFFER_WRITING;
+	wbuffer->id = fbr_id_gen();
+	wbuffer->fio = fio;
+
+	fbr_fs_stat_add(&fs->stats.wbuffers);
+
+	return wbuffer;
+}
+
+static struct fbr_wbuffer *
+_wbuffer_alloc_buffer(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size,
+    size_t max)
 {
 	assert_dev(fs);
 	assert_dev(fio);
@@ -47,21 +67,15 @@ _wbuffer_alloc(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t siz
 	}
 	assert_dev(size <= wsize);
 
-	struct fbr_wbuffer *wbuffer = calloc(1, sizeof(*wbuffer));
-	assert(wbuffer);
+	struct fbr_wbuffer *wbuffer = _wbuffer_alloc(fs, fio);
 
-	wbuffer->magic = FBR_WBUFFER_MAGIC;
-	wbuffer->state = FBR_WBUFFER_WRITING;
-	wbuffer->id = fbr_id_gen();
 	wbuffer->offset = offset;
 	wbuffer->size = wsize;
 	wbuffer->end = size;
-	wbuffer->fio = fio;
 
+	wbuffer->free_buffer = 1;
 	wbuffer->buffer = malloc(wsize);
 	assert(wbuffer->buffer);
-
-	fbr_fs_stat_add(&fs->stats.wbuffers);
 
 	return wbuffer;
 }
@@ -95,6 +109,37 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 		current = current->next;
 	}
 
+	// Hole detected, split the wbuffer
+	if (wbuffer && offset > (wbuffer->offset + wbuffer->end)) {
+		assert_dev(offset > wbuffer->offset);
+		assert_dev(offset < wbuffer->offset + wbuffer->size);
+		assert_dev(wbuffer->size > wbuffer->end);
+
+		size_t wbuffer_offset = offset - wbuffer->offset;
+		prev = wbuffer;
+
+		wbuffer = _wbuffer_alloc(fs, fio);
+
+		wbuffer->offset = offset;
+		wbuffer->size = prev->size - wbuffer_offset;
+		wbuffer->end = size;
+		if (wbuffer->end > wbuffer->size) {
+			wbuffer->end = wbuffer->size;
+		}
+
+		wbuffer->buffer = prev->buffer + wbuffer_offset;
+		wbuffer->split = 1;
+		assert_zero_dev(wbuffer->free_buffer);
+
+		prev->size = wbuffer_offset;
+
+		wbuffer->next = prev->next;
+		prev->next = wbuffer;
+
+		fs->log("WBUFFER hole detected hole: %zu offset: %zu end: %zu size: %zu",
+			prev->offset + prev->end, offset, wbuffer->end, wbuffer->size);
+	}
+
 	if (!wbuffer) {
 		size_t max = 0;
 
@@ -106,7 +151,7 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 			}
 		}
 
-		wbuffer = _wbuffer_alloc(fs, fio, offset, size, max);
+		wbuffer = _wbuffer_alloc_buffer(fs, fio, offset, size, max);
 		assert_dev(wbuffer);
 
 		if (prev) {
@@ -217,11 +262,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 		assert(offset < wbuffer_end);
 
 		size_t wbuffer_offset = offset - wbuffer->offset;
-
-		if (wbuffer_offset > wbuffer->end) {
-			size_t wbuffer_zero = wbuffer_offset - wbuffer->end;
-			memset(wbuffer->buffer + wbuffer->end, 0, wbuffer_zero);
-		}
+		assert_dev(wbuffer_offset <= wbuffer->end);
 
 		size_t wsize = size - written;
 		if (wsize > wbuffer->size - wbuffer_offset) {
@@ -259,11 +300,12 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 			chunk->state = FBR_CHUNK_WBUFFER;
 			chunk->data = wbuffer->buffer;
-			chunk->do_free = 1;
+			chunk->do_free = wbuffer->free_buffer;
 
 			fbr_chunk_take(chunk);
 
 			wbuffer->chunk = chunk;
+			wbuffer->free_buffer = 0;
 		}
 
 		offset = wbuffer_end;
@@ -311,6 +353,7 @@ _wbuffer_flush_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 
 		wbuffer->chunk = NULL;
 		wbuffer->buffer = NULL;
+		wbuffer->free_buffer = 0;
 
 		wbuffer = wbuffer->next;
 	}
@@ -391,7 +434,10 @@ fbr_wbuffers_free(struct fbr_wbuffer *wbuffer)
 
 		struct fbr_wbuffer *next = wbuffer->next;
 
-		if (wbuffer->buffer && !wbuffer->chunk) {
+		if (wbuffer->free_buffer) {
+			assert_dev(wbuffer->buffer);
+			assert_zero_dev(wbuffer->chunk)
+			assert_zero_dev(wbuffer->split);
 			free(wbuffer->buffer);
 		} else if (wbuffer->chunk) {
 			fbr_chunk_release(wbuffer->chunk);
@@ -462,9 +508,10 @@ fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio)
 		wbuffer = fio->wbuffers;
 		while (wbuffer) {
 			fbr_wbuffer_ok(wbuffer);
-			assert_dev(wbuffer->state >= FBR_WBUFFER_DONE);
+			assert_dev(wbuffer->state >= FBR_WBUFFER_READY);
 
-			if (wbuffer->state == FBR_WBUFFER_ERROR) {
+			if (wbuffer->state == FBR_WBUFFER_ERROR ||
+			    wbuffer->state == FBR_WBUFFER_READY) {
 				wbuffer->state = FBR_WBUFFER_WRITING;
 			}
 

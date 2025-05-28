@@ -252,6 +252,9 @@ struct fbr_wbuffer {
 	struct fbr_fio				*fio;
 	struct fbr_chunk			*chunk;
 	struct fbr_wbuffer			*next;
+
+	unsigned int				free_buffer:1;
+	unsigned int				split:1;
 };
 
 struct fbr_fio {
@@ -467,6 +470,7 @@ void fbr_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 int fbr_wbuffer_flush(struct fbr_fs *fs, struct fbr_fio *fio);
 int fbr_wbuffer_has_chunk(struct fbr_wbuffer *wbuffers, struct fbr_chunk *chunk);
 struct fbr_chunk_list *fbr_wbuffer_chunks(struct fbr_wbuffer *wbuffer);
+void fbr_wbuffers_free(struct fbr_wbuffer *wbuffers);
 void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 
 #define fbr_fs_ok(fs)			fbr_magic_check(fs, FBR_FS_MAGIC)

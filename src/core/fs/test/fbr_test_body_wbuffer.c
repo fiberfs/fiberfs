@@ -33,7 +33,6 @@ static size_t _BODY_CHUNKS;
 static size_t _WBUFFER_ALLOC_SIZE;
 
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
-extern void fbr_wbuffers_free(struct fbr_wbuffer *wbuffers);
 
 struct _thread_args {
 	struct fbr_fs *fs;
