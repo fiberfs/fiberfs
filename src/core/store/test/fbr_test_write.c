@@ -32,6 +32,7 @@ extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 static size_t _THREAD_COUNT;
 static int _SHARED_FIO;
 static size_t _ERROR_WBUFFER;
+static size_t _ERROR_FLUSH;
 
 static void
 _init(void)
@@ -42,17 +43,28 @@ _init(void)
 	_THREAD_COUNT = 0;
 	_SHARED_FIO = 0;
 	_ERROR_WBUFFER = 0;
+	_ERROR_FLUSH = 0;
 
 	fbr_test_random_seed();
+}
+
+static unsigned char
+_buffer_byte(size_t offset, size_t i)
+{
+	size_t pos = offset + i;
+	unsigned char byte = (pos / 100);
+	byte += (pos % 100);
+	if (!byte) {
+		byte = pos;
+	}
+	return byte;
 }
 
 static void
 _buffer_check(size_t offset, unsigned char *buffer, size_t buffer_len)
 {
 	for (size_t i = 0; i < buffer_len; i++) {
-		size_t pos = offset + i;
-		unsigned char byte = (pos / 100);
-		byte += (pos % 100);
+		unsigned char byte = _buffer_byte(offset, i);
 		fbr_test_ASSERT(buffer[i] == byte, "offset: %zu i: %zu found: %u expected: %u",
 			offset, i, buffer[i], byte);
 	}
@@ -62,9 +74,7 @@ static void
 _buffer_init(size_t offset, unsigned char *buffer, size_t buffer_len)
 {
 	for (size_t i = 0; i < buffer_len; i++) {
-		size_t pos = offset + i;
-		unsigned char byte = (pos / 100);
-		byte += (pos % 100);
+		unsigned char byte = _buffer_byte(offset, i);
 		buffer[i] = byte;
 	}
 }
@@ -90,6 +100,12 @@ static int
 _write_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
     struct fbr_writer *writer, struct fbr_directory *previous)
 {
+	if (_ERROR_FLUSH && !(random() % 2)) {
+		fbr_test_logs("*** ERROR FLUSH");
+		fbr_atomic_sub(&_ERROR_FLUSH, 1);
+		return EBUSY;
+	}
+
 	return fbr_dstore_index_root_write(fs, directory, writer, previous);
 }
 
@@ -114,7 +130,7 @@ _write_thread(void *arg)
 	fbr_file_ok(file);
 
 	int error_mode = 0;
-	if (_ERROR_WBUFFER) {
+	if (_ERROR_WBUFFER || _ERROR_FLUSH) {
 		error_mode = 1;
 	}
 
@@ -124,12 +140,12 @@ _write_thread(void *arg)
 	size_t size = _FILE_SIZE / _THREADS;
 	size_t offset = (id - 1) * size;
 
+	fbr_test_logs(" ** Thread %zu running (%zu/%zu)", id, offset, size);
+
 	while (_THREAD_COUNT < _THREADS) {
 		fbr_sleep_ms(0.1);
 	}
 	assert(_THREAD_COUNT == _THREADS);
-
-	fbr_test_logs(" ** Thread %zu running (%zu/%zu)", id, offset, size);
 
 	if (_SHARED_FIO) {
 		assert(fio);
@@ -145,6 +161,7 @@ _write_thread(void *arg)
 	memset(buffer, 0, sizeof(buffer));
 
 	size_t pos = 0;
+	int flushed = 0;
 
 	while (pos < size) {
 		_buffer_init(offset + pos, (unsigned char*)buffer, sizeof(buffer));
@@ -152,10 +169,12 @@ _write_thread(void *arg)
 
 		pos += sizeof(buffer);
 
-		if (pos == size / 2) {
+		if (pos == size / 2 && !flushed) {
+			flushed = 1;
 			int ret = fbr_wbuffer_flush(fs, fio);
 			if (error_mode && ret) {
 				fbr_test_logs("ERROR FLUSH thread %zu", id);
+				pos -= sizeof(buffer);
 			} else {
 				assert_zero(ret);
 			}
@@ -198,10 +217,12 @@ _write_test(void)
 	_DEBUG_WBUFFER_ALLOC_SIZE = _WBUFFER_SIZE;
 
 	size_t __ERROR_WBUFFER = _ERROR_WBUFFER;
+	size_t __ERROR_FLUSH = _ERROR_FLUSH;
 	int error_mode = 0;
-	if (_ERROR_WBUFFER) {
+	if (_ERROR_WBUFFER || _ERROR_FLUSH) {
 		error_mode = 1;
 		_ERROR_WBUFFER = 0;
+		_ERROR_FLUSH = 0;
 	}
 
 	fbr_test_logs("*** Allocating root directory");
@@ -269,6 +290,7 @@ _write_test(void)
 	fbr_test_logs("*** Starting write threads");
 
 	_ERROR_WBUFFER = __ERROR_WBUFFER;
+	_ERROR_FLUSH = __ERROR_FLUSH;
 
 	assert_zero(_THREAD_COUNT);
 	pthread_t threads[_THREADS];
@@ -342,6 +364,7 @@ _write_test(void)
 		bufvec_len += buf->size;
 	}
 	assert(bufvec_len == vector->size);
+	assert(bufvec_len == _FILE_SIZE);
 
 	fbr_fio_vector_free(fs, fio, vector);
 	fbr_test_index_request_finish();
@@ -371,7 +394,8 @@ _write_test(void)
 	}
 
 	if (error_mode) {
-		fbr_test_logs("*** ERRORS %zu", __ERROR_WBUFFER);
+		fbr_test_logs("*** ERRORS wbuffer: %zu flush: %zu", __ERROR_WBUFFER,
+			__ERROR_FLUSH);
 		fbr_test_ASSERT(fs->stats.flush_errors, "zero");
 	}
 
@@ -420,4 +444,20 @@ fbr_cmd_store_write_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	_write_test();
 
 	fbr_test_logs("store_write_error done");
+}
+
+void
+fbr_cmd_store_write_error_flush(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_init();
+
+	_ERROR_FLUSH = 3;
+	_SHARED_FIO = 1;
+
+	_write_test();
+
+	fbr_test_logs("store_write_error_flush done");
 }

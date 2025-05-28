@@ -16,6 +16,8 @@
 #include "fiberfs.h"
 #include "test/fbr_test.h"
 
+static int _SRANDOM_INIT;
+
 struct fbr_test *
 fbr_test_convert(struct fbr_test_context *ctx)
 {
@@ -234,6 +236,12 @@ fbr_test_line_pos(struct fbr_test *test)
 void
 fbr_test_random_seed(void)
 {
+	if (_SRANDOM_INIT) {
+		return;
+	}
+
+	_SRANDOM_INIT = 1;
+
 	struct timespec now;
 	assert_zero(clock_gettime(CLOCK_MONOTONIC, &now));
 

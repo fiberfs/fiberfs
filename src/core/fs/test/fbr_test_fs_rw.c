@@ -72,7 +72,8 @@ fbr_test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file,
 
 	int ret = fbr_index_write(fs, &index_data);
 	if (ret) {
-		fs->log("RW_FLUSH fbr_index_write(new_directory) failed");
+		fs->log("RW_FLUSH fbr_index_write(new_directory) failed (%d %s)", ret,
+			strerror(ret));
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
 	} else {
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);

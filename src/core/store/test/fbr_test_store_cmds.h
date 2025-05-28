@@ -30,6 +30,7 @@ FBR_TEST_STORE_CMD(index_2fs_thread_test)
 FBR_TEST_STORE_CMD(store_write)
 FBR_TEST_STORE_CMD(store_write_shared)
 FBR_TEST_STORE_CMD(store_write_error)
+FBR_TEST_STORE_CMD(store_write_error_flush)
 
 FBR_TEST_STORE_CMD(dstore_debug)
 

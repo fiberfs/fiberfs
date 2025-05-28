@@ -171,7 +171,11 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 			assert_dev(wbuffer->state == FBR_WBUFFER_DONE);
 			assert_dev(wbuffer->chunk);
 
+			// TODO should we give the wbuffer/chunk a new id and async delete?
+
 			wbuffer->state = FBR_WBUFFER_WRITING;
+
+			fs->log("WBUFFER rewriting offset: %zu", wbuffer->offset);
 
 			if (fs->store->chunk_delete_f) {
 				fs->store->chunk_delete_f(fs, fio->file, wbuffer->chunk);
@@ -601,7 +605,9 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 	pt_assert(pthread_mutex_destroy(&fio->wbuffer_lock));
 	pt_assert(pthread_cond_destroy(&fio->wbuffer_update));
 
+	// TODO get rid of this
 	assert_zero_dev(fio->wbuffers);
+
 	fbr_wbuffers_free(fio->wbuffers);
 	fio->wbuffers = NULL;
 }
