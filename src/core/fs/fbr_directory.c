@@ -445,30 +445,109 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	fbr_file_ok(file);
 	fbr_wbuffer_ok(wbuffers);
 
-	struct fbr_file *parent = fbr_inode_take(fs, file->parent_inode);
-	fbr_ASSERT(parent, "parent %lu missing", file->parent_inode);
-	fbr_file_ok(parent);
+	fbr_inode_t inode = file->parent_inode;
+	struct fbr_file *parent = fbr_inode_take(fs, inode);
+	if (!parent) {
+		fs->log("FLUSH parent inode missing (%lu)", inode);
+		return EIO;
+	}
 
 	struct fbr_path_name dirname;
 	char buf[PATH_MAX];
 	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
 
-	// Start sync/write loop
-
-	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 1);
-	fbr_ASSERT(directory, "directory '%s' missing", dirname.name);
-	fbr_directory_ok(directory);
-
-	// Note that wait_for_new can return an error if no changes were found...
-	// If we dont have a directory, use the below LOADING state to load the index
-
 	fs->log("FLUSH directory: '%s'", dirname.name);
 
-	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
-	fbr_directory_ok(new_directory);
-	fbr_ASSERT(new_directory->state == FBR_DIRSTATE_LOADING, "new_directory isnt LOADING");
+	// Start sync/write loop
 
-	fbr_directory_copy(fs, new_directory, directory);
+	struct fbr_directory *directory = NULL;
+	int wait_for_new = 1;
+
+	// Read from dindex
+	do {
+		directory = fbr_dindex_take(fs, &dirname, wait_for_new);
+		if (directory) {
+			fbr_directory_ok(directory);
+			assert_dev(directory->state >= FBR_DIRSTATE_OK);
+			if (directory->state == FBR_DIRSTATE_ERROR) {
+				assert_dev(wait_for_new);
+				fbr_dindex_release(fs, &directory);
+			}
+		}
+
+		if (!wait_for_new) {
+			break;
+		}
+		wait_for_new = 0;
+	} while (!directory);
+
+	// Read from index store
+	if (!directory) {
+		directory = fbr_directory_alloc(fs, &dirname, inode);
+		fbr_directory_ok(directory);
+
+		switch (directory->state) {
+			case FBR_DIRSTATE_ERROR:
+				// inode is stale, a top level change was made
+				fbr_dindex_release(fs, &directory);
+				return EIO;
+			case FBR_DIRSTATE_OK:
+				break;
+			case FBR_DIRSTATE_LOADING:
+				fbr_index_read(fs, directory);
+				if (directory->state == FBR_DIRSTATE_ERROR) {
+					fbr_dindex_release(fs, &directory);
+					return EIO;
+				}
+				break;
+			default:
+				fbr_ABORT("FLUSH bad directory allocation state: %d",
+					directory->state);
+		}
+	}
+	assert_dev(directory->state == FBR_DIRSTATE_OK);
+
+	struct fbr_directory *new_directory = NULL;
+	// TODO make this a parameter
+	size_t attempts = 100;
+
+	do {
+		if (!attempts) {
+			fbr_ABORT("FLUSH attempt limit directory allocation");
+			fbr_dindex_release(fs, &directory);
+			return EIO;
+		}
+		attempts--;
+
+		new_directory = fbr_directory_alloc(fs, &dirname, inode);
+		fbr_directory_ok(new_directory);
+
+		switch (new_directory->state) {
+			case FBR_DIRSTATE_ERROR:
+				// inode is stale, a top level change was made
+				fbr_dindex_release(fs, &directory);
+				fbr_dindex_release(fs, &new_directory);
+				return EIO;
+			case FBR_DIRSTATE_OK:
+				fbr_dindex_release(fs, &directory);
+				directory = new_directory;
+				new_directory = NULL;
+			case FBR_DIRSTATE_LOADING:
+				break;
+			default:
+				fbr_ABORT("FLUSH bad directory allocation state: %d",
+					new_directory->state);
+		}
+	} while (!new_directory);
+
+	assert_dev(new_directory->state == FBR_DIRSTATE_LOADING);
+
+	struct fbr_directory *previous = new_directory->previous;
+	if (!previous) {
+		previous = directory;
+	}
+
+	fbr_directory_copy(fs, new_directory, previous);
 
 	new_directory->generation++;
 
@@ -478,12 +557,8 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		fbr_directory_add_file(fs, new_directory, file);
 	}
 
-	struct fbr_directory *previous = new_directory->previous;
-	if (!previous) {
-		previous = directory;
-	}
-
-	// TOOD make sure we use the latest file generation
+	// TODO loop the write a few times, make sure this doesnt break index tests
+	// TODO make sure we use the latest file generation
 	// wbuffers may not exist on this version so we need a merge somewhere
 
 	struct fbr_index_data index_data;
