@@ -93,12 +93,6 @@ struct fbr_index_parser {
 	unsigned int				files_existing;
 };
 
-enum fbr_index_flags {
-	FBR_INDEX_NONE = 0,
-	FBR_INDEX_FILE_TRUNCATE = (1 << 0),
-	FBR_INDEX_FILE_APPEND = (1 << 1)
-};
-
 struct fbr_index_data {
 	struct fbr_directory			*directory;
 	struct fbr_directory			*previous;
@@ -106,7 +100,7 @@ struct fbr_index_data {
 	struct fbr_wbuffer			*wbuffers;
 	struct fbr_chunk_list			*chunks;
 	struct fbr_chunk_list			*removed;
-	enum fbr_index_flags			flags;
+	enum fbr_flush_flags			flags;
 };
 
 struct fbr_store_callbacks {
@@ -116,8 +110,8 @@ struct fbr_store_callbacks {
 		struct fbr_chunk *chunk);
 	void (*wbuffer_write_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_wbuffer *wbuffer);
-	int (*wbuffers_flush_f)(struct fbr_fs *fs, struct fbr_file *file,
-		struct fbr_wbuffer *wbuffers, enum fbr_index_flags flags);
+	int (*directory_flush_f)(struct fbr_fs *fs, struct fbr_file *file,
+		struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
 	int (*index_write_f)(struct fbr_fs *fs, struct fbr_directory *directory,
 		struct fbr_writer *writer, struct fbr_directory *previous);
 	int (*index_read_f)(struct fbr_fs *fs, struct fbr_directory *directory);
@@ -128,7 +122,7 @@ struct fjson_context;
 
 void fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	struct fbr_directory *directory, struct fbr_directory *previous,
-	struct fbr_file *file, struct fbr_wbuffer *wbuffers, enum fbr_index_flags flags);
+	struct fbr_file *file, struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
 void fbr_index_data_free(struct fbr_index_data *index_data);
 int fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data);
 void fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);

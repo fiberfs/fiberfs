@@ -529,16 +529,16 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	fbr_body_LOCK(fs, &file->body);
 
-	enum fbr_index_flags flags = FBR_INDEX_NONE;
+	enum fbr_flush_flags flags = FBR_FLUSH_NONE;
 	if (fio->truncate) {
-		flags |= FBR_INDEX_FILE_TRUNCATE;
+		flags |= FBR_FLUSH_TRUNCATE;
 	}
 	if (fio->append) {
-		flags |= FBR_INDEX_FILE_APPEND;
+		flags |= FBR_FLUSH_APPEND;
 	}
 
-	if (fs->store->wbuffers_flush_f) {
-		int ret = fs->store->wbuffers_flush_f(fs, file, fio->wbuffers, flags);
+	if (fs->store->directory_flush_f) {
+		int ret = fs->store->directory_flush_f(fs, file, fio->wbuffers, flags);
 		if (ret) {
 			error = ret;
 		}

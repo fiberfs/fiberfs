@@ -228,8 +228,8 @@ _test_concurrent_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuf
 }
 
 static int
-_test_flush_wbuffers(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-    enum fbr_index_flags flags)
+_test_flush_directory(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
+    enum fbr_flush_flags flags)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -321,7 +321,7 @@ _test_fio_thread(void *arg)
 		int ret = fbr_wbuffer_flush_fio(fs, fio);
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
-			_test_flush_wbuffers(fs, file, fio->wbuffers, 0);
+			_test_flush_directory(fs, file, fio->wbuffers, 0);
 			fbr_wbuffers_free(fio->wbuffers);
 			fio->wbuffers = NULL;
 		} else {
@@ -400,7 +400,7 @@ _test_fio_read_thread(void *arg)
 static const struct fbr_store_callbacks _TEST_WBUFFER_CALLBACKS = {
 	.chunk_read_f = _test_concurrent_gen_wbuffer,
 	.wbuffer_write_f = _test_concurrent_store,
-	.wbuffers_flush_f = _test_flush_wbuffers
+	.directory_flush_f = _test_flush_directory
 };
 
 static void
@@ -462,7 +462,7 @@ _test_concurrent_fio(void)
 		int ret = fbr_wbuffer_flush_fio(fs, fio);
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
-			_test_flush_wbuffers(fs, file, fio->wbuffers, 0);
+			_test_flush_directory(fs, file, fio->wbuffers, 0);
 			fbr_wbuffers_free(fio->wbuffers);
 			fio->wbuffers = NULL;
 		} else {

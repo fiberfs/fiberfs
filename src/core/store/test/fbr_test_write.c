@@ -113,7 +113,7 @@ static const struct fbr_store_callbacks _WRITE_CALLBACKS = {
 	.chunk_read_f = fbr_dstore_chunk_read,
 	.chunk_delete_f = fbr_dstore_chunk_delete,
 	.wbuffer_write_f = _write_wbuffer,
-	.wbuffers_flush_f = fbr_test_fs_rw_wbuffers_flush,
+	.directory_flush_f = fbr_directory_flush,
 	.index_write_f = _write_index_root,
 	.index_read_f = fbr_dstore_index_read,
 	.root_read_f = fbr_dstore_root_read
@@ -240,7 +240,7 @@ _write_test(void)
 	fbr_test_index_request_start();
 
 	struct fbr_index_data index_data;
-	fbr_index_data_init(NULL, &index_data, directory, NULL, NULL, NULL, FBR_INDEX_NONE);
+	fbr_index_data_init(NULL, &index_data, directory, NULL, NULL, NULL, FBR_FLUSH_NONE);
 	int ret = fbr_index_write(fs, &index_data);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
 	fbr_index_data_free(&index_data);

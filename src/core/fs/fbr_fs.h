@@ -227,6 +227,12 @@ struct fbr_dreader {
 	struct fbr_file_ptr			*position;
 };
 
+enum fbr_flush_flags {
+	FBR_FLUSH_NONE = 0,
+	FBR_FLUSH_TRUNCATE = (1 << 0),
+	FBR_FLUSH_APPEND = (1 << 1)
+};
+
 enum fbr_wbuffer_state {
 	FBR_WBUFFER_NONE = 0,
 	FBR_WBUFFER_WRITING,
@@ -434,6 +440,8 @@ struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const 
 	size_t filename_len);
 void fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest,
 	struct fbr_directory *source);
+int fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
+	enum fbr_flush_flags flags);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
 void fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,

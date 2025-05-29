@@ -251,7 +251,7 @@ _json_directory_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_index
 void
 fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
     struct fbr_directory *directory, struct fbr_directory *previous, struct fbr_file *file,
-    struct fbr_wbuffer *wbuffers, enum fbr_index_flags flags)
+    struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags)
 {
 	assert(index_data);
 	fbr_directory_ok(directory);
@@ -269,7 +269,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		fbr_wbuffer_ok(wbuffers);
 		fbr_file_ok(file);
 
-		if (flags & FBR_INDEX_FILE_TRUNCATE) {
+		if (flags & FBR_FLUSH_TRUNCATE) {
 			fs->log("INDEX TRUNCATE flagged");
 
 			index_data->chunks = fbr_wbuffer_chunks(wbuffers);
@@ -290,7 +290,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 					size, file->size);
 				file->size = size;
 			}
-		} else if (flags & FBR_INDEX_FILE_APPEND) {
+		} else if (flags & FBR_FLUSH_APPEND) {
 			fs->log("INDEX APPEND flagged");
 			// TODO we need to make sure this is aligned with other fios
 			index_data->chunks = fbr_wbuffer_chunks(wbuffers);
@@ -330,7 +330,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	assert_dev(directory->version);
 	assert_dev(directory->generation);
 
-	if (index_data->flags & FBR_INDEX_FILE_APPEND) {
+	if (index_data->flags & FBR_FLUSH_APPEND) {
 		fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
 	}
 

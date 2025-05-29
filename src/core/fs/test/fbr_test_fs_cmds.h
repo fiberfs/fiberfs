@@ -40,9 +40,6 @@ struct fbr_fs * fbr_test_fs_alloc(void);
 
 size_t fbr_test_fs_count_chunks(struct fbr_file *file);
 
-int fbr_test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file,
-    struct fbr_wbuffer *wbuffers, enum fbr_index_flags flags);
-
 #endif /* FBR_TEST_FS_CMD */
 
 FBR_TEST_FS_CMD(fs_test_init_mount)
