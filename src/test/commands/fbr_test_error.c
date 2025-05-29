@@ -4,6 +4,7 @@
  */
 
 #include <pthread.h>
+#include <unistd.h>
 
 #include "test/fbr_test.h"
 
@@ -142,4 +143,13 @@ fbr_test_cmd_test_triple_crash(struct fbr_test_context *ctx, struct fbr_test_cmd
 
 	// This thread always exits
 	_test_error_CRASH();
+}
+
+void
+fbr_test_cmd__exit(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_exit(1);
 }

@@ -39,6 +39,7 @@ FBR_TEST_CMD(sys_cat)
 FBR_TEST_CMD(sys_cat_md5)
 FBR_TEST_CMD(sys_stat_size)
 FBR_TEST_CMD(sys_write)
+FBR_TEST_CMD(sys_append)
 FBR_TEST_CMD(sys_write_seek)
 
 FBR_TEST_CMD(set_var1)
@@ -66,6 +67,7 @@ FBR_TEST_CMD(test_fork_crash)
 FBR_TEST_CMD(test_finish_crash)
 FBR_TEST_CMD(test_double_crash)
 FBR_TEST_CMD(test_triple_crash)
+FBR_TEST_CMD(_exit)
 
 FBR_TEST_VAR(test_counter)
 

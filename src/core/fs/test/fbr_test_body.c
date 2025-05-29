@@ -503,7 +503,7 @@ fbr_cmd_fs_test_body_hole(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 			sizeof(buffer));
 	}
 
-	int ret = fbr_wbuffer_flush(fs, fio);
+	int ret = fbr_wbuffer_flush_fio(fs, fio);
 	assert(ret);
 
 	size_t count = 0;

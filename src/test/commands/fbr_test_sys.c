@@ -414,8 +414,8 @@ fbr_test_cmd_sys_stat_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_stat_size done %ld", st.st_size);
 }
 
-void
-fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+static void
+_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append)
 {
 	_sys_init(ctx);
 	fbr_test_ERROR(cmd->param_count < 2, "Need 2 params");
@@ -427,8 +427,15 @@ fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	char *filename = cmd->params[0].value;
 
-	int fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
-	fbr_test_ASSERT(fd >= 0, "sys_write open() failed %s (%d %s)", filename, fd,
+	char *name = "write";
+	int write_flag = O_TRUNC;
+	if (append) {
+		name = "append";
+		write_flag = O_APPEND;
+	}
+
+	int fd = open(filename, write_flag | O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	fbr_test_ASSERT(fd >= 0, "sys_%s open() failed %s (%d %s)", name, filename, fd,
 		strerror(errno));
 
 	size_t total_bytes = 0;
@@ -444,9 +451,21 @@ fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 	int ret = close(fd);
-	fbr_test_ERROR(ret, "sys_write close() failed (%d %s %d)", ret, strerror(errno), errno);
+	fbr_test_ERROR(ret, "sys_%s close() failed (%d %s %d)", name, ret, strerror(errno), errno);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_write bytes %zu", total_bytes);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_%s bytes %zu", name, total_bytes);
+}
+
+void
+fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_write(ctx, cmd, 0);
+}
+
+void
+fbr_test_cmd_sys_append(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_write(ctx, cmd, 1);
 }
 
 void

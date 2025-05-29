@@ -95,7 +95,8 @@ struct fbr_index_parser {
 
 enum fbr_index_flags {
 	FBR_INDEX_NONE = 0,
-	FBR_INDEX_FILE_TRUNCATE = (1 << 0)
+	FBR_INDEX_FILE_TRUNCATE = (1 << 0),
+	FBR_INDEX_FILE_APPEND = (1 << 1)
 };
 
 struct fbr_index_data {

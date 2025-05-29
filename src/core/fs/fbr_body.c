@@ -191,8 +191,9 @@ fbr_body_chunk_append(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, siz
 
 // Note: must have body->lock
 void
-fbr_body_chunk_prune(struct fbr_file *file, struct fbr_chunk_list *remove)
+fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_list *remove)
 {
+	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	assert(file->state >= FBR_FILE_OK);
 	fbr_chunk_list_ok(remove);
@@ -203,6 +204,7 @@ fbr_body_chunk_prune(struct fbr_file *file, struct fbr_chunk_list *remove)
 
 	struct fbr_chunk *chunk = file->body.chunks;
 	struct fbr_chunk *prev = NULL;
+	size_t size = 0;
 
 	while (chunk) {
 		fbr_chunk_ok(chunk);
@@ -219,11 +221,22 @@ fbr_body_chunk_prune(struct fbr_file *file, struct fbr_chunk_list *remove)
 			continue;
 		}
 
+		size_t chunk_end = chunk->offset + chunk->length;
+		if (chunk_end > size) {
+			size = chunk_end;
+		}
+
 		prev = chunk;
 		chunk = chunk->next;
 	}
 
 	file->body.chunk_last = prev;
+
+	if (file->size != size) {
+		fs->log("BODY new file->size: %zu (was: %zu)",
+			size, file->size);
+		file->size = size;
+	}
 }
 
 // Note: must have body->lock

@@ -318,7 +318,7 @@ _test_fio_thread(void *arg)
 	assert(total == sizeof(buffer));
 
 	if (!_SHARED_FIO) {
-		int ret = fbr_wbuffer_flush(fs, fio);
+		int ret = fbr_wbuffer_flush_fio(fs, fio);
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
 			_test_flush_wbuffers(fs, file, fio->wbuffers, 0);
@@ -459,7 +459,7 @@ _test_concurrent_fio(void)
 	assert(_FIO_READ_THREAD_ID == _BODY_TEST_THREADS - 1);
 
 	if (_SHARED_FIO) {
-		int ret = fbr_wbuffer_flush(fs, fio);
+		int ret = fbr_wbuffer_flush_fio(fs, fio);
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
 			_test_flush_wbuffers(fs, file, fio->wbuffers, 0);

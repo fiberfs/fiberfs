@@ -171,7 +171,7 @@ _write_thread(void *arg)
 
 		if (pos == size / 2 && !flushed) {
 			flushed = 1;
-			int ret = fbr_wbuffer_flush(fs, fio);
+			int ret = fbr_wbuffer_flush_fio(fs, fio);
 			if (error_mode && ret) {
 				fbr_test_logs("ERROR FLUSH thread %zu", id);
 				pos -= sizeof(buffer);
@@ -186,7 +186,7 @@ _write_thread(void *arg)
 
 	int ret;
 	do {
-		ret = fbr_wbuffer_flush(fs, fio);
+		ret = fbr_wbuffer_flush_fio(fs, fio);
 		if (error_mode && ret) {
 			fbr_test_logs("ERROR FLUSH thread %zu", id);
 		} else {
@@ -270,7 +270,7 @@ _write_test(void)
 	while (offset < _FILE_SIZE) {
 		fbr_wbuffer_write(fs, fio, offset, buffer, sizeof(buffer));
 		if (offset % 1000 == 0) {
-			ret = fbr_wbuffer_flush(fs, fio);
+			ret = fbr_wbuffer_flush_fio(fs, fio);
 			assert_zero(ret);
 		}
 		offset += sizeof(buffer);
@@ -278,7 +278,7 @@ _write_test(void)
 	assert(offset == _FILE_SIZE);
 	assert(file->size == _FILE_SIZE);
 
-	ret = fbr_wbuffer_flush(fs, fio);
+	ret = fbr_wbuffer_flush_fio(fs, fio);
 	assert_zero(ret);
 
 	fbr_fio_release(fs, fio);

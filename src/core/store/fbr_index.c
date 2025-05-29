@@ -262,6 +262,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	index_data->previous = previous;
 	index_data->file = file;
 	index_data->wbuffers = wbuffers;
+	index_data->flags = flags;
 
 	if (wbuffers) {
 		fbr_fs_ok(fs);
@@ -270,8 +271,30 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 		if (flags & FBR_INDEX_FILE_TRUNCATE) {
 			fs->log("INDEX TRUNCATE flagged");
+
 			index_data->chunks = fbr_wbuffer_chunks(wbuffers);
 			index_data->removed = fbr_body_chunk_all(file, 0);
+
+			size_t size = 0;
+			for (size_t i = 0; i < index_data->chunks->length; i++) {
+				struct fbr_chunk *chunk = index_data->chunks->list[i];
+				fbr_chunk_ok(chunk);
+				size_t chunk_end = chunk->offset + chunk->length;
+				if (chunk_end > size) {
+					size = chunk_end;
+				}
+			}
+
+			if (file->size != size) {
+				fs->log("INDEX new file->size: %zu (was: %zu)",
+					size, file->size);
+				file->size = size;
+			}
+		} else if (flags & FBR_INDEX_FILE_APPEND) {
+			fs->log("INDEX APPEND flagged");
+			// TODO we need to make sure this is aligned with other fios
+			index_data->chunks = fbr_wbuffer_chunks(wbuffers);
+			assert_zero_dev(index_data->removed);
 		} else {
 			index_data->chunks = fbr_body_chunk_range(file, 0, file->size,
 				&index_data->removed, wbuffers);
@@ -307,6 +330,10 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	assert_dev(directory->version);
 	assert_dev(directory->generation);
 
+	if (index_data->flags & FBR_INDEX_FILE_APPEND) {
+		fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
+	}
+
 	struct fbr_request *request = fbr_request_get();
 
 	int gzip = 0;
@@ -331,26 +358,22 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 		ret = fs->store->index_write_f(fs, directory, &json_gen, index_data->previous);
 	}
 
-	if (index_data->chunks) {
-		struct fbr_chunk_list *chunks = index_data->chunks;
-		fbr_chunk_list_ok(chunks);
+	if (index_data->removed && !ret) {
 		struct fbr_chunk_list *removed = index_data->removed;
 		fbr_chunk_list_ok(removed);
 
-		if (!ret) {
-			fbr_body_chunk_prune(index_data->file, removed);
+		fbr_body_chunk_prune(fs, index_data->file, removed);
 
-			for (size_t i = 0; i < removed->length; i++) {
-				struct fbr_chunk *chunk = removed->list[i];
-				fbr_chunk_ok(chunk);
+		for (size_t i = 0; i < removed->length; i++) {
+			struct fbr_chunk *chunk = removed->list[i];
+			fbr_chunk_ok(chunk);
 
-				if (!chunk->id) {
-					continue;
-				}
+			if (!chunk->id) {
+				continue;
+			}
 
-				if (fs->store->chunk_delete_f) {
-					fs->store->chunk_delete_f(fs, index_data->file, chunk);
-				}
+			if (fs->store->chunk_delete_f) {
+				fs->store->chunk_delete_f(fs, index_data->file, chunk);
 			}
 		}
 	}

@@ -66,9 +66,11 @@ fbr_test_fs_rw_wbuffers_flush(struct fbr_fs *fs, struct fbr_file *file,
 		previous = directory;
 	}
 
+	// TOOD make sure we use the latest file generation
+	// wbuffers may not exist on this version so we need a merge somewhere
+
 	struct fbr_index_data index_data;
-	fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers,
-		flags);
+	fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers, flags);
 
 	int ret = fbr_index_write(fs, &index_data);
 	if (ret) {
@@ -380,7 +382,7 @@ _test_fs_rw_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 	fbr_file_ok(fio->file);
 	assert(fio->file->inode == ino);
 
-	int ret = fbr_wbuffer_flush(fs, fio);
+	int ret = fbr_wbuffer_flush_fio(fs, fio);
 	fbr_fuse_reply_err(request, ret);
 
 	fbr_fio_release(fs, fio);
@@ -396,7 +398,7 @@ _test_fs_rw_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_fil
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 
 	// Flush incase we hit a previous flush error
-	int ret = fbr_wbuffer_flush(fs, fio);
+	int ret = fbr_wbuffer_flush_fio(fs, fio);
 
 	fbr_fio_release(fs, fio);
 
