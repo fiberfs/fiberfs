@@ -335,7 +335,7 @@ _write_test(void)
 
 	fbr_test_logs("*** directory->generation: %lu", directory->generation);
 	if (error_mode) {
-		assert(directory->generation < fs->stats.flushes + 1);
+		assert(directory->generation <= fs->stats.flushes + 1);
 	} else {
 		assert(directory->generation == fs->stats.flushes + 1);
 	}

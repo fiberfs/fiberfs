@@ -20,11 +20,74 @@
 
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
+static int
+_test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
+    struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_wbuffer_ok(wbuffers);
+
+	struct fbr_file *parent = fbr_inode_take(fs, file->parent_inode);
+	fbr_ASSERT(parent, "parent %lu missing", file->parent_inode);
+	fbr_file_ok(parent);
+
+	struct fbr_path_name dirname;
+	char buf[PATH_MAX];
+	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
+
+	fs->log("RW_FLUSH directory: '%s'", dirname.name);
+
+	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 1);
+	fbr_ASSERT(directory, "directory '%s' missing", dirname.name);
+	fbr_directory_ok(directory);
+
+	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
+	fbr_directory_ok(new_directory);
+	fbr_ASSERT(new_directory->state == FBR_DIRSTATE_LOADING, "new_directory isnt LOADING");
+
+	fbr_directory_copy(fs, new_directory, directory);
+
+	new_directory->generation++;
+
+	if (file->state == FBR_FILE_INIT) {
+		file->state = FBR_FILE_OK;
+		file->generation = 1;
+		fbr_directory_add_file(fs, new_directory, file);
+	}
+
+	struct fbr_directory *previous = new_directory->previous;
+	if (!previous) {
+		previous = directory;
+	}
+
+	struct fbr_index_data index_data;
+	fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers, flags);
+
+	int ret = fbr_index_write(fs, &index_data);
+	if (ret) {
+		fs->log("RW_FLUSH fbr_index_write(new_directory) failed (%d %s)", ret,
+			strerror(ret));
+		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
+	} else {
+		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
+	}
+
+	fbr_index_data_free(&index_data);
+
+	// Safe to call within flush
+	fbr_dindex_release(fs, &directory);
+	fbr_dindex_release(fs, &new_directory);
+	fbr_inode_release(fs, &parent);
+
+	return ret;
+}
+
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
 	.chunk_read_f = fbr_dstore_chunk_read,
 	.chunk_delete_f = fbr_dstore_chunk_delete,
 	.wbuffer_write_f = fbr_dstore_wbuffer_write,
-	.directory_flush_f = fbr_directory_flush,
+	.directory_flush_f = _test_fs_rw_directory_flush,
 	.index_write_f = fbr_dstore_index_root_write,
 	.index_read_f = fbr_dstore_index_read,
 	.root_read_f = fbr_dstore_root_read
