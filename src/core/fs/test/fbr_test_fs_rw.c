@@ -170,15 +170,17 @@ _test_fs_rw_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_i
 		return;
 	}
 
-	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
-	fbr_fio_ok(fio);
+	int read_only = 0;
 
 	if (fi->flags & O_WRONLY || fi->flags & O_RDWR) {
 		fbr_test_logs("** OPEN flags: read+write");
 	} else {
-		fio->read_only = 1;
+		read_only = 1;
 		fbr_test_logs("** OPEN flags: read only");
 	}
+
+	struct fbr_fio *fio = fbr_fio_alloc(fs, file, read_only);
+	fbr_fio_ok(fio);
 
 	if (fi->flags & O_APPEND) {
 		fio->append = 1;
@@ -199,6 +201,8 @@ _test_fs_rw_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_i
 	fi->keep_cache = 1;
 
 	fbr_fuse_reply_open(request, fi);
+
+	fbr_inode_release(fs, &file);
 }
 
 static void
@@ -277,10 +281,7 @@ _test_fs_rw_create(struct fbr_request *request, fuse_ino_t parent, const char *n
 	file->uid = fctx->uid;
 	file->gid = fctx->gid;
 
-	// fio reference
-	fbr_inode_add(fs, file);
-
-	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
+	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 0);
 	fbr_fio_ok(fio);
 
 	if (fi->flags & O_RDONLY) {

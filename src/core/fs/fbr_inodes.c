@@ -189,6 +189,7 @@ fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref)
 
 	int do_free = 0;
 	if (!file->refcounts.dindex && !file->refcounts.inode) {
+		assert_zero(file->refcounts.wbuffer);
 		do_free = 1;
 	}
 
@@ -233,6 +234,7 @@ fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs)
 
 	int do_free = 0;
 	if (!file->refcounts.dindex && !file->refcounts.inode) {
+		assert_zero(file->refcounts.wbuffer);
 		do_free = 1;
 	}
 

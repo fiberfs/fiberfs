@@ -141,13 +141,15 @@ _test_fio_thread(void *arg)
 
 	if (!_SHARED_FIO) {
 		assert_zero(fio);
-		fbr_inode_add(fs, file);
-		fio = fbr_fio_alloc(fs, file);
+		fio = fbr_fio_alloc(fs, file, 1);
 		fbr_fio_ok(fio);
 	} else {
 		fbr_fio_ok(fio);
 		fbr_fio_take(fio);
 	}
+
+	assert(fio->read_only);
+	assert_zero(fio->write);
 
 	int id = fbr_atomic_add(&_FIO_THREAD_ID, 1);
 	assert(id >= 0);
@@ -218,8 +220,7 @@ _test_concurrent_fio(void)
 	assert(file->size == 1000 * _BODY_TEST_THREADS);
 
 	if (_SHARED_FIO) {
-		fbr_inode_add(fs, file);
-		fio = fbr_fio_alloc(fs, file);
+		fio = fbr_fio_alloc(fs, file, 1);
 	}
 
 	pthread_t threads[10];

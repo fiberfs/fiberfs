@@ -277,11 +277,12 @@ _test_fio_thread(void *arg)
 
 	if (!_SHARED_FIO) {
 		assert_zero(fio);
-		fbr_inode_add(fs, file);
-		fio = fbr_fio_alloc(fs, file);
+		fio = fbr_fio_alloc(fs, file, 0);
 		fbr_fio_ok(fio);
+		assert(fio->write);
 	} else {
 		fbr_fio_ok(fio);
+		assert(fio->write);
 		fbr_fio_take(fio);
 	}
 
@@ -347,9 +348,10 @@ _test_fio_read_thread(void *arg)
 
 	if (!_SHARED_FIO) {
 		assert_zero(fio);
-		fbr_inode_add(fs, file);
-		fio = fbr_fio_alloc(fs, file);
+		fio = fbr_fio_alloc(fs, file, 1);
 		fbr_fio_ok(fio);
+		assert(fio->read_only);
+		assert_zero(fio->write);
 	} else {
 		fbr_fio_ok(fio);
 		fbr_fio_take(fio);
@@ -429,8 +431,7 @@ _test_concurrent_fio(void)
 	assert(file->size == 1000 * _BODY_CHUNKS);
 
 	if (_SHARED_FIO) {
-		fbr_inode_add(fs, file);
-		fio = fbr_fio_alloc(fs, file);
+		fio = fbr_fio_alloc(fs, file, 0);
 	}
 
 	pthread_t threads[_BODY_TEST_THREADS];
@@ -508,8 +509,7 @@ _test_concurrent_fio(void)
 
 	fbr_test_logs("# final vector validation");
 
-	fbr_inode_add(fs, file);
-	fio = fbr_fio_alloc(fs, file);
+	fio = fbr_fio_alloc(fs, file, 1);
 
 	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, 0, file->size);
 	fbr_chunk_vector_ok(vector);

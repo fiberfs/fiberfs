@@ -16,7 +16,7 @@
 static uint8_t _ZERO_FILL[1024 * 16];
 
 struct fbr_fio *
-fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
+fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file, int read_only)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -26,7 +26,8 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
 
 	fio->magic = FBR_FIO_MAGIC;
 
-	// We release this, so caller needs to take an inode ref on this
+	// Take an inode ref
+	fbr_inode_add(fs, file);
 	fio->file = file;
 
 	fio->floating = fbr_chunk_list_alloc();
@@ -36,6 +37,13 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file)
 
 	// Caller owns a ref
 	fio->refcount = 1;
+
+	if (read_only) {
+		fio->read_only = 1;
+	} else {
+		fio->write = 1;
+		fbr_file_ref_wbuffer(fs, fio->file);
+	}
 
 	fbr_body_debug(fs, file);
 
@@ -524,6 +532,11 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	fbr_chunk_list_free(fio->floating);
 	fbr_wbuffer_free(fs, fio);
+
+	if (fio->write) {
+		assert_zero_dev(fio->read_only);
+		fbr_file_release_wbuffer(fs, fio->file);
+	}
 
 	fbr_inode_release(fs, &fio->file);
 	assert_zero_dev(fio->file);

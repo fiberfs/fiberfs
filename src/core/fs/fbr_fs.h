@@ -108,6 +108,7 @@ struct fbr_body {
 struct fbr_file_refcounts {
 	fbr_refcount_t				dindex;
 	fbr_refcount_t				inode;
+	fbr_refcount_t				wbuffer;
 };
 
 struct fbr_file_ptr {
@@ -269,6 +270,7 @@ struct fbr_fio {
 
 	unsigned int				error:1;
 	unsigned int				read_only:1;
+	unsigned int				write:1;
 	unsigned int				append:1;
 	unsigned int				truncate:1;
 
@@ -388,6 +390,8 @@ void fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file **file_ref);
 void fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_release_inode_lock(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_refcount_t refs);
+void fbr_file_ref_wbuffer(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_file_release_wbuffer(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 struct fbr_file_ptr *fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_ptr_free(struct fbr_file_ptr *file_ptr);
@@ -461,7 +465,7 @@ void fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
 	const char *name, struct stat *st);
 void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 
-struct fbr_fio *fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file);
+struct fbr_fio *fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file, int read_only);
 void fbr_fio_take(struct fbr_fio *fio);
 struct fbr_chunk_vector *fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio,
 	size_t offset, size_t size);

@@ -706,10 +706,10 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 		return;
 	}
 
-	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
+	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 1);
 	fbr_fio_ok(fio);
-
-	fio->read_only = 1;
+	assert_dev(fio->read_only);
+	assert_zero_dev(fio->write);
 
 	assert_zero_dev(fi->fh);
 	fi->fh = fbr_fs_int64(fio);
@@ -717,6 +717,8 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 	fi->keep_cache = 1;
 
 	fbr_fuse_reply_open(request, fi);
+
+	fbr_inode_release(fs, &file);
 }
 
 void

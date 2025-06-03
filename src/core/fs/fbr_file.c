@@ -155,6 +155,7 @@ fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file **file_ref)
 
 	int do_free = 0;
 	if (!file->refcounts.dindex && !file->refcounts.inode) {
+		assert_zero(file->refcounts.wbuffer);
 		do_free = 1;
 	}
 
@@ -204,6 +205,38 @@ fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_refcoun
 	fbr_fs_stat_sub_count(&fs->stats.file_refs, refs);
 
 	// NOTE: caller must unlock when done
+}
+
+void
+fbr_file_ref_wbuffer(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	pt_assert(pthread_mutex_lock(&file->refcount_lock));
+	fbr_file_ok(file);
+	assert(file->refcounts.inode);
+
+	file->refcounts.wbuffer++;
+	assert(file->refcounts.wbuffer);
+
+	pt_assert(pthread_mutex_unlock(&file->refcount_lock));
+}
+
+void
+fbr_file_release_wbuffer(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	pt_assert(pthread_mutex_lock(&file->refcount_lock));
+	fbr_file_ok(file);
+	assert(file->refcounts.inode);
+
+	assert(file->refcounts.wbuffer);
+	file->refcounts.wbuffer--;
+
+	pt_assert(pthread_mutex_unlock(&file->refcount_lock));
 }
 
 void

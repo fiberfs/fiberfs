@@ -152,8 +152,9 @@ _write_thread(void *arg)
 		fbr_fio_take(fio);
 	} else {
 		assert_zero(fio);
-		fbr_inode_add(fs, file);
-		fio = fbr_fio_alloc(fs, file);
+		fio = fbr_fio_alloc(fs, file, 0);
+		assert_zero(fio->read_only);
+		assert(fio->write);
 	}
 
 	char buffer[100];
@@ -254,8 +255,7 @@ _write_test(void)
 
 	fbr_test_index_request_start();
 
-	fbr_inode_add(fs, file);
-	struct fbr_fio *fio = fbr_fio_alloc(fs, file);
+	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 0);
 	struct fbr_fio *shared_fio = NULL;
 	if (_SHARED_FIO) {
 		shared_fio = fio;
@@ -347,8 +347,9 @@ _write_test(void)
 
 	fbr_test_index_request_start();
 
-	fbr_inode_add(fs, file);
-	fio = fbr_fio_alloc(fs, file);
+	fio = fbr_fio_alloc(fs, file, 1);
+	assert(fio->read_only);
+	assert_zero(fio->write);
 
 	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, 0, file->size);
 	assert(vector);

@@ -432,8 +432,7 @@ fbr_cmd_fs_test_body_fio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_ASSERT(_find_chunk(file, 0, 0)->id == 1, "Wrong chunk");
 	fbr_ASSERT(file->size == 1000, "Bad file size");
 
-	fbr_inode_add(fs, file);
-	fio = fbr_fio_alloc(fs, file);
+	fio = fbr_fio_alloc(fs, file, 1);
 	vector = fbr_fio_vector_gen(fs, fio, 0, file->size);
 	fbr_ASSERT(vector, "Bad vector");
 	fbr_ASSERT(!fio->error, "fio error");
@@ -450,8 +449,7 @@ fbr_cmd_fs_test_body_fio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(_count_chunks(file) == 5);
 	assert(file->size == 5000);
 
-	fbr_inode_add(fs, file);
-	fio = fbr_fio_alloc(fs, file);
+	fio = fbr_fio_alloc(fs, file, 1);
 	vector = fbr_fio_vector_gen(fs, fio, 0, 1500);
 	assert(vector->bufvec->count == 2);
 	fbr_fio_vector_free(fs, fio, vector);
@@ -486,8 +484,7 @@ fbr_cmd_fs_test_body_hole(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_ASSERT(_count_chunks(file) == 0, "Bad chunk count");
 	fbr_ASSERT(file->size == 0, "Bad file size");
 
-	fbr_inode_add(fs, file);
-	fio = fbr_fio_alloc(fs, file);
+	fio = fbr_fio_alloc(fs, file, 0);
 
 	char buffer[1000];
 	memset(buffer, 1, sizeof(buffer));
