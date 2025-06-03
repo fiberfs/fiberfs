@@ -851,7 +851,7 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 		fbr_test_logs("DSTORE root mismatch, want %lu, found %lu", existing,
 			metadata.etag);
 
-		return EIO;
+		return EAGAIN;
 	} else {
 		fbr_test_logs("DSTORE root passed: %lu", existing);
 	}

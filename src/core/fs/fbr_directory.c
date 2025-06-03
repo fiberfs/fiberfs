@@ -449,7 +449,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	struct fbr_file *parent = fbr_inode_take(fs, inode);
 	if (!parent) {
 		fs->log("FLUSH parent inode missing (%lu)", inode);
-		return EIO;
+		return ENOENT;
 	}
 
 	struct fbr_path_name dirname;
@@ -490,7 +490,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			case FBR_DIRSTATE_ERROR:
 				// inode is stale, a top level change was made
 				fbr_dindex_release(fs, &directory);
-				return EIO;
+				return ENOENT;
 			case FBR_DIRSTATE_OK:
 				break;
 			case FBR_DIRSTATE_LOADING:
@@ -565,6 +565,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers, flags);
 
 	int ret = fbr_index_write(fs, &index_data);
+	// EAGAIN means version is out of sync
 	if (ret) {
 		fs->log("FLUSH fbr_index_write(new_directory) failed (%d %s)", ret,
 			strerror(ret));

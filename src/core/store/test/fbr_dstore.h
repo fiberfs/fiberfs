@@ -16,7 +16,7 @@ struct fbr_directory;
 struct fbr_path_name;
 struct fbr_wbuffer;
 struct fbr_chunk;
-struct fbr_writer *writer;
+struct fbr_writer;
 
 void fbr_dstore_init(struct fbr_test_context *ctx);
 void fbr_dstore_debug(int show_meta);

@@ -103,7 +103,7 @@ _write_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
 	if (_ERROR_FLUSH && !(random() % 2)) {
 		fbr_test_logs("*** ERROR FLUSH");
 		fbr_atomic_sub(&_ERROR_FLUSH, 1);
-		return EBUSY;
+		return EIO;
 	}
 
 	return fbr_dstore_index_root_write(fs, directory, writer, previous);
