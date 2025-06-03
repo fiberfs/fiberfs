@@ -212,15 +212,11 @@ fbr_file_ref_wbuffer(struct fbr_fs *fs, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
-
-	pt_assert(pthread_mutex_lock(&file->refcount_lock));
-	fbr_file_ok(file);
 	assert(file->refcounts.inode);
 
-	file->refcounts.wbuffer++;
+	// This is safe, fio always takes an inode reference first
+	fbr_atomic_add(&file->refcounts.wbuffer, 1);
 	assert(file->refcounts.wbuffer);
-
-	pt_assert(pthread_mutex_unlock(&file->refcount_lock));
 }
 
 void
@@ -228,15 +224,10 @@ fbr_file_release_wbuffer(struct fbr_fs *fs, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
-
-	pt_assert(pthread_mutex_lock(&file->refcount_lock));
-	fbr_file_ok(file);
 	assert(file->refcounts.inode);
 
 	assert(file->refcounts.wbuffer);
-	file->refcounts.wbuffer--;
-
-	pt_assert(pthread_mutex_unlock(&file->refcount_lock));
+	fbr_atomic_sub(&file->refcounts.wbuffer, 1);
 }
 
 void
