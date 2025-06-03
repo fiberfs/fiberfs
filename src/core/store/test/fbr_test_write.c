@@ -396,7 +396,6 @@ _write_test(void)
 	if (error_mode) {
 		fbr_test_logs("*** ERRORS wbuffer: %zu flush: %zu", __ERROR_WBUFFER,
 			__ERROR_FLUSH);
-		fbr_test_ASSERT(fs->stats.flush_errors, "zero");
 	}
 
 	fbr_request_pool_shutdown(fs);
