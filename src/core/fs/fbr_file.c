@@ -230,6 +230,18 @@ fbr_file_release_wbuffer(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_atomic_sub(&file->refcounts.wbuffer, 1);
 }
 
+int
+fbr_file_has_wbuffer(struct fbr_file *file)
+{
+	fbr_file_ok(file);
+
+	if (file->refcounts.wbuffer) {
+		return 1;
+	}
+
+	return 0;
+}
+
 void
 fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 {

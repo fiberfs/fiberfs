@@ -392,6 +392,7 @@ void fbr_file_release_inode_lock(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_refcount_t refs);
 void fbr_file_ref_wbuffer(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_release_wbuffer(struct fbr_fs *fs, struct fbr_file *file);
+int fbr_file_has_wbuffer(struct fbr_file *file);
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
 struct fbr_file_ptr *fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_ptr_free(struct fbr_file_ptr *file_ptr);

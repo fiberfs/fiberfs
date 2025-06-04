@@ -294,7 +294,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 		if (!wbuffer->chunk) {
 			assert_zero_dev(wbuffer_offset);
-			assert_dev(fio->file->refcounts.wbuffer);
+			assert_dev(fbr_file_has_wbuffer(fio->file));
 
 			fs->log("WBUFFER new chunk offset: %zu length: %zu",
 				wbuffer->offset, wbuffer->end);
@@ -509,10 +509,10 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_wbuffer_ok(fio->wbuffers);
 	assert(fio->write);
 	assert_zero_dev(fio->read_only);
+	assert_dev(fbr_file_has_wbuffer(fio->file));
 
 
 	struct fbr_file *file = fio->file;
-	assert_dev(file->refcounts.wbuffer);
 	int skip_write = 0;
 	int error = 0;
 
