@@ -82,6 +82,7 @@ struct fbr_index_parser {
 	struct fbr_fs				*fs;
 	struct fbr_directory			*directory;
 	struct fbr_file				*file;
+	struct fbr_file				*merge;
 
 	struct {
 		fbr_id_t			id;
@@ -91,6 +92,7 @@ struct fbr_index_parser {
 
 	unsigned int				files_new;
 	unsigned int				files_existing;
+	unsigned int				files_merged;
 };
 
 struct fbr_index_data {

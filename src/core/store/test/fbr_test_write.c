@@ -236,6 +236,7 @@ _write_test(void)
 	struct fbr_path_name filename;
 	fbr_path_name_init(&filename, "file_write_store");
 	struct fbr_file *file = fbr_file_alloc(fs, directory, &filename);
+	file->generation = 1;
 	file->state = FBR_FILE_OK;
 
 	fbr_test_index_request_start();

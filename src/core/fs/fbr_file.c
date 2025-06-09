@@ -54,9 +54,7 @@ _file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	fbr_fs_stat_add(&fs->stats.files_total);
 
 	if (parent) {
-		if (create) {
-			assert_dev(parent->state == FBR_DIRSTATE_OK);
-		} else {
+		if (!create) {
 			fbr_directory_add_file(fs, parent, file);
 		}
 
