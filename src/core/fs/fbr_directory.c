@@ -556,6 +556,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		file->generation = 1;
 		fbr_directory_add_file(fs, new_directory, file);
 	}
+	// TODO what about an existing file generation?
 
 	// TODO loop the write a few times, make sure this doesnt break index tests
 	// TODO make sure we use the latest file generation

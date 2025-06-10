@@ -434,7 +434,7 @@ _dstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 		return;
 	}
 
-	fbr_chunk_update(fs, &file->body, chunk, state);
+	fbr_chunk_update(fs, file, chunk, state);
 }
 
 void

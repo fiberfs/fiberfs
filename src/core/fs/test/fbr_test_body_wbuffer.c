@@ -101,7 +101,7 @@ _test_fetch_thread(void *arg)
 
 	fbr_test_logs("FETCH thread: %d chunk: %zu (%lu)", id, chunk->offset, chunk->id);
 
-	fbr_chunk_update(fs, &file->body, chunk, FBR_CHUNK_LOADING);
+	fbr_chunk_update(fs, file, chunk, FBR_CHUNK_LOADING);
 
 	fbr_sleep_ms(random() % 5);
 
@@ -111,7 +111,7 @@ _test_fetch_thread(void *arg)
 
 	chunk->do_free = 1;
 
-	fbr_chunk_update(fs, &file->body, chunk, FBR_CHUNK_READY);
+	fbr_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
 
 	return NULL;
 }

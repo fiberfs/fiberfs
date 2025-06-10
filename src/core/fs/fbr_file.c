@@ -47,6 +47,8 @@ _file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	}
 
 	pt_assert(pthread_mutex_init(&file->refcount_lock, NULL));
+	pt_assert(pthread_mutex_init(&file->lock, NULL));
+	pt_assert(pthread_cond_init(&file->update, NULL));
 
 	fbr_body_init(&file->body);
 
@@ -81,6 +83,24 @@ fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *parent,
     const struct fbr_path_name *filename)
 {
 	return _file_alloc(fs, parent, filename, 1);
+}
+
+/*
+ * Locking is required when reading/writing the body and attributes
+ */
+void
+fbr_file_LOCK(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_fuse_lock(fs->fuse_ctx, &file->lock);
+}
+
+void
+fbr_file_UNLOCK(struct fbr_file *file)
+{
+	fbr_file_ok(file);
+	pt_assert(pthread_mutex_unlock(&file->lock));
 }
 
 int
@@ -251,6 +271,8 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_file_ptrs_free(file);
 
 	pt_assert(pthread_mutex_destroy(&file->refcount_lock));
+	pt_assert(pthread_mutex_destroy(&file->lock));
+	pt_assert(pthread_cond_destroy(&file->update));
 
 	fbr_ZERO(file);
 	free(file);

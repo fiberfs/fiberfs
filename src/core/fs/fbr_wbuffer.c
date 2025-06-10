@@ -256,7 +256,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 	size_t offset_end = offset + size;
 	size_t written = 0;
 
-	fbr_body_LOCK(fs, &fio->file->body);
+	fbr_file_LOCK(fs, fio->file);
 
 	while (written < size) {
 		fbr_wbuffer_ok(wbuffer);
@@ -330,7 +330,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 	assert_dev(written == size);
 
-	fbr_body_UNLOCK(&fio->file->body);
+	fbr_file_UNLOCK(fio->file);
 	_wbuffer_UNLOCK(fio);
 }
 
@@ -340,6 +340,8 @@ _wbuffer_finish_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuf
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	assert_dev(wbuffer);
+
+	fbr_file_LOCK(fs, file);
 
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
@@ -363,6 +365,8 @@ _wbuffer_finish_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuf
 
 		wbuffer = wbuffer->next;
 	}
+
+	fbr_file_UNLOCK(file);
 
 	fbr_body_debug(fs, file);
 }
@@ -529,11 +533,6 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 		return error;
 	}
 
-	// Note: we unlocked, potential changes:
-	//  * file->size could change
-
-	fbr_body_LOCK(fs, &file->body);
-
 	enum fbr_flush_flags flags = FBR_FLUSH_NONE;
 	if (fio->truncate) {
 		flags |= FBR_FLUSH_TRUNCATE;
@@ -561,7 +560,6 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 		fbr_fs_stat_add(&fs->stats.flush_errors);
 	}
 
-	fbr_body_UNLOCK(&file->body);
 	_wbuffer_UNLOCK(fio);
 
 	return error;

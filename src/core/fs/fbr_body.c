@@ -17,11 +17,9 @@ fbr_body_init(struct fbr_body *body)
 {
 	assert_dev(body);
 
-	pt_assert(pthread_mutex_init(&body->lock, NULL));
-	pt_assert(pthread_cond_init(&body->update, NULL));
-
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
 		body->chunk_head.chunks[i].magic = FBR_CHUNK_MAGIC;
+		assert_dev(body->chunk_head.chunks[i].state == FBR_CHUNK_FREE);
 	}
 }
 
@@ -36,6 +34,7 @@ _body_chunk_slab_alloc(void)
 
 	for (size_t i = 0; i < slab->length; i++) {
 		slab->chunks[i].magic = FBR_CHUNK_MAGIC;
+		assert_dev(slab->chunks[i].state == FBR_CHUNK_FREE);
 	}
 
 	return slab;
@@ -49,7 +48,7 @@ _body_chunk_alloc(struct fbr_fs *fs, struct fbr_body *body)
 
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
 		fbr_chunk_ok(&body->chunk_head.chunks[i]);
-		if (body->chunk_head.chunks[i].state == FBR_CHUNK_NONE) {
+		if (body->chunk_head.chunks[i].state == FBR_CHUNK_FREE) {
 			return &body->chunk_head.chunks[i];
 		}
 	}
@@ -61,7 +60,7 @@ _body_chunk_alloc(struct fbr_fs *fs, struct fbr_body *body)
 
 		for (size_t i = 0; i < slab->length; i++) {
 			fbr_chunk_ok(&slab->chunks[i]);
-			if (slab->chunks[i].state == FBR_CHUNK_NONE) {
+			if (slab->chunks[i].state == FBR_CHUNK_FREE) {
 				return &slab->chunks[i];
 			}
 		}
@@ -125,7 +124,7 @@ _body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t of
 
 	struct fbr_chunk *chunk = _body_chunk_alloc(fs, &file->body);
 	fbr_chunk_ok(chunk);
-	assert(chunk->state == FBR_CHUNK_NONE);
+	assert_dev(chunk->state == FBR_CHUNK_FREE);
 	assert_zero_dev(chunk->next);
 
 	chunk->state = FBR_CHUNK_EMPTY;
@@ -165,7 +164,7 @@ _body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t of
 	return chunk;
 }
 
-// Note: if file->state == FBR_FILE_OK, must have body->lock
+// Note: if file->state == FBR_FILE_OK, must have file lock
 struct fbr_chunk *
 fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t offset,
     size_t length)
@@ -189,7 +188,6 @@ fbr_body_chunk_append(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, siz
 	return _body_chunk_add(fs, file, id, offset, length, 1);
 }
 
-// Note: must have body->lock
 void
 fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_list *remove)
 {
@@ -201,6 +199,8 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 	if (!remove->length || !file->body.chunks) {
 		return;
 	}
+
+	fbr_file_LOCK(fs, file);
 
 	struct fbr_chunk *chunk = file->body.chunks;
 	struct fbr_chunk *prev = NULL;
@@ -237,6 +237,8 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 			size, file->size);
 		file->size = size;
 	}
+
+	fbr_file_UNLOCK(file);
 }
 
 // Note: must have body->lock
@@ -249,7 +251,6 @@ fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 	assert_dev(size <= file->size);
 
 	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
-	struct fbr_chunk *chunk = file->body.chunks;
 	int completed = 0;
 	int do_removed = 0;
 
@@ -274,6 +275,8 @@ fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 			return chunks;
 		}
 	}
+
+	struct fbr_chunk *chunk = file->body.chunks;
 
 	while (chunk) {
 		fbr_chunk_ok(chunk);
@@ -327,14 +330,16 @@ fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 	return chunks;
 }
 
-// Note: must have body->lock
 struct fbr_chunk_list *
-fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers)
+fbr_body_chunk_all(struct fbr_fs *fs, struct fbr_file *file, int include_wbuffers)
 {
 	fbr_file_ok(file);
 	assert(file->state >= FBR_FILE_OK);
 
 	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
+
+	fbr_file_LOCK(fs, file);
+
 	struct fbr_chunk *chunk = file->body.chunks;
 
 	while (chunk) {
@@ -351,25 +356,11 @@ fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers)
 		chunk = chunk->next;
 	}
 
+	fbr_file_UNLOCK(file);
+
 	return chunks;
 }
 
-void
-fbr_body_LOCK(struct fbr_fs *fs, struct fbr_body *body)
-{
-	fbr_fs_ok(fs);
-	assert(body);
-	fbr_fuse_lock(fs->fuse_ctx, &body->lock);
-}
-
-void
-fbr_body_UNLOCK(struct fbr_body *body)
-{
-	assert(body);
-	pt_assert(pthread_mutex_unlock(&body->lock));
-}
-
-// Note: recommended to have body->lock
 void
 fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 {
@@ -380,6 +371,8 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 	if (!fbr_assert_is_dev()) {
 		return;
 	}
+
+	fbr_file_LOCK(fs, file);
 
 	struct fbr_chunk *chunk = file->body.chunks;
 	size_t count = 0;
@@ -400,6 +393,8 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 		state[chunk->state]++;
 		chunk = chunk->next;
 	}
+
+	fbr_file_UNLOCK(file);
 
 	char buffer[500];
 	buffer[0] = '\0';
@@ -439,9 +434,6 @@ void
 fbr_body_free(struct fbr_body *body)
 {
 	assert_dev(body);
-
-	pt_assert(pthread_mutex_destroy(&body->lock));
-	pt_assert(pthread_cond_destroy(&body->update));
 
 	for (size_t i = 0; i < FBR_BODY_DEFAULT_CHUNKS; i++) {
 		struct fbr_chunk *chunk = &body->chunk_head.chunks[i];

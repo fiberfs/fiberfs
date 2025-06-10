@@ -61,11 +61,11 @@ fbr_fio_take(struct fbr_fio *fio)
 }
 
 void
-fbr_chunk_update(struct fbr_fs *fs, struct fbr_body *body, struct fbr_chunk *chunk,
+fbr_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk,
     enum fbr_chunk_state state)
 {
 	fbr_fs_ok(fs);
-	assert(body);
+	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_LOADING);
 
@@ -79,13 +79,13 @@ fbr_chunk_update(struct fbr_fs *fs, struct fbr_body *body, struct fbr_chunk *chu
 			fbr_ABORT("fbr_chunk_update() invalid state %d", state);
 	}
 
-	fbr_body_LOCK(fs, body);
+	fbr_file_LOCK(fs, file);
 
 	chunk->state = state;
 
-	pt_assert(pthread_cond_broadcast(&body->update));
+	pt_assert(pthread_cond_broadcast(&file->update));
 
-	fbr_body_UNLOCK(body);
+	fbr_file_UNLOCK(file);
 }
 
 static int
@@ -130,6 +130,7 @@ _fio_ready(struct fbr_chunk_list *chunks)
 	return 1;
 }
 
+// Note: file->lock required
 static struct fbr_chunk_list *
 _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t size)
 {
@@ -139,7 +140,8 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 	fbr_file_ok(fio->file);
 	assert(size);
 
-	struct fbr_chunk_list *chunks = fbr_body_chunk_range(fio->file, offset, size, NULL, NULL);
+	struct fbr_file *file = fio->file;
+	struct fbr_chunk_list *chunks = fbr_body_chunk_range(file, offset, size, NULL, NULL);
 	size_t offset_end = offset + size;
 
 	for (size_t i = 0; i < chunks->length; i++) {
@@ -163,7 +165,7 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 			assert_zero_dev(chunk->chttp_splice);
 
 			if (fs->store->chunk_read_f) {
-				fs->store->chunk_read_f(fs, fio->file, chunk);
+				fs->store->chunk_read_f(fs, file, chunk);
 			}
 		}
 	}
@@ -175,7 +177,7 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 			break;
 		}
 
-		pt_assert(pthread_cond_wait(&fio->file->body.update, &fio->file->body.lock));
+		pt_assert(pthread_cond_wait(&file->update, &file->lock));
 	}
 
 	return chunks;
@@ -291,28 +293,29 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
-	fbr_body_LOCK(fs, &fio->file->body);
+	// TODO we carry this lock thru fbr_fio_vector_free() which is too long
+	fbr_file_LOCK(fs, fio->file);
 
 	fio->error = 0;
 
 	size_t file_size = fio->file->size;
 
 	if (offset >= file_size) {
-		fbr_body_UNLOCK(&fio->file->body);
+		fbr_file_UNLOCK(fio->file);
 		return NULL;
 	}
 	if (offset + size > file_size) {
 		size = file_size - offset;
 	}
 	if (!size) {
-		fbr_body_UNLOCK(&fio->file->body);
+		fbr_file_UNLOCK(fio->file);
 		return NULL;
 	}
 
 	struct fbr_chunk_list *chunks = _fio_fetch_chunks(fs, fio, offset, size);
 	fbr_chunk_list_ok(chunks);
 
-	// Note: body could be unlocked in _fio_fetch_chunks(), potential changes:
+	// Note: file could be unlocked in _fio_fetch_chunks(), potential changes:
 	//  * chunk->length can increase
 	//  * file->size can change
 
@@ -506,7 +509,7 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 	fbr_chunk_list_ok(fio->floating);
 	fbr_chunk_list_debug(fs, fio->floating, "FLOATING");
 
-	fbr_body_UNLOCK(&fio->file->body);
+	fbr_file_UNLOCK(fio->file);
 }
 
 void
@@ -524,9 +527,7 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	if (fio->floating->length) {
-		fbr_body_LOCK(fs, &fio->file->body);
 		_fio_release_floating(fs, fio, 0);
-		fbr_body_UNLOCK(&fio->file->body);
 		assert_zero_dev(fio->floating->length);
 	}
 

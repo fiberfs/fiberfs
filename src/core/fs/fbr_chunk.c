@@ -89,8 +89,8 @@ const char *
 fbr_chunk_state(enum fbr_chunk_state state)
 {
 	switch (state) {
-		case FBR_CHUNK_NONE:
-			return "NONE";
+		case FBR_CHUNK_FREE:
+			return "FREE";
 		case FBR_CHUNK_EMPTY:
 			return "EMPTY";
 		case FBR_CHUNK_LOADING:

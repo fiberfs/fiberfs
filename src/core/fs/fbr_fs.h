@@ -30,7 +30,7 @@
 #define FBR_TTL_MAX				INT32_MAX
 
 enum fbr_chunk_state {
-	FBR_CHUNK_NONE = 0,
+	FBR_CHUNK_FREE = 0,
 	FBR_CHUNK_EMPTY,
 	FBR_CHUNK_LOADING,
 	FBR_CHUNK_READY,
@@ -93,9 +93,6 @@ struct fbr_chunk_vector {
 };
 
 struct fbr_body {
-	pthread_mutex_t				lock;
-	pthread_cond_t				update;
-
 	struct {
 		struct fbr_chunk		chunks[FBR_BODY_DEFAULT_CHUNKS];
 		struct fbr_chunk_slab		*next;
@@ -141,6 +138,8 @@ struct fbr_file {
 
 	struct fbr_file_refcounts		refcounts;
 	pthread_mutex_t				refcount_lock;
+	pthread_mutex_t				lock;
+	pthread_cond_t				update;
 
 	fbr_inode_t				inode;
 	fbr_inode_t				parent_inode;
@@ -382,6 +381,8 @@ struct fbr_file *fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	const struct fbr_path_name *filename);
 struct fbr_file * fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *parent,
 	const struct fbr_path_name *filename);
+void fbr_file_LOCK(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_file_UNLOCK(struct fbr_file *file);
 int fbr_file_ptr_cmp(const struct fbr_file_ptr *p1, const struct fbr_file_ptr *p2);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 int fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
@@ -423,9 +424,8 @@ void fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_chunk_list *removed);
 struct fbr_chunk_list *fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 	struct fbr_chunk_list **removed, struct fbr_wbuffer *wbuffers);
-struct fbr_chunk_list *fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers);
-void fbr_body_LOCK(struct fbr_fs *fs, struct fbr_body *body);
-void fbr_body_UNLOCK(struct fbr_body *body);
+struct fbr_chunk_list *fbr_body_chunk_all(struct fbr_fs *fs, struct fbr_file *file,
+	int include_wbuffers);
 void fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_body_free(struct fbr_body *body);
 
@@ -470,7 +470,7 @@ struct fbr_fio *fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file, int read
 void fbr_fio_take(struct fbr_fio *fio);
 struct fbr_chunk_vector *fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio,
 	size_t offset, size_t size);
-void fbr_chunk_update(struct fbr_fs *fs, struct fbr_body *body, struct fbr_chunk *chunk,
+void fbr_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk,
 	enum fbr_chunk_state state);
 void fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio,
 	struct fbr_chunk_vector *vector);
