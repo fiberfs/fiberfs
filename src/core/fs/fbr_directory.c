@@ -562,6 +562,8 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	// TODO make sure we use the latest file generation
 	// wbuffers may not exist on this version so we need a merge somewhere
 
+	fbr_file_LOCK(fs, file);
+
 	struct fbr_index_data index_data;
 	fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers, flags);
 
@@ -572,8 +574,11 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			strerror(ret));
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
 	} else {
+		fbr_wbuffer_ready(fs, file, wbuffers);
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 	}
+
+	fbr_file_UNLOCK(file);
 
 	fbr_index_data_free(&index_data);
 

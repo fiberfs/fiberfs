@@ -45,7 +45,9 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file, int read_only)
 		fbr_file_ref_wbuffer(fs, fio->file);
 	}
 
+	fbr_file_LOCK(fs, file);
 	fbr_body_debug(fs, file);
+	fbr_file_UNLOCK(file);
 
 	return fio;
 }

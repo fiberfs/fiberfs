@@ -424,8 +424,7 @@ void fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_chunk_list *removed);
 struct fbr_chunk_list *fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 	struct fbr_chunk_list **removed, struct fbr_wbuffer *wbuffers);
-struct fbr_chunk_list *fbr_body_chunk_all(struct fbr_fs *fs, struct fbr_file *file,
-	int include_wbuffers);
+struct fbr_chunk_list *fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers);
 void fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_body_free(struct fbr_body *body);
 
@@ -484,6 +483,7 @@ void fbr_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 int fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffers);
 int fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio);
+void fbr_wbuffer_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer);
 int fbr_wbuffer_has_chunk(struct fbr_wbuffer *wbuffers, struct fbr_chunk *chunk);
 struct fbr_chunk_list *fbr_wbuffer_chunks(struct fbr_wbuffer *wbuffer);
 void fbr_wbuffers_free(struct fbr_wbuffer *wbuffers);

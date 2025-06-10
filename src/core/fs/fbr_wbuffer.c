@@ -334,43 +334,6 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 	_wbuffer_UNLOCK(fio);
 }
 
-static void
-_wbuffer_finish_chunks(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
-{
-	fbr_fs_ok(fs);
-	fbr_file_ok(file);
-	assert_dev(wbuffer);
-
-	fbr_file_LOCK(fs, file);
-
-	while (wbuffer) {
-		fbr_wbuffer_ok(wbuffer);
-		assert(wbuffer->state == FBR_WBUFFER_DONE);
-
-		struct fbr_chunk *chunk = wbuffer->chunk;
-		fbr_chunk_ok(chunk);
-		assert_dev(chunk->state == FBR_CHUNK_WBUFFER);
-		assert_dev(chunk->data);
-
-		fs->log("WBUFFER chunk state: %s offset: %zu length: %zu",
-			fbr_chunk_state(chunk->state), chunk->offset, chunk->length);
-
-		chunk->state = FBR_CHUNK_READY;
-
-		fbr_chunk_release(chunk);
-
-		wbuffer->chunk = NULL;
-		wbuffer->buffer = NULL;
-		wbuffer->free_buffer = 0;
-
-		wbuffer = wbuffer->next;
-	}
-
-	fbr_file_UNLOCK(file);
-
-	fbr_body_debug(fs, file);
-}
-
 void
 fbr_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer, enum fbr_wbuffer_state state)
 {
@@ -551,8 +514,6 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	if (!error) {
-		_wbuffer_finish_chunks(fs, file, fio->wbuffers);
-
 		fbr_wbuffers_free(fio->wbuffers);
 		fio->wbuffers = NULL;
 		fio->truncate = 0;
@@ -563,6 +524,40 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	_wbuffer_UNLOCK(fio);
 
 	return error;
+}
+
+// Note: file->lock required
+void
+fbr_wbuffer_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	assert_dev(wbuffer);
+
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+		assert(wbuffer->state == FBR_WBUFFER_DONE);
+
+		struct fbr_chunk *chunk = wbuffer->chunk;
+		fbr_chunk_ok(chunk);
+		assert_dev(chunk->state == FBR_CHUNK_WBUFFER);
+		assert_dev(chunk->data);
+
+		fs->log("WBUFFER chunk state: %s offset: %zu length: %zu",
+			fbr_chunk_state(chunk->state), chunk->offset, chunk->length);
+
+		chunk->state = FBR_CHUNK_READY;
+
+		fbr_chunk_release(chunk);
+
+		wbuffer->chunk = NULL;
+		wbuffer->buffer = NULL;
+		wbuffer->free_buffer = 0;
+
+		wbuffer = wbuffer->next;
+	}
+
+	fbr_body_debug(fs, file);
 }
 
 int

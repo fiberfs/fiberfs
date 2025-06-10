@@ -188,6 +188,7 @@ fbr_body_chunk_append(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, siz
 	return _body_chunk_add(fs, file, id, offset, length, 1);
 }
 
+// Note: must have body->lock
 void
 fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_list *remove)
 {
@@ -199,8 +200,6 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 	if (!remove->length || !file->body.chunks) {
 		return;
 	}
-
-	fbr_file_LOCK(fs, file);
 
 	struct fbr_chunk *chunk = file->body.chunks;
 	struct fbr_chunk *prev = NULL;
@@ -237,8 +236,6 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 			size, file->size);
 		file->size = size;
 	}
-
-	fbr_file_UNLOCK(file);
 }
 
 // Note: must have body->lock
@@ -330,16 +327,14 @@ fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 	return chunks;
 }
 
+// Note: must have body->lock
 struct fbr_chunk_list *
-fbr_body_chunk_all(struct fbr_fs *fs, struct fbr_file *file, int include_wbuffers)
+fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers)
 {
 	fbr_file_ok(file);
 	assert(file->state >= FBR_FILE_OK);
 
 	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
-
-	fbr_file_LOCK(fs, file);
-
 	struct fbr_chunk *chunk = file->body.chunks;
 
 	while (chunk) {
@@ -356,11 +351,10 @@ fbr_body_chunk_all(struct fbr_fs *fs, struct fbr_file *file, int include_wbuffer
 		chunk = chunk->next;
 	}
 
-	fbr_file_UNLOCK(file);
-
 	return chunks;
 }
 
+// Note: file->lock required
 void
 fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 {
@@ -371,8 +365,6 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 	if (!fbr_assert_is_dev()) {
 		return;
 	}
-
-	fbr_file_LOCK(fs, file);
 
 	struct fbr_chunk *chunk = file->body.chunks;
 	size_t count = 0;
@@ -393,8 +385,6 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 		state[chunk->state]++;
 		chunk = chunk->next;
 	}
-
-	fbr_file_UNLOCK(file);
 
 	char buffer[500];
 	buffer[0] = '\0';

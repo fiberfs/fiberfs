@@ -273,7 +273,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 			fs->log("INDEX TRUNCATE flagged");
 
 			index_data->chunks = fbr_wbuffer_chunks(wbuffers);
-			index_data->removed = fbr_body_chunk_all(fs, file, 0);
+			index_data->removed = fbr_body_chunk_all(file, 0);
 
 			size_t size = 0;
 			for (size_t i = 0; i < index_data->chunks->length; i++) {
@@ -296,10 +296,8 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 			index_data->chunks = fbr_wbuffer_chunks(wbuffers);
 			assert_zero_dev(index_data->removed);
 		} else {
-			fbr_file_LOCK(fs, file);
 			index_data->chunks = fbr_body_chunk_range(file, 0, file->size,
 				&index_data->removed, wbuffers);
-			fbr_file_UNLOCK(file);
 		}
 	}
 }
