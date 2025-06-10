@@ -456,7 +456,10 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	char buf[PATH_MAX];
 	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
 
-	fs->log("FLUSH directory: '%s'", dirname.name);
+	const char *filename = fbr_path_get_file(&file->path, NULL);
+
+	fs->log("FLUSH directory: '%s' file: '%s' (%lu)", dirname.name, filename,
+		file->generation);
 
 	// Start sync/write loop
 
@@ -507,6 +510,10 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	}
 	assert_dev(directory->state == FBR_DIRSTATE_OK);
 
+	fs->log("FLUSH directory: '%s' found generation: %lu", dirname.name,
+		directory->generation);
+
+	// Lock on LOADING state
 	struct fbr_directory *new_directory = NULL;
 	// TODO make this a parameter
 	size_t attempts = 100;
@@ -551,18 +558,19 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 	new_directory->generation++;
 
+	fbr_file_LOCK(fs, file);
+
 	if (file->state == FBR_FILE_INIT) {
 		file->state = FBR_FILE_OK;
 		file->generation = 1;
 		fbr_directory_add_file(fs, new_directory, file);
+	} else {
+		file->generation++;
 	}
-	// TODO what about an existing file generation?
 
 	// TODO loop the write a few times, make sure this doesnt break index tests
 	// TODO make sure we use the latest file generation
 	// wbuffers may not exist on this version so we need a merge somewhere
-
-	fbr_file_LOCK(fs, file);
 
 	struct fbr_index_data index_data;
 	fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers, flags);

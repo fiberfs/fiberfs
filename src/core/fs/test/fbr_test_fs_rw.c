@@ -36,11 +36,14 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 	char buf[PATH_MAX];
 	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
 
-	fs->log("RW_FLUSH directory: '%s'", dirname.name);
+	const char *filename = fbr_path_get_file(&file->path, NULL);
 
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 1);
 	fbr_ASSERT(directory, "directory '%s' missing", dirname.name);
 	fbr_directory_ok(directory);
+
+	fs->log("RW_FLUSH directory: '%s' (%lu) file: '%s' (%lu)", dirname.name,
+		directory->generation, filename, file->generation);
 
 	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
 	fbr_directory_ok(new_directory);
@@ -50,18 +53,20 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 
 	new_directory->generation++;
 
-	if (file->state == FBR_FILE_INIT) {
-		file->state = FBR_FILE_OK;
-		file->generation = 1;
-		fbr_directory_add_file(fs, new_directory, file);
-	}
-
 	struct fbr_directory *previous = new_directory->previous;
 	if (!previous) {
 		previous = directory;
 	}
 
 	fbr_file_LOCK(fs, file);
+
+	if (file->state == FBR_FILE_INIT) {
+		file->state = FBR_FILE_OK;
+		file->generation = 1;
+		fbr_directory_add_file(fs, new_directory, file);
+	} else {
+		file->generation++;
+	}
 
 	struct fbr_index_data index_data;
 	fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers, flags);
@@ -331,7 +336,7 @@ _test_fs_rw_create(struct fbr_request *request, fuse_ino_t parent, const char *n
 	entry.attr_timeout = fbr_fs_dentry_ttl(fs);
 	entry.entry_timeout = fbr_fs_dentry_ttl(fs);
 	entry.ino = file->inode;
-	fbr_file_attr(file, &entry.attr);
+	fbr_file_attr(fs, file, &entry.attr);
 
 	// Dentry reference
 	struct fbr_file *dref = fbr_inode_take(fs, file->inode);

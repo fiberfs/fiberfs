@@ -296,7 +296,7 @@ fbr_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fus
 	fbr_file_ok(file);
 
 	struct stat st;
-	fbr_file_attr(file, &st);
+	fbr_file_attr(fs, file, &st);
 
 	fbr_inode_release(fs, &file);
 	assert_zero_dev(file);
@@ -417,7 +417,7 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	entry.attr_timeout = fbr_fs_dentry_ttl(fs);
 	entry.entry_timeout = fbr_fs_dentry_ttl(fs);
 	entry.ino = file->inode;
-	fbr_file_attr(file, &entry.attr);
+	fbr_file_attr(fs, file, &entry.attr);
 
 	fbr_inode_add(fs, file);
 
@@ -524,7 +524,7 @@ static void
 _test_fs_fuse_diradd(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
     struct fbr_file *file)
 {
-	fbr_request_ok(request);
+	struct fbr_fs *fs = fbr_request_fs(request);
 	assert(dbuf);
 	fbr_file_ok(file);
 
@@ -533,7 +533,7 @@ _test_fs_fuse_diradd(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
 	fbr_test_logs("READDIR filename: '%s' inode: %lu", filename, file->inode);
 
 	struct stat st;
-	fbr_file_attr(file, &st);
+	fbr_file_attr(fs, file, &st);
 
 	fbr_dirbuffer_add(request, dbuf, filename, &st);
 }
@@ -570,7 +570,7 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 		fbr_file_ok(directory->file);
 
 		struct stat st;
-		fbr_file_attr(directory->file, &st);
+		fbr_file_attr(fs, directory->file, &st);
 
 		fbr_dirbuffer_add(request, &dbuf, ".", &st);
 
@@ -591,7 +591,7 @@ fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t siz
 		fbr_file_ok(parent);
 
 		struct stat st;
-		fbr_file_attr(parent, &st);
+		fbr_file_attr(fs, parent, &st);
 
 		if (do_release) {
 			fbr_inode_release(fs, &parent);

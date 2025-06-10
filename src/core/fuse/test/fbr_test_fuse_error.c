@@ -94,7 +94,7 @@ _fuse_err_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 	fbr_file_ok(file);
 
 	struct stat st;
-	fbr_file_attr(file, &st);
+	fbr_file_attr(fs, file, &st);
 
 	fbr_inode_release(fs, &file);
 

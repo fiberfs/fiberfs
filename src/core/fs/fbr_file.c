@@ -404,18 +404,22 @@ fbr_file_ptrs_free(struct fbr_file *file)
 }
 
 void
-fbr_file_attr(const struct fbr_file *file, struct stat *st)
+fbr_file_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st)
 {
+	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	assert(st);
 
 	fbr_ZERO(st);
+
+	fbr_file_LOCK(fs, file);
 
 	st->st_ino = file->inode;
 	st->st_mode = file->mode;
 	st->st_size = (off_t)file->size;
 	st->st_uid = file->uid;
 	st->st_gid = file->gid;
-
 	st->st_nlink = 1;
+
+	fbr_file_UNLOCK(file);
 }
