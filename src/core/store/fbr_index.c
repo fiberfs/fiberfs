@@ -331,7 +331,10 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	assert_dev(directory->generation);
 
 	if (index_data->flags & FBR_FLUSH_APPEND) {
-		fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
+		int ret = fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
+		if (ret) {
+			return ret;
+		}
 	}
 
 	struct fbr_request *request = fbr_request_get();
@@ -372,6 +375,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 				continue;
 			}
 
+			// TODO async?
 			if (fs->store->chunk_delete_f) {
 				fs->store->chunk_delete_f(fs, index_data->file, chunk);
 			}
