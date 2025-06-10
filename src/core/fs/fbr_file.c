@@ -93,7 +93,7 @@ fbr_file_LOCK(struct fbr_fs *fs, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
-	fbr_fuse_lock(fs->fuse_ctx, &file->lock);
+	fbr_fuse_LOCK(fs->fuse_ctx, &file->lock);
 }
 
 void

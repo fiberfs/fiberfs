@@ -227,7 +227,7 @@ _wbuffer_LOCK(struct fbr_fs *fs, struct fbr_fio *fio)
 {
 	assert_dev(fs);
 	fbr_fio_ok(fio);
-	fbr_fuse_lock(fs->fuse_ctx, &fio->wbuffer_lock);
+	fbr_fuse_LOCK(fs->fuse_ctx, &fio->wbuffer_lock);
 }
 
 static void

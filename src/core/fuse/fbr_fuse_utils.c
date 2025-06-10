@@ -11,7 +11,7 @@
 #include "core/fuse/fbr_fuse.h"
 
 void
-fbr_fuse_lock(struct fbr_fuse_context *fuse_ctx, pthread_mutex_t *lock)
+fbr_fuse_LOCK(struct fbr_fuse_context *fuse_ctx, pthread_mutex_t *lock)
 {
 	assert(lock);
 

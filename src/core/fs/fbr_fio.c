@@ -295,7 +295,6 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
-	// TODO we carry this lock thru fbr_fio_vector_free() which is too long
 	fbr_file_LOCK(fs, fio->file);
 
 	fio->error = 0;
@@ -331,6 +330,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	vector->size = size;
 
 	if (fio->error) {
+		fbr_file_UNLOCK(fio->file);
 		fbr_fio_vector_free(fs, fio, vector);
 		return NULL;
 	}
@@ -432,6 +432,8 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 
 	vector->bufvec = bufvec;
 
+	fbr_file_UNLOCK(fio->file);
+
 	assert_dev(offset_pos == offset_end);
 
 	fbr_chunk_list_debug(fs, vector->chunks, "FIO");
@@ -476,6 +478,8 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 
 	// Try to keep more chunks around incase of slow parallel reads
 	size_t offset_end = offset + size;
+
+	fbr_file_LOCK(fs, fio->file);
 
 	if (fio->error) {
 		_fio_release_floating(fs, fio, 0);
