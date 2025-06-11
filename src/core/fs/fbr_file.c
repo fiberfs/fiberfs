@@ -103,6 +103,18 @@ fbr_file_UNLOCK(struct fbr_file *file)
 	pt_assert(pthread_mutex_unlock(&file->lock));
 }
 
+void
+fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(source);
+	assert(source->state == FBR_FILE_INIT);
+	fbr_file_ok(dest);
+	assert(dest->state == FBR_FILE_OK);
+
+	fbr_ABORT("TODO");
+}
+
 int
 fbr_file_ptr_cmp(const struct fbr_file_ptr *p1, const struct fbr_file_ptr *p2)
 {

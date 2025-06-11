@@ -778,7 +778,11 @@ _index_parse_file_end(struct fbr_index_parser *parser)
 		assert_zero_dev(merge);
 	} else if (merge) {
 		assert_dev(file->state == FBR_FILE_INIT);
-		fbr_ABORT("TODO merge");
+
+		fbr_file_merge(fs, file, merge);
+		fbr_directory_add_file(fs, directory, merge);
+
+		fbr_file_free(fs, file);
 	} else if (!file->generation) {
 		assert_dev(file->state == FBR_FILE_INIT);
 		fbr_file_free(fs, file);
