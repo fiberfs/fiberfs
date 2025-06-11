@@ -38,6 +38,69 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_fs_ok(fs_2);
 	fbr_fs_set_store(fs_2, &_MERGE_TEST_CALLBACKS);
 
+	fbr_test_logs("*** Allocating dir_fs1");
+
+	struct fbr_directory *dir_fs1 = fbr_directory_root_alloc(fs_1);
+	fbr_directory_ok(dir_fs1);
+	assert_zero(dir_fs1->previous);
+	assert(dir_fs1->state == FBR_DIRSTATE_LOADING);
+	dir_fs1->generation = 1;
+
+	fbr_test_logs("*** Storing dir_fs1 (gen %lu)", dir_fs1->generation);
+
+	struct fbr_index_data index_data;
+	fbr_index_data_init(NULL, &index_data, dir_fs1, NULL, NULL, NULL, FBR_FLUSH_NONE);
+	int ret = fbr_index_write(fs_1, &index_data);
+	fbr_test_ERROR(ret, "fbr_index_write(fs_1) failed");
+	fbr_index_data_free(&index_data);
+
+	fbr_directory_set_state(fs_1, dir_fs1, FBR_DIRSTATE_OK);
+	assert_zero(dir_fs1->file_count);
+
+	fbr_dindex_release(fs_1, &dir_fs1);
+
+	fbr_test_logs("*** Loading dir_fs2");
+
+	struct fbr_directory *dir_fs2 = fbr_directory_root_alloc(fs_2);
+	fbr_directory_ok(dir_fs2);
+	assert_zero(dir_fs2->previous);
+	assert(dir_fs2->state == FBR_DIRSTATE_LOADING);
+
+	fbr_index_read(fs_2, dir_fs2);
+	assert(dir_fs2->state == FBR_DIRSTATE_OK);
+	assert(dir_fs2->generation == 1);
+	assert_zero(dir_fs2->file_count);
+
+	fbr_dindex_release(fs_2, &dir_fs2);
+
+	fbr_test_logs("*** Write file.merge on dir_fs1");
+
+	dir_fs1 = fbr_dindex_take(fs_1, FBR_DIRNAME_ROOT, 0);
+	fbr_directory_ok(dir_fs1);
+	assert(dir_fs1->state == FBR_DIRSTATE_OK);
+	assert(dir_fs1->generation == 1);
+	assert_zero(dir_fs1->file_count);
+
+	struct fbr_path_name filename;
+	fbr_path_name_init(&filename, "file.merge");
+	struct fbr_file *file = fbr_file_alloc_new(fs_1, dir_fs1, &filename);
+	fbr_file_ok(file);
+	assert(file->state == FBR_FILE_INIT);
+	assert_zero(file->size);
+	file->mode = S_IFREG | 0444;
+
+	struct fbr_fio *fio = fbr_fio_alloc(fs_1, file, 0);
+	fbr_wbuffer_write(fs_1, fio, 0, "1234567890", 10);
+	ret = fbr_wbuffer_flush_fio(fs_1, fio);
+	fbr_test_ERROR(ret, "fbr_wbuffer_flush_fio(fs_1) failed");
+	fbr_fio_release(fs_1, fio);
+
+	fbr_file_ok(file);
+	assert(file->state == FBR_FILE_OK);
+	assert(file->size == 10);
+
+	fbr_dindex_release(fs_1, &dir_fs1);
+
 	fbr_test_logs("*** Cleanup fs_1");
 
 	fbr_fs_release_all(fs_1, 1);
