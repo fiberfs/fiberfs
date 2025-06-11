@@ -23,6 +23,9 @@ _fs_config_init(struct fbr_fs *fs)
 	if (fbr_gzip_enabled()) {
 		fs->config.gzip_index = 1;
 	}
+
+	fs->config.flush_attempts = 100;
+	fs->config.flush_timeout_sec = 60;
 }
 
 struct fbr_fs *

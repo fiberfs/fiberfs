@@ -47,6 +47,31 @@ fbr_fs_dentry_ttl(struct fbr_fs *fs)
 	return fs->config.dentry_ttl;
 }
 
+unsigned int
+fbr_fs_param_value(unsigned int param)
+{
+	if (param == 0) {
+		return INT32_MAX;
+	}
+
+	return param;
+}
+
+int
+fbr_fs_timeout_expired(double time_start, double timeout)
+{
+	if (timeout <= 0) {
+		return 0;
+	}
+
+	double time_now = fbr_get_time();
+	if (time_now - time_start > timeout) {
+		return 1;
+	}
+
+	return 0;
+}
+
 void __fbr_attr_printf(1)
 fbr_fs_logger(const char *fmt, ...)
 {

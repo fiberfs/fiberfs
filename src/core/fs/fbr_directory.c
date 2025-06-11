@@ -268,7 +268,7 @@ fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
     size_t filename_len)
 {
 	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_OK);
+	assert(directory->state >= FBR_DIRSTATE_LOADING);
 	assert(filename);
 
 	struct fbr_file find;
@@ -437,6 +437,62 @@ fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_dir
 	assert_dev(dest->file_count == source->file_count);
 }
 
+struct fbr_directory *
+_directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_inode_t inode,
+    struct fbr_directory **previous, unsigned int *attempts, double time_start)
+{
+	assert_dev(fs);
+	assert_dev(dirname);
+	assert_dev(inode);
+	assert_dev(attempts);
+
+	struct fbr_directory *directory = NULL;
+
+	while (!directory) {
+		directory = fbr_directory_alloc(fs, dirname, inode);
+		fbr_directory_ok(directory);
+
+		switch (directory->state) {
+			case FBR_DIRSTATE_ERROR:
+				// inode is stale, a top level change was made
+				fbr_dindex_release(fs, &directory);
+				return NULL;
+			case FBR_DIRSTATE_OK:
+				if (previous) {
+					if (*previous) {
+						fbr_dindex_release(fs, previous);
+					}
+					*previous = directory;
+					directory = NULL;
+				} else {
+					fbr_dindex_release(fs, &directory);
+				}
+			case FBR_DIRSTATE_LOADING:
+				continue;
+			default:
+				fbr_ABORT("FLUSH bad directory allocation state: %d",
+					directory->state);
+		}
+		assert_zero_dev(directory);
+
+		fbr_fs_stat_add(&fs->stats.flush_conflicts);
+
+		(*attempts)++;
+		if (*attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
+			fs->log("FLUSH flush_attempts limit hit on alloc");
+			return NULL;
+		}
+		if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
+			fs->log("FLUSH flush_timeout_sec limit hit on alloc");
+			return NULL;
+		}
+	}
+
+	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
+
+	return directory;
+}
+
 int
 fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
     enum fbr_flush_flags flags)
@@ -455,11 +511,21 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	struct fbr_path_name dirname;
 	char buf[PATH_MAX];
 	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
+	fbr_inode_release(fs, &parent);
 
 	const char *filename = fbr_path_get_file(&file->path, NULL);
 
 	fs->log("FLUSH directory: '%s' file: '%s' (%lu)", dirname.name, filename,
 		file->generation);
+
+	int add_file = 0;
+	int add_file_init = 0;
+	if (file->state == FBR_FILE_INIT) {
+		file->state = FBR_FILE_OK;
+		file->generation = 1;
+		add_file = 1;
+		add_file_init = 1;
+	}
 
 	// Start sync/write loop
 
@@ -484,7 +550,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		wait_for_new = 0;
 	} while (!directory);
 
-	// Read from index store
+	// dindex empty, read from index store
 	if (!directory) {
 		directory = fbr_directory_alloc(fs, &dirname, inode);
 		fbr_directory_ok(directory);
@@ -508,92 +574,104 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 					directory->state);
 		}
 	}
-	assert_dev(directory->state == FBR_DIRSTATE_OK);
 
-	fs->log("FLUSH directory: '%s' found generation: %lu", dirname.name,
-		directory->generation);
+	unsigned int attempts = 0;
+	double time_start = fbr_get_time();
+	struct fbr_index_data index_data;
+	int ret;
 
-	// Lock on LOADING state
-	struct fbr_directory *new_directory = NULL;
-	// TODO make this a parameter
-	size_t attempts = 100;
+	while (1) {
+		assert_dev(directory->state == FBR_DIRSTATE_OK);
 
-	do {
-		if (!attempts) {
-			fbr_ABORT("FLUSH attempt limit directory allocation");
+		fs->log("FLUSH directory: '%s' found generation: %lu attempts: %u", dirname.name,
+			directory->generation, attempts);
+
+		// Lock on LOADING state
+		struct fbr_directory *new_directory = _directory_get_loading(fs, &dirname, inode,
+			&directory, &attempts, time_start);
+		if (!new_directory) {
 			fbr_dindex_release(fs, &directory);
 			return EIO;
 		}
-		attempts--;
+		assert_dev(new_directory->state == FBR_DIRSTATE_LOADING);
 
-		new_directory = fbr_directory_alloc(fs, &dirname, inode);
-		fbr_directory_ok(new_directory);
-
-		switch (new_directory->state) {
-			case FBR_DIRSTATE_ERROR:
-				// inode is stale, a top level change was made
-				fbr_dindex_release(fs, &directory);
-				fbr_dindex_release(fs, &new_directory);
-				return EIO;
-			case FBR_DIRSTATE_OK:
-				fbr_dindex_release(fs, &directory);
-				directory = new_directory;
-				new_directory = NULL;
-			case FBR_DIRSTATE_LOADING:
-				break;
-			default:
-				fbr_ABORT("FLUSH bad directory allocation state: %d",
-					new_directory->state);
+		// Prep new_directory
+		struct fbr_directory *previous = new_directory->previous;
+		if (!previous) {
+			previous = directory;
 		}
-	} while (!new_directory);
 
-	assert_dev(new_directory->state == FBR_DIRSTATE_LOADING);
+		fbr_directory_copy(fs, new_directory, previous);
 
-	struct fbr_directory *previous = new_directory->previous;
-	if (!previous) {
-		previous = directory;
+		new_directory->generation++;
+
+		fbr_file_LOCK(fs, file);
+
+		if (add_file_init) {
+			fbr_directory_add_file(fs, new_directory, file);
+			add_file_init = 0;
+		} else {
+			file->generation++;
+		}
+
+		fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers,
+			flags);
+
+		int retry = 0;
+
+		ret = fbr_index_write(fs, &index_data);
+		if (!ret) {
+			fbr_wbuffer_ready(fs, file, wbuffers);
+			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
+		} else {
+			fs->log("FLUSH fbr_index_write(new_directory) failed (%d %s)", ret,
+				strerror(ret));
+
+			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
+
+			if (ret == EAGAIN) {
+				retry = 1;
+			}
+		}
+
+		fbr_file_UNLOCK(file);
+
+		fbr_index_data_free(&index_data);
+		fbr_dindex_release(fs, &directory);
+		fbr_dindex_release(fs, &new_directory);
+
+		if (!retry) {
+			break;
+		}
+
+		attempts++;
+		if (attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
+			fs->log("FLUSH flush_attempts limit hit on write");
+			break;
+		}
+		if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
+			fs->log("FLUSH flush_timeout_sec limit hit on write");
+			break;
+		}
+
+		directory = _directory_get_loading(fs, &dirname, inode, NULL, &attempts,
+			time_start);
+		if (!directory) {
+			return EIO;
+		}
+		assert_dev(directory->state == FBR_DIRSTATE_LOADING);
+
+		if (add_file) {
+			file->generation = 0;
+			fbr_directory_add_file(fs, directory, file);
+		}
+
+		fbr_index_read(fs, directory);
+		if (directory->state == FBR_DIRSTATE_ERROR) {
+			fbr_dindex_release(fs, &directory);
+			return EIO;
+		}
 	}
-
-	fbr_directory_copy(fs, new_directory, previous);
-
-	new_directory->generation++;
-
-	fbr_file_LOCK(fs, file);
-
-	if (file->state == FBR_FILE_INIT) {
-		file->state = FBR_FILE_OK;
-		file->generation = 1;
-		fbr_directory_add_file(fs, new_directory, file);
-	} else {
-		file->generation++;
-	}
-
-	// TODO loop the write a few times, make sure this doesnt break index tests
-	// TODO make sure we use the latest file generation
-	// wbuffers may not exist on this version so we need a merge somewhere
-
-	struct fbr_index_data index_data;
-	fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers, flags);
-
-	int ret = fbr_index_write(fs, &index_data);
-	// EAGAIN means version is out of sync
-	if (ret) {
-		fs->log("FLUSH fbr_index_write(new_directory) failed (%d %s)", ret,
-			strerror(ret));
-		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
-	} else {
-		fbr_wbuffer_ready(fs, file, wbuffers);
-		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
-	}
-
-	fbr_file_UNLOCK(file);
-
-	fbr_index_data_free(&index_data);
-
-	// Safe to call within flush
-	fbr_dindex_release(fs, &directory);
-	fbr_dindex_release(fs, &new_directory);
-	fbr_inode_release(fs, &parent);
 
 	return ret;
 }

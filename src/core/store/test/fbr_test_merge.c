@@ -73,7 +73,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_dindex_release(fs_2, &dir_fs2);
 
-	fbr_test_logs("*** Write file.merge on dir_fs1");
+	fbr_test_logs("*** Write file.merge on dir_fs1 (10 bytes)");
 
 	dir_fs1 = fbr_dindex_take(fs_1, FBR_DIRNAME_ROOT, 0);
 	fbr_directory_ok(dir_fs1);
@@ -100,6 +100,32 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(file->size == 10);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
+
+	fbr_test_logs("*** Write file.merge on dir_fs2 (5 bytes)");
+
+	dir_fs2 = fbr_dindex_take(fs_2, FBR_DIRNAME_ROOT, 0);
+	fbr_directory_ok(dir_fs2);
+	assert(dir_fs2->state == FBR_DIRSTATE_OK);
+	assert(dir_fs2->generation == 1);
+	assert_zero(dir_fs2->file_count);
+
+	file = fbr_file_alloc_new(fs_2, dir_fs2, &filename);
+	fbr_file_ok(file);
+	assert(file->state == FBR_FILE_INIT);
+	assert_zero(file->size);
+	assert_zero(file->mode);
+
+	fio = fbr_fio_alloc(fs_2, file, 0);
+	fbr_wbuffer_write(fs_2, fio, 0, "ABCDE", 5);
+	ret = fbr_wbuffer_flush_fio(fs_2, fio);
+	fbr_test_ERROR(ret, "fbr_wbuffer_flush_fio(fs_2) failed");
+	fbr_fio_release(fs_2, fio);
+
+	fbr_file_ok(file);
+	assert(file->state == FBR_FILE_OK);
+	assert(file->size == 10);
+
+	fbr_dindex_release(fs_2, &dir_fs2);
 
 	fbr_test_logs("*** Cleanup fs_1");
 

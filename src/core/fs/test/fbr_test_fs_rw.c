@@ -282,14 +282,15 @@ _test_fs_rw_create(struct fbr_request *request, fuse_ino_t parent, const char *n
 
 	assert(file->parent_inode == directory->inode);
 	assert(file->state == FBR_FILE_INIT);
-
-	file->mode = mode;
+	assert_zero_dev(file->size);
+	assert_zero_dev(file->generation);
 
 	const struct fuse_ctx *fctx = fuse_req_ctx(request->fuse_req);
 	assert(fctx);
 
 	file->uid = fctx->uid;
 	file->gid = fctx->gid;
+	file->mode = mode;
 
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 0);
 	fbr_fio_ok(fio);

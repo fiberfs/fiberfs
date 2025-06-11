@@ -697,7 +697,9 @@ _index_parse_file_start(struct fbr_index_parser *parser, const char *filename, s
 	struct fbr_directory *directory = parser->directory;
 	struct fbr_directory *previous = directory->previous;
 
-	if (previous) {
+	parser->file = fbr_directory_find_file(directory, filename, filename_len);
+
+	if (previous && !parser->file) {
 		parser->file = fbr_directory_find_file(previous, filename, filename_len);
 	}
 
@@ -732,7 +734,6 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 			parser->files_new++;
 		} else  {
 			assert_dev(file->state >= FBR_FILE_OK);
-			assert_dev(file->generation);
 
 			if (fbr_file_has_wbuffer(file)) {
 				assert_zero_dev(parser->merge);

@@ -310,6 +310,8 @@ struct fbr_fs_stats {
 
 	fbr_stats_t				flushes;
 	fbr_stats_t				flush_errors;
+	fbr_stats_t				flush_conflicts;
+	fbr_stats_t				merges;
 
 	fbr_stats_t				wbuffers;
 	fbr_stats_t				chunk_slabs;
@@ -318,8 +320,10 @@ struct fbr_fs_stats {
 };
 
 struct fbr_fs_config {
-	double					dentry_ttl;
 	unsigned int				gzip_index:1;
+	double					dentry_ttl;
+	unsigned int				flush_attempts;
+	unsigned int				flush_timeout_sec;
 };
 
 struct fbr_fs {
@@ -365,6 +369,8 @@ void fbr_fs_stat_add(fbr_stats_t *stat);
 void fbr_fs_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value);
 void fbr_fs_stat_sub(fbr_stats_t *stat);
 double fbr_fs_dentry_ttl(struct fbr_fs *fs);
+unsigned int fbr_fs_param_value(unsigned int param);
+int fbr_fs_timeout_expired(double time_start, double timeout);
 void __fbr_attr_printf(1) fbr_fs_logger(const char *fmt, ...);
 size_t fbr_fs_chunk_size(size_t offset);
 
