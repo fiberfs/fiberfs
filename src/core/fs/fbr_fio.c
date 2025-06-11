@@ -438,6 +438,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 
 	fbr_chunk_list_debug(fs, vector->chunks, "FIO");
 
+	// TODO this is debug
 	size_t total_size = 0;
 	for (size_t i = 0; i < bufvec->count; i++) {
 		struct fuse_buf *buf = &bufvec->buf[i];

@@ -374,7 +374,7 @@ _test_fio_read_thread(void *arg)
 		fbr_test_logs("** fio_read_thread %d vector: %zu/%zu", id, offset, length);
 
 		struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, offset, length);
-		assert(vector);
+		fbr_ASSERT(vector, "NULL vector offset: %zu length: %zu", offset, length);
 		assert(vector->chunks);
 		assert(vector->bufvec);
 
