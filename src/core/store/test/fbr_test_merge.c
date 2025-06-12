@@ -240,6 +240,42 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
+	fbr_test_logs("*** Loading dir_fs2 and validate");
+
+	dir_fs2 = fbr_directory_root_alloc(fs_2);
+	fbr_directory_ok(dir_fs2);
+	assert(dir_fs2->previous);
+	assert(dir_fs2->previous->generation == 4);
+	assert(dir_fs2->state == FBR_DIRSTATE_LOADING);
+
+	fbr_index_read(fs_2, dir_fs2);
+	assert(dir_fs2->state == FBR_DIRSTATE_OK);
+	assert(dir_fs2->generation == 5);
+	assert(dir_fs2->file_count == 2);
+
+	file1 = fbr_directory_find_file(dir_fs2, filename1.name, filename1.len);
+	fbr_file_ok(file1);
+	assert(file1->state == FBR_FILE_OK);
+	assert(file1->size == 10);
+	assert(file1->generation == 2);
+
+	bytes = fbr_test_fs_read(fs_2, file1, 0, buffer, sizeof(buffer));
+	fbr_test_ASSERT(bytes == 10, "Found %zu", bytes);
+	fbr_test_ASSERT(!memcmp(buffer, "ABCDE67890", bytes), "Body mismatch '%.*s'", 10, buffer);
+
+	file2 = fbr_directory_find_file(dir_fs2, filename2.name, filename2.len);
+	fbr_file_ok(file2);
+	assert(file2->state == FBR_FILE_OK);
+	assert(file2->size == 20);
+	assert(file2->generation == 3);
+
+	bytes = fbr_test_fs_read(fs_2, file2, 0, buffer, sizeof(buffer));
+	fbr_test_ASSERT(bytes == 20, "Found %zu", bytes);
+	fbr_test_ASSERT(!memcmp(buffer, "1234567890KLMOPQRST", bytes), "Body mismatch '%.*s'",
+		20, buffer);
+
+	fbr_dindex_release(fs_2, &dir_fs2);
+
 	fbr_test_logs("*** Cleanup fs_1");
 
 	fbr_fs_release_all(fs_1, 1);
