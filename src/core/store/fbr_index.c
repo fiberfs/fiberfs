@@ -734,18 +734,12 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 			assert_zero_dev(parser->skip_add);
 			assert_zero_dev(file->generation);
 			file->generation = generation;
-
-			parser->files_new++;
 		} else  {
 			assert_dev(file->state >= FBR_FILE_OK);
 
 			if (fbr_file_has_wbuffer(file)) {
 				assert_zero_dev(parser->merge);
 				parser->merge = file;
-
-				parser->files_merged++;
-			} else {
-				parser->files_new++;
 			}
 
 			parser->file = NULL;
@@ -793,6 +787,8 @@ _index_parse_file_end(struct fbr_index_parser *parser)
 		}
 
 		fbr_file_free(fs, file);
+
+		parser->files_merged++;
 	} else if (!file->generation) {
 		assert_dev(file->state == FBR_FILE_INIT);
 		fbr_file_free(fs, file);
@@ -805,6 +801,8 @@ _index_parse_file_end(struct fbr_index_parser *parser)
 		fbr_directory_add_file(fs, directory, file);
 
 		//fbr_body_debug(fs, file);
+
+		parser->files_new++;
 	} else {
 		assert_dev(file->state >= FBR_FILE_OK);
 		fbr_file_free(fs, file);

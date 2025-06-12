@@ -38,13 +38,22 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_fs_ok(fs_2);
 	fbr_fs_set_store(fs_2, &_MERGE_TEST_CALLBACKS);
 
-	fbr_test_logs("*** Allocating dir_fs1");
+	fbr_test_logs("*** Allocating dir_fs1 and file.merge2");
 
 	struct fbr_directory *dir_fs1 = fbr_directory_root_alloc(fs_1);
 	fbr_directory_ok(dir_fs1);
 	assert_zero(dir_fs1->previous);
 	assert(dir_fs1->state == FBR_DIRSTATE_LOADING);
 	dir_fs1->generation = 1;
+
+	struct fbr_path_name filename2;
+	fbr_path_name_init(&filename2, "file.merge2");
+	struct fbr_file *file2 = fbr_file_alloc(fs_1, dir_fs1, &filename2);
+	fbr_file_ok(file2);
+	assert(file2->state == FBR_FILE_INIT);
+	assert_zero(file2->size);
+	file2->generation = 1;
+	file2->state = FBR_FILE_OK;
 
 	fbr_test_logs("*** Storing dir_fs1 (gen %lu)", dir_fs1->generation);
 
@@ -55,7 +64,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_index_data_free(&index_data);
 
 	fbr_directory_set_state(fs_1, dir_fs1, FBR_DIRSTATE_OK);
-	assert_zero(dir_fs1->file_count);
+	assert(dir_fs1->file_count == 1);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
@@ -69,90 +78,165 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_index_read(fs_2, dir_fs2);
 	assert(dir_fs2->state == FBR_DIRSTATE_OK);
 	assert(dir_fs2->generation == 1);
-	assert_zero(dir_fs2->file_count);
+	assert(dir_fs2->file_count == 1);
 
 	fbr_dindex_release(fs_2, &dir_fs2);
 
-	fbr_test_logs("*** Write file.merge on dir_fs1 (10 bytes)");
+	fbr_test_logs("*** Write file.merge1 on dir_fs1 (10 bytes)");
 
 	dir_fs1 = fbr_dindex_take(fs_1, FBR_DIRNAME_ROOT, 0);
 	fbr_directory_ok(dir_fs1);
 	assert(dir_fs1->state == FBR_DIRSTATE_OK);
 	assert(dir_fs1->generation == 1);
-	assert_zero(dir_fs1->file_count);
+	assert(dir_fs1->file_count == 1);
 
-	struct fbr_path_name filename;
-	fbr_path_name_init(&filename, "file.merge");
-	struct fbr_file *file = fbr_file_alloc_new(fs_1, dir_fs1, &filename);
-	fbr_file_ok(file);
-	assert(file->state == FBR_FILE_INIT);
-	assert_zero(file->size);
-	file->mode = S_IFREG | 0444;
+	struct fbr_path_name filename1;
+	fbr_path_name_init(&filename1, "file.merge1");
+	struct fbr_file *file1 = fbr_file_alloc_new(fs_1, dir_fs1, &filename1);
+	fbr_file_ok(file1);
+	assert(file1->state == FBR_FILE_INIT);
+	assert_zero(file1->size);
+	file1->mode = S_IFREG | 0444;
 
-	struct fbr_fio *fio = fbr_fio_alloc(fs_1, file, 0);
+	struct fbr_fio *fio = fbr_fio_alloc(fs_1, file1, 0);
 	fbr_wbuffer_write(fs_1, fio, 0, "1234567890", 10);
 	ret = fbr_wbuffer_flush_fio(fs_1, fio);
 	fbr_test_ERROR(ret, "fbr_wbuffer_flush_fio(fs_1) failed");
 	fbr_fio_release(fs_1, fio);
 
-	fbr_file_ok(file);
-	assert(file->state == FBR_FILE_OK);
-	assert(file->size == 10);
-	assert(file->generation == 1);
+	fbr_file_ok(file1);
+	assert(file1->state == FBR_FILE_OK);
+	assert(file1->size == 10);
+	assert(file1->generation == 1);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
-	fbr_test_logs("*** Write file.merge on dir_fs2 (5 bytes)");
+	fbr_test_logs("*** Write file.merge1 on dir_fs2 (5 bytes)");
 
 	dir_fs2 = fbr_dindex_take(fs_2, FBR_DIRNAME_ROOT, 0);
 	fbr_directory_ok(dir_fs2);
 	assert(dir_fs2->state == FBR_DIRSTATE_OK);
 	assert(dir_fs2->generation == 1);
-	assert_zero(dir_fs2->file_count);
+	assert(dir_fs2->file_count == 1);
 
-	file = fbr_file_alloc_new(fs_2, dir_fs2, &filename);
-	fbr_file_ok(file);
-	assert(file->state == FBR_FILE_INIT);
-	assert_zero(file->size);
-	assert_zero(file->mode);
+	file1 = fbr_file_alloc_new(fs_2, dir_fs2, &filename1);
+	fbr_file_ok(file1);
+	assert(file1->state == FBR_FILE_INIT);
+	assert_zero(file1->size);
+	assert_zero(file1->mode);
 
-	fio = fbr_fio_alloc(fs_2, file, 0);
+	fio = fbr_fio_alloc(fs_2, file1, 0);
 	fbr_wbuffer_write(fs_2, fio, 0, "ABCDE", 5);
 	ret = fbr_wbuffer_flush_fio(fs_2, fio);
 	fbr_test_ERROR(ret, "fbr_wbuffer_flush_fio(fs_2) failed");
 	fbr_fio_release(fs_2, fio);
 
-	fbr_file_ok(file);
-	assert(file->state == FBR_FILE_OK);
-	assert(file->size == 10);
-	assert(file->generation == 2);
-	assert(file->mode == (S_IFREG | 0444));
+	fbr_file_ok(file1);
+	assert(file1->state == FBR_FILE_OK);
+	assert(file1->size == 10);
+	assert(file1->generation == 2);
+	assert(file1->mode == (S_IFREG | 0444));
 
 	fbr_dindex_release(fs_2, &dir_fs2);
+
+	fbr_test_logs("*** Write file.merge2 on dir_fs2 (20 bytes)");
+
+	dir_fs2 = fbr_dindex_take(fs_2, FBR_DIRNAME_ROOT, 0);
+	fbr_directory_ok(dir_fs2);
+	assert(dir_fs2->state == FBR_DIRSTATE_OK);
+	assert(dir_fs2->generation == 3);
+	assert(dir_fs2->file_count == 2);
+
+	file2 = fbr_directory_find_file(dir_fs2, filename2.name, filename2.len);
+	fbr_file_ok(file2);
+	assert(file2->state == FBR_FILE_OK);
+	assert(file2->generation == 1);
+	assert_zero(file2->size);
+	assert_zero(file2->uid);
+	assert_zero(file2->gid);
+	file2->uid = 987654;
+	file2->gid = 123456;
+
+	fio = fbr_fio_alloc(fs_2, file2, 0);
+	fbr_wbuffer_write(fs_2, fio, 0, "ABCDEFGHIJKLMOPQRST", 20);
+	ret = fbr_wbuffer_flush_fio(fs_2, fio);
+	fbr_test_ERROR(ret, "fbr_wbuffer_flush_fio(fs_2) failed");
+	fbr_fio_release(fs_2, fio);
+
+	fbr_file_ok(file2);
+	assert(file2->state == FBR_FILE_OK);
+	assert(file2->size == 20);
+	assert(file2->generation == 2);
+
+	fbr_dindex_release(fs_2, &dir_fs2);
+
+	fbr_test_logs("*** Write file.merge2 on dir_fs1 (10 bytes)");
+
+	dir_fs1 = fbr_dindex_take(fs_1, FBR_DIRNAME_ROOT, 0);
+	fbr_directory_ok(dir_fs1);
+	assert(dir_fs1->state == FBR_DIRSTATE_OK);
+	assert(dir_fs1->generation == 2);
+	assert(dir_fs1->file_count == 2);
+
+	file2 = fbr_directory_find_file(dir_fs1, filename2.name, filename2.len);
+	fbr_file_ok(file2);
+	assert(file2->state == FBR_FILE_OK);
+	assert(file2->generation == 1);
+	assert_zero(file2->size);
+	assert_zero(file2->uid);
+	assert_zero(file2->gid);
+
+	fio = fbr_fio_alloc(fs_1, file2, 0);
+	fbr_wbuffer_write(fs_1, fio, 0, "1234567890", 10);
+	ret = fbr_wbuffer_flush_fio(fs_1, fio);
+	fbr_test_ERROR(ret, "fbr_wbuffer_flush_fio(fs_1) failed");
+	fbr_fio_release(fs_1, fio);
+
+	fbr_file_ok(file2);
+	assert(file2->state == FBR_FILE_OK);
+	assert(file2->size == 20);
+	assert(file2->generation == 3);
+
+	fbr_dindex_release(fs_1, &dir_fs1);
 
 	fbr_test_logs("*** Loading dir_fs1 and validate");
 
 	dir_fs1 = fbr_directory_root_alloc(fs_1);
 	fbr_directory_ok(dir_fs1);
 	assert(dir_fs1->previous);
-	assert(dir_fs1->previous->generation == 2);
+	assert(dir_fs1->previous->generation == 5);
 	assert(dir_fs1->state == FBR_DIRSTATE_LOADING);
 
 	fbr_index_read(fs_1, dir_fs1);
-	assert(dir_fs1->state == FBR_DIRSTATE_OK);
-	assert(dir_fs1->generation == 3);
-	assert(dir_fs1->file_count == 1);
+	assert(dir_fs1->state == FBR_DIRSTATE_ERROR);
+	fbr_dindex_release(fs_1, &dir_fs1);
 
-	file = fbr_directory_find_file(dir_fs1, filename.name, filename.len);
-	fbr_file_ok(file);
-	assert(file->state == FBR_FILE_OK);
-	assert(file->size == 10);
-	assert(file->generation == 2);
+	dir_fs1 = fbr_dindex_take(fs_1, FBR_DIRNAME_ROOT, 0);
+	assert(dir_fs1->state == FBR_DIRSTATE_OK);
+	assert(dir_fs1->generation == 5);
+	assert(dir_fs1->file_count == 2);
+
+	file1 = fbr_directory_find_file(dir_fs1, filename1.name, filename1.len);
+	fbr_file_ok(file1);
+	assert(file1->state == FBR_FILE_OK);
+	assert(file1->size == 10);
+	assert(file1->generation == 2);
 
 	char buffer[100];
-	size_t bytes = fbr_test_fs_read(fs_1, file, 0, buffer, sizeof(buffer));
-	fbr_test_ASSERT(bytes == 10, "Expected 10 bytes, found %zu", bytes);
+	size_t bytes = fbr_test_fs_read(fs_1, file1, 0, buffer, sizeof(buffer));
+	fbr_test_ASSERT(bytes == 10, "Found %zu", bytes);
 	fbr_test_ASSERT(!memcmp(buffer, "ABCDE67890", bytes), "Body mismatch '%.*s'", 10, buffer);
+
+	file2 = fbr_directory_find_file(dir_fs1, filename2.name, filename2.len);
+	fbr_file_ok(file2);
+	assert(file2->state == FBR_FILE_OK);
+	assert(file2->size == 20);
+	assert(file2->generation == 3);
+
+	bytes = fbr_test_fs_read(fs_1, file2, 0, buffer, sizeof(buffer));
+	fbr_test_ASSERT(bytes == 20, "Found %zu", bytes);
+	fbr_test_ASSERT(!memcmp(buffer, "1234567890KLMOPQRST", bytes), "Body mismatch '%.*s'",
+		20, buffer);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
@@ -170,8 +254,8 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_1->stats.files, "non zero");
 	fbr_test_ERROR(fs_1->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs_1->stats.file_refs, "non zero");
-	fbr_test_ERROR(fs_1->stats.flush_conflicts, "non zero");
-	fbr_test_ERROR(fs_1->stats.merges, "non zero");
+	fbr_test_ASSERT(fs_1->stats.flush_conflicts == 1, "zero");
+	fbr_test_ASSERT(fs_1->stats.merges == 1, "zero");
 
 	fbr_fs_free(fs_1);
 
