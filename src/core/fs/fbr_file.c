@@ -125,12 +125,19 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	dest->uid = source->uid;
 	dest->gid = source->gid;
 
+	// Start zipper merge
+
 	struct fbr_chunk *chunk_source = source->body.chunks;
 	struct fbr_chunk *chunk_dest = dest->body.chunks;
 	struct fbr_chunk *chunk_dest_prev = NULL;
 	struct fbr_chunk *clone;
 
 	while (chunk_source) {
+		size_t chunk_source_end = chunk_source->offset + chunk_source->length;
+		if (dest->size < chunk_source_end) {
+			dest->size = chunk_source_end;
+		}
+
 		if (!chunk_dest) {
 			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
 
@@ -139,7 +146,6 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 				dest->body.chunk_last = clone;
 				chunk_dest = clone;
 			} else {
-				assert_dev(chunk_source->offset > chunk_dest_prev->offset);
 				dest->body.chunk_last = clone;
 				chunk_dest_prev->next = clone;
 				chunk_dest_prev = clone;
@@ -147,21 +153,13 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 
 			chunk_source = chunk_source->next;
 			continue;
-		} else if (chunk_source->offset < chunk_dest->offset) {
-			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
-
-			if (!chunk_dest_prev) {
-				dest->body.chunks = clone;
-			} else {
-				chunk_dest_prev->next = clone;
-			}
-
-			clone->next = chunk_dest;
-			chunk_dest_prev = clone;
-
-			chunk_source = chunk_source->next;
+		} else if (chunk_dest->state == FBR_CHUNK_WBUFFER) {
+			chunk_dest_prev = chunk_dest;
+			chunk_dest = chunk_dest->next;
 			continue;
-		} else if (chunk_source->offset == chunk_dest->offset) {
+		}
+
+		if (chunk_source->offset == chunk_dest->offset) {
 			if (chunk_source->id == chunk_dest->id) {
 				chunk_source = chunk_source->next;
 				chunk_dest_prev = chunk_dest;
@@ -170,21 +168,6 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			}
 
 			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
-
-			if (chunk_dest->state == FBR_CHUNK_WBUFFER) {
-				clone->next = chunk_dest->next;
-				chunk_dest->next = clone;
-
-				chunk_source = chunk_source->next;
-				chunk_dest_prev = clone;
-				chunk_dest = clone->next;
-
-				if (!chunk_dest && !chunk_source) {
-					dest->body.chunk_last = clone;
-				}
-
-				continue;
-			}
 
 			if (!chunk_dest_prev) {
 				dest->body.chunks = clone;
@@ -200,16 +183,27 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			continue;
 		}
 
+		size_t chunk_dest_end = chunk_dest->offset + chunk_dest->length;
+		if (chunk_source->offset < chunk_dest_end) {
+			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
+
+			if (!chunk_dest_prev) {
+				dest->body.chunks = clone;
+			} else {
+				chunk_dest_prev->next = clone;
+			}
+
+			clone->next = chunk_dest;
+			chunk_dest_prev = clone;
+
+			chunk_source = chunk_source->next;
+			continue;
+		}
+
 		assert_dev(chunk_source->offset > chunk_dest->offset);
 
 		chunk_dest_prev = chunk_dest;
 		chunk_dest = chunk_dest->next;
-	}
-
-	chunk_dest = dest->body.chunk_last;
-	size_t chunk_end = chunk_dest->offset + chunk_dest->length;
-	if (dest->size < chunk_end) {
-		dest->size = chunk_end;
 	}
 
 	fbr_body_debug(fs, dest);
