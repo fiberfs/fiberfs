@@ -396,3 +396,35 @@ fbr_test_fs_alloc(void)
 
 	return fs;
 }
+
+size_t
+fbr_test_fs_read(struct fbr_fs *fs, struct fbr_file *file, size_t offset, char *buffer,
+    size_t buffer_len)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	assert(buffer);
+	assert(buffer_len);
+
+	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 1);
+
+	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, offset, buffer_len);
+	if (!vector) {
+		fbr_fio_release(fs, fio);
+		return 0;
+	}
+
+	struct fuse_bufvec *bufvec = vector->bufvec;
+	size_t bytes = 0;
+	for (size_t i = 0; i < bufvec->count; i++) {
+		struct fuse_buf *buf = &bufvec->buf[i];
+		memcpy(buffer + bytes, buf->mem, buf->size);
+		bytes += buf->size;
+		assert(bytes <= buffer_len);
+	}
+
+	fbr_fio_vector_free(fs, fio, vector);
+	fbr_fio_release(fs, fio);
+
+	return bytes;
+}

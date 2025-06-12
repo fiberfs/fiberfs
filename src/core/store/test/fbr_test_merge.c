@@ -149,6 +149,11 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(file->size == 10);
 	assert(file->generation == 2);
 
+	char buffer[100];
+	size_t bytes = fbr_test_fs_read(fs_1, file, 0, buffer, sizeof(buffer));
+	fbr_test_ASSERT(bytes == 10, "Expected 10 bytes, found %zu", bytes);
+	fbr_test_ASSERT(!memcmp(buffer, "ABCDE67890", bytes), "Body mismatch '%.*s'", 10, buffer);
+
 	fbr_dindex_release(fs_1, &dir_fs1);
 
 	fbr_test_logs("*** Cleanup fs_1");
