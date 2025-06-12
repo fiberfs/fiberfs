@@ -33,12 +33,6 @@ _count_chunks(struct fbr_file *file)
 	return count;
 }
 
-size_t
-fbr_test_fs_count_chunks(struct fbr_file *file)
-{
-	return _count_chunks(file);
-}
-
 static struct fbr_chunk *
 _find_chunk(struct fbr_file *file, size_t offset, size_t size)
 {
@@ -78,6 +72,18 @@ _get_chunk(struct fbr_file *file, size_t position)
 	}
 
 	return NULL;
+}
+
+size_t
+fbr_test_fs_count_chunks(struct fbr_file *file)
+{
+	return _count_chunks(file);
+}
+
+struct fbr_chunk *
+fbr_test_fs_get_chunk(struct fbr_file *file, size_t position)
+{
+	return _get_chunk(file, position);
 }
 
 void

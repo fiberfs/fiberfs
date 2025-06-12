@@ -192,3 +192,79 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "merge_2fs_test done");
 }
+
+void
+fbr_cmd_merge_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fs *fs = fbr_test_fs_alloc();
+
+	struct fbr_directory *root = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_LOADING);
+
+	struct fbr_file *file1, *file2;
+	struct fbr_path_name name;
+	struct fbr_chunk_list *chunks;
+	struct fbr_chunk_list *removed = NULL;
+
+	file1 = fbr_file_alloc_new(fs, root, fbr_path_name_init(&name, "file_merge1"));
+	fbr_body_chunk_add(fs, file1, 1, 0, 100);
+	fbr_body_chunk_add(fs, file1, 2, 100, 100);
+	fbr_body_chunk_add(fs, file1, 3, 200, 100);
+	file1->state = FBR_FILE_OK;
+	assert(fbr_test_fs_count_chunks(file1) == 3);
+	assert(file1->size == 300);
+	file2 = fbr_file_alloc_new(fs, root, &name);
+	fbr_body_chunk_add(fs, file2, 1, 0, 100);
+	fbr_body_chunk_add(fs, file2, 2, 100, 100);
+	fbr_body_chunk_add(fs, file2, 3, 200, 100);
+	assert(fbr_test_fs_count_chunks(file2) == 3);
+	assert(file2->size == 300);
+	fbr_file_merge(fs, file2, file1);
+	assert(fbr_test_fs_count_chunks(file1) == 3);
+	assert(file1->size == 300);
+	assert(fbr_test_fs_get_chunk(file1, 0)->id == 1);
+	assert(fbr_test_fs_get_chunk(file1, 1)->id == 2);
+	assert(fbr_test_fs_get_chunk(file1, 2)->id == 3);
+	fbr_file_free(fs, file1);
+	fbr_file_free(fs, file2);
+
+	file1 = fbr_file_alloc_new(fs, root, fbr_path_name_init(&name, "file_merge2"));
+	fbr_body_chunk_add(fs, file1, 1, 0, 100);
+	fbr_body_chunk_add(fs, file1, 2, 100, 100);
+	fbr_body_chunk_add(fs, file1, 3, 200, 100);
+	file1->state = FBR_FILE_OK;
+	assert(fbr_test_fs_count_chunks(file1) == 3);
+	assert(file1->size == 300);
+	file2 = fbr_file_alloc_new(fs, root, &name);
+	fbr_body_chunk_add(fs, file2, 4, 0, 100);
+	fbr_body_chunk_add(fs, file2, 5, 100, 100);
+	fbr_body_chunk_add(fs, file2, 6, 200, 100);
+	assert(fbr_test_fs_count_chunks(file2) == 3);
+	assert(file2->size == 300);
+	fbr_file_merge(fs, file2, file1);
+	assert(fbr_test_fs_count_chunks(file1) == 6);
+	assert(file1->size == 300);
+	chunks = fbr_body_chunk_range(file1, 0, file1->size, &removed, NULL);
+	fbr_chunk_list_debug(fs, chunks, "  file1");
+	assert(chunks->length == 3);
+	assert(chunks->list[0]->id == 4);
+	assert(chunks->list[1]->id == 5);
+	assert(chunks->list[2]->id == 6);
+	fbr_chunk_list_free(chunks);
+	fbr_chunk_list_debug(fs, removed, "  file1:removed");
+	assert(removed->length == 3);
+	assert(removed->list[0]->id == 1);
+	assert(removed->list[1]->id == 2);
+	assert(removed->list[2]->id == 3);
+	fbr_file_free(fs, file1);
+	fbr_file_free(fs, file2);
+
+	fbr_chunk_list_free(removed);
+	fbr_fs_free(fs);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "merge_test done");
+}

@@ -39,6 +39,7 @@ void fbr_test_fs_dindex_debug(struct fbr_fs *fs);
 struct fbr_fs * fbr_test_fs_alloc(void);
 
 size_t fbr_test_fs_count_chunks(struct fbr_file *file);
+struct fbr_chunk *fbr_test_fs_get_chunk(struct fbr_file *file, size_t position);
 
 #endif /* FBR_TEST_FS_CMD */
 

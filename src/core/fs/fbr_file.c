@@ -127,7 +127,7 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 
 	struct fbr_chunk *chunk_source = source->body.chunks;
 	struct fbr_chunk *chunk_dest = dest->body.chunks;
-	struct fbr_chunk *chunk_dest_prev = chunk_dest;
+	struct fbr_chunk *chunk_dest_prev = NULL;
 	struct fbr_chunk *clone;
 
 	while (chunk_source) {
@@ -135,8 +135,6 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
 
 			if (!chunk_dest_prev) {
-				assert_zero_dev(dest->body.chunks);
-				assert_zero_dev(dest->body.chunk_last);
 				dest->body.chunks = clone;
 				dest->body.chunk_last = clone;
 				chunk_dest = clone;
@@ -153,7 +151,6 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
 
 			if (!chunk_dest_prev) {
-				assert_zero_dev(dest->body.chunks);
 				dest->body.chunks = clone;
 			} else {
 				chunk_dest_prev->next = clone;
@@ -190,7 +187,6 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			}
 
 			if (!chunk_dest_prev) {
-				assert_zero_dev(dest->body.chunks);
 				dest->body.chunks = clone;
 			} else {
 				chunk_dest_prev->next = clone;
