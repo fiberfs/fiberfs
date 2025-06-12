@@ -337,6 +337,12 @@ fbr_cmd_merge_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(removed->list[1]->id == 5);
 	assert(removed->list[2]->id == 3);
 	fbr_test_fs_get_chunk(file1, 2)->state = FBR_CHUNK_EMPTY;
+	fbr_body_chunk_prune(fs, file1, removed);
+	assert(fbr_test_fs_count_chunks(file1) == 3);
+	assert(file1->body.chunk_last == fbr_test_fs_get_chunk(file1, 2));
+	assert(fbr_test_fs_get_chunk(file1, 0)->id == 4);
+	assert(fbr_test_fs_get_chunk(file1, 1)->id == 2);
+	assert(fbr_test_fs_get_chunk(file1, 2)->id == 6);
 	fbr_file_free(fs, file1);
 
 	file1 = fbr_file_alloc_new(fs, root, fbr_path_name_init(&name, "file_merge6"));
@@ -369,6 +375,13 @@ fbr_cmd_merge_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(removed->length == 0);
 	fbr_test_fs_get_chunk(file1, 0)->state = FBR_CHUNK_EMPTY;
 	fbr_test_fs_get_chunk(file1, 1)->state = FBR_CHUNK_EMPTY;
+	fbr_body_chunk_prune(fs, file1, removed);
+	assert(fbr_test_fs_count_chunks(file1) == 4);
+	assert(file1->body.chunk_last == fbr_test_fs_get_chunk(file1, 3));
+	assert(fbr_test_fs_get_chunk(file1, 0)->id == 1);
+	assert(fbr_test_fs_get_chunk(file1, 1)->id == 2);
+	assert(fbr_test_fs_get_chunk(file1, 2)->id == 3);
+	assert(fbr_test_fs_get_chunk(file1, 3)->id == 4);
 	fbr_file_free(fs, file1);
 
 	file1 = fbr_file_alloc_new(fs, root, fbr_path_name_init(&name, "file_merge7"));
@@ -397,6 +410,11 @@ fbr_cmd_merge_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(removed->length == 2);
 	assert(removed->list[0]->id == 2);
 	assert(removed->list[1]->id == 3);
+	fbr_body_chunk_prune(fs, file1, removed);
+	assert(fbr_test_fs_count_chunks(file1) == 2);
+	assert(file1->body.chunk_last == fbr_test_fs_get_chunk(file1, 1));
+	assert(fbr_test_fs_get_chunk(file1, 0)->id == 4);
+	assert(fbr_test_fs_get_chunk(file1, 1)->id == 1);
 	fbr_file_free(fs, file1);
 
 	file1 = fbr_file_alloc_new(fs, root, fbr_path_name_init(&name, "file_merge8"));
@@ -427,6 +445,12 @@ fbr_cmd_merge_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_chunk_list_free(chunks);
 	fbr_chunk_list_debug(fs, removed, "  file1:removed");
 	assert(removed->length == 0);
+	fbr_body_chunk_prune(fs, file1, removed);
+	assert(fbr_test_fs_count_chunks(file1) == 3);
+	assert(file1->body.chunk_last == fbr_test_fs_get_chunk(file1, 2));
+	assert(fbr_test_fs_get_chunk(file1, 0)->id == 2);
+	assert(fbr_test_fs_get_chunk(file1, 1)->id == 3);
+	assert(fbr_test_fs_get_chunk(file1, 2)->id == 1);
 	fbr_file_free(fs, file1);
 
 	file1 = fbr_file_alloc_new(fs, root, fbr_path_name_init(&name, "file_merge9"));
@@ -461,6 +485,12 @@ fbr_cmd_merge_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(removed->list[1]->id == 2);
 	assert(removed->list[2]->id == 6);
 	fbr_test_fs_get_chunk(file1, 4)->state = FBR_CHUNK_EMPTY;
+	fbr_body_chunk_prune(fs, file1, removed);
+	assert(fbr_test_fs_count_chunks(file1) == 3);
+	assert(file1->body.chunk_last == fbr_test_fs_get_chunk(file1, 2));
+	assert(fbr_test_fs_get_chunk(file1, 0)->id == 4);
+	assert(fbr_test_fs_get_chunk(file1, 1)->id == 5);
+	assert(fbr_test_fs_get_chunk(file1, 2)->id == 3);
 	fbr_file_free(fs, file1);
 
 	fbr_chunk_list_free(removed);
