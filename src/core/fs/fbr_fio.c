@@ -185,11 +185,14 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 	return chunks;
 }
 
+// Note: must have a file->lock if calling under an active fio
 static void
 _fio_release_floating(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset_end)
 {
 	assert_dev(fio);
 	assert_dev(fio->floating);
+
+	// TODO we should track if the chunk was fully read and then release
 
 	if (offset_end) {
 		// Double the chunk size for offset_end and keep chunks in this range

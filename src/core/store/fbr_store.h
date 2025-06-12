@@ -90,6 +90,8 @@ struct fbr_index_parser {
 		size_t				length;
 	} chunk;
 
+	unsigned int				skip_add:1;
+
 	unsigned int				files_new;
 	unsigned int				files_existing;
 	unsigned int				files_merged;

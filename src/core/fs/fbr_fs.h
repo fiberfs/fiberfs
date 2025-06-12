@@ -427,6 +427,8 @@ struct fbr_chunk *fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, f
 	size_t offset, size_t length);
 struct fbr_chunk *fbr_body_chunk_append(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id,
 	size_t offset, size_t length);
+struct fbr_chunk *fbr_body_chunk_clone(struct fbr_fs *fs, struct fbr_body *body,
+	struct fbr_chunk *chunk);
 void fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_chunk_list *removed);
 struct fbr_chunk_list *fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,

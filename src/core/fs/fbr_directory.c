@@ -527,12 +527,10 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		add_file_init = 1;
 	}
 
-	// Start sync/write loop
-
+	// Read from dindex
 	struct fbr_directory *directory = NULL;
 	int wait_for_new = 1;
 
-	// Read from dindex
 	do {
 		directory = fbr_dindex_take(fs, &dirname, wait_for_new);
 		if (directory) {
@@ -575,12 +573,14 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		}
 	}
 
+	// Start sync/write loop
+
 	unsigned int attempts = 0;
 	double time_start = fbr_get_time();
 	struct fbr_index_data index_data;
-	int ret;
+	int ret = EIO;
 
-	while (1) {
+	while (directory) {
 		assert_dev(directory->state == FBR_DIRSTATE_OK);
 
 		fs->log("FLUSH directory: '%s' found generation: %lu attempts: %u", dirname.name,
@@ -640,9 +640,11 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		fbr_dindex_release(fs, &directory);
 		fbr_dindex_release(fs, &new_directory);
 
-		if (!retry) {
+		if (!ret || !retry) {
 			break;
 		}
+
+		fbr_fs_stat_add(&fs->stats.flush_conflicts);
 
 		attempts++;
 		if (attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
@@ -654,6 +656,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			break;
 		}
 
+		// Retry, lock on LOADING state
 		directory = _directory_get_loading(fs, &dirname, inode, NULL, &attempts,
 			time_start);
 		if (!directory) {
@@ -661,6 +664,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		}
 		assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 
+		// Read from index store
 		if (add_file) {
 			file->generation = 0;
 			fbr_directory_add_file(fs, directory, file);

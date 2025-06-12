@@ -396,6 +396,8 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
 	fbr_test_ERROR(fs->stats.buffers, "non zero");
+	fbr_test_ERROR(fs->stats.flush_conflicts, "non zero");
+	fbr_test_ERROR(fs->stats.merges, "non zero");
 
 	fbr_request_pool_shutdown(fs);
 	fbr_fs_free(fs);
@@ -481,6 +483,8 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs->stats.files, "non zero");
 	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
+	fbr_test_ERROR(fs->stats.flush_conflicts, "non zero");
+	fbr_test_ERROR(fs->stats.merges, "non zero");
 
 	fbr_request_pool_shutdown(fs);
 	fbr_fs_free(fs);
@@ -595,6 +599,8 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_1->stats.files, "non zero");
 	fbr_test_ERROR(fs_1->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs_1->stats.file_refs, "non zero");
+	fbr_test_ERROR(fs_1->stats.flush_conflicts, "non zero");
+	fbr_test_ERROR(fs_1->stats.merges, "non zero");
 
 	fbr_fs_free(fs_1);
 
@@ -613,6 +619,8 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_2->stats.files, "non zero");
 	fbr_test_ERROR(fs_2->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs_2->stats.file_refs, "non zero");
+	fbr_test_ERROR(fs_2->stats.flush_conflicts, "non zero");
+	fbr_test_ERROR(fs_2->stats.merges, "non zero");
 
 	fbr_fs_free(fs_2);
 
@@ -707,6 +715,8 @@ _index_thread(void *arg)
 	fbr_test_ERROR(fs->stats.files, "non zero");
 	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
+	fbr_test_ERROR(fs->stats.flush_conflicts, "non zero");
+	fbr_test_ERROR(fs->stats.merges, "non zero");
 
 	fbr_fs_free(fs);
 
@@ -764,6 +774,8 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_test_ERROR(fs->stats.files, "non zero");
 	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
+	fbr_test_ERROR(fs->stats.flush_conflicts, "non zero");
+	fbr_test_ERROR(fs->stats.merges, "non zero");
 
 	fbr_fs_free(fs);
 

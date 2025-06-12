@@ -171,8 +171,7 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 			assert_dev(wbuffer->state == FBR_WBUFFER_DONE);
 			assert_dev(wbuffer->chunk);
 
-			// TODO should we give the wbuffer/chunk a new id and async delete?
-			// or make a sync/async delete callback
+			// TODO we have to change the id of the wbuffer/chunk
 
 			wbuffer->state = FBR_WBUFFER_WRITING;
 

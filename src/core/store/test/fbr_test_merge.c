@@ -98,6 +98,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_OK);
 	assert(file->size == 10);
+	assert(file->generation == 1);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
@@ -124,8 +125,31 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_OK);
 	assert(file->size == 10);
+	assert(file->generation == 2);
+	assert(file->mode == (S_IFREG | 0444));
 
 	fbr_dindex_release(fs_2, &dir_fs2);
+
+	fbr_test_logs("*** Loading dir_fs1 and validate");
+
+	dir_fs1 = fbr_directory_root_alloc(fs_1);
+	fbr_directory_ok(dir_fs1);
+	assert(dir_fs1->previous);
+	assert(dir_fs1->previous->generation == 2);
+	assert(dir_fs1->state == FBR_DIRSTATE_LOADING);
+
+	fbr_index_read(fs_1, dir_fs1);
+	assert(dir_fs1->state == FBR_DIRSTATE_OK);
+	assert(dir_fs1->generation == 3);
+	assert(dir_fs1->file_count == 1);
+
+	file = fbr_directory_find_file(dir_fs1, filename.name, filename.len);
+	fbr_file_ok(file);
+	assert(file->state == FBR_FILE_OK);
+	assert(file->size == 10);
+	assert(file->generation == 2);
+
+	fbr_dindex_release(fs_1, &dir_fs1);
 
 	fbr_test_logs("*** Cleanup fs_1");
 
@@ -141,6 +165,8 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_1->stats.files, "non zero");
 	fbr_test_ERROR(fs_1->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs_1->stats.file_refs, "non zero");
+	fbr_test_ERROR(fs_1->stats.flush_conflicts, "non zero");
+	fbr_test_ERROR(fs_1->stats.merges, "non zero");
 
 	fbr_fs_free(fs_1);
 
@@ -159,6 +185,8 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_2->stats.files, "non zero");
 	fbr_test_ERROR(fs_2->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs_2->stats.file_refs, "non zero");
+	fbr_test_ASSERT(fs_2->stats.flush_conflicts == 1, "zero");
+	fbr_test_ASSERT(fs_2->stats.merges == 1, "zero");
 
 	fbr_fs_free(fs_2);
 

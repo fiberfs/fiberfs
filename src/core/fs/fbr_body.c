@@ -188,6 +188,28 @@ fbr_body_chunk_append(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, siz
 	return _body_chunk_add(fs, file, id, offset, length, 1);
 }
 
+struct fbr_chunk *
+fbr_body_chunk_clone(struct fbr_fs *fs, struct fbr_body *body, struct fbr_chunk *chunk)
+{
+	fbr_fs_ok(fs);
+	assert(body);
+	fbr_chunk_ok(chunk);
+	assert(chunk->state == FBR_CHUNK_EMPTY);
+
+	struct fbr_chunk *clone = _body_chunk_alloc(fs, body);
+	fbr_chunk_ok(clone);
+	assert_dev(clone->state == FBR_CHUNK_FREE);
+	assert_zero_dev(clone->next);
+	assert_zero_dev(clone->data);
+
+	clone->state = FBR_CHUNK_EMPTY;
+	clone->id = chunk->id;
+	clone->offset = chunk->offset;
+	clone->length = chunk->length;
+
+	return clone;
+}
+
 // Note: must have body->lock
 void
 fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_list *remove)
@@ -412,10 +434,9 @@ _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 		fbr_chunk_ok(chunk);
 		assert_zero_dev(chunk->refcount);
 		assert(chunk->state <= FBR_CHUNK_EMPTY);
-	}
 
-	size_t chunk_size = sizeof(struct fbr_chunk) * slab->length;
-	explicit_bzero(slab, sizeof(*slab) + chunk_size);
+		fbr_ZERO(chunk);
+	}
 
 	free(slab);
 }

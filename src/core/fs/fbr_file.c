@@ -78,6 +78,7 @@ fbr_file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 	return _file_alloc(fs, parent, filename, 0);
 }
 
+// Note: file isnt added to directory, its returned unreferenced
 struct fbr_file *
 fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *parent,
     const struct fbr_path_name *filename)
@@ -112,7 +113,112 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	fbr_file_ok(dest);
 	assert(dest->state == FBR_FILE_OK);
 
-	fbr_ABORT("TODO");
+	const char *filename = fbr_path_get_file(&dest->path, NULL);
+	fs->log("MERGE '%s' gen: %lu", filename, source->generation);
+
+	fbr_fs_stat_add(&fs->stats.merges);
+
+	fbr_file_LOCK(fs, dest);
+
+	dest->generation = source->generation;
+	dest->mode = source->mode;
+	dest->uid = source->uid;
+	dest->gid = source->gid;
+
+	struct fbr_chunk *chunk_source = source->body.chunks;
+	struct fbr_chunk *chunk_dest = dest->body.chunks;
+	struct fbr_chunk *chunk_dest_prev = chunk_dest;
+	struct fbr_chunk *clone;
+
+	while (chunk_source) {
+		if (!chunk_dest) {
+			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
+
+			if (!chunk_dest_prev) {
+				assert_zero_dev(dest->body.chunks);
+				assert_zero_dev(dest->body.chunk_last);
+				dest->body.chunks = clone;
+				dest->body.chunk_last = clone;
+				chunk_dest = clone;
+			} else {
+				assert_dev(chunk_source->offset > chunk_dest_prev->offset);
+				dest->body.chunk_last = clone;
+				chunk_dest_prev->next = clone;
+				chunk_dest_prev = clone;
+			}
+
+			chunk_source = chunk_source->next;
+			continue;
+		} else if (chunk_source->offset < chunk_dest->offset) {
+			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
+
+			if (!chunk_dest_prev) {
+				assert_zero_dev(dest->body.chunks);
+				dest->body.chunks = clone;
+			} else {
+				chunk_dest_prev->next = clone;
+			}
+
+			clone->next = chunk_dest;
+			chunk_dest_prev = clone;
+
+			chunk_source = chunk_source->next;
+			continue;
+		} else if (chunk_source->offset == chunk_dest->offset) {
+			if (chunk_source->id == chunk_dest->id) {
+				chunk_source = chunk_source->next;
+				chunk_dest_prev = chunk_dest;
+				chunk_dest = chunk_dest->next;
+				continue;
+			}
+
+			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
+
+			if (chunk_dest->state == FBR_CHUNK_WBUFFER) {
+				clone->next = chunk_dest->next;
+				chunk_dest->next = clone;
+
+				chunk_source = chunk_source->next;
+				chunk_dest_prev = clone;
+				chunk_dest = clone->next;
+
+				if (!chunk_dest && !chunk_source) {
+					dest->body.chunk_last = clone;
+				}
+
+				continue;
+			}
+
+			if (!chunk_dest_prev) {
+				assert_zero_dev(dest->body.chunks);
+				dest->body.chunks = clone;
+			} else {
+				chunk_dest_prev->next = clone;
+			}
+
+			clone->next = chunk_dest;
+
+			chunk_source = chunk_source->next;
+			chunk_dest_prev = chunk_dest;
+			chunk_dest = chunk_dest->next;
+			continue;
+		}
+
+		assert_dev(chunk_source->offset > chunk_dest->offset);
+
+		chunk_dest_prev = chunk_dest;
+		chunk_dest = chunk_dest->next;
+	}
+
+	chunk_dest = dest->body.chunk_last;
+	size_t chunk_end = chunk_dest->offset + chunk_dest->length;
+	if (dest->size < chunk_end) {
+		dest->size = chunk_end;
+	}
+
+	fbr_body_debug(fs, dest);
+
+	fbr_file_UNLOCK(dest);
 }
 
 int
