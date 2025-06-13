@@ -323,7 +323,7 @@ _test_fio_thread(void *arg)
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
 			_test_flush_directory(fs, file, fio->wbuffers, 0);
-			fbr_wbuffers_free(fio->wbuffers);
+			fbr_wbuffers_free(fs, file, fio->wbuffers);
 			fio->wbuffers = NULL;
 		} else {
 			assert_zero(ret);
@@ -465,7 +465,7 @@ _test_concurrent_fio(void)
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
 			_test_flush_directory(fs, file, fio->wbuffers, 0);
-			fbr_wbuffers_free(fio->wbuffers);
+			fbr_wbuffers_free(fs, file, fio->wbuffers);
 			fio->wbuffers = NULL;
 		} else {
 			assert_zero(ret);

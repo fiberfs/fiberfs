@@ -39,6 +39,7 @@ _chunk_reset(struct fbr_chunk *chunk)
 	chunk->chttp_splice = NULL;
 }
 
+// Note: file->lock required
 void
 fbr_chunk_take(struct fbr_chunk *chunk)
 {
@@ -49,6 +50,7 @@ fbr_chunk_take(struct fbr_chunk *chunk)
 	assert(chunk->refcount);
 }
 
+// Note: file->lock required
 void
 fbr_chunk_release(struct fbr_chunk *chunk)
 {

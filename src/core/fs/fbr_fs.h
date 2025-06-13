@@ -495,7 +495,7 @@ int fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffer_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer);
 int fbr_wbuffer_has_chunk(struct fbr_wbuffer *wbuffers, struct fbr_chunk *chunk);
 struct fbr_chunk_list *fbr_wbuffer_chunks(struct fbr_wbuffer *wbuffer);
-void fbr_wbuffers_free(struct fbr_wbuffer *wbuffers);
+void fbr_wbuffers_free(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers);
 void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 
 #define fbr_fs_ok(fs)			fbr_magic_check(fs, FBR_FS_MAGIC)

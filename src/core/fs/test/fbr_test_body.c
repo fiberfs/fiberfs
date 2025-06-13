@@ -536,7 +536,7 @@ fbr_cmd_fs_test_body_hole(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert(count == 64);
 	assert(allocs == 3);
 
-	fbr_wbuffers_free(fio->wbuffers);
+	fbr_wbuffers_free(fs, file, fio->wbuffers);
 	fio->wbuffers = NULL;
 
 	fbr_fio_release(fs, fio);

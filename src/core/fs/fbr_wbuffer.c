@@ -514,7 +514,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	if (!error) {
-		fbr_wbuffers_free(fio->wbuffers);
+		fbr_wbuffers_free(fs, fio->file, fio->wbuffers);
 		fio->wbuffers = NULL;
 		fio->truncate = 0;
 	} else {
@@ -595,8 +595,10 @@ fbr_wbuffer_chunks(struct fbr_wbuffer *wbuffer)
 }
 
 void
-fbr_wbuffers_free(struct fbr_wbuffer *wbuffer)
+fbr_wbuffers_free(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
+	fbr_file_LOCK(fs, file);
+
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
 		assert(wbuffer->state != FBR_WBUFFER_SYNC);
@@ -617,6 +619,8 @@ fbr_wbuffers_free(struct fbr_wbuffer *wbuffer)
 
 		wbuffer = next;
 	}
+
+	fbr_file_UNLOCK(file);
 }
 
 void
@@ -624,6 +628,7 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 {
 	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
+	fbr_file_ok(fio->file);
 
 	pt_assert(pthread_mutex_destroy(&fio->wbuffer_lock));
 	pt_assert(pthread_cond_destroy(&fio->wbuffer_update));
@@ -631,6 +636,6 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 	// TODO get rid of this
 	assert_zero_dev(fio->wbuffers);
 
-	fbr_wbuffers_free(fio->wbuffers);
+	fbr_wbuffers_free(fs, fio->file, fio->wbuffers);
 	fio->wbuffers = NULL;
 }

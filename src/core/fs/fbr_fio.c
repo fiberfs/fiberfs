@@ -185,7 +185,7 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 	return chunks;
 }
 
-// Note: must have a file->lock if calling under an active fio
+// Note: must have a file->lock
 static void
 _fio_release_floating(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset_end)
 {
@@ -537,7 +537,9 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	if (fio->floating->length) {
+		fbr_file_LOCK(fs, fio->file);
 		_fio_release_floating(fs, fio, 0);
+		fbr_file_UNLOCK(fio->file);
 		assert_zero_dev(fio->floating->length);
 	}
 
