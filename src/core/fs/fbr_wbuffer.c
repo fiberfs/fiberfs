@@ -514,8 +514,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	if (!error) {
-		fbr_wbuffers_free(fs, fio->file, fio->wbuffers);
-		fio->wbuffers = NULL;
+		fbr_wbuffers_reset(fs, fio);
 		fio->truncate = 0;
 	} else {
 		fbr_fs_stat_add(&fs->stats.flush_errors);
@@ -595,10 +594,13 @@ fbr_wbuffer_chunks(struct fbr_wbuffer *wbuffer)
 }
 
 void
-fbr_wbuffers_free(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+fbr_wbuffers_reset(struct fbr_fs *fs, struct fbr_fio *fio)
 {
-	fbr_file_LOCK(fs, file);
+	fbr_fio_ok(fio);
 
+	fbr_file_LOCK(fs, fio->file);
+
+	struct fbr_wbuffer *wbuffer = fio->wbuffers;
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
 		assert(wbuffer->state != FBR_WBUFFER_SYNC);
@@ -620,7 +622,19 @@ fbr_wbuffers_free(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *
 		wbuffer = next;
 	}
 
-	fbr_file_UNLOCK(file);
+	fio->wbuffers = NULL;
+
+	fbr_file_UNLOCK(fio->file);
+}
+
+void
+fbr_wbuffers_reset_lock(struct fbr_fs *fs, struct fbr_fio *fio)
+{
+	fbr_fio_ok(fio);
+
+	_wbuffer_LOCK(fs, fio);
+	fbr_wbuffers_reset(fs, fio);
+	_wbuffer_UNLOCK(fio);
 }
 
 void
@@ -636,6 +650,5 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 	// TODO get rid of this
 	assert_zero_dev(fio->wbuffers);
 
-	fbr_wbuffers_free(fs, fio->file, fio->wbuffers);
-	fio->wbuffers = NULL;
+	fbr_wbuffers_reset(fs, fio);
 }
