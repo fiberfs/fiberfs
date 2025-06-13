@@ -59,7 +59,7 @@ fbr_fio_take(struct fbr_fio *fio)
 	assert(fio->refcount);
 
 	fbr_refcount_t refs = fbr_atomic_add(&fio->refcount, 1);
-	assert(refs);
+	assert(refs > 1);
 }
 
 void
@@ -190,7 +190,7 @@ static void
 _fio_release_floating(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset_end)
 {
 	assert_dev(fio);
-	assert_dev(fio->floating);
+	fbr_chunk_list_ok(fio->floating);
 
 	// TODO we should track if the chunk was fully read and then release
 
@@ -463,7 +463,6 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
-	fbr_chunk_list_ok(fio->floating);
 	fbr_chunk_vector_ok(vector);
 
 	struct fbr_chunk_list *chunks = vector->chunks;
