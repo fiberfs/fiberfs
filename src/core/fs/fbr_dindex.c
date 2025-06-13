@@ -271,7 +271,6 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 			// Directory inode too old
 			directory->state = FBR_DIRSTATE_ERROR;
 			_dindex_ref(fs, directory);
-
 			_dindex_lru_move(fs, existing);
 
 			_dindex_UNLOCK(dirhead);

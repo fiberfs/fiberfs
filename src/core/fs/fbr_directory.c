@@ -577,6 +577,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 	unsigned int attempts = 0;
 	double time_start = fbr_get_time();
+	unsigned long last_generation = 0;
 	struct fbr_index_data index_data;
 	int ret = EIO;
 
@@ -585,6 +586,12 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 		fs->log("FLUSH directory: '%s' found generation: %lu attempts: %u", dirname.name,
 			directory->generation, attempts);
+
+		if (directory->generation == last_generation) {
+			// TODO
+			fs->log("FLUSH warning generation hasn't changed");
+		}
+		last_generation = directory->generation;
 
 		// Lock on LOADING state
 		struct fbr_directory *new_directory = _directory_get_loading(fs, &dirname, inode,

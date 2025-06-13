@@ -527,7 +527,8 @@ fbr_file_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st)
 	st->st_size = (off_t)file->size;
 	st->st_uid = file->uid;
 	st->st_gid = file->gid;
-	st->st_nlink = 1;
 
 	fbr_file_UNLOCK(file);
+
+	st->st_nlink = 1;
 }
