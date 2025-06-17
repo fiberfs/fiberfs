@@ -434,6 +434,7 @@ void fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file,
 struct fbr_chunk_list *fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 	struct fbr_chunk_list **removed, struct fbr_wbuffer *wbuffers);
 struct fbr_chunk_list *fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers);
+unsigned long fbr_body_length(struct fbr_file *file, int include_wbuffers);
 void fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_body_free(struct fbr_body *body);
 

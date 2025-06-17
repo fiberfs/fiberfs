@@ -376,6 +376,32 @@ fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers)
 	return chunks;
 }
 
+// Note: must have body->lock
+unsigned long
+fbr_body_length(struct fbr_file *file, int include_wbuffers)
+{
+	fbr_file_ok(file);
+
+	unsigned long size = 0;
+
+	struct fbr_chunk *chunk = file->body.chunks;
+	while (chunk) {
+		if (!include_wbuffers && chunk->state == FBR_CHUNK_WBUFFER) {
+			chunk = chunk->next;
+			continue;
+		}
+
+		size_t chunk_end = chunk->offset + chunk->length;
+		if (chunk_end > size) {
+			size = chunk_end;
+		}
+
+		chunk = chunk->next;
+	}
+
+	return size;
+}
+
 // Note: file->lock required
 void
 fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)

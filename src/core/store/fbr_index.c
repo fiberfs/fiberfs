@@ -292,9 +292,38 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 			}
 		} else if (flags & FBR_FLUSH_APPEND) {
 			fs->log("INDEX APPEND flagged");
-			// TODO we need to make sure this is aligned with other fios
+
+			// TODO chunks might be published too early here
+			// they can be read after merging and while shifting?
+
 			index_data->chunks = fbr_wbuffer_chunks(wbuffers);
 			assert_zero_dev(index_data->removed);
+			unsigned long size_end = fbr_body_length(file, 0);
+			struct fbr_wbuffer *wbuffer = wbuffers;
+
+			while (wbuffer) {
+				struct fbr_chunk *chunk = wbuffer->chunk;
+				fbr_chunk_ok(chunk);
+				assert_dev(chunk->state == FBR_CHUNK_WBUFFER);
+
+				if (wbuffer->offset != size_end) {
+					fs->log("INDEX APPEND shifting offset from: %lu to: %lu",
+						wbuffer->offset, size_end);
+
+					wbuffer->offset = size_end;
+					chunk->offset = size_end;
+					assert_dev(wbuffer->end == chunk->length);
+				}
+
+				size_end += wbuffer->end;
+				wbuffer = wbuffer->next;
+			}
+
+			if (file->size != size_end) {
+				fs->log("INDEX new file->size: %zu (was: %zu)",
+					size_end, file->size);
+				file->size = size_end;
+			}
 		} else {
 			index_data->chunks = fbr_body_chunk_range(file, 0, file->size,
 				&index_data->removed, wbuffers);
