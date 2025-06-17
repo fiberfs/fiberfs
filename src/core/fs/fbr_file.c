@@ -12,6 +12,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "core/fuse/fbr_fuse_lowlevel.h"
 
 static struct fbr_file *
 _file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
@@ -207,6 +208,14 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	}
 
 	fbr_body_debug(fs, dest);
+
+	if (fs->fuse_ctx) {
+		fbr_fuse_mounted(fs->fuse_ctx);
+		assert(fs->fuse_ctx->session);
+		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, dest->inode,
+			0, 0);
+		assert_dev(ret != -ENOSYS);
+	}
 
 	fbr_file_UNLOCK(dest);
 }
