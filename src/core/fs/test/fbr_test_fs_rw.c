@@ -368,7 +368,16 @@ _test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, 
 
 	fbr_fs_stat_add_count(&fs->stats.write_bytes, size);
 
-	fbr_fuse_reply_write(request, size);
+	int ret = 0;
+	if (fio->append) {
+		ret = fbr_wbuffer_flush_fio(fs, fio);
+	}
+
+	if (!ret) {
+		fbr_fuse_reply_write(request, size);
+	} else {
+		fbr_fuse_reply_err(request, ret);
+	}
 
 	fbr_fio_release(fs, fio);
 }

@@ -359,7 +359,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	assert_dev(directory->version);
 	assert_dev(directory->generation);
 
-	if (index_data->flags & FBR_FLUSH_APPEND) {
+	int do_append = index_data->flags & FBR_FLUSH_APPEND;
+	if (do_append) {
 		int ret = fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
 		if (ret) {
 			return ret;
@@ -410,6 +411,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 			}
 		}
 	}
+
+	// TODO what do we do on append failure?
 
 	fbr_writer_free(fs, &json_gen);
 

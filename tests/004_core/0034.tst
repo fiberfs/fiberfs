@@ -17,12 +17,12 @@ sleep_ms 100
 
 print "### APPEND 2"
 
-sys_append $var1 "TWO"
+sys_append $var1 "T" "W" "OoO"
 sys_append $var1 "THREE"
 
 print "### READ (memory)"
 
-sys_cat $var1 "ONETWOTHREE"
+sys_cat $var1 "ONETWOoOTHREE"
 
 sleep_ms 100
 
@@ -49,6 +49,6 @@ equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
-equal $fs_test_stat_store_chunks 3
+equal $fs_test_stat_store_chunks 5
 
 fuse_test_unmount
