@@ -32,6 +32,7 @@ struct {
 #define _DSTORE_MAGIC				0x1B775C3C
 
 	const char				*root;
+	fbr_stats_t				chunks;
 
 	pthread_mutex_t				lock;
 } __DSTORE, *_DSTORE;
@@ -137,6 +138,13 @@ fbr_cmd_dstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_dstore_debug(0);
+}
+
+fbr_stats_t
+fbr_dstore_stat_chunks(void)
+{
+	fbr_dstore_ok();
+	return _DSTORE->chunks;
 }
 
 static void
@@ -300,7 +308,7 @@ _json_parse(struct fjson_context *ctx, void *priv)
 	return 1;
 }
 
-static void
+static int
 _dstore_metadata_read(const char *path, struct _dstore_metadata *metadata)
 {
 	assert_dev(path);
@@ -313,7 +321,7 @@ _dstore_metadata_read(const char *path, struct _dstore_metadata *metadata)
 	if (fd < 0) {
 		fbr_test_logs("DSTORE metadata open(%s) error %d %d %s", path, fd, errno,
 			strerror(errno));
-		return;
+		return EAGAIN;
 	}
 
 	char buffer[1024];
@@ -334,6 +342,8 @@ _dstore_metadata_read(const char *path, struct _dstore_metadata *metadata)
 	fbr_ASSERT(!json.error, "JSON error");
 
 	fjson_context_free(&json);
+
+	return 0;
 }
 
 static void
@@ -416,6 +426,7 @@ fbr_dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 
 	fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
 	fbr_fs_stat_add(&fs->stats.store_chunks);
+	fbr_fs_stat_add(&_DSTORE->chunks);
 
 	_dstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_DONE);
 }
@@ -522,6 +533,7 @@ fbr_dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 	assert_zero(ret);
 
 	fbr_fs_stat_sub(&fs->stats.store_chunks);
+	fbr_fs_stat_sub(&_DSTORE->chunks);
 
 	_dstore_UNLOCK();
 }
@@ -605,7 +617,10 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	_dstore_index_path(directory, 1, index_path, sizeof(index_path));
 
 	struct _dstore_metadata metadata;
-	_dstore_metadata_read(index_path, &metadata);
+	int ret = _dstore_metadata_read(index_path, &metadata);
+	if (ret) {
+		return ret;
+	}
 
 	if (metadata.etag != directory->version) {
 		fbr_test_logs("DSTORE read index metadata etag found: %lu, expected: %lu",
@@ -622,7 +637,7 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	if (fd < 0) {
 		fbr_test_logs("DSTORE read index open(%s) error %d %d %s", index_path, fd, errno,
 			strerror(errno));
-		return 1;
+		return EAGAIN;
 	}
 
 	struct fbr_request *request = fbr_request_get();
@@ -722,7 +737,7 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fjson_parse(&json, output->buffer, output->buffer_pos);
 	assert(parser.magic == FBR_INDEX_PARSER_MAGIC);
 
-	int ret = 0;
+	ret = 0;
 
 	if (metadata.gzipped) {
 		if (gzip.status != FBR_GZIP_DONE) {

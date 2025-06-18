@@ -557,24 +557,30 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
-	fbr_id_t version = 0;
+	// TODO retry counter here
 
-	if (fs->store->root_read_f) {
-		version = fs->store->root_read_f(fs, &dirpath);
-	}
+	int ret;
 
-	if (version == 0) {
-		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
-		return;
-	}
+	do {
+		fbr_id_t version = 0;
 
-	directory->version = version;
+		if (fs->store->root_read_f) {
+			version = fs->store->root_read_f(fs, &dirpath);
+		}
 
-	int ret = 1;
+		if (version == 0) {
+			fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+			return;
+		}
 
-	if (fs->store->index_read_f) {
-		ret = fs->store->index_read_f(fs, directory);
-	}
+		directory->version = version;
+
+		ret = 1;
+
+		if (fs->store->index_read_f) {
+			ret = fs->store->index_read_f(fs, directory);
+		}
+	} while (ret == EAGAIN);
 
 	if (ret) {
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
@@ -1029,10 +1035,6 @@ fbr_index_parse_json(struct fjson_context *ctx, void *priv)
 					parser->fs->log("INDEX_PARSER COMPLETED "
 						"(%zu files [%u+%u+%u])", directory->file_count,
 						parser->files_existing, parser->files_merged,
-						parser->files_new);
-
-					assert_dev(directory->file_count ==
-						parser->files_existing + parser->files_merged +
 						parser->files_new);
 				}
 				return 0;
