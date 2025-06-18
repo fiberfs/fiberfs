@@ -35,6 +35,8 @@ FBR_TEST_STORE_CMD(store_write_error_flush)
 FBR_TEST_STORE_CMD(merge_test)
 FBR_TEST_STORE_CMD(merge_2fs_test)
 
+FBR_TEST_STORE_CMD(append_2fs_test)
+
 FBR_TEST_STORE_CMD(dstore_debug)
 
 #undef FBR_TEST_STORE_CMD

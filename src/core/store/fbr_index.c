@@ -225,7 +225,7 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	fbr_writer_add(fs, json, ",\"p\":", 5);
 	fbr_writer_add_ulong(fs, json, file->gid);
 
-	if (file->body.chunks) {
+	if (file->body.chunks || modified) {
 		// b: body chunks
 		fbr_writer_add(fs, json, ",\"b\":[", 6);
 
