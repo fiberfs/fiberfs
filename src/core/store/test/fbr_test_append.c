@@ -230,7 +230,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 #define _APPEND_THREADS		8
-#define _APPEND_COUNTER_MAX	32
+#define _APPEND_COUNTER_MAX	64
 size_t _APPEND_THREAD_COUNT;
 size_t _APPEND_COUNTER;
 
@@ -257,6 +257,7 @@ _append_thread(void *arg)
 	fbr_path_name_init(&filename, "file.append-thread");
 
 	size_t count = fbr_atomic_add(&_APPEND_COUNTER, 1);
+	size_t appends = 0;
 
 	while (count <= _APPEND_COUNTER_MAX) {
 		struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
@@ -293,12 +294,13 @@ _append_thread(void *arg)
 		fbr_dindex_release(fs, &root);
 
 		count = fbr_atomic_add(&_APPEND_COUNTER, 1);
+		appends++;
 	}
 
 	fbr_fs_release_all(fs, 1);
 	fbr_fs_free(fs);
 
-	fbr_test_logs(" ** Thread %zu done", id);
+	fbr_test_logs(" ** Thread %zu done appends: %zu", id, appends);
 
 	return NULL;
 }
