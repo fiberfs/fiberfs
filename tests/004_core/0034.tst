@@ -26,12 +26,12 @@ sys_cat $var1 "ONETWOoOTHREE"
 
 sleep_ms 100
 
-#print "### READ (dstore)"
+print "### READ (dstore)"
 
-#fs_test_release_all
-#sleep_ms 100
+fs_test_release_all
+sleep_ms 100
 
-#sys_cat $var1 "ONETWOTHREE"
+sys_cat $var1 "ONETWOoOTHREE"
 
 # Cleanup
 
