@@ -237,6 +237,32 @@ _wbuffer_UNLOCK(struct fbr_fio *fio)
 	pt_assert(pthread_mutex_unlock(&fio->wbuffer_lock));
 }
 
+// Note: file->lock required
+void
+fbr_wbuffer_chunk_add(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_wbuffer_ok(wbuffer);
+	assert_dev(fbr_file_has_wbuffer(file));
+
+	fs->log("WBUFFER new chunk offset: %zu length: %zu", wbuffer->offset, wbuffer->end);
+
+	struct fbr_chunk *chunk = fbr_body_chunk_add(fs, file, wbuffer->id, wbuffer->offset,
+		wbuffer->end);
+	assert_dev(chunk);
+	assert_dev(chunk->state == FBR_CHUNK_EMPTY);
+
+	chunk->state = FBR_CHUNK_WBUFFER;
+	chunk->data = wbuffer->buffer;
+	chunk->do_free = wbuffer->free_buffer;
+
+	fbr_chunk_take(chunk);
+
+	wbuffer->chunk = chunk;
+	wbuffer->free_buffer = 0;
+}
+
 void
 fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const char *buf,
     size_t size)
@@ -292,26 +318,9 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 			}
 		}
 
-		if (!wbuffer->chunk) {
+		if (!wbuffer->chunk && !fio->append) {
 			assert_zero_dev(wbuffer_offset);
-			assert_dev(fbr_file_has_wbuffer(fio->file));
-
-			fs->log("WBUFFER new chunk offset: %zu length: %zu",
-				wbuffer->offset, wbuffer->end);
-
-			struct fbr_chunk *chunk = fbr_body_chunk_add(fs, fio->file, wbuffer->id,
-				wbuffer->offset, wbuffer->end);
-			assert_dev(chunk);
-			assert_dev(chunk->state == FBR_CHUNK_EMPTY);
-
-			chunk->state = FBR_CHUNK_WBUFFER;
-			chunk->data = wbuffer->buffer;
-			chunk->do_free = wbuffer->free_buffer;
-
-			fbr_chunk_take(chunk);
-
-			wbuffer->chunk = chunk;
-			wbuffer->free_buffer = 0;
+			fbr_wbuffer_chunk_add(fs, fio->file, wbuffer);
 		}
 
 		offset = wbuffer_end;
@@ -321,10 +330,8 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 	}
 
 
-	if (fio->file->size < offset_end) {
-		fs->log("WBUFFER new file->size: %zu (was: %zu)",
-			offset_end, fio->file->size);
-
+	if (fio->file->size < offset_end && !fio->append) {
+		fs->log("WBUFFER new file->size: %zu (was: %zu)", offset_end, fio->file->size);
 		fio->file->size = offset_end;
 	}
 
@@ -484,6 +491,8 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	int error = 0;
 
 	if (fio->append) {
+		assert_zero(fio->wbuffers->chunk);
+		assert_zero(fio->wbuffers->next);
 		skip_write = 1;
 	}
 

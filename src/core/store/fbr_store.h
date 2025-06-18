@@ -104,6 +104,7 @@ struct fbr_index_data {
 	struct fbr_wbuffer			*wbuffers;
 	struct fbr_chunk_list			*chunks;
 	struct fbr_chunk_list			*removed;
+	unsigned long				size;
 	enum fbr_flush_flags			flags;
 };
 

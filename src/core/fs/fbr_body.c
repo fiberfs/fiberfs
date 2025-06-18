@@ -158,6 +158,7 @@ _body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t of
 
 	size_t chunk_end = chunk->offset + chunk->length;
 	if (file->size < chunk_end) {
+		fs->log("CHUNK new file->size: %zu (was: %zu)", chunk_end, file->size);
 		file->size = chunk_end;
 	}
 
@@ -274,8 +275,6 @@ fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 	int do_removed = 0;
 
 	if (removed) {
-		assert(size == file->size);
-
 		if (!*removed) {
 			*removed = fbr_chunk_list_alloc();
 		} else {
@@ -378,7 +377,7 @@ fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers)
 
 // Note: must have body->lock
 unsigned long
-fbr_body_length(struct fbr_file *file, int include_wbuffers)
+fbr_body_length(struct fbr_file *file, struct fbr_wbuffer *wbuffers)
 {
 	fbr_file_ok(file);
 
@@ -386,7 +385,7 @@ fbr_body_length(struct fbr_file *file, int include_wbuffers)
 
 	struct fbr_chunk *chunk = file->body.chunks;
 	while (chunk) {
-		if (!include_wbuffers && chunk->state == FBR_CHUNK_WBUFFER) {
+		if (chunk->state == FBR_CHUNK_WBUFFER) {
 			chunk = chunk->next;
 			continue;
 		}
@@ -397,6 +396,16 @@ fbr_body_length(struct fbr_file *file, int include_wbuffers)
 		}
 
 		chunk = chunk->next;
+	}
+
+	struct fbr_wbuffer *wbuffer = wbuffers;
+	while (wbuffer) {
+		size_t wbuffer_end = wbuffer->offset + wbuffer->end;
+		if (wbuffer_end > size) {
+			size = wbuffer_end;
+		}
+
+		wbuffer = wbuffer->next;
 	}
 
 	return size;

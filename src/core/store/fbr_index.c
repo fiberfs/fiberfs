@@ -115,7 +115,8 @@ _json_body_modified_gen(struct fbr_fs *fs, struct fbr_writer *json,
 	struct fbr_chunk_list *chunks = index_data->chunks;
 	fbr_chunk_list_ok(chunks);
 
-	for (size_t i = 0; i < chunks->length; i++) {
+	size_t i;
+	for (i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
 
@@ -124,6 +125,24 @@ _json_body_modified_gen(struct fbr_fs *fs, struct fbr_writer *json,
 		}
 
 		_json_chunk_gen(fs, json, chunk);
+	}
+
+	if (index_data->flags & FBR_FLUSH_APPEND && index_data->wbuffers) {
+		if (i) {
+			fbr_writer_add(fs, json, ",", 1);
+		}
+
+		struct fbr_wbuffer *wbuffer = index_data->wbuffers;
+		assert_zero_dev(wbuffer->next);
+
+		struct fbr_chunk chunk;
+		fbr_ZERO(&chunk);
+		chunk.state = FBR_CHUNK_WBUFFER;
+		chunk.id = wbuffer->id;
+		chunk.offset = wbuffer->offset;
+		chunk.length = wbuffer->end;
+
+		_json_chunk_gen(fs, json, &chunk);
 	}
 }
 
@@ -169,6 +188,11 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	assert_dev(file);
 	assert_dev(index_data);
 
+	int modified = 0;
+	if (file == index_data->file && index_data->chunks) {
+		modified = 1;
+	}
+
 	// n: filename
 	fbr_writer_add(fs, json, "{\"n\":\"", 6);
 
@@ -183,7 +207,11 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 
 	// s: file size
 	fbr_writer_add(fs, json, ",\"s\":", 5);
-	fbr_writer_add_ulong(fs, json, file->size);
+	if (modified) {
+		fbr_writer_add_ulong(fs, json, index_data->size);
+	} else {
+		fbr_writer_add_ulong(fs, json, file->size);
+	}
 
 	// m: file mode
 	fbr_writer_add(fs, json, ",\"m\":", 5);
@@ -201,7 +229,7 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 		// b: body chunks
 		fbr_writer_add(fs, json, ",\"b\":[", 6);
 
-		if (file == index_data->file && index_data->chunks) {
+		if (modified) {
 			_json_body_modified_gen(fs, json, index_data);
 		} else {
 			_json_body_gen(fs, json, file);
@@ -285,6 +313,8 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 				}
 			}
 
+			index_data->size = size;
+
 			if (file->size != size) {
 				fs->log("INDEX new file->size: %zu (was: %zu)",
 					size, file->size);
@@ -293,39 +323,26 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		} else if (flags & FBR_FLUSH_APPEND) {
 			fs->log("INDEX APPEND flagged");
 
-			// TODO chunks might be published too early here
-			// they can be read after merging and while shifting?
+			index_data->size = fbr_body_length(file, NULL);
+			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
+				&index_data->removed, NULL);
 
-			index_data->chunks = fbr_wbuffer_chunks(wbuffers);
-			assert_zero_dev(index_data->removed);
-			unsigned long size_end = fbr_body_length(file, 0);
 			struct fbr_wbuffer *wbuffer = wbuffers;
+			assert_dev(wbuffer->state == FBR_WBUFFER_WRITING);
+			assert_zero_dev(wbuffer->next);
+			assert_zero_dev(wbuffer->chunk);
 
-			while (wbuffer) {
-				struct fbr_chunk *chunk = wbuffer->chunk;
-				fbr_chunk_ok(chunk);
-				assert_dev(chunk->state == FBR_CHUNK_WBUFFER);
+			if (wbuffer->offset != index_data->size) {
+				fs->log("INDEX APPEND shifting offset from: %lu to: %lu",
+					wbuffer->offset, index_data->size);
 
-				if (wbuffer->offset != size_end) {
-					fs->log("INDEX APPEND shifting offset from: %lu to: %lu",
-						wbuffer->offset, size_end);
-
-					wbuffer->offset = size_end;
-					chunk->offset = size_end;
-					assert_dev(wbuffer->end == chunk->length);
-				}
-
-				size_end += wbuffer->end;
-				wbuffer = wbuffer->next;
+				wbuffer->offset = index_data->size;
 			}
 
-			if (file->size != size_end) {
-				fs->log("INDEX new file->size: %zu (was: %zu)",
-					size_end, file->size);
-				file->size = size_end;
-			}
+			index_data->size += wbuffer->end;
 		} else {
-			index_data->chunks = fbr_body_chunk_range(file, 0, file->size,
+			index_data->size = fbr_body_length(file, wbuffers);
+			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
 				&index_data->removed, wbuffers);
 		}
 	}
@@ -359,7 +376,11 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	assert_dev(directory->version);
 	assert_dev(directory->generation);
 
-	int do_append = index_data->flags & FBR_FLUSH_APPEND;
+	int do_append = 0;
+	if (index_data->flags & FBR_FLUSH_APPEND && index_data->wbuffers) {
+		do_append = 1;
+	}
+
 	if (do_append) {
 		int ret = fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
 		if (ret) {
@@ -391,6 +412,32 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 		ret = fs->store->index_write_f(fs, directory, &json_gen, index_data->previous);
 	}
 
+	if (do_append) {
+		struct fbr_wbuffer *wbuffer = index_data->wbuffers;
+		assert(wbuffer->state == FBR_WBUFFER_DONE);
+		assert_zero_dev(wbuffer->next);
+		assert_zero_dev(wbuffer->chunk);
+
+		if (!ret) {
+			// Publish the wbuffer
+			fbr_wbuffer_chunk_add(fs, index_data->file, wbuffer);
+		} else {
+			wbuffer->state = FBR_WBUFFER_WRITING;
+
+			if (fs->store->chunk_delete_f) {
+				struct fbr_chunk chunk;
+				fbr_ZERO(&chunk);
+				chunk.magic = FBR_CHUNK_MAGIC;
+				chunk.id = wbuffer->id;
+				chunk.offset = wbuffer->offset;
+
+				fs->store->chunk_delete_f(fs, index_data->file, &chunk);
+
+				fbr_ZERO(&chunk);
+			}
+		}
+	}
+
 	if (index_data->removed && !ret) {
 		struct fbr_chunk_list *removed = index_data->removed;
 		fbr_chunk_list_ok(removed);
@@ -411,8 +458,6 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 			}
 		}
 	}
-
-	// TODO what do we do on append failure?
 
 	fbr_writer_free(fs, &json_gen);
 
