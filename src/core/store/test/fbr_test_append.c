@@ -331,14 +331,27 @@ _append_thread(void *arg)
 			assert(file->state == FBR_FILE_INIT);
 		}
 
-		char buffer[32];
-		size_t buffer_len = snprintf(buffer, sizeof(buffer), "%zu ", count);
-		assert(buffer_len < sizeof(buffer));
-
 		struct fbr_fio *fio = fbr_fio_alloc(fs, file, 0);
 		fio->append = 1;
-		fbr_wbuffer_write(fs, fio, 0, buffer, buffer_len);
+
+		char buffer[32];
+		if (!_APPEND_ERROR_TEST) {
+			size_t buffer_len = snprintf(buffer, sizeof(buffer), "%zu ", count);
+			assert(buffer_len < sizeof(buffer));
+			fbr_wbuffer_write(fs, fio, 0, buffer, buffer_len);
+			assert_zero(fio->wbuffers->next);
+		} else {
+			size_t buffer_len = snprintf(buffer, sizeof(buffer), "%zu", count);
+			assert(buffer_len < sizeof(buffer));
+			fbr_wbuffer_write(fs, fio, file->size, buffer, buffer_len);
+			fbr_wbuffer_write(fs, fio, file->size + buffer_len, " ", 1);
+			if (buffer_len == 2) {
+				fbr_wbuffer_ok(fio->wbuffers->next);
+			}
+		}
+
 		fbr_test_logs(" ** Thread %zu flush", id);
+
 		int ret = fbr_wbuffer_flush_fio(fs, fio);
 		if (_APPEND_ERROR_TEST) {
 			while (ret) {
@@ -456,7 +469,17 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_test_ASSERT(checks[i], "%zu missing from check", i);
 	}
 
-	assert(fbr_dstore_stat_chunks() == _APPEND_COUNTER_MAX);
+	if (!_APPEND_ERROR_TEST) {
+		fbr_test_ASSERT(fbr_dstore_stat_chunks() == _APPEND_COUNTER_MAX,
+			"chunks: %lu != %d", fbr_dstore_stat_chunks(), _APPEND_COUNTER_MAX);
+	} else {
+		size_t chunks = _APPEND_COUNTER_MAX;
+		if (chunks >= 10) {
+			chunks += _APPEND_COUNTER_MAX - 9;
+		}
+		fbr_test_ASSERT(fbr_dstore_stat_chunks() == chunks,
+			"chunks: %lu != %zu", fbr_dstore_stat_chunks(), chunks);
+	}
 
 	fbr_test_logs("*** All %d checks PASSED", _APPEND_COUNTER_MAX);
 
@@ -488,7 +511,7 @@ fbr_cmd_append_thread_error_test(struct fbr_test_context *ctx, struct fbr_test_c
 	_APPEND_ERROR_TEST = 1;
 	_APPEND_ERROR_WBUFFER = 5;
 	_APPEND_ERROR_FLUSH = 3;
-	//_DEBUG_WBUFFER_ALLOC_SIZE = 3;
+	_DEBUG_WBUFFER_ALLOC_SIZE = 2;
 
 	_append_thread_test(ctx, cmd);
 }
