@@ -233,6 +233,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 #define _APPEND_COUNTER_MAX	64
 size_t _APPEND_THREAD_COUNT;
 size_t _APPEND_COUNTER;
+size_t _APPEND_ERROR_TEST;
 
 static void *
 _append_thread(void *arg)
@@ -305,8 +306,8 @@ _append_thread(void *arg)
 	return NULL;
 }
 
-void
-fbr_cmd_append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+static void
+_append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -407,5 +408,22 @@ fbr_cmd_append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_fs_free(fs);
 	fbr_dstore_debug(0);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "append_thread_test done");
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "append_thread_test done%s",
+		_APPEND_ERROR_TEST ? " (ERROR TEST)" : "");
+}
+
+void
+fbr_cmd_append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	assert_zero(_APPEND_ERROR_TEST);
+
+	_append_thread_test(ctx, cmd);
+}
+
+void
+fbr_cmd_append_thread_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_APPEND_ERROR_TEST = 1;
+
+	_append_thread_test(ctx, cmd);
 }
