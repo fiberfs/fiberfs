@@ -234,6 +234,50 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 size_t _APPEND_THREAD_COUNT;
 size_t _APPEND_COUNTER;
 size_t _APPEND_ERROR_TEST;
+size_t _APPEND_ERROR_WBUFFER;
+size_t _APPEND_ERROR_FLUSH;
+
+extern int _DEBUG_WBUFFER_ALLOC_SIZE;
+
+static void
+_append_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+{
+	fbr_wbuffer_ok(wbuffer);
+	assert(wbuffer->state == FBR_WBUFFER_READY);
+
+	if (_APPEND_ERROR_WBUFFER && !(random() % 2)) {
+		fbr_test_logs("*** ERROR WBUFFER offset: %zu id: %lu",
+			wbuffer->offset, wbuffer->id);
+		fbr_atomic_sub(&_APPEND_ERROR_WBUFFER, 1);
+		wbuffer->state = FBR_WBUFFER_ERROR;
+		return;
+	}
+
+	fbr_dstore_wbuffer_write(fs, file, wbuffer);
+}
+
+static int
+_append_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_writer *writer, struct fbr_directory *previous)
+{
+	if (_APPEND_ERROR_FLUSH && !(random() % 2)) {
+		fbr_test_logs("*** ERROR FLUSH");
+		fbr_atomic_sub(&_APPEND_ERROR_FLUSH, 1);
+		return EIO;
+	}
+
+	return fbr_dstore_index_root_write(fs, directory, writer, previous);
+}
+
+static const struct fbr_store_callbacks _APPEND_TEST_ERROR_CALLBACKS = {
+	.chunk_read_f = fbr_dstore_chunk_read,
+	.chunk_delete_f = fbr_dstore_chunk_delete,
+	.wbuffer_write_f = _append_wbuffer,
+	.directory_flush_f = fbr_directory_flush,
+	.index_write_f = _append_index_root,
+	.index_read_f = fbr_dstore_index_read,
+	.root_read_f = fbr_dstore_root_read
+};
 
 static void *
 _append_thread(void *arg)
@@ -252,7 +296,11 @@ _append_thread(void *arg)
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
-	fbr_fs_set_store(fs, &_APPEND_TEST_CALLBACKS);
+	if (!_APPEND_ERROR_TEST) {
+		fbr_fs_set_store(fs, &_APPEND_TEST_CALLBACKS);
+	} else {
+		fbr_fs_set_store(fs, &_APPEND_TEST_ERROR_CALLBACKS);
+	}
 
 	struct fbr_path_name filename;
 	fbr_path_name_init(&filename, "file.append-thread");
@@ -261,6 +309,8 @@ _append_thread(void *arg)
 	size_t appends = 0;
 
 	while (count <= _APPEND_COUNTER_MAX) {
+		fbr_test_logs(" ** Thread %zu writing %zu", id, count);
+
 		struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
 		if (!root) {
 			root = fbr_directory_root_alloc(fs);
@@ -288,8 +338,16 @@ _append_thread(void *arg)
 		struct fbr_fio *fio = fbr_fio_alloc(fs, file, 0);
 		fio->append = 1;
 		fbr_wbuffer_write(fs, fio, 0, buffer, buffer_len);
+		fbr_test_logs(" ** Thread %zu flush", id);
 		int ret = fbr_wbuffer_flush_fio(fs, fio);
+		if (_APPEND_ERROR_TEST) {
+			while (ret) {
+				fbr_test_logs(" ** Thread %zu retrying flush", id);
+				ret = fbr_wbuffer_flush_fio(fs, fio);
+			}
+		}
 		fbr_test_ERROR(ret, "thread %zu fbr_wbuffer_flush_fio(fs) failed", id);
+
 		fbr_fio_release(fs, fio);
 
 		fbr_dindex_release(fs, &root);
@@ -361,7 +419,8 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(root->state == FBR_DIRSTATE_LOADING);
 	fbr_index_read(fs, root);
 	assert(root->state == FBR_DIRSTATE_OK);
-	assert(root->generation == _APPEND_COUNTER_MAX + 1);
+	fbr_test_ASSERT(root->generation == _APPEND_COUNTER_MAX + 1, "root->generation: %lu",
+		root->generation);
 	assert(root->file_count == 1);
 
 	fbr_test_logs("*** root generation: %lu", root->generation);
@@ -369,7 +428,8 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_file *file = fbr_directory_find_file(root, "file.append-thread", 18);
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_OK);
-	assert(file->generation == _APPEND_COUNTER_MAX);
+	fbr_test_ASSERT(file->generation == _APPEND_COUNTER_MAX, "file->generation: %lu",
+		file->generation);
 
 	fbr_test_logs("*** root->generation: %lu file->generation: %lu", root->generation,
 		file->generation);
@@ -416,6 +476,8 @@ void
 fbr_cmd_append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	assert_zero(_APPEND_ERROR_TEST);
+	assert_zero(_APPEND_ERROR_WBUFFER);
+	assert_zero(_APPEND_ERROR_FLUSH);
 
 	_append_thread_test(ctx, cmd);
 }
@@ -424,6 +486,9 @@ void
 fbr_cmd_append_thread_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_APPEND_ERROR_TEST = 1;
+	_APPEND_ERROR_WBUFFER = 5;
+	_APPEND_ERROR_FLUSH = 3;
+	//_DEBUG_WBUFFER_ALLOC_SIZE = 3;
 
 	_append_thread_test(ctx, cmd);
 }

@@ -128,21 +128,26 @@ _json_body_modified_gen(struct fbr_fs *fs, struct fbr_writer *json,
 	}
 
 	if (index_data->flags & FBR_FLUSH_APPEND && index_data->wbuffers) {
-		if (i) {
-			fbr_writer_add(fs, json, ",", 1);
-		}
-
 		struct fbr_wbuffer *wbuffer = index_data->wbuffers;
-		assert_zero_dev(wbuffer->next);
+		while (wbuffer) {
+			fbr_wbuffer_ok(wbuffer);
 
-		struct fbr_chunk chunk;
-		fbr_ZERO(&chunk);
-		chunk.state = FBR_CHUNK_WBUFFER;
-		chunk.id = wbuffer->id;
-		chunk.offset = wbuffer->offset;
-		chunk.length = wbuffer->end;
+			if (i) {
+				fbr_writer_add(fs, json, ",", 1);
+			}
+			i++;
 
-		_json_chunk_gen(fs, json, &chunk);
+			struct fbr_chunk chunk;
+			fbr_ZERO(&chunk);
+			chunk.state = FBR_CHUNK_WBUFFER;
+			chunk.id = wbuffer->id;
+			chunk.offset = wbuffer->offset;
+			chunk.length = wbuffer->end;
+
+			_json_chunk_gen(fs, json, &chunk);
+
+			wbuffer = wbuffer->next;
+		}
 	}
 }
 
@@ -328,18 +333,22 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 				&index_data->removed, NULL);
 
 			struct fbr_wbuffer *wbuffer = wbuffers;
-			assert_dev(wbuffer->state == FBR_WBUFFER_WRITING);
-			assert_zero_dev(wbuffer->next);
-			assert_zero_dev(wbuffer->chunk);
+			while (wbuffer) {
+				fbr_wbuffer_ok(wbuffer);
+				assert_dev(wbuffer->state == FBR_WBUFFER_WRITING);
+				assert_zero_dev(wbuffer->chunk);
 
-			if (wbuffer->offset != index_data->size) {
-				fs->log("INDEX APPEND shifting offset from: %lu to: %lu",
-					wbuffer->offset, index_data->size);
+				if (wbuffer->offset != index_data->size) {
+					fs->log("INDEX APPEND shifting offset from: %lu to: %lu",
+						wbuffer->offset, index_data->size);
 
-				wbuffer->offset = index_data->size;
+					wbuffer->offset = index_data->size;
+				}
+
+				index_data->size = wbuffer->offset + wbuffer->end;
+
+				wbuffer = wbuffer->next;
 			}
-
-			index_data->size += wbuffer->end;
 		} else {
 			index_data->size = fbr_body_length(file, wbuffers);
 			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
@@ -363,6 +372,28 @@ fbr_index_data_free(struct fbr_index_data *index_data)
 	fbr_ZERO(index_data);
 }
 
+static void
+_index_wbuffer_remove(struct fbr_fs *fs, struct fbr_index_data *index_data,
+    struct fbr_wbuffer *wbuffer)
+{
+	assert_dev(fs);
+	assert_dev(fs->store);
+	assert_dev(index_data);
+	fbr_wbuffer_ok(wbuffer);
+
+	if (fs->store->chunk_delete_f) {
+		struct fbr_chunk chunk;
+		fbr_ZERO(&chunk);
+		chunk.magic = FBR_CHUNK_MAGIC;
+		chunk.id = wbuffer->id;
+		chunk.offset = wbuffer->offset;
+
+		fs->store->chunk_delete_f(fs, index_data->file, &chunk);
+
+		fbr_ZERO(&chunk);
+	}
+}
+
 int
 fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 {
@@ -384,6 +415,20 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	if (do_append) {
 		int ret = fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
 		if (ret) {
+			struct fbr_wbuffer *wbuffer = index_data->wbuffers;
+			while (wbuffer) {
+				fbr_wbuffer_ok(wbuffer);
+				assert(wbuffer->state == FBR_WBUFFER_WRITING ||
+					wbuffer->state == FBR_WBUFFER_DONE);
+
+				if (wbuffer->state == FBR_WBUFFER_DONE) {
+					wbuffer->state = FBR_WBUFFER_WRITING;
+					_index_wbuffer_remove(fs, index_data, wbuffer);
+				}
+
+				wbuffer = wbuffer->next;
+			}
+
 			return ret;
 		}
 	}
@@ -414,27 +459,21 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 
 	if (do_append) {
 		struct fbr_wbuffer *wbuffer = index_data->wbuffers;
-		assert(wbuffer->state == FBR_WBUFFER_DONE);
-		assert_zero_dev(wbuffer->next);
-		assert_zero_dev(wbuffer->chunk);
+		while (wbuffer) {
+			fbr_wbuffer_ok(wbuffer);
+			assert(wbuffer->state == FBR_WBUFFER_DONE);
+			assert_zero_dev(wbuffer->chunk);
 
-		if (!ret) {
-			// Publish the wbuffer
-			fbr_wbuffer_chunk_add(fs, index_data->file, wbuffer);
-		} else {
-			wbuffer->state = FBR_WBUFFER_WRITING;
-
-			if (fs->store->chunk_delete_f) {
-				struct fbr_chunk chunk;
-				fbr_ZERO(&chunk);
-				chunk.magic = FBR_CHUNK_MAGIC;
-				chunk.id = wbuffer->id;
-				chunk.offset = wbuffer->offset;
-
-				fs->store->chunk_delete_f(fs, index_data->file, &chunk);
-
-				fbr_ZERO(&chunk);
+			if (!ret) {
+				// Publish the wbuffers
+				fbr_wbuffer_chunk_add(fs, index_data->file, wbuffer);
+			} else {
+				// Revert back to writing state
+				wbuffer->state = FBR_WBUFFER_WRITING;
+				_index_wbuffer_remove(fs, index_data, wbuffer);
 			}
+
+			wbuffer = wbuffer->next;
 		}
 	}
 

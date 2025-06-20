@@ -491,10 +491,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	int error = 0;
 
 	if (fio->append) {
-		assert_zero(fio->wbuffers->chunk);
-		assert_zero(fio->wbuffers->next);
 		skip_write = 1;
-
 		fbr_fs_stat_add(&fs->stats.appends);
 	}
 

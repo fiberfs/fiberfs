@@ -513,16 +513,14 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
 	fbr_inode_release(fs, &parent);
 
-	const char *filename = fbr_path_get_file(&file->path, NULL);
+	struct fbr_path_name filename;
+	fbr_path_get_file(&file->path, &filename);
 
-	fs->log("FLUSH directory: '%s' file: '%s' (%lu)", dirname.name, filename,
-		file->generation);
+	fs->log("FLUSH invoked directory: '%s' file: '%s'", dirname.name, filename.name);
 
 	int add_file = 0;
 	int add_file_init = 0;
 	if (file->state == FBR_FILE_INIT) {
-		file->state = FBR_FILE_OK;
-		file->generation = 1;
 		add_file = 1;
 		add_file_init = 1;
 	}
@@ -561,7 +559,17 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			case FBR_DIRSTATE_OK:
 				break;
 			case FBR_DIRSTATE_LOADING:
+				if (add_file_init) {
+					file->state = FBR_FILE_OK;
+					file->generation = 0;
+
+					fbr_directory_add_file(fs, directory, file);
+
+					add_file_init = 0;
+				}
+
 				fbr_index_read(fs, directory);
+
 				if (directory->state == FBR_DIRSTATE_ERROR) {
 					fbr_dindex_release(fs, &directory);
 					return EIO;
@@ -598,7 +606,8 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			&directory, &attempts, time_start);
 		if (!new_directory) {
 			fbr_dindex_release(fs, &directory);
-			return EIO;
+			ret = EIO;
+			break;
 		}
 		assert_dev(new_directory->state == FBR_DIRSTATE_LOADING);
 
@@ -615,11 +624,27 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		fbr_file_LOCK(fs, file);
 
 		if (add_file_init) {
-			fbr_directory_add_file(fs, new_directory, file);
-			add_file_init = 0;
+			file->state = FBR_FILE_OK;
+
+			struct fbr_file *existing = fbr_directory_find_file(new_directory,
+				filename.name, filename.len);
+
+			if (!existing) {
+				file->generation = 1;
+				fbr_directory_add_file(fs, new_directory, file);
+			} else {
+				assert(existing == file);
+				file->generation++;
+
+				add_file_init = 0;
+			}
 		} else {
+			assert_dev(file == fbr_directory_find_file(new_directory, filename.name,
+				filename.len));
 			file->generation++;
 		}
+
+		fs->log("FLUSH file: '%s' generation: %lu", filename.name, file->generation);
 
 		fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers,
 			flags);
@@ -636,10 +661,16 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
 
+			if (!add_file_init) {
+				file->generation--;
+			}
+
 			if (ret == EAGAIN) {
 				retry = 1;
 			}
 		}
+
+		add_file_init = 0;
 
 		fbr_file_UNLOCK(file);
 
@@ -667,7 +698,8 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		directory = _directory_get_loading(fs, &dirname, inode, NULL, &attempts,
 			time_start);
 		if (!directory) {
-			return EIO;
+			ret = EIO;
+			break;
 		}
 		assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 
@@ -680,8 +712,13 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		fbr_index_read(fs, directory);
 		if (directory->state == FBR_DIRSTATE_ERROR) {
 			fbr_dindex_release(fs, &directory);
-			return EIO;
+			ret = EIO;
+			break;
 		}
+	}
+
+	if (ret && add_file) {
+		file->state = FBR_FILE_INIT;
 	}
 
 	return ret;
