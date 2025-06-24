@@ -230,7 +230,8 @@ struct fbr_dreader {
 enum fbr_flush_flags {
 	FBR_FLUSH_NONE = 0,
 	FBR_FLUSH_TRUNCATE = (1 << 0),
-	FBR_FLUSH_APPEND = (1 << 1)
+	FBR_FLUSH_APPEND = (1 << 1),
+	FBR_FLUSH_DELAY_WRITE = (1 << 2)
 };
 
 enum fbr_wbuffer_state {
@@ -374,6 +375,7 @@ unsigned int fbr_fs_param_value(unsigned int param);
 int fbr_fs_timeout_expired(double time_start, double timeout);
 void __fbr_attr_printf(1) fbr_fs_logger(const char *fmt, ...);
 size_t fbr_fs_chunk_size(size_t offset);
+int fbr_fs_is_flag(enum fbr_flush_flags flags, enum fbr_flush_flags value);
 
 void fbr_inodes_alloc(struct fbr_fs *fs);
 fbr_inode_t fbr_inode_gen(struct fbr_fs *fs);

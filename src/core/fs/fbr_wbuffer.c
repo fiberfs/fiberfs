@@ -561,31 +561,26 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	assert_zero_dev(fio->read_only);
 	assert_dev(fbr_file_has_wbuffer(fio->file));
 
-
 	struct fbr_file *file = fio->file;
-	int skip_write = 0;
-	int error = 0;
+	enum fbr_flush_flags flags = FBR_FLUSH_NONE;
 
 	if (fio->append) {
-		skip_write = 1;
+		flags |= FBR_FLUSH_APPEND;
+		flags |= FBR_FLUSH_DELAY_WRITE;
 		fbr_fs_stat_add(&fs->stats.appends);
 	}
+	if (fio->truncate) {
+		flags |= FBR_FLUSH_TRUNCATE;
+	}
 
-	if (!skip_write) {
+	int error = 0;
+	if (!fbr_fs_is_flag(flags, FBR_FLUSH_DELAY_WRITE)) {
 		error = fbr_wbuffer_flush_store(fs, file, fio->wbuffers, 0);
 	}
 
 	if (error) {
 		_wbuffer_UNLOCK(fio);
 		return error;
-	}
-
-	enum fbr_flush_flags flags = FBR_FLUSH_NONE;
-	if (fio->truncate) {
-		flags |= FBR_FLUSH_TRUNCATE;
-	}
-	if (fio->append) {
-		flags |= FBR_FLUSH_APPEND;
 	}
 
 	if (fs->store->directory_flush_f) {

@@ -105,3 +105,9 @@ fbr_fs_chunk_size(size_t offset)
 
 	return 1024 * 1024 * 2;
 }
+
+int
+fbr_fs_is_flag(enum fbr_flush_flags flags, enum fbr_flush_flags value)
+{
+	return flags & value;
+}
