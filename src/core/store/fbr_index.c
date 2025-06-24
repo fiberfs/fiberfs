@@ -308,23 +308,12 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 			index_data->chunks = fbr_wbuffer_chunks(wbuffers);
 			index_data->removed = fbr_body_chunk_all(file, 0);
+			index_data->size = fbr_chunk_list_size(index_data->chunks);
 
-			size_t size = 0;
-			for (size_t i = 0; i < index_data->chunks->length; i++) {
-				struct fbr_chunk *chunk = index_data->chunks->list[i];
-				fbr_chunk_ok(chunk);
-				size_t chunk_end = chunk->offset + chunk->length;
-				if (chunk_end > size) {
-					size = chunk_end;
-				}
-			}
-
-			index_data->size = size;
-
-			if (file->size != size) {
-				fs->log("INDEX new file->size: %zu (was: %zu)",
-					size, file->size);
-				file->size = size;
+			if (file->size != index_data->size) {
+				fs->log("INDEX new file->size: %zu (was: %zu)", index_data->size,
+					file->size);
+				file->size = index_data->size;
 			}
 		} else if (fbr_fs_is_flag(flags, FBR_FLUSH_APPEND)) {
 			fs->log("INDEX APPEND flagged");

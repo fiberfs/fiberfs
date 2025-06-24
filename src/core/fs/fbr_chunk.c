@@ -240,7 +240,7 @@ fbr_chunk_list_next(struct fbr_chunk_list *chunks, size_t offset)
 int
 fbr_chunk_list_complete(struct fbr_chunk_list *chunks, size_t offset, size_t size)
 {
-	assert_dev(chunks);
+	fbr_chunk_list_ok(chunks);
 
 	size_t offset_end = offset + size;
 
@@ -254,6 +254,27 @@ fbr_chunk_list_complete(struct fbr_chunk_list *chunks, size_t offset, size_t siz
 	}
 
 	return 1;
+}
+
+size_t
+fbr_chunk_list_size(struct fbr_chunk_list *chunks)
+{
+	fbr_chunk_list_ok(chunks);
+
+	size_t size = 0;
+
+	for (size_t i = 0; i < chunks->length; i++) {
+		struct fbr_chunk *chunk = chunks->list[i];
+		fbr_chunk_ok(chunk);
+
+		size_t chunk_end = chunk->offset + chunk->length;
+
+		if (chunk_end > size) {
+			size = chunk_end;
+		}
+	}
+
+	return size;
 }
 
 void

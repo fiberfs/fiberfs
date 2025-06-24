@@ -423,6 +423,7 @@ int fbr_chunk_list_contains(struct fbr_chunk_list *chunks, struct fbr_chunk *chu
 struct fbr_chunk *fbr_chunk_list_find(struct fbr_chunk_list *chunks, size_t offset);
 struct fbr_chunk *fbr_chunk_list_next(struct fbr_chunk_list *chunks, size_t offset);
 int fbr_chunk_list_complete(struct fbr_chunk_list *chunks, size_t offset, size_t size);
+size_t fbr_chunk_list_size(struct fbr_chunk_list *chunks);
 void fbr_chunk_list_free(struct fbr_chunk_list *chunks);
 
 void fbr_body_init(struct fbr_body *body);
