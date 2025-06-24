@@ -11,6 +11,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "core/store/fbr_store.h"
 
 void
 fbr_body_init(struct fbr_body *body)
@@ -216,6 +217,7 @@ void
 fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_list *remove)
 {
 	fbr_fs_ok(fs);
+	assert_dev(fs->store);
 	fbr_file_ok(file);
 	assert(file->state >= FBR_FILE_OK);
 	fbr_chunk_list_ok(remove);
@@ -258,6 +260,20 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 		fs->log("BODY new file->size: %zu (was: %zu)",
 			size, file->size);
 		file->size = size;
+	}
+
+	for (size_t i = 0; i < remove->length; i++) {
+		struct fbr_chunk *chunk = remove->list[i];
+		fbr_chunk_ok(chunk);
+
+		if (!chunk->id) {
+			continue;
+		}
+
+		// TODO async?
+		if (fs->store->chunk_delete_f) {
+			fs->store->chunk_delete_f(fs, file, chunk);
+		}
 	}
 }
 
