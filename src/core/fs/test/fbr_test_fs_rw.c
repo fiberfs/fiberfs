@@ -77,7 +77,6 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 			strerror(ret));
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
 	} else {
-		fbr_wbuffer_ready(fs, file, wbuffers);
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 	}
 

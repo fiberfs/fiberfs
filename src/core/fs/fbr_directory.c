@@ -653,7 +653,6 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 		ret = fbr_index_write(fs, &index_data);
 		if (!ret) {
-			fbr_wbuffer_ready(fs, file, wbuffers);
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 		} else {
 			fs->log("FLUSH fbr_index_write(new_directory) failed (%d %s)", ret,

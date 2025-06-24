@@ -372,28 +372,7 @@ fbr_index_data_free(struct fbr_index_data *index_data)
 	fbr_ZERO(index_data);
 }
 
-static void
-_index_wbuffer_remove(struct fbr_fs *fs, struct fbr_index_data *index_data,
-    struct fbr_wbuffer *wbuffer)
-{
-	assert_dev(fs);
-	assert_dev(fs->store);
-	assert_dev(index_data);
-	fbr_wbuffer_ok(wbuffer);
-
-	if (fs->store->chunk_delete_f) {
-		struct fbr_chunk chunk;
-		fbr_ZERO(&chunk);
-		chunk.magic = FBR_CHUNK_MAGIC;
-		chunk.id = wbuffer->id;
-		chunk.offset = wbuffer->offset;
-
-		fs->store->chunk_delete_f(fs, index_data->file, &chunk);
-
-		fbr_ZERO(&chunk);
-	}
-}
-
+// Note: if doing file IO, file->lock needed
 int
 fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 {
@@ -413,22 +392,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	}
 
 	if (do_append) {
-		int ret = fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
+		int ret = fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers, 1);
 		if (ret) {
-			struct fbr_wbuffer *wbuffer = index_data->wbuffers;
-			while (wbuffer) {
-				fbr_wbuffer_ok(wbuffer);
-				assert(wbuffer->state == FBR_WBUFFER_WRITING ||
-					wbuffer->state == FBR_WBUFFER_DONE);
-
-				if (wbuffer->state == FBR_WBUFFER_DONE) {
-					wbuffer->state = FBR_WBUFFER_WRITING;
-					_index_wbuffer_remove(fs, index_data, wbuffer);
-				}
-
-				wbuffer = wbuffer->next;
-			}
-
 			return ret;
 		}
 	}
@@ -457,32 +422,17 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 		ret = fs->store->index_write_f(fs, directory, &json_gen, index_data->previous);
 	}
 
-	if (do_append) {
-		struct fbr_wbuffer *wbuffer = index_data->wbuffers;
-		while (wbuffer) {
-			fbr_wbuffer_ok(wbuffer);
-			assert(wbuffer->state == FBR_WBUFFER_DONE);
-			assert_zero_dev(wbuffer->chunk);
-
-			if (!ret) {
-				// Publish the wbuffers
-				fbr_wbuffer_chunk_add(fs, index_data->file, wbuffer);
-			} else {
-				// Revert back to writing state
-				wbuffer->state = FBR_WBUFFER_WRITING;
-				_index_wbuffer_remove(fs, index_data, wbuffer);
-			}
-
-			wbuffer = wbuffer->next;
-		}
+	if (ret && do_append) {
+		fbr_wbuffers_error_reset(fs, index_data->file, index_data->wbuffers, 1);
 	}
 
-	if (index_data->removed && !ret) {
+	if (!ret && index_data->removed) {
 		struct fbr_chunk_list *removed = index_data->removed;
 		fbr_chunk_list_ok(removed);
 
 		fbr_body_chunk_prune(fs, index_data->file, removed);
 
+		// TODO move this into prune
 		for (size_t i = 0; i < removed->length; i++) {
 			struct fbr_chunk *chunk = removed->list[i];
 			fbr_chunk_ok(chunk);
@@ -496,6 +446,10 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 				fs->store->chunk_delete_f(fs, index_data->file, chunk);
 			}
 		}
+	}
+
+	if (!ret && index_data->wbuffers) {
+		fbr_wbuffers_ready(fs, index_data->file, index_data->wbuffers, do_append);
 	}
 
 	fbr_writer_free(fs, &json_gen);
