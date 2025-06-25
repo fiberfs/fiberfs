@@ -508,3 +508,22 @@ fbr_test_cmd_sys_write_seek(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_write_seek bytes %zu", total_bytes);
 }
+
+void
+fbr_test_cmd_sys_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	char *dirname = cmd->params[0].value;
+
+	int ret = mkdir(dirname, S_IRWXU);
+	fbr_test_ERROR(ret, "mkdir failed %d", ret);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_mkdir '%s'", dirname);
+}

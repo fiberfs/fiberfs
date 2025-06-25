@@ -499,7 +499,6 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
-	fbr_wbuffer_ok(wbuffers);
 
 	fbr_inode_t inode = file->parent_inode;
 	struct fbr_file *parent = fbr_inode_take(fs, inode);
