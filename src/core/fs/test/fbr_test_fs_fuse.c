@@ -27,7 +27,6 @@
 static DIR *_TEST_DIR;
 static int _TEST_FD = -1;
 
-static int _TEST_FS_DO_INIT;
 static int _TEST_FS_ALLOW_CRASH;
 
 static void
@@ -194,16 +193,10 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 
 	if (inode == FBR_INODE_ROOT) {
 		assert_zero(dirname->len);
-
 		directory = fbr_directory_root_alloc(fs);
 	} else {
 		assert(dirname->len);
-
 		directory = fbr_directory_alloc(fs, dirname, inode);
-	}
-
-	if (!_TEST_FS_DO_INIT) {
-		fbr_index_read(fs, directory);
 	}
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
@@ -259,6 +252,7 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 }
 
 static const struct fbr_store_callbacks _TEST_FS_STORE_CALLBACKS = {
+	.directory_load_f = _test_fs_init_directory,
 	.chunk_read_f = _test_fs_chunk_gen
 };
 
@@ -277,142 +271,26 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fs_set_store(ctx->fs, &_TEST_FS_STORE_CALLBACKS);
 
 	fbr_test_random_seed();
-
-	_TEST_FS_DO_INIT = 1;
 }
 
 void
 fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 {
-	struct fbr_fs *fs = fbr_request_fs(request);
-
-	fbr_test_logs("LOOKUP req: %lu parent: %lu name: %s", request->id, parent, name);
+	fbr_request_ok(request);
 
 	if (_TEST_FS_ALLOW_CRASH && !strcmp(name, "__CRASH")) {
+		fbr_test_logs("LOOKUP req: %lu name: %s", request->id, name);
 		fbr_ABORT("__CRASH triggered!");
 	}
 
-	struct fbr_file *parent_file = fbr_inode_take(fs, parent);
-
-	if (!parent_file || parent_file->state == FBR_FILE_EXPIRED) {
-		fbr_fuse_reply_err(request, ENOTDIR);
-
-		if (parent_file) {
-			fbr_inode_release(fs, &parent_file);
-		}
-		assert_zero_dev(parent_file);
-
-		return;
-	}
-
-	struct fbr_path_name parent_dirname;
-	char buf[PATH_MAX];
-	fbr_path_get_full(&parent_file->path, &parent_dirname, buf, sizeof(buf));
-
-	fbr_test_logs("** LOOKUP found parent_file: '%.*s':%zu (inode: %lu)",
-		(int)parent_dirname.len, parent_dirname.name, parent_dirname.len,
-		parent_file->inode);
-
-	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname, 0);
-	struct fbr_directory *stale_directory = NULL;
-
-	if (directory && directory->inode > parent_file->inode) {
-		fbr_test_logs("** LOOKUP parent: %lu found newer dir_inode: %lu (return error)",
-			parent_file->inode, directory->inode);
-
-		fbr_fuse_reply_err(request, ENOTDIR);
-
-		fbr_inode_release(fs, &parent_file);
-		fbr_dindex_release(fs, &directory);
-
-		return;
-	} else if (directory && directory->inode < parent_file->inode) {
-		fbr_test_logs("** LOOKUP parent: %lu mismatch dir_inode: %lu (will make new)",
-			parent_file->inode, directory->inode);
-		stale_directory = directory;
-		directory = NULL;
-	}
-
-	if (!directory) {
-		directory = _test_fs_init_directory(fs, &parent_dirname, parent_file->inode);
-
-		if (!directory) {
-			fbr_fuse_reply_err(request, EIO);
-
-			fbr_inode_release(fs, &parent_file);
-
-			if (stale_directory) {
-				fbr_dindex_release(fs, &stale_directory);
-				assert_zero_dev(stale_directory);
-			}
-
-			return;
-		}
-
-		assert(directory->inode == parent_file->inode);
-	}
-
-	fbr_directory_ok(directory);
-
-	fbr_inode_release(fs, &parent_file);
-	assert_zero_dev(parent_file);
-
-	struct fbr_path_name dirname;
-	fbr_directory_name(directory, &dirname);
-	fbr_test_logs("** LOOKUP found directory: '%s' (inode: %lu)",
-		dirname.name, directory->inode);
-
-	size_t name_len = strlen(name);
-	struct fbr_file *file = fbr_directory_find_file(directory, name, name_len);
-
-	if (!file) {
-		fbr_fuse_reply_err(request, ENOENT);
-
-		fbr_dindex_release(fs, &directory);
-		assert_zero_dev(directory);
-
-		if (stale_directory) {
-			fbr_dindex_release(fs, &stale_directory);
-			assert_zero_dev(stale_directory);
-		}
-
-		return;
-	}
-
-	fbr_file_ok(file);
-
-	const char *fullname = fbr_path_get_full(&file->path, NULL, buf, sizeof(buf));
-	fbr_test_logs("** LOOKUP found file: '%s' (inode: %lu)", fullname, file->inode);
-
-	struct fbr_path_name filename;
-	fbr_path_get_file(&file->path, &filename);
-	assert(name_len == filename.len);
-	assert_zero(strcmp(name, filename.name));
-
-	struct fuse_entry_param entry;
-	fbr_ZERO(&entry);
-	entry.attr_timeout = fbr_fs_dentry_ttl(fs);
-	entry.entry_timeout = fbr_fs_dentry_ttl(fs);
-	entry.ino = file->inode;
-	fbr_file_attr(fs, file, &entry.attr);
-
-	fbr_inode_add(fs, file);
-
-	fbr_fuse_reply_entry(request, &entry);
-
-	fbr_dindex_release(fs, &directory);
-	assert_zero_dev(directory);
-
-	if (stale_directory) {
-		fbr_dindex_release(fs, &stale_directory);
-		assert_zero_dev(stale_directory);
-	}
+	fbr_ops_lookup(request, parent, name);
 }
 
 void
 fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
+	assert_dev(fs->store);
 
 	fbr_test_logs("OPENDIR req: %lu ino: %lu", request->id, ino);
 
@@ -457,7 +335,9 @@ fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fus
 	}
 
 	if (!directory) {
-		directory = _test_fs_init_directory(fs, &dirname, file->inode);
+		if (fs->store->directory_load_f) {
+			directory = fs->store->directory_load_f(fs, &dirname, file->inode);
+		}
 
 		if (!directory) {
 			fbr_fuse_reply_err(request, EIO);

@@ -10,5 +10,6 @@
 #include "core/request/fbr_request.h"
 
 void fbr_ops_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
+void fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name);
 
 #endif /* _FBR_OPERATIONS_H_INCLUDED_ */

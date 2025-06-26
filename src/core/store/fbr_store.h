@@ -109,6 +109,8 @@ struct fbr_index_data {
 };
 
 struct fbr_store_callbacks {
+	struct fbr_directory* (*directory_load_f)(struct fbr_fs *fs,
+		const struct fbr_path_name *dirname, fbr_inode_t inode);
 	void (*chunk_read_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_chunk *chunk);
 	void (*chunk_delete_f)(struct fbr_fs *fs, struct fbr_file *file,

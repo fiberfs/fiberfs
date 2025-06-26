@@ -23,10 +23,10 @@ RB_GENERATE(fbr_filename_tree, fbr_file_ptr, filename_entry, fbr_file_ptr_cmp)
 
 static void _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory);
 
-struct fbr_directory *
-fbr_directory_root_alloc(struct fbr_fs *fs)
+static void
+_directory_root_init(struct fbr_fs *fs)
 {
-	fbr_fs_ok(fs);
+	assert_dev(fs);
 
 	struct fbr_file *root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
 
@@ -59,14 +59,8 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 
 	assert_dev(fs->root_file);
 
-	struct fbr_directory *root = fbr_directory_alloc(fs, FBR_DIRNAME_ROOT, root_file->inode);
-	fbr_directory_ok(root);
-	assert_dev(root->inode == FBR_INODE_ROOT);
-
 	fbr_inode_release(fs, &root_file);
 	assert_zero_dev(root_file);
-
-	return root;
 }
 
 static void
@@ -96,6 +90,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 
 	if (inode == FBR_INODE_ROOT) {
 		assert_zero_dev(dirname->len);
+		_directory_root_init(fs);
 	} else {
 		assert_dev(dirname->len);
 	}
@@ -160,6 +155,36 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 	}
 
 	assert_dev(directory->state >= FBR_DIRSTATE_LOADING);
+
+	return directory;
+}
+
+struct fbr_directory *
+fbr_directory_root_alloc(struct fbr_fs *fs)
+{
+	return fbr_directory_alloc(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+}
+
+struct fbr_directory *
+fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_inode_t inode)
+{
+	fbr_fs_ok(fs);
+	assert(dirname);
+	assert(inode);
+
+	struct fbr_directory *directory = fbr_directory_alloc(fs, dirname, inode);
+
+	if (directory->state == FBR_DIRSTATE_LOADING) {
+		fbr_index_read(fs, directory);
+	}
+
+	if (directory->state == FBR_DIRSTATE_ERROR) {
+		fbr_dindex_release(fs, &directory);
+		return NULL;
+	}
+
+	fbr_ASSERT(directory->state == FBR_DIRSTATE_OK,
+		"fbr_directory_load() directory->state: %d", directory->state);
 
 	return directory;
 }

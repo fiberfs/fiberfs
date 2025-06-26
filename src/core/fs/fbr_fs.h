@@ -447,6 +447,8 @@ RB_PROTOTYPE(fbr_filename_tree, fbr_file_ptr, filename_entry, fbr_file_ptr_cmp)
 struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	fbr_inode_t inode);
+struct fbr_directory *fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname,
+	fbr_inode_t inode);
 void fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_directory_name(const struct fbr_directory *directory, struct fbr_path_name *result);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
