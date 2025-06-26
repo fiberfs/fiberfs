@@ -559,8 +559,8 @@ static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 	.release = _test_fs_rw_release,
 	.fsync = _test_fs_rw_fsync,
 
-	.forget = fbr_test_fs_fuse_forget,
-	.forget_multi = fbr_test_fs_fuse_forget_multi
+	.forget = fbr_ops_forget,
+	.forget_multi = fbr_ops_forget_multi
 };
 
 void

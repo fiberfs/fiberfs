@@ -22,9 +22,6 @@ void __fbr_attr_printf(1) fbr_test_fs_logger_null(const char *fmt, ...);
 void fbr_test_fs_stats(struct fbr_fs *fs);
 void fbr_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
 	struct fuse_file_info *fi);
-void fbr_test_fs_fuse_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup);
-void fbr_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
-	struct fuse_forget_data *forgets);
 void fbr_test_fs_inodes_debug(struct fbr_fs *fs);
 void fbr_test_fs_dindex_debug(struct fbr_fs *fs);
 struct fbr_fs * fbr_test_fs_alloc(void);
