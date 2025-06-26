@@ -267,89 +267,6 @@ _test_fs_rw_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *na
 	assert_zero_dev(directory);
 }
 
-static void
-_test_fs_rw_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, size_t size,
-    off_t off, struct fuse_file_info *fi)
-{
-	struct fbr_fs *fs = fbr_request_fs(request);
-
-	fbr_test_logs("WRITE req: %lu ino: %lu off: %ld size: %zu", request->id, ino, off, size);
-	assert(off >= 0);
-	assert(size);
-
-	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
-	fbr_fio_take(fio);
-	fbr_file_ok(fio->file);
-	assert(fio->file->inode == ino);
-
-	fbr_wbuffer_write(fs, fio, off, buf, size);
-
-	fbr_fs_stat_add_count(&fs->stats.write_bytes, size);
-
-	int ret = 0;
-	if (fio->append) {
-		ret = fbr_wbuffer_flush_fio(fs, fio);
-	}
-
-	if (!ret) {
-		fbr_fuse_reply_write(request, size);
-	} else {
-		fbr_fuse_reply_err(request, ret);
-	}
-
-	fbr_fio_release(fs, fio);
-}
-
-static void
-_test_fs_rw_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
-{
-	struct fbr_fs *fs = fbr_request_fs(request);
-	(void)fs;
-	(void)fi;
-
-	fbr_test_logs("FLUSH req: %lu ino: %lu", request->id, ino);
-
-	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
-	fbr_fio_take(fio);
-	fbr_file_ok(fio->file);
-	assert(fio->file->inode == ino);
-
-	int ret = fbr_wbuffer_flush_fio(fs, fio);
-	fbr_fuse_reply_err(request, ret);
-
-	fbr_fio_release(fs, fio);
-}
-
-static void
-_test_fs_rw_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
-{
-	struct fbr_fs *fs = fbr_request_fs(request);
-
-	fbr_test_logs("RELEASE req: %lu ino: %lu", request->id, ino);
-
-	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
-
-	// Flush incase we hit a previous flush error
-	int ret = fbr_wbuffer_flush_fio(fs, fio);
-
-	fbr_fio_release(fs, fio);
-
-	fbr_fuse_reply_err(request, ret);
-}
-
-static void
-_test_fs_rw_fsync(struct fbr_request *request, fuse_ino_t ino, int datasync,
-    struct fuse_file_info *fi)
-{
-	struct fbr_fs *fs = fbr_request_fs(request);
-	(void)fs;
-	(void)fi;
-
-	fbr_test_logs("FSYNC req: %lu ino: %lu datasync: %d", request->id, ino, datasync);
-
-	fbr_fuse_reply_err(request, 0);
-}
-
 static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 	.init = _test_fs_rw_init,
 
@@ -364,11 +281,11 @@ static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 
 	.open = fbr_ops_open,
 	.create = fbr_ops_create,
-	.read = fbr_test_fs_fuse_read,
-	.write = _test_fs_rw_write,
-	.flush = _test_fs_rw_flush,
-	.release = _test_fs_rw_release,
-	.fsync = _test_fs_rw_fsync,
+	.read = fbr_ops_read,
+	.write = fbr_ops_write,
+	.flush = fbr_ops_flush,
+	.release = fbr_ops_release,
+	.fsync = fbr_ops_fsync,
 
 	.forget = fbr_ops_forget,
 	.forget_multi = fbr_ops_forget_multi

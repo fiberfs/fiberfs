@@ -314,56 +314,6 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 	fbr_ops_open(request, ino, fi);
 }
 
-void
-fbr_test_fs_fuse_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
-    struct fuse_file_info *fi)
-{
-	struct fbr_fs *fs = fbr_request_fs(request);
-
-	fbr_test_logs("READ req: %lu ino: %lu off: %ld size: %zu flags: %d",
-		request->id, ino, off, size, fi->flags);
-
-	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
-	fbr_fio_take(fio);
-	fbr_file_ok(fio->file);
-
-	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, off, size);
-
-	if (!vector) {
-		if (fio->error) {
-			fbr_fuse_reply_err(request, EIO);
-		} else {
-			fbr_fuse_reply_buf(request, NULL, 0);
-		}
-	} else {
-		fbr_chunk_list_ok(vector->chunks);
-		assert(vector->bufvec);
-
-		fbr_test_logs("** READ chunks: %u bufvecs: %zu",
-			vector->chunks->length, vector->bufvec->count);
-		fbr_fs_stat_add_count(&fs->stats.read_bytes, vector->size);
-
-		fbr_fuse_reply_data(request, vector->bufvec, FUSE_BUF_SPLICE_MOVE);
-
-		fbr_fio_vector_free(fs, fio, vector);
-	}
-
-	fbr_fio_release(fs, fio);
-}
-
-static void
-_test_fs_fuse_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
-{
-	struct fbr_fs *fs = fbr_request_fs(request);
-
-	fbr_test_logs("RELEASE req: %lu ino: %lu flags: %d", request->id, ino, fi->flags);
-
-	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
-	fbr_fio_release(fs, fio);
-
-	fbr_fuse_reply_err(request, 0);
-}
-
 static const struct fbr_fuse_callbacks _TEST_FS_FUSE_CALLBACKS = {
 	.init = _test_fs_fuse_init,
 
@@ -375,8 +325,8 @@ static const struct fbr_fuse_callbacks _TEST_FS_FUSE_CALLBACKS = {
 	.releasedir = fbr_ops_releasedir,
 
 	.open = _test_fs_fuse_open,
-	.read = fbr_test_fs_fuse_read,
-	.release = _test_fs_fuse_release,
+	.read = fbr_ops_read,
+	.release = fbr_ops_release,
 
 	.forget = fbr_ops_forget,
 	.forget_multi = fbr_ops_forget_multi
