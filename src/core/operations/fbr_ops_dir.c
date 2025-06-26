@@ -64,7 +64,6 @@ fbr_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 
 		if (!directory) {
 			fbr_fuse_reply_err(request, EIO);
-
 			fbr_inode_release(fs, &file);
 
 			if (stale_directory) {
@@ -72,9 +71,9 @@ fbr_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 			}
 
 			return;
+		} else {
+			assert_dev(directory->inode == file->inode);
 		}
-
-		assert(directory->inode == file->inode);
 	}
 
 	fbr_directory_ok(directory);

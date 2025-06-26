@@ -303,44 +303,15 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 static void
 _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct fbr_fs *fs = fbr_request_fs(request);
+	fbr_request_ok(request);
 
-	fbr_test_logs("OPEN req: %lu ino: %lu flags: %d", request->id, ino, fi->flags);
-
-	struct fbr_file *file = fbr_inode_take(fs, ino);
-
-	if (!file) {
-		fbr_fuse_reply_err(request, ENOENT);
-		return;
-	} else if (!S_ISREG(file->mode)) {
-		fbr_inode_release(fs, &file);
-		assert_zero_dev(file);
-
-		fbr_fuse_reply_err(request, EISDIR);
-		return;
-	} else if (fi->flags & O_WRONLY || fi->flags & O_RDWR) {
-		fbr_inode_release(fs, &file);
-		assert_zero_dev(file);
-
+	if (fi->flags & O_WRONLY || fi->flags & O_RDWR) {
 		fbr_test_logs("** OPEN detected write");
-
 		fbr_fuse_reply_err(request, EROFS);
 		return;
 	}
 
-	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 1);
-	fbr_fio_ok(fio);
-	assert_dev(fio->read_only);
-	assert_zero_dev(fio->write);
-
-	assert_zero_dev(fi->fh);
-	fi->fh = fbr_fs_int64(fio);
-
-	fi->keep_cache = 1;
-
-	fbr_fuse_reply_open(request, fi);
-
-	fbr_inode_release(fs, &file);
+	fbr_ops_open(request, ino, fi);
 }
 
 void
