@@ -543,13 +543,13 @@ static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 	.init = _test_fs_rw_init,
 
 	.getattr = fbr_ops_getattr,
-	.lookup = fbr_test_fs_fuse_lookup,
+	.lookup = fbr_ops_lookup,
 
 	.mkdir = _test_fs_rw_mkdir,
 
-	.opendir = fbr_test_fs_fuse_opendir,
-	.readdir = fbr_test_fs_fuse_readdir,
-	.releasedir = fbr_test_fs_fuse_releasedir,
+	.opendir = fbr_ops_opendir,
+	.readdir = fbr_ops_readdir,
+	.releasedir = fbr_ops_releasedir,
 
 	.open = _test_fs_rw_open,
 	.create = _test_fs_rw_create,

@@ -27,7 +27,6 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 		if (parent_file) {
 			fbr_inode_release(fs, &parent_file);
 		}
-		assert_zero_dev(parent_file);
 
 		return;
 	}
@@ -48,7 +47,6 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 			parent_file->inode, directory->inode);
 
 		fbr_fuse_reply_err(request, ENOTDIR);
-
 		fbr_inode_release(fs, &parent_file);
 		fbr_dindex_release(fs, &directory);
 
@@ -68,12 +66,10 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 
 		if (!directory) {
 			fbr_fuse_reply_err(request, EIO);
-
 			fbr_inode_release(fs, &parent_file);
 
 			if (stale_directory) {
 				fbr_dindex_release(fs, &stale_directory);
-				assert_zero_dev(stale_directory);
 			}
 
 			return;
@@ -96,13 +92,10 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
-
 		fbr_dindex_release(fs, &directory);
-		assert_zero_dev(directory);
 
 		if (stale_directory) {
 			fbr_dindex_release(fs, &stale_directory);
-			assert_zero_dev(stale_directory);
 		}
 
 		return;
@@ -130,10 +123,8 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 	fbr_fuse_reply_entry(request, &entry);
 
 	fbr_dindex_release(fs, &directory);
-	assert_zero_dev(directory);
 
 	if (stale_directory) {
 		fbr_dindex_release(fs, &stale_directory);
-		assert_zero_dev(stale_directory);
 	}
 }

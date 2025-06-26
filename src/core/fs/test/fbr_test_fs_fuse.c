@@ -273,8 +273,8 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_test_random_seed();
 }
 
-void
-fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
+static void
+_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 {
 	fbr_request_ok(request);
 
@@ -286,253 +286,18 @@ fbr_test_fs_fuse_lookup(struct fbr_request *request, fuse_ino_t parent, const ch
 	fbr_ops_lookup(request, parent, name);
 }
 
-void
-fbr_test_fs_fuse_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
-{
-	struct fbr_fs *fs = fbr_request_fs(request);
-	assert_dev(fs->store);
-
-	fbr_test_logs("OPENDIR req: %lu ino: %lu", request->id, ino);
-
-	struct fbr_file *file = fbr_inode_take(fs, ino);
-
-	if (!file || file->state == FBR_FILE_EXPIRED) {
-		fbr_fuse_reply_err(request, ENOENT);
-
-		if (file) {
-			fbr_inode_release(fs, &file);
-		}
-		assert_zero_dev(file);
-
-		return;
-	}
-
-	struct fbr_path_name dirname;
-	char buf[PATH_MAX];
-	fbr_path_get_full(&file->path, &dirname, buf, sizeof(buf));
-
-	fbr_test_logs("** OPENDIR directory: '%.*s':%zu",
-		(int)dirname.len, dirname.name, dirname.len);
-
-	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 0);
-	struct fbr_directory *stale_directory = NULL;
-
-	if (directory && directory->inode > file->inode) {
-		fbr_test_logs("** OPENDIR inode: %lu found newer dir_inode: %lu (return error)",
-			file->inode, directory->inode);
-
-		fbr_fuse_reply_err(request, ENOENT);
-
-		fbr_inode_release(fs, &file);
-		fbr_dindex_release(fs, &directory);
-
-		return;
-	} else if (directory && directory->inode < file->inode) {
-		fbr_test_logs("** OPENDIR inode: %lu mismatch dir_inode: %lu (will make new)",
-			file->inode, directory->inode);
-		stale_directory = directory;
-		directory = NULL;
-	}
-
-	if (!directory) {
-		if (fs->store->directory_load_f) {
-			directory = fs->store->directory_load_f(fs, &dirname, file->inode);
-		}
-
-		if (!directory) {
-			fbr_fuse_reply_err(request, EIO);
-
-			fbr_inode_release(fs, &file);
-			assert_zero_dev(file);
-
-			if (stale_directory) {
-				fbr_dindex_release(fs, &stale_directory);
-				assert_zero_dev(stale_directory);
-			}
-
-			return;
-		}
-
-		assert(directory->inode == file->inode);
-	}
-
-	fbr_directory_ok(directory);
-
-	fbr_inode_release(fs, &file);
-	assert_zero_dev(file);
-
-	struct fbr_dreader *reader = fbr_dreader_alloc(fs, directory);
-	fbr_dreader_ok(reader);
-
-	assert_zero_dev(fi->fh);
-	fi->fh = fbr_fs_int64(reader);
-
-	fi->cache_readdir = 1;
-
-	fbr_fuse_reply_open(request, fi);
-
-	if (stale_directory) {
-		fbr_dindex_release(fs, &stale_directory);
-		assert_zero_dev(stale_directory);
-	}
-}
-
 static void
-_test_fs_fuse_diradd(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
-    struct fbr_file *file)
-{
-	struct fbr_fs *fs = fbr_request_fs(request);
-	assert(dbuf);
-	fbr_file_ok(file);
-
-	const char *filename = fbr_path_get_file(&file->path, NULL);
-
-	fbr_test_logs("READDIR filename: '%s' inode: %lu", filename, file->inode);
-
-	struct stat st;
-	fbr_file_attr(fs, file, &st);
-
-	fbr_dirbuffer_add(request, dbuf, filename, &st);
-}
-
-void
-fbr_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
+_test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_file_info *fi)
 {
-	struct fbr_fs *fs = fbr_request_fs(request);
-
-	fbr_test_logs("READDIR req: %lu ino: %lu size: %zu off: %ld",
-		request->id, ino, size, off);
-
-	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
-
-	if (reader->end) {
-		fbr_test_logs("READDIR return: end");
-		fbr_fuse_reply_buf(request, NULL, 0);
-		return;
-	}
-
-	struct fbr_directory *directory = reader->directory;
-	fbr_directory_ok(directory);
+	fbr_request_ok(request);
 
 	if (random() % 2 == 0) {
 		size = (random() % 256) + 50;
 		fbr_test_logs("READDIR size: %zu", size);
 	}
 
-	struct fbr_dirbuffer dbuf;
-	fbr_dirbuffer_init(&dbuf, size);
-
-	if (!dbuf.full && !reader->read_dot) {
-		fbr_file_ok(directory->file);
-
-		struct stat st;
-		fbr_file_attr(fs, directory->file, &st);
-
-		fbr_dirbuffer_add(request, &dbuf, ".", &st);
-
-		if (!dbuf.full) {
-			reader->read_dot = 1;
-		}
-	}
-	if (!dbuf.full && !reader->read_dotdot) {
-		int do_release = 1;
-
-		struct fbr_file *parent;
-		if (directory->file->parent_inode) {
-			parent = fbr_inode_take(fs, directory->file->parent_inode);
-		} else {
-			parent = directory->file;
-			do_release = 0;
-		}
-		fbr_file_ok(parent);
-
-		struct stat st;
-		fbr_file_attr(fs, parent, &st);
-
-		if (do_release) {
-			fbr_inode_release(fs, &parent);
-		}
-
-		fbr_dirbuffer_add(request, &dbuf, "..", &st);
-
-		if (!dbuf.full) {
-			reader->read_dotdot = 1;
-		}
-	}
-
-	if (dbuf.full) {
-		fbr_test_logs("READDIR return: %zu", dbuf.pos);
-		fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
-		return;
-	}
-
-	struct fbr_path_name filedir;
-	struct fbr_path_name dirname;
-	fbr_directory_name(directory, &dirname);
-
-	struct fbr_file_ptr *file_ptr;
-	struct fbr_file_ptr *file_ptr_pos = reader->position;
-
-	if (file_ptr_pos) {
-		RB_FOREACH_FROM(file_ptr, fbr_filename_tree, file_ptr_pos) {
-			fbr_file_ptr_ok(file_ptr);
-			struct fbr_file *file = file_ptr->file;
-
-			fbr_path_get_dir(&file->path, &filedir);
-			assert_zero(fbr_path_name_cmp(&dirname, &filedir));
-
-			_test_fs_fuse_diradd(request, &dbuf, file);
-
-			if (dbuf.full) {
-				break;
-			}
-		}
-	} else {
-		RB_FOREACH(file_ptr, fbr_filename_tree, &directory->filename_tree) {
-			fbr_file_ptr_ok(file_ptr);
-			struct fbr_file *file = file_ptr->file;
-
-			fbr_path_get_dir(&file->path, &filedir);
-			assert_zero(fbr_path_name_cmp(&dirname, &filedir));
-
-			_test_fs_fuse_diradd(request, &dbuf, file);
-
-			if (dbuf.full) {
-				break;
-			}
-		}
-	}
-
-	if (dbuf.full) {
-		assert_zero_dev(reader->end);
-
-		reader->position = file_ptr;
-
-		fbr_test_logs("READDIR return: %zu", dbuf.pos);
-		fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
-
-		return;
-	}
-
-	reader->end = 1;
-
-	fbr_test_logs("READDIR return: %zu", dbuf.pos);
-	fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
-}
-
-void
-fbr_test_fs_fuse_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
-{
-	struct fbr_fs *fs = fbr_request_fs(request);
-
-	fbr_test_logs("RELEASEDIR req: %lu ino: %lu", request->id, ino);
-
-	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
-
-	fbr_fuse_reply_err(request, 0);
-
-	fbr_dreader_free(fs, reader);
+	fbr_ops_readdir(request, ino, size, off, fi);
 }
 
 static void
@@ -661,11 +426,11 @@ static const struct fbr_fuse_callbacks _TEST_FS_FUSE_CALLBACKS = {
 	.init = _test_fs_fuse_init,
 
 	.getattr = fbr_ops_getattr,
-	.lookup = fbr_test_fs_fuse_lookup,
+	.lookup = _test_fs_fuse_lookup,
 
-	.opendir = fbr_test_fs_fuse_opendir,
-	.readdir = fbr_test_fs_fuse_readdir,
-	.releasedir = fbr_test_fs_fuse_releasedir,
+	.opendir = fbr_ops_opendir,
+	.readdir = _test_fs_fuse_readdir,
+	.releasedir = fbr_ops_releasedir,
 
 	.open = _test_fs_fuse_open,
 	.read = fbr_test_fs_fuse_read,

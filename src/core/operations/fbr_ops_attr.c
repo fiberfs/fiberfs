@@ -28,7 +28,6 @@ fbr_ops_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 	fbr_file_attr(fs, file, &st);
 
 	fbr_inode_release(fs, &file);
-	assert_zero_dev(file);
 
 	fbr_fuse_reply_attr(request, &st, fbr_fs_dentry_ttl(fs));
 }
