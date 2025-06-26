@@ -16,6 +16,7 @@
 #include "core/fs/fbr_fs_inline.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
+#include "core/operations/fbr_operations.h"
 #include "core/request/fbr_request.h"
 #include "core/store/fbr_store.h"
 
@@ -268,6 +269,8 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fs_ok(ctx->fs);
 	assert(conn);
 
+	ctx->fs->logger = fbr_test_fs_logger;
+
 	conn->want |= FUSE_CAP_SPLICE_WRITE;
 	conn->want |= FUSE_CAP_SPLICE_MOVE;
 
@@ -276,32 +279,6 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_test_random_seed();
 
 	_TEST_FS_DO_INIT = 1;
-}
-
-void
-fbr_test_fs_fuse_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi)
-{
-	struct fbr_fs *fs = fbr_request_fs(request);
-	(void)fi;
-
-	fbr_test_logs("GETATTR req: %lu ino: %lu", request->id, ino);
-
-	struct fbr_file *file = fbr_inode_take(fs, ino);
-
-	if (!file) {
-		fbr_fuse_reply_err(request, ENOENT);
-		return;
-	}
-
-	fbr_file_ok(file);
-
-	struct stat st;
-	fbr_file_attr(fs, file, &st);
-
-	fbr_inode_release(fs, &file);
-	assert_zero_dev(file);
-
-	fbr_fuse_reply_attr(request, &st, fbr_fs_dentry_ttl(fs));
 }
 
 void
@@ -803,7 +780,7 @@ fbr_test_fs_fuse_forget_multi(struct fbr_request *request, size_t count,
 static const struct fbr_fuse_callbacks _TEST_FS_FUSE_CALLBACKS = {
 	.init = _test_fs_fuse_init,
 
-	.getattr = fbr_test_fs_fuse_getattr,
+	.getattr = fbr_ops_getattr,
 	.lookup = fbr_test_fs_fuse_lookup,
 
 	.opendir = fbr_test_fs_fuse_opendir,

@@ -10,6 +10,7 @@
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
+#include "core/operations/fbr_operations.h"
 #include "core/request/fbr_request.h"
 #include "core/store/fbr_store.h"
 
@@ -216,6 +217,8 @@ _test_fs_rw_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *na
 
 	struct fbr_path_name dirname;
 	fbr_path_name_init(&dirname, name);
+
+	// TODO look for duplicate
 
 	struct fbr_file *file = fbr_file_alloc_new(fs, directory, &dirname);
 
@@ -538,7 +541,7 @@ _test_fs_rw_fsync(struct fbr_request *request, fuse_ino_t ino, int datasync,
 static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 	.init = _test_fs_rw_init,
 
-	.getattr = fbr_test_fs_fuse_getattr,
+	.getattr = fbr_ops_getattr,
 	.lookup = fbr_test_fs_fuse_lookup,
 
 	.mkdir = _test_fs_rw_mkdir,
