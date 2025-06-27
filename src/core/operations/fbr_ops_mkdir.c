@@ -20,51 +20,15 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	fs->log("MKDIR req: %lu parent: %lu name: %s mode: %u", request->id, parent, name,
 		mode);
 
-	struct fbr_file *parent_file = fbr_inode_take(fs, parent);
-
-	if (!parent_file || parent_file->state == FBR_FILE_EXPIRED) {
-		fbr_fuse_reply_err(request, ENOTDIR);
-
-		if (parent_file) {
-			fbr_inode_release(fs, &parent_file);
-		}
-
-		return;
-	}
-
-	struct fbr_path_name parent_dirname;
-	char buf[PATH_MAX];
-	fbr_path_get_full(&parent_file->path, &parent_dirname, buf, sizeof(buf));
-
-	fs->log("MKDIR found parent_file: '%s' (inode: %lu)", parent_dirname.name,
-		parent_file->inode);
-
-	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname, 0);
-
+	struct fbr_directory *stale;
+	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent, &stale);
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOTDIR);
-
-		fbr_inode_release(fs, &parent_file);
+		if (stale) {
+			fbr_dindex_release(fs, &stale);
+		}
 		return;
 	}
-
-	fbr_directory_ok(directory);
-
-	if (directory->inode != parent_file->inode) {
-		fs->log("CREATE parent: %lu mismatch dir_inode: %lu (return error)",
-			parent_file->inode, directory->inode);
-
-		fbr_fuse_reply_err(request, ENOTDIR);
-
-		fbr_inode_release(fs, &parent_file);
-		fbr_dindex_release(fs, &directory);
-
-		return;
-	}
-
-	fbr_inode_release(fs, &parent_file);
-
-	fs->log("MKDIR found directory inode: %lu", directory->inode);
 
 	struct fbr_path_name dirname;
 	fbr_path_name_init(&dirname, name);
@@ -73,6 +37,7 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 
 	struct fbr_file *file = fbr_file_alloc_new(fs, directory, &dirname);
 
+	char buf[PATH_MAX];
 	fbr_path_get_full(&file->path, &dirname, buf, sizeof(buf));
 	fs->log("MKDIR new directory: inode: %lu path: '%s'", file->inode, dirname.name);
 
@@ -94,11 +59,17 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 			// TODO file is floating...?
 			fbr_fuse_reply_err(request, EIO);
 			fbr_dindex_release(fs, &directory);
+			if (stale) {
+				fbr_dindex_release(fs, &stale);
+			}
 			return;
 		}
 	} else {
 		fbr_fuse_reply_err(request, EIO);
 		fbr_dindex_release(fs, &directory);
+		if (stale) {
+			fbr_dindex_release(fs, &stale);
+		}
 		return;
 	}
 
@@ -114,4 +85,7 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	fbr_fuse_reply_entry(request, &entry);
 
 	fbr_dindex_release(fs, &directory);
+	if (stale) {
+		fbr_dindex_release(fs, &stale);
+	}
 }

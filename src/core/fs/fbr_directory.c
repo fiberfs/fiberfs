@@ -746,3 +746,67 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 	return ret;
 }
+
+struct fbr_directory *
+fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode, struct fbr_directory **stale)
+{
+	fbr_fs_ok(fs);
+	assert(inode);
+	assert(stale);
+
+	*stale = NULL;
+
+	struct fbr_file *file = fbr_inode_take(fs, inode);
+	if (!file) {
+		return NULL;
+	} else if (file->state == FBR_FILE_EXPIRED || !S_ISDIR(file->mode)) {
+		fbr_inode_release(fs, &file);
+		return NULL;
+	}
+	assert_dev(file->inode == inode);
+
+	struct fbr_path_name dirname;
+	char buf[PATH_MAX];
+	fbr_path_get_full(&file->path, &dirname, buf, sizeof(buf));
+
+	fbr_inode_release(fs, &file);
+
+	fs->log("DIRECTORY found: '%s':%zu (inode: %lu)", dirname.name, dirname.len, inode);
+
+	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 0);
+
+	if (directory && directory->inode > inode) {
+		fs->log("DIRECTORY inode: %lu found newer inode: %lu (return error)",
+			inode, directory->inode);
+
+		*stale = directory;
+		return NULL;
+	} else if (directory && directory->inode < inode) {
+		fs->log("DIRECTORY inode: %lu mismatch inode: %lu (will make new)",
+			inode, directory->inode);
+
+		*stale = directory;
+		directory = NULL;
+	} else if (directory && directory->state == FBR_DIRSTATE_ERROR) {
+		fs->log("DIRECTORY error state (will make new)");
+
+		fbr_dindex_release(fs, &directory);
+		assert_zero_dev(directory);
+	}
+
+	if (!directory) {
+		if (fs->store->directory_load_f) {
+			directory = fs->store->directory_load_f(fs, &dirname, inode);
+		}
+
+		if (!directory) {
+			return NULL;
+		}
+	}
+
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+	assert_dev(directory->inode == inode);
+
+	return directory;
+}

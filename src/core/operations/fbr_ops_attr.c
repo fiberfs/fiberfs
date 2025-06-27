@@ -22,8 +22,6 @@ fbr_ops_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 		return;
 	}
 
-	fbr_file_ok(file);
-
 	struct stat st;
 	fbr_file_attr(fs, file, &st);
 

@@ -73,66 +73,22 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	fs->log("CREATE req: %lu parent: %lu name: '%s' mode: %d flags: %u",
 		request->id, parent, name, mode, fi->flags);
 
-	struct fbr_file *parent_file = fbr_inode_take(fs, parent);
-
-	if (!parent_file || parent_file->state == FBR_FILE_EXPIRED) {
-		fbr_fuse_reply_err(request, ENOTDIR);
-
-		if (parent_file) {
-			fbr_inode_release(fs, &parent_file);
-		}
-
-		return;
-	}
-	assert_dev(parent_file->inode == parent);
-
-	struct fbr_path_name parent_dirname;
-	char buf[PATH_MAX];
-	fbr_path_get_full(&parent_file->path, &parent_dirname, buf, sizeof(buf));
-
-	fs->log("CREATE found parent_file: '%s' (inode: %lu)",
-		parent_dirname.name, parent_file->inode);
-
-	struct fbr_directory *directory = fbr_dindex_take(fs, &parent_dirname, 0);
-
-	if (directory && directory->inode != parent_file->inode) {
-		fs->log("CREATE parent: %lu mismatch dir_inode: %lu (return error)",
-			parent_file->inode, directory->inode);
-
-		fbr_fuse_reply_err(request, ENOTDIR);
-		fbr_inode_release(fs, &parent_file);
-		fbr_dindex_release(fs, &directory);
-
-		return;
-	}
-
+	struct fbr_directory *stale;
+	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent, &stale);
 	if (!directory) {
-		if (fs->store->directory_load_f) {
-			directory = fs->store->directory_load_f(fs, &parent_dirname,
-				parent_file->inode);
+		fbr_fuse_reply_err(request, ENOTDIR);
+		if (stale) {
+			fbr_dindex_release(fs, &stale);
 		}
-
-		if (!directory) {
-			fbr_fuse_reply_err(request, EIO);
-			fbr_inode_release(fs, &parent_file);
-			return;
-		} else {
-			assert_dev(directory->inode == parent);
-		}
+		return;
 	}
-
-	fbr_directory_ok(directory);
-	assert_dev(directory->state == FBR_DIRSTATE_OK);
-
-	fbr_inode_release(fs, &parent_file);
-
-	fs->log("CREATE found directory inode: %lu", directory->inode);
 
 	struct fbr_path_name filename;
 	fbr_path_name_init(&filename, name);
 
 	struct fbr_file *file = fbr_file_alloc_new(fs, directory, &filename);
 
+	char buf[PATH_MAX];
 	fbr_path_get_full(&file->path, &filename, buf, sizeof(buf));
 	fs->log("CREATE new file: inode: %lu path: '%s'", file->inode, filename.name);
 
@@ -179,7 +135,11 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		}
 
 		fbr_fuse_reply_err(request, EIO);
+
 		fbr_dindex_release(fs, &directory);
+		if (stale) {
+			fbr_dindex_release(fs, &stale);
+		}
 
 		return;
 	}
@@ -203,4 +163,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	fbr_fuse_reply_create(request, &entry, fi);
 
 	fbr_dindex_release(fs, &directory);
+	if (stale) {
+		fbr_dindex_release(fs, &stale);
+	}
 }

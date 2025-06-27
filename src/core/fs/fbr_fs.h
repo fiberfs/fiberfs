@@ -462,6 +462,8 @@ void fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest,
 	struct fbr_directory *source);
 int fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
 	enum fbr_flush_flags flags);
+struct fbr_directory *fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode,
+	struct fbr_directory **stale);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
 void fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,

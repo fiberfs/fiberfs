@@ -19,66 +19,15 @@ fbr_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 
 	fs->log("OPENDIR req: %lu ino: %lu", request->id, ino);
 
-	struct fbr_file *file = fbr_inode_take(fs, ino);
-
-	if (!file || file->state == FBR_FILE_EXPIRED) {
-		fbr_fuse_reply_err(request, ENOENT);
-
-		if (file) {
-			fbr_inode_release(fs, &file);
-		}
-
-		return;
-	}
-
-	struct fbr_path_name dirname;
-	char buf[PATH_MAX];
-	fbr_path_get_full(&file->path, &dirname, buf, sizeof(buf));
-
-	fs->log("OPENDIR directory: '%.*s':%zu", (int)dirname.len, dirname.name, dirname.len);
-
-	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 0);
-	struct fbr_directory *stale_directory = NULL;
-
-	if (directory && directory->inode > file->inode) {
-		fs->log("OPENDIR inode: %lu found newer dir_inode: %lu (return error)",
-			file->inode, directory->inode);
-
-		fbr_fuse_reply_err(request, ENOENT);
-
-		fbr_inode_release(fs, &file);
-		fbr_dindex_release(fs, &directory);
-
-		return;
-	} else if (directory && directory->inode < file->inode) {
-		fs->log("OPENDIR inode: %lu mismatch dir_inode: %lu (will make new)",
-			file->inode, directory->inode);
-		stale_directory = directory;
-		directory = NULL;
-	}
-
+	struct fbr_directory *stale;
+	struct fbr_directory *directory = fbr_directory_from_inode(fs, ino, &stale);
 	if (!directory) {
-		if (fs->store->directory_load_f) {
-			directory = fs->store->directory_load_f(fs, &dirname, file->inode);
+		fbr_fuse_reply_err(request, ENOTDIR);
+		if (stale) {
+			fbr_dindex_release(fs, &stale);
 		}
-
-		if (!directory) {
-			fbr_fuse_reply_err(request, EIO);
-			fbr_inode_release(fs, &file);
-
-			if (stale_directory) {
-				fbr_dindex_release(fs, &stale_directory);
-			}
-
-			return;
-		} else {
-			assert_dev(directory->inode == file->inode);
-		}
+		return;
 	}
-
-	fbr_directory_ok(directory);
-
-	fbr_inode_release(fs, &file);
 
 	struct fbr_dreader *reader = fbr_dreader_alloc(fs, directory);
 	fbr_dreader_ok(reader);
@@ -90,8 +39,8 @@ fbr_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 
 	fbr_fuse_reply_open(request, fi);
 
-	if (stale_directory) {
-		fbr_dindex_release(fs, &stale_directory);
+	if (stale) {
+		fbr_dindex_release(fs, &stale);
 	}
 }
 

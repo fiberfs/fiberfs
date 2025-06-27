@@ -41,6 +41,7 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 1);
 	fbr_ASSERT(directory, "directory '%s' missing", dirname.name);
 	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
 
 	fs->log("RW_FLUSH directory: '%s' (%lu) file: '%s' (%lu)", dirname.name,
 		directory->generation, filename, file->generation);
