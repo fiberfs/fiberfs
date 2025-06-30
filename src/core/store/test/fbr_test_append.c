@@ -481,6 +481,9 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 			"chunks: %lu != %zu", fbr_dstore_stat_chunks(), chunks);
 	}
 
+	assert(fbr_dstore_stat_roots() == 1);
+	assert(fbr_dstore_stat_indexes() == 1);
+
 	fbr_test_logs("*** All %d checks PASSED", _APPEND_COUNTER_MAX);
 
 	fbr_dindex_release(fs, &root);

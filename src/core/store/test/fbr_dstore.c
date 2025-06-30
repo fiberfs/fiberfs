@@ -32,6 +32,8 @@ struct {
 #define _DSTORE_MAGIC				0x1B775C3C
 
 	const char				*root;
+	fbr_stats_t				roots;
+	fbr_stats_t				indexes;
 	fbr_stats_t				chunks;
 
 	pthread_mutex_t				lock;
@@ -117,6 +119,10 @@ fbr_dstore_debug(int show_meta)
 {
 	fbr_dstore_ok();
 
+	fbr_test_logs("DSTORE_DEBUG roots: %lu", fbr_dstore_stat_roots());
+	fbr_test_logs("DSTORE_DEBUG indexed: %lu", fbr_dstore_stat_indexes());
+	fbr_test_logs("DSTORE_DEBUG chunks: %lu", fbr_dstore_stat_chunks());
+
 	if (show_meta) {
 		fbr_sys_nftw(_DSTORE->root, _dstore_debug_cb);
 		return;
@@ -138,6 +144,20 @@ fbr_cmd_dstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_dstore_debug(0);
+}
+
+fbr_stats_t
+fbr_dstore_stat_roots(void)
+{
+	fbr_dstore_ok();
+	return _DSTORE->roots;
+}
+
+fbr_stats_t
+fbr_dstore_stat_indexes(void)
+{
+	fbr_dstore_ok();
+	return _DSTORE->indexes;
 }
 
 fbr_stats_t
@@ -605,6 +625,7 @@ fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	_dstore_metadata_write(index_path, &metadata);
 
 	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, writer->bytes);
+	fbr_fs_stat_add(&_DSTORE->indexes);
 }
 
 int
@@ -785,6 +806,8 @@ fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_zero(ret);
 
 	_dstore_UNLOCK();
+
+	fbr_fs_stat_sub(&_DSTORE->indexes);
 }
 
 int
@@ -885,7 +908,11 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 
 	fbr_test_logs("DSTORE write root: %lu previous: %lu", directory->version, existing);
 
-	int fd = open(root_path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	if (!fbr_sys_exists(root_path)) {
+		fbr_fs_stat_add(&_DSTORE->roots);
+	}
+
+	int fd = open(root_path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 
 	_dstore_writer(fd, &json);
 
