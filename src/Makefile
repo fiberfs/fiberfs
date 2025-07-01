@@ -7,8 +7,7 @@ CFLAGS_CLANG=-Wno-gnu-zero-variadic-macro-arguments
 CFLAGS_BUILD=
 DEPFLAGS=-MMD -MP
 LDFLAGS=-shared
-LIBFLAGS=
-LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
+LIBFLAGS=-lrt -lpthread
 BUILD=build
 
 TEST_SRC:=$(shell find * -type f -name '*.c' -path '*/test/*')
@@ -140,10 +139,10 @@ chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
 		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libchttp.a $(LIBFLAGS)
 
 fjson_client:	libfjson.a $(FJSON_CLIENT_OBJS)
-		$(CC) -o $@ $(FJSON_CLIENT_OBJS) libfjson.a $(LIBFLAGS_TEST)
+		$(CC) -o $@ $(FJSON_CLIENT_OBJS) libfjson.a $(LIBFLAGS)
 
 fiberfs_test:	libchttp.a libfjson.a $(TEST_OBJS) $(OBJS)
-		$(CC) -o $@ $(TEST_OBJS) $(OBJS) libchttp.a libfjson.a $(LIBFLAGS_TEST)
+		$(CC) -o $@ $(TEST_OBJS) $(OBJS) libchttp.a libfjson.a $(LIBFLAGS)
 
 libfiberfs.so:	$(OBJS) libchttp.a libfjson.a
 		$(CC) $(LDFLAGS) -o $@ $(OBJS) libchttp.a libfjson.a
