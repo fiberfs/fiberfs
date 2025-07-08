@@ -24,6 +24,8 @@ unsigned long fbr_parse_ulong(const char *str, size_t length);
 	__sync_sub_and_fetch(dest_ptr, value);
 #define fbr_compare_swap(dest_ptr, old_value, new_value)		\
 	__sync_val_compare_and_swap(dest_ptr, old_value, new_value)
+#define fbr_memory_sync()						\
+	__sync_synchronize()
 
 #define fbr_ZERO(p)							\
 	explicit_bzero(p, sizeof(*(p)))

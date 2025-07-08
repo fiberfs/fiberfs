@@ -8,10 +8,12 @@
 #define _FBR_LOG_H_INCLUDED_
 
 #include <limits.h>
+#include <pthread.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #define FBR_LOG_SEGMENTS			8
+#define FBR_LOG_VERSION				1
 
 struct fbr_log_header {
 	unsigned int				magic;
@@ -28,7 +30,11 @@ struct fbr_log_header {
 };
 
 struct fbr_log_writer {
+	int					valid;
+
 	double					time_created;
+
+	pthread_mutex_t				log_lock;
 
 	uint64_t				*log_end;
 	uint64_t				*log_pos;
@@ -49,9 +55,7 @@ struct fbr_log {
 
 struct fbr_log_header *fbr_log_header(struct fbr_log *log, void *data, size_t size);
 struct fbr_log *fbr_log_alloc(const char *name);
-void fbr_log_init_global(const char *name);
 void fbr_log_free(struct fbr_log *log);
-void fbr_log_free_global(void);
 
 #define fbr_log_ok(log)				fbr_magic_check(log, FBR_LOG_MAGIC)
 #define fbr_log_header_ok(header)		fbr_magic_check(header, FBR_LOG_HEADER_MAGIC)

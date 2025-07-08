@@ -17,10 +17,6 @@
 #include "fiberfs.h"
 #include "fbr_log.h"
 
-struct fbr_log *_LOG;
-
-#define _log_ok()		fbr_log_ok(_LOG)
-
 static void
 _log_init(struct fbr_log *log)
 {
@@ -30,19 +26,34 @@ _log_init(struct fbr_log *log)
 
 	log->magic = FBR_LOG_MAGIC;
 	log->shm_fd = -1;
-	log->writer.time_created = fbr_get_time();
 }
 
 static void
-_log_data_init(struct fbr_log *log, void *data, size_t size)
+_log_writer_init(struct fbr_log *log)
 {
 	assert_dev(log);
+	assert_zero_dev(log->writer.valid);
+
+	log->writer.valid = 1;
+	log->writer.time_created = fbr_get_time();
+
+	pt_assert(pthread_mutex_init(&log->writer.log_lock, NULL));
+}
+
+static void
+_log_header_init(struct fbr_log *log, void *data, size_t size)
+{
+	assert_dev(log);
+	assert_dev(log->writer.valid);
 	assert_dev(data);
 	assert(size > sizeof(struct fbr_log_header));
 
 	struct fbr_log_header *header = data;
 	header->magic = FBR_LOG_HEADER_MAGIC;
+	header->version = FBR_LOG_VERSION;
 	header->time_created = log->writer.time_created;
+
+	fbr_memory_sync();
 }
 
 struct fbr_log_header *
@@ -54,6 +65,7 @@ fbr_log_header(struct fbr_log *log, void *data, size_t size)
 
 	struct fbr_log_header *header = data;
 	fbr_log_header_ok(header);
+	assert(header->version == FBR_LOG_VERSION);
 
 	return header;
 }
@@ -66,6 +78,8 @@ _log_shared_init(struct fbr_log *log, const char *name)
 	assert_zero_dev(log->mmap_ptr);
 	assert_zero_dev(*log->shm_name);
 	assert_dev(name && *name);
+
+	_log_writer_init(log);
 
 	int ret = snprintf(log->shm_name, sizeof(log->shm_name), "/fiberfs:%s", name);
 	assert(ret > 0 && (size_t)ret < sizeof(log->shm_name));
@@ -89,7 +103,9 @@ _log_shared_init(struct fbr_log *log, const char *name)
 	assert(log->mmap_ptr != MAP_FAILED);
 	assert(log->mmap_ptr);
 
-	_log_data_init(log, log->mmap_ptr, log->mmap_size);
+	_log_header_init(log, log->mmap_ptr, log->mmap_size);
+
+	log->header = fbr_log_header(log, log->mmap_ptr, log->mmap_size);
 }
 
 struct fbr_log *
@@ -106,15 +122,6 @@ fbr_log_alloc(const char *name)
 	_log_shared_init(log, name);
 
 	return log;
-}
-
-void
-fbr_log_init_global(const char *name)
-{
-	assert_zero(_LOG);
-
-	_LOG = fbr_log_alloc(name);
-	_log_ok();
 }
 
 void
@@ -136,13 +143,4 @@ fbr_log_free(struct fbr_log *log)
 
 	fbr_ZERO(log);
 	free(log);
-}
-
-void
-fbr_log_free_global(void)
-{
-	_log_ok();
-
-	fbr_log_free(_LOG);
-	_LOG = NULL;
 }
