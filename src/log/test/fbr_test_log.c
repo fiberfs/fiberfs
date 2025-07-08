@@ -38,6 +38,7 @@ _test_log_debug(struct fbr_log *log)
 	fbr_test_logs("HEADER->version: %d", header->version);
 	fbr_test_logs("HEADER->time_created: %lf", header->time_created);
 	fbr_test_logs("HEADER->segments: %zu", header->segments);
+	fbr_test_logs("HEADER->segment_size: %zu", header->segment_size);
 	fbr_test_logs("HEADER->segment_counter: %zu", header->segment_counter);
 
 	for (size_t i = 0; i < header->segments; i++) {

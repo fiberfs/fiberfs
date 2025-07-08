@@ -53,6 +53,13 @@ _log_header_init(struct fbr_log *log, void *data, size_t size)
 	header->version = FBR_LOG_VERSION;
 	header->time_created = log->writer.time_created;
 
+	header->segments = FBR_LOG_SEGMENTS;
+	header->segment_size = (size - sizeof(struct fbr_log_header)) /
+		(sizeof(*header->data) * FBR_LOG_SEGMENTS);
+
+	log->writer.log_pos = header->data;
+	log->writer.log_end = header->data + (header->segment_size * FBR_LOG_SEGMENTS);
+
 	fbr_memory_sync();
 }
 

@@ -23,6 +23,7 @@ struct fbr_log_header {
 	double					time_created;
 
 	size_t					segments;
+	size_t					segment_size;
 	size_t					segment_counter;
 	size_t					segment_offset[FBR_LOG_SEGMENTS];
 
