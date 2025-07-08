@@ -16,6 +16,7 @@
 
 #endif /* FBR_TEST_LOG_CMD */
 
+FBR_TEST_LOG_CMD(test_log_assert)
 FBR_TEST_LOG_CMD(test_log_init)
 
 #undef FBR_TEST_LOG_CMD

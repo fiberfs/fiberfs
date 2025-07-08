@@ -1,3 +1,3 @@
-fiber_test "Logging"
+fiber_test "Logging asserts"
 
-test_log_init
+test_log_assert
