@@ -9,35 +9,29 @@
 
 #include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
 
-enum fbr_log_type {
-	FBR_LOG_EMPTY = 0
-};
-
-struct fbr_log_entry {
-	unsigned char				magic;
-#define FBR_LOG_ENTRY_MAGIC			0xC7
-
-	unsigned char				block_len;
-	unsigned short				type;
-	unsigned int				block;
-	unsigned long				id;
-};
+#define FBR_LOG_SEGMENTS			8
 
 struct fbr_log_header {
 	unsigned int				magic;
 #define FBR_LOG_HEADER_MAGIC			0xF8F8AAF2
 
+	int					version;
 	double					time_created;
-	size_t					size;
 
-	size_t					entry_count;
-	struct fbr_log_entry			entries[];
+	size_t					segments;
+	size_t					segment_counter;
+	size_t					segment_offset[FBR_LOG_SEGMENTS];
+
+	uint64_t				data[];
 };
 
-struct fbr_log_blocks {
-	unsigned int				magic;
-#define FBR_LOG_BLOCKS_MAGIC			0x317C3826
+struct fbr_log_writer {
+	double					time_created;
+
+	uint64_t				*log_end;
+	uint64_t				*log_pos;
 };
 
 struct fbr_log {
@@ -45,16 +39,12 @@ struct fbr_log {
 #define FBR_LOG_MAGIC				0x496108CB
 
 	char					shm_name[NAME_MAX + 1];
-
 	int					shm_fd;
 	size_t					mmap_size;
 	void					*mmap_ptr;
 
-	double					time_created;
-
-	size_t					block_size;
-	size_t					block_count;
-	void					*blocks;
+	struct fbr_log_header			*header;
+	struct fbr_log_writer			writer;
 };
 
 struct fbr_log_header *fbr_log_header(struct fbr_log *log, void *data, size_t size);

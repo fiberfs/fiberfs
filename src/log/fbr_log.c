@@ -30,7 +30,7 @@ _log_init(struct fbr_log *log)
 
 	log->magic = FBR_LOG_MAGIC;
 	log->shm_fd = -1;
-	log->time_created = fbr_get_time();
+	log->writer.time_created = fbr_get_time();
 }
 
 static void
@@ -42,29 +42,7 @@ _log_data_init(struct fbr_log *log, void *data, size_t size)
 
 	struct fbr_log_header *header = data;
 	header->magic = FBR_LOG_HEADER_MAGIC;
-	header->time_created = log->time_created;
-	header->size = size;
-
-	// TODO make configurable
-	log->block_size = 64;
-	header->entry_count = size / log->block_size;
-	assert(header->entry_count > 16);
-
-	for (size_t i = 0; i < header->entry_count; i++) {
-		struct fbr_log_entry *entry = &header->entries[i];
-		entry->magic = FBR_LOG_ENTRY_MAGIC;
-		entry->type = FBR_LOG_EMPTY;
-	}
-
-	struct fbr_log_blocks *blocks =
-		(struct fbr_log_blocks*)&header->entries[header->entry_count];
-	blocks->magic = FBR_LOG_BLOCKS_MAGIC;
-
-	log->blocks = blocks + 1;
-	size_t header_size = (uintptr_t)log->blocks - (uintptr_t)data;
-	assert(size > header_size);
-	log->block_count = (size - header_size) / log->block_size;
-	assert(log->block_count >= 16);
+	header->time_created = log->writer.time_created;
 }
 
 struct fbr_log_header *
@@ -72,24 +50,10 @@ fbr_log_header(struct fbr_log *log, void *data, size_t size)
 {
 	fbr_log_ok(log);
 	assert(data);
+	assert(size);
 
 	struct fbr_log_header *header = data;
 	fbr_log_header_ok(header);
-	assert(header->size == size);
-	assert(header->time_created == log->time_created);
-	assert(header->entry_count);
-
-	if (fbr_assert_is_dev()) {
-		for (size_t i = 0; i < header->entry_count; i++) {
-			struct fbr_log_entry *entry = &header->entries[i];
-			fbr_log_entry_ok(entry);
-		}
-	}
-
-	struct fbr_log_blocks *blocks =
-		(struct fbr_log_blocks*)&header->entries[header->entry_count];
-	fbr_log_blocks_ok(blocks);
-	assert((uintptr_t)log->blocks == (uintptr_t)blocks + sizeof(*blocks));
 
 	return header;
 }
