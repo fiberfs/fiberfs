@@ -19,21 +19,26 @@ fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	assert(sizeof(fbr_log_data_t) == sizeof(struct fbr_log_tag));
 
-	fbr_test_logs("FBR_LOG_TAG_EOF_DATA=%d", FBR_LOG_TAG_EOF_DATA);
-	fbr_test_logs("FBR_LOG_TAG_WRAP_DATA=%d", FBR_LOG_TAG_WRAP_DATA);
-
 	struct fbr_log_tag tag;
-	tag.value = fbr_log_tag_gen(FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
+	tag.value = fbr_log_tag_gen(0, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
 	assert(tag.parts.magic == FBR_LOG_TAG_MAGIC);
-	assert_zero(tag.parts.length);
+	assert_zero(tag.parts.sequence);
 	assert(tag.parts.type == FBR_LOG_TAG_EOF);
 	assert(tag.parts.type_data == FBR_LOG_TAG_EOF_DATA);
+	assert_zero(tag.parts.length);
 
-	tag.value = fbr_log_tag_gen(FBR_LOG_TAG_WRAP, FBR_LOG_TAG_WRAP_DATA, USHRT_MAX);
+	fbr_test_logs("FBR_LOG_TAG_EOF_DATA=%d", FBR_LOG_TAG_EOF_DATA);
+	fbr_test_logs("FBR_LOG_TAG_EOF_DATA='%.2s'", (char*)&tag.parts.type_data);
+
+	tag.value = fbr_log_tag_gen(UCHAR_MAX, FBR_LOG_TAG_WRAP, FBR_LOG_TAG_WRAP_DATA, USHRT_MAX);
 	assert(tag.parts.magic == FBR_LOG_TAG_MAGIC);
-	assert(tag.parts.length == USHRT_MAX);
+	assert(tag.parts.sequence == UCHAR_MAX);
 	assert(tag.parts.type == FBR_LOG_TAG_WRAP);
 	assert(tag.parts.type_data == FBR_LOG_TAG_WRAP_DATA);
+	assert(tag.parts.length == USHRT_MAX);
+
+	fbr_test_logs("FBR_LOG_TAG_WRAP_DATA=%d", FBR_LOG_TAG_WRAP_DATA);
+	fbr_test_logs("FBR_LOG_TAG_WRAP_DATA='%.2s'", (char*)&tag.parts.type_data);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_assert passed");
 }
@@ -90,7 +95,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	_test_log_debug(log);
 
-	fbr_log_data_t eof = fbr_log_tag_gen(FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
+	fbr_log_data_t eof = fbr_log_tag_gen(0, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
 	assert(*log->writer.log_pos == eof);
 
 	fbr_log_free(log);

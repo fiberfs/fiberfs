@@ -26,18 +26,19 @@ enum fbr_log_tag_type
 	__FBR_LOG_TAG_TYPE_END
 };
 
-#define FBR_LOG_TAG_EOF_DATA			0x454545
-#define FBR_LOG_TAG_WRAP_DATA			0x575757
+#define FBR_LOG_TAG_EOF_DATA			0x4545
+#define FBR_LOG_TAG_WRAP_DATA			0x5757
 
-struct fbr_log_tag_parts
-{
+struct fbr_log_tag_parts {
 	unsigned short				magic;
 #define FBR_LOG_TAG_MAGIC			0xC4A9
 
-	unsigned short				length;
+	unsigned char				sequence;
 
-	unsigned int				type:8;
-	unsigned int				type_data:24;
+	unsigned char				type;
+	unsigned short				type_data;
+
+	unsigned short				length;
 };
 
 struct fbr_log_tag {
@@ -69,6 +70,8 @@ struct fbr_log_writer {
 
 	pthread_mutex_t				log_lock;
 
+	unsigned char				sequence;
+
 	fbr_log_data_t				*log_end;
 	fbr_log_data_t				*log_pos;
 };
@@ -89,7 +92,8 @@ struct fbr_log {
 struct fbr_log_header *fbr_log_header(struct fbr_log *log, void *data, size_t size);
 struct fbr_log *fbr_log_alloc(const char *name);
 void fbr_log_free(struct fbr_log *log);
-fbr_log_data_t fbr_log_tag_gen(unsigned int type, unsigned int type_data, unsigned short length);
+fbr_log_data_t fbr_log_tag_gen(unsigned char sequence, unsigned char type,
+	unsigned short type_data, unsigned short length);
 
 #define fbr_log_ok(log)				fbr_magic_check(log, FBR_LOG_MAGIC)
 #define fbr_log_header_ok(header)		fbr_magic_check(header, FBR_LOG_HEADER_MAGIC)

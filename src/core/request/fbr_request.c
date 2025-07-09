@@ -288,8 +288,12 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
 	fbr_fs_ok(fs);
 
-	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
-		fbr_sleep_ms(100);
+	size_t max_ms = 500;
+	size_t wait_ms = 0;
+	size_t sleep_ms = 25;
+	while (wait_ms < max_ms && !TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
+		fbr_sleep_ms(sleep_ms);
+		wait_ms += sleep_ms;
 	}
 
 	pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));

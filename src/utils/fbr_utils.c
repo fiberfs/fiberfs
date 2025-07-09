@@ -14,6 +14,11 @@
 void
 fbr_sleep_ms(double ms)
 {
+	assert(ms >= 0);
+	if (ms == 0) {
+		return;
+	}
+
 	struct timespec tspec, rem;
 
 	tspec.tv_sec = (time_t)(ms / 1000);
