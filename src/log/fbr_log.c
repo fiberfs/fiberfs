@@ -163,10 +163,10 @@ fbr_log_alloc(const char *name)
 	return log;
 }
 
-void
-fbr_log_free(struct fbr_log *log)
+static void
+_log_close(struct fbr_log *log)
 {
-	fbr_log_ok(log);
+	assert_dev(log);
 	assert(log->shm_fd >= 0);
 	assert(*log->shm_name);
 	assert(log->mmap_ptr);
@@ -183,14 +183,16 @@ fbr_log_free(struct fbr_log *log)
 
 		pt_assert(pthread_mutex_destroy(&log->writer.lock));
 	}
+}
 
-	int do_free = log->do_free;
+void
+fbr_log_free(struct fbr_log *log)
+{
+	fbr_log_ok(log);
+	assert(log->do_free)
 
 	fbr_ZERO(log);
-
-	if (do_free) {
-		free(log);
-	}
+	free(log);
 }
 
 fbr_log_data_t
@@ -345,9 +347,10 @@ void
 fbr_log_reader_free(struct fbr_log_reader *reader)
 {
 	fbr_log_reader_ok(reader);
+	fbr_log_ok(&reader->log);
 	assert_zero_dev(reader->log.do_free);
 
-	fbr_log_free(&reader->log);
+	_log_close(&reader->log);
 	fbr_ZERO(reader);
 }
 
