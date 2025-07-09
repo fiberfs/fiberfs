@@ -7,6 +7,9 @@
 #include "log/fbr_log.h"
 #include "test/fbr_test.h"
 
+fbr_log_data_t _log_tag_gen(unsigned char sequence, enum fbr_log_tag_type type,
+	unsigned short type_data, unsigned short length);
+
 void
 fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -16,11 +19,13 @@ fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("sizeof(fbr_log_data_t)=%zu", sizeof(fbr_log_data_t));
 	fbr_test_logs("sizeof(struct fbr_log_tag_parts)=%zu", sizeof(struct fbr_log_tag_parts));
 	fbr_test_logs("sizeof(struct fbr_log_tag)=%zu", sizeof(struct fbr_log_tag));
+	fbr_test_logs("__FBR_LOG_TAG_TYPE_END=%d", __FBR_LOG_TAG_TYPE_END);
 
 	assert(sizeof(fbr_log_data_t) == sizeof(struct fbr_log_tag));
+	assert(__FBR_LOG_TAG_TYPE_END <= UCHAR_MAX);
 
 	struct fbr_log_tag tag;
-	tag.value = fbr_log_tag_gen(0, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
+	tag.value = _log_tag_gen(0, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
 	assert(tag.parts.magic == FBR_LOG_TAG_MAGIC);
 	assert_zero(tag.parts.sequence);
 	assert(tag.parts.type == FBR_LOG_TAG_EOF);
@@ -30,7 +35,7 @@ fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("FBR_LOG_TAG_EOF_DATA=%d", FBR_LOG_TAG_EOF_DATA);
 	fbr_test_logs("FBR_LOG_TAG_EOF_DATA='%.2s'", (char*)&tag.parts.type_data);
 
-	tag.value = fbr_log_tag_gen(UCHAR_MAX, FBR_LOG_TAG_WRAP, FBR_LOG_TAG_WRAP_DATA, USHRT_MAX);
+	tag.value = _log_tag_gen(UCHAR_MAX, FBR_LOG_TAG_WRAP, FBR_LOG_TAG_WRAP_DATA, USHRT_MAX);
 	assert(tag.parts.magic == FBR_LOG_TAG_MAGIC);
 	assert(tag.parts.sequence == UCHAR_MAX);
 	assert(tag.parts.type == FBR_LOG_TAG_WRAP);

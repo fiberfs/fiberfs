@@ -40,6 +40,25 @@ _log_writer_init(struct fbr_log *log)
 	pt_assert(pthread_mutex_init(&log->writer.lock, NULL));
 }
 
+fbr_log_data_t
+_log_tag_gen(unsigned char sequence, enum fbr_log_tag_type type, unsigned short type_data,
+    unsigned short length)
+{
+	assert(type < __FBR_LOG_TAG_TYPE_END);
+
+	struct fbr_log_tag tag;
+
+	tag.parts.magic = FBR_LOG_TAG_MAGIC;
+	tag.parts.sequence = sequence;
+	tag.parts.type = type;
+	tag.parts.type_data = type_data;
+	tag.parts.length = length;
+
+	fbr_log_tag_ok(&tag.parts);
+
+	return tag.value;
+}
+
 static void
 _log_header_init(struct fbr_log *log, void *data, size_t size)
 {
@@ -62,13 +81,13 @@ _log_header_init(struct fbr_log *log, void *data, size_t size)
 	log->writer.log_pos = header->data;
 	log->writer.log_end = header->data + (header->segment_size * FBR_LOG_SEGMENTS);
 
-	*log->writer.log_pos = fbr_log_tag_gen(0, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
+	*log->writer.log_pos = _log_tag_gen(0, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
 
 	fbr_memory_sync();
 }
 
-struct fbr_log_header *
-fbr_log_header(struct fbr_log *log, void *data, size_t size)
+static struct fbr_log_header *
+_log_header(struct fbr_log *log, void *data, size_t size)
 {
 	fbr_log_ok(log);
 	assert(data);
@@ -142,7 +161,7 @@ _log_shared_init(struct fbr_log *log, const char *name, int write)
 		_log_header_init(log, log->mmap_ptr, log->mmap_size);
 	}
 
-	log->header = fbr_log_header(log, log->mmap_ptr, log->mmap_size);
+	log->header = _log_header(log, log->mmap_ptr, log->mmap_size);
 }
 
 struct fbr_log *
@@ -195,25 +214,6 @@ fbr_log_free(struct fbr_log *log)
 	free(log);
 }
 
-fbr_log_data_t
-fbr_log_tag_gen(unsigned char sequence, unsigned char type, unsigned short type_data,
-    unsigned short length)
-{
-	assert(type < __FBR_LOG_TAG_TYPE_END);
-
-	struct fbr_log_tag tag;
-
-	tag.parts.magic = FBR_LOG_TAG_MAGIC;
-	tag.parts.sequence = sequence;
-	tag.parts.type = type;
-	tag.parts.type_data = type_data;
-	tag.parts.length = length;
-
-	fbr_log_tag_ok(&tag.parts);
-
-	return tag.value;
-}
-
 static fbr_log_data_t *
 _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 {
@@ -231,7 +231,7 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 
 	assert(writer->log_pos < writer->log_end);
 
-	fbr_log_data_t eof = fbr_log_tag_gen(writer->sequence, FBR_LOG_TAG_EOF,
+	fbr_log_data_t eof = _log_tag_gen(writer->sequence, FBR_LOG_TAG_EOF,
 		FBR_LOG_TAG_EOF_DATA, 0);
 	assert(*writer->log_pos == eof);
 
@@ -248,13 +248,13 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 		segment_counter += FBR_LOG_SEGMENTS - (segment_counter % FBR_LOG_SEGMENTS);
 		assert_zero_dev(segment_counter % FBR_LOG_SEGMENTS);
 
-		fbr_log_data_t wrap = fbr_log_tag_gen(*sequence, FBR_LOG_TAG_WRAP,
+		fbr_log_data_t wrap = _log_tag_gen(*sequence, FBR_LOG_TAG_WRAP,
 			FBR_LOG_TAG_WRAP_DATA, 0);
 
 		*sequence = writer->sequence;
 		writer->sequence++;
 
-		eof = fbr_log_tag_gen(writer->sequence, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
+		eof = _log_tag_gen(writer->sequence, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
 
 		header->segment_offset[0] = 0;
 		*header->data = eof;
@@ -272,24 +272,69 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 
 	fbr_log_data_t *log_data = writer->log_pos;
 
-	eof = fbr_log_tag_gen(writer->sequence, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
+	eof = _log_tag_gen(writer->sequence, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
 	*next = eof;
 
 	size_t segment_counter_next = (next - header->data) / header->segment_size;
-	if (segment_counter_next > segment_counter) {
+	while (segment_counter_next > segment_counter) {
 		segment_counter++;
-		assert(segment_counter_next == segment_counter);
-
 		header->segment_offset[segment_counter % FBR_LOG_SEGMENTS] = next - header->data;
 	}
 
 	writer->log_pos = next;
 
-	pt_assert(pthread_mutex_unlock(&writer->lock));
+	fbr_memory_sync();
 
 	header->segment_counter = segment_counter;
 
+	pt_assert(pthread_mutex_unlock(&writer->lock));
+
 	return log_data;
+}
+
+static void
+_log_append(struct fbr_log *log, enum fbr_log_tag_type type, unsigned short type_data,
+    void *buffer, size_t buffer_len)
+{
+	assert_dev(log);
+	assert_dev(buffer);
+	assert_dev(buffer_len);
+
+	unsigned char sequence;
+	fbr_log_data_t *data = _log_get(log, buffer_len, &sequence);
+
+	memcpy(data + 1, buffer, buffer_len);
+
+	fbr_memory_sync();
+
+	*data = _log_tag_gen(sequence, type, type_data, buffer_len);
+}
+
+static void *
+_log_read(struct fbr_log *log, fbr_log_data_t *log_pos, unsigned char sequence,
+    size_t *type_length)
+{
+	assert_dev(log);
+	assert_dev(log_pos);
+	assert_dev(type_length);
+
+	*type_length = 0;
+
+	struct fbr_log_tag tag;
+	tag.value = *log_pos;
+	fbr_log_tag_ok(&tag.parts);
+	assert(tag.parts.sequence == sequence);
+
+	if (tag.parts.type == FBR_LOG_TAG_EOF) {
+		return NULL;
+	}
+
+	assert(tag.parts.type == FBR_LOG_TAG_LOGGING);
+	void *log_buffer = log_pos + 1;
+
+	*type_length = (tag.parts.length + sizeof(fbr_log_data_t) - 1) / sizeof(fbr_log_data_t);
+
+	return log_buffer;
 }
 
 void
@@ -300,17 +345,8 @@ fbr_log_write(struct fbr_log *log, void *buffer, size_t buffer_len)
 	assert(buffer_len);
 	assert(buffer_len <= FBR_LOG_MAX_LENGTH);
 
-	// TODO we need start, end, and truncation flags
-
-	unsigned char sequence;
-	fbr_log_data_t *data = _log_get(log, buffer_len, &sequence);
-
-	// TODO add a log line header here...
-	memcpy(data + 1, buffer, buffer_len);
-
-	fbr_memory_sync();
-
-	*data = fbr_log_tag_gen(sequence, FBR_LOG_TAG_LOGGING, 0, buffer_len);
+	// TODO put a header on buffer
+	_log_append(log, FBR_LOG_TAG_LOGGING, 0, buffer, buffer_len);
 }
 
 void
@@ -359,23 +395,17 @@ fbr_log_reader_get(struct fbr_log_reader *reader)
 {
 	fbr_log_reader_ok(reader);
 	assert(reader->log_pos);
+	fbr_log_ok(&reader->log);
 
 	// TODO we need to copy into a buffer and also check for overrrun
 
-	struct fbr_log_tag tag;
-	tag.value = *reader->log_pos;
-	fbr_log_tag_ok(&tag.parts);
-	assert(tag.parts.sequence == reader->sequence);
+	size_t type_length;
+	const char *log_buffer = _log_read(&reader->log, reader->log_pos, reader->sequence,
+		&type_length);
 
-	if (tag.parts.type == FBR_LOG_TAG_EOF) {
+	if (!log_buffer) {
 		return NULL;
 	}
-
-	assert(tag.parts.type == FBR_LOG_TAG_LOGGING);
-	const char *log_buffer = (const char *)(reader->log_pos + 1);
-
-	size_t length = tag.parts.length;
-	size_t type_length = (length + sizeof(fbr_log_data_t) - 1) / sizeof(fbr_log_data_t);
 
 	reader->log_pos += 1 + type_length;
 	reader->sequence++;

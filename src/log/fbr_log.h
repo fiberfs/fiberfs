@@ -25,6 +25,7 @@ enum fbr_log_tag_type
 	FBR_LOG_TAG_EOF,
 	FBR_LOG_TAG_WRAP,
 	FBR_LOG_TAG_LOGGING,
+	FBR_LOG_TAG_NOOP,
 	__FBR_LOG_TAG_TYPE_END
 };
 
@@ -103,11 +104,8 @@ struct fbr_log_reader {
 	struct fbr_log				log;
 };
 
-struct fbr_log_header *fbr_log_header(struct fbr_log *log, void *data, size_t size);
 struct fbr_log *fbr_log_alloc(const char *name);
 void fbr_log_free(struct fbr_log *log);
-fbr_log_data_t fbr_log_tag_gen(unsigned char sequence, unsigned char type,
-	unsigned short type_data, unsigned short length);
 void fbr_log_write(struct fbr_log *log, void *buffer, size_t buffer_len);
 
 void fbr_log_reader_init(struct fbr_log_reader *reader, const char *name);
