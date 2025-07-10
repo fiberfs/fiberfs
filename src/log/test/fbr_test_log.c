@@ -99,7 +99,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	const char *logname = "/test/123";
 
-	struct fbr_log *log = fbr_log_alloc(logname);
+	struct fbr_log *log = fbr_log_alloc(logname, 65 * 1024);
 	fbr_log_ok(log);
 	assert(log->writer.valid);
 	assert(log->header);

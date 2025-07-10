@@ -104,13 +104,13 @@ struct fbr_log_reader {
 	struct fbr_log				log;
 };
 
-struct fbr_log *fbr_log_alloc(const char *name);
-void fbr_log_free(struct fbr_log *log);
+struct fbr_log *fbr_log_alloc(const char *name, size_t size);
 void fbr_log_write(struct fbr_log *log, void *buffer, size_t buffer_len);
+void fbr_log_free(struct fbr_log *log);
 
 void fbr_log_reader_init(struct fbr_log_reader *reader, const char *name);
-void fbr_log_reader_free(struct fbr_log_reader *reader);
 const char *fbr_log_reader_get(struct fbr_log_reader *reader);
+void fbr_log_reader_free(struct fbr_log_reader *reader);
 
 #define fbr_log_ok(log)				fbr_magic_check(log, FBR_LOG_MAGIC)
 #define fbr_log_tag_ok(tag)			fbr_magic_check(tag, FBR_LOG_TAG_MAGIC)
