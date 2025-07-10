@@ -293,14 +293,11 @@ fbr_log_append(struct fbr_log *log, enum fbr_log_tag_type type, unsigned short t
 }
 
 void *
-fbr_log_read(struct fbr_log *log, fbr_log_data_t **log_pos, unsigned char *sequence,
-    struct fbr_log_tag *tag)
+fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 {
 	fbr_log_ok(log);
 	fbr_log_header_ok(log->header);
-	assert(log_pos);
-	assert(sequence);
-	assert(tag);
+	assert(cursor);
 
 	// TODO we need to keep a segment counter here and keep within a safe distance
 
@@ -308,47 +305,51 @@ fbr_log_read(struct fbr_log *log, fbr_log_data_t **log_pos, unsigned char *seque
 
 	int init_sequence = 0;
 
-	if (!*log_pos) {
+	if (!cursor->log_pos) {
 		struct fbr_log_header *header = log->header;
 
 		size_t segment = header->segment_counter % header->segments;
-		*log_pos = header->data + header->segment_offset[segment];
+		cursor->log_pos = header->data + header->segment_offset[segment];
 
 		init_sequence = 1;
 	}
 
-	tag->value = **log_pos;
-	fbr_log_tag_ok(&tag->parts);
+	struct fbr_log_tag tag;
+	tag.value = *cursor->log_pos;
+	fbr_log_tag_ok(&tag.parts);
 
 	if (init_sequence) {
-		*sequence = tag->parts.sequence;
+		cursor->sequence = tag.parts.sequence;
 	} else {
-		assert(tag->parts.sequence == *sequence);
+		assert(tag.parts.sequence == cursor->sequence);
 	}
 
-	if (tag->parts.type == FBR_LOG_TAG_WRAP) {
-		assert(tag->parts.type_data == FBR_LOG_TAG_WRAP_DATA);
+	if (tag.parts.type == FBR_LOG_TAG_WRAP) {
+		assert(tag.parts.type_data == FBR_LOG_TAG_WRAP_DATA);
 
-		(*sequence)++;
-		*log_pos = log->header->data;
+		cursor->sequence++;
+		cursor->log_pos = log->header->data;
 
-		tag->value = **log_pos;
-		fbr_log_tag_ok(&tag->parts);
-		assert(tag->parts.sequence == *sequence);
+		tag.value = *cursor->log_pos;
+		fbr_log_tag_ok(&tag.parts);
+		assert(tag.parts.sequence == cursor->sequence);
 	}
 
-	if (tag->parts.type == FBR_LOG_TAG_EOF) {
-		assert(tag->parts.type_data == FBR_LOG_TAG_EOF_DATA);
+	cursor->tag.value = tag.value;
+
+	if (tag.parts.type == FBR_LOG_TAG_EOF) {
+		assert(tag.parts.type_data == FBR_LOG_TAG_EOF_DATA);
 		return NULL;
 	}
 
-	assert(tag->parts.type > FBR_LOG_TAG_NOOP && tag->parts.type < __FBR_LOG_TAG_TYPE_END);
-	void *log_buffer = *log_pos + 1;
+	assert(tag.parts.type > FBR_LOG_TAG_NOOP && tag.parts.type < __FBR_LOG_TAG_TYPE_END);
 
-	size_t type_length = (tag->parts.length + sizeof(fbr_log_data_t) - 1) /
+	void *log_buffer = cursor->log_pos + 1;
+
+	size_t type_length = (tag.parts.length + sizeof(fbr_log_data_t) - 1) /
 		sizeof(fbr_log_data_t);
-	*log_pos += 1 + type_length;
-	(*sequence)++;
+	cursor->log_pos += 1 + type_length;
+	cursor->sequence++;
 
 	return log_buffer;
 }
@@ -398,6 +399,13 @@ fbr_log_free(struct fbr_log *log)
 }
 
 void
+fbr_log_cursor_init(struct fbr_log_cursor *cursor)
+{
+	assert(cursor);
+	fbr_ZERO(cursor);
+}
+
+void
 fbr_log_reader_init(struct fbr_log_reader *reader, const char *name)
 {
 	assert(reader);
@@ -417,7 +425,8 @@ fbr_log_reader_init(struct fbr_log_reader *reader, const char *name)
 	struct fbr_log_header *header = reader->log.header;
 
 	reader->time_created = header->time_created;
-	reader->log_pos = NULL;
+
+	fbr_log_cursor_init(&reader->cursor);
 }
 
 const char *
@@ -425,14 +434,21 @@ fbr_log_reader_get(struct fbr_log_reader *reader)
 {
 	fbr_log_reader_ok(reader);
 	fbr_log_ok(&reader->log);
+	fbr_log_header_ok(reader->log.header);
+	assert(reader->time_created == reader->log.header->time_created);
 
 	// TODO we need to copy into a buffer and also check for overrrun
 
-	struct fbr_log_tag tag;
-	const char *log_buffer = fbr_log_read(&reader->log, &reader->log_pos, &reader->sequence,
-		&tag);
+	const char *log_buffer = fbr_log_read(&reader->log, &reader->cursor);
 
 	return log_buffer;
+}
+
+void
+fbr_log_cursor_close(struct fbr_log_cursor *cursor)
+{
+	assert(cursor);
+	fbr_ZERO(cursor);
 }
 
 void
@@ -442,6 +458,7 @@ fbr_log_reader_free(struct fbr_log_reader *reader)
 	fbr_log_ok(&reader->log);
 	assert_zero_dev(reader->log.do_free);
 
+	fbr_log_cursor_close(&reader->cursor);
 	_log_close(&reader->log);
 	fbr_ZERO(reader);
 }

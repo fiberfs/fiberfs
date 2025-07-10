@@ -162,8 +162,9 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);
 
-	fbr_log_data_t *log_pos = NULL;
-	unsigned char sequence = 0;
+	struct fbr_log_cursor cursor;
+	fbr_log_cursor_init(&cursor);
+
 	size_t waiting = 0;
 	size_t i;
 
@@ -189,15 +190,14 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		waiting++;
 
 		if (!i || i == 1000 || random() % 25 == 0 || waiting > 30) {
-			struct fbr_log_tag tag;
 			char *read_buffer;
-			while ((read_buffer = fbr_log_read(log, &log_pos, &sequence, &tag))) {
+			while ((read_buffer = fbr_log_read(log, &cursor))) {
 				size_t read_len = *((size_t*)read_buffer);
 				for (size_t j = 0; j < read_len; j++) {
 					unsigned char value = read_buffer[sizeof(read_len) + j];
-					fbr_ASSERT(value == tag.parts.type_data,
+					fbr_ASSERT(value == cursor.tag.parts.type_data,
 						"j=%zu len=%zu value=%u expected=%u",
-						j, read_len, value, tag.parts.type_data);
+						j, read_len, value, cursor.tag.parts.type_data);
 				}
 			}
 
@@ -210,6 +210,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(log->writer.stat_wraps);
 	assert(log->writer.stat_appends == i);
 
+	fbr_log_cursor_close(&cursor);
 	fbr_log_free(log);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_wrap passed");

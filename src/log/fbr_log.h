@@ -82,6 +82,13 @@ struct fbr_log_writer {
 	unsigned long				stat_wraps;
 };
 
+struct fbr_log_cursor {
+	unsigned char				sequence;
+	fbr_log_data_t				*log_pos;
+	struct fbr_log_tag			tag;
+	// TODO read status
+};
+
 struct fbr_log {
 	unsigned int				magic;
 #define FBR_LOG_MAGIC				0x496108CB
@@ -102,22 +109,22 @@ struct fbr_log_reader {
 #define FBR_LOG_READER_MAGIC			0x5EBC86C6
 
 	double					time_created;
-	unsigned char				sequence;
-	fbr_log_data_t				*log_pos;
 
+	struct fbr_log_cursor			cursor;
 	struct fbr_log				log;
 };
 
 struct fbr_log *fbr_log_alloc(const char *name, size_t size);
 void fbr_log_append(struct fbr_log *log, enum fbr_log_tag_type type, unsigned short type_data,
 	void *buffer, size_t buffer_len);
-void *fbr_log_read(struct fbr_log *log, fbr_log_data_t **log_pos, unsigned char *sequence,
-	struct fbr_log_tag *tag);
+void *fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor);
 void fbr_log_write(struct fbr_log *log, void *buffer, size_t buffer_len);
 void fbr_log_free(struct fbr_log *log);
 
+void fbr_log_cursor_init(struct fbr_log_cursor *cursor);
 void fbr_log_reader_init(struct fbr_log_reader *reader, const char *name);
 const char *fbr_log_reader_get(struct fbr_log_reader *reader);
+void fbr_log_cursor_close(struct fbr_log_cursor *cursor);
 void fbr_log_reader_free(struct fbr_log_reader *reader);
 
 #define fbr_log_ok(log)				fbr_magic_check(log, FBR_LOG_MAGIC)
