@@ -4,10 +4,12 @@
  *
  */
 
+#include <stdlib.h>
+
 #include "log/fbr_log.h"
 #include "test/fbr_test.h"
 
-fbr_log_data_t _log_tag_gen(unsigned char sequence, enum fbr_log_tag_type type,
+fbr_log_data_t fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_type type,
 	unsigned short type_data, unsigned short length);
 
 void
@@ -16,6 +18,8 @@ fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
+	fbr_test_logs("FBR_LOG_SEGMENTS=%d", FBR_LOG_SEGMENTS);
+	fbr_test_logs("FBR_LOG_VERSION=%d", FBR_LOG_VERSION);
 	fbr_test_logs("sizeof(fbr_log_data_t)=%zu", sizeof(fbr_log_data_t));
 	fbr_test_logs("sizeof(struct fbr_log_tag_parts)=%zu", sizeof(struct fbr_log_tag_parts));
 	fbr_test_logs("sizeof(struct fbr_log_tag)=%zu", sizeof(struct fbr_log_tag));
@@ -25,7 +29,7 @@ fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(__FBR_LOG_TAG_TYPE_END <= UCHAR_MAX);
 
 	struct fbr_log_tag tag;
-	tag.value = _log_tag_gen(0, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
+	tag.value = fbr_log_tag_gen(0, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
 	assert(tag.parts.magic == FBR_LOG_TAG_MAGIC);
 	assert_zero(tag.parts.sequence);
 	assert(tag.parts.type == FBR_LOG_TAG_EOF);
@@ -35,7 +39,7 @@ fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("FBR_LOG_TAG_EOF_DATA=%d", FBR_LOG_TAG_EOF_DATA);
 	fbr_test_logs("FBR_LOG_TAG_EOF_DATA='%.2s'", (char*)&tag.parts.type_data);
 
-	tag.value = _log_tag_gen(UCHAR_MAX, FBR_LOG_TAG_WRAP, FBR_LOG_TAG_WRAP_DATA, USHRT_MAX);
+	tag.value = fbr_log_tag_gen(UCHAR_MAX, FBR_LOG_TAG_WRAP, FBR_LOG_TAG_WRAP_DATA, USHRT_MAX);
 	assert(tag.parts.magic == FBR_LOG_TAG_MAGIC);
 	assert(tag.parts.sequence == UCHAR_MAX);
 	assert(tag.parts.type == FBR_LOG_TAG_WRAP);
@@ -54,9 +58,6 @@ _test_log_debug(struct fbr_log *log)
 	fbr_log_ok(log);
 	fbr_log_header_ok(log->header);
 
-	fbr_test_logs("FBR_LOG_SEGMENTS=%d", FBR_LOG_SEGMENTS);
-	fbr_test_logs("FBR_LOG_VERSION=%d", FBR_LOG_VERSION);
-
 	fbr_test_logs("LOG->name: '%s'", log->shm_name);
 	fbr_test_logs("LOG->shm_fd: %d", log->shm_fd);
 	fbr_test_logs("LOG->mmap_size: %zu", log->mmap_size);
@@ -67,10 +68,14 @@ _test_log_debug(struct fbr_log *log)
 	if (log->writer.valid) {
 		fbr_test_logs("LOG->writer.time_created: %lf", log->writer.time_created);
 		fbr_test_logs("LOG->writer.sequence: %u", log->writer.sequence);
+
 		fbr_test_logs("LOG->writer.log_end: %p (offset: %zu)",
 			(void*)log->writer.log_end, log->writer.log_end - log->header->data);
 		fbr_test_logs("LOG->writer.log_pos: %p (offset: %zu)",
 			(void*)log->writer.log_pos, log->writer.log_pos - log->header->data);
+
+		fbr_test_logs("LOG->writer.stat_appends: %lu", log->writer.stat_appends);
+		fbr_test_logs("LOG->writer.stat_wraps: %lu", log->writer.stat_wraps);
 	}
 
 	if (!log->header) {
@@ -83,7 +88,7 @@ _test_log_debug(struct fbr_log *log)
 	fbr_test_logs("HEADER->version: %d", header->version);
 	fbr_test_logs("HEADER->time_created: %lf", header->time_created);
 	fbr_test_logs("HEADER->segments: %zu", header->segments);
-	fbr_test_logs("HEADER->segment_size: %zu", header->segment_size);
+	fbr_test_logs("HEADER->segment_type_size: %zu", header->segment_type_size);
 	fbr_test_logs("HEADER->segment_counter: %zu", header->segment_counter);
 
 	for (size_t i = 0; i < header->segments; i++) {
@@ -97,12 +102,12 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	const char *logname = "/test/123";
+	const char *logname = "/test/init";
 
 	struct fbr_log *log = fbr_log_alloc(logname, 65 * 1024);
 	fbr_log_ok(log);
+	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);
-	assert(log->header);
 
 	_test_log_debug(log);
 
@@ -128,8 +133,77 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		i++;
 	}
 
+	assert(log->writer.stat_appends == 3);
+
 	fbr_log_reader_free(&reader);
 	fbr_log_free(log);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_init passed");
+}
+
+void
+fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_random_seed();
+
+	const char *logname = "/test/loop";
+
+	struct fbr_log *log = fbr_log_alloc(logname, 65 * 1024);
+	fbr_log_ok(log);
+	fbr_log_header_ok(log->header);
+	assert(log->writer.valid);
+
+	fbr_log_data_t *log_pos = NULL;
+	unsigned char sequence = 0;
+	size_t waiting = 0;
+	size_t i;
+
+	for (i = 0; i <= 5000; i++) {
+		char buffer[2048];
+		size_t buffer_len;
+		unsigned short data;
+
+		buffer_len = random() % (sizeof(buffer) - sizeof(buffer_len));
+		*((size_t*)buffer) = buffer_len;
+		buffer_len += sizeof(buffer_len);
+		assert(buffer_len <= sizeof(buffer));
+
+		data = random() % (UCHAR_MAX + 1);
+		assert(data <= UCHAR_MAX);
+
+		for (size_t j = sizeof(buffer_len); j < buffer_len; j++) {
+			buffer[j] = data;
+		}
+
+		fbr_log_append(log, FBR_LOG_TAG_OTHER, data, buffer, buffer_len);
+
+		waiting++;
+
+		if (!i || i == 1000 || random() % 25 == 0 || waiting > 30) {
+			struct fbr_log_tag tag;
+			char *read_buffer;
+			while ((read_buffer = fbr_log_read(log, &log_pos, &sequence, &tag))) {
+				size_t read_len = *((size_t*)read_buffer);
+				for (size_t j = 0; j < read_len; j++) {
+					unsigned char value = read_buffer[sizeof(read_len) + j];
+					fbr_ASSERT(value == tag.parts.type_data,
+						"j=%zu value=%u", j, value);
+				}
+			}
+
+			fbr_test_logs("*** Tests passed %zu", i);
+			waiting = 0;
+		}
+	}
+
+	_test_log_debug(log);
+	assert(log->writer.stat_wraps);
+	assert(log->writer.stat_appends == i);
+
+	fbr_log_free(log);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_wrap passed");
 }

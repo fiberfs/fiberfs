@@ -19,13 +19,15 @@
 
 typedef uint64_t fbr_log_data_t;
 
+// TODO rename type to class
 enum fbr_log_tag_type
 {
 	FBR_LOG_TAG_NONE = 0,
 	FBR_LOG_TAG_EOF,
 	FBR_LOG_TAG_WRAP,
-	FBR_LOG_TAG_LOGGING,
 	FBR_LOG_TAG_NOOP,
+	FBR_LOG_TAG_LOGGING,
+	FBR_LOG_TAG_OTHER,
 	__FBR_LOG_TAG_TYPE_END
 };
 
@@ -59,7 +61,7 @@ struct fbr_log_header {
 	double					time_created;
 
 	size_t					segments;
-	size_t					segment_size;
+	size_t					segment_type_size;
 	size_t					segment_counter;
 	size_t					segment_offset[FBR_LOG_SEGMENTS];
 
@@ -75,6 +77,9 @@ struct fbr_log_writer {
 
 	fbr_log_data_t				*log_end;
 	fbr_log_data_t				*log_pos;
+
+	unsigned long				stat_appends;
+	unsigned long				stat_wraps;
 };
 
 struct fbr_log {
@@ -98,13 +103,16 @@ struct fbr_log_reader {
 
 	double					time_created;
 	unsigned char				sequence;
-	size_t					segment_pos;
 	fbr_log_data_t				*log_pos;
 
 	struct fbr_log				log;
 };
 
 struct fbr_log *fbr_log_alloc(const char *name, size_t size);
+void fbr_log_append(struct fbr_log *log, enum fbr_log_tag_type type, unsigned short type_data,
+	void *buffer, size_t buffer_len);
+void *fbr_log_read(struct fbr_log *log, fbr_log_data_t **log_pos, unsigned char *sequence,
+	struct fbr_log_tag *tag);
 void fbr_log_write(struct fbr_log *log, void *buffer, size_t buffer_len);
 void fbr_log_free(struct fbr_log *log);
 
