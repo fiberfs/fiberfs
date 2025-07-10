@@ -102,7 +102,11 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	const char *logname = "/test/init";
+	fbr_test_random_seed();
+
+	char logname[100];
+	int ret = snprintf(logname, sizeof(logname), "/test/init/%ld", random());
+	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
 	struct fbr_log *log = fbr_log_alloc(logname, 65 * 1024);
 	fbr_log_ok(log);
@@ -149,7 +153,9 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_random_seed();
 
-	const char *logname = "/test/loop";
+	char logname[100];
+	int ret = snprintf(logname, sizeof(logname), "/test/loop/%ld", random());
+	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
 	struct fbr_log *log = fbr_log_alloc(logname, 65 * 1024);
 	fbr_log_ok(log);
@@ -190,7 +196,8 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 				for (size_t j = 0; j < read_len; j++) {
 					unsigned char value = read_buffer[sizeof(read_len) + j];
 					fbr_ASSERT(value == tag.parts.type_data,
-						"j=%zu value=%u", j, value);
+						"j=%zu len=%zu value=%u expected=%u",
+						j, read_len, value, tag.parts.type_data);
 				}
 			}
 

@@ -304,6 +304,8 @@ fbr_log_read(struct fbr_log *log, fbr_log_data_t **log_pos, unsigned char *seque
 
 	// TODO we need to keep a segment counter here and keep within a safe distance
 
+	fbr_memory_sync();
+
 	int init_sequence = 0;
 
 	if (!*log_pos) {
