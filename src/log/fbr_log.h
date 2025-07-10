@@ -19,8 +19,7 @@
 
 typedef uint64_t fbr_log_data_t;
 
-// TODO rename type to class
-enum fbr_log_tag_type
+enum fbr_log_tag_class
 {
 	FBR_LOG_TAG_NONE = 0,
 	FBR_LOG_TAG_EOF,
@@ -28,7 +27,7 @@ enum fbr_log_tag_type
 	FBR_LOG_TAG_NOOP,
 	FBR_LOG_TAG_LOGGING,
 	FBR_LOG_TAG_OTHER,
-	__FBR_LOG_TAG_TYPE_END
+	__FBR_LOG_TAG_END
 };
 
 #define FBR_LOG_TAG_EOF_DATA			0x4545
@@ -40,8 +39,8 @@ struct fbr_log_tag_parts {
 
 	unsigned char				sequence;
 
-	unsigned char				type;
-	unsigned short				type_data;
+	unsigned char				class;
+	unsigned short				class_data;
 
 	unsigned short				length;
 };
@@ -115,8 +114,8 @@ struct fbr_log_reader {
 };
 
 struct fbr_log *fbr_log_alloc(const char *name, size_t size);
-void fbr_log_append(struct fbr_log *log, enum fbr_log_tag_type type, unsigned short type_data,
-	void *buffer, size_t buffer_len);
+void fbr_log_append(struct fbr_log *log, enum fbr_log_tag_class class,
+	unsigned short class_data, void *buffer, size_t buffer_len);
 void *fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor);
 void fbr_log_write(struct fbr_log *log, void *buffer, size_t buffer_len);
 void fbr_log_free(struct fbr_log *log);

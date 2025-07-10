@@ -17,8 +17,8 @@
 #include "fiberfs.h"
 #include "fbr_log.h"
 
-fbr_log_data_t fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_type type,
-	unsigned short type_data, unsigned short length);
+fbr_log_data_t fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_class class,
+	unsigned short class_data, unsigned short length);
 
 static void
 _log_init(struct fbr_log *log)
@@ -173,17 +173,17 @@ fbr_log_alloc(const char *name, size_t size)
 }
 
 fbr_log_data_t
-fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_type type, unsigned short type_data,
+fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_class class, unsigned short class_data,
     unsigned short length)
 {
-	assert(type < __FBR_LOG_TAG_TYPE_END);
+	assert(class && class < __FBR_LOG_TAG_END);
 
 	struct fbr_log_tag tag;
 
 	tag.parts.magic = FBR_LOG_TAG_MAGIC;
 	tag.parts.sequence = sequence;
-	tag.parts.type = type;
-	tag.parts.type_data = type_data;
+	tag.parts.class = class;
+	tag.parts.class_data = class_data;
 	tag.parts.length = length;
 
 	fbr_log_tag_ok(&tag.parts);
@@ -274,11 +274,11 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 }
 
 void
-fbr_log_append(struct fbr_log *log, enum fbr_log_tag_type type, unsigned short type_data,
+fbr_log_append(struct fbr_log *log, enum fbr_log_tag_class class, unsigned short class_data,
     void *buffer, size_t buffer_len)
 {
 	fbr_log_ok(log);
-	assert(type > FBR_LOG_TAG_NOOP && type < __FBR_LOG_TAG_TYPE_END);
+	assert(class > FBR_LOG_TAG_NOOP && class < __FBR_LOG_TAG_END);
 	assert(buffer);
 	assert(buffer_len);
 
@@ -289,7 +289,7 @@ fbr_log_append(struct fbr_log *log, enum fbr_log_tag_type type, unsigned short t
 
 	fbr_memory_sync();
 
-	*data = fbr_log_tag_gen(sequence, type, type_data, buffer_len);
+	*data = fbr_log_tag_gen(sequence, class, class_data, buffer_len);
 }
 
 void *
@@ -324,8 +324,8 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 		assert(tag.parts.sequence == cursor->sequence);
 	}
 
-	if (tag.parts.type == FBR_LOG_TAG_WRAP) {
-		assert(tag.parts.type_data == FBR_LOG_TAG_WRAP_DATA);
+	if (tag.parts.class == FBR_LOG_TAG_WRAP) {
+		assert(tag.parts.class_data == FBR_LOG_TAG_WRAP_DATA);
 
 		cursor->sequence++;
 		cursor->log_pos = log->header->data;
@@ -337,12 +337,12 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 
 	cursor->tag.value = tag.value;
 
-	if (tag.parts.type == FBR_LOG_TAG_EOF) {
-		assert(tag.parts.type_data == FBR_LOG_TAG_EOF_DATA);
+	if (tag.parts.class == FBR_LOG_TAG_EOF) {
+		assert(tag.parts.class_data == FBR_LOG_TAG_EOF_DATA);
 		return NULL;
 	}
 
-	assert(tag.parts.type > FBR_LOG_TAG_NOOP && tag.parts.type < __FBR_LOG_TAG_TYPE_END);
+	assert(tag.parts.class > FBR_LOG_TAG_NOOP && tag.parts.class < __FBR_LOG_TAG_END);
 
 	void *log_buffer = cursor->log_pos + 1;
 
