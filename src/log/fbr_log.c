@@ -133,12 +133,16 @@ _log_shared_init(struct fbr_log *log, const char *name, size_t size)
 		log->mmap_size = size;
 		int ret = ftruncate(log->shm_fd, log->mmap_size);
 		assert_zero(ret);
-	} else {
-		struct stat st;
-		int ret = fstat(log->shm_fd, &st);
-		assert_zero(ret);
-		assert(st.st_size > 0);
+	}
 
+	struct stat st;
+	int ret = fstat(log->shm_fd, &st);
+	assert_zero(ret);
+	assert(st.st_size > 0);
+
+	if (size) {
+		assert(log->mmap_size == (size_t)st.st_size);
+	} else {
 		log->mmap_size = st.st_size;
 	}
 
