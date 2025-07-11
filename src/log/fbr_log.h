@@ -16,6 +16,7 @@
 #define FBR_LOG_VERSION				1
 #define FBR_LOG_SEGMENT_MIN_SIZE		(8 * 1024)
 #define FBR_LOG_MAX_LENGTH			(4 * 1024)
+#define FBR_LOG_TYPE_SIZE			(sizeof(fbr_log_data_t))
 
 typedef uint64_t fbr_log_data_t;
 

@@ -61,9 +61,9 @@ _log_header_init(struct fbr_log *log, void *data, size_t size)
 	header->time_created = log->writer.time_created;
 
 	header->segments = FBR_LOG_SEGMENTS;
-	header->segment_type_size = (size - sizeof(struct fbr_log_header)) /
-		(sizeof(fbr_log_data_t) * FBR_LOG_SEGMENTS);
-	assert(header->segment_type_size * sizeof(fbr_log_data_t) >= FBR_LOG_SEGMENT_MIN_SIZE);
+	header->segment_type_size = (size - sizeof(*header)) /
+		(FBR_LOG_TYPE_SIZE * FBR_LOG_SEGMENTS);
+	assert(header->segment_type_size * FBR_LOG_TYPE_SIZE >= FBR_LOG_SEGMENT_MIN_SIZE);
 
 	log->writer.log_pos = header->data;
 	log->writer.log_end = header->data + (header->segment_type_size * FBR_LOG_SEGMENTS);
@@ -191,6 +191,12 @@ fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_class class, unsigned s
 	return tag.value;
 }
 
+static inline size_t
+_log_type_length(size_t length)
+{
+	return (length + FBR_LOG_TYPE_SIZE - 1) / FBR_LOG_TYPE_SIZE;
+}
+
 static fbr_log_data_t *
 _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 {
@@ -202,7 +208,7 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 
 	struct fbr_log_header *header = log->header;
 	struct fbr_log_writer *writer = &log->writer;
-	size_t type_length = (length + sizeof(fbr_log_data_t) - 1) / sizeof(fbr_log_data_t);
+	size_t type_length = _log_type_length(length);
 
 	pt_assert(pthread_mutex_lock(&writer->lock));
 
@@ -346,8 +352,7 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 
 	void *log_buffer = cursor->log_pos + 1;
 
-	size_t type_length = (tag.parts.length + sizeof(fbr_log_data_t) - 1) /
-		sizeof(fbr_log_data_t);
+	size_t type_length = _log_type_length(tag.parts.length);
 	cursor->log_pos += 1 + type_length;
 	cursor->sequence++;
 
