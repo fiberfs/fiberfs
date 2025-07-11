@@ -139,11 +139,12 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	_test_log_debug(log);
 
-	fbr_test_logs("*** writing big[20000]");
+	fbr_test_logs("*** writing big[30000]");
 
-	char big[30000];
+	char big[60000];
+	size_t big_size = 30000;
 	memset(big, 6, sizeof(big));
-	fbr_log_append(log, FBR_LOG_TAG_OTHER, 6, big, sizeof(big));
+	fbr_log_append(log, FBR_LOG_TAG_OTHER, 6, big, big_size);
 
 	fbr_log_write(log, "END", 4);
 
@@ -151,8 +152,8 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(reader.cursor.status == FBR_LOG_CURSOR_OK);
 	assert(reader.cursor.tag.parts.class == FBR_LOG_TAG_OTHER);
 	assert(reader.cursor.tag.parts.class_data == 6);
-	assert(reader.cursor.tag.parts.length == sizeof(big));
-	assert_zero(memcmp(log_buffer, big, sizeof(big)));
+	assert(reader.cursor.tag.parts.length == big_size);
+	assert_zero(memcmp(log_buffer, big, big_size));
 
 	log_buffer = fbr_log_reader_get(&reader);
 	assert_zero(strcmp(log_buffer, "END"));
@@ -162,7 +163,24 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	_test_log_debug(log);
 
-	assert(log->writer.stat_appends == 5);
+	fbr_test_logs("*** overflow");
+
+	big_size = 30000;
+	fbr_log_append(log, FBR_LOG_TAG_OTHER, 6, big, big_size);
+
+	fbr_test_logs("*** header.segment_counter: %zu", log->header->segment_counter);
+	fbr_test_logs("*** cursor.segment_counter: %zu", reader.cursor.segment_counter);
+
+	big_size = 50000;
+	fbr_log_append(log, FBR_LOG_TAG_OTHER, 6, big, big_size);
+
+	_test_log_debug(log);
+	fbr_test_logs("*** cursor.segment_counter: %zu", reader.cursor.segment_counter);
+
+	assert_zero(fbr_log_reader_get(&reader));
+	assert(reader.cursor.status == FBR_LOG_CURSOR_OVERFLOW);
+
+	assert(log->writer.stat_appends == 7);
 
 	fbr_log_reader_free(&reader);
 	fbr_log_free(log);
@@ -214,7 +232,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		waiting++;
 
-		if (!i || i == 1000 || random() % 25 == 0 || waiting > 30) {
+		if (!i || i == 5000 || random() % 25 == 0 || waiting > 30) {
 			char *read_buffer;
 			while ((read_buffer = fbr_log_read(log, &cursor))) {
 				assert(cursor.status == FBR_LOG_CURSOR_OK);
@@ -234,6 +252,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 	_test_log_debug(log);
+	assert(cursor.segment_counter == log->header->segment_counter);
 	assert(log->writer.stat_wraps);
 	assert(log->writer.stat_appends == i);
 

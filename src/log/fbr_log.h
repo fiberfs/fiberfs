@@ -85,12 +85,16 @@ struct fbr_log_writer {
 enum fbr_log_cursor_status {
 	FBR_LOG_CURSOR_OK = 0,
 	FBR_LOG_CURSOR_EOF,
+	FBR_LOG_CURSOR_ERROR,
 	FBR_LOG_CURSOR_OVERFLOW
 };
 
 struct fbr_log_cursor {
 	unsigned char				sequence;
+	size_t					segment_counter;
+
 	fbr_log_data_t				*log_pos;
+
 	struct fbr_log_tag			tag;
 	enum fbr_log_cursor_status		status;
 };

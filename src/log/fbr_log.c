@@ -197,6 +197,18 @@ _log_type_length(size_t length)
 	return (length + FBR_LOG_TYPE_SIZE - 1) / FBR_LOG_TYPE_SIZE;
 }
 
+static inline size_t
+_log_segment(struct fbr_log_header *header, fbr_log_data_t *log_pos)
+{
+	assert_dev(header);
+	assert_dev(log_pos);
+
+	size_t segment = (log_pos - header->data) / header->segment_type_size;
+	assert(segment < header->segments);
+
+	return segment;
+}
+
 static fbr_log_data_t *
 _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 {
@@ -266,8 +278,9 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 
 	fbr_log_data_t *log_data = writer->log_pos;
 
-	size_t segment_counter_next = (next - header->data) / header->segment_type_size;
-	while (segment_counter_next > segment_counter) {
+	size_t segment_counter_next = _log_segment(header, next);
+	while (segment_counter_next > (segment_counter % FBR_LOG_SEGMENTS)) {
+		// TODO wraparound
 		segment_counter++;
 		header->segment_offset[segment_counter % FBR_LOG_SEGMENTS] = next - header->data;
 	}
@@ -309,19 +322,33 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 	fbr_log_header_ok(log->header);
 	assert(cursor);
 
-	// TODO we need to keep a segment counter here and keep within a safe distance
+	if (cursor->status >= FBR_LOG_CURSOR_ERROR) {
+		return NULL;
+	}
 
 	fbr_memory_sync();
 
+	struct fbr_log_header *header = log->header;
 	int init_sequence = 0;
 
 	if (!cursor->log_pos) {
-		struct fbr_log_header *header = log->header;
-
-		size_t segment = header->segment_counter % header->segments;
+		cursor->segment_counter = header->segment_counter;
+		size_t segment = cursor->segment_counter % header->segments;
 		cursor->log_pos = header->data + header->segment_offset[segment];
 
 		init_sequence = 1;
+	}
+
+	size_t segment_pos = _log_segment(header, cursor->log_pos);
+	while (segment_pos > (cursor->segment_counter % FBR_LOG_SEGMENTS)) {
+		// TODO wraparound
+		cursor->segment_counter++;
+	}
+
+	size_t distance = header->segment_counter - cursor->segment_counter;
+	if (distance > header->segments - 2) {
+		cursor->status = FBR_LOG_CURSOR_OVERFLOW;
+		return NULL;
 	}
 
 	struct fbr_log_tag tag;
@@ -343,6 +370,10 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 		tag.value = *cursor->log_pos;
 		fbr_log_tag_ok(&tag.parts);
 		assert(tag.parts.sequence == cursor->sequence);
+
+		cursor->segment_counter += FBR_LOG_SEGMENTS -
+			(cursor->segment_counter % FBR_LOG_SEGMENTS);
+		assert_zero_dev(cursor->segment_counter % FBR_LOG_SEGMENTS);
 	}
 
 	cursor->tag.value = tag.value;
