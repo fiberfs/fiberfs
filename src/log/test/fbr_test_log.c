@@ -5,6 +5,8 @@
  */
 
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "log/fbr_log.h"
 #include "test/fbr_test.h"
@@ -105,7 +107,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_random_seed();
 
 	char logname[100];
-	int ret = snprintf(logname, sizeof(logname), "/test/init/%ld", random());
+	int ret = snprintf(logname, sizeof(logname), "/test/init/%ld/%d", random(), getpid());
 	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
 	struct fbr_log *log = fbr_log_alloc(logname, 65 * 1024);
@@ -197,7 +199,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_random_seed();
 
 	char logname[100];
-	int ret = snprintf(logname, sizeof(logname), "/test/loop/%ld", random());
+	int ret = snprintf(logname, sizeof(logname), "/test/loop/%ld/%d", random(), getpid());
 	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
 	struct fbr_log *log = fbr_log_alloc(logname, 65 * 1024);
@@ -232,7 +234,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		waiting++;
 
-		if (!i || i == 5000 || random() % 25 == 0 || waiting > 30) {
+		if (!i || i == 5000 || random() % 25 == 0 || waiting > 20) {
 			char *read_buffer;
 			while ((read_buffer = fbr_log_read(log, &cursor))) {
 				assert(cursor.status == FBR_LOG_CURSOR_OK);
@@ -244,7 +246,8 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 						j, read_len, value, cursor.tag.parts.class_data);
 				}
 			}
-			assert(cursor.status == FBR_LOG_CURSOR_EOF);
+			fbr_ASSERT(cursor.status == FBR_LOG_CURSOR_EOF, "cursor.status: %d",
+				cursor.status);
 
 			fbr_test_logs("*** Tests passed %zu", i);
 			waiting = 0;
