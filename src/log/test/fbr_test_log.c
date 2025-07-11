@@ -137,7 +137,32 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		i++;
 	}
 
-	assert(log->writer.stat_appends == 3);
+	_test_log_debug(log);
+
+	fbr_test_logs("*** writing big[20000]");
+
+	char big[30000];
+	memset(big, 6, sizeof(big));
+	fbr_log_append(log, FBR_LOG_TAG_OTHER, 6, big, sizeof(big));
+
+	fbr_log_write(log, "END", 4);
+
+	log_buffer = fbr_log_reader_get(&reader);
+	assert(reader.cursor.status == FBR_LOG_CURSOR_OK);
+	assert(reader.cursor.tag.parts.class == FBR_LOG_TAG_OTHER);
+	assert(reader.cursor.tag.parts.class_data == 6);
+	assert(reader.cursor.tag.parts.length == sizeof(big));
+	assert_zero(memcmp(log_buffer, big, sizeof(big)));
+
+	log_buffer = fbr_log_reader_get(&reader);
+	assert_zero(strcmp(log_buffer, "END"));
+
+	assert_zero(fbr_log_reader_get(&reader));
+	assert(reader.cursor.status == FBR_LOG_CURSOR_EOF);
+
+	_test_log_debug(log);
+
+	assert(log->writer.stat_appends == 5);
 
 	fbr_log_reader_free(&reader);
 	fbr_log_free(log);
@@ -192,6 +217,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		if (!i || i == 1000 || random() % 25 == 0 || waiting > 30) {
 			char *read_buffer;
 			while ((read_buffer = fbr_log_read(log, &cursor))) {
+				assert(cursor.status == FBR_LOG_CURSOR_OK);
 				size_t read_len = *((size_t*)read_buffer);
 				for (size_t j = 0; j < read_len; j++) {
 					unsigned char value = read_buffer[sizeof(read_len) + j];
@@ -200,6 +226,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 						j, read_len, value, cursor.tag.parts.class_data);
 				}
 			}
+			assert(cursor.status == FBR_LOG_CURSOR_EOF);
 
 			fbr_test_logs("*** Tests passed %zu", i);
 			waiting = 0;

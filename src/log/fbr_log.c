@@ -203,8 +203,12 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 	fbr_log_ok(log);
 	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);
-	assert_dev(length && length <= FBR_LOG_MAX_LENGTH);
+	assert_dev(length)
 	assert_dev(sequence);
+
+	size_t length_max = log->header->segment_type_size * FBR_LOG_TYPE_SIZE *
+		(FBR_LOG_SEGMENTS - 1);
+	assert(length < length_max);
 
 	struct fbr_log_header *header = log->header;
 	struct fbr_log_writer *writer = &log->writer;
@@ -345,6 +349,7 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 
 	if (tag.parts.class == FBR_LOG_TAG_EOF) {
 		assert(tag.parts.class_data == FBR_LOG_TAG_EOF_DATA);
+		cursor->status = FBR_LOG_CURSOR_EOF;
 		return NULL;
 	}
 
@@ -355,6 +360,7 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 	size_t type_length = _log_type_length(tag.parts.length);
 	cursor->log_pos += 1 + type_length;
 	cursor->sequence++;
+	cursor->status = FBR_LOG_CURSOR_OK;
 
 	return log_buffer;
 }

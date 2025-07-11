@@ -82,11 +82,17 @@ struct fbr_log_writer {
 	unsigned long				stat_wraps;
 };
 
+enum fbr_log_cursor_status {
+	FBR_LOG_CURSOR_OK = 0,
+	FBR_LOG_CURSOR_EOF,
+	FBR_LOG_CURSOR_OVERFLOW
+};
+
 struct fbr_log_cursor {
 	unsigned char				sequence;
 	fbr_log_data_t				*log_pos;
 	struct fbr_log_tag			tag;
-	// TODO read status
+	enum fbr_log_cursor_status		status;
 };
 
 struct fbr_log {
