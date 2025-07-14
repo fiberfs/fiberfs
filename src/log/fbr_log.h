@@ -79,7 +79,8 @@ struct fbr_log_writer {
 	fbr_log_data_t				*log_pos;
 
 	unsigned long				stat_appends;
-	unsigned long				stat_wraps;
+	unsigned long				stat_log_wraps;
+	unsigned long				stat_segment_wraps;
 };
 
 enum fbr_log_cursor_status {

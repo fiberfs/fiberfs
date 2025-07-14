@@ -274,7 +274,11 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 		next = writer->log_pos + 1 + type_length;
 		assert_dev(next < writer->log_end);
 
-		writer->stat_wraps++;
+		writer->stat_log_wraps++;
+
+		if (!segment_counter) {
+			writer->stat_segment_wraps++;
+		}
 	}
 
 	eof = fbr_log_tag_gen(writer->sequence, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
@@ -284,9 +288,12 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 
 	size_t segment_counter_next = _log_segment(header, next);
 	while (segment_counter_next > (segment_counter % FBR_LOG_SEGMENTS)) {
-		// TODO wraparound
 		segment_counter++;
 		header->segment_offset[segment_counter % FBR_LOG_SEGMENTS] = next - header->data;
+
+		if (!segment_counter) {
+			writer->stat_segment_wraps++;
+		}
 	}
 
 	writer->log_pos = next;
@@ -345,7 +352,6 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 
 	size_t segment_pos = _log_segment(header, cursor->log_pos);
 	while (segment_pos > (cursor->segment_counter % FBR_LOG_SEGMENTS)) {
-		// TODO wraparound
 		cursor->segment_counter++;
 	}
 

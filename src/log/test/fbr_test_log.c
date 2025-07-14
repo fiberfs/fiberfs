@@ -77,7 +77,9 @@ _test_log_debug(struct fbr_log *log)
 			(void*)log->writer.log_pos, log->writer.log_pos - log->header->data);
 
 		fbr_test_logs("LOG->writer.stat_appends: %lu", log->writer.stat_appends);
-		fbr_test_logs("LOG->writer.stat_wraps: %lu", log->writer.stat_wraps);
+		fbr_test_logs("LOG->writer.stat_log_wraps: %lu", log->writer.stat_log_wraps);
+		fbr_test_logs("LOG->writer.stat_segment_wraps: %lu",
+			log->writer.stat_segment_wraps);
 	}
 
 	if (!log->header) {
@@ -207,6 +209,9 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);
 
+	assert_zero(log->header->segment_counter);
+	log->header->segment_counter -= FBR_LOG_SEGMENTS;
+
 	struct fbr_log_cursor cursor;
 	fbr_log_cursor_init(&cursor);
 
@@ -249,14 +254,18 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 			fbr_ASSERT(cursor.status == FBR_LOG_CURSOR_EOF, "cursor.status: %d",
 				cursor.status);
 
-			fbr_test_logs("*** Tests passed %zu", i);
+			fbr_test_logs("*** Tests passed %zu (segment_counter: %zu/%zu)", i,
+				log->header->segment_counter,
+				log->header->segment_counter % FBR_LOG_SEGMENTS);
+
 			waiting = 0;
 		}
 	}
 
 	_test_log_debug(log);
 	assert(cursor.segment_counter == log->header->segment_counter);
-	assert(log->writer.stat_wraps);
+	assert(log->writer.stat_log_wraps);
+	assert(log->writer.stat_segment_wraps);
 	assert(log->writer.stat_appends == i);
 
 	fbr_log_cursor_close(&cursor);
