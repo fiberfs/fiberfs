@@ -446,9 +446,9 @@ fbr_log_free(struct fbr_log *log)
 	free(log);
 }
 
-void __fbr_attr_printf(4)
-fbr_log_print(struct fbr_log *log, enum fbr_log_type type, unsigned long request_id,
-    const char *fmt, ...)
+void
+fbr_log_vprint(struct fbr_log *log, enum fbr_log_type type, unsigned long request_id,
+    const char *fmt, va_list ap)
 {
 	fbr_log_ok(log);
 	assert(type > __FBR_LOG_TYPE_NONE && type < __FBR_LOG_TYPE_END);
@@ -464,9 +464,6 @@ fbr_log_print(struct fbr_log *log, enum fbr_log_type type, unsigned long request
 	log_line->length = sizeof(buffer) - sizeof(*log_line);
 	assert_dev(log_line->length <= sizeof(buffer));
 
-	va_list ap;
-	va_start(ap, fmt);
-
 	int ret = vsnprintf(log_line->buffer, log_line->length, fmt, ap);
 	assert(ret > 0);
 
@@ -480,6 +477,16 @@ fbr_log_print(struct fbr_log *log, enum fbr_log_type type, unsigned long request
 	size_t buffer_len = sizeof(*log_line) + log_line->length + 1;
 
 	fbr_log_append(log, FBR_LOG_TAG_LOGLINE, type, buffer, buffer_len);
+}
+
+void __fbr_attr_printf(4)
+fbr_log_print(struct fbr_log *log, enum fbr_log_type type, unsigned long request_id,
+    const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	fbr_log_vprint(log, type, request_id, fmt, ap);
 
 	va_end(ap);
 }

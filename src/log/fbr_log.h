@@ -9,6 +9,7 @@
 
 #include <limits.h>
 #include <pthread.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -146,6 +147,8 @@ void fbr_log_append(struct fbr_log *log, enum fbr_log_tag_class class,
 void *fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor);
 void fbr_log_free(struct fbr_log *log);
 
+void fbr_log_vprint(struct fbr_log *log, enum fbr_log_type type, unsigned long request_id,
+    const char *fmt, va_list ap);
 void __fbr_attr_printf(4) fbr_log_print(struct fbr_log *log, enum fbr_log_type type,
 	unsigned long request_id, const char *fmt, ...);
 

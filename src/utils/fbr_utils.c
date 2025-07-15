@@ -11,6 +11,8 @@
 
 #include "fiberfs.h"
 
+extern int _IS_FIBERFS_TEST;
+
 void
 fbr_sleep_ms(double ms)
 {
@@ -73,4 +75,14 @@ fbr_parse_ulong(const char *str, size_t length)
 	}
 
 	return ret;
+}
+
+int
+fbr_is_test(void)
+{
+	if (_IS_FIBERFS_TEST) {
+		return 1;
+	}
+
+	return 0;
 }

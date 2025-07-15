@@ -10,6 +10,7 @@
 #include <pthread.h>
 
 #include "fiberfs.h"
+#include "fbr_rlog.h"
 #include "fbr_workspace.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
@@ -32,6 +33,7 @@ struct fbr_request {
 
 	struct fbr_fuse_context			*fuse_ctx;
 	struct fbr_workspace			*workspace;
+	struct fbr_rlog				*rlog;
 
 	TAILQ_ENTRY(fbr_request)		entry;
 };
