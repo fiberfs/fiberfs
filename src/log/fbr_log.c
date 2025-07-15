@@ -446,7 +446,7 @@ fbr_log_free(struct fbr_log *log)
 	free(log);
 }
 
-void __fbr_log_printf(4)
+void __fbr_attr_printf(4)
 fbr_log_print(struct fbr_log *log, enum fbr_log_type type, unsigned long request_id,
     const char *fmt, ...)
 {
@@ -547,7 +547,7 @@ fbr_log_reader_get(struct fbr_log_reader *reader, void *buffer, size_t buffer_le
 
 	memcpy(buffer, log_line_read, log_line_len);
 	struct fbr_log_line *log_line = buffer;
-	fbr_logline_ok(log_line);
+	fbr_logline_ok_dev(log_line);
 
 	if (truncated) {
 		log_line->length = buffer_len - sizeof(struct fbr_log_line) - 1;

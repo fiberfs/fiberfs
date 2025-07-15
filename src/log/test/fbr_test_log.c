@@ -180,10 +180,10 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(reader.cursor.tag.parts.length == big_size);
 	assert_zero(memcmp(big_ptr, big, big_size));
 
-	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(*log_line) + 4);
+	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(*log_line) + 5);
 	assert(log_line->truncated);
-	assert(log_line->length == 3);
-	assert_zero(strcmp(log_line->buffer, "123"));
+	assert(log_line->length == 4);
+	assert_zero(strcmp(log_line->buffer, "1234"));
 	_test_logline_debug(log_line);
 
 	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));

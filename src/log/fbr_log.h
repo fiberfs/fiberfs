@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "fiberfs.h"
 #include "fbr_log_types.h"
 
 #define FBR_LOG_SEGMENTS			8
@@ -145,10 +146,7 @@ void fbr_log_append(struct fbr_log *log, enum fbr_log_tag_class class,
 void *fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor);
 void fbr_log_free(struct fbr_log *log);
 
-#define __fbr_log_printf(fpos)			\
-	__attribute__((__format__(__printf__, (fpos), ((fpos) + 1))))
-
-void __fbr_log_printf(4) fbr_log_print(struct fbr_log *log, enum fbr_log_type type,
+void __fbr_attr_printf(4) fbr_log_print(struct fbr_log *log, enum fbr_log_type type,
 	unsigned long request_id, const char *fmt, ...);
 
 void fbr_log_cursor_init(struct fbr_log_cursor *cursor);
@@ -163,5 +161,6 @@ void fbr_log_reader_free(struct fbr_log_reader *reader);
 #define fbr_log_header_ok(header)		fbr_magic_check(header, FBR_LOG_HEADER_MAGIC)
 #define fbr_log_reader_ok(reader)		fbr_magic_check(reader, FBR_LOG_READER_MAGIC)
 #define fbr_logline_ok(line)			fbr_magic_check(line, FBR_LOGLINE_MAGIC)
+#define fbr_logline_ok_dev(line)		fbr_magic_check_dev(line, FBR_LOGLINE_MAGIC)
 
 #endif /* _FBR_LOG_H_INCLUDED_ */
