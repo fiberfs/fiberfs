@@ -26,6 +26,7 @@ fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("sizeof(struct fbr_log_tag_parts)=%zu", sizeof(struct fbr_log_tag_parts));
 	fbr_test_logs("sizeof(struct fbr_log_tag)=%zu", sizeof(struct fbr_log_tag));
 	fbr_test_logs("__FBR_LOG_TAG_END=%d", __FBR_LOG_TAG_END);
+	fbr_test_logs("sizeof(struct fbr_log_line)=%zu", sizeof(struct fbr_log_line));
 
 	assert(sizeof(fbr_log_data_t) == sizeof(struct fbr_log_tag));
 	assert(__FBR_LOG_TAG_END <= UCHAR_MAX);
@@ -54,7 +55,7 @@ fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_assert passed");
 }
 
-void
+static void
 _test_log_debug(struct fbr_log *log)
 {
 	fbr_log_ok(log);
@@ -100,6 +101,21 @@ _test_log_debug(struct fbr_log *log)
 	}
 }
 
+static void
+_test_logline_debug(struct fbr_log_line *log_line)
+{
+	fbr_logline_ok(log_line);
+
+	fbr_test_logs("LOG_LINE->length: %u", log_line->length);
+	fbr_test_logs("LOG_LINE->truncated: %u", log_line->truncated);
+	fbr_test_logs("LOG_LINE->start: %u", log_line->start);
+	fbr_test_logs("LOG_LINE->end: %u", log_line->end);
+	fbr_test_logs("LOG_LINE->request_id: %lu", log_line->request_id);
+	fbr_test_logs("LOG_LINE->buffer: '%s'", log_line->buffer);
+
+	assert(log_line->length == strlen(log_line->buffer));
+}
+
 void
 fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -122,22 +138,25 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_log_reader reader;
 	fbr_log_reader_init(&reader, logname);
 
-	fbr_log_write(log, "111", 4);
-	fbr_log_write(log, "TWO TWO TWO", 12);
+	fbr_log_print(log, FBR_LOG_DEBUG, 0, "111");
+	fbr_log_print(log, FBR_LOG_DEBUG, 0, "TWO TWO TWO");
 
 	_test_log_debug(log);
 
-	const char *log_buffer;
+	char log_buffer[FBR_LOGLINE_MAX_LENGTH];
+	struct fbr_log_line *log_line;
 	size_t i = 0;
-	while ((log_buffer = fbr_log_reader_get(&reader))) {
-		fbr_test_logs("READER log_buffer[%zu]: '%s'", i, log_buffer);
+	while ((log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)))) {
+		fbr_test_logs("READER log_buffer[%zu]", i);
+		_test_logline_debug(log_line);
 		i++;
 	}
 
-	fbr_log_write(log, "33333333333333333333333", 25);
+	fbr_log_print(log, FBR_LOG_DEBUG, 0, "33333333333333333333333");
 
-	while ((log_buffer = fbr_log_reader_get(&reader))) {
-		fbr_test_logs("READER log_buffer[%zu]: '%s'", i, log_buffer);
+	while ((log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)))) {
+		fbr_test_logs("READER log_buffer[%zu]", i);
+		_test_logline_debug(log_line);
 		i++;
 	}
 
@@ -146,23 +165,33 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("*** writing big[30000]");
 
 	char big[60000];
+	char *big_ptr;
 	size_t big_size = 30000;
 	memset(big, 6, sizeof(big));
 	fbr_log_append(log, FBR_LOG_TAG_OTHER, 6, big, big_size);
 
-	fbr_log_write(log, "END", 4);
+	fbr_log_print(log, FBR_LOG_DEBUG, 0, "12345");
+	fbr_log_print(log, FBR_LOG_DEBUG, 0, "END");
 
-	log_buffer = fbr_log_reader_get(&reader);
+	big_ptr = fbr_log_read(&reader.log, &reader.cursor);
 	assert(reader.cursor.status == FBR_LOG_CURSOR_OK);
 	assert(reader.cursor.tag.parts.class == FBR_LOG_TAG_OTHER);
 	assert(reader.cursor.tag.parts.class_data == 6);
 	assert(reader.cursor.tag.parts.length == big_size);
-	assert_zero(memcmp(log_buffer, big, big_size));
+	assert_zero(memcmp(big_ptr, big, big_size));
 
-	log_buffer = fbr_log_reader_get(&reader);
-	assert_zero(strcmp(log_buffer, "END"));
+	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(*log_line) + 4);
+	assert(log_line->truncated);
+	assert(log_line->length == 3);
+	assert_zero(strcmp(log_line->buffer, "123"));
+	_test_logline_debug(log_line);
 
-	assert_zero(fbr_log_reader_get(&reader));
+	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	assert_zero(log_line->truncated);
+	assert_zero(strcmp(log_line->buffer, "END"));
+	_test_logline_debug(log_line);
+
+	assert_zero(fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)));
 	assert(reader.cursor.status == FBR_LOG_CURSOR_EOF);
 
 	_test_log_debug(log);
@@ -181,10 +210,10 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_test_log_debug(log);
 	fbr_test_logs("*** cursor.segment_counter: %zu", reader.cursor.segment_counter);
 
-	assert_zero(fbr_log_reader_get(&reader));
+	assert_zero(fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)));
 	assert(reader.cursor.status == FBR_LOG_CURSOR_OVERFLOW);
 
-	assert(log->writer.stat_appends == 7);
+	assert(log->writer.stat_appends == 8);
 
 	fbr_log_reader_free(&reader);
 	fbr_log_free(log);

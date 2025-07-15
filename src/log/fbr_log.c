@@ -6,9 +6,11 @@
 
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -316,6 +318,10 @@ fbr_log_append(struct fbr_log *log, enum fbr_log_tag_class class, unsigned short
 	assert(buffer);
 	assert(buffer_len);
 
+	if (class == FBR_LOG_TAG_LOGLINE) {
+		fbr_logline_ok((struct fbr_log_line*)buffer);
+	}
+
 	unsigned char sequence;
 	fbr_log_data_t *data = _log_get(log, buffer_len, &sequence);
 
@@ -406,18 +412,6 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 	return log_buffer;
 }
 
-void
-fbr_log_write(struct fbr_log *log, void *buffer, size_t buffer_len)
-{
-	fbr_log_ok(log);
-	assert(buffer);
-	assert(buffer_len);
-	assert(buffer_len <= FBR_LOG_MAX_LENGTH);
-
-	// TODO put a header on buffer
-	fbr_log_append(log, FBR_LOG_TAG_LOGGING, 0, buffer, buffer_len);
-}
-
 static void
 _log_close(struct fbr_log *log)
 {
@@ -452,6 +446,44 @@ fbr_log_free(struct fbr_log *log)
 	free(log);
 }
 
+void __fbr_log_printf(4)
+fbr_log_print(struct fbr_log *log, enum fbr_log_type type, unsigned long request_id,
+    const char *fmt, ...)
+{
+	fbr_log_ok(log);
+	assert(type > __FBR_LOG_TYPE_NONE && type < __FBR_LOG_TYPE_END);
+	assert(fmt);
+	assert(*fmt);
+
+	char buffer[FBR_LOGLINE_MAX_LENGTH];
+	assert(sizeof(buffer) < USHRT_MAX);
+
+	struct fbr_log_line *log_line = (struct fbr_log_line*)buffer;
+	log_line->magic = FBR_LOGLINE_MAGIC;
+	log_line->request_id = request_id;
+	log_line->length = sizeof(buffer) - sizeof(*log_line);
+	assert_dev(log_line->length <= sizeof(buffer));
+
+	va_list ap;
+	va_start(ap, fmt);
+
+	int ret = vsnprintf(log_line->buffer, log_line->length, fmt, ap);
+	assert(ret > 0);
+
+	if (ret >= log_line->length) {
+		log_line->truncated = 1;
+		log_line->length--;
+	} else {
+		log_line->length = ret;
+	}
+
+	size_t buffer_len = sizeof(*log_line) + log_line->length + 1;
+
+	fbr_log_append(log, FBR_LOG_TAG_LOGLINE, type, buffer, buffer_len);
+
+	va_end(ap);
+}
+
 void
 fbr_log_cursor_init(struct fbr_log_cursor *cursor)
 {
@@ -483,19 +515,50 @@ fbr_log_reader_init(struct fbr_log_reader *reader, const char *name)
 	fbr_log_cursor_init(&reader->cursor);
 }
 
-const char *
-fbr_log_reader_get(struct fbr_log_reader *reader)
+struct fbr_log_line *
+fbr_log_reader_get(struct fbr_log_reader *reader, void *buffer, size_t buffer_len)
 {
 	fbr_log_reader_ok(reader);
 	fbr_log_ok(&reader->log);
 	fbr_log_header_ok(reader->log.header);
 	assert(reader->time_created == reader->log.header->time_created);
+	assert(buffer);
+	assert(buffer_len > sizeof(struct fbr_log_line));
 
-	// TODO we need to copy into a buffer and also check for overrrun
+	const struct fbr_log_line *log_line_read;
 
-	const char *log_buffer = fbr_log_read(&reader->log, &reader->cursor);
+	do {
+		log_line_read = fbr_log_read(&reader->log, &reader->cursor);
 
-	return log_buffer;
+		if (reader->cursor.status >= FBR_LOG_CURSOR_EOF) {
+			return NULL;
+		}
+	} while (reader->cursor.tag.parts.class != FBR_LOG_TAG_LOGLINE);
+
+	fbr_logline_ok(log_line_read);
+
+	size_t log_line_len = sizeof(*log_line_read) + log_line_read->length + 1;
+	int truncated = 0;
+
+	if (log_line_len > buffer_len) {
+		log_line_len = buffer_len;
+		truncated = 1;
+	}
+
+	memcpy(buffer, log_line_read, log_line_len);
+	struct fbr_log_line *log_line = buffer;
+	fbr_logline_ok(log_line);
+
+	if (truncated) {
+		log_line->length = buffer_len - sizeof(struct fbr_log_line) - 1;
+		assert_dev(log_line->length < buffer_len);
+		log_line->buffer[log_line->length] = '\0';
+		log_line->truncated = 1;
+	}
+
+	assert_dev(log_line->length == strlen(log_line->buffer));
+
+	return log_line;
 }
 
 void

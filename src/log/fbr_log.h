@@ -12,21 +12,22 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "fbr_log_types.h"
+
 #define FBR_LOG_SEGMENTS			8
 #define FBR_LOG_VERSION				1
 #define FBR_LOG_SEGMENT_MIN_SIZE		(8 * 1024)
-#define FBR_LOG_MAX_LENGTH			(4 * 1024)
+#define FBR_LOGLINE_MAX_LENGTH			(4 * 1024)
 #define FBR_LOG_TYPE_SIZE			(sizeof(fbr_log_data_t))
 
 typedef uint64_t fbr_log_data_t;
 
-enum fbr_log_tag_class
-{
+enum fbr_log_tag_class {
 	FBR_LOG_TAG_NONE = 0,
 	FBR_LOG_TAG_EOF,
 	FBR_LOG_TAG_WRAP,
 	FBR_LOG_TAG_NOOP,
-	FBR_LOG_TAG_LOGGING,
+	FBR_LOG_TAG_LOGLINE,
 	FBR_LOG_TAG_OTHER,
 	__FBR_LOG_TAG_END
 };
@@ -125,16 +126,35 @@ struct fbr_log_reader {
 	struct fbr_log				log;
 };
 
+struct fbr_log_line {
+	unsigned int				magic;
+#define FBR_LOGLINE_MAGIC			0x40E225B8
+
+	unsigned short				length;
+	unsigned short				truncated:1;
+	unsigned short				start:1;
+	unsigned short				end:1;
+	unsigned long				request_id;
+
+	char					buffer[];
+};
+
 struct fbr_log *fbr_log_alloc(const char *name, size_t size);
 void fbr_log_append(struct fbr_log *log, enum fbr_log_tag_class class,
 	unsigned short class_data, void *buffer, size_t buffer_len);
 void *fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor);
-void fbr_log_write(struct fbr_log *log, void *buffer, size_t buffer_len);
 void fbr_log_free(struct fbr_log *log);
+
+#define __fbr_log_printf(fpos)			\
+	__attribute__((__format__(__printf__, (fpos), ((fpos) + 1))))
+
+void __fbr_log_printf(4) fbr_log_print(struct fbr_log *log, enum fbr_log_type type,
+	unsigned long request_id, const char *fmt, ...);
 
 void fbr_log_cursor_init(struct fbr_log_cursor *cursor);
 void fbr_log_reader_init(struct fbr_log_reader *reader, const char *name);
-const char *fbr_log_reader_get(struct fbr_log_reader *reader);
+struct fbr_log_line *fbr_log_reader_get(struct fbr_log_reader *reader, void *buffer,
+	size_t buffer_len);
 void fbr_log_cursor_close(struct fbr_log_cursor *cursor);
 void fbr_log_reader_free(struct fbr_log_reader *reader);
 
@@ -142,5 +162,6 @@ void fbr_log_reader_free(struct fbr_log_reader *reader);
 #define fbr_log_tag_ok(tag)			fbr_magic_check(tag, FBR_LOG_TAG_MAGIC)
 #define fbr_log_header_ok(header)		fbr_magic_check(header, FBR_LOG_HEADER_MAGIC)
 #define fbr_log_reader_ok(reader)		fbr_magic_check(reader, FBR_LOG_READER_MAGIC)
+#define fbr_logline_ok(line)			fbr_magic_check(line, FBR_LOGLINE_MAGIC)
 
 #endif /* _FBR_LOG_H_INCLUDED_ */
