@@ -42,6 +42,25 @@ fbr_rlog_workspace_alloc(struct fbr_request *request)
 	_rlog_init(request->rlog, rlog_size);
 }
 
+static void
+_rlog_flush(struct fbr_rlog *rlog)
+{
+	fbr_rlog_ok(rlog);
+	assert(rlog->lines);
+
+	// fbr_log_batch
+
+	rlog->log_pos = rlog->data;
+	rlog->lines = 0;
+}
+
+static inline size_t
+_rlog_space(struct fbr_rlog *rlog)
+{
+	assert_dev(rlog);
+	return (rlog->log_end - rlog->log_pos) * FBR_LOG_TYPE_SIZE;
+}
+
 void __fbr_attr_printf(2)
 fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 {
@@ -64,10 +83,12 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 	fbr_rlog_ok(rlog);
 	assert_dev(rlog->log_pos <= rlog->log_end);
 
-	size_t space = (rlog->log_end - rlog->log_pos) * FBR_LOG_TYPE_SIZE;
+	size_t space = _rlog_space(rlog);
 
 	if (space < 128) {
-		fbr_ABORT("TODO");
+		_rlog_flush(rlog);
+		space = _rlog_space(rlog);
+		assert_dev(space > 128);
 	}
 
 	fbr_log_data_t *tag = rlog->log_pos;
@@ -85,7 +106,9 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 
 	*tag = fbr_log_tag_gen(0, FBR_LOG_TAG_LOGLINE, type, length);
 
-	// TODO we need to sequence when appending the batch
+	rlog->lines++;
+	rlog->log_pos += FBR_TYPE_LENGTH(length) + 1;
+	assert(rlog->log_pos <= rlog->log_end);
 
 	va_end(ap);
 }

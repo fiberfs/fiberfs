@@ -195,12 +195,6 @@ fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_class class, unsigned s
 }
 
 static inline size_t
-_log_type_length(size_t length)
-{
-	return (length + FBR_LOG_TYPE_SIZE - 1) / FBR_LOG_TYPE_SIZE;
-}
-
-static inline size_t
 _log_segment(struct fbr_log_header *header, fbr_log_data_t *log_pos)
 {
 	assert_dev(header);
@@ -213,13 +207,14 @@ _log_segment(struct fbr_log_header *header, fbr_log_data_t *log_pos)
 }
 
 static fbr_log_data_t *
-_log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
+_log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence, size_t count)
 {
 	fbr_log_ok(log);
 	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);
 	assert_dev(length)
 	assert_dev(sequence);
+	assert_dev(count);
 
 	size_t length_max = log->header->segment_type_size * FBR_LOG_TYPE_SIZE *
 		(FBR_LOG_SEGMENTS - 1);
@@ -227,7 +222,7 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 
 	struct fbr_log_header *header = log->header;
 	struct fbr_log_writer *writer = &log->writer;
-	size_t type_length = _log_type_length(length);
+	size_t type_length = FBR_TYPE_LENGTH(length);
 
 	pt_assert(pthread_mutex_lock(&writer->lock));
 
@@ -241,6 +236,7 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 
 	*sequence = writer->sequence;
 	writer->sequence++;
+	count--;
 
 	fbr_log_data_t *next = writer->log_pos + 1 + type_length;
 	size_t segment_counter = header->segment_counter;
@@ -279,6 +275,8 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence)
 			writer->stat_segment_wraps++;
 		}
 	}
+
+	writer->sequence += count;
 
 	eof = fbr_log_tag_gen(writer->sequence, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
 	*next = eof;
@@ -320,13 +318,24 @@ fbr_log_append(struct fbr_log *log, enum fbr_log_tag_class class, unsigned short
 	}
 
 	unsigned char sequence;
-	fbr_log_data_t *data = _log_get(log, buffer_len, &sequence);
+	fbr_log_data_t *data = _log_get(log, buffer_len, &sequence, 1);
 
 	memcpy(data + 1, buffer, buffer_len);
 
 	fbr_memory_sync();
 
 	*data = fbr_log_tag_gen(sequence, class, class_data, buffer_len);
+}
+
+void
+fbr_log_batch(struct fbr_log *log, void *buffer, size_t buffer_len, size_t count)
+{
+	fbr_log_ok(log);
+	assert(buffer);
+	assert(buffer_len);
+	assert(count);
+
+	fbr_ABORT("TODO");
 }
 
 void *
@@ -401,7 +410,7 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 
 	void *log_buffer = cursor->log_pos + 1;
 
-	size_t type_length = _log_type_length(tag.parts.length);
+	size_t type_length = FBR_TYPE_LENGTH(tag.parts.length);
 	cursor->log_pos += 1 + type_length;
 	cursor->sequence++;
 	cursor->status = FBR_LOG_CURSOR_OK;

@@ -21,6 +21,7 @@
 #define FBR_LOG_SEGMENT_MIN_SIZE		(8 * 1024)
 #define FBR_LOGLINE_MAX_LENGTH			(4 * 1024)
 #define FBR_LOG_TYPE_SIZE			(sizeof(fbr_log_data_t))
+#define FBR_TYPE_LENGTH(len)			((len + FBR_LOG_TYPE_SIZE - 1) / FBR_LOG_TYPE_SIZE)
 
 typedef uint64_t fbr_log_data_t;
 
@@ -146,6 +147,7 @@ fbr_log_data_t fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_class cl
 	unsigned short class_data, unsigned short length);
 void fbr_log_append(struct fbr_log *log, enum fbr_log_tag_class class,
 	unsigned short class_data, void *buffer, size_t buffer_len);
+void fbr_log_batch(struct fbr_log *log, void *buffer, size_t buffer_len, size_t count);
 void *fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor);
 void fbr_log_free(struct fbr_log *log);
 

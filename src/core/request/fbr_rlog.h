@@ -18,6 +18,8 @@ struct fbr_rlog {
 	unsigned int				magic;
 #define FBR_RLOG_MAGIC				0x2F1D5206
 
+	unsigned int				lines;
+
 	fbr_log_data_t				*log_end;
 	fbr_log_data_t				*log_pos;
 
