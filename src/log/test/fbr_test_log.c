@@ -12,9 +12,6 @@
 #include "log/fbr_log.h"
 #include "test/fbr_test.h"
 
-fbr_log_data_t fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_class class,
-	unsigned short class_data, unsigned short length);
-
 void
 fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {

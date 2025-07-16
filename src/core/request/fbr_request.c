@@ -89,7 +89,7 @@ _request_init(struct fbr_request *request, fuse_req_t fuse_req, const char *name
 	assert_dev(request->workspace->free >= FBR_WORKSPACE_MIN_SIZE);
 	assert_zero_dev(request->workspace->pos);
 
-	fbr_rlog_alloc(request);
+	fbr_rlog_workspace_alloc(request);
 }
 
 static struct fbr_request *
@@ -283,7 +283,7 @@ fbr_request_free(struct fbr_request *request)
 
 	fbr_ZERO(&request->thread);
 
-	fbr_rlog_free(request);
+	fbr_rlog_free(&request->rlog);
 	fbr_workspace_reset(request->workspace);
 
 	_request_pool_put(request);

@@ -19,9 +19,6 @@
 #include "fiberfs.h"
 #include "fbr_log.h"
 
-fbr_log_data_t fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_class class,
-	unsigned short class_data, unsigned short length);
-
 static void
 _log_init(struct fbr_log *log)
 {
@@ -446,24 +443,26 @@ fbr_log_free(struct fbr_log *log)
 	free(log);
 }
 
-void
-fbr_log_vprint(struct fbr_log *log, enum fbr_log_type type, unsigned long request_id,
-    const char *fmt, va_list ap)
+size_t
+fbr_log_print_buf(void *buffer, size_t buffer_len, enum fbr_log_type type,
+    unsigned long request_id, const char *fmt, va_list ap)
 {
-	fbr_log_ok(log);
+	assert(buffer);
+	assert(buffer_len > sizeof(struct fbr_log_line));
 	assert(type > __FBR_LOG_TYPE_NONE && type < __FBR_LOG_TYPE_END);
 	assert(request_id);
 	assert(fmt);
 	assert(*fmt);
 
-	char buffer[FBR_LOGLINE_MAX_LENGTH];
-	assert(sizeof(buffer) < USHRT_MAX);
+	if (buffer_len > FBR_LOGLINE_MAX_LENGTH) {
+		buffer_len = FBR_LOGLINE_MAX_LENGTH;
+	}
 
 	struct fbr_log_line *log_line = (struct fbr_log_line*)buffer;
 	log_line->magic = FBR_LOGLINE_MAGIC;
 	log_line->request_id = request_id;
-	log_line->length = sizeof(buffer) - sizeof(*log_line);
-	assert_dev(log_line->length <= sizeof(buffer));
+	log_line->length = buffer_len - sizeof(*log_line);
+	assert_dev(log_line->length <= buffer_len);
 
 	int ret = vsnprintf(log_line->buffer, log_line->length, fmt, ap);
 	assert(ret > 0);
@@ -475,7 +474,20 @@ fbr_log_vprint(struct fbr_log *log, enum fbr_log_type type, unsigned long reques
 		log_line->length = ret;
 	}
 
-	size_t buffer_len = sizeof(*log_line) + log_line->length + 1;
+	size_t line_len = sizeof(*log_line) + log_line->length + 1;
+	assert_dev(line_len <= buffer_len);
+
+	return line_len;
+}
+
+void
+fbr_log_vprint(struct fbr_log *log, enum fbr_log_type type, unsigned long request_id,
+    const char *fmt, va_list ap)
+{
+	fbr_log_ok(log);
+
+	char buffer[FBR_LOGLINE_MAX_LENGTH];
+	size_t buffer_len = fbr_log_print_buf(buffer, sizeof(buffer), type, request_id, fmt, ap);
 
 	fbr_log_append(log, FBR_LOG_TAG_LOGLINE, type, buffer, buffer_len);
 }

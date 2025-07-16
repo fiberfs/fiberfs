@@ -142,13 +142,17 @@ struct fbr_log_line {
 };
 
 struct fbr_log *fbr_log_alloc(const char *name, size_t size);
+fbr_log_data_t fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_class class,
+	unsigned short class_data, unsigned short length);
 void fbr_log_append(struct fbr_log *log, enum fbr_log_tag_class class,
 	unsigned short class_data, void *buffer, size_t buffer_len);
 void *fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor);
 void fbr_log_free(struct fbr_log *log);
 
+size_t fbr_log_print_buf(void *buffer, size_t buffer_len, enum fbr_log_type type,
+	unsigned long request_id, const char *fmt, va_list ap);
 void fbr_log_vprint(struct fbr_log *log, enum fbr_log_type type, unsigned long request_id,
-    const char *fmt, va_list ap);
+	const char *fmt, va_list ap);
 void __fbr_attr_printf(4) fbr_log_print(struct fbr_log *log, enum fbr_log_type type,
 	unsigned long request_id, const char *fmt, ...);
 
