@@ -17,6 +17,13 @@
 #include "data/queue.h"
 
 #define FBR_REQUEST_POOL_MAX_SIZE		64
+#define FBR_REQUEST_ID_MIN			1024
+
+enum fbr_request_ids {
+	FBR_REQUEST_ID_NONE = 0,
+	FBR_REQUEST_ID_DEBUG,
+	__FBR_REQUEST_ID_MAX
+};
 
 struct fbr_request {
 	unsigned int				magic;

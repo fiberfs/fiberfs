@@ -36,6 +36,7 @@ fbr_cmd_request_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fs *fs = fbr_test_fuse_mock(ctx);
 	fbr_fs_ok(fs);
 
+	assert(__FBR_REQUEST_ID_MAX < FBR_REQUEST_ID_MIN);
 	assert_zero(fbr_request_get());
 
 	fuse_req_t fuse_req = (fuse_req_t)1;

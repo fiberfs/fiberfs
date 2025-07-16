@@ -31,7 +31,7 @@ struct {
 	PTHREAD_MUTEX_INITIALIZER,
 	TAILQ_HEAD_INITIALIZER(__REQUEST_POOL.free_list),
 	TAILQ_HEAD_INITIALIZER(__REQUEST_POOL.active_list),
-	0, 0, 0
+	0, 0, FBR_REQUEST_ID_MIN
 }, *_REQUEST_POOL = &__REQUEST_POOL;
 
 static unsigned int _REQUEST_KEY_COUNT;
@@ -75,6 +75,10 @@ _request_init(struct fbr_request *request, fuse_req_t fuse_req, const char *name
 	request->time_start = fbr_get_time();
 	request->id = fbr_atomic_add(&_REQUEST_POOL->id_count, 1);
 	request->thread = pthread_self();
+
+	if (request->id < FBR_REQUEST_ID_MIN) {
+		request->id += UINT32_MAX;
+	}
 
 	if (!request->fuse_ctx) {
 		request->fuse_ctx = fbr_fuse_get_context();

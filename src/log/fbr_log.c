@@ -452,6 +452,7 @@ fbr_log_vprint(struct fbr_log *log, enum fbr_log_type type, unsigned long reques
 {
 	fbr_log_ok(log);
 	assert(type > __FBR_LOG_TYPE_NONE && type < __FBR_LOG_TYPE_END);
+	assert(request_id);
 	assert(fmt);
 	assert(*fmt);
 

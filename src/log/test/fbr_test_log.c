@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "core/request/fbr_request.h"
 #include "log/fbr_log.h"
 #include "test/fbr_test.h"
 
@@ -138,8 +139,8 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_log_reader reader;
 	fbr_log_reader_init(&reader, logname);
 
-	fbr_log_print(log, FBR_LOG_DEBUG, 0, "111");
-	fbr_log_print(log, FBR_LOG_DEBUG, 0, "TWO TWO TWO");
+	fbr_log_print(log, FBR_LOG_DEBUG, FBR_REQUEST_ID_DEBUG, "111");
+	fbr_log_print(log, FBR_LOG_DEBUG, FBR_REQUEST_ID_DEBUG, "TWO TWO TWO");
 
 	_test_log_debug(log);
 
@@ -152,7 +153,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		i++;
 	}
 
-	fbr_log_print(log, FBR_LOG_DEBUG, 0, "33333333333333333333333");
+	fbr_log_print(log, FBR_LOG_DEBUG, FBR_REQUEST_ID_DEBUG, "33333333333333333333333");
 
 	while ((log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)))) {
 		fbr_test_logs("READER log_buffer[%zu]", i);
@@ -170,8 +171,8 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	memset(big, 6, sizeof(big));
 	fbr_log_append(log, FBR_LOG_TAG_OTHER, 6, big, big_size);
 
-	fbr_log_print(log, FBR_LOG_DEBUG, 0, "12345");
-	fbr_log_print(log, FBR_LOG_DEBUG, 0, "END");
+	fbr_log_print(log, FBR_LOG_DEBUG, FBR_REQUEST_ID_DEBUG, "12345");
+	fbr_log_print(log, FBR_LOG_DEBUG, FBR_REQUEST_ID_DEBUG, "END");
 
 	big_ptr = fbr_log_read(&reader.log, &reader.cursor);
 	assert(reader.cursor.status == FBR_LOG_CURSOR_OK);
