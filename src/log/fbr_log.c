@@ -332,29 +332,28 @@ fbr_log_batch(struct fbr_log *log, void *buffer, size_t buffer_len, size_t count
 {
 	fbr_log_ok(log);
 	assert(buffer);
-	assert(buffer_len);
+	assert(buffer_len > FBR_LOG_TYPE_SIZE);
 	assert(count);
 
 	unsigned char sequence;
-	fbr_log_data_t *data = _log_get(log, buffer_len, &sequence, count);
+	fbr_log_data_t *data = _log_get(log, buffer_len - FBR_LOG_TYPE_SIZE, &sequence, count);
 
 	fbr_log_data_t *log_pos = buffer;
 
 	while (count) {
 		assert((log_pos - (fbr_log_data_t*)buffer) * FBR_LOG_TYPE_SIZE < buffer_len);
 
-		struct fbr_log_tag tag;
-		tag.value = *log_pos;
-		fbr_log_tag_ok(&tag.parts);
+		struct fbr_log_tag *tag = (struct fbr_log_tag*)log_pos;
+		fbr_log_tag_ok(&tag->parts);
 
-		if (tag.parts.class == FBR_LOG_TAG_LOGLINE) {
-			fbr_logline_ok((struct fbr_log_line*)log_pos + 1);
+		if (tag->parts.class == FBR_LOG_TAG_LOGLINE) {
+			fbr_logline_ok((struct fbr_log_line*)(log_pos + 1));
 		}
 
-		tag.parts.sequence = sequence;
+		tag->parts.sequence = sequence;
 		sequence++;
 
-		size_t type_length = FBR_TYPE_LENGTH(tag.parts.length);
+		size_t type_length = FBR_TYPE_LENGTH(tag->parts.length);
 		log_pos += 1 + type_length;
 
 		count--;
@@ -362,7 +361,7 @@ fbr_log_batch(struct fbr_log *log, void *buffer, size_t buffer_len, size_t count
 
 	log_pos = buffer;
 
-	memcpy(data + 1, log_pos + 1, buffer_len - 1);
+	memcpy(data + 1, log_pos + 1, buffer_len - FBR_LOG_TYPE_SIZE);
 
 	fbr_memory_sync();
 

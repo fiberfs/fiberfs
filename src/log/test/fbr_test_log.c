@@ -12,6 +12,8 @@
 #include "log/fbr_log.h"
 #include "test/fbr_test.h"
 
+extern int _RLOG_TEST;
+
 void
 fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -299,4 +301,60 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_log_free(log);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_wrap passed");
+}
+
+void
+fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_RLOG_TEST = 1;
+
+	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+	fbr_fuse_mounted(fuse_ctx);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** Logging on request");
+
+	fuse_req_t fuse_req = (fuse_req_t)1;
+	struct fbr_request *request = fbr_request_alloc(fuse_req, __func__);
+	fbr_request_ok(request);
+	request->not_fuse = 1;
+	fbr_request_take_fuse(request);
+
+	fbr_rlog(FBR_LOG_DEBUG, "TEST 1");
+	fbr_rlog(FBR_LOG_DEBUG, "TEST %d", 2);
+	fbr_rlog(FBR_LOG_DEBUG, "TEST THREE");
+
+	fbr_request_free(request);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** Reader setup");
+
+	struct fbr_log_reader reader;
+	fbr_log_reader_init(&reader, fuse_ctx->path);
+
+	char log_buffer[FBR_LOGLINE_MAX_LENGTH];
+	struct fbr_log_line *log_line;
+
+	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	fbr_test_logs("READER[0]");
+	_test_logline_debug(log_line);
+	assert_zero(strcmp(log_line->buffer, "TEST 1"));
+
+	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	fbr_test_logs("READER[1]");
+	_test_logline_debug(log_line);
+	assert_zero(strcmp(log_line->buffer, "TEST 2"));
+
+	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	fbr_test_logs("READER[2]");
+	_test_logline_debug(log_line);
+	assert_zero(strcmp(log_line->buffer, "TEST THREE"));
+
+	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	assert_zero(log_line);
+
+	fbr_log_reader_free(&reader);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_rlog passed");
 }

@@ -4,6 +4,7 @@
  *
  */
 
+#include <limits.h>
 #include <stdio.h>
 
 #include "fiberfs.h"
@@ -11,12 +12,15 @@
 #include "core/fuse/fbr_fuse.h"
 #include "log/fbr_log.h"
 
+int _RLOG_TEST;
+
 static void
 _rlog_init(struct fbr_rlog *rlog, size_t rlog_size, unsigned long request_id)
 {
 	assert_dev(rlog);
 	assert(rlog_size > sizeof(*rlog));
 	assert(rlog_size < FBR_LOG_SEGMENT_MIN_SIZE); // TODO
+	assert(rlog_size <= USHRT_MAX);
 
 	fbr_ZERO(rlog);
 
@@ -56,7 +60,7 @@ _rlog_get(void)
 	fbr_request_ok(request);
 	fbr_rlog_ok(request->rlog);
 
-	if (fbr_is_test() && !request->rlog->test_override) {
+	if (fbr_is_test() && !_RLOG_TEST) {
 		return NULL;
 	}
 
@@ -75,9 +79,13 @@ static void
 _rlog_flush(struct fbr_rlog *rlog)
 {
 	fbr_rlog_ok(rlog);
-	assert(rlog->lines);
-	assert(rlog->log_pos > rlog->data);
 
+	if (!rlog->lines) {
+		assert_dev(rlog->log_pos == rlog->data);
+		return;
+	}
+
+	assert(rlog->log_pos > rlog->data);
 	size_t length = (rlog->log_pos - rlog->data) * FBR_LOG_TYPE_SIZE;
 
 	struct fbr_log *log = _rlog_get_log();
@@ -181,7 +189,7 @@ fbr_rlog_free(struct fbr_rlog **rlog_p)
 	fbr_rlog_ok(rlog);
 	*rlog_p = NULL;
 
-	// TODO flush the log
+	_rlog_flush(rlog);
 
 	fbr_ZERO(rlog);
 }

@@ -19,6 +19,7 @@
 FBR_TEST_LOG_CMD(test_log_assert)
 FBR_TEST_LOG_CMD(test_log_init)
 FBR_TEST_LOG_CMD(test_log_loop)
+FBR_TEST_LOG_CMD(test_log_rlog)
 
 #undef FBR_TEST_LOG_CMD
 #undef FBR_TEST_LOG_VAR

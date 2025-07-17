@@ -21,8 +21,6 @@ struct fbr_rlog {
 	unsigned int				lines;
 	unsigned long				request_id;
 
-	unsigned int				test_override:1;
-
 	fbr_log_data_t				*log_end;
 	fbr_log_data_t				*log_pos;
 
