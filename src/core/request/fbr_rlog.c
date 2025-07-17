@@ -129,8 +129,13 @@ _rlog_log(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, va_lis
 		assert_dev(space > FBR_LOG_TYPE_SIZE);
 		space -= FBR_LOG_TYPE_SIZE;
 
-		length = fbr_log_print_buf(log_line, space, type, rlog->request_id, fmt, ap);
+		va_list ap_copy;
+		va_copy(ap_copy, ap);
+
+		length = fbr_log_print_buf(log_line, space, type, rlog->request_id, fmt, ap_copy);
 		fbr_logline_ok(log_line);
+
+		va_end(ap_copy);
 
 		if (log_line->truncated && retry) {
 			space = 0;

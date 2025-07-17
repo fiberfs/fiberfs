@@ -309,7 +309,7 @@ static void
 _log_random_string(char *buffer, size_t length)
 {
 	for (size_t i = 0; i < length; i++) {
-		buffer[i] = 'a';
+		buffer[i] = 'a' + (random() % 26);
 	}
 	buffer[length] = '\0';
 }
@@ -374,13 +374,23 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_request_take_fuse(r2);
 	fbr_ZERO(&r2->thread);
 
-	char buffer[220];
-	for (size_t i = 0; i < 20; i++) {
+	char buffer[500];
+	size_t i;
+	for (i = 0; i < 20; i++) {
 		_log_random_string(buffer, sizeof(buffer) - 1);
 		assert(strlen(buffer) == sizeof(buffer) - 1);
-		strcpy(buffer, "buffer");
 		fbr_rlog(FBR_LOG_TEST, "%s", buffer);
 	}
+
+	i = 0;
+	while ((log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)))) {
+		size_t len = strlen(log_line->buffer);
+		fbr_test_logs("READER log_buffer[%zu]:%zu", i, len);
+		assert_zero(log_line->truncated);
+		assert(len == sizeof(buffer) - 1);
+		i++;
+	}
+	assert(i == 19);
 
 	fbr_request_free(request);
 
