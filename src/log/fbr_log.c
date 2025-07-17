@@ -336,8 +336,9 @@ fbr_log_batch(struct fbr_log *log, void *buffer, size_t buffer_len, size_t count
 	assert(count);
 
 	unsigned char sequence;
-	fbr_log_data_t *data = _log_get(log, buffer_len - FBR_LOG_TYPE_SIZE, &sequence, count);
+	fbr_log_data_t *data = _log_get(log, buffer_len, &sequence, count + 1);
 
+	unsigned char noop_seq = sequence;
 	fbr_log_data_t *log_pos = buffer;
 
 	while (count) {
@@ -350,8 +351,8 @@ fbr_log_batch(struct fbr_log *log, void *buffer, size_t buffer_len, size_t count
 			fbr_logline_ok((struct fbr_log_line*)(log_pos + 1));
 		}
 
-		tag->parts.sequence = sequence;
 		sequence++;
+		tag->parts.sequence = sequence;
 
 		size_t type_length = FBR_TYPE_LENGTH(tag->parts.length);
 		log_pos += 1 + type_length;
@@ -361,11 +362,11 @@ fbr_log_batch(struct fbr_log *log, void *buffer, size_t buffer_len, size_t count
 
 	log_pos = buffer;
 
-	memcpy(data + 1, log_pos + 1, buffer_len - FBR_LOG_TYPE_SIZE);
+	memcpy(data + 1, log_pos, buffer_len);
 
 	fbr_memory_sync();
 
-	*data = *log_pos;
+	*data = fbr_log_tag_gen(noop_seq, FBR_LOG_TAG_NOOP, 0, 0);
 }
 
 void *
@@ -436,7 +437,7 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 		return NULL;
 	}
 
-	assert(tag.parts.class > FBR_LOG_TAG_NOOP && tag.parts.class < __FBR_LOG_TAG_END);
+	assert(tag.parts.class >= FBR_LOG_TAG_NOOP && tag.parts.class < __FBR_LOG_TAG_END);
 
 	void *log_buffer = cursor->log_pos + 1;
 
@@ -505,7 +506,7 @@ fbr_log_print_buf(void *buffer, size_t buffer_len, enum fbr_log_type type,
 	assert_dev(log_line->length <= buffer_len);
 
 	int ret = vsnprintf(log_line->buffer, log_line->length, fmt, ap);
-	assert(ret > 0);
+	fbr_ASSERT(ret > 0, "ret: %d", ret);
 
 	if (ret >= log_line->length) {
 		log_line->truncated = 1;

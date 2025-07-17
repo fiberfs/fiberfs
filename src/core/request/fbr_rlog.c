@@ -75,8 +75,8 @@ _rlog_get_log(void)
 	return fuse_ctx->log;
 }
 
-static void
-_rlog_flush(struct fbr_rlog *rlog)
+void
+fbr_rlog_flush(struct fbr_rlog *rlog)
 {
 	fbr_rlog_ok(rlog);
 
@@ -112,24 +112,33 @@ _rlog_log(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, va_lis
 	assert_dev(fmt);
 
 	size_t space = _rlog_space(rlog);
+	fbr_log_data_t *tag = NULL;
+	size_t length;
+	int retry = 1;
 
-	if (space < 128) {
-		_rlog_flush(rlog);
-		space = _rlog_space(rlog);
-		assert_dev(space > 128);
-	}
+	while (1) {
+		if (space < 128) {
+			fbr_rlog_flush(rlog);
+			space = _rlog_space(rlog);
+			assert_dev(space > 128);
+		}
 
-	fbr_log_data_t *tag = rlog->log_pos;
-	struct fbr_log_line *log_line = (struct fbr_log_line*)(tag + 1);
+		tag = rlog->log_pos;
+		struct fbr_log_line *log_line = (struct fbr_log_line*)(tag + 1);
 
-	assert_dev(space > FBR_LOG_TYPE_SIZE);
-	space -= FBR_LOG_TYPE_SIZE;
+		assert_dev(space > FBR_LOG_TYPE_SIZE);
+		space -= FBR_LOG_TYPE_SIZE;
 
-	size_t length = fbr_log_print_buf(log_line, space, type, rlog->request_id, fmt, ap);
-	fbr_logline_ok(log_line);
+		length = fbr_log_print_buf(log_line, space, type, rlog->request_id, fmt, ap);
+		fbr_logline_ok(log_line);
 
-	if (log_line->truncated) {
-		fbr_ABORT("TODO")
+		if (log_line->truncated && retry) {
+			space = 0;
+			retry = 0;
+			continue;
+		}
+
+		break;
 	}
 
 	*tag = fbr_log_tag_gen(0, FBR_LOG_TAG_LOGLINE, type, length);
@@ -189,7 +198,7 @@ fbr_rlog_free(struct fbr_rlog **rlog_p)
 	fbr_rlog_ok(rlog);
 	*rlog_p = NULL;
 
-	_rlog_flush(rlog);
+	fbr_rlog_flush(rlog);
 
 	fbr_ZERO(rlog);
 }

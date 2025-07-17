@@ -138,8 +138,8 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_log_reader reader;
 	fbr_log_reader_init(&reader, logname);
 
-	fbr_log_print(log, FBR_LOG_DEBUG, FBR_REQUEST_ID_DEBUG, "111");
-	fbr_log_print(log, FBR_LOG_DEBUG, FBR_REQUEST_ID_DEBUG, "TWO TWO TWO");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQUEST_ID_TEST, "111");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQUEST_ID_TEST, "TWO TWO TWO");
 
 	_test_log_debug(log);
 
@@ -152,7 +152,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		i++;
 	}
 
-	fbr_log_print(log, FBR_LOG_DEBUG, FBR_REQUEST_ID_DEBUG, "33333333333333333333333");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQUEST_ID_TEST, "33333333333333333333333");
 
 	while ((log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)))) {
 		fbr_test_logs("READER log_buffer[%zu]", i);
@@ -170,8 +170,8 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	memset(big, 6, sizeof(big));
 	fbr_log_append(log, FBR_LOG_TAG_OTHER, 6, big, big_size);
 
-	fbr_log_print(log, FBR_LOG_DEBUG, FBR_REQUEST_ID_DEBUG, "12345");
-	fbr_log_print(log, FBR_LOG_DEBUG, FBR_REQUEST_ID_DEBUG, "END");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQUEST_ID_TEST, "12345");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQUEST_ID_TEST, "END");
 
 	big_ptr = fbr_log_read(&reader.log, &reader.cursor);
 	assert(reader.cursor.status == FBR_LOG_CURSOR_OK);
@@ -187,6 +187,8 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_test_logline_debug(log_line);
 
 	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	assert(reader.cursor.tag.parts.class_data == FBR_LOG_TEST);
+	assert(log_line->request_id == FBR_REQUEST_ID_TEST);
 	assert_zero(log_line->truncated);
 	assert_zero(strcmp(log_line->buffer, "END"));
 	_test_logline_debug(log_line);
@@ -303,6 +305,15 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_wrap passed");
 }
 
+static void
+_log_random_string(char *buffer, size_t length)
+{
+	for (size_t i = 0; i < length; i++) {
+		buffer[i] = 'a';
+	}
+	buffer[length] = '\0';
+}
+
 void
 fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -321,10 +332,11 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_request_ok(request);
 	request->not_fuse = 1;
 	fbr_request_take_fuse(request);
+	fbr_ZERO(&request->thread);
 
-	fbr_rlog(FBR_LOG_DEBUG, "TEST 1");
-	fbr_rlog(FBR_LOG_DEBUG, "TEST %d", 2);
-	fbr_rlog(FBR_LOG_DEBUG, "TEST THREE");
+	fbr_rlog(FBR_LOG_TEST, "TEST 1");
+	fbr_rlog(FBR_LOG_TEST, "TEST %d", 2);
+	fbr_rlog(FBR_LOG_TEST, "TEST THREE");
 
 	fbr_request_free(request);
 
@@ -353,6 +365,24 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
 	assert_zero(log_line);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** Flush loop");
+
+	struct fbr_request *r2 = fbr_request_alloc(fuse_req, __func__);
+	fbr_request_ok(r2);
+	r2->not_fuse = 1;
+	fbr_request_take_fuse(r2);
+	fbr_ZERO(&r2->thread);
+
+	char buffer[220];
+	for (size_t i = 0; i < 20; i++) {
+		_log_random_string(buffer, sizeof(buffer) - 1);
+		assert(strlen(buffer) == sizeof(buffer) - 1);
+		strcpy(buffer, "buffer");
+		fbr_rlog(FBR_LOG_TEST, "%s", buffer);
+	}
+
+	fbr_request_free(request);
 
 	fbr_log_reader_free(&reader);
 

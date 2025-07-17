@@ -30,6 +30,9 @@ struct fbr_rlog {
 struct fbr_request;
 
 void fbr_rlog_workspace_alloc(struct fbr_request *request);
+void fbr_rlog_flush(struct fbr_rlog *rlog);
+void __fbr_attr_printf(3) fbr_rclog(struct fbr_rlog *rlog, enum fbr_log_type type,
+	const char *fmt, ...);
 void __fbr_attr_printf(2) fbr_rlog(enum fbr_log_type type, const char *fmt, ...);
 void fbr_rlog_free(struct fbr_rlog **rlog);
 

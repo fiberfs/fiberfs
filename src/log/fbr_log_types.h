@@ -9,12 +9,14 @@
 
 enum fbr_request_ids {
 	FBR_REQUEST_ID_NONE = 0,
+	FBR_REQUEST_ID_TEST,
 	FBR_REQUEST_ID_DEBUG,
 	__FBR_REQUEST_ID_MAX
 };
 
 enum fbr_log_type {
 	__FBR_LOG_TYPE_NONE = 0,
+	FBR_LOG_TEST,
 	FBR_LOG_DEBUG,
 	__FBR_LOG_TYPE_END
 };

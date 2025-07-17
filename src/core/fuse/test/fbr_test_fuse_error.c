@@ -42,7 +42,7 @@ _test_err_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	if (_ERR_STATE == 1) {
 		fbr_test_logs("** INIT doing abort");
-		fbr_ABORT("Forced abort")
+		fbr_ABORT("Forced abort");
 	} else if (_ERR_STATE == 2) {
 		fbr_test_logs("** INIT crashing");
 		_test_error_CRASH();

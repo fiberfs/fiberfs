@@ -35,7 +35,7 @@ void fbr_libunwind_backtrace(char **stack_syms, int len);
 #define fbr_void(expr)								\
 	(void)(expr)
 #define fbr_ABORT(fmt, ...)							\
-	fbr_do_abort(NULL, __func__, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
+	fbr_do_abort(NULL, __func__, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
 #define fbr_ASSERT(cond, fmt, ...)						\
 {										\
 	if (__builtin_expect(!(cond), 0)) {					\
