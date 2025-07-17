@@ -29,6 +29,7 @@ struct fbr_fuse_context {
 	pthread_mutex_t				mount_lock;
 
 	struct fbr_fs				*fs;
+	struct fbr_log				*log;
 
 	unsigned int				debug:1;
 	unsigned int				signals:1;

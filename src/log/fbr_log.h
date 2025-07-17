@@ -18,6 +18,7 @@
 
 #define FBR_LOG_SEGMENTS			8
 #define FBR_LOG_VERSION				1
+#define FBR_LOG_DEFAULT_SIZE			(65 * 1024)
 #define FBR_LOG_SEGMENT_MIN_SIZE		(8 * 1024)
 #define FBR_LOGLINE_MAX_LENGTH			(4 * 1024)
 #define FBR_LOG_TYPE_SIZE			(sizeof(fbr_log_data_t))
@@ -137,7 +138,9 @@ struct fbr_log_line {
 	unsigned short				truncated:1;
 	unsigned short				start:1;
 	unsigned short				end:1;
+
 	unsigned long				request_id;
+	double					timestamp;
 
 	char					buffer[];
 };

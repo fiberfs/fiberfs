@@ -335,7 +335,38 @@ fbr_log_batch(struct fbr_log *log, void *buffer, size_t buffer_len, size_t count
 	assert(buffer_len);
 	assert(count);
 
-	fbr_ABORT("TODO");
+	unsigned char sequence;
+	fbr_log_data_t *data = _log_get(log, buffer_len, &sequence, count);
+
+	fbr_log_data_t *log_pos = buffer;
+
+	while (count) {
+		assert((log_pos - (fbr_log_data_t*)buffer) * FBR_LOG_TYPE_SIZE < buffer_len);
+
+		struct fbr_log_tag tag;
+		tag.value = *log_pos;
+		fbr_log_tag_ok(&tag.parts);
+
+		if (tag.parts.class == FBR_LOG_TAG_LOGLINE) {
+			fbr_logline_ok((struct fbr_log_line*)log_pos + 1);
+		}
+
+		tag.parts.sequence = sequence;
+		sequence++;
+
+		size_t type_length = FBR_TYPE_LENGTH(tag.parts.length);
+		log_pos += 1 + type_length;
+
+		count--;
+	}
+
+	log_pos = buffer;
+
+	memcpy(data + 1, log_pos + 1, buffer_len - 1);
+
+	fbr_memory_sync();
+
+	*data = *log_pos;
 }
 
 void *
@@ -470,6 +501,7 @@ fbr_log_print_buf(void *buffer, size_t buffer_len, enum fbr_log_type type,
 	struct fbr_log_line *log_line = (struct fbr_log_line*)buffer;
 	log_line->magic = FBR_LOGLINE_MAGIC;
 	log_line->request_id = request_id;
+	log_line->timestamp = fbr_get_time();
 	log_line->length = buffer_len - sizeof(*log_line);
 	assert_dev(log_line->length <= buffer_len);
 

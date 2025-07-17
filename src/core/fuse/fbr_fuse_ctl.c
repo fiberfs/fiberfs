@@ -14,6 +14,7 @@
 #include "fbr_fuse.h"
 #include "fbr_fuse_lowlevel.h"
 #include "core/fs/fbr_fs.h"
+#include "log/fbr_log.h"
 
 struct fbr_fuse_context *_FUSE_CTX;
 
@@ -131,6 +132,9 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	}
 
 	ctx->state = FBR_FUSE_MOUNTED;
+
+	ctx->log = fbr_log_alloc(ctx->path, FBR_LOG_DEFAULT_SIZE);
+	fbr_log_ok(ctx->log);
 
 	ctx->fs = fbr_fs_alloc();
 	fbr_fs_ok(ctx->fs);
@@ -261,6 +265,11 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 	if (ctx->path) {
 		free(ctx->path);
 		ctx->path = NULL;
+	}
+
+	if (ctx->log) {
+		fbr_log_free(ctx->log);
+		ctx->log = NULL;
 	}
 
 	pt_assert(pthread_mutex_destroy(&ctx->mount_lock));

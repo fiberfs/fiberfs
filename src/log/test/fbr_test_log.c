@@ -126,7 +126,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int ret = snprintf(logname, sizeof(logname), "/test/init/%ld/%d", random(), getpid());
 	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
-	struct fbr_log *log = fbr_log_alloc(logname, 65 * 1024);
+	struct fbr_log *log = fbr_log_alloc(logname, FBR_LOG_DEFAULT_SIZE);
 	fbr_log_ok(log);
 	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);
@@ -231,7 +231,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int ret = snprintf(logname, sizeof(logname), "/test/loop/%ld/%d", random(), getpid());
 	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
-	struct fbr_log *log = fbr_log_alloc(logname, 65 * 1024);
+	struct fbr_log *log = fbr_log_alloc(logname, FBR_LOG_DEFAULT_SIZE);
 	fbr_log_ok(log);
 	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);

@@ -8,10 +8,11 @@
 
 #include "fiberfs.h"
 #include "fbr_request.h"
+#include "core/fuse/fbr_fuse.h"
 #include "log/fbr_log.h"
 
 static void
-_rlog_init(struct fbr_rlog *rlog, size_t rlog_size)
+_rlog_init(struct fbr_rlog *rlog, size_t rlog_size, unsigned long request_id)
 {
 	assert_dev(rlog);
 	assert(rlog_size > sizeof(*rlog));
@@ -20,6 +21,7 @@ _rlog_init(struct fbr_rlog *rlog, size_t rlog_size)
 	fbr_ZERO(rlog);
 
 	rlog->magic = FBR_RLOG_MAGIC;
+	rlog->request_id = request_id;
 	rlog->log_end = rlog->data + ((rlog_size - sizeof(*rlog)) / FBR_LOG_TYPE_SIZE);
 	rlog->log_pos = rlog->data;
 	assert(rlog->log_pos < rlog->log_end);
@@ -39,7 +41,34 @@ fbr_rlog_workspace_alloc(struct fbr_request *request)
 	request->rlog = fbr_workspace_alloc(request->workspace, rlog_size);
 	assert(request->rlog);
 
-	_rlog_init(request->rlog, rlog_size);
+	_rlog_init(request->rlog, rlog_size, request->id);
+}
+
+static struct fbr_rlog *
+_rlog_get(void)
+{
+	struct fbr_request *request = fbr_request_get();
+	if (!request) {
+		fbr_ASSERT(fbr_is_test(), "request context missing");
+		return NULL;
+	}
+
+	fbr_request_ok(request);
+	fbr_rlog_ok(request->rlog);
+
+	if (fbr_is_test() && !request->rlog->test_override) {
+		return NULL;
+	}
+
+	return request->rlog;
+}
+
+static struct fbr_log *
+_rlog_get_log(void)
+{
+	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+	fbr_log_ok(fuse_ctx->log);
+	return fuse_ctx->log;
 }
 
 static void
@@ -47,8 +76,12 @@ _rlog_flush(struct fbr_rlog *rlog)
 {
 	fbr_rlog_ok(rlog);
 	assert(rlog->lines);
+	assert(rlog->log_pos > rlog->data);
 
-	// fbr_log_batch
+	size_t length = (rlog->log_pos - rlog->data) * FBR_LOG_TYPE_SIZE;
+
+	struct fbr_log *log = _rlog_get_log();
+	fbr_log_batch(log, rlog->data, length, rlog->lines);
 
 	rlog->log_pos = rlog->data;
 	rlog->lines = 0;
@@ -61,27 +94,14 @@ _rlog_space(struct fbr_rlog *rlog)
 	return (rlog->log_end - rlog->log_pos) * FBR_LOG_TYPE_SIZE;
 }
 
-void __fbr_attr_printf(2)
-fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
+static void
+_rlog_log(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, va_list ap)
 {
-	va_list ap;
-	va_start(ap, fmt);
-
-	struct fbr_request *request = fbr_request_get();
-
-	if (!request) {
-		fbr_ASSERT(fbr_is_test(), "request context missing");
-
-		vprintf(fmt, ap);
-		va_end(ap);
-
-		return;
-	}
-	fbr_request_ok(request);
-
-	struct fbr_rlog *rlog = request->rlog;
-	fbr_rlog_ok(rlog);
-	assert_dev(rlog->log_pos <= rlog->log_end);
+	assert_dev(rlog);
+	assert(rlog->log_pos <= rlog->log_end);
+	assert_dev(rlog->request_id);
+	assert_dev(type);
+	assert_dev(fmt);
 
 	size_t space = _rlog_space(rlog);
 
@@ -97,7 +117,7 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 	assert_dev(space > FBR_LOG_TYPE_SIZE);
 	space -= FBR_LOG_TYPE_SIZE;
 
-	size_t length = fbr_log_print_buf(log_line, space, type, request->id, fmt, ap);
+	size_t length = fbr_log_print_buf(log_line, space, type, rlog->request_id, fmt, ap);
 	fbr_logline_ok(log_line);
 
 	if (log_line->truncated) {
@@ -109,6 +129,45 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 	rlog->lines++;
 	rlog->log_pos += FBR_TYPE_LENGTH(length) + 1;
 	assert(rlog->log_pos <= rlog->log_end);
+}
+
+void __fbr_attr_printf(3)
+fbr_rclog(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, ...)
+{
+	fbr_rlog_ok(rlog);
+
+	va_list ap;
+	va_start(ap, fmt);
+
+	if (fbr_is_test()) {
+		vprintf(fmt, ap);
+		va_end(ap);
+		return;
+	}
+
+	_rlog_log(rlog, type, fmt, ap);
+
+	va_end(ap);
+}
+
+void __fbr_attr_printf(2)
+fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
+{
+	assert(type);
+	assert(fmt && *fmt);
+
+	va_list ap;
+	va_start(ap, fmt);
+
+	struct fbr_rlog *rlog = _rlog_get();
+	if (!rlog) {
+		vprintf(fmt, ap);
+		va_end(ap);
+		return;
+	}
+	fbr_rlog_ok(rlog);
+
+	_rlog_log(rlog, type, fmt, ap);
 
 	va_end(ap);
 }
