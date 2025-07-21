@@ -475,7 +475,7 @@ void
 fbr_log_free(struct fbr_log *log)
 {
 	fbr_log_ok(log);
-	assert(log->do_free)
+	assert(log->do_free);
 
 	_log_close(log);
 

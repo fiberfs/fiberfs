@@ -41,7 +41,7 @@ fbr_id_string(fbr_id_t id, char *buffer, size_t buffer_len)
 	fbr_id_part_t timestamp = _id.parts.timestamp;
 
 	int ret = snprintf(buffer, buffer_len, FBR_ID_PRINTF_FMT, timestamp, rand);
-	assert(ret > 0 && (size_t)ret < buffer_len)
+	assert(ret > 0 && (size_t)ret < buffer_len);
 
 	return (size_t)ret;
 }

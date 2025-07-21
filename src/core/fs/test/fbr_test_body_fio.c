@@ -172,11 +172,11 @@ _test_fio_thread(void *arg)
 		assert(vector->bufvec);
 
 		if (vector->chunks->length == 1) {
-			assert(vector->chunks->list[0]->id == (size_t)id + 1)
+			assert(vector->chunks->list[0]->id == (size_t)id + 1);
 			assert(vector->bufvec->count == 1);
 		} else if (vector->chunks->length == 2) {
-			assert(vector->chunks->list[0]->id == (size_t)id + 1)
-			assert(vector->chunks->list[1]->id == (size_t)id + 2)
+			assert(vector->chunks->list[0]->id == (size_t)id + 1);
+			assert(vector->chunks->list[1]->id == (size_t)id + 2);
 			assert(vector->bufvec->count == 2);
 		} else {
 			fbr_ABORT("bad chunk size %u", vector->chunks->length);

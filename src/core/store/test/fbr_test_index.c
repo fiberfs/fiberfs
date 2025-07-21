@@ -258,7 +258,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	directory = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(directory);
 	fbr_directory_ok(directory->previous);
-	assert(directory->previous == old_directory)
+	assert(directory->previous == old_directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_directory_copy(fs, directory, directory->previous);
 	directory->generation++;
@@ -285,7 +285,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	directory = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(directory);
 	fbr_directory_ok(directory->previous);
-	assert(directory->previous != old_directory)
+	assert(directory->previous != old_directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_directory_copy(fs, directory, directory->previous);
 	directory->generation++;
