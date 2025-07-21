@@ -12,7 +12,25 @@
 #include "core/request/fbr_request.h"
 
 #include "test/fbr_test.h"
+#include "fbr_test_request_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+
+struct fbr_request *
+fbr__test_request_mock(const char *function)
+{
+	assert_zero(fbr_request_get());
+
+	struct fbr_request *request = fbr_request_alloc((fuse_req_t)1, function);
+	fbr_request_ok(request);
+
+	fbr_request_take_fuse(request);
+	fbr_ZERO(&request->thread);
+	request->not_fuse = 1;
+
+	assert(fbr_request_get() == request);
+
+	return request;
+}
 
 static void
 _debug_request_stats(struct fbr_fs *fs)
@@ -39,15 +57,10 @@ fbr_cmd_request_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(__FBR_REQUEST_ID_MAX < FBR_REQUEST_ID_MIN);
 	assert_zero(fbr_request_get());
 
-	fuse_req_t fuse_req = (fuse_req_t)1;
-
-	struct fbr_request *r1 = fbr_request_alloc(fuse_req, __func__);
+	struct fbr_request *r1 = fbr_test_request_mock();
 	fbr_request_ok(r1);
-	r1->not_fuse = 1;
-	assert(fbr_request_get() == r1);
 	assert(fs->stats.requests_active == 1);
 	assert(fs->stats.requests_pooled == 0);
-	fbr_request_take_fuse(r1);
 	fbr_request_free(r1);
 
 	_debug_request_stats(fs);
@@ -60,12 +73,10 @@ fbr_cmd_request_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fs->stats.requests_recycled == 0);
 	assert(fs->stats.requests_freed == 0);
 
-	struct fbr_request *r2 = fbr_request_alloc(fuse_req, __func__);
+	struct fbr_request *r2 = fbr_test_request_mock();
 	fbr_request_ok(r2);
-	r2->not_fuse = 1;
 	assert(fs->stats.requests_active == 1);
 	assert(fs->stats.requests_pooled == 0);
-	fbr_request_take_fuse(r2);
 
 	char *buf = fbr_workspace_rbuffer(r2->workspace);
 	size_t buf_len = fbr_workspace_rlen(r2->workspace);
@@ -108,12 +119,8 @@ _test_request_thread(void *arg)
 
 	fbr_test_logs("** thread %zu running", id);
 
-	fuse_req_t fuse_req = (fuse_req_t)1;
-
-	struct fbr_request *r1 = fbr_request_alloc(fuse_req, __func__);
+	struct fbr_request *r1 = fbr_test_request_mock();
 	fbr_request_ok(r1);
-	r1->not_fuse = 1;
-	assert(fbr_request_get() == r1);
 
 	char *buf = fbr_workspace_rbuffer(r1->workspace);
 	size_t buf_len = fbr_workspace_rlen(r1->workspace);
@@ -127,16 +134,12 @@ _test_request_thread(void *arg)
 	}
 	assert(_TEST_REQUEST_THREAD_ID == _TEST_REQUEST_THREADS * 2);
 
-	fbr_request_take_fuse(r1);
 	fbr_request_free(r1);
 
 	assert_zero(fbr_request_get());
 
-	struct fbr_request *r2 = fbr_request_alloc(fuse_req, __func__);
+	struct fbr_request *r2 = fbr_test_request_mock();
 	fbr_request_ok(r2);
-	r2->not_fuse = 1;
-	fbr_request_take_fuse(r2);
-	assert(fbr_request_get() == r2);
 
 	buf = fbr_workspace_rbuffer(r2->workspace);
 	buf_len = fbr_workspace_rlen(r2->workspace);
@@ -200,14 +203,8 @@ fbr_cmd_request_test_active(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 	struct fbr_fs *fs = fbr_test_fuse_mock(ctx);
 	fbr_fs_ok(fs);
 
-	fuse_req_t fuse_req = (fuse_req_t)1;
-
-	struct fbr_request *r1 = fbr_request_alloc(fuse_req, __func__);
+	struct fbr_request *r1 = fbr_test_request_mock();
 	fbr_request_ok(r1);
-	r1->not_fuse = 1;
-	assert(fbr_request_get() == r1);
-	fbr_request_take_fuse(r1);
-	fbr_ZERO(&r1->thread);
 	assert(fs->stats.requests_active == 1);
 
 	fbr_request_pool_shutdown(fs);

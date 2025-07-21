@@ -11,6 +11,7 @@
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+#include "core/request/test/fbr_test_request_cmds.h"
 
 static char _ONE_BUFFER[10000];
 static int _INIT;
@@ -93,11 +94,8 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fs = fbr_test_fuse_mock(ctx);
 	fbr_fs_ok(fs);
 
-	fuse_req_t fuse_req = (fuse_req_t)1;
-	struct fbr_request *r1 = fbr_request_alloc(fuse_req, __func__);
+	struct fbr_request *r1 = fbr_test_request_mock();
 	fbr_request_ok(r1);
-	r1->not_fuse = 1;
-	fbr_request_take_fuse(r1);
 
 	struct fbr_writer writer2;
 	fbr_writer_init(fs, &writer2, r1, 0);
@@ -165,11 +163,8 @@ fbr_cmd_reader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fs = fbr_test_fuse_mock(ctx);
 	fbr_fs_ok(fs);
 
-	fuse_req_t fuse_req = (fuse_req_t)1;
-	struct fbr_request *r1 = fbr_request_alloc(fuse_req, __func__);
+	struct fbr_request *r1 = fbr_test_request_mock();
 	fbr_request_ok(r1);
-	r1->not_fuse = 1;
-	fbr_request_take_fuse(r1);
 
 	struct fbr_reader reader2;
 	fbr_reader_init(fs, &reader2, r1, 0);

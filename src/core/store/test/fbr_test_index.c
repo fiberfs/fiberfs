@@ -13,6 +13,7 @@
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+#include "core/request/test/fbr_test_request_cmds.h"
 #include "core/store/test/fbr_dstore.h"
 
 static const struct fbr_store_callbacks _INDEX_TEST_CALLBACKS = {
@@ -24,16 +25,7 @@ static const struct fbr_store_callbacks _INDEX_TEST_CALLBACKS = {
 void
 fbr_test_index_request_start(void)
 {
-	assert_zero(fbr_request_get());
-
-	fuse_req_t fuse_req = (fuse_req_t)1;
-	struct fbr_request *request = fbr_request_alloc(fuse_req, __func__);
-	fbr_request_ok(request);
-
-	fbr_request_take_fuse(request);
-	fbr_ZERO(&request->thread);
-
-	request->not_fuse = 1;
+	fbr_test_request_mock();
 }
 
 void

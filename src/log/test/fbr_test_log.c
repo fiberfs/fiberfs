@@ -10,7 +10,9 @@
 
 #include "core/request/fbr_request.h"
 #include "log/fbr_log.h"
+
 #include "test/fbr_test.h"
+#include "core/request/test/fbr_test_request_cmds.h"
 
 extern int _RLOG_TEST;
 
@@ -327,12 +329,8 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** Logging on request");
 
-	fuse_req_t fuse_req = (fuse_req_t)1;
-	struct fbr_request *request = fbr_request_alloc(fuse_req, __func__);
+	struct fbr_request *request = fbr_test_request_mock();
 	fbr_request_ok(request);
-	request->not_fuse = 1;
-	fbr_request_take_fuse(request);
-	fbr_ZERO(&request->thread);
 
 	fbr_rlog(FBR_LOG_TEST, "TEST 1");
 	fbr_rlog(FBR_LOG_TEST, "TEST %d", 2);
@@ -368,11 +366,8 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** Flush loop");
 
-	struct fbr_request *r2 = fbr_request_alloc(fuse_req, __func__);
+	struct fbr_request *r2 = fbr_test_request_mock();
 	fbr_request_ok(r2);
-	r2->not_fuse = 1;
-	fbr_request_take_fuse(r2);
-	fbr_ZERO(&r2->thread);
 
 	char buffer[500];
 	size_t i;
@@ -392,8 +387,7 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 	assert(i == 19);
 
-	fbr_request_free(request);
-
+	fbr_request_free(r2);
 	fbr_log_reader_free(&reader);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_rlog passed");
