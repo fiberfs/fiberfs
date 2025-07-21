@@ -52,7 +52,7 @@ void fbr_workspace_debug(struct fbr_workspace *workspace, fbr_log_f *logger);
 #define fbr_workspace_ok(workspace)						\
 {										\
 	fbr_magic_check(workspace, FBR_WORKSPACE_MAGIC);			\
-	assert_dev(workspace->pos + workspace->free == workspace->size);	\
+	assert_dev((workspace)->pos + (workspace)->free == (workspace)->size);	\
 }
 
 #endif /* _FBR_WORKSPACE_H_INCLUDED_ */

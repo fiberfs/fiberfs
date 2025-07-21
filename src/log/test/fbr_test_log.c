@@ -252,7 +252,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	size_t i;
 
 	for (i = 0; i <= 5000; i++) {
-		char buffer[2048];
+		unsigned char buffer[2048];
 		size_t buffer_len;
 		unsigned short data;
 
@@ -265,7 +265,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		assert(data <= UCHAR_MAX);
 
 		for (size_t j = sizeof(buffer_len); j < buffer_len; j++) {
-			buffer[j] = data;
+			buffer[j] = (unsigned char)data;
 		}
 
 		fbr_log_append(log, FBR_LOG_TAG_OTHER, data, buffer, buffer_len);
@@ -311,7 +311,7 @@ static void
 _log_random_string(char *buffer, size_t length)
 {
 	for (size_t i = 0; i < length; i++) {
-		buffer[i] = 'a' + (random() % 26);
+		buffer[i] = (char)('a' + (random() % 26));
 	}
 	buffer[length] = '\0';
 }

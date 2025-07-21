@@ -24,7 +24,7 @@ fbr_sleep_ms(double ms)
 	struct timespec tspec, rem;
 
 	tspec.tv_sec = (time_t)(ms / 1000);
-	tspec.tv_nsec = ((time_t)(ms * 1000 * 1000)) % (1000 * 1000 * 1000);
+	tspec.tv_nsec = ((time_t)(ms * 1000L * 1000L)) % (1000L * 1000L * 1000L);
 
 	errno = 0;
 	while (nanosleep(&tspec, &rem) && errno == EINTR) {
@@ -40,7 +40,7 @@ fbr_get_time(void)
 	struct timespec ts;
 	assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
 
-	return ts.tv_sec + ((double)ts.tv_nsec / (1000 * 1000 * 1000));
+	return (double)ts.tv_sec + ((double)ts.tv_nsec / (1000 * 1000 * 1000));
 }
 
 void
@@ -51,7 +51,7 @@ fbr_timespec_add_clock(struct timespec *value)
 	struct timespec now;
 	assert_zero(clock_gettime(CLOCK_REALTIME, &now));
 
-	long ns = 1000 * 1000 * 1000;
+	long ns = 1000L * 1000L * 1000L;
 
 	value->tv_nsec += now.tv_nsec;
 	assert_dev(value->tv_nsec / ns <= 1);

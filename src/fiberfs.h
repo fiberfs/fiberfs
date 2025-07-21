@@ -22,12 +22,12 @@ typedef void __fbr_attr_printf(1) (fbr_log_f)(const char *fmt, ...);
 #define fbr_magic_check(obj, value)				\
 {								\
 	assert(obj);						\
-	assert((obj)->magic == value);				\
+	assert((obj)->magic == (value));			\
 }
 #define fbr_magic_check_dev(obj, value)				\
 {								\
 	assert_dev(obj);					\
-	assert_dev((obj)->magic == value);			\
+	assert_dev((obj)->magic == (value));			\
 }
 
 #endif /* _FIBERFS_H_INCLUDED_ */

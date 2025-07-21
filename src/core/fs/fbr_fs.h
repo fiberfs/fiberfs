@@ -526,7 +526,7 @@ void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 #define fbr_file_ptr_ok(file_ptr)				\
 {								\
 	assert(file_ptr);					\
-	fbr_file_ok(file_ptr->file);				\
+	fbr_file_ok((file_ptr)->file);				\
 }
 #define fbr_fs_int64(obj)					\
 	((uint64_t)(obj))

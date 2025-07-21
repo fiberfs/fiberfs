@@ -75,7 +75,7 @@ _test_fetch_thread(void *arg)
 
 	fbr_test_logs("FETCH synced: %d", id);
 
-	fbr_sleep_ms(random() % 60);
+	fbr_sleep_ms((double)(random() % 60));
 
 	if (chunk->id == _FETCH_ERROR_CHUNK_ID) {
 		fbr_test_logs("FETCH ERROR: %lu", chunk->id);
@@ -157,9 +157,9 @@ _test_fio_thread(void *arg)
 
 	fbr_test_logs("** fio_thread %d", id);
 
-	fbr_sleep_ms(random() % 40);
+	fbr_sleep_ms((double)(random() % 40));
 
-	size_t offset = id * 1000;
+	size_t offset = id * 1000UL;
 
 	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, offset, 2000);
 
@@ -217,7 +217,7 @@ _test_concurrent_fio(void)
 	}
 	file->state = FBR_FILE_OK;
 	assert(fbr_test_fs_count_chunks(file) == _BODY_TEST_THREADS);
-	assert(file->size == 1000 * _BODY_TEST_THREADS);
+	assert(file->size == 1000UL * _BODY_TEST_THREADS);
 
 	if (_SHARED_FIO) {
 		fio = fbr_fio_alloc(fs, file, 1);

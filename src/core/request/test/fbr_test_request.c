@@ -101,7 +101,7 @@ fbr_cmd_request_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "request_test done");
 }
 
-#define _TEST_REQUEST_THREADS 100
+#define _TEST_REQUEST_THREADS 100UL
 volatile size_t _TEST_REQUEST_THREAD_ID;
 
 static void *

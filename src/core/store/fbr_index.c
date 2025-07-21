@@ -36,7 +36,7 @@ _json_header_peek(const char *json_buf, size_t json_buf_len)
 		return -1;
 	}
 
-	if (strncmp(json_buf, "{\"fiberfs\":", 11)) {
+	if (strncmp(json_buf, "{\"fiberfs\":", 11) != 0) {
 		return -1;
 	}
 
@@ -52,7 +52,7 @@ _json_header_peek(const char *json_buf, size_t json_buf_len)
 		return -1;
 	}
 
-	return version;
+	return (int)version;
 }
 
 static void

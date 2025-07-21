@@ -130,7 +130,7 @@ _log_shared_init(struct fbr_log *log, const char *name, size_t size)
 
 	if (size) {
 		log->mmap_size = size;
-		int ret = ftruncate(log->shm_fd, log->mmap_size);
+		int ret = ftruncate(log->shm_fd, (off_t)log->mmap_size);
 		assert_zero(ret);
 	}
 

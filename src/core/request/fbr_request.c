@@ -295,9 +295,9 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
 	fbr_fs_ok(fs);
 
-	size_t max_ms = 500;
-	size_t wait_ms = 0;
-	size_t sleep_ms = 25;
+	int max_ms = 500;
+	int wait_ms = 0;
+	int sleep_ms = 25;
 	while (wait_ms < max_ms && !TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
 		fbr_sleep_ms(sleep_ms);
 		wait_ms += sleep_ms;
@@ -347,8 +347,8 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 		assert_zero_dev(request->fuse_req);
 
 		if (request->thread) {
-			fs->log("REQUEST id: %lu sending SIGTERM", request->id);
-			pthread_kill(request->thread, SIGTERM);
+			fs->log("REQUEST id: %lu sending SIGQUIT", request->id);
+			pthread_kill(request->thread, SIGQUIT);
 			fbr_ZERO(&request->thread);
 		}
 	}
