@@ -77,6 +77,18 @@ fbr_parse_ulong(const char *str, size_t length)
 	return ret;
 }
 
+// This compiles out code if we are a release build
+int
+fbr_is_dev(void)
+{
+#ifdef FBR_NO_ASSERT_DEV
+	return 0;
+#else
+	return 1;
+#endif
+}
+
+// This checks if we are running under a fiber_test context
 int
 fbr_is_test(void)
 {

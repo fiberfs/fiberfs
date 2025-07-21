@@ -212,7 +212,7 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence, si
 	fbr_log_ok(log);
 	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);
-	assert_dev(length)
+	assert_dev(length);
 	assert_dev(sequence);
 	assert_dev(count);
 

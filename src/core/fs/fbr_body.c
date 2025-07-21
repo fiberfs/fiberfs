@@ -349,7 +349,7 @@ fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 		chunk = chunk->next;
 	}
 
-	if (fbr_assert_is_dev() && wbuffers) {
+	if (fbr_is_dev() && wbuffers) {
 		struct fbr_wbuffer *wbuffer = wbuffers;
 		while (wbuffer) {
 			assert_dev(wbuffer->chunk);
@@ -435,7 +435,7 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 	assert_dev(fs->logger);
 	fbr_file_ok(file);
 
-	if (!fbr_assert_is_dev()) {
+	if (!fbr_is_dev()) {
 		return;
 	}
 

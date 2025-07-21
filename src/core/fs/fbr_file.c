@@ -488,7 +488,7 @@ _file_ptr_slab_free(struct fbr_file_ptr_slab *ptr_slab)
 {
 	assert_dev(ptr_slab);
 
-	if (fbr_assert_is_dev()) {
+	if (fbr_is_dev()) {
 		for (size_t i = 0; i < ptr_slab->length; i++) {
 			assert(_file_ptr_empty(&ptr_slab->ptrs[i]));
 		}
@@ -503,7 +503,7 @@ fbr_file_ptrs_free(struct fbr_file *file)
 {
 	fbr_file_ok(file);
 
-	if (fbr_assert_is_dev()) {
+	if (fbr_is_dev()) {
 		for (size_t i = 0; i < fbr_array_len(file->ptr_head.ptrs); i++) {
 			assert(_file_ptr_empty(&file->ptr_head.ptrs[i]));
 		}

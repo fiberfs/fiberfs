@@ -113,7 +113,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 				directory->file = fbr_inode_take(fs, directory->inode);
 				fbr_file_ok(directory->file);
 
-				if (fbr_assert_is_dev()) {
+				if (fbr_is_dev()) {
 					struct fbr_path_name filename;
 					char buf[PATH_MAX];
 					fbr_path_get_full(&directory->file->path, &filename,

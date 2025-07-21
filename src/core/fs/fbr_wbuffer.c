@@ -663,7 +663,7 @@ fbr_wbuffers_reset(struct fbr_fs *fs, struct fbr_fio *fio)
 
 		if (wbuffer->free_buffer) {
 			assert_dev(wbuffer->buffer);
-			assert_zero_dev(wbuffer->chunk)
+			assert_zero_dev(wbuffer->chunk);
 			assert_zero_dev(wbuffer->split);
 			free(wbuffer->buffer);
 		} else if (wbuffer->chunk) {

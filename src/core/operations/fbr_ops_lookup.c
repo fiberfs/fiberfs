@@ -44,7 +44,7 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 	const char *fullname = fbr_path_get_full(&file->path, NULL, buf, sizeof(buf));
 	fs->log("LOOKUP found file: '%s' (inode: %lu)", fullname, file->inode);
 
-	if (fbr_assert_is_dev()) {
+	if (fbr_is_dev()) {
 		struct fbr_path_name filename;
 		fbr_path_get_file(&file->path, &filename);
 		assert(name_len == filename.len);

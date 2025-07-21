@@ -17,7 +17,6 @@
 	__attribute__ ((__noreturn__))
 
 void fbr_setup_crash_signals(void);
-int fbr_assert_is_dev(void);
 void __fbr_attr_printf(5) __fbr_noreturn fbr_do_abort(const char *assertion,
 	const char *function, const char *file, int line, const char *fmt, ...);
 int fbr_libunwind_enabled(void);
