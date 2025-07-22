@@ -12,7 +12,6 @@
 #include "fiberfs.h"
 #include "fbr_rlog.h"
 #include "fbr_workspace.h"
-#include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "data/queue.h"
@@ -76,6 +75,7 @@ struct fbr_request *fbr_request_get(void);
 fuse_req_t fbr_request_take_fuse(struct fbr_request *request);
 void fbr_request_free(struct fbr_request *request);
 
+struct fbr_fs;
 void fbr_request_pool_shutdown(struct fbr_fs *fs);
 
 void fbr_fuse_reply_none(struct fbr_request *request);
