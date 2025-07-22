@@ -136,7 +136,7 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 		wbuffer->next = prev->next;
 		prev->next = wbuffer;
 
-		fs->log("WBUFFER hole detected hole: %zu offset: %zu end: %zu size: %zu",
+		fbr_rlog(FBR_LOG_WBUFFER, "hole detected hole: %zu offset: %zu end: %zu size: %zu",
 			prev->offset + prev->end, offset, wbuffer->end, wbuffer->size);
 	}
 
@@ -162,8 +162,8 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 
 		wbuffer->next = current;
 
-		fs->log("WBUFFER alloc offset: %zu end: %zu size: %zu current->offset: %zd",
-			wbuffer->offset, wbuffer->end, wbuffer->size,
+		fbr_rlog(FBR_LOG_WBUFFER, "alloc offset: %zu end: %zu size: %zu"
+			" current->offset: %zd", wbuffer->offset, wbuffer->end, wbuffer->size,
 			current ? (ssize_t)current->offset : -1);
 	} else {
 		// Successful leftover from previous flush
@@ -175,7 +175,7 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 
 			wbuffer->state = FBR_WBUFFER_WRITING;
 
-			fs->log("WBUFFER rewriting offset: %zu", wbuffer->offset);
+			fbr_rlog(FBR_LOG_WBUFFER, "rewriting offset: %zu", wbuffer->offset);
 
 			if (fs->store->chunk_delete_f) {
 				fs->store->chunk_delete_f(fs, fio->file, wbuffer->chunk);
@@ -248,7 +248,8 @@ _wbuffer_chunk_add(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 	assert_zero(wbuffer->chunk);
 	assert_dev(fbr_file_has_wbuffer(file));
 
-	fs->log("WBUFFER new chunk offset: %zu length: %zu", wbuffer->offset, wbuffer->end);
+	fbr_rlog(FBR_LOG_WBUFFER, "new chunk offset: %zu length: %zu", wbuffer->offset,
+		wbuffer->end);
 
 	struct fbr_chunk *chunk = fbr_body_chunk_add(fs, file, wbuffer->id, wbuffer->offset,
 		wbuffer->end);
@@ -343,7 +344,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 		memcpy(wbuffer->buffer + wbuffer_offset, buf + written, wsize);
 
 		if (wbuffer->end < wbuffer_offset + wsize) {
-			fs->log("WBUFFER extending offset: %zu end: %zu (was: %zu)",
+			fbr_rlog(FBR_LOG_WBUFFER, "extending offset: %zu end: %zu (was: %zu)",
 				wbuffer->offset, wbuffer_offset + wsize, wbuffer->end);
 
 			wbuffer->end = wbuffer_offset + wsize;
@@ -371,7 +372,8 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 
 	if (fio->file->size < offset_end && !fio->append) {
-		fs->log("WBUFFER new file->size: %zu (was: %zu)", offset_end, fio->file->size);
+		fbr_rlog(FBR_LOG_WBUFFER, "new file->size: %zu (was: %zu)", offset_end,
+			fio->file->size);
 		fio->file->size = offset_end;
 	}
 
@@ -521,7 +523,7 @@ fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 
 	while (!_wbuffer_ready(wbuffers)) {
 		if (_wbuffer_ready_error(wbuffers)) {
-			fs->log("WBUFFER error state found, setting EIO");
+			fbr_rlog(FBR_LOG_ERROR, "wbuffer error state found, setting EIO");
 			if (!error) {
 				error = EIO;
 			}
@@ -630,7 +632,7 @@ fbr_wbuffers_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 		assert_dev(chunk->state == FBR_CHUNK_WBUFFER);
 		assert_dev(chunk->data);
 
-		fs->log("WBUFFER chunk state: %s offset: %zu length: %zu",
+		fbr_rlog(FBR_LOG_WBUFFER, "chunk state: %s offset: %zu length: %zu",
 			fbr_chunk_state(chunk->state), chunk->offset, chunk->length);
 
 		chunk->state = FBR_CHUNK_READY;

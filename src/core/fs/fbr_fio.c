@@ -174,7 +174,7 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 
 	while (!_fio_ready(chunks)) {
 		if (_fio_ready_error(chunks)) {
-			fs->log("FIO empty chunk found, setting error");
+			fbr_rlog(FBR_LOG_ERROR, "empty chunk found, setting error");
 			fio->error = 1;
 			break;
 		}
@@ -210,7 +210,7 @@ _fio_release_floating(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset_end)
 		}
 
 		assert_dev(fs);
-		fs->log("FLOATING offset_end: %zu", offset_end);
+		fbr_rlog(FBR_LOG_FIO, "floating offset_end: %zu", offset_end);
 	}
 
 	struct fbr_chunk_list *chunks = fio->floating;
@@ -445,7 +445,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	size_t total_size = 0;
 	for (size_t i = 0; i < bufvec->count; i++) {
 		struct fuse_buf *buf = &bufvec->buf[i];
-		fs->log("VECTOR bufvec[%zu] mem: %p offset: %zu size: %zu", i,
+		fbr_rlog(FBR_LOG_FIO, "vector bufvec[%zu] mem: %p offset: %zu size: %zu", i,
 			(void*)((char*)buf->mem - buf->pos), buf->pos,
 			buf->size);
 		total_size += buf->size;

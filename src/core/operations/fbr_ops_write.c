@@ -14,7 +14,8 @@ fbr_ops_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, size
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fs->log("WRITE req: %lu ino: %lu off: %ld size: %zu", request->id, ino, off, size);
+	fbr_rlog(FBR_LOG_OP_WRITE, "req: %lu ino: %lu off: %ld size: %zu", request->id, ino, off,
+		size);
 	assert(off >= 0);
 	assert(size);
 

@@ -662,10 +662,48 @@ fbr_log_type_str(enum fbr_log_type type)
 			return "REQUEST";
 		case FBR_LOG_FS:
 			return "FS";
+		case FBR_LOG_DINDEX:
+			return "DINDEX";
+		case FBR_LOG_INODE:
+			return "INODE";
 		case FBR_LOG_DIR_EXP:
 			return "DIR_EXP";
 		case FBR_LOG_FLUSH:
 			return "FLUSH";
+		case FBR_LOG_MERGE:
+			return "MERGE";
+		case FBR_LOG_CHUNK:
+			return "CHUNK";
+		case FBR_LOG_BODY:
+			return "BODY";
+		case FBR_LOG_FIO:
+			return "FIO";
+		case FBR_LOG_WBUFFER:
+			return "WBUFFER";
+		case FBR_LOG_INDEX:
+			return "INDEX";
+		case FBR_LOG_OP_READ:
+			return "OP_READ";
+		case FBR_LOG_OP_DIR:
+			return "OP_DIR";
+		case FBR_LOG_OP_FLUSH:
+			return "OP_FLUSH";
+		case FBR_LOG_OP_ATTR:
+			return "OP_ATTR";
+		case FBR_LOG_OP_FORGET:
+			return "OP_FORGET";
+		case FBR_LOG_OP_LOOKUP:
+			return "OP_LOOKUP";
+		case FBR_LOG_OP_MKDIR:
+			return "OP_MKDIR";
+		case FBR_LOG_OP_OPEN:
+			return "OP_OPEN";
+		case FBR_LOG_OP_CREATE:
+			return "OP_CREATE";
+		case FBR_LOG_OP_RELEASE:
+			return "OP_RELEASE";
+		case FBR_LOG_OP_WRITE:
+			return "OP_WRITE";
 		case __FBR_LOG_TYPE_NONE:
 		case __FBR_LOG_TYPE_END:
 			break;

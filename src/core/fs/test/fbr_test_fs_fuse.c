@@ -263,8 +263,6 @@ _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fs_ok(ctx->fs);
 	assert(conn);
 
-	ctx->fs->logger = fbr_test_fs_logger;
-
 	conn->want |= FUSE_CAP_SPLICE_WRITE;
 	conn->want |= FUSE_CAP_SPLICE_MOVE;
 
@@ -346,8 +344,6 @@ fbr_cmd_fs_test_fuse_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
-
-	fs->logger = fbr_test_fs_logger;
 }
 
 void

@@ -43,7 +43,7 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
 
-	fs->log("RW_FLUSH directory: '%s' (%lu) file: '%s' (%lu)", dirname.name,
+	fbr_rlog(FBR_LOG_TEST, "RW_FLUSH directory: '%s' (%lu) file: '%s' (%lu)", dirname.name,
 		directory->generation, filename, file->generation);
 
 	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
@@ -74,8 +74,8 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 
 	int ret = fbr_index_write(fs, &index_data);
 	if (ret) {
-		fs->log("RW_FLUSH fbr_index_write(new_directory) failed (%d %s)", ret,
-			strerror(ret));
+		fbr_rlog(FBR_LOG_TEST, "RW_FLUSH fbr_index_write(new_directory) failed (%d %s)",
+			ret, strerror(ret));
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
 	} else {
 		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
@@ -111,8 +111,6 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fs_ok(ctx->fs);
 	assert(conn);
 
-	ctx->fs->logger = fbr_test_fs_logger;
-
 	fbr_fs_set_store(ctx->fs, &_TEST_FS_RW_STORE_CALLBACKS);
 
 	fbr_dstore_init(fbr_test_get_ctx());
@@ -141,7 +139,7 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	int ret = fbr_index_write(ctx->fs, &index_data);
 	if (ret) {
-		ctx->fs->log("INIT fbr_index_write(root) failed");
+		fbr_rlog(FBR_LOG_TEST, "INIT fbr_index_write(root) failed");
 		fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_ERROR);
 		ctx->error = 1;
 	} else {
@@ -154,7 +152,7 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_directory_name(root, &dirpath);
 	fbr_id_t root_id = fbr_dstore_root_read(ctx->fs, &dirpath);
 
-	ctx->fs->log("INIT fbr_dstore_root_read(): %lu", root_id);
+	fbr_rlog(FBR_LOG_TEST, "INIT fbr_dstore_root_read(): %lu", root_id);
 	fbr_ASSERT(root_id == root->version, "root version mismatch, found %lu, expected %lu",
 		root_id, root->version);
 

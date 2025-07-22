@@ -16,7 +16,7 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fs->log("OPEN req: %lu ino: %lu flags: %d", request->id, ino, fi->flags);
+	fbr_rlog(FBR_LOG_OP_OPEN, "req: %lu ino: %lu flags: %d", request->id, ino, fi->flags);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -32,10 +32,10 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 	int read_only = 0;
 
 	if (fi->flags & O_WRONLY || fi->flags & O_RDWR) {
-		fs->log("OPEN flags: read+write");
+		fbr_rlog(FBR_LOG_OP_OPEN, "flags: read+write");
 	} else {
 		read_only = 1;
-		fs->log("OPEN flags: read only");
+		fbr_rlog(FBR_LOG_OP_OPEN, "flags: read only");
 	}
 
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file, read_only);
@@ -43,12 +43,12 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 
 	if (fi->flags & O_APPEND) {
 		fio->append = 1;
-		fs->log("OPEN flags: append");
+		fbr_rlog(FBR_LOG_OP_OPEN, "flags: append");
 	}
 	if (fi->flags & O_TRUNC) {
 		// TODO should we zero out file->size here?
 		fio->truncate = 1;
-		fs->log("OPEN flags: truncate");
+		fbr_rlog(FBR_LOG_OP_OPEN, "flags: truncate");
 	}
 	if (fi->flags & O_CREAT) {
 		fbr_ABORT("O_CREAT used in OPEN?");
@@ -70,7 +70,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fs->log("CREATE req: %lu parent: %lu name: '%s' mode: %d flags: %u",
+	fbr_rlog(FBR_LOG_OP_CREATE, "req: %lu parent: %lu name: '%s' mode: %d flags: %u",
 		request->id, parent, name, mode, fi->flags);
 
 	struct fbr_directory *stale;
@@ -90,7 +90,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 	char buf[PATH_MAX];
 	fbr_path_get_full(&file->path, &filename, buf, sizeof(buf));
-	fs->log("CREATE new file: inode: %lu path: '%s'", file->inode, filename.name);
+	fbr_rlog(FBR_LOG_OP_CREATE, "new file: inode: %lu path: '%s'", file->inode, filename.name);
 
 	assert(file->parent_inode == directory->inode);
 	assert(file->state == FBR_FILE_INIT);
@@ -111,27 +111,27 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		fbr_ABORT("O_RDONLY used in CREATE?");
 	} else {
 		assert_dev(fi->flags & O_WRONLY || fi->flags & O_RDWR);
-		fs->log("CREATE flags: read+write");
+		fbr_rlog(FBR_LOG_OP_CREATE, "flags: read+write");
 	}
 
 	assert(fi->flags & O_CREAT);
 
 	if (fi->flags & O_APPEND) {
 		fio->append = 1;
-		fs->log("CREATE flags: append");
+		fbr_rlog(FBR_LOG_OP_CREATE, "flags: append");
 	}
 	if (fi->flags & O_TRUNC) {
 		fio->truncate = 1;
-		fs->log("CREATE flags: truncate");
+		fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
 	}
 
 	if (S_ISREG(mode)) {
-		fs->log("CREATE mode: file");
+		fbr_rlog(FBR_LOG_OP_CREATE, "mode: file");
 	} else {
 		if (S_ISDIR(mode)) {
-			fs->log("CREATE mode: directory");
+			fbr_rlog(FBR_LOG_OP_CREATE, "mode: directory");
 		} else {
-			fs->log("CREATE mode: other");
+			fbr_rlog(FBR_LOG_OP_CREATE, "mode: other");
 		}
 
 		fbr_fuse_reply_err(request, EIO);

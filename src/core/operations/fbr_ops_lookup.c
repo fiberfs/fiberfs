@@ -17,7 +17,7 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 	struct fbr_fs *fs = fbr_request_fs(request);
 	assert_dev(fs->store);
 
-	fs->log("LOOKUP req: %lu parent: %lu name: %s", request->id, parent, name);
+	fbr_rlog(FBR_LOG_OP_LOOKUP, "req: %lu parent: %lu name: %s", request->id, parent, name);
 
 	struct fbr_directory *stale;
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent, &stale);
@@ -42,7 +42,7 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 
 	char buf[PATH_MAX];
 	const char *fullname = fbr_path_get_full(&file->path, NULL, buf, sizeof(buf));
-	fs->log("LOOKUP found file: '%s' (inode: %lu)", fullname, file->inode);
+	fbr_rlog(FBR_LOG_OP_LOOKUP, "found file: '%s' (inode: %lu)", fullname, file->inode);
 
 	if (fbr_is_dev()) {
 		struct fbr_path_name filename;

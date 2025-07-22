@@ -17,7 +17,7 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	struct fbr_fs *fs = fbr_request_fs(request);
 	assert_dev(fs->store);
 
-	fs->log("MKDIR req: %lu parent: %lu name: %s mode: %u", request->id, parent, name,
+	fbr_rlog(FBR_LOG_OP_MKDIR, "req: %lu parent: %lu name: %s mode: %u", request->id, parent, name,
 		mode);
 
 	struct fbr_directory *stale;
@@ -40,7 +40,8 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 
 	char buf[PATH_MAX];
 	fbr_path_get_full(&file->path, &dirname, buf, sizeof(buf));
-	fs->log("MKDIR new directory: inode: %lu path: '%s'", file->inode, dirname.name);
+	fbr_rlog(FBR_LOG_OP_MKDIR, "new directory: inode: %lu path: '%s'", file->inode,
+		dirname.name);
 
 	assert(file->parent_inode == directory->inode);
 	assert(file->state == FBR_FILE_INIT);

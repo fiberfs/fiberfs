@@ -159,7 +159,7 @@ _body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t of
 
 	size_t chunk_end = chunk->offset + chunk->length;
 	if (file->size < chunk_end) {
-		fs->log("CHUNK new file->size: %zu (was: %zu)", chunk_end, file->size);
+		fbr_rlog(FBR_LOG_CHUNK, "new file->size: %zu (was: %zu)", chunk_end, file->size);
 		file->size = chunk_end;
 	}
 
@@ -257,8 +257,7 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 	file->body.chunk_last = prev;
 
 	if (file->size != size) {
-		fs->log("BODY new file->size: %zu (was: %zu)",
-			size, file->size);
+		fbr_rlog(FBR_LOG_BODY, "new file->size: %zu (was: %zu)", size, file->size);
 		file->size = size;
 	}
 
@@ -432,7 +431,6 @@ void
 fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
-	assert_dev(fs->logger);
 	fbr_file_ok(file);
 
 	if (!fbr_is_dev()) {
@@ -449,7 +447,7 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 		assert(chunk->state < __FBR_CHUNK_STATE_SIZE);
 
 		if (count < 3) {
-			fs->log("BODY chunk[%zu] state: %s off: %zu len: %zu id: %lu", count,
+			fbr_rlog(FBR_LOG_BODY, "chunk[%zu] state: %s off: %zu len: %zu id: %lu", count,
 				fbr_chunk_state(chunk->state), chunk->offset, chunk->length,
 				chunk->id);
 		}
@@ -471,7 +469,7 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 	}
 
 	if (count > 3) {
-		fs->log("BODY ... chunks: %zu%s", count, buffer);
+		fbr_rlog(FBR_LOG_BODY, "... chunks: %zu%s", count, buffer);
 	}
 }
 

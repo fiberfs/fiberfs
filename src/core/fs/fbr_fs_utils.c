@@ -72,15 +72,6 @@ fbr_fs_timeout_expired(double time_start, double timeout)
 	return 0;
 }
 
-void __fbr_attr_printf(1)
-fbr_fs_logger(const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	vprintf(fmt, ap);
-	va_end(ap);
-}
-
 size_t
 fbr_fs_chunk_size(size_t offset)
 {

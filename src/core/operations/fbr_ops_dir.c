@@ -17,7 +17,7 @@ fbr_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 	struct fbr_fs *fs = fbr_request_fs(request);
 	assert_dev(fs->store);
 
-	fs->log("OPENDIR req: %lu ino: %lu", request->id, ino);
+	fbr_rlog(FBR_LOG_OP_DIR, "open req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_directory *stale;
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, ino, &stale);
@@ -53,7 +53,7 @@ _ops_diradd(struct fbr_request *request, struct fbr_dirbuffer *dbuf, struct fbr_
 
 	const char *filename = fbr_path_get_file(&file->path, NULL);
 
-	fs->log("READDIR filename: '%s' inode: %lu", filename, file->inode);
+	fbr_rlog(FBR_LOG_OP_DIR, "read filename: '%s' inode: %lu", filename, file->inode);
 
 	struct stat st;
 	fbr_file_attr(fs, file, &st);
@@ -67,12 +67,13 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fs->log("READDIR req: %lu ino: %lu size: %zu off: %ld", request->id, ino, size, off);
+	fbr_rlog(FBR_LOG_OP_DIR, "read req: %lu ino: %lu size: %zu off: %ld", request->id, ino,
+		size, off);
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 
 	if (reader->end) {
-		fs->log("READDIR return: end");
+		fbr_rlog(FBR_LOG_OP_DIR, "read return: end");
 		fbr_fuse_reply_buf(request, NULL, 0);
 		return;
 	}
@@ -122,7 +123,7 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 	}
 
 	if (dbuf.full) {
-		fs->log("READDIR return: %zu", dbuf.pos);
+		fbr_rlog(FBR_LOG_OP_DIR, "read return: %zu", dbuf.pos);
 		fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
 		return;
 	}
@@ -169,7 +170,7 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 
 		reader->position = file_ptr;
 
-		fs->log("READDIR return: %zu", dbuf.pos);
+		fbr_rlog(FBR_LOG_OP_DIR, "read return: %zu", dbuf.pos);
 		fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
 
 		return;
@@ -177,7 +178,7 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 
 	reader->end = 1;
 
-	fs->log("READDIR return: %zu", dbuf.pos);
+	fbr_rlog(FBR_LOG_OP_DIR, "read return: %zu", dbuf.pos);
 	fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
 }
 
@@ -186,7 +187,7 @@ fbr_ops_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fs->log("RELEASEDIR req: %lu ino: %lu", request->id, ino);
+	fbr_rlog(FBR_LOG_OP_DIR, " release req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 

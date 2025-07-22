@@ -13,7 +13,7 @@ fbr_ops_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fs->log("RELEASE req: %lu ino: %lu", request->id, ino);
+	fbr_rlog(FBR_LOG_OP_RELEASE, "req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 

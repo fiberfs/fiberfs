@@ -144,13 +144,13 @@ void
 fbr_chunk_list_debug(struct fbr_fs *fs, struct fbr_chunk_list *chunks, const char *name)
 {
 	fbr_fs_ok(fs);
-	assert_dev(fs->logger);
 	fbr_chunk_list_ok(chunks);
 
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
-		fs->log("%s chunk[%zu] state: %s, data: %p off: %zu len: %zu id: %lu",
+		fbr_rlog(FBR_LOG_CHUNK, "%s chunk[%zu] state: %s, data: %p off: %zu"
+			" len: %zu id: %lu",
 			name, i, fbr_chunk_state(chunk->state), (void*)chunk->data,
 			chunk->offset, chunk->length, chunk->id);
 	}

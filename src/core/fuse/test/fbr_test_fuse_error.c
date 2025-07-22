@@ -38,8 +38,6 @@ _test_err_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
 
-	fs->logger = fbr_test_fs_logger;
-
 	if (_ERR_STATE == 1) {
 		fbr_test_logs("** INIT doing abort");
 		fbr_ABORT("Forced abort");

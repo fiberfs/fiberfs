@@ -632,7 +632,6 @@ _index_thread(void *arg)
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
-	fs->logger = fbr_test_fs_logger_null;
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
 
 	size_t thread_id = fbr_atomic_add(&_THREAD_COUNT, 1);
@@ -745,7 +744,6 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
-	fs->logger = fbr_test_fs_logger_null;
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
 
 	fbr_test_logs("*** Final read and validation");

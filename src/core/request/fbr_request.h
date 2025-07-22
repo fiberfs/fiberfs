@@ -12,6 +12,7 @@
 #include "fiberfs.h"
 #include "fbr_rlog.h"
 #include "fbr_workspace.h"
+#include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "data/queue.h"

@@ -402,7 +402,7 @@ _test_body_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 	chunk->state = FBR_CHUNK_READY;
 	chunk->data = (void*)chunk->id;
 
-	fs->log("FETCH chunk id: %lu off: %zu len: %zu",
+	fbr_rlog(FBR_LOG_TEST, "FETCH chunk id: %lu off: %zu len: %zu",
 		chunk->id, chunk->offset, chunk->length);
 }
 

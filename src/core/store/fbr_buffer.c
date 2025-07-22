@@ -80,8 +80,9 @@ fbr_buffer_debug(struct fbr_fs *fs, struct fbr_buffer *fbuf, const char *name)
 	while (fbuf) {
 		fbr_buffer_ok(fbuf);
 
-		fs->log("WRITER %s.%zu pos: %zu len: %zu buf_free: %d free: %d", name, i,
-			fbuf->buffer_pos, fbuf->buffer_len, fbuf->buffer_free, fbuf->do_free);
+		fbr_rlog(FBR_LOG_DEBUG, "WRITER %s.%zu pos: %zu len: %zu buf_free: %d free: %d",
+			name, i, fbuf->buffer_pos, fbuf->buffer_len, fbuf->buffer_free,
+			fbuf->do_free);
 
 		fbuf = fbuf->next;
 		i++;

@@ -115,7 +115,7 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	assert(dest->state == FBR_FILE_OK);
 
 	const char *filename = fbr_path_get_file(&dest->path, NULL);
-	fs->log("MERGE '%s' gen: %lu", filename, source->generation);
+	fbr_rlog(FBR_LOG_MERGE, "'%s' gen: %lu", filename, source->generation);
 
 	fbr_fs_stat_add(&fs->stats.merges);
 

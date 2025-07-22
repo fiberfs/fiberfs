@@ -155,7 +155,7 @@ _rlog_test_log(enum fbr_log_type type, unsigned long request_id, const char *fmt
 	char reqid_str[32];
 	fbr_log_reqid_str(request_id, reqid_str, sizeof(reqid_str));
 
-	printf("#%.3f %s:%s %s\n", time, type_str, reqid_str, vbuf);
+	printf("##%.3f %s:%s %s\n", time, type_str, reqid_str, vbuf);
 }
 
 static void

@@ -18,23 +18,6 @@
 #include "test/fbr_test.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
-void __fbr_attr_printf(1)
-fbr_test_fs_logger(const char *fmt, ...)
-{
-	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
-
-	va_list ap;
-	va_start(ap, fmt);
-	fbr_test_vlog(test_ctx, FBR_LOG_VERBOSE, 0, fmt, ap);
-	va_end(ap);
-}
-
-void __fbr_attr_printf(1)
-fbr_test_fs_logger_null(const char *fmt, ...)
-{
-	(void)fmt;
-}
-
 static void
 _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
@@ -43,8 +26,6 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	struct fbr_fs *fs = ctx->fs;
 	fbr_fs_ok(fs);
-
-	fs->logger = fbr_test_fs_logger;
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);
@@ -393,8 +374,6 @@ fbr_test_fs_alloc(void)
 {
 	struct fbr_fs *fs = fbr_fs_alloc();
 	fbr_fs_ok(fs);
-
-	fs->logger = fbr_test_fs_logger;
 
 	return fs;
 }

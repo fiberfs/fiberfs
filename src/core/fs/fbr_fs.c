@@ -48,7 +48,6 @@ fbr_fs_alloc(void)
 	pt_assert(pthread_mutex_init(&fs->lock, NULL));
 
 	fs->store = &_STORE_CALLBACKS_EMPTY;
-	fs->logger = fbr_fs_logger;
 
 	_fs_config_init(fs);
 
