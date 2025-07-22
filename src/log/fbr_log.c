@@ -658,6 +658,14 @@ fbr_log_type_str(enum fbr_log_type type)
 			return "ERROR";
 		case FBR_LOG_FUSE:
 			return "FUSE";
+		case FBR_LOG_REQUEST:
+			return "REQUEST";
+		case FBR_LOG_FS:
+			return "FS";
+		case FBR_LOG_DIR_EXP:
+			return "DIR_EXP";
+		case FBR_LOG_FLUSH:
+			return "FLUSH";
 		default:
 			break;
 	}
@@ -688,8 +696,8 @@ fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len)
 			ret = snprintf(buffer, buffer_len, "%s", "DEBUG");
 			assert_dev(ret > 0 && (size_t)ret < buffer_len);
 			return;
-		case FBR_REQID_FUSE:
-			ret = snprintf(buffer, buffer_len, "%s", "FUSE");
+		case FBR_REQID_CORE:
+			ret = snprintf(buffer, buffer_len, "%s", "CORE");
 			assert_dev(ret > 0 && (size_t)ret < buffer_len);
 			return;
 		default:

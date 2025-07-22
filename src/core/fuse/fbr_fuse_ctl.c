@@ -65,7 +65,7 @@ _fuse_mount_thread(void *arg)
 
 	ctx->exit_value = fuse_session_loop_mt(ctx->session, &config);
 
-	fbr_flog(FBR_LOG_FUSE, FBR_REQID_FUSE, "session exit");
+	fbr_flog(FBR_LOG_FUSE, FBR_REQID_CORE, "session exit");
 
 	ctx->exited = 1;
 
@@ -146,7 +146,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	assert_zero(_FUSE_CTX);
 	_FUSE_CTX = ctx;
 
-	fbr_flog(FBR_LOG_FUSE, FBR_REQID_FUSE, "initialized");
+	fbr_flog(FBR_LOG_FUSE, FBR_REQID_CORE, "initialized");
 
 	pt_assert(pthread_create(&ctx->loop_thread, NULL, _fuse_mount_thread, ctx));
 
@@ -156,19 +156,19 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 		if (ctx->error) {
 			pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
-			fbr_flog(FBR_LOG_ERROR, FBR_REQID_FUSE, "session mount error");
+			fbr_flog(FBR_LOG_ERROR, FBR_REQID_CORE, "session mount error");
 			return 1;
 		} else if (ctx->exited) {
 			pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 			_fuse_error(ctx);
-			fbr_flog(FBR_LOG_ERROR, FBR_REQID_FUSE, "session mount exit error");
+			fbr_flog(FBR_LOG_ERROR, FBR_REQID_CORE, "session mount exit error");
 			return 1;
 		}
 	}
 
 	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 
-	fbr_flog(FBR_LOG_FUSE, FBR_REQID_FUSE, "session mounted");
+	fbr_flog(FBR_LOG_FUSE, FBR_REQID_CORE, "session mounted");
 
 	return 0;
 }
@@ -217,7 +217,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 		return;
 	}
 
-	fbr_flog(FBR_LOG_FUSE, FBR_REQID_FUSE, "unmount starting");
+	fbr_flog(FBR_LOG_FUSE, FBR_REQID_CORE, "unmount starting");
 
 	_fuse_abort(ctx);
 	fbr_request_pool_shutdown(ctx->fs);
@@ -242,7 +242,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	ctx->state = FBR_FUSE_NONE;
 
-	fbr_flog(FBR_LOG_FUSE, FBR_REQID_FUSE, "umount complete");
+	fbr_flog(FBR_LOG_FUSE, FBR_REQID_CORE, "umount complete");
 
 	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 

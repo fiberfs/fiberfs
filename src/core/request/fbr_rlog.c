@@ -177,25 +177,6 @@ fbr_rclog(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, ...)
 	va_end(ap);
 }
 
-static struct fbr_rlog *
-_rlog_get(void)
-{
-	struct fbr_request *request = fbr_request_get();
-	if (!request) {
-		fbr_ASSERT(fbr_is_test(), "request context missing");
-		return NULL;
-	}
-
-	fbr_request_ok(request);
-	fbr_rlog_ok(request->rlog);
-
-	if (fbr_is_test() && !_FORCE_LOG_TEST) {
-		return NULL;
-	}
-
-	return request->rlog;
-}
-
 void __fbr_attr_printf(2)
 fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 {
@@ -205,9 +186,26 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 
-	struct fbr_rlog *rlog = _rlog_get();
+	struct fbr_rlog *rlog = NULL;
+	unsigned long request_id = FBR_REQID_CORE;
+
+	struct fbr_request *request = fbr_request_get();
+	if (!request) {
+		fbr_ASSERT(fbr_is_test(), "request context missing");
+	} else {
+		fbr_request_ok(request);
+		fbr_rlog_ok(request->rlog);
+
+		rlog = request->rlog;
+		request_id = request->id;
+
+		if (fbr_is_test() && !_FORCE_LOG_TEST) {
+			rlog = NULL;
+		}
+	}
+
 	if (!rlog) {
-		_rlog_test_log(type, 0, fmt, ap);
+		_rlog_test_log(type, request_id, fmt, ap);
 		va_end(ap);
 		return;
 	}
@@ -239,9 +237,6 @@ fbr_flog(enum fbr_log_type type, unsigned long request_id, const char *fmt, ...)
 	assert(request_id);
 	assert(fmt && *fmt);
 
-	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
-	fbr_log_ok(fuse_ctx->log);
-
 	va_list ap;
 	va_start(ap, fmt);
 
@@ -250,6 +245,9 @@ fbr_flog(enum fbr_log_type type, unsigned long request_id, const char *fmt, ...)
 		va_end(ap);
 		return;
 	}
+
+	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+	fbr_log_ok(fuse_ctx->log);
 
 	fbr_log_vprint(fuse_ctx->log, type, request_id, fmt, ap);
 

@@ -351,9 +351,8 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_path_name dirname;
 	fbr_directory_name(directory, &dirname);
 
-	assert_dev(fs->logger);
 	if (next) {
-		fs->log("** DIR_EXP inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
+		fbr_rlog(FBR_LOG_DIR_EXP, "inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
 				" next: true next_inode: %lu(%lu)",
 			directory->inode, directory->generation,
 			directory->refcounts.in_dindex,
@@ -362,7 +361,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 			(int)dirname.len, dirname.name, dirname.len,
 			next->inode, next->generation);
 	} else {
-		fs->log("** DIR_EXP inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
+		fbr_rlog(FBR_LOG_DIR_EXP, "inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
 				" next: false",
 			directory->inode, directory->generation,
 			directory->refcounts.in_dindex,
@@ -414,7 +413,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 		int ret;
 
 		if (file_deleted) {
-			fs->log("** FILE_DELETE inode: %lu", file->inode);
+			fbr_rlog(FBR_LOG_DIR_EXP, "DELETE inode: %lu", file->inode);
 
 			file->state = FBR_FILE_EXPIRED;
 
@@ -422,7 +421,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 				file->inode, filename.name, filename.len);
 			assert_dev(ret != -ENOSYS);
 		} else if (file_expired) {
-			fs->log("** FILE_EXP inode: %lu", file->inode);
+			fbr_rlog(FBR_LOG_DIR_EXP, "INVAL inode: %lu", file->inode);
 
 			file->state = FBR_FILE_EXPIRED;
 
@@ -504,11 +503,11 @@ _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_ino
 
 		(*attempts)++;
 		if (*attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
-			fs->log("FLUSH flush_attempts limit hit on alloc");
+			fbr_rlog(FBR_LOG_ERROR, "flush_attempts limit hit on alloc");
 			return NULL;
 		}
 		if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
-			fs->log("FLUSH flush_timeout_sec limit hit on alloc");
+			fbr_rlog(FBR_LOG_ERROR, "flush_timeout_sec limit hit on alloc");
 			return NULL;
 		}
 	}
@@ -528,7 +527,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	fbr_inode_t inode = file->parent_inode;
 	struct fbr_file *parent = fbr_inode_take(fs, inode);
 	if (!parent) {
-		fs->log("FLUSH parent inode missing (%lu)", inode);
+		fbr_rlog(FBR_LOG_ERROR, "flush parent inode missing (%lu)", inode);
 		return ENOENT;
 	}
 
@@ -540,7 +539,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
 
-	fs->log("FLUSH invoked directory: '%s' file: '%s'", dirname.name, filename.name);
+	fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' file: '%s'", dirname.name, filename.name);
 
 	int add_file = 0;
 	int add_file_init = 0;
@@ -616,12 +615,12 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	while (directory) {
 		assert_dev(directory->state == FBR_DIRSTATE_OK);
 
-		fs->log("FLUSH directory: '%s' found generation: %lu attempts: %u", dirname.name,
-			directory->generation, attempts);
+		fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' found generation: %lu attempts: %u",
+			dirname.name, directory->generation, attempts);
 
 		if (directory->generation == last_generation) {
 			// TODO
-			fs->log("FLUSH warning generation hasn't changed");
+			fbr_rlog(FBR_LOG_FLUSH, "warning generation hasn't changed");
 		}
 		last_generation = directory->generation;
 
@@ -668,7 +667,8 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			file->generation++;
 		}
 
-		fs->log("FLUSH file: '%s' generation: %lu", filename.name, file->generation);
+		fbr_rlog(FBR_LOG_FLUSH, "file: '%s' generation: %lu", filename.name,
+			file->generation);
 
 		fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers,
 			flags);
@@ -679,8 +679,8 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		if (!ret) {
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 		} else {
-			fs->log("FLUSH fbr_index_write(new_directory) failed (%d %s)", ret,
-				strerror(ret));
+			fbr_rlog(FBR_LOG_ERROR, "flush fbr_index_write(new_directory) failed"
+				" (%d %s)", ret, strerror(ret));
 
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
 
@@ -709,11 +709,11 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 		attempts++;
 		if (attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
-			fs->log("FLUSH flush_attempts limit hit on write");
+			fbr_rlog(FBR_LOG_ERROR, "flush_attempts limit hit on write");
 			break;
 		}
 		if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
-			fs->log("FLUSH flush_timeout_sec limit hit on write");
+			fbr_rlog(FBR_LOG_ERROR, "flush_timeout_sec limit hit on write");
 			break;
 		}
 
@@ -771,24 +771,25 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode, struct fbr_direct
 
 	fbr_inode_release(fs, &file);
 
-	fs->log("DIRECTORY found: '%s':%zu (inode: %lu)", dirname.name, dirname.len, inode);
+	fbr_rlog(FBR_LOG_FS, "directory found: '%s':%zu (inode: %lu)", dirname.name, dirname.len,
+		inode);
 
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 0);
 
 	if (directory && directory->inode > inode) {
-		fs->log("DIRECTORY inode: %lu found newer inode: %lu (return error)",
+		fbr_rlog(FBR_LOG_FS, "directory inode: %lu found newer inode: %lu (return error)",
 			inode, directory->inode);
 
 		*stale = directory;
 		return NULL;
 	} else if (directory && directory->inode < inode) {
-		fs->log("DIRECTORY inode: %lu mismatch inode: %lu (will make new)",
+		fbr_rlog(FBR_LOG_FS, "directory inode: %lu mismatch inode: %lu (will make new)",
 			inode, directory->inode);
 
 		*stale = directory;
 		directory = NULL;
 	} else if (directory && directory->state == FBR_DIRSTATE_ERROR) {
-		fs->log("DIRECTORY error state (will make new)");
+		fbr_rlog(FBR_LOG_FS, "directory error state (will make new)");
 
 		fbr_dindex_release(fs, &directory);
 		assert_zero_dev(directory);
