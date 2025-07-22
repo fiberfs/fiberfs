@@ -169,6 +169,9 @@ struct fbr_log_line *fbr_log_reader_get(struct fbr_log_reader *reader, void *buf
 void fbr_log_cursor_close(struct fbr_log_cursor *cursor);
 void fbr_log_reader_free(struct fbr_log_reader *reader);
 
+const char *fbr_log_type_str(enum fbr_log_type type);
+void fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len);
+
 #define fbr_log_ok(log)				fbr_magic_check(log, FBR_LOG_MAGIC)
 #define fbr_log_tag_ok(tag)			fbr_magic_check(tag, FBR_LOG_TAG_MAGIC)
 #define fbr_log_header_ok(header)		fbr_magic_check(header, FBR_LOG_HEADER_MAGIC)

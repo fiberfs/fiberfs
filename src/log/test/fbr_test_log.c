@@ -14,7 +14,7 @@
 #include "test/fbr_test.h"
 #include "core/request/test/fbr_test_request_cmds.h"
 
-extern int _RLOG_TEST;
+extern int _FORCE_LOG_TEST;
 
 void
 fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
@@ -140,8 +140,8 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_log_reader reader;
 	fbr_log_reader_init(&reader, logname);
 
-	fbr_log_print(log, FBR_LOG_TEST, FBR_REQUEST_ID_TEST, "111");
-	fbr_log_print(log, FBR_LOG_TEST, FBR_REQUEST_ID_TEST, "TWO TWO TWO");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "111");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "TWO TWO TWO");
 
 	_test_log_debug(log);
 
@@ -154,7 +154,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		i++;
 	}
 
-	fbr_log_print(log, FBR_LOG_TEST, FBR_REQUEST_ID_TEST, "33333333333333333333333");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "33333333333333333333333");
 
 	while ((log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)))) {
 		fbr_test_logs("READER log_buffer[%zu]", i);
@@ -172,8 +172,8 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	memset(big, 6, sizeof(big));
 	fbr_log_append(log, FBR_LOG_TAG_OTHER, 6, big, big_size);
 
-	fbr_log_print(log, FBR_LOG_TEST, FBR_REQUEST_ID_TEST, "12345");
-	fbr_log_print(log, FBR_LOG_TEST, FBR_REQUEST_ID_TEST, "END");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "12345");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "END");
 
 	big_ptr = fbr_log_read(&reader.log, &reader.cursor);
 	assert(reader.cursor.status == FBR_LOG_CURSOR_OK);
@@ -190,7 +190,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
 	assert(reader.cursor.tag.parts.class_data == FBR_LOG_TEST);
-	assert(log_line->request_id == FBR_REQUEST_ID_TEST);
+	assert(log_line->request_id == FBR_REQID_TEST);
 	assert_zero(log_line->truncated);
 	assert_zero(strcmp(log_line->buffer, "END"));
 	_test_logline_debug(log_line);
@@ -322,7 +322,7 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	_RLOG_TEST = 1;
+	_FORCE_LOG_TEST = 1;
 
 	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 	fbr_fuse_mounted(fuse_ctx);

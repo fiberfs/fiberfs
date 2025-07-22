@@ -15,6 +15,7 @@
 
 #include "fiberfs.h"
 #include "test/fbr_test.h"
+#include "log/fbr_log.h"
 
 static int _SRANDOM_INIT;
 
@@ -37,8 +38,7 @@ fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level, int n
 		fbr_test_context_ok(ctx);
 		struct fbr_test *test = fbr_test_convert(ctx);
 
-		if (level != FBR_LOG_FORCE && (test->verbocity == FBR_LOG_NONE ||
-		    test->verbocity < level)) {
+		if (!fbr_test_can_log(test, level)) {
 			return;
 		}
 	}
@@ -53,7 +53,7 @@ fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level, int n
 		prefix = "--- ";
 	}
 
-	char vbuf[FBR_TEST_LOG_BUFMAX];
+	char vbuf[FBR_LOGLINE_MAX_LENGTH];
 	(void)vsnprintf(vbuf, sizeof(vbuf), fmt, ap);
 
 	printf("%s%s%s", prefix, vbuf, newline ? "\n" : "");

@@ -18,6 +18,9 @@
 
 #include "fiberfs.h"
 #include "fbr_log.h"
+#include "core/request/fbr_request.h"
+
+int _FORCE_LOG_TEST;
 
 static void
 _log_init(struct fbr_log *log)
@@ -226,6 +229,7 @@ _log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence, si
 
 	pt_assert(pthread_mutex_lock(&writer->lock));
 
+	assert(writer->time_created == header->time_created);
 	assert(writer->log_pos < writer->log_end);
 
 	writer->stat_appends++;
@@ -639,4 +643,59 @@ fbr_log_reader_free(struct fbr_log_reader *reader)
 	fbr_log_cursor_close(&reader->cursor);
 	_log_close(&reader->log);
 	fbr_ZERO(reader);
+}
+
+const char *
+fbr_log_type_str(enum fbr_log_type type)
+{
+	switch (type) {
+		case FBR_LOG_TEST:
+			return "TEST";
+		case FBR_LOG_DEBUG:
+			return "DEBUG";
+		case FBR_LOG_ERROR:
+			return "ERROR";
+		case FBR_LOG_FUSE:
+			return "FUSE";
+		default:
+			break;
+	}
+
+	return "UNKNOWN";
+}
+
+void
+fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len)
+{
+	assert(buffer);
+	assert(buffer_len);
+
+	int ret;
+
+	if (request_id >= FBR_REQUEST_ID_MIN) {
+		ret = snprintf(buffer, buffer_len, "%lu", request_id);
+		assert_dev(ret > 0 && (size_t)ret < buffer_len);
+		return;
+	}
+
+	switch (request_id) {
+		case FBR_REQID_TEST:
+			ret = snprintf(buffer, buffer_len, "%s", "TEST");
+			assert_dev(ret > 0 && (size_t)ret < buffer_len);
+			return;
+		case FBR_REQID_DEBUG:
+			ret = snprintf(buffer, buffer_len, "%s", "DEBUG");
+			assert_dev(ret > 0 && (size_t)ret < buffer_len);
+			return;
+		case FBR_REQID_FUSE:
+			ret = snprintf(buffer, buffer_len, "%s", "FUSE");
+			assert_dev(ret > 0 && (size_t)ret < buffer_len);
+			return;
+		default:
+			break;
+	}
+
+	ret = snprintf(buffer, buffer_len, "%s", "UNKNOWN");
+	assert_dev(ret > 0 && (size_t)ret < buffer_len);
+	return;
 }

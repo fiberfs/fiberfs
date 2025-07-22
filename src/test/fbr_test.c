@@ -308,6 +308,7 @@ fbr_test_run_all_finish(struct fbr_test *test)
 struct fbr_test_context *
 fbr_test_get_ctx(void)
 {
+	assert(fbr_is_test());
 	fbr_test_ok(_TEST);
 	fbr_test_context_ok(_TEST->context);
 	return _TEST->context;
