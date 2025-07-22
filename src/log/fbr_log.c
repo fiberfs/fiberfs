@@ -666,7 +666,8 @@ fbr_log_type_str(enum fbr_log_type type)
 			return "DIR_EXP";
 		case FBR_LOG_FLUSH:
 			return "FLUSH";
-		default:
+		case __FBR_LOG_TYPE_NONE:
+		case __FBR_LOG_TYPE_END:
 			break;
 	}
 
@@ -700,7 +701,8 @@ fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len)
 			ret = snprintf(buffer, buffer_len, "%s", "CORE");
 			assert_dev(ret > 0 && (size_t)ret < buffer_len);
 			return;
-		default:
+		case FBR_REQID_NONE:
+		case __FBR_REQID_MAX:
 			break;
 	}
 

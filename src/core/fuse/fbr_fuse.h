@@ -10,9 +10,6 @@
 #include <errno.h>
 #include <pthread.h>
 
-#include "fiberfs.h"
-#include "log/fbr_log.h"
-
 enum fbr_fuse_state {
 	FBR_FUSE_NONE = 0,
 	FBR_FUSE_MOUNTED
@@ -57,8 +54,6 @@ void fbr_fuse_unmount(struct fbr_fuse_context *ctx);
 void fbr_fuse_unmount_signal(void);
 
 void fbr_fuse_LOCK(struct fbr_fuse_context *fuse_ctx, pthread_mutex_t *lock);
-void __fbr_attr_printf(3) fbr_flog(enum fbr_log_type type, unsigned long request_id,
-	const char *fmt, ...);
 
 #define fbr_fuse_context_ok(ctx)	fbr_magic_check(ctx, FBR_FUSE_CTX_MAGIC)
 
