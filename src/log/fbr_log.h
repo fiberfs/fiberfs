@@ -171,6 +171,8 @@ void fbr_log_reader_free(struct fbr_log_reader *reader);
 
 const char *fbr_log_type_str(enum fbr_log_type type);
 void fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len);
+void fbr_log_test_init(void);
+double fbr_log_test_time(void);
 
 #define fbr_log_ok(log)				fbr_magic_check(log, FBR_LOG_MAGIC)
 #define fbr_log_tag_ok(tag)			fbr_magic_check(tag, FBR_LOG_TAG_MAGIC)

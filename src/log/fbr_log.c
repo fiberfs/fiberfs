@@ -21,6 +21,7 @@
 #include "core/request/fbr_request.h"
 
 int _FORCE_LOG_TEST;
+double _LOG_TEST_START;
 
 static void
 _log_init(struct fbr_log *log)
@@ -698,4 +699,26 @@ fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len)
 	ret = snprintf(buffer, buffer_len, "%s", "UNKNOWN");
 	assert_dev(ret > 0 && (size_t)ret < buffer_len);
 	return;
+}
+
+void
+fbr_log_test_init(void)
+{
+	assert(fbr_is_test());
+	assert_zero(_LOG_TEST_START);
+	_LOG_TEST_START = fbr_get_time();
+}
+
+double
+fbr_log_test_time(void)
+{
+	assert(fbr_is_test());
+	assert(_LOG_TEST_START);
+
+	double now = fbr_get_time();
+	assert(now >= _LOG_TEST_START);
+
+	now -= _LOG_TEST_START;
+
+	return now;
 }

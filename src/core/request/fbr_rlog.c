@@ -145,6 +145,8 @@ _rlog_test_log(enum fbr_log_type type, unsigned long request_id, const char *fmt
 		return;
 	}
 
+	double time = fbr_log_test_time();
+
 	char vbuf[FBR_LOGLINE_MAX_LENGTH];
 	(void)vsnprintf(vbuf, sizeof(vbuf), fmt, ap);
 
@@ -153,7 +155,7 @@ _rlog_test_log(enum fbr_log_type type, unsigned long request_id, const char *fmt
 	char reqid_str[32];
 	fbr_log_reqid_str(request_id, reqid_str, sizeof(reqid_str));
 
-	printf("#%s:%s %s\n", type_str, reqid_str, vbuf);
+	printf("#%.3f %s:%s %s\n", time, type_str, reqid_str, vbuf);
 }
 
 void __fbr_attr_printf(3)

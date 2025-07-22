@@ -10,6 +10,7 @@
 
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
+#include "log/fbr_log.h"
 
 int _IS_FIBERFS_TEST;
 static struct fbr_test *_TEST;
@@ -143,14 +144,15 @@ fbr_test_main(int argc, char **argv)
 {
 	struct fbr_test test;
 
+	_IS_FIBERFS_TEST = 1;
+
+	fbr_log_test_init();
 	fbr_setup_crash_signals();
 
 	_init_test(&test);
 	fbr_test_cmds_init(&test);
 
 	pt_assert(pthread_mutex_init(&_FINISH_LOCK, NULL));
-
-	_IS_FIBERFS_TEST = 1;
 
 	test.prog_name = argv[0];
 
