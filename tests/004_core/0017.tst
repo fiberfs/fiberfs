@@ -3,7 +3,7 @@ fiber_test "Mount fs fuse and do external tests (small)"
 # Init
 
 set_timeout_sec 20
-test_log_size 250000
+test_log_size 500000
 
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir
