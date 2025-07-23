@@ -641,9 +641,12 @@ fbr_cmd_test_log_printer(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_log_free(log);
 
-	fbr_test_sleep_ms(50);
-
 	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {
+		int max = 20;
+		while (max && fbr_test_log_printer_lines() != 3) {
+			fbr_test_sleep_ms(25);
+			max--;
+		}
 		assert(fbr_test_log_printer_lines() == 3);
 	} else {
 		assert_zero(fbr_test_log_printer_lines());
