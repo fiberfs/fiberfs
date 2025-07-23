@@ -453,7 +453,8 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int ret = snprintf(logname, sizeof(logname), "/test/loop/%ld/%d", random(), getpid());
 	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
-	struct fbr_log *log = fbr_log_alloc(logname, fbr_log_default_size() + random() % 11111);
+	struct fbr_log *log = fbr_log_alloc(logname, fbr_log_default_size() +
+		(random() % (fbr_log_default_size() * 3)));
 	fbr_log_ok(log);
 	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);
