@@ -18,7 +18,7 @@
 
 #define FBR_LOG_SEGMENTS			8
 #define FBR_LOG_VERSION				1
-#define FBR_LOG_DEFAULT_SIZE			(65 * 1024UL)
+#define __FBR_LOG_DEFAULT_SIZE			(65 * 1024UL)
 #define FBR_LOG_SEGMENT_MIN_SIZE		(8 * 1024UL)
 #define FBR_LOGLINE_MAX_LENGTH			(4 * 1024UL)
 #define FBR_LOG_TYPE_SIZE			(sizeof(fbr_log_data_t))
@@ -148,6 +148,7 @@ struct fbr_log_line {
 	char					buffer[];
 };
 
+size_t fbr_log_default_size(void);
 struct fbr_log *fbr_log_alloc(const char *name, size_t size);
 fbr_log_data_t fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_class class,
 	unsigned short class_data, unsigned short length);

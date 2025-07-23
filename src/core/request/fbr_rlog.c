@@ -14,8 +14,6 @@
 
 #include "test/fbr_test.h"
 
-extern int _FORCE_LOG_TEST;
-
 static void
 _rlog_init(struct fbr_rlog *rlog, size_t rlog_size, unsigned long request_id)
 {
@@ -165,7 +163,8 @@ _flog(enum fbr_log_type type, unsigned long request_id, const char *fmt, va_list
 	assert_dev(request_id);
 	assert_dev(fmt && *fmt);
 
-	if (fbr_is_test() && !_FORCE_LOG_TEST) {
+	if (!fbr_fuse_has_context()) {
+		assert(fbr_is_test());
 		_rlog_test_log(type, request_id, fmt, ap);
 		return;
 	}
@@ -189,17 +188,13 @@ _rlog(enum fbr_log_type type, const char *fmt, va_list ap)
 	if (!request) {
 		_flog(type, request_id, fmt, ap);
 		return;
-	} else {
-		fbr_request_ok(request);
-		fbr_rlog_ok(request->rlog);
-
-		rlog = request->rlog;
-		request_id = request->id;
-
-		if (fbr_is_test() && !_FORCE_LOG_TEST) {
-			rlog = NULL;
-		}
 	}
+
+	fbr_request_ok(request);
+	fbr_rlog_ok(request->rlog);
+
+	rlog = request->rlog;
+	request_id = request->id;
 
 	if (!rlog) {
 		_rlog_test_log(type, request_id, fmt, ap);

@@ -31,6 +31,16 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 	fbr_fuse_context_ok(ctx);
 }
 
+int
+fbr_fuse_has_context(void)
+{
+	if (_FUSE_CTX) {
+		return 1;
+	}
+
+	return 0;
+}
+
 struct fbr_fuse_context *
 fbr_fuse_get_context(void)
 {
@@ -135,7 +145,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	ctx->state = FBR_FUSE_MOUNTED;
 
-	ctx->log = fbr_log_alloc(ctx->path, FBR_LOG_DEFAULT_SIZE);
+	ctx->log = fbr_log_alloc(ctx->path, fbr_log_default_size());
 	fbr_log_ok(ctx->log);
 
 	ctx->fs = fbr_fs_alloc();

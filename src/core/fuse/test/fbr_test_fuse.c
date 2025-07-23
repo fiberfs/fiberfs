@@ -148,7 +148,7 @@ fbr_test_fuse_mock(struct fbr_test_context *test_ctx)
 	}
 
 	if (!fuse_ctx->log) {
-		fuse_ctx->log = fbr_log_alloc(fuse_ctx->path, FBR_LOG_DEFAULT_SIZE);
+		fuse_ctx->log = fbr_log_alloc(fuse_ctx->path, fbr_log_default_size());
 		fbr_log_ok(fuse_ctx->log);
 	}
 

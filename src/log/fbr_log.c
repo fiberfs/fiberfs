@@ -20,8 +20,16 @@
 #include "fbr_log.h"
 #include "core/request/fbr_request.h"
 
-int _FORCE_LOG_TEST;
+size_t _FBR_LOG_DEFAULT_SIZE = __FBR_LOG_DEFAULT_SIZE;
+
 double _LOG_TEST_START;
+
+size_t
+fbr_log_default_size(void)
+{
+	assert(_FBR_LOG_DEFAULT_SIZE >= __FBR_LOG_DEFAULT_SIZE);
+	return _FBR_LOG_DEFAULT_SIZE;
+}
 
 static void
 _log_init(struct fbr_log *log)

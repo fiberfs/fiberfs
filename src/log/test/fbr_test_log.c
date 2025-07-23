@@ -9,14 +9,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "core/fuse/fbr_fuse.h"
 #include "core/request/fbr_request.h"
 #include "log/fbr_log.h"
 
 #include "test/fbr_test.h"
 #include "fbr_test_log_cmds.h"
+#include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
-
-extern int _FORCE_LOG_TEST;
 
 struct fbr_test_log_printer {
 	unsigned int				magic;
@@ -27,9 +27,28 @@ struct fbr_test_log_printer {
 	int					thread_running;
 	int					thread_exit;
 	int					silent;
+	size_t					lines;
 };
 
 #define fbr_test_log_printer_ok(print)		fbr_magic_check(print, FBR_TEST_LOG_PRINT_MAGIC)
+
+extern size_t _FBR_LOG_DEFAULT_SIZE;
+
+void
+fbr_cmd_test_log_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	long size = fbr_test_parse_long(cmd->params[0].value);
+	assert(size > 0 && (size_t)size >= __FBR_LOG_DEFAULT_SIZE);
+
+	_FBR_LOG_DEFAULT_SIZE = size;
+
+	assert(fbr_log_default_size() == (size_t)size);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_size: %zu", fbr_log_default_size());
+}
 
 static void *
 _test_log_printer_thread(void *arg)
@@ -47,6 +66,8 @@ _test_log_printer_thread(void *arg)
 
 	fbr_test_logs("### log printer running (%s)", reader->log.shm_name);
 
+	unsigned int sleep_count = 0;
+
 	while (1) {
 		char log_buffer[FBR_LOGLINE_MAX_LENGTH];
 		struct fbr_log_line *log_line;
@@ -57,17 +78,26 @@ _test_log_printer_thread(void *arg)
 			if (reader->cursor.status == FBR_LOG_CURSOR_EXIT) {
 				break;
 			}
-			assert(reader->cursor.status == FBR_LOG_CURSOR_EOF);
+			fbr_ASSERT(reader->cursor.status == FBR_LOG_CURSOR_EOF,
+				"cursor.status=%d", reader->cursor.status);
 
 			if (printer->thread_exit) {
 				break;
 			}
 
-			fbr_test_sleep_ms(10);
+			fbr_test_sleep_ms(sleep_count);
+
+			if (sleep_count < 20) {
+				sleep_count++;
+			}
+
 			continue;
 		}
 
 		assert(reader->cursor.status == FBR_LOG_CURSOR_OK);
+
+		printer->lines++;
+		sleep_count = 0;
 
 		if (printer->silent) {
 			continue;
@@ -152,6 +182,16 @@ fbr_test_log_printer_silent(int silent)
 	fbr_test_log_printer_ok(test_ctx->printer);
 
 	test_ctx->printer->silent = silent;
+}
+
+size_t
+fbr_test_log_printer_lines(void)
+{
+	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
+	fbr_test_context_ok(test_ctx);
+	fbr_test_log_printer_ok(test_ctx->printer);
+
+	return test_ctx->printer->lines;
 }
 
 void
@@ -251,9 +291,22 @@ _test_logline_debug(struct fbr_log_line *log_line)
 	fbr_test_logs("LOG_LINE->start: %u", log_line->start);
 	fbr_test_logs("LOG_LINE->end: %u", log_line->end);
 	fbr_test_logs("LOG_LINE->request_id: %lu", log_line->request_id);
+	fbr_test_logs("LOG_LINE->timestamp: %f", log_line->timestamp);
 	fbr_test_logs("LOG_LINE->buffer: '%s'", log_line->buffer);
 
 	assert(log_line->length == strlen(log_line->buffer));
+}
+
+void
+fbr_cmd_test_log_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_log_ok(fuse_ctx->log);
+
+	_test_log_debug(fuse_ctx->log);
 }
 
 void
@@ -268,7 +321,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int ret = snprintf(logname, sizeof(logname), "/test/init/%ld/%d", random(), getpid());
 	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
-	struct fbr_log *log = fbr_log_alloc(logname, FBR_LOG_DEFAULT_SIZE);
+	struct fbr_log *log = fbr_log_alloc(logname, fbr_log_default_size());
 	fbr_log_ok(log);
 	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);
@@ -362,7 +415,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** exit");
 
-	log = fbr_log_alloc(logname, FBR_LOG_DEFAULT_SIZE);
+	log = fbr_log_alloc(logname, fbr_log_default_size());
 	fbr_log_ok(log);
 
 	fbr_log_reader_init(&reader, logname);
@@ -398,7 +451,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int ret = snprintf(logname, sizeof(logname), "/test/loop/%ld/%d", random(), getpid());
 	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
-	struct fbr_log *log = fbr_log_alloc(logname, FBR_LOG_DEFAULT_SIZE);
+	struct fbr_log *log = fbr_log_alloc(logname, fbr_log_default_size() + random() % 11111);
 	fbr_log_ok(log);
 	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);
@@ -483,10 +536,10 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	_FORCE_LOG_TEST = 1;
-
 	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 	fbr_fuse_mounted(fuse_ctx);
+
+	fbr_test_log_printer_silent(1);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** Logging on request");
 
@@ -507,27 +560,28 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	char log_buffer[FBR_LOGLINE_MAX_LENGTH];
 	struct fbr_log_line *log_line;
 
-	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	do {
+		log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	} while (log_line && reader.cursor.tag.parts.class_data != FBR_LOG_TEST);
 	fbr_test_logs("READER[0]");
 	_test_logline_debug(log_line);
 	assert_zero(strcmp(log_line->buffer, "TEST 1"));
 
-	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	do {
+		log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	} while (log_line && reader.cursor.tag.parts.class_data != FBR_LOG_TEST);
 	fbr_test_logs("READER[1]");
 	_test_logline_debug(log_line);
 	assert_zero(strcmp(log_line->buffer, "TEST 2"));
 
-	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	do {
+		log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	} while (log_line && reader.cursor.tag.parts.class_data != FBR_LOG_TEST);
 	fbr_test_logs("READER[2]");
 	_test_logline_debug(log_line);
 	assert_zero(strcmp(log_line->buffer, "TEST THREE"));
 
-	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
-	assert_zero(log_line);
-
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** Flush loop");
-
-	fbr_test_log_printer_silent(1);
 
 	struct fbr_request *r2 = fbr_test_request_mock();
 	fbr_request_ok(r2);
@@ -542,10 +596,16 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	i = 0;
 	while ((log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)))) {
+		if (reader.cursor.tag.parts.class_data != FBR_LOG_TEST) {
+			continue;
+		}
+
 		size_t len = strlen(log_line->buffer);
+
 		fbr_test_logs("READER log_buffer[%zu]:%zu", i, len);
 		assert_zero(log_line->truncated);
 		assert(len == sizeof(buffer) - 1);
+
 		i++;
 	}
 	assert(i == 19);
@@ -562,23 +622,30 @@ fbr_cmd_test_log_printer(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	_FORCE_LOG_TEST = 1;
-
 	fbr_test_random_seed();
 
 	char logname[100];
 	int ret = snprintf(logname, sizeof(logname), "/test/printer/%ld/%d", random(), getpid());
 	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
-	struct fbr_log *log = fbr_log_alloc(logname, FBR_LOG_DEFAULT_SIZE);
+	struct fbr_log *log = fbr_log_alloc(logname, fbr_log_default_size());
 	fbr_log_ok(log);
 
 	fbr_test_log_printer_init(ctx, logname);
 
 	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "One!");
 	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "Message two!");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "Last message here, bye");
 
 	fbr_log_free(log);
+
+	fbr_test_sleep_ms(50);
+
+	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {
+		assert(fbr_test_log_printer_lines() == 3);
+	} else {
+		assert_zero(fbr_test_log_printer_lines());
+	}
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_printer passed");
 }

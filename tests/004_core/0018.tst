@@ -3,6 +3,7 @@ fiber_test "Mount fs fuse and do external tests"
 # Init
 
 set_timeout_sec 30
+test_log_size 250000
 
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir
@@ -62,6 +63,8 @@ equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
+
+test_log_debug
 
 fuse_test_unmount
 
