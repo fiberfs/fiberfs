@@ -164,7 +164,6 @@ _flog(enum fbr_log_type type, unsigned long request_id, const char *fmt, va_list
 	assert_dev(fmt && *fmt);
 
 	if (!fbr_fuse_has_context()) {
-		assert(fbr_is_test());
 		_rlog_test_log(type, request_id, fmt, ap);
 		return;
 	}
@@ -181,27 +180,16 @@ _rlog(enum fbr_log_type type, const char *fmt, va_list ap)
 	assert_dev(type);
 	assert_dev(fmt && *fmt);
 
-	struct fbr_rlog *rlog = NULL;
-	unsigned long request_id = FBR_REQID_CORE;
-
 	struct fbr_request *request = fbr_request_get();
 	if (!request) {
-		_flog(type, request_id, fmt, ap);
+		_flog(type, FBR_REQID_CORE, fmt, ap);
 		return;
 	}
 
 	fbr_request_ok(request);
 	fbr_rlog_ok(request->rlog);
 
-	rlog = request->rlog;
-	request_id = request->id;
-
-	if (!rlog) {
-		_rlog_test_log(type, request_id, fmt, ap);
-		return;
-	}
-
-	_rlog_log(rlog, type, fmt, ap);
+	_rlog_log(request->rlog, type, fmt, ap);
 }
 
 void __fbr_attr_printf(2)
