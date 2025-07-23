@@ -78,6 +78,8 @@ _test_log_printer_thread(void *arg)
 			if (reader->cursor.status == FBR_LOG_CURSOR_EXIT) {
 				break;
 			}
+			fbr_ASSERT(reader->cursor.status != FBR_LOG_CURSOR_OVERFLOW,
+				"### LOG OVERFLOW ###");
 			fbr_ASSERT(reader->cursor.status == FBR_LOG_CURSOR_EOF,
 				"cursor.status=%d", reader->cursor.status);
 
