@@ -64,6 +64,7 @@ struct fbr_log_header {
 #define FBR_LOG_HEADER_MAGIC			0xF8F8AAF2
 
 	int					version;
+	int					exit;
 	double					time_created;
 
 	size_t					segments;
@@ -93,6 +94,7 @@ enum fbr_log_cursor_status {
 	FBR_LOG_CURSOR_OK = 0,
 	FBR_LOG_CURSOR_EOF,
 	FBR_LOG_CURSOR_ERROR,
+	FBR_LOG_CURSOR_EXIT,
 	FBR_LOG_CURSOR_OVERFLOW
 };
 

@@ -438,7 +438,13 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 
 	if (tag.parts.class == FBR_LOG_TAG_EOF) {
 		assert(tag.parts.class_data == FBR_LOG_TAG_EOF_DATA);
-		cursor->status = FBR_LOG_CURSOR_EOF;
+
+		if (header->exit) {
+			cursor->status = FBR_LOG_CURSOR_EXIT;
+		} else {
+			cursor->status = FBR_LOG_CURSOR_EOF;
+		}
+
 		return NULL;
 	}
 
@@ -461,6 +467,12 @@ _log_close(struct fbr_log *log)
 	assert(log->shm_fd >= 0);
 	assert(*log->shm_name);
 	assert(log->mmap_ptr);
+
+	if (log->writer.valid) {
+		fbr_log_header_ok(log->header);
+		assert_zero_dev(log->header->exit);
+		log->header->exit = 1;
+	}
 
 	int ret = close(log->shm_fd);
 	assert_zero(ret);
@@ -682,6 +694,8 @@ fbr_log_type_str(enum fbr_log_type type)
 			return "WBUFFER";
 		case FBR_LOG_INDEX:
 			return "INDEX";
+		case FBR_LOG_OP:
+			return "OP";
 		case FBR_LOG_OP_READ:
 			return "OP_READ";
 		case FBR_LOG_OP_DIR:

@@ -222,6 +222,29 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_log_reader_free(&reader);
 	fbr_log_free(log);
 
+	fbr_test_logs("*** exit");
+
+	log = fbr_log_alloc(logname, FBR_LOG_DEFAULT_SIZE);
+	fbr_log_ok(log);
+
+	fbr_log_reader_init(&reader, logname);
+
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "one");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "222");
+
+	fbr_log_free(log);
+
+	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	assert_zero(strcmp(log_line->buffer, "one"));
+
+	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	assert_zero(strcmp(log_line->buffer, "222"));
+
+	assert_zero(fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)));
+	assert(reader.cursor.status == FBR_LOG_CURSOR_EXIT);
+
+	fbr_log_reader_free(&reader);
+
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_init passed");
 }
 
