@@ -33,6 +33,7 @@ _finish_test(struct fbr_test_context *ctx)
 
 	fbr_finish_ERROR(ctx->sys != NULL, "sys detected");
 	fbr_finish_ERROR(ctx->test_fuse != NULL, "test_fuse detected");
+	fbr_finish_ERROR(ctx->printer != NULL, "printer detected");
 	fbr_finish_ERROR(ctx->random != NULL, "random detected");
 	fbr_finish_ERROR(ctx->var != NULL, "var detected");
 	fbr_finish_ERROR(ctx->shell != NULL, "shell detected");

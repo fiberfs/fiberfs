@@ -11,10 +11,12 @@
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "core/request/fbr_request.h"
+#include "log/fbr_log.h"
 
 #include "test/fbr_test.h"
 #include "fbr_test_fuse_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
+#include "log/test/fbr_test_log_cmds.h"
 
 extern struct fbr_fuse_context *_FUSE_CTX;
 
@@ -48,6 +50,7 @@ _fuse_init(struct fbr_test_context *test_ctx)
 		struct fbr_test_fuse *test_fuse = malloc(sizeof(*test_fuse));
 		assert(test_fuse);
 
+		fbr_ZERO(test_fuse);
 		test_fuse->magic = FBR_TEST_FUSE_MAGIC;
 
 		test_ctx->test_fuse = test_fuse;
@@ -87,6 +90,8 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 		return ret;
 	}
 
+	fbr_test_log_printer_init(test_ctx, path);
+
 	return ctx->error;
 }
 
@@ -120,13 +125,34 @@ fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx)
 struct fbr_fs *
 fbr_test_fuse_mock(struct fbr_test_context *test_ctx)
 {
-	struct fbr_fuse_context *ctx = _fuse_init(test_ctx);
-	fbr_fuse_init(ctx);
-	_FUSE_CTX = ctx;
-	assert(fbr_fuse_get_context() == ctx);
+	struct fbr_fuse_context *fuse_ctx = _fuse_init(test_ctx);
+	if (!fuse_ctx->magic) {
+		fbr_fuse_init(fuse_ctx);
+		_FUSE_CTX = fuse_ctx;
+	} else {
+		fbr_fuse_context_ok(fuse_ctx);
+	}
+	assert(fbr_fuse_get_context() == fuse_ctx);
 
-	struct fbr_fs *fs = fbr_test_fs_alloc();
-	ctx->fs = fs;
+	fuse_ctx->fs = fbr_test_fs_alloc();
+	fbr_fs_ok(fuse_ctx->fs);
 
-	return fs;
+	if (!fuse_ctx->path) {
+		fbr_test_random_seed();
+
+		char mock_name[100];
+		int ret = snprintf(mock_name, sizeof(mock_name), "/fuse/mock/%ld/%d", random(), getpid());
+		assert(ret > 0 && (size_t)ret < sizeof(mock_name));
+		fuse_ctx->path = strdup(mock_name);
+		assert(fuse_ctx->path);
+	}
+
+	if (!fuse_ctx->log) {
+		fuse_ctx->log = fbr_log_alloc(fuse_ctx->path, FBR_LOG_DEFAULT_SIZE);
+		fbr_log_ok(fuse_ctx->log);
+	}
+
+	fbr_test_log_printer_init(test_ctx, fuse_ctx->path);
+
+	return fuse_ctx->fs;
 }

@@ -4,6 +4,7 @@
  *
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -12,9 +13,146 @@
 #include "log/fbr_log.h"
 
 #include "test/fbr_test.h"
+#include "fbr_test_log_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
 
 extern int _FORCE_LOG_TEST;
+
+struct fbr_test_log_printer {
+	unsigned int				magic;
+#define FBR_TEST_LOG_PRINT_MAGIC		0x57A22B5D
+
+	struct fbr_log_reader			reader;
+	pthread_t				thread;
+	int					thread_running;
+	int					thread_exit;
+	int					silent;
+};
+
+#define fbr_test_log_printer_ok(print)		fbr_magic_check(print, FBR_TEST_LOG_PRINT_MAGIC)
+
+static void *
+_test_log_printer_thread(void *arg)
+{
+	struct fbr_test_log_printer *printer = arg;
+	fbr_test_log_printer_ok(printer);
+
+	struct fbr_log_reader *reader = &printer->reader;
+	fbr_log_reader_ok(reader);
+
+	struct fbr_log_header *header = reader->log.header;
+	fbr_log_header_ok(header);
+
+	printer->thread_running = 1;
+
+	fbr_test_logs("### log printer running (%s)", reader->log.shm_name);
+
+	while (1) {
+		char log_buffer[FBR_LOGLINE_MAX_LENGTH];
+		struct fbr_log_line *log_line;
+
+		log_line = fbr_log_reader_get(reader, log_buffer, sizeof(log_buffer));
+
+		if (!log_line) {
+			if (reader->cursor.status == FBR_LOG_CURSOR_EXIT) {
+				break;
+			}
+			assert(reader->cursor.status == FBR_LOG_CURSOR_EOF);
+
+			if (printer->thread_exit) {
+				break;
+			}
+
+			fbr_test_sleep_ms(10);
+			continue;
+		}
+
+		assert(reader->cursor.status == FBR_LOG_CURSOR_OK);
+
+		if (printer->silent) {
+			continue;
+		}
+
+		double time = log_line->timestamp - header->time_created;
+		assert(time >= 0);
+
+		const char *type_str = fbr_log_type_str(reader->cursor.tag.parts.class_data);
+
+		char reqid_str[32];
+		fbr_log_reqid_str(log_line->request_id, reqid_str, sizeof(reqid_str));
+
+		printf("#%.3f %s:%s %s\n", time, type_str, reqid_str, log_line->buffer);
+	}
+
+	fbr_test_logs("### log printer exit");
+
+	return NULL;
+}
+
+static void
+_test_printer_finish(struct fbr_test_context *test_ctx)
+{
+	fbr_test_context_ok(test_ctx);
+
+	struct fbr_test_log_printer *printer = test_ctx->printer;
+	fbr_test_log_printer_ok(printer);
+
+	if (printer->thread_running) {
+		assert_zero(printer->thread_exit);
+		fbr_log_reader_ok(&printer->reader);
+
+		printer->thread_exit = 1;
+
+		pt_assert(pthread_join(printer->thread, NULL));
+
+		fbr_log_reader_free(&printer->reader);
+	}
+
+	fbr_ZERO(printer);
+	free(printer);
+	test_ctx->printer = NULL;
+}
+
+void
+fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname)
+{
+	fbr_test_context_ok(test_ctx);
+	assert(logname);
+
+	if (test_ctx->printer) {
+		fbr_test_log_printer_ok(test_ctx->printer);
+		return;
+	}
+
+	struct fbr_test_log_printer *printer = calloc(1, sizeof(*printer));
+	assert(printer);
+	printer->magic = FBR_TEST_LOG_PRINT_MAGIC;
+	fbr_test_log_printer_ok(printer);
+
+	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {
+		fbr_log_reader_init(&printer->reader, logname);
+
+		pt_assert(pthread_create(&printer->thread, NULL, _test_log_printer_thread, printer));
+
+		while (!printer->thread_running) {
+			fbr_test_sleep_ms(1);
+		}
+	}
+
+	test_ctx->printer = printer;
+
+	fbr_test_register_finish(test_ctx, "printer", _test_printer_finish);
+}
+
+void
+fbr_test_log_printer_silent(int silent)
+{
+	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
+	fbr_test_context_ok(test_ctx);
+	fbr_test_log_printer_ok(test_ctx->printer);
+
+	test_ctx->printer->silent = silent;
+}
 
 void
 fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
@@ -389,6 +527,8 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** Flush loop");
 
+	fbr_test_log_printer_silent(1);
+
 	struct fbr_request *r2 = fbr_test_request_mock();
 	fbr_request_ok(r2);
 
@@ -414,4 +554,31 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_log_reader_free(&reader);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_rlog passed");
+}
+
+void
+fbr_cmd_test_log_printer(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_FORCE_LOG_TEST = 1;
+
+	fbr_test_random_seed();
+
+	char logname[100];
+	int ret = snprintf(logname, sizeof(logname), "/test/printer/%ld/%d", random(), getpid());
+	assert(ret > 0 && (size_t)ret < sizeof(logname));
+
+	struct fbr_log *log = fbr_log_alloc(logname, FBR_LOG_DEFAULT_SIZE);
+	fbr_log_ok(log);
+
+	fbr_test_log_printer_init(ctx, logname);
+
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "One!");
+	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "Message two!");
+
+	fbr_log_free(log);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_printer passed");
 }

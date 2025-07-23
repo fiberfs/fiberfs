@@ -625,7 +625,7 @@ fbr_log_reader_get(struct fbr_log_reader *reader, void *buffer, size_t buffer_le
 
 	memcpy(buffer, log_line_read, log_line_len);
 	struct fbr_log_line *log_line = buffer;
-	fbr_logline_ok_dev(log_line);
+	fbr_logline_ok(log_line);
 
 	if (truncated) {
 		log_line->length = buffer_len - sizeof(struct fbr_log_line) - 1;
