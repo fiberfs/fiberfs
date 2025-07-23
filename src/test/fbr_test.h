@@ -169,6 +169,7 @@ int fbr_test_can_vfork(struct fbr_test_context *ctx);
 char *fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot);
 
 int fbr_test_can_log(struct fbr_test *test, enum fbr_test_verbocity level);
+int fbr_is_test(void);
 struct fbr_test *fbr_test_convert(struct fbr_test_context *ctx);
 void fbr_test_skip(struct fbr_test_context *ctx);
 void fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level,

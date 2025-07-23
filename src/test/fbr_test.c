@@ -10,6 +10,7 @@
 
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
+#include "core/request/fbr_rlog.h"
 #include "log/fbr_log.h"
 
 int _IS_FIBERFS_TEST;
@@ -147,7 +148,7 @@ fbr_test_main(int argc, char **argv)
 
 	_IS_FIBERFS_TEST = 1;
 
-	fbr_log_test_init();
+	fbr_rlog_test_init();
 	fbr_setup_crash_signals();
 
 	_init_test(&test);

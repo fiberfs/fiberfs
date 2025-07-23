@@ -7,6 +7,10 @@
 #include "fiberfs.h"
 #include "test/fbr_test.h"
 
+// Note: link in versions of these functions which both return 0 for fuse releases
+
+extern int _IS_FIBERFS_TEST;
+
 int
 fbr_test_can_log(struct fbr_test *test, enum fbr_test_verbocity level)
 {
@@ -23,4 +27,15 @@ fbr_test_can_log(struct fbr_test *test, enum fbr_test_verbocity level)
 	}
 
 	return 1;
+}
+
+// This checks if we are running under a fiber_test context
+int
+fbr_is_test(void)
+{
+	if (_IS_FIBERFS_TEST) {
+		return 1;
+	}
+
+	return 0;
 }

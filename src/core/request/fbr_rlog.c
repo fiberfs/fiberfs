@@ -14,6 +14,10 @@
 
 #include "test/fbr_test.h"
 
+double _LOG_TEST_START;
+
+static double _rlog_test_time(void);
+
 static void
 _rlog_init(struct fbr_rlog *rlog, size_t rlog_size, unsigned long request_id)
 {
@@ -143,7 +147,7 @@ _rlog_test_log(enum fbr_log_type type, unsigned long request_id, const char *fmt
 		return;
 	}
 
-	double time = fbr_log_test_time();
+	double time = _rlog_test_time();
 
 	char vbuf[FBR_LOGLINE_MAX_LENGTH];
 	(void)vsnprintf(vbuf, sizeof(vbuf), fmt, ap);
@@ -233,4 +237,26 @@ fbr_rlog_free(struct fbr_rlog **rlog_p)
 	fbr_rlog_flush(rlog);
 
 	fbr_ZERO(rlog);
+}
+
+void
+fbr_rlog_test_init(void)
+{
+	assert(fbr_is_test());
+	assert_zero(_LOG_TEST_START);
+	_LOG_TEST_START = fbr_get_time();
+}
+
+static double
+_rlog_test_time(void)
+{
+	assert(fbr_is_test());
+	assert(_LOG_TEST_START);
+
+	double now = fbr_get_time();
+	assert(now >= _LOG_TEST_START);
+
+	now -= _LOG_TEST_START;
+
+	return now;
 }
