@@ -6,6 +6,7 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -84,4 +85,15 @@ fbr_is_dev(void)
 #else
 	return 1;
 #endif
+}
+
+void
+fbr_strcpy(char *dest, size_t dest_len, char *source)
+{
+	assert(dest);
+	assert(dest_len);
+	assert(source);
+
+	int ret = snprintf(dest, dest_len, "%s", source);
+	assert_dev(ret >= 0 && (size_t)ret < dest_len);
 }

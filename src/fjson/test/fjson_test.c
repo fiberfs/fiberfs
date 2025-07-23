@@ -179,7 +179,7 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 	}
 
 	if (cmd->params[0].value[0] == '/') {
-		snprintf(path, sizeof(path), "%s", cmd->params[0].value);
+		fbr_strcpy(path, sizeof(path), cmd->params[0].value);
 	} else {
 		char *rpath = realpath(ctx->test->test_file, path);
 		fbr_test_ERROR(rpath != path, "realpath failed");
@@ -199,7 +199,7 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 
 		rpath = &path[pos + 1];
 
-		snprintf(rpath, sizeof(path) - pos, "%s", cmd->params[0].value);
+		fbr_strcpy(rpath, sizeof(path) - pos, cmd->params[0].value);
 	}
 
 	int fd = open(path, O_RDONLY);

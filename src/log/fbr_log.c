@@ -738,33 +738,26 @@ fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len)
 	assert(buffer);
 	assert(buffer_len);
 
-	int ret;
-
 	if (request_id >= FBR_REQUEST_ID_MIN) {
-		ret = snprintf(buffer, buffer_len, "%lu", request_id);
+		int ret = snprintf(buffer, buffer_len, "%lu", request_id);
 		assert_dev(ret > 0 && (size_t)ret < buffer_len);
 		return;
 	}
 
 	switch (request_id) {
 		case FBR_REQID_TEST:
-			ret = snprintf(buffer, buffer_len, "%s", "TEST");
-			assert_dev(ret > 0 && (size_t)ret < buffer_len);
+			fbr_strcpy(buffer, buffer_len, "TEST");
 			return;
 		case FBR_REQID_DEBUG:
-			ret = snprintf(buffer, buffer_len, "%s", "DEBUG");
-			assert_dev(ret > 0 && (size_t)ret < buffer_len);
+			fbr_strcpy(buffer, buffer_len, "DEBUG");
 			return;
 		case FBR_REQID_CORE:
-			ret = snprintf(buffer, buffer_len, "%s", "CORE");
-			assert_dev(ret > 0 && (size_t)ret < buffer_len);
+			fbr_strcpy(buffer, buffer_len, "CORE");
 			return;
 		case FBR_REQID_NONE:
 		case __FBR_REQID_MAX:
 			break;
 	}
 
-	ret = snprintf(buffer, buffer_len, "%s", "UNKNOWN");
-	assert_dev(ret > 0 && (size_t)ret < buffer_len);
-	return;
+	fbr_strcpy(buffer, buffer_len, "UNKNOWN");
 }
