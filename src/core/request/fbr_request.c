@@ -299,8 +299,11 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 	int wait_ms = 0;
 	int sleep_ms = 25;
 	while (wait_ms < max_ms && !TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
-		if (fs->fuse_ctx && fs->fuse_ctx->error) {
-			break;
+		if (fs->fuse_ctx) {
+			fbr_fuse_context_ok(fs->fuse_ctx);
+			if (fs->fuse_ctx->error) {
+				break;
+			}
 		}
 
 		fbr_sleep_ms(sleep_ms);
