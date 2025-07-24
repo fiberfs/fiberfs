@@ -523,6 +523,7 @@ fbr_log_print_buf(void *buffer, size_t buffer_len, enum fbr_log_type type,
 	}
 
 	struct fbr_log_line *log_line = (struct fbr_log_line*)buffer;
+	fbr_ZERO(log_line);
 	log_line->magic = FBR_LOGLINE_MAGIC;
 	log_line->request_id = request_id;
 	log_line->timestamp = fbr_get_time();
