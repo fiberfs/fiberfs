@@ -142,20 +142,18 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 	va_start(ap, fmt);
 
 	struct fbr_request *request = fbr_request_get();
-	if (!request) {
+	if (request) {
+		fbr_request_ok(request);
+		fbr_rlog_ok(request->rlog);
+
+		_rlog_log(request->rlog, type, fmt, ap);
+	} else {
 		struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 		fbr_log_ok(fuse_ctx->log);
 
 		fbr_log_vprint(fuse_ctx->log, type, FBR_REQID_CORE, fmt, ap);
-		va_end(ap);
-
-		return;
 	}
 
-	fbr_request_ok(request);
-	fbr_rlog_ok(request->rlog);
-
-	_rlog_log(request->rlog, type, fmt, ap);
 	va_end(ap);
 }
 
