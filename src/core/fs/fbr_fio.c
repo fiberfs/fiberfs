@@ -445,7 +445,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	size_t total_size = 0;
 	for (size_t i = 0; i < bufvec->count; i++) {
 		struct fuse_buf *buf = &bufvec->buf[i];
-		fbr_rlog(FBR_LOG_FIO, "vector bufvec[%zu] mem: %p offset: %zu size: %zu", i,
+		fbr_rlog(FBR_LOG_DEBUG, "vector bufvec[%zu] mem: %p offset: %zu size: %zu", i,
 			(void*)((char*)buf->mem - buf->pos), buf->pos,
 			buf->size);
 		total_size += buf->size;

@@ -17,7 +17,7 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 	struct fbr_fs *fs = fbr_request_fs(request);
 	assert_dev(fs->store);
 
-	fbr_rlog(FBR_LOG_OP_LOOKUP, "req: %lu parent: %lu name: %s", request->id, parent, name);
+	fbr_rlog(FBR_LOG_OP, "LOOKUP req: %lu parent: %lu name: %s", request->id, parent, name);
 
 	struct fbr_directory *stale;
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent, &stale);

@@ -21,6 +21,7 @@
 #include "core/request/fbr_request.h"
 
 size_t _FBR_LOG_DEFAULT_SIZE = __FBR_LOG_DEFAULT_SIZE;
+int _FBR_LOG_MASK_DEBUG = 1;
 
 size_t
 fbr_log_default_size(void)
@@ -550,6 +551,10 @@ fbr_log_vprint(struct fbr_log *log, enum fbr_log_type type, unsigned long reques
 {
 	fbr_log_ok(log);
 
+	if (fbr_log_type_masked(type)) {
+		return;
+	}
+
 	char buffer[FBR_LOGLINE_MAX_LENGTH];
 	size_t buffer_len = fbr_log_print_buf(buffer, sizeof(buffer), type, request_id, fmt, ap);
 
@@ -560,6 +565,10 @@ void __fbr_attr_printf(4)
 fbr_log_print(struct fbr_log *log, enum fbr_log_type type, unsigned long request_id,
     const char *fmt, ...)
 {
+	if (fbr_log_type_masked(type)) {
+		return;
+	}
+
 	va_list ap;
 	va_start(ap, fmt);
 
@@ -664,6 +673,16 @@ fbr_log_reader_free(struct fbr_log_reader *reader)
 	fbr_ZERO(reader);
 }
 
+int
+fbr_log_type_masked(enum fbr_log_type type)
+{
+	if (type == FBR_LOG_DEBUG && _FBR_LOG_MASK_DEBUG) {
+		return 1;
+	}
+
+	return 0;
+}
+
 const char *
 fbr_log_type_str(enum fbr_log_type type)
 {
@@ -700,6 +719,8 @@ fbr_log_type_str(enum fbr_log_type type)
 			return "WBUFFER";
 		case FBR_LOG_INDEX:
 			return "INDEX";
+		case FBR_LOG_WRITER:
+			return "WRITER";
 		case FBR_LOG_OP:
 			return "OP";
 		case FBR_LOG_OP_READ:

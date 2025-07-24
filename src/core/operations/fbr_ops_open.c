@@ -16,7 +16,7 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_rlog(FBR_LOG_OP_OPEN, "req: %lu ino: %lu flags: %d", request->id, ino, fi->flags);
+	fbr_rlog(FBR_LOG_OP, "OPEN req: %lu ino: %lu flags: %d", request->id, ino, fi->flags);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 
@@ -70,7 +70,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_rlog(FBR_LOG_OP_CREATE, "req: %lu parent: %lu name: '%s' mode: %d flags: %u",
+	fbr_rlog(FBR_LOG_OP, "CREATE req: %lu parent: %lu name: '%s' mode: %d flags: %u",
 		request->id, parent, name, mode, fi->flags);
 
 	struct fbr_directory *stale;

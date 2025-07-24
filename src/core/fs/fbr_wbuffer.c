@@ -632,7 +632,7 @@ fbr_wbuffers_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 		assert_dev(chunk->state == FBR_CHUNK_WBUFFER);
 		assert_dev(chunk->data);
 
-		fbr_rlog(FBR_LOG_WBUFFER, "chunk state: %s offset: %zu length: %zu",
+		fbr_rlog(FBR_LOG_DEBUG, "wbuffer chunk state: %s offset: %zu length: %zu",
 			fbr_chunk_state(chunk->state), chunk->offset, chunk->length);
 
 		chunk->state = FBR_CHUNK_READY;

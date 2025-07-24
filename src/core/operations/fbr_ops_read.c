@@ -14,7 +14,7 @@ fbr_ops_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_rlog(FBR_LOG_OP_READ, "req: %lu ino: %lu off: %ld size: %zu flags: %d",
+	fbr_rlog(FBR_LOG_OP, "READ req: %lu ino: %lu off: %ld size: %zu flags: %d",
 		request->id, ino, off, size, fi->flags);
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);

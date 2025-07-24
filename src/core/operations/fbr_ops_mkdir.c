@@ -17,7 +17,7 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	struct fbr_fs *fs = fbr_request_fs(request);
 	assert_dev(fs->store);
 
-	fbr_rlog(FBR_LOG_OP_MKDIR, "req: %lu parent: %lu name: %s mode: %u", request->id, parent, name,
+	fbr_rlog(FBR_LOG_OP, "MKDIR req: %lu parent: %lu name: %s mode: %u", request->id, parent, name,
 		mode);
 
 	struct fbr_directory *stale;

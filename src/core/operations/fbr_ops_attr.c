@@ -14,7 +14,7 @@ fbr_ops_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 	struct fbr_fs *fs = fbr_request_fs(request);
 	(void)fi;
 
-	fbr_rlog(FBR_LOG_OP_ATTR, "req: %lu ino: %lu", request->id, ino);
+	fbr_rlog(FBR_LOG_OP, "ATTR req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_file *file = fbr_inode_take(fs, ino);
 	if (!file) {

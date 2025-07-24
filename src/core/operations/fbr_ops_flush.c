@@ -29,7 +29,7 @@ fbr_ops_flush(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info
 {
 	fbr_request_valid(request);
 
-	fbr_rlog(FBR_LOG_OP_FLUSH, "flush req: %lu ino: %lu", request->id, ino);
+	fbr_rlog(FBR_LOG_OP, "FLUSH req: %lu ino: %lu", request->id, ino);
 
 	_ops_flush(request, ino, fi);
 }
@@ -39,7 +39,7 @@ fbr_ops_fsync(struct fbr_request *request, fuse_ino_t ino, int datasync, struct 
 {
 	fbr_request_valid(request);
 
-	fbr_rlog(FBR_LOG_OP_FLUSH, "fsync req: %lu ino: %lu datasync: %d", request->id, ino,
+	fbr_rlog(FBR_LOG_OP, "FSYNC req: %lu ino: %lu datasync: %d", request->id, ino,
 		datasync);
 
 	_ops_flush(request, ino, fi);

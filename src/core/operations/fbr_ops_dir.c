@@ -17,7 +17,7 @@ fbr_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 	struct fbr_fs *fs = fbr_request_fs(request);
 	assert_dev(fs->store);
 
-	fbr_rlog(FBR_LOG_OP_DIR, "open req: %lu ino: %lu", request->id, ino);
+	fbr_rlog(FBR_LOG_OP, "OPENDIR open req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_directory *stale;
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, ino, &stale);
@@ -67,7 +67,7 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_rlog(FBR_LOG_OP_DIR, "read req: %lu ino: %lu size: %zu off: %ld", request->id, ino,
+	fbr_rlog(FBR_LOG_OP, "READDIR req: %lu ino: %lu size: %zu off: %ld", request->id, ino,
 		size, off);
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
@@ -187,7 +187,7 @@ fbr_ops_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 
-	fbr_rlog(FBR_LOG_OP_DIR, " release req: %lu ino: %lu", request->id, ino);
+	fbr_rlog(FBR_LOG_OP, "RELEASEDIR req: %lu ino: %lu", request->id, ino);
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 

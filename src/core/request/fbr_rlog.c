@@ -138,6 +138,10 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 	assert(type);
 	assert(fmt && *fmt);
 
+	if (fbr_log_type_masked(type)) {
+		return;
+	}
+
 	va_list ap;
 	va_start(ap, fmt);
 

@@ -33,6 +33,7 @@ struct fbr_test_log_printer {
 #define fbr_test_log_printer_ok(print)		fbr_magic_check(print, FBR_TEST_LOG_PRINT_MAGIC)
 
 extern size_t _FBR_LOG_DEFAULT_SIZE;
+extern int _FBR_LOG_MASK_DEBUG;
 
 void
 fbr_cmd_test_log_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
@@ -50,6 +51,17 @@ fbr_cmd_test_log_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_size: %zu", fbr_log_default_size());
 }
 
+void
+fbr_cmd_test_log_allow_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_FBR_LOG_MASK_DEBUG = 0;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_allow_debug: %d", _FBR_LOG_MASK_DEBUG);
+}
+
 static void *
 _test_log_printer_thread(void *arg)
 {
@@ -64,7 +76,7 @@ _test_log_printer_thread(void *arg)
 
 	printer->thread_running = 1;
 
-	fbr_test_logs("### log printer running (%s)", reader->log.shm_name);
+	fbr_test_logs("## log printer running (%s)", reader->log.shm_name);
 
 	unsigned int sleep_count = 0;
 
@@ -116,7 +128,7 @@ _test_log_printer_thread(void *arg)
 		printf("#%.3f %s:%s %s\n", time, reqid_str, type_str, log_line->buffer);
 	}
 
-	fbr_test_logs("### log printer exit");
+	fbr_test_logs("## log printer exit");
 
 	return NULL;
 }
@@ -377,17 +389,17 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(memcmp(big_ptr, big, big_size));
 
 	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(*log_line) + 5);
+	_test_logline_debug(log_line);
 	assert(log_line->truncated);
 	assert(log_line->length == 4);
 	assert_zero(strcmp(log_line->buffer, "1234"));
-	_test_logline_debug(log_line);
 
 	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	_test_logline_debug(log_line);
 	assert(reader.cursor.tag.parts.class_data == FBR_LOG_TEST);
 	assert(log_line->request_id == FBR_REQID_TEST);
 	assert_zero(log_line->truncated);
 	assert_zero(strcmp(log_line->buffer, "END"));
-	_test_logline_debug(log_line);
 
 	assert_zero(fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)));
 	assert(reader.cursor.status == FBR_LOG_CURSOR_EOF);

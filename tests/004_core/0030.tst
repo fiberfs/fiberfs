@@ -2,6 +2,7 @@ fiber_test "RW create and truncate"
 
 # Init
 
+test_log_allow_debug
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 fs_test_dentry_ttl_ms 0
@@ -50,5 +51,7 @@ equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
 equal $fs_test_stat_store_chunks 3
+
+test_log_debug
 
 fuse_test_unmount

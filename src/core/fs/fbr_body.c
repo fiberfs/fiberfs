@@ -447,9 +447,9 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 		assert(chunk->state < __FBR_CHUNK_STATE_SIZE);
 
 		if (count < 3) {
-			fbr_rlog(FBR_LOG_BODY, "chunk[%zu] state: %s off: %zu len: %zu id: %lu", count,
-				fbr_chunk_state(chunk->state), chunk->offset, chunk->length,
-				chunk->id);
+			fbr_rlog(FBR_LOG_DEBUG, "BODY chunk[%zu] state: %s off: %zu len: %zu"
+				" id: %lu", count, fbr_chunk_state(chunk->state), chunk->offset,
+				chunk->length, chunk->id);
 		}
 
 		count++;
@@ -469,7 +469,7 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 	}
 
 	if (count > 3) {
-		fbr_rlog(FBR_LOG_BODY, "... chunks: %zu%s", count, buffer);
+		fbr_rlog(FBR_LOG_DEBUG, "BODY ... chunks: %zu%s", count, buffer);
 	}
 }
 

@@ -149,7 +149,7 @@ fbr_chunk_list_debug(struct fbr_fs *fs, struct fbr_chunk_list *chunks, const cha
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
-		fbr_rlog(FBR_LOG_CHUNK, "%s chunk[%zu] state: %s, data: %p off: %zu"
+		fbr_rlog(FBR_LOG_DEBUG, "%s chunk[%zu] state: %s, data: %p off: %zu"
 			" len: %zu id: %lu",
 			name, i, fbr_chunk_state(chunk->state), (void*)chunk->data,
 			chunk->offset, chunk->length, chunk->id);

@@ -636,20 +636,20 @@ _index_parse_debug(struct fbr_index_parser *parser, struct fjson_token *token, s
 	size_t location = parser->location;
 	assert_dev(location);
 
-	fbr_rlog(FBR_LOG_INDEX, "PARSER location: %s context: %c (prev: %c)",
+	fbr_rlog(FBR_LOG_DEBUG, "PARSER location: %s context: %c (prev: %c)",
 		_index_parse_loc(parser),
 		parser->context[location] ? parser->context[location] : '-',
 		parser->context[location - 1] ? parser->context[location - 1] : '-');
 
-	fbr_rlog(FBR_LOG_INDEX, "token: %s length: %u depth: %zu sep: %d closed: %d",
+	fbr_rlog(FBR_LOG_DEBUG, "token: %s length: %u depth: %zu sep: %d closed: %d",
 		fjson_token_name(token->type), token->length, depth,
 		token->seperated, token->closed);
 
 	if (token->type == FJSON_TOKEN_NUMBER) {
-		fbr_rlog(FBR_LOG_INDEX, "dvalue=%lf (%.*s:%zu)", token->dvalue, (int)token->svalue_len,
+		fbr_rlog(FBR_LOG_DEBUG, "dvalue=%lf (%.*s:%zu)", token->dvalue, (int)token->svalue_len,
 			token->svalue, token->svalue_len);
 	} else if (token->type == FJSON_TOKEN_STRING || token->type == FJSON_TOKEN_LABEL) {
-		fbr_rlog(FBR_LOG_INDEX, "svalue=%.*s:%zu", (int)token->svalue_len, token->svalue,
+		fbr_rlog(FBR_LOG_DEBUG, "svalue=%.*s:%zu", (int)token->svalue_len, token->svalue,
 			token->svalue_len);
 	}
 }
