@@ -188,6 +188,7 @@ fbr_test_main(int argc, char **argv)
 	assert_zero(_TEST);
 	_TEST = &test;
 	fbr_test_ok(_TEST);
+	assert(fbr_is_test());
 
 	pt_assert(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
 	assert_zero(fbr_test_is_thread());
