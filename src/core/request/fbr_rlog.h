@@ -32,11 +32,7 @@ struct fbr_request;
 void fbr_rlog_workspace_alloc(struct fbr_request *request);
 void fbr_rlog_flush(struct fbr_rlog *rlog);
 void __fbr_attr_printf(2) fbr_rlog(enum fbr_log_type type, const char *fmt, ...);
-void __fbr_attr_printf(3) fbr_flog(enum fbr_log_type type, unsigned long request_id,
-	const char *fmt, ...);
 void fbr_rlog_free(struct fbr_rlog **rlog);
-
-void fbr_rlog_test_init(void);
 
 #define fbr_rlog_ok(rlog)			fbr_magic_check(rlog, FBR_RLOG_MAGIC)
 

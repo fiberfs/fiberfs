@@ -10,6 +10,7 @@
 
 #include "test/fbr_test.h"
 #include "fbr_test_fs_cmds.h"
+#include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 static size_t
 _count_chunks(struct fbr_file *file)
@@ -92,7 +93,7 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_test_fs_alloc();
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);
@@ -402,7 +403,7 @@ _test_body_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 	chunk->state = FBR_CHUNK_READY;
 	chunk->data = (void*)chunk->id;
 
-	fbr_rlog(FBR_LOG_TEST, "FETCH chunk id: %lu off: %zu len: %zu",
+	fbr_test_logs("FETCH chunk id: %lu off: %zu len: %zu",
 		chunk->id, chunk->offset, chunk->length);
 }
 
@@ -416,7 +417,7 @@ fbr_cmd_fs_test_body_fio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_test_fs_alloc();
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 
 	fbr_fs_set_store(fs, &_TEST_BODY_STORE_CALLBACKS);
 
@@ -475,7 +476,7 @@ fbr_cmd_fs_test_body_hole(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_test_fs_alloc();
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);

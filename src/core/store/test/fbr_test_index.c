@@ -154,7 +154,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_dstore_init(ctx);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock(ctx);
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
 
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
@@ -408,7 +408,7 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_dstore_init(ctx);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock(ctx);
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
 
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
@@ -494,6 +494,7 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_dstore_init(ctx);
+	fbr_test_fuse_mock(ctx);
 
 	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_1);
@@ -724,6 +725,7 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_dstore_init(ctx);
+	fbr_test_fuse_mock(ctx);
 
 	pthread_t threads[_THREADS_MAX];
 	_THREAD_COUNT = 0;

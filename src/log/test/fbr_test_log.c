@@ -108,12 +108,12 @@ _test_log_printer_thread(void *arg)
 		double time = log_line->timestamp - header->time_created;
 		assert(time >= 0);
 
-		const char *type_str = fbr_log_type_str(reader->cursor.tag.parts.class_data);
-
 		char reqid_str[32];
 		fbr_log_reqid_str(log_line->request_id, reqid_str, sizeof(reqid_str));
 
-		printf("#%.3f %s:%s %s\n", time, type_str, reqid_str, log_line->buffer);
+		const char *type_str = fbr_log_type_str(reader->cursor.tag.parts.class_data);
+
+		printf("#%.3f %s:%s %s\n", time, reqid_str, type_str, log_line->buffer);
 	}
 
 	fbr_test_logs("### log printer exit");
@@ -164,7 +164,8 @@ fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname
 	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {
 		fbr_log_reader_init(&printer->reader, logname);
 
-		pt_assert(pthread_create(&printer->thread, NULL, _test_log_printer_thread, printer));
+		pt_assert(pthread_create(&printer->thread, NULL, _test_log_printer_thread,
+			printer));
 
 		while (!printer->thread_running) {
 			fbr_test_sleep_ms(1);

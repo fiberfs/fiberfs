@@ -12,6 +12,8 @@
 
 #include "fiberfs.h"
 
+int _IS_FIBERFS_TEST;
+
 void
 fbr_sleep_ms(double ms)
 {
@@ -85,6 +87,17 @@ fbr_is_dev(void)
 #else
 	return 1;
 #endif
+}
+
+// This checks if we are running under a fiber_test context
+int
+fbr_is_test(void)
+{
+	if (_IS_FIBERFS_TEST) {
+		return 1;
+	}
+
+	return 0;
 }
 
 void

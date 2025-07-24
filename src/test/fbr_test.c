@@ -13,7 +13,7 @@
 #include "core/request/fbr_rlog.h"
 #include "log/fbr_log.h"
 
-int _IS_FIBERFS_TEST;
+extern int _IS_FIBERFS_TEST;
 static struct fbr_test *_TEST;
 static int _EXIT;
 static int _ERROR;
@@ -148,7 +148,6 @@ fbr_test_main(int argc, char **argv)
 
 	_IS_FIBERFS_TEST = 1;
 
-	fbr_rlog_test_init();
 	fbr_setup_crash_signals();
 
 	_init_test(&test);

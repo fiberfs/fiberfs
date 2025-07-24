@@ -13,6 +13,7 @@
 
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
+#include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/store/test/fbr_dstore.h"
 
 static const struct fbr_store_callbacks _APPEND_TEST_CALLBACKS = {
@@ -33,11 +34,11 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_dstore_init(ctx);
 
-	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
+	struct fbr_fs *fs_1 = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs_1);
 	fbr_fs_set_store(fs_1, &_APPEND_TEST_CALLBACKS);
 
-	struct fbr_fs *fs_2 = fbr_test_fs_alloc();
+	struct fbr_fs *fs_2 = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs_2);
 	fbr_fs_set_store(fs_2, &_APPEND_TEST_CALLBACKS);
 
@@ -505,6 +506,8 @@ fbr_cmd_append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert_zero(_APPEND_ERROR_WBUFFER);
 	assert_zero(_APPEND_ERROR_FLUSH);
 
+	fbr_test_fuse_mock(ctx);
+
 	_append_thread_test(ctx, cmd);
 }
 
@@ -515,6 +518,8 @@ fbr_cmd_append_thread_error_test(struct fbr_test_context *ctx, struct fbr_test_c
 	_APPEND_ERROR_WBUFFER = 5;
 	_APPEND_ERROR_FLUSH = 3;
 	_DEBUG_WBUFFER_ALLOC_SIZE = 2;
+
+	fbr_test_fuse_mock(ctx);
 
 	_append_thread_test(ctx, cmd);
 }

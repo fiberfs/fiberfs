@@ -30,6 +30,24 @@ fbr_test_convert(struct fbr_test_context *ctx)
 	return test;
 }
 
+int
+fbr_test_can_log(struct fbr_test *test, enum fbr_test_verbocity level)
+{
+	if (!test) {
+		struct fbr_test_context *test_ctx = fbr_test_get_ctx();
+		test = fbr_test_convert(test_ctx);
+	} else {
+		fbr_test_ok(test);
+	}
+
+	if (level != FBR_LOG_FORCE && (test->verbocity == FBR_LOG_NONE ||
+	    test->verbocity < level)) {
+		return 0;
+	}
+
+	return 1;
+}
+
 void
 fbr_test_vlog(struct fbr_test_context *ctx, enum fbr_test_verbocity level, int newline,
     const char *fmt, va_list ap)

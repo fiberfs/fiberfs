@@ -14,6 +14,7 @@
 
 #include "test/fbr_test.h"
 #include "fbr_test_fs_cmds.h"
+#include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 #define _BODY_TEST_THREADS 10
 #define _BODY_WRITE_SIZE 1000
@@ -410,7 +411,7 @@ _test_concurrent_fio(void)
 {
 	assert(_FIO_THREAD_ID == -1);
 
-	struct fbr_fs *fs = fbr_test_fs_alloc();
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(NULL);
 
 	fbr_fs_set_store(fs, &_TEST_WBUFFER_CALLBACKS);
 

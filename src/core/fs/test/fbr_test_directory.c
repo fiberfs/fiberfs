@@ -8,8 +8,10 @@
 #include <stdlib.h>
 
 #include "core/fs/fbr_fs.h"
+
 #include "test/fbr_test.h"
 #include "fbr_test_fs_cmds.h"
+#include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 #define _TEST_DIR_THREADS_ALLOC		3
 #define _TEST_DIR_THREADS_READ		3
@@ -252,7 +254,7 @@ _dir_test_release(void *arg)
 static void
 _directory_parallel(void)
 {
-	struct fbr_fs *fs = fbr_test_fs_alloc();
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(NULL);
 
 	fbr_test_random_seed();
 
@@ -375,7 +377,7 @@ fbr_cmd_fs_test_directory_parallel(struct fbr_test_context *ctx, struct fbr_test
 static void
 _directory_release(int ttl)
 {
-	struct fbr_fs *fs = fbr_test_fs_alloc();
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(NULL);
 	fbr_fs_ok(fs);
 
 	if (ttl) {

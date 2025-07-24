@@ -15,6 +15,7 @@ double fbr_get_time(void);
 void fbr_timespec_add_clock(struct timespec *value);
 unsigned long fbr_parse_ulong(const char *str, size_t length);
 int fbr_is_dev(void);
+int fbr_is_test(void);
 void fbr_strcpy(char *dest, size_t dest_len, char *source);
 
 #define _FBR_STRINGIFY(_value)			#_value

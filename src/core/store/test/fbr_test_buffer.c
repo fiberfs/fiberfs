@@ -58,7 +58,7 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** writer1");
 
-	struct fbr_fs *fs = fbr_test_fs_alloc();
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
 
 	struct fbr_writer writer1;
@@ -91,7 +91,7 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** writer2 (workspace)");
 
-	fs = fbr_test_fuse_mock(ctx);
+	fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
 
 	struct fbr_request *r1 = fbr_test_request_mock();
@@ -141,7 +141,7 @@ fbr_cmd_reader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** reader1");
 
-	struct fbr_fs *fs = fbr_test_fs_alloc();
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
 
 	struct fbr_reader reader1;
@@ -160,7 +160,7 @@ fbr_cmd_reader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** reader2");
 
-	fs = fbr_test_fuse_mock(ctx);
+	fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
 
 	struct fbr_request *r1 = fbr_test_request_mock();

@@ -211,7 +211,7 @@ _write_test(void)
 
 	fbr_dstore_init(test_ctx);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock(test_ctx);
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(test_ctx);
 	fbr_fs_ok(fs);
 	fbr_fs_set_store(fs, &_WRITE_CALLBACKS);
 

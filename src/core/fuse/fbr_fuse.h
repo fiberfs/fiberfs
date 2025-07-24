@@ -31,6 +31,7 @@ struct fbr_fuse_context {
 	struct fbr_fs				*fs;
 	struct fbr_log				*log;
 
+	unsigned int				init:1;
 	unsigned int				debug:1;
 	unsigned int				signals:1;
 

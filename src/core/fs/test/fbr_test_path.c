@@ -12,6 +12,7 @@
 
 #include "test/fbr_test.h"
 #include "fbr_test_fs_cmds.h"
+#include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 void
 fbr_cmd_fs_test_path_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
@@ -128,7 +129,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
 
-	struct fbr_fs *fs = fbr_test_fs_alloc();
+	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** ROOT");
 

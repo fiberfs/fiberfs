@@ -335,20 +335,18 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 
 		fuse_req_t fuse_req = fbr_request_take_fuse(request);
 
-		fbr_flog(FBR_LOG_REQUEST, FBR_REQID_CORE, "active id: %lu name: %s running: %s",
-			request->id, request->name, fuse_req ? "YES" : "NO");
+		fbr_rlog(FBR_LOG_REQUEST, "active id: %lu name: %s running: %s", request->id,
+			request->name, fuse_req ? "YES" : "NO");
 
 		if (fuse_req) {
-			fbr_flog(FBR_LOG_REQUEST, FBR_REQID_CORE, "id: %lu sending EIO",
-				request->id);
+			fbr_rlog(FBR_LOG_REQUEST, "id: %lu sending EIO", request->id);
 			fuse_reply_err(fuse_req, EIO);
 		}
 
 		assert_zero_dev(request->fuse_req);
 
 		if (request->thread) {
-			fbr_flog(FBR_LOG_REQUEST, FBR_REQID_CORE, "id: %lu sending SIGQUIT",
-				request->id);
+			fbr_rlog(FBR_LOG_REQUEST, "id: %lu sending SIGQUIT", request->id);
 			pthread_kill(request->thread, SIGQUIT);
 			fbr_ZERO(&request->thread);
 		}
