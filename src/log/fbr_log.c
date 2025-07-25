@@ -336,6 +336,8 @@ fbr_log_append(struct fbr_log *log, enum fbr_log_tag_class class, unsigned short
 
 	fbr_memory_sync();
 
+	assert(((struct fbr_log_tag*)data)->parts.class == FBR_LOG_TAG_EOF);
+
 	*data = fbr_log_tag_gen(sequence, class, class_data, buffer_len);
 }
 
@@ -377,6 +379,8 @@ fbr_log_batch(struct fbr_log *log, void *buffer, size_t buffer_len, size_t count
 	memcpy(data + 1, log_pos, buffer_len);
 
 	fbr_memory_sync();
+
+	assert(((struct fbr_log_tag*)data)->parts.class == FBR_LOG_TAG_EOF);
 
 	*data = fbr_log_tag_gen(noop_seq, FBR_LOG_TAG_NOOP, 0, 0);
 }
