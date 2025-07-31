@@ -55,17 +55,18 @@ fbr_test_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	char *v1_var = cmd->params[0].variable;
 	char *v2_var = cmd->params[1].variable;
 
-	do {
+	while (1) {
 		ret = strcmp(v1, v2);
 
 		if (!ret) {
 			break;
 		} else if (!v1_var && !v2_var) {
 			break;
-		} else {
-			fbr_test_log(ctx, FBR_LOG_VERBOSE, "not equal '%s' != '%s', retry...",
-				v1, v2);
+		} else if (retries >= 3) {
+			break;
 		}
+
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "not equal '%s' != '%s', retry...", v1, v2);
 
 		retries++;
 		fbr_test_sleep_ms(200 * retries);
@@ -78,7 +79,7 @@ fbr_test_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 			v2 = fbr_test_read_var(ctx->test, v2_var);
 			assert(v2);
 		}
-	} while (retries < 3);
+	}
 
 	fbr_test_ERROR(ret, "not equal '%s' != '%s'", v1, v2);
 
