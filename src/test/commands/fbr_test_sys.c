@@ -523,7 +523,7 @@ fbr_test_cmd_sys_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	char *dirname = cmd->params[0].value;
 
 	int ret = mkdir(dirname, S_IRWXU);
-	fbr_test_ERROR(ret, "mkdir failed %d", ret);
+	fbr_test_ERROR(ret, "mkdir failed %d %d (%s)", ret, errno, strerror(errno));
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_mkdir '%s'", dirname);
 }

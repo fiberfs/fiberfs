@@ -33,7 +33,16 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	struct fbr_path_name dirname;
 	fbr_path_name_init(&dirname, name);
 
-	// TODO look for duplicate
+	struct fbr_file *duplicate = fbr_directory_find_file(directory, dirname.name, dirname.len);
+	if (duplicate) {
+		fbr_fuse_reply_err(request, EEXIST);
+		fbr_dindex_release(fs, &directory);
+		if (stale) {
+			fbr_dindex_release(fs, &stale);
+		}
+		return;
+	}
+
 	// TODO write the new root and index before adding the file
 
 	struct fbr_file *file = fbr_file_alloc_new(fs, directory, &dirname);
