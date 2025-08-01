@@ -18,6 +18,7 @@
 
 FBR_TEST_OPS_CMD(mkdir_op_test_mount)
 FBR_TEST_OPS_CMD(mkdir_test_fail)
+FBR_TEST_OPS_CMD(mkdir_test_remote)
 
 #undef FBR_TEST_OPS_CMD
 #undef FBR_TEST_OPS_VAR

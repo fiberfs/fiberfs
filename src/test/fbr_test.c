@@ -146,6 +146,8 @@ fbr_test_main(int argc, char **argv)
 {
 	struct fbr_test test;
 
+	// TODO we need to change current directory
+
 	_IS_FIBERFS_TEST = 1;
 
 	fbr_setup_crash_signals();

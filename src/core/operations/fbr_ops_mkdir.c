@@ -119,6 +119,8 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 		ret = fs->store->directory_flush_f(fs, file, NULL, FBR_FLUSH_NONE);
 	}
 	if (ret) {
+		// TODO we need to delete the new root
+
 		fbr_fuse_reply_err(request, ret);
 
 		fbr_inode_release(fs, &file);
