@@ -31,6 +31,7 @@ void fbr_fuse_test_unmount(struct fbr_test_context *test_ctx);
 struct fbr_fuse_context *fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx);
 void fbr_test_fuse_mock(struct fbr_test_context *test_ctx);
 struct fbr_fs *fbr_test_fuse_mock_fs(struct fbr_test_context *test_ctx);
+void fbr_test_fuse_root_alloc(struct fbr_fs *fs);
 
 #endif /* FBR_TEST_FUSE_CMD */
 

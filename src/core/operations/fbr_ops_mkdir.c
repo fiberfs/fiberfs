@@ -114,7 +114,7 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	fbr_dindex_release(fs, &new_directory);
 
 	// Flush changes to parent
-	ret = EIO;
+	ret = EINVAL;
 	if (fs->store->directory_flush_f) {
 		ret = fs->store->directory_flush_f(fs, file, NULL, FBR_FLUSH_NONE);
 	}

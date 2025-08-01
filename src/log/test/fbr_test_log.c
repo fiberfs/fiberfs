@@ -76,7 +76,7 @@ _test_log_printer_thread(void *arg)
 
 	printer->thread_running = 1;
 
-	fbr_test_logs("## log printer running (%s)", reader->log.shm_name);
+	fbr_test_logs("# log printer running (%s)", reader->log.shm_name);
 
 	unsigned int sleep_count = 0;
 
@@ -127,8 +127,6 @@ _test_log_printer_thread(void *arg)
 
 		printf("#%.3f %s:%s %s\n", time, reqid_str, type_str, log_line->buffer);
 	}
-
-	fbr_test_logs("## log printer exit");
 
 	return NULL;
 }

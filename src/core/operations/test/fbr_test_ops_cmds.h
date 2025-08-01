@@ -16,7 +16,8 @@
 
 #endif /* FBR_TEST_OPS_CMD */
 
-FBR_TEST_OPS_CMD(mkdir_test)
+FBR_TEST_OPS_CMD(mkdir_op_test_mount)
+FBR_TEST_OPS_CMD(mkdir_test_fail)
 
 #undef FBR_TEST_OPS_CMD
 #undef FBR_TEST_OPS_VAR

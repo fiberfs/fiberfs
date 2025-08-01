@@ -174,3 +174,27 @@ fbr_test_fuse_mock_fs(struct fbr_test_context *test_ctx)
 
 	return fuse_ctx->fs;
 }
+
+void
+fbr_test_fuse_root_alloc(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
+
+	struct fbr_directory *root = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_LOADING);
+	assert_zero(root->generation);
+
+	root->generation = 1;
+
+	struct fbr_index_data index_data;
+	fbr_index_data_init(NULL, &index_data, root, NULL, NULL, NULL, FBR_FLUSH_NONE);
+
+	int ret = fbr_index_write(fs, &index_data);
+	fbr_ASSERT(!ret, "fbr_index_write() root failed: %d", ret);
+
+	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
+
+	fbr_index_data_free(&index_data);
+	fbr_dindex_release(fs, &root);
+}

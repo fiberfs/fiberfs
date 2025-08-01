@@ -591,7 +591,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 			error = ret;
 		}
 	} else {
-		error = EIO;
+		error = EINVAL;
 	}
 
 	if (!error) {

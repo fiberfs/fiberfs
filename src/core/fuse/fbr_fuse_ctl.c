@@ -254,6 +254,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 	ctx->state = FBR_FUSE_NONE;
 
 	fbr_rlog(FBR_LOG_FUSE, "umount complete");
+	// TODO we need to push some kind of special log message to bounce log readers
 
 	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 
