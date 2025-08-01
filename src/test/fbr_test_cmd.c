@@ -13,10 +13,12 @@
 #include "test/fjson_test_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+#include "core/operations/test/fbr_test_ops_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "core/store/test/fbr_test_store_cmds.h"
 #include "log/test/fbr_test_log_cmds.h"
 #include "utils/test/fbr_test_util_cmds.h"
+
 
 #define FBR_TEST_COMMAND_MAX		256
 
@@ -181,6 +183,13 @@ fbr_test_cmds_init(struct fbr_test *test)
 #define FBR_TEST_LOG_VAR(var)					\
 	_test_var_register(test, "$" #var, &fbr_var_##var);
 #include "log/test/fbr_test_log_cmds.h"
+
+#undef FBR_TEST_OPS_CMDS_H_INCLUDED
+#define FBR_TEST_OPS_CMD(cmd)					\
+	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
+#define FBR_TEST_OPS_VAR(var)					\
+	_test_var_register(test, "$" #var, &fbr_var_##var);
+#include "core/operations/test/fbr_test_ops_cmds.h"
 
 	fbr_test_register_finish(test->context, "cmd", _test_cmds_free);
 }

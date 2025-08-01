@@ -84,6 +84,7 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 		return;
 	}
 
+	assert_dev(new_directory->state == FBR_DIRSTATE_LOADING);
 	assert_zero_dev(new_directory->generation);
 	new_directory->generation = 1;
 
@@ -113,21 +114,12 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	fbr_dindex_release(fs, &new_directory);
 
 	// Flush changes to parent
+	ret = EIO;
 	if (fs->store->directory_flush_f) {
-		int ret = fs->store->directory_flush_f(fs, file, NULL, FBR_FLUSH_NONE);
-		if (ret) {
-			fbr_fuse_reply_err(request, EIO);
-
-			fbr_inode_release(fs, &file);
-			fbr_dindex_release(fs, &directory);
-			if (stale) {
-				fbr_dindex_release(fs, &stale);
-			}
-
-			return;
-		}
-	} else {
-		fbr_fuse_reply_err(request, EIO);
+		ret = fs->store->directory_flush_f(fs, file, NULL, FBR_FLUSH_NONE);
+	}
+	if (ret) {
+		fbr_fuse_reply_err(request, ret);
 
 		fbr_inode_release(fs, &file);
 		fbr_dindex_release(fs, &directory);
