@@ -40,6 +40,8 @@ FBR_TEST_STORE_CMD(append_thread_test)
 FBR_TEST_STORE_CMD(append_thread_error_test)
 
 FBR_TEST_STORE_CMD(dstore_debug)
+FBR_TEST_STORE_VAR(dstore_stat_roots)
+FBR_TEST_STORE_VAR(dstore_stat_indexes)
 
 #undef FBR_TEST_STORE_CMD
 #undef FBR_TEST_STORE_VAR

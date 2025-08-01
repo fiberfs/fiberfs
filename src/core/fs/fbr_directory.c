@@ -83,16 +83,16 @@ _directory_init(struct fbr_fs *fs, struct fbr_directory *directory, fbr_inode_t 
 }
 
 struct fbr_directory *
-fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_inode_t inode)
+fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_inode_t inode)
 {
 	fbr_fs_ok(fs);
-	assert(dirname);
+	assert(dirpath);
 
 	if (inode == FBR_INODE_ROOT) {
-		assert_zero_dev(dirname->len);
+		assert_zero_dev(dirpath->len);
 		_directory_root_init(fs);
 	} else {
-		assert_dev(dirname->len);
+		assert_dev(dirpath->len);
 	}
 
 	struct fbr_directory *directory = calloc(1, sizeof(*directory));
@@ -100,7 +100,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 
 	_directory_init(fs, directory, inode);
 
-	directory->path = fbr_path_shared_alloc(dirname);
+	directory->path = fbr_path_shared_alloc(dirpath);
 	assert_dev(directory->path);
 
 	while (directory->state == FBR_DIRSTATE_NONE) {
@@ -118,7 +118,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_
 					char buf[PATH_MAX];
 					fbr_path_get_full(&directory->file->path, &filename,
 						buf, sizeof(buf));
-					assert_zero(fbr_path_name_cmp(dirname, &filename));
+					assert_zero(fbr_path_name_cmp(dirpath, &filename));
 				}
 			} else {
 				// Inode is too old, caller gets an error state

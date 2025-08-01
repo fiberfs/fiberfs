@@ -35,6 +35,7 @@ struct {
 	fbr_stats_t				roots;
 	fbr_stats_t				indexes;
 	fbr_stats_t				chunks;
+	char					stat_buf[32];
 
 	pthread_mutex_t				lock;
 } __DSTORE, *_DSTORE;
@@ -120,7 +121,7 @@ fbr_dstore_debug(int show_meta)
 	fbr_dstore_ok();
 
 	fbr_test_logs("DSTORE_DEBUG roots: %lu", fbr_dstore_stat_roots());
-	fbr_test_logs("DSTORE_DEBUG indexed: %lu", fbr_dstore_stat_indexes());
+	fbr_test_logs("DSTORE_DEBUG indexes: %lu", fbr_dstore_stat_indexes());
 	fbr_test_logs("DSTORE_DEBUG chunks: %lu", fbr_dstore_stat_chunks());
 
 	if (show_meta) {
@@ -151,6 +152,22 @@ fbr_dstore_stat_roots(void)
 {
 	fbr_dstore_ok();
 	return _DSTORE->roots;
+}
+
+char *
+fbr_var_dstore_stat_roots(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+	snprintf(_DSTORE->stat_buf, sizeof(_DSTORE->stat_buf), "%lu", _DSTORE->roots);
+	return _DSTORE->stat_buf;
+}
+
+char *
+fbr_var_dstore_stat_indexes(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+	snprintf(_DSTORE->stat_buf, sizeof(_DSTORE->stat_buf), "%lu", _DSTORE->indexes);
+	return _DSTORE->stat_buf;
 }
 
 fbr_stats_t
