@@ -49,6 +49,8 @@ struct _dstore_metadata {
 
 #define fbr_dstore_ok()				fbr_magic_check(_DSTORE, _DSTORE_MAGIC)
 
+static int _dstore_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);
+
 static void
 _dstore_finish(struct fbr_test_context *ctx)
 {
@@ -801,8 +803,8 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	return ret;
 }
 
-void
-fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
+static void
+_dstore_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
@@ -828,6 +830,23 @@ fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 int
+fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert_zero(directory->file_count);
+
+	int ret = _dstore_root_remove(fs, directory);
+	if (ret) {
+		return ret;
+	}
+
+	_dstore_index_remove(fs, directory);
+
+	return 0;
+}
+
+int
 fbr_dstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
     struct fbr_writer *writer, struct fbr_directory *previous)
 {
@@ -848,9 +867,9 @@ fbr_dstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	int ret = fbr_dstore_root_write(fs, directory, previous_version);
 
 	if (ret) {
-		fbr_dstore_index_delete(fs, directory);
+		_dstore_index_remove(fs, directory);
 	} else if (previous) {
-		fbr_dstore_index_delete(fs, previous);
+		_dstore_index_remove(fs, previous);
 	}
 
 	return ret;
@@ -923,7 +942,8 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 	fbr_writer_init_buffer(fs, &json, json_buf, sizeof(json_buf));
 	fbr_root_json_gen(fs, &json, directory->version);
 
-	fbr_test_logs("DSTORE write root: %lu previous: %lu", directory->version, existing);
+	fbr_test_logs("DSTORE write root: %s (%lu) previous: %lu", root_path, directory->version,
+		existing);
 
 	if (!fbr_sys_exists(root_path)) {
 		fbr_fs_stat_add(&_DSTORE->roots);
@@ -977,7 +997,54 @@ fbr_dstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	fbr_id_t version = fbr_root_json_parse(fs, json_buf, bytes);
 	fbr_ASSERT(metadata.etag == version, "%lu != %lu", metadata.etag, version);
 
-	fbr_test_logs("DSTORE read root: %lu", version);
+	fbr_test_logs("DSTORE read root: %s (%lu)", root_path, version);
 
 	return version;
+}
+
+static int
+_dstore_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert_dev(directory->version);
+	assert_zero_dev(directory->file_count);
+
+	char root_path[PATH_MAX];
+	struct _dstore_metadata metadata;
+	struct fbr_path_name dirpath;
+	fbr_directory_name(directory, &dirpath);
+
+	_dstore_root_path(&dirpath, 1, root_path, sizeof(root_path));
+
+	_dstore_LOCK();
+
+	_dstore_metadata_read(root_path, &metadata);
+
+	if (metadata.etag != directory->version) {
+		_dstore_UNLOCK();
+
+		fbr_test_logs("DSTORE DELETE root mismatch, want %lu, found %lu",
+			directory->version, metadata.etag);
+
+		return EAGAIN;
+	}
+
+	fbr_test_logs("DSTORE DELETE root passed: %lu", directory->version);
+
+	int ret = unlink(root_path);
+	assert_zero(ret);
+
+	_dstore_root_path(&dirpath, 0, root_path, sizeof(root_path));
+
+	ret = unlink(root_path);
+	assert_zero(ret);
+
+	fbr_test_logs("DSTORE DELETE root: %s (%lu)", root_path, directory->version);
+
+	fbr_fs_stat_sub(&_DSTORE->roots);
+
+	_dstore_UNLOCK();
+
+	return 0;
 }

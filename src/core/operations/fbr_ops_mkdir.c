@@ -111,7 +111,6 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 
 	fbr_index_data_free(&index_data);
-	fbr_dindex_release(fs, &new_directory);
 
 	// Flush changes to parent
 	ret = EINVAL;
@@ -119,12 +118,16 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 		ret = fs->store->directory_flush_f(fs, file, NULL, FBR_FLUSH_NONE);
 	}
 	if (ret) {
-		// TODO we need to delete the new root
+		if (fs->store->index_delete_f) {
+			int delete_ret = fs->store->index_delete_f(fs, new_directory);
+			assert_zero(delete_ret);
+		}
 
 		fbr_fuse_reply_err(request, ret);
 
 		fbr_inode_release(fs, &file);
 		fbr_dindex_release(fs, &directory);
+		fbr_dindex_release(fs, &new_directory);
 		if (stale) {
 			fbr_dindex_release(fs, &stale);
 		}
@@ -145,6 +148,7 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	fbr_fuse_reply_entry(request, &entry);
 
 	fbr_dindex_release(fs, &directory);
+	fbr_dindex_release(fs, &new_directory);
 	if (stale) {
 		fbr_dindex_release(fs, &stale);
 	}

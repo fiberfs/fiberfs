@@ -36,9 +36,8 @@ fs_test_stats
 fs_test_debug
 dstore_debug
 
-# TODO should be 4
-equal $dstore_stat_roots 5
-equal $dstore_stat_indexes 5
+equal $dstore_stat_roots 4
+equal $dstore_stat_indexes 4
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0

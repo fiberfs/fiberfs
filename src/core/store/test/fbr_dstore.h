@@ -30,7 +30,7 @@ void fbr_dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fb
 void fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_writer *writer);
 int fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
-void fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
+int fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_dstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_writer *writer, struct fbr_directory *previous);
 int fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t existing);

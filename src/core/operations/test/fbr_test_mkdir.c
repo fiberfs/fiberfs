@@ -35,6 +35,7 @@ static const struct fbr_store_callbacks _TEST_MKDIR_CALLBACKS = {
 	.directory_flush_f = _test_mkdir_flush,
 	.index_write_f = fbr_dstore_index_root_write,
 	.index_read_f = fbr_dstore_index_read,
+	.index_delete_f = fbr_dstore_index_delete,
 	.root_read_f = fbr_dstore_root_read
 };
 
