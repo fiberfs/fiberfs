@@ -23,7 +23,7 @@ _test_mkdir_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *
 	fbr_file_ok(file);
 
 	const char *filename = fbr_path_get_file(&file->path, NULL);
-	if (!strcmp(filename, "test_error")) {
+	if (!strcmp(filename, "test_flush_error")) {
 		fbr_test_logs("FLUSH forcing error (EBUSY)");
 		return EBUSY;
 	}
@@ -80,7 +80,8 @@ static const struct fbr_fuse_callbacks _TEST_FS_MKDIR_CALLBACKS = {
 	.init = _test_mkdir_init,
 	.getattr = _test_mkdir_getattr,
 	.lookup = _test_mkdir_lookup,
-	.mkdir = fbr_ops_mkdir
+	.mkdir = fbr_ops_mkdir,
+	.forget = fbr_ops_forget
 };
 
 void

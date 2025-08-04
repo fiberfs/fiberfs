@@ -403,7 +403,6 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 			if (!new_file) {
 				file_deleted = 1;
 			} else if (file->inode != new_file->inode) {
-				assert_dev(file->generation != new_file->generation);
 				file_expired = 1;
 			}
 		} else {
