@@ -5,9 +5,9 @@ FLAGS=-q
 TESTS=$(sort $(wildcard */*.cht */*.tst))
 TESTS_CHTTP=$(sort $(wildcard 001_http/*.cht 002_http_live/*.cht))
 TESTS_JSON=$(sort $(wildcard 003_json/*.tst))
-TESTS_CORE=$(sort $(wildcard 004_core/*.tst 006_store/*.tst 007_utils/*.tst))
+TESTS_CORE=$(sort $(wildcard 004_*/*.tst 006_*/*.tst 007_*/*.tst 008_*/*.tst))
 TESTS_COREX=$(sort $(wildcard 004_core/*.tstx))
-TESTS_ERROR=$(sort $(wildcard */*.tstf))
+TESTS_ERROR=$(sort $(wildcard */*.tstf 005_*/*.tst))
 PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
 FAIL_CMD=timeout 2 bash -c

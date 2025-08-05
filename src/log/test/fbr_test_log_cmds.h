@@ -9,10 +9,7 @@
 
 #ifndef FBR_TEST_LOG_CMD
 
-#include <pthread.h>
-
 #include "test/fbr_test.h"
-#include "log/fbr_log.h"
 
 #define FBR_TEST_LOG_CMD(cmd)	fbr_test_cmd_f fbr_cmd_##cmd;
 #define FBR_TEST_LOG_VAR(var)	fbr_test_var_f fbr_var_##var;
