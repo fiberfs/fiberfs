@@ -6,11 +6,7 @@
 
 #include "fiberfs.h"
 #include "fbr_cache_store.h"
-
-#ifdef FBR_RELEASE
-#define XXH_INLINE_ALL
-#endif
-#include "data/xxhash.h"
+#include "data/fbr_xxhash.h"
 
 struct fbr_cache_store __CSTORE;
 struct fbr_cache_store *_CSTORE = &__CSTORE;
