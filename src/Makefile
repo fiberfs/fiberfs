@@ -10,7 +10,7 @@ LDFLAGS=-shared
 LIBFLAGS=-lrt -lpthread
 BUILD=build
 
-TEST_SRC:=$(shell find * -type f -name '*.c' -path '*/test/*')
+TEST_SRC:=$(shell find * -type f -name '*.c' -path '*test/*')
 TEST_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(TEST_SRC)))
 
 CHTTP_CLIENT:=$(wildcard chttp/client/*.c)
@@ -136,7 +136,7 @@ AFL_CFLAGS_CC=$(CFLAGS_CLANG)
 .PHONY:		all lib clean gcov gcovclean afl
 
 all:		chttp_client fjson_client fiberfs_test lib
-lib:		libfiberfs.so libchttp.a libfjson.a libfcache.a
+lib:		libfiberfs.so libfiberfs.a libchttp.a libfjson.a libfcache.a libfibertest.a
 
 chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
 		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libchttp.a $(LIBFLAGS)
@@ -144,11 +144,17 @@ chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
 fjson_client:	libfjson.a $(FJSON_CLIENT_OBJS)
 		$(CC) -o $@ $(FJSON_CLIENT_OBJS) libfjson.a $(LIBFLAGS)
 
-fiberfs_test:	libchttp.a libfjson.a libfcache.a $(TEST_OBJS) $(OBJS)
-		$(CC) -o $@ $(TEST_OBJS) $(OBJS) libchttp.a libfjson.a libfcache.a $(LIBFLAGS)
+fiberfs_test:	libfiberfs.a libchttp.a libfjson.a libfcache.a libfibertest.a
+		$(CC) -o $@ libfibertest.a libfiberfs.a libchttp.a libfjson.a libfcache.a $(LIBFLAGS)
 
-libfiberfs.so:	$(OBJS) libchttp.a libfjson.a libfcache.a
-		$(CC) $(LDFLAGS) -o $@ $(OBJS) libchttp.a libfjson.a libfcache.a
+libfiberfs.so:	libfiberfs.a libchttp.a libfjson.a libfcache.a
+		$(CC) $(LDFLAGS) -o $@ libfiberfs.a libchttp.a libfjson.a libfcache.a
+
+libfiberfs.a:	$(OBJS)
+		ar cr $@ $(OBJS)
+
+libfibertest.a:	$(TEST_OBJS) $(UTILS_OBJS)
+		ar cr $@ $(TEST_OBJS) $(UTILS_OBJS)
 
 libchttp.a:	$(CHTTP_OBJS) $(UTILS_OBJS)
 		ar cr $@ $(CHTTP_OBJS) $(UTILS_OBJS)
