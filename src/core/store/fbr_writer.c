@@ -64,7 +64,7 @@ _writer_extend(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
 	struct fbr_buffer *fbuf = NULL;
 
 	for (size_t i = 0; i < fbr_array_len(writer->buffer_slab); i++) {
-		if (!writer->buffer_slab[i].magic) {
+		if (fbr_object_is_empty(&writer->buffer_slab[i])) {
 			fbuf = &writer->buffer_slab[i];
 			fbuf->magic = FBR_BUFFER_MAGIC;
 

@@ -20,14 +20,13 @@ struct fbr_cache_store *_CSTORE = &__CSTORE;
 void
 fbr_cache_store_init(void)
 {
-	assert(_CSTORE);
-	assert_zero(_CSTORE->magic);
+	fbr_object_empty(_CSTORE);
 
 	_CSTORE->magic = FBR_CSTORE_MAGIC;
 
 	for (size_t i = 0; i < fbr_array_len(_CSTORE->heads); i++) {
 		struct fbr_cstore_head *head = &_CSTORE->heads[i];
-		assert_zero_dev(head->magic);
+		fbr_object_empty(head);
 
 		head->magic = FBR_CSTORE_HEAD_MAGIC;
 
