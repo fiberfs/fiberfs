@@ -16,5 +16,8 @@ fbr_cache_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 	fbr_wbuffer_ok(wbuffer);
 	assert(wbuffer->state == FBR_WBUFFER_READY);
 
+	fbr_chash_t hash = fbr_chash_wbuffer(fs, file, wbuffer);
+	(void)hash;
+
 	fbr_ABORT("TODO");
 }

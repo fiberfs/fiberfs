@@ -6,7 +6,6 @@
 
 #include "fiberfs.h"
 #include "fbr_cache_store.h"
-#include "utils/fbr_xxhash.h"
 
 struct fbr_cache_store __CSTORE;
 struct fbr_cache_store *_CSTORE = &__CSTORE;

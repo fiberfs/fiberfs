@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <stdint.h>
 
+#include "fbr_cache.h"
 #include "data/queue.h"
 #include "data/tree.h"
 
@@ -19,7 +20,7 @@ struct fbr_cstore_entry {
 	unsigned				magic;
 #define FBR_CSTORE_ENTRY_MAGIC			0xA59C372B
 
-	uint64_t				hash;
+	fbr_chash_t				hash;
 
 	RB_ENTRY(fbr_cstore_entry)		entry;
 	TAILQ_ENTRY(fbr_cstore_entry)		lru_entry;
