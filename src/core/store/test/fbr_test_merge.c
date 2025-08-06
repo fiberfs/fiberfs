@@ -551,7 +551,7 @@ fbr_cmd_merge_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	file2 = fbr_file_alloc_new(fs, root, &name);
 	fbr_body_chunk_add(fs, file2, 2, 0, 150);
 	fbr_body_chunk_add(fs, file2, 3, 150, 10);
-	fbr_body_chunk_append(fs, file2, 1, 100, 100);
+	fbr_body_chunk_append(fs, file2, 1, 100, 100, 0);
 	file1->state = FBR_FILE_OK;
 	assert(fbr_test_fs_count_chunks(file2) == 3);
 	assert(fbr_test_fs_get_chunk(file2, 0)->id == 2);

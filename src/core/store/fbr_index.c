@@ -82,19 +82,20 @@ _json_chunk_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_chunk *ch
 {
 	assert_dev(chunk);
 	assert_dev(chunk->state >= FBR_CHUNK_EMPTY);
+	assert_dev(chunk->id);
 
 	// i: chunk id (string, optional)
-	if (chunk->id) {
-		fbr_writer_add(fs, json, "{\"i\":\"", 6);
-		fbr_writer_add_id(fs, json, chunk->id);
+	fbr_writer_add(fs, json, "{\"i\":\"", 6);
+	fbr_writer_add_id(fs, json, chunk->id);
+	fbr_writer_add(fs, json, "\",", 2);
+
+	// e: chunk external
+	if (chunk->external) {
+		fbr_writer_add(fs, json, "\"e\":1,", 6);
 	}
 
 	// o: chunk offset
-	if (chunk->id) {
-		fbr_writer_add(fs, json, "\",\"o\":", 6);
-	} else {
-		fbr_writer_add(fs, json, "{\"o\":", 5);
-	}
+	fbr_writer_add(fs, json, "\"o\":", 4);
 	fbr_writer_add_ulong(fs, json, chunk->offset);
 
 	// l: chunk length
@@ -667,6 +668,8 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 
 	struct fbr_fs *fs = parser->fs;
 	struct fbr_file *file = parser->file;
+	const char *val = token->svalue;
+	size_t val_len = token->svalue_len;
 
 	switch (token->type) {
 		case FJSON_TOKEN_STRING:
@@ -674,23 +677,25 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 			if (!_file_editable(file)) {
 				return 0;
 			}
+
 			if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'i')) {
-				parser->chunk.id = fbr_id_parse(token->svalue, token->svalue_len);
+				parser->chunk.id = fbr_id_parse(val, val_len);
+			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'e')) {
+				parser->chunk.external = fbr_parse_ulong(val, val_len);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'o')) {
-				parser->chunk.offset = fbr_parse_ulong(token->svalue,
-					token->svalue_len);
+				parser->chunk.offset = fbr_parse_ulong(val, val_len);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'l')) {
-				parser->chunk.length = fbr_parse_ulong(token->svalue,
-					token->svalue_len);
+				parser->chunk.length = fbr_parse_ulong(val, val_len);
 			}
 			break;
 		case FJSON_TOKEN_OBJECT:
 			if (token->closed && depth == 6 &&
 			    parser->context[FBR_INDEX_LOC_FILE] == 'b') {
-				if (parser->chunk.length) {
+				if (parser->chunk.id && parser->chunk.length) {
 					assert_dev(_file_editable(file));
 					fbr_body_chunk_append(fs, file, parser->chunk.id,
-						parser->chunk.offset, parser->chunk.length);
+						parser->chunk.offset, parser->chunk.length,
+						(parser->chunk.external > 0) ? 1 : 0);
 				}
 				fbr_ZERO(&parser->chunk);
 			}
@@ -879,18 +884,19 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 	//_index_parse_debug(parser, token, depth);
 
 	struct fbr_file *file = parser->file;
+	const char *val = token->svalue;
+	size_t val_len = token->svalue_len;
 
 	switch (token->type) {
 		case FJSON_TOKEN_STRING:
 		case FJSON_TOKEN_NUMBER:
 			if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'n')) {
-				_index_parse_file_start(parser, token->svalue, token->svalue_len);
+				_index_parse_file_start(parser, val, val_len);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'j')) {
 				_index_parse_generation(parser, token);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 's')) {
 				if (_file_editable(file)) {
-					file->size = fbr_parse_ulong(token->svalue,
-						token->svalue_len);
+					file->size = fbr_parse_ulong(val, val_len);
 				}
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'm')) {
 				if (_file_editable(file)) {
@@ -955,8 +961,10 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 			break;
 		case FJSON_TOKEN_NUMBER:
 			if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'g')) {
-				directory->generation = fbr_parse_ulong(token->svalue,
-					token->svalue_len);
+				const char *val = token->svalue;
+				size_t val_len = token->svalue_len;
+
+				directory->generation = fbr_parse_ulong(val, val_len);
 
 				if (previous && previous->generation == directory->generation &&
 				    previous->version == directory->version) {

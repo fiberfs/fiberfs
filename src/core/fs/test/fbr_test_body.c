@@ -316,10 +316,10 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	file = fbr_file_alloc(fs, root, fbr_path_name_init(&name, "file11"));
 	fbr_body_chunk_add(fs, file, 1, 0, 200);
-	fbr_body_chunk_append(fs, file, 2, 100, 100);
-	fbr_body_chunk_append(fs, file, 3, 200, 100);
-	fbr_body_chunk_append(fs, file, 4, 300, 100);
-	fbr_body_chunk_append(fs, file, 5, 400, 100);
+	fbr_body_chunk_append(fs, file, 2, 100, 100, 0);
+	fbr_body_chunk_append(fs, file, 3, 200, 100, 0);
+	fbr_body_chunk_append(fs, file, 4, 300, 100, 0);
+	fbr_body_chunk_append(fs, file, 5, 400, 100, 0);
 	fbr_body_chunk_add(fs, file, 6, 0, 300);
 	file->state = FBR_FILE_OK;
 	assert(_count_chunks(file) == 6);

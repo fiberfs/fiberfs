@@ -494,8 +494,9 @@ fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
-	assert(chunk->id);
 	assert(chunk->state == FBR_CHUNK_EMPTY);
+	assert(chunk->id);
+	assert_zero(chunk->external);
 
 	char chunk_path[PATH_MAX];
 	_dstore_chunk_path(file, chunk->id, chunk->offset, 0, chunk_path, sizeof(chunk_path));
@@ -554,7 +555,7 @@ fbr_dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
-	assert(chunk->id);
+	assert_zero(chunk->external);
 
 	char chunk_path[PATH_MAX];
 	_dstore_chunk_path(file, chunk->id, chunk->offset, 0, chunk_path, sizeof(chunk_path));

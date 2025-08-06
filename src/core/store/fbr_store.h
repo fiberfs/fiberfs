@@ -86,6 +86,7 @@ struct fbr_index_parser {
 
 	struct {
 		fbr_id_t			id;
+		unsigned long			external;
 		size_t				offset;
 		size_t				length;
 	} chunk;

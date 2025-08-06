@@ -117,7 +117,7 @@ _body_chunk_insert(struct fbr_body *body, struct fbr_chunk *chunk)
 
 static struct fbr_chunk *
 _body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t offset,
-    size_t length, int append)
+    size_t length, int external, int append)
 {
 	assert_dev(fs);
 	assert_dev(file);
@@ -132,6 +132,15 @@ _body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t of
 	chunk->id = id;
 	chunk->offset = offset;
 	chunk->length = length;
+
+	if (external) {
+		assert_dev(id);
+		chunk->external = 1;
+	}
+	if (!chunk->id) {
+		chunk->id = fbr_id_gen();
+		chunk->external = 1;
+	}
 
 	if (!file->body.chunks) {
 		assert_zero_dev(file->body.chunk_last);
@@ -175,19 +184,20 @@ fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t
 	fbr_file_ok(file);
 	assert(length);
 
-	return _body_chunk_add(fs, file, id, offset, length, 0);
+	return _body_chunk_add(fs, file, id, offset, length, 0, 0);
 }
 
 struct fbr_chunk *
 fbr_body_chunk_append(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t offset,
-    size_t length)
+    size_t length, int external)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_INIT);
+	assert(id);
 	assert(length);
 
-	return _body_chunk_add(fs, file, id, offset, length, 1);
+	return _body_chunk_add(fs, file, id, offset, length, external, 1);
 }
 
 struct fbr_chunk *
@@ -265,7 +275,7 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 		struct fbr_chunk *chunk = remove->list[i];
 		fbr_chunk_ok(chunk);
 
-		if (!chunk->id) {
+		if (chunk->external) {
 			continue;
 		}
 
