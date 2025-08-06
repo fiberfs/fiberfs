@@ -15,25 +15,41 @@
 #include "data/tree.h"
 
 #define FBR_CSTORE_HEAD_COUNT			1024
+#define FBR_CSTORE_SLAB_SIZE			512
 
 struct fbr_cstore_entry {
 	unsigned				magic;
 #define FBR_CSTORE_ENTRY_MAGIC			0xA59C372B
 
+	unsigned int				free:1;
+	unsigned int				used:1;
+
 	fbr_chash_t				hash;
+	size_t					bytes;
 
 	RB_ENTRY(fbr_cstore_entry)		entry;
-	TAILQ_ENTRY(fbr_cstore_entry)		lru_entry;
+	TAILQ_ENTRY(fbr_cstore_entry)		list_entry;
+};
+
+struct fbr_cstore_entry_slab {
+	struct fbr_cstore_entry			entries[FBR_CSTORE_SLAB_SIZE];
+	size_t					count;
+	struct fbr_cstore_entry_slab		*next;
 };
 
 RB_HEAD(fbr_cstore_tree, fbr_cstore_entry);
-TAILQ_HEAD(fbr_cstore_lru_list, fbr_cstore_entry);
+TAILQ_HEAD(fbr_cstore_list, fbr_cstore_entry);
 
 struct fbr_cstore_head {
 	unsigned				magic;
 #define FBR_CSTORE_HEAD_MAGIC			0xA249385F
 
 	struct fbr_cstore_tree			tree;
+	struct fbr_cstore_list			lru_list;
+	struct fbr_cstore_list			free_list;
+
+	struct fbr_cstore_entry_slab		*slabs;
+
 	pthread_rwlock_t			lock;
 
 	size_t					count;
@@ -45,9 +61,6 @@ struct fbr_cache_store {
 #define FBR_CSTORE_MAGIC			0xC8747276
 
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
-
-	struct fbr_cstore_lru_list		lru;
-	pthread_mutex_t				lru_lock;
 };
 
 void fbr_cache_store_init(void);
