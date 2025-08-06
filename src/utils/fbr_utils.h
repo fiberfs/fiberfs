@@ -7,8 +7,11 @@
 #ifndef _FBR_UTILS_H_INCLUDED_
 #define _FBR_UTILS_H_INCLUDED_
 
+#include <stdint.h>
 #include <string.h>
 #include <time.h>
+
+typedef uint64_t fbr_hash_t;
 
 void fbr_sleep_ms(double ms);
 double fbr_get_time(void);
@@ -16,6 +19,7 @@ void fbr_timespec_add_clock(struct timespec *value);
 unsigned long fbr_parse_ulong(const char *str, size_t length);
 int fbr_is_dev(void);
 int fbr_is_test(void);
+fbr_hash_t fbr_hash(const void *buffer, size_t buffer_len);
 void fbr_strcpy(char *dest, size_t dest_len, char *source);
 
 #define _FBR_STRINGIFY(_value)			#_value

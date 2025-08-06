@@ -11,6 +11,7 @@
 #include <time.h>
 
 #include "fiberfs.h"
+#include "fbr_xxhash.h"
 
 int _IS_FIBERFS_TEST;
 
@@ -95,6 +96,15 @@ fbr_is_test(void)
 	}
 
 	return 0;
+}
+
+fbr_hash_t
+fbr_hash(const void *buffer, size_t buffer_len)
+{
+	XXH64_hash_t hash = XXH3_64bits(buffer, buffer_len);
+	static_ASSERT(sizeof(hash) == sizeof(fbr_hash_t));
+
+	return (fbr_hash_t)hash;
 }
 
 void

@@ -8,9 +8,8 @@
 #define _FBR_CACHE_STORE_H_INCLUDED_
 
 #include <pthread.h>
-#include <stdint.h>
 
-#include "fbr_cache.h"
+#include "fiberfs.h"
 #include "data/queue.h"
 #include "data/tree.h"
 
@@ -24,7 +23,7 @@ struct fbr_cstore_entry {
 	unsigned int				free:1;
 	unsigned int				used:1;
 
-	fbr_chash_t				hash;
+	fbr_hash_t				hash;
 	size_t					bytes;
 
 	RB_ENTRY(fbr_cstore_entry)		entry;

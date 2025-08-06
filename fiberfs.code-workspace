@@ -33,6 +33,7 @@
 			"src/fjson"
 		],
 		"C_Cpp.default.compilerArgs": [
+			"-DFBR_IDE_INTELLISENSE",
 			"-DCHTTP_OPENSSL",
 			"-DFBR_ZLIB",
 			"-DFBR_FUSE3",

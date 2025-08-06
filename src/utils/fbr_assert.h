@@ -55,4 +55,11 @@ void fbr_libunwind_backtrace(char **stack_syms, int len);
 	assert_zero(expr)
 #endif
 
+#ifndef static_assert
+#define static_assert								\
+	_Static_assert
+#endif
+#define static_ASSERT(cond)							\
+	static_assert(cond, #cond)
+
 #endif /* _FBR_ASSERT_H_INCLUDED_ */

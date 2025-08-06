@@ -212,12 +212,7 @@ _dindex_dirhead_get(struct fbr_dindex *dindex, struct fbr_directory *directory)
 	fbr_directory_name(directory, &dirname);
 	assert_dev(dirname.name);
 
-	unsigned long hash = 5381;
-
-	for (size_t i = 0; i < dirname.len; i++) {
-		int c = dirname.name[i];
-		hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-	}
+	fbr_hash_t hash = fbr_hash(dirname.name, dirname.len);
 
 	struct fbr_dindex_dirhead *dirhead = &(dindex->dirheads[hash % _DINDEX_HEAD_COUNT]);
 	fbr_dindex_dirhead_ok(dirhead);
