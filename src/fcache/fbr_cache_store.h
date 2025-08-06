@@ -16,12 +16,17 @@
 #define FBR_CSTORE_HEAD_COUNT			1024
 #define FBR_CSTORE_SLAB_SIZE			512
 
+enum fbr_cstore_entry_state {
+	FBR_CSTORE_ENTRY_NONE = 0,
+	FBR_CSTORE_ENTRY_FREE,
+	FBR_CSTORE_ENTRY_USED
+};
+
 struct fbr_cstore_entry {
 	unsigned				magic;
 #define FBR_CSTORE_ENTRY_MAGIC			0xA59C372B
 
-	unsigned int				free:1;
-	unsigned int				used:1;
+	enum fbr_cstore_entry_state		state;
 
 	fbr_hash_t				hash;
 	size_t					bytes;
@@ -43,6 +48,8 @@ struct fbr_cstore_head {
 	unsigned				magic;
 #define FBR_CSTORE_HEAD_MAGIC			0xA249385F
 
+	unsigned int				write_locked:1;
+
 	struct fbr_cstore_tree			tree;
 	struct fbr_cstore_list			lru_list;
 	struct fbr_cstore_list			free_list;
@@ -50,8 +57,9 @@ struct fbr_cstore_head {
 	struct fbr_cstore_entry_slab		*slabs;
 
 	pthread_rwlock_t			lock;
+	pthread_mutex_t				lru_lock;
 
-	size_t					count;
+	size_t					entries;
 	size_t					bytes;
 };
 
@@ -63,6 +71,10 @@ struct fbr_cache_store {
 };
 
 void fbr_cache_store_init(void);
+int fbr_cstore_readlock(fbr_hash_t hash);
+int fbr_cstore_writelock(fbr_hash_t hash);
+void fbr_cstore_insert(fbr_hash_t hash, size_t bytes);
+void fbr_cstore_unlock(fbr_hash_t hash);
 void fbr_cache_store_free(void);
 
 #define fbr_cstore_ok(cstore)			fbr_magic_check(cstore, FBR_CSTORE_MAGIC)
