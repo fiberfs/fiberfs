@@ -81,17 +81,22 @@ _cstore_thread(void *arg)
 			size_t bytes = random() % _CSTORE_HASH_MAX_BYTES;
 			entry = fbr_cstore_insert(hash, bytes);
 			if (entry) {
+				fbr_cstore_entry_ok(entry);
 				fbr_atomic_add(&_CSTORE_BYTES_COUNTER, bytes);
 				fbr_atomic_add(&_CSTORE_ENTRY_COUNTER, 1);
+				fbr_cstore_release(entry);
 			} else {
 				entry = fbr_cstore_get(hash);
+				if (entry) {
+					fbr_cstore_entry_ok(entry);
+					fbr_cstore_release(entry);
+				}
 			}
 		} else {
+			fbr_cstore_entry_ok(entry);
 			fbr_atomic_add(&_CSTORE_READ_COUNTER, 1);
+			fbr_cstore_release(entry);
 		}
-		fbr_cstore_entry_ok(entry);
-
-		fbr_cstore_release(entry);
 	}
 
 	return NULL;
