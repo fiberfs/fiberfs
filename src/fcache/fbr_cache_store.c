@@ -67,8 +67,7 @@ fbr_cache_store_init(void)
 		RB_INIT(&head->tree);
 		TAILQ_INIT(&head->lru_list);
 		TAILQ_INIT(&head->free_list);
-		pt_assert(pthread_rwlock_init(&head->lock, NULL));
-		pt_assert(pthread_mutex_init(&head->lru_lock, NULL));
+		pt_assert(pthread_mutex_init(&head->lock, NULL));
 
 		_cstore_add_slab(head);
 		assert_dev(!TAILQ_EMPTY(&head->free_list));
@@ -98,7 +97,6 @@ static struct fbr_cstore_entry *
 _cstore_get_entry(struct fbr_cstore_head *head, fbr_hash_t hash)
 {
 	fbr_cstore_head_ok(head);
-	assert(head->write_locked);
 
 	if (TAILQ_EMPTY(&head->free_list)) {
 		_cstore_add_slab(head);
@@ -111,12 +109,13 @@ _cstore_get_entry(struct fbr_cstore_head *head, fbr_hash_t hash)
 
 	entry->hash = hash;
 	entry->state = FBR_CSTORE_ENTRY_USED;
+	entry->refcount = 1; // LRU takes a ref
 
 	TAILQ_REMOVE(&head->free_list, entry, list_entry);
 	TAILQ_INSERT_HEAD(&head->lru_list, entry, list_entry);
 	assert_zero(RB_INSERT(fbr_cstore_tree, &head->tree, entry));
 
-	head->entries++;
+	fbr_atomic_add(&_CSTORE->entries, 1);
 
 	return entry;
 }
@@ -132,14 +131,13 @@ _cstore_get_head(fbr_hash_t hash)
 	return head;
 }
 
-int
-fbr_cstore_readlock(fbr_hash_t hash)
+struct fbr_cstore_entry *
+fbr_cstore_get(fbr_hash_t hash)
 {
 	_cstore_ok();
 
 	struct fbr_cstore_head *head = _cstore_get_head(hash);
-
-	pt_assert(pthread_rwlock_rdlock(&head->lock));
+	pt_assert(pthread_mutex_lock(&head->lock));
 	fbr_cstore_head_ok(head);
 
 	struct fbr_cstore_entry find;
@@ -148,37 +146,35 @@ fbr_cstore_readlock(fbr_hash_t hash)
 
 	struct fbr_cstore_entry *entry = RB_FIND(fbr_cstore_tree, &head->tree, &find);
 	if (!entry) {
-		pthread_rwlock_unlock(&head->lock);
-		return 0;
+		pthread_mutex_unlock(&head->lock);
+		return NULL;
 	}
 
 	fbr_cstore_entry_ok(entry);
 	assert(entry->state == FBR_CSTORE_ENTRY_USED);
+	assert(entry->refcount);
 
-	pt_assert(pthread_mutex_lock(&head->lru_lock));
+	entry->refcount++;
+	assert(entry->refcount);
 
 	if (TAILQ_FIRST(&head->lru_list) != entry) {
 		TAILQ_REMOVE(&head->lru_list, entry, list_entry);
 		TAILQ_INSERT_HEAD(&head->lru_list, entry, list_entry);
 	}
 
-	pt_assert(pthread_mutex_unlock(&head->lru_lock));
+	pt_assert(pthread_mutex_unlock(&head->lock));
 
-	return 1;
+	return entry;
 }
 
-int
-fbr_cstore_writelock(fbr_hash_t hash)
+struct fbr_cstore_entry *
+fbr_cstore_insert(fbr_hash_t hash, size_t bytes)
 {
 	_cstore_ok();
 
 	struct fbr_cstore_head *head = _cstore_get_head(hash);
-
-	pt_assert(pthread_rwlock_wrlock(&head->lock));
+	pt_assert(pthread_mutex_lock(&head->lock));
 	fbr_cstore_head_ok(head);
-
-	assert_zero(head->write_locked);
-	head->write_locked = 1;
 
 	struct fbr_cstore_entry find;
 	find.magic = FBR_CSTORE_ENTRY_MAGIC;
@@ -187,39 +183,62 @@ fbr_cstore_writelock(fbr_hash_t hash)
 	struct fbr_cstore_entry *entry = RB_FIND(fbr_cstore_tree, &head->tree, &find);
 	if (entry) {
 		fbr_cstore_entry_ok(entry);
-		assert(entry->state == FBR_CSTORE_ENTRY_USED);
+		assert_dev(entry->state == FBR_CSTORE_ENTRY_USED);
+		assert_dev(entry->refcount);
 
-		return 1;
+		pthread_mutex_unlock(&head->lock);
+
+		return NULL;
 	}
 
-	return 0;
-}
-
-void
-fbr_cstore_insert(fbr_hash_t hash, size_t bytes)
-{
-	_cstore_ok();
-
-	struct fbr_cstore_head *head = _cstore_get_head(hash);
-	assert(head->write_locked);
-
-	struct fbr_cstore_entry *entry = _cstore_get_entry(head, hash);
+	entry = _cstore_get_entry(head, hash);
 	assert_dev(entry->state == FBR_CSTORE_ENTRY_USED);
 
+	// Caller takes a ref
+	entry->refcount++;
+	assert(entry->refcount);
+
 	entry->bytes = bytes;
-	head->bytes += bytes;
+	fbr_atomic_add(&_CSTORE->bytes, bytes);
+
+	pt_assert(pthread_mutex_unlock(&head->lock));
+
+	return entry;
 }
 
 void
-fbr_cstore_unlock(fbr_hash_t hash)
+fbr_cstore_release(struct fbr_cstore_entry *entry)
 {
 	_cstore_ok();
+	fbr_cstore_entry_ok(entry);
+	assert(entry->state == FBR_CSTORE_ENTRY_USED);
 
-	struct fbr_cstore_head *head = _cstore_get_head(hash);
+	struct fbr_cstore_head *head = _cstore_get_head(entry->hash);
+	pt_assert(pthread_mutex_lock(&head->lock));
+	fbr_cstore_head_ok(head);
 
-	head->write_locked = 0;
+	assert(entry->refcount);
+	entry->refcount--;
 
-	pthread_rwlock_unlock(&head->lock);
+	if (entry->refcount) {
+		pt_assert(pthread_mutex_unlock(&head->lock));
+		return;
+	}
+
+	fbr_atomic_sub(&_CSTORE->bytes, entry->bytes);
+	fbr_atomic_sub(&_CSTORE->entries, 1);
+
+	entry->state = FBR_CSTORE_ENTRY_FREE;
+	entry->hash = 0;
+	entry->bytes = 0;
+
+	TAILQ_REMOVE(&head->lru_list, entry, list_entry);
+	void *ret = RB_REMOVE(fbr_cstore_tree, &head->tree, entry);
+	assert(ret == entry);
+
+	TAILQ_INSERT_HEAD(&head->free_list, entry, list_entry);
+
+	pt_assert(pthread_mutex_unlock(&head->lock));
 }
 
 void
@@ -242,12 +261,13 @@ fbr_cache_store_free(void)
 					TAILQ_REMOVE(&head->free_list, entry, list_entry);
 				} else {
 					assert(entry->state == FBR_CSTORE_ENTRY_USED);
+					assert_dev(entry->refcount == 1);
 					TAILQ_REMOVE(&head->lru_list, entry, list_entry);
 					void *ret = RB_REMOVE(fbr_cstore_tree, &head->tree, entry);
 					assert(ret == entry);
 
-					head->entries--;
-					head->bytes -= entry->bytes;
+					_CSTORE->entries--;
+					_CSTORE->bytes -= entry->bytes;
 				}
 			}
 
@@ -255,18 +275,17 @@ fbr_cache_store_free(void)
 			free(slab);
 		}
 
-		pt_assert(pthread_rwlock_destroy(&head->lock));
-		pt_assert(pthread_mutex_destroy(&head->lru_lock));
+		pt_assert(pthread_mutex_destroy(&head->lock));
 
 		assert(TAILQ_EMPTY(&head->free_list));
 		assert(TAILQ_EMPTY(&head->lru_list));
 		assert(RB_EMPTY(&head->tree));
 
-		assert_zero(head->entries);
-		assert_zero(head->bytes);
-
 		fbr_ZERO(head);
 	}
+
+	assert_zero(_CSTORE->entries);
+	assert_zero(_CSTORE->bytes);
 
 	fbr_ZERO(_CSTORE);
 }

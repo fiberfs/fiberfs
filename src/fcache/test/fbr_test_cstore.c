@@ -75,20 +75,22 @@ _cstore_thread(void *arg)
 			hash = random() % _CSTORE_ENTRY_MAX;
 		}
 
-		int locked = fbr_cstore_readlock(hash);
-		if (!locked) {
-			int exists = fbr_cstore_writelock(hash);
-			if (!exists) {
-				size_t bytes = random() % _CSTORE_MAX_BYTES;
+		struct fbr_cstore_entry *entry = fbr_cstore_get(hash);
+		if (!entry) {
+			size_t bytes = random() % _CSTORE_MAX_BYTES;
+			entry = fbr_cstore_insert(hash, bytes);
+			if (entry) {
 				fbr_atomic_add(&_CSTORE_BYTES_COUNTER, bytes);
 				fbr_atomic_add(&_CSTORE_ENTRY_COUNTER, 1);
-				fbr_cstore_insert(hash, bytes);
+			} else {
+				entry = fbr_cstore_get(hash);
 			}
 		} else {
 			fbr_atomic_add(&_CSTORE_READ_COUNTER, 1);
 		}
+		fbr_cstore_entry_ok(entry);
 
-		fbr_cstore_unlock(hash);
+		fbr_cstore_release(entry);
 	}
 
 	return NULL;
@@ -126,15 +128,12 @@ fbr_cmd_cstore_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("* cstore reads: %zu", _CSTORE_READ_COUNTER);
 	fbr_test_logs("* cstore bytes: %zu", _CSTORE_BYTES_COUNTER);
 
-	size_t entries = 0;
-	size_t bytes = 0;
-	size_t slabs = 0;
-
 	fbr_cstore_ok(_CSTORE);
+	size_t slabs = 0;
 	for (size_t i = 0; i < fbr_array_len(_CSTORE->heads); i++) {
 		struct fbr_cstore_head *head = &_CSTORE->heads[i];
-		entries += head->entries;
-		bytes += head->bytes;
+		fbr_cstore_head_ok(head);
+
 		struct fbr_cstore_entry_slab *slab = head->slabs;
 		while (slab) {
 			slabs++;
@@ -143,14 +142,14 @@ fbr_cmd_cstore_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 	fbr_test_logs("* _CSTORE->heads=%zu", fbr_array_len(_CSTORE->heads));
-	fbr_test_logs("* _CSTORE->entries=%zu", entries);
+	fbr_test_logs("* _CSTORE->entries=%zu", _CSTORE->entries);
+	fbr_test_logs("* _CSTORE->bytes=%zu", _CSTORE->bytes);
 	fbr_test_logs("* _CSTORE->slabs=%zu", slabs);
-	fbr_test_logs("* _CSTORE->bytes=%zu", bytes);
 
-	fbr_ASSERT(_CSTORE_ENTRY_COUNTER == entries, "inserted: %zu, found %zu",
-		_CSTORE_ENTRY_COUNTER, entries);
-	fbr_ASSERT(_CSTORE_BYTES_COUNTER == bytes, "bytes: %zu, found %zu",
-		_CSTORE_BYTES_COUNTER, bytes);
+	fbr_ASSERT(_CSTORE_ENTRY_COUNTER == _CSTORE->entries, "inserted: %zu, found %zu",
+		_CSTORE_ENTRY_COUNTER, _CSTORE->entries);
+	fbr_ASSERT(_CSTORE_BYTES_COUNTER == _CSTORE->bytes, "bytes: %zu, found %zu",
+		_CSTORE_BYTES_COUNTER, _CSTORE->bytes);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_test done");
 }
