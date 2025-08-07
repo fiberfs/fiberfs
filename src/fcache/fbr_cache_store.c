@@ -17,7 +17,7 @@ struct fbr_cache_store *_CSTORE = &__CSTORE;
 
 static int _cstore_entry_cmp(const struct fbr_cstore_entry *e1, const struct fbr_cstore_entry *e2);
 
-RB_GENERATE_STATIC(fbr_cstore_tree, fbr_cstore_entry, entry, _cstore_entry_cmp)
+RB_GENERATE_STATIC(fbr_cstore_tree, fbr_cstore_entry, tree_entry, _cstore_entry_cmp)
 
 static void
 _cstore_add_slab(struct fbr_cstore_head *head)
@@ -40,15 +40,8 @@ _cstore_add_slab(struct fbr_cstore_head *head)
 		fbr_cstore_entry_ok(entry);
 	}
 
-	if (!head->slabs) {
-		head->slabs = slab;
-	} else {
-		struct fbr_cstore_entry_slab *prev = head->slabs;
-		while (prev->next) {
-			prev = prev->next;
-		}
-		prev->next = slab;
-	}
+	slab->next = head->slabs;
+	head->slabs = slab;
 }
 
 void
@@ -110,6 +103,7 @@ _cstore_get_entry(struct fbr_cstore_head *head, fbr_hash_t hash)
 	entry->hash = hash;
 	entry->state = FBR_CSTORE_ENTRY_USED;
 	entry->refcount = 1; // LRU takes a ref
+	entry->in_lru = 1;
 
 	TAILQ_REMOVE(&head->free_list, entry, list_entry);
 	TAILQ_INSERT_HEAD(&head->lru_list, entry, list_entry);
@@ -157,9 +151,11 @@ fbr_cstore_get(fbr_hash_t hash)
 	entry->refcount++;
 	assert(entry->refcount);
 
-	if (TAILQ_FIRST(&head->lru_list) != entry) {
-		TAILQ_REMOVE(&head->lru_list, entry, list_entry);
-		TAILQ_INSERT_HEAD(&head->lru_list, entry, list_entry);
+	if (entry->in_lru) {
+		if (TAILQ_FIRST(&head->lru_list) != entry) {
+			TAILQ_REMOVE(&head->lru_list, entry, list_entry);
+			TAILQ_INSERT_HEAD(&head->lru_list, entry, list_entry);
+		}
 	}
 
 	pt_assert(pthread_mutex_unlock(&head->lock));
@@ -173,6 +169,7 @@ _cstore_entry_free(struct fbr_cstore_head *head, struct fbr_cstore_entry *entry)
 	assert_dev(head);
 	assert_dev(entry);
 	assert_zero(entry->refcount);
+	assert_zero(entry->in_lru);
 
 	size_t bytes = entry->bytes;
 
@@ -207,11 +204,14 @@ _cstore_lru_prune(struct fbr_cstore_head *head, size_t new_bytes)
 
 		struct fbr_cstore_entry *entry = TAILQ_LAST(&head->lru_list, fbr_cstore_list);
 		fbr_cstore_entry_ok(entry);
+		assert(entry->state == FBR_CSTORE_ENTRY_USED);
+		assert(entry->in_lru);
 
 		TAILQ_REMOVE(&head->lru_list, entry, list_entry);
 
 		assert(entry->refcount);
 		entry->refcount--;
+		entry->in_lru = 0;
 
 		if (!entry->refcount) {
 			_cstore_entry_free(head, entry);
@@ -251,6 +251,7 @@ fbr_cstore_insert(fbr_hash_t hash, size_t bytes)
 
 	entry = _cstore_get_entry(head, hash);
 	assert_dev(entry->state == FBR_CSTORE_ENTRY_USED);
+	assert_dev(entry->in_lru);
 
 	// Caller takes a ref
 	entry->refcount++;
@@ -309,6 +310,7 @@ fbr_cache_store_free(void)
 				} else {
 					assert(entry->state == FBR_CSTORE_ENTRY_USED);
 					assert_dev(entry->refcount == 1);
+					assert_dev(entry->in_lru);
 					TAILQ_REMOVE(&head->lru_list, entry, list_entry);
 					void *ret = RB_REMOVE(fbr_cstore_tree, &head->tree, entry);
 					assert(ret == entry);

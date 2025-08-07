@@ -32,8 +32,9 @@ struct fbr_cstore_entry {
 	size_t					bytes;
 
 	fbr_refcount_t				refcount;
+	unsigned int				in_lru:1;
 
-	RB_ENTRY(fbr_cstore_entry)		entry;
+	RB_ENTRY(fbr_cstore_entry)		tree_entry;
 	TAILQ_ENTRY(fbr_cstore_entry)		list_entry;
 };
 
