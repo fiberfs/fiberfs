@@ -115,7 +115,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_
 
 				if (fbr_is_dev()) {
 					struct fbr_path_name filename;
-					char buf[PATH_MAX];
+					char buf[FBR_PATH_MAX];
 					fbr_path_get_full(&directory->file->path, &filename,
 						buf, sizeof(buf));
 					assert_zero(fbr_path_name_cmp(dirpath, &filename));
@@ -531,7 +531,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	}
 
 	struct fbr_path_name dirname;
-	char buf[PATH_MAX];
+	char buf[FBR_PATH_MAX];
 	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
 	fbr_inode_release(fs, &parent);
 
@@ -765,7 +765,7 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode, struct fbr_direct
 	assert_dev(file->inode == inode);
 
 	struct fbr_path_name dirname;
-	char buf[PATH_MAX];
+	char buf[FBR_PATH_MAX];
 	fbr_path_get_full(&file->path, &dirname, buf, sizeof(buf));
 
 	fbr_inode_release(fs, &file);

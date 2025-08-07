@@ -7,6 +7,7 @@
 #ifndef _FBR_FS_H_INCLUDED_
 #define _FBR_FS_H_INCLUDED_
 
+#include <limits.h>
 #include <pthread.h>
 #include <stddef.h>
 #include <stdint.h>

@@ -26,7 +26,7 @@ _chash_file_path(XXH3_state_t *hash, struct fbr_file *file, fbr_id_t id, size_t 
 	assert_dev(hash);
 	assert_dev(file);
 
-	char buffer[PATH_MAX];
+	char buffer[FBR_PATH_MAX];
 	struct fbr_path_name filepath;
 	fbr_path_get_full(&file->path, &filepath, buffer, sizeof(buffer));
 

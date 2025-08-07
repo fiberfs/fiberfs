@@ -196,11 +196,13 @@ _cstore_lru_prune(struct fbr_cstore_head *head, size_t new_bytes)
 	}
 
 	size_t total_bytes = _CSTORE->bytes + new_bytes;
+	size_t count = 0;
 
 	while (total_bytes > _CSTORE->max_bytes) {
-		if (TAILQ_EMPTY(&head->lru_list)) {
+		if (TAILQ_EMPTY(&head->lru_list) || count > 5) {
 			break;
 		}
+		count++;
 
 		struct fbr_cstore_entry *entry = TAILQ_LAST(&head->lru_list, fbr_cstore_list);
 		fbr_cstore_entry_ok(entry);

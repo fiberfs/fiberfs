@@ -4,8 +4,6 @@
  *
  */
 
-#include <limits.h>
-
 #include "fiberfs.h"
 #include "core/request/fbr_workspace.h"
 
@@ -18,12 +16,12 @@ fbr_cmd_workspace_test_asserts(struct fbr_test_context *ctx, struct fbr_test_cmd
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_test_logs("FBR_WORKSPACE_MIN_SIZE=%d", FBR_WORKSPACE_MIN_SIZE);
-	fbr_test_logs("PATH_MAX=%d", PATH_MAX);
+	fbr_test_logs("FBR_PATH_MAX=%d", FBR_PATH_MAX);
 	fbr_test_logs("FBR_WORKSPACE_OVERFLOW_MAX=%d", FBR_WORKSPACE_OVERFLOW_MAX);
 	fbr_test_logs("fbr_workspace_size()=%zu", fbr_workspace_size());
 	fbr_test_logs("sizeof(struct fbr_workspace)=%zu", sizeof(struct fbr_workspace));
 
-	fbr_ASSERT(PATH_MAX <= FBR_WORKSPACE_MIN_SIZE, "PATH_MAX > FBR_WORKSPACE_MIN_SIZE");
+	fbr_ASSERT(FBR_PATH_MAX <= FBR_WORKSPACE_MIN_SIZE, "FBR_PATH_MAX > FBR_WORKSPACE_MIN_SIZE");
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "workspace_test_asserts done");
 }

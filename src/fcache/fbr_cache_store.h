@@ -66,6 +66,8 @@ struct fbr_cache_store {
 
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 
+	char					root[FBR_PATH_MAX];
+
 	size_t					entries;
 	size_t					max_bytes;
 	size_t					bytes;

@@ -36,7 +36,7 @@ fbr_test_fork(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		flags = NULL;
 	}
 
-	char tstfile[PATH_MAX + 1];
+	char tstfile[FBR_PATH_MAX + 1];
 	int ret = snprintf(tstfile, sizeof(tstfile), "%s/" _FORK_TST_FILE, tmpdir);
 	fbr_test_ASSERT(ret < (int)sizeof(tstfile), "snprintf overflow %d", ret);
 

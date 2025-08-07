@@ -131,7 +131,7 @@ fbr_dstore_debug(int show_meta)
 		return;
 	}
 
-	char path[PATH_MAX];
+	char path[FBR_PATH_MAX];
 	size_t ret = snprintf(path, sizeof(path), "%s/%s",
 		_DSTORE->root,
 		_DSTORE_DATA_PATH);
@@ -192,7 +192,7 @@ _dstore_mkdirs(char *path)
 	assert(path);
 
 	size_t path_len = strlen(path);
-	assert(path_len < PATH_MAX);
+	assert(path_len < FBR_PATH_MAX);
 
 	for (size_t i = 1; i < path_len; i++) {
 		if (path[i] == '/') {
@@ -395,7 +395,7 @@ _dstore_chunk_path(const struct fbr_file *file, fbr_id_t id, size_t offset, int 
 	assert_dev(buffer);
 	assert_dev(buffer_len);
 
-	char filebuf[PATH_MAX];
+	char filebuf[FBR_PATH_MAX];
 	struct fbr_path_name filepath;
 	fbr_path_get_full(&file->path, &filepath, filebuf, sizeof(filebuf));
 
@@ -441,7 +441,7 @@ fbr_dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	fbr_wbuffer_ok(wbuffer);
 	assert(wbuffer->state == FBR_WBUFFER_READY);
 
-	char chunk_path[PATH_MAX];
+	char chunk_path[FBR_PATH_MAX];
 	_dstore_chunk_path(file, wbuffer->id, wbuffer->offset, 0, chunk_path, sizeof(chunk_path));
 
 	fbr_test_logs("DSTORE wbuffer chunk: '%s':%zu", chunk_path, wbuffer->end);
@@ -498,7 +498,7 @@ fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	assert(chunk->id);
 	assert_zero(chunk->external);
 
-	char chunk_path[PATH_MAX];
+	char chunk_path[FBR_PATH_MAX];
 	_dstore_chunk_path(file, chunk->id, chunk->offset, 0, chunk_path, sizeof(chunk_path));
 
 	fbr_test_logs("DSTORE read chunk: '%s'", chunk_path);
@@ -557,7 +557,7 @@ fbr_dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 	fbr_chunk_ok(chunk);
 	assert_zero(chunk->external);
 
-	char chunk_path[PATH_MAX];
+	char chunk_path[FBR_PATH_MAX];
 	_dstore_chunk_path(file, chunk->id, chunk->offset, 0, chunk_path, sizeof(chunk_path));
 
 	fbr_test_logs("DSTORE DELETE chunk: '%s'", chunk_path);
@@ -622,7 +622,7 @@ fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	assert_dev(writer->output);
 	assert_zero_dev(writer->error);
 
-	char index_path[PATH_MAX];
+	char index_path[FBR_PATH_MAX];
 	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
 
 	fbr_test_logs("DSTORE write index: '%s' %s", index_path, writer->is_gzip ? "GZIP" : "");
@@ -654,7 +654,7 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 
-	char index_path[PATH_MAX];
+	char index_path[FBR_PATH_MAX];
 	_dstore_index_path(directory, 1, index_path, sizeof(index_path));
 
 	struct _dstore_metadata metadata;
@@ -810,7 +810,7 @@ _dstore_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 
-	char index_path[PATH_MAX];
+	char index_path[FBR_PATH_MAX];
 	_dstore_index_path(directory, 0, index_path, sizeof(index_path));
 
 	fbr_test_logs("DSTORE DELETE index: '%s'", index_path);
@@ -909,7 +909,7 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 	fbr_directory_ok(directory);
 	assert_dev(directory->version);
 
-	char root_path[PATH_MAX];
+	char root_path[FBR_PATH_MAX];
 	struct _dstore_metadata metadata;
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
@@ -971,7 +971,7 @@ fbr_dstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	fbr_fs_ok(fs);
 	assert(dirpath);
 
-	char root_path[PATH_MAX];
+	char root_path[FBR_PATH_MAX];
 	_dstore_root_path(dirpath, 0, root_path, sizeof(root_path));
 
 	_dstore_LOCK();
@@ -1011,7 +1011,7 @@ _dstore_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_dev(directory->version);
 	assert_zero_dev(directory->file_count);
 
-	char root_path[PATH_MAX];
+	char root_path[FBR_PATH_MAX];
 	struct _dstore_metadata metadata;
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);

@@ -162,7 +162,7 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 	fbr_test_ERROR(cmd->param_count < 1, "Need a single parameter");
 	fbr_test_ERROR(cmd->param_count > 2, "Too many parameters");
 
-	char buf[4096], path[PATH_MAX + 1];
+	char buf[4096], path[FBR_PATH_MAX + 1];
 	size_t size, len, pos;
 	int is_random = 0;
 

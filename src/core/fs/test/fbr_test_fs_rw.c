@@ -33,7 +33,7 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 	fbr_file_ok(parent);
 
 	struct fbr_path_name dirname;
-	char buf[PATH_MAX];
+	char buf[FBR_PATH_MAX];
 	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
 
 	const char *filename = fbr_path_get_file(&file->path, NULL);

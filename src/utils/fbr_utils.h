@@ -7,9 +7,12 @@
 #ifndef _FBR_UTILS_H_INCLUDED_
 #define _FBR_UTILS_H_INCLUDED_
 
+#include <limits.h>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+
+#define FBR_PATH_MAX				PATH_MAX
 
 typedef uint64_t fbr_hash_t;
 

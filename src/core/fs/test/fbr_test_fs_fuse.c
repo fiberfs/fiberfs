@@ -225,7 +225,7 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_EMPTY);
 
-	char buf[PATH_MAX];
+	char buf[FBR_PATH_MAX];
 	const char *fullpath = fbr_path_get_full(&file->path, NULL, buf, sizeof(buf));
 
 	fbr_test_logs("** FETCH chunk: offset: %zu length: %zu splice: %d path: %s",
