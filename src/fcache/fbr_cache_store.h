@@ -74,7 +74,8 @@ struct fbr_cache_store {
 	size_t					lru_pruned;
 };
 
-void fbr_cache_store_init(void);
+void fbr_cache_store_init(const char *root_path);
+void fbr_cstore_max_size(size_t max_bytes);
 struct fbr_cstore_entry *fbr_cstore_get(fbr_hash_t hash);
 struct fbr_cstore_entry *fbr_cstore_insert(fbr_hash_t hash, size_t bytes);
 void fbr_cstore_release(struct fbr_cstore_entry *entry);

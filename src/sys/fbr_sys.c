@@ -5,6 +5,7 @@
 
 #define _XOPEN_SOURCE 500
 
+#include <errno.h>
 #include <ftw.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -128,4 +129,31 @@ fbr_sys_read(int fd, void *buf, size_t buf_len)
 	} while (ret && bytes < buf_len);
 
 	return bytes;
+}
+
+int
+fbr_mkdirs(const char *path)
+{
+	assert(path);
+
+	size_t path_len = strlen(path);
+	assert(path_len < FBR_PATH_MAX);
+
+	char path_buf[FBR_PATH_MAX];
+	memcpy(path_buf, path, path_len + 1);
+
+	for (size_t i = 1; i < path_len; i++) {
+		if (path_buf[i] == '/') {
+			path_buf[i] = '\0';
+
+			int ret = mkdir(path_buf, S_IRWXU);
+			if (ret && errno != EEXIST) {
+				return ret;
+			}
+
+			path_buf[i] = '/';
+		}
+	}
+
+	return 0;
 }

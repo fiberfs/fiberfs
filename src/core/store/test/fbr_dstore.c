@@ -191,19 +191,8 @@ _dstore_mkdirs(char *path)
 {
 	assert(path);
 
-	size_t path_len = strlen(path);
-	assert(path_len < FBR_PATH_MAX);
-
-	for (size_t i = 1; i < path_len; i++) {
-		if (path[i] == '/') {
-			path[i] = '\0';
-
-			int ret = mkdir(path, S_IRWXU);
-			fbr_ASSERT(!ret || errno == EEXIST, "mkdir error %s %d", path, errno);
-
-			path[i] = '/';
-		}
-	}
+	int ret = fbr_mkdirs(path);
+	fbr_ASSERT(!ret, "mkdir failed %d (%s)", ret, strerror(ret));
 }
 
 // If-None-Match: *

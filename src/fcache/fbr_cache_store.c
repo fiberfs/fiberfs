@@ -45,7 +45,7 @@ _cstore_add_slab(struct fbr_cstore_head *head)
 }
 
 void
-fbr_cache_store_init(void)
+fbr_cache_store_init(const char *root_path)
 {
 	fbr_object_empty(_CSTORE);
 
@@ -68,7 +68,19 @@ fbr_cache_store_init(void)
 		fbr_cstore_head_ok(head);
 	}
 
+	size_t path_len = strlen(root_path);
+	assert(path_len < sizeof(_CSTORE->root));
+	memcpy(_CSTORE->root, root_path, path_len + 1);
+
 	_cstore_ok();
+}
+
+void
+fbr_cstore_max_size(size_t max_bytes)
+{
+	_cstore_ok();
+
+	_CSTORE->max_bytes = max_bytes;
 }
 
 static int
