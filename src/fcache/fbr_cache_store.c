@@ -167,6 +167,62 @@ fbr_cstore_get(fbr_hash_t hash)
 	return entry;
 }
 
+static void
+_cstore_entry_free(struct fbr_cstore_head *head, struct fbr_cstore_entry *entry)
+{
+	assert_dev(head);
+	assert_dev(entry);
+	assert_zero(entry->refcount);
+
+	size_t bytes = entry->bytes;
+
+	entry->state = FBR_CSTORE_ENTRY_FREE;
+	entry->hash = 0;
+	entry->bytes = 0;
+
+	void *ret = RB_REMOVE(fbr_cstore_tree, &head->tree, entry);
+	assert(ret == entry);
+
+	TAILQ_INSERT_HEAD(&head->free_list, entry, list_entry);
+
+	fbr_atomic_sub(&_CSTORE->bytes, bytes);
+	fbr_atomic_sub(&_CSTORE->entries, 1);
+}
+
+static void
+_cstore_lru_prune(struct fbr_cstore_head *head, size_t new_bytes)
+{
+	assert_dev(head);
+
+	if (!_CSTORE->max_bytes) {
+		return;
+	}
+
+	size_t total_bytes = _CSTORE->bytes + new_bytes;
+
+	while (total_bytes > _CSTORE->max_bytes) {
+		if (TAILQ_EMPTY(&head->lru_list)) {
+			break;
+		}
+
+		struct fbr_cstore_entry *entry = TAILQ_LAST(&head->lru_list, fbr_cstore_list);
+		fbr_cstore_entry_ok(entry);
+
+		TAILQ_REMOVE(&head->lru_list, entry, list_entry);
+
+		assert(entry->refcount);
+		entry->refcount--;
+
+		if (!entry->refcount) {
+			_cstore_entry_free(head, entry);
+		}
+
+		fbr_atomic_add(&_CSTORE->lru_pruned, 1);
+
+		total_bytes = _CSTORE->bytes + new_bytes;
+	}
+}
+
 struct fbr_cstore_entry *
 fbr_cstore_insert(fbr_hash_t hash, size_t bytes)
 {
@@ -190,6 +246,8 @@ fbr_cstore_insert(fbr_hash_t hash, size_t bytes)
 
 		return NULL;
 	}
+
+	_cstore_lru_prune(head, bytes);
 
 	entry = _cstore_get_entry(head, hash);
 	assert_dev(entry->state == FBR_CSTORE_ENTRY_USED);
@@ -225,18 +283,7 @@ fbr_cstore_release(struct fbr_cstore_entry *entry)
 		return;
 	}
 
-	fbr_atomic_sub(&_CSTORE->bytes, entry->bytes);
-	fbr_atomic_sub(&_CSTORE->entries, 1);
-
-	entry->state = FBR_CSTORE_ENTRY_FREE;
-	entry->hash = 0;
-	entry->bytes = 0;
-
-	TAILQ_REMOVE(&head->lru_list, entry, list_entry);
-	void *ret = RB_REMOVE(fbr_cstore_tree, &head->tree, entry);
-	assert(ret == entry);
-
-	TAILQ_INSERT_HEAD(&head->free_list, entry, list_entry);
+	_cstore_entry_free(head, entry);
 
 	pt_assert(pthread_mutex_unlock(&head->lock));
 }

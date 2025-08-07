@@ -35,8 +35,9 @@ fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 #define _CSTORE_THREADS		4
 #define _CSTORE_RAND_THREADS	2
 #define _CSTORE_ALL_THREADS	(_CSTORE_THREADS + _CSTORE_RAND_THREADS)
-#define _CSTORE_ENTRY_MAX	((1 * 1024 * 1024) + _CSTORE_THREADS)
-#define _CSTORE_MAX_BYTES	(10 * 1000 * 1000)
+#define _CSTORE_ENTRY_MAX	((256 * 1024) + _CSTORE_THREADS)
+#define _CSTORE_HASH_MAX_BYTES	(2 * 1000 * 1000)
+size_t _CSTORE_MAX_BYTES;
 size_t _CSTORE_THREAD_COUNT;
 size_t _CSTORE_ENTRY_COUNTER;
 size_t _CSTORE_READ_COUNTER;
@@ -77,7 +78,7 @@ _cstore_thread(void *arg)
 
 		struct fbr_cstore_entry *entry = fbr_cstore_get(hash);
 		if (!entry) {
-			size_t bytes = random() % _CSTORE_MAX_BYTES;
+			size_t bytes = random() % _CSTORE_HASH_MAX_BYTES;
 			entry = fbr_cstore_insert(hash, bytes);
 			if (entry) {
 				fbr_atomic_add(&_CSTORE_BYTES_COUNTER, bytes);
@@ -96,18 +97,17 @@ _cstore_thread(void *arg)
 	return NULL;
 }
 
-void
-fbr_cmd_cstore_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+static void
+_cstore_test(void)
 {
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
-
 	fbr_test_random_seed();
 
 	_CSTORE_THREAD_COUNT = 0;
 	_CSTORE_ENTRY_COUNTER = 0;
 	_CSTORE_READ_COUNTER = 0;
 	_CSTORE_BYTES_COUNTER = 0;
+
+	_CSTORE->max_bytes = _CSTORE_MAX_BYTES;
 
 	fbr_test_logs("*** Starting threads");
 
@@ -143,13 +143,49 @@ fbr_cmd_cstore_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("* _CSTORE->heads=%zu", fbr_array_len(_CSTORE->heads));
 	fbr_test_logs("* _CSTORE->entries=%zu", _CSTORE->entries);
+	fbr_test_logs("* _CSTORE->max_bytes=%zu", _CSTORE->max_bytes);
 	fbr_test_logs("* _CSTORE->bytes=%zu", _CSTORE->bytes);
+	fbr_test_logs("* _CSTORE->lru_pruned=%zu", _CSTORE->lru_pruned);
 	fbr_test_logs("* _CSTORE->slabs=%zu", slabs);
 
-	fbr_ASSERT(_CSTORE_ENTRY_COUNTER == _CSTORE->entries, "inserted: %zu, found %zu",
-		_CSTORE_ENTRY_COUNTER, _CSTORE->entries);
-	fbr_ASSERT(_CSTORE_BYTES_COUNTER == _CSTORE->bytes, "bytes: %zu, found %zu",
-		_CSTORE_BYTES_COUNTER, _CSTORE->bytes);
+	size_t entries = _CSTORE->entries + _CSTORE->lru_pruned;
+
+	fbr_ASSERT(_CSTORE_ENTRY_COUNTER == entries, "inserted: %zu, found %zu",
+		_CSTORE_ENTRY_COUNTER, entries);
+
+	if (!_CSTORE_MAX_BYTES) {
+		fbr_ASSERT(_CSTORE_BYTES_COUNTER == _CSTORE->bytes, "bytes: %zu, found %zu",
+			_CSTORE_BYTES_COUNTER, _CSTORE->bytes);
+	} else {
+		size_t max_bytes = _CSTORE->max_bytes +
+			(_CSTORE_HASH_MAX_BYTES * _CSTORE_THREAD_COUNT);
+		fbr_ASSERT(_CSTORE->bytes <= max_bytes, "bytes: %zu, found %zu",
+			_CSTORE_BYTES_COUNTER, max_bytes);
+	}
+}
+
+void
+fbr_cmd_cstore_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_CSTORE_MAX_BYTES = 0;
+
+	_cstore_test();
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_test done");
+}
+
+void
+fbr_cmd_cstore_test_lru(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_CSTORE_MAX_BYTES = 200 * 1000 * 1000;
+
+	_cstore_test();
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_test_lru done");
 }

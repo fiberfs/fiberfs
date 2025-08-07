@@ -13,8 +13,8 @@
 #include "data/queue.h"
 #include "data/tree.h"
 
-#define FBR_CSTORE_HEAD_COUNT			1024
-#define FBR_CSTORE_SLAB_SIZE			512
+#define FBR_CSTORE_HEAD_COUNT			64
+#define FBR_CSTORE_SLAB_SIZE			128
 
 enum fbr_cstore_entry_state {
 	FBR_CSTORE_ENTRY_NONE = 0,
@@ -66,7 +66,9 @@ struct fbr_cache_store {
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 
 	size_t					entries;
+	size_t					max_bytes;
 	size_t					bytes;
+	size_t					lru_pruned;
 };
 
 void fbr_cache_store_init(void);

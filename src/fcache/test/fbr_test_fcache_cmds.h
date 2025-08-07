@@ -18,6 +18,7 @@
 
 FBR_TEST_FCACHE_CMD(cstore_init)
 FBR_TEST_FCACHE_CMD(cstore_test)
+FBR_TEST_FCACHE_CMD(cstore_test_lru)
 
 #undef FBR_TEST_FCACHE_CMD
 #undef FBR_TEST_FCACHE_VAR
