@@ -32,6 +32,7 @@ fbr_test_cstore_init(struct fbr_test_context *ctx)
 	fbr_cstore_init(root);
 
 	fbr_test_log_printer_init(ctx, root, "^");
+	fbr_test_register_finish(ctx, "cstore", _test_cstore_finish);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore root: %s", _CSTORE->root);
 }
@@ -43,8 +44,6 @@ fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_test_cstore_init(ctx);
-
-	fbr_test_register_finish(ctx, "cstore", _test_cstore_finish);
 }
 
 #define _CSTORE_THREADS		4
