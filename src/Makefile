@@ -24,15 +24,15 @@ FJSON_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FJSON_CLIENT)))
 FJSON_SRC:=$(wildcard fjson/*.c)
 FJSON_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FJSON_SRC)))
 
-FCACHE_SRC:=$(wildcard fcache/*.c)
-FCACHE_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FCACHE_SRC)))
+CSTORE_SRC:=$(wildcard cstore/*.c)
+CSTORE_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(CSTORE_SRC)))
 
 UTILS_SRC=$(wildcard utils/*.c compress/*.c)
 UTILS_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(UTILS_SRC)))
 
 ALL_SOURCE:=$(shell find * -type f -name '*.c')
 SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(FJSON_SRC) \
-	$(FCACHE_SRC), $(ALL_SOURCE))
+	$(CSTORE_SRC), $(ALL_SOURCE))
 OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(SOURCE)))
 DEPS:=$(patsubst %,$(BUILD)/%.d,$(basename $(ALL_SOURCE)))
 BUILD_DIRS=$(sort $(dir $(DEPS)))
@@ -136,7 +136,7 @@ AFL_CFLAGS_CC=$(CFLAGS_CLANG)
 .PHONY:		all lib clean gcov gcovclean afl
 
 all:		chttp_client fjson_client fiberfs_test lib
-lib:		libfiberfs.so libfiberfs.a libchttp.a libfjson.a libfcache.a libfibertest.a
+lib:		libfiberfs.so libfiberfs.a libchttp.a libfjson.a libcstore.a libfibertest.a
 
 chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
 		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libchttp.a $(LIBFLAGS)
@@ -144,11 +144,11 @@ chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
 fjson_client:	libfjson.a $(FJSON_CLIENT_OBJS)
 		$(CC) -o $@ $(FJSON_CLIENT_OBJS) libfjson.a $(LIBFLAGS)
 
-fiberfs_test:	libfiberfs.a libchttp.a libfjson.a libfcache.a libfibertest.a
-		$(CC) -o $@ libfibertest.a libfiberfs.a libchttp.a libfjson.a libfcache.a $(LIBFLAGS)
+fiberfs_test:	libfiberfs.a libchttp.a libfjson.a libcstore.a libfibertest.a
+		$(CC) -o $@ libfibertest.a libfiberfs.a libchttp.a libfjson.a libcstore.a $(LIBFLAGS)
 
-libfiberfs.so:	libfiberfs.a libchttp.a libfjson.a libfcache.a
-		$(CC) $(LDFLAGS) -o $@ libfiberfs.a libchttp.a libfjson.a libfcache.a
+libfiberfs.so:	libfiberfs.a libchttp.a libfjson.a libcstore.a
+		$(CC) $(LDFLAGS) -o $@ libfiberfs.a libchttp.a libfjson.a libcstore.a
 
 libfiberfs.a:	$(OBJS)
 		ar cr $@ $(OBJS)
@@ -162,8 +162,8 @@ libchttp.a:	$(CHTTP_OBJS) $(UTILS_OBJS)
 libfjson.a:	$(FJSON_OBJS) $(UTILS_OBJS)
 		ar cr $@ $(FJSON_OBJS) $(UTILS_OBJS)
 
-libfcache.a:	$(FCACHE_OBJS) $(UTILS_OBJS)
-		ar cr $@ $(FCACHE_OBJS) $(UTILS_OBJS)
+libcstore.a:	$(CSTORE_OBJS) $(UTILS_OBJS)
+		ar cr $@ $(CSTORE_OBJS) $(UTILS_OBJS)
 
 $(BUILD)/%.o:	%.c | $(BUILD_DIRS)
 		$(CC) $(CFLAGS) $(CFLAGS_CC) $(CFLAGS_BUILD) $(DEPFLAGS) -c $< -o $@

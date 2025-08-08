@@ -4,8 +4,8 @@
  *
  */
 
-#ifndef _FBR_CACHE_STORE_H_INCLUDED_
-#define _FBR_CACHE_STORE_H_INCLUDED_
+#ifndef _FBR_CSTORE_STORE_H_INCLUDED_
+#define _FBR_CSTORE_STORE_H_INCLUDED_
 
 #include <pthread.h>
 
@@ -60,7 +60,7 @@ struct fbr_cstore_head {
 	pthread_mutex_t				lock;
 };
 
-struct fbr_cache_store {
+struct fbr_cstore {
 	unsigned				magic;
 #define FBR_CSTORE_MAGIC			0xC8747276
 
@@ -76,15 +76,15 @@ struct fbr_cache_store {
 	size_t					lru_pruned;
 };
 
-void fbr_cache_store_init(const char *root_path);
+void fbr_cstore_init(const char *root_path);
 void fbr_cstore_max_size(size_t max_bytes, int lru);
 struct fbr_cstore_entry *fbr_cstore_get(fbr_hash_t hash);
 struct fbr_cstore_entry *fbr_cstore_insert(fbr_hash_t hash, size_t bytes);
 void fbr_cstore_release(struct fbr_cstore_entry *entry);
-void fbr_cache_store_free(void);
+void fbr_cstore_free(void);
 
 #define fbr_cstore_ok(cstore)			fbr_magic_check(cstore, FBR_CSTORE_MAGIC)
 #define fbr_cstore_head_ok(head)		fbr_magic_check(head, FBR_CSTORE_HEAD_MAGIC)
 #define fbr_cstore_entry_ok(entry)		fbr_magic_check(entry, FBR_CSTORE_ENTRY_MAGIC)
 
-#endif /* _FBR_CACHE_STORE_H_INCLUDED_ */
+#endif /* _FBR_CSTORE_STORE_H_INCLUDED_ */

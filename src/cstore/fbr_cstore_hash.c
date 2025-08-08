@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 #include "fiberfs.h"
-#include "fbr_cache.h"
+#include "fbr_cstore.h"
 #include "core/fs/fbr_fs.h"
 #include "utils/fbr_xxhash.h"
 

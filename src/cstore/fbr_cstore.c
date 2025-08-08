@@ -8,10 +8,10 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "fbr_cache_store.h"
+#include "fbr_cstore_api.h"
 
-struct fbr_cache_store __CSTORE;
-struct fbr_cache_store *_CSTORE = &__CSTORE;
+struct fbr_cstore __CSTORE;
+struct fbr_cstore *_CSTORE = &__CSTORE;
 
 #define _cstore_ok()	fbr_cstore_ok(_CSTORE)
 
@@ -45,7 +45,7 @@ _cstore_add_slab(struct fbr_cstore_head *head)
 }
 
 void
-fbr_cache_store_init(const char *root_path)
+fbr_cstore_init(const char *root_path)
 {
 	fbr_object_empty(_CSTORE);
 
@@ -326,7 +326,7 @@ fbr_cstore_release(struct fbr_cstore_entry *entry)
 }
 
 void
-fbr_cache_store_free(void)
+fbr_cstore_free(void)
 {
 	_cstore_ok();
 
