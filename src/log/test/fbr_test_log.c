@@ -679,36 +679,42 @@ fbr_cmd_test_log_printer(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	char logname[100];
 	int ret = snprintf(logname, sizeof(logname), "/test/printer1/%ld/%d", random(), getpid());
 	assert(ret > 0 && (size_t)ret < sizeof(logname));
-
 	struct fbr_log *log1 = fbr_log_alloc(logname, fbr_log_default_size());
 	fbr_log_ok(log1);
-
 	fbr_test_log_printer_init(ctx, logname, "#");
 
 	ret = snprintf(logname, sizeof(logname), "/test/printer2/%ld/%d", random(), getpid());
 	assert(ret > 0 && (size_t)ret < sizeof(logname));
-
 	struct fbr_log *log2 = fbr_log_alloc(logname, fbr_log_default_size());
 	fbr_log_ok(log2);
-
 	fbr_test_log_printer_init(ctx, logname, "^");
+
+	ret = snprintf(logname, sizeof(logname), "/test/printer3/%ld/%d", random(), getpid());
+	assert(ret > 0 && (size_t)ret < sizeof(logname));
+	struct fbr_log *log3 = fbr_log_alloc(logname, fbr_log_default_size());
+	fbr_log_ok(log3);
+	fbr_test_log_printer_init(ctx, logname, "!=");
 
 	fbr_log_print(log1, FBR_LOG_TEST, FBR_REQID_TEST, "One!");
 	fbr_log_print(log2, FBR_LOG_TEST, FBR_REQID_TEST, "HERE! (log2)");
 	fbr_log_print(log1, FBR_LOG_TEST, FBR_REQID_TEST, "Message two!");
 	fbr_log_print(log1, FBR_LOG_TEST, FBR_REQID_TEST, "Last message here, bye");
+	fbr_log_print(log3, FBR_LOG_TEST, FBR_REQID_TEST, "log3 alive and well");
 	fbr_log_print(log2, FBR_LOG_TEST, FBR_REQID_TEST, "log2 done.");
 
 	fbr_log_free(log1);
 	fbr_log_free(log2);
+	fbr_log_free(log3);
+
+	size_t lines = 6;
 
 	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {
 		int max = 20;
-		while (max && fbr_test_log_printer_lines() != 5) {
+		while (max && fbr_test_log_printer_lines() != lines) {
 			fbr_test_sleep_ms(25);
 			max--;
 		}
-		assert(fbr_test_log_printer_lines() == 5);
+		assert(fbr_test_log_printer_lines() == lines);
 	} else {
 		assert_zero(fbr_test_log_printer_lines());
 	}

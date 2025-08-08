@@ -117,3 +117,65 @@ fbr_strcpy(char *dest, size_t dest_len, char *source)
 	int ret = snprintf(dest, dest_len, "%s", source);
 	assert_dev(ret >= 0 && (size_t)ret < dest_len);
 }
+
+size_t
+fbr_bin2hex(const void *input, size_t input_len, char *output, size_t output_len)
+{
+	assert(input);
+	assert(input_len);
+	assert(output);
+	assert(output_len >= (input_len * 2) + 1);
+
+	output[0] = '\0';
+	size_t i = 0;
+
+	for (i = 0; i < input_len; i++) {
+		assert_dev((i * 2) + 3 <= output_len);
+		int ret = snprintf(&output[i * 2], 3, "%.2x", ((const char*)input)[i]);
+		assert(ret == 2);
+	}
+
+	return (i * 2);
+}
+
+static unsigned char
+_util_char2int(char c)
+{
+	if (c >= '0' && c <= '9') {
+		return (c - '0');
+	} else if (c >= 'a' && c <= 'f') {
+		return (c - 87);
+	} else if (c >= 'A' && c <= 'F') {
+		return (c - 55);
+	}
+
+	return 0;
+}
+
+static unsigned char
+_util_hex2int(const char *hex)
+{
+	assert(hex);
+
+	unsigned char value = _util_char2int(hex[0]) << 4;
+	value += _util_char2int(hex[1]);
+
+	return value;
+}
+
+size_t
+fbr_hex2bin(const char *input, size_t input_len, void* output, size_t output_len)
+{
+	assert(input);
+	assert(input_len);
+	assert(output);
+	assert(output_len >= (input_len / 2) + 1);
+
+	size_t i = 0;
+	for (i = 0; i < input_len - 1; i += 2) {
+		assert_dev(i / 2 < output_len);
+		((char*)output)[i / 2] = _util_hex2int(&input[i]);
+	}
+
+	return (i / 2);
+}
