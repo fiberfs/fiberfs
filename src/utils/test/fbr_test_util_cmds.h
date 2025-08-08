@@ -7,7 +7,6 @@
 #ifndef _FBR_TEST_UTILS_CMDS_H_INCLUDED
 #define _FBR_TEST_UTILS_CMDS_H_INCLUDED
 
-#include "test/fbr_test.h"
 #include "test/fbr_test_cmd_declare.h"
 
 #endif /* _FBR_TEST_UTILS_CMDS_H_INCLUDED */

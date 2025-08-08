@@ -10,7 +10,6 @@
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
 
-#include "test/fbr_test.h"
 #include "test/fbr_test_cmd_declare.h"
 
 void fbr_test_fs_stats(struct fbr_fs *fs);
