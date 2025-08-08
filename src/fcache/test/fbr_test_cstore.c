@@ -27,6 +27,7 @@ fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
+	// TODO do this interally if it doesnt exist...
 	char *root = cmd->params[0].value;
 
 	fbr_cache_store_init(root);
@@ -114,7 +115,7 @@ _cstore_test(void)
 	_CSTORE_READ_COUNTER = 0;
 	_CSTORE_BYTES_COUNTER = 0;
 
-	fbr_cstore_max_size(_CSTORE_MAX_BYTES);
+	fbr_cstore_max_size(_CSTORE_MAX_BYTES, 1);
 
 	fbr_test_logs("*** Starting threads");
 

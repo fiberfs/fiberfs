@@ -76,11 +76,12 @@ fbr_cache_store_init(const char *root_path)
 }
 
 void
-fbr_cstore_max_size(size_t max_bytes)
+fbr_cstore_max_size(size_t max_bytes, int lru)
 {
 	_cstore_ok();
 
 	_CSTORE->max_bytes = max_bytes;
+	_CSTORE->do_lru = lru;
 }
 
 static int
@@ -198,19 +199,37 @@ _cstore_entry_free(struct fbr_cstore_head *head, struct fbr_cstore_entry *entry)
 	fbr_atomic_sub(&_CSTORE->entries, 1);
 }
 
+static int
+_cstore_full(size_t new_bytes)
+{
+	_cstore_ok();
+
+	if (!_CSTORE->max_bytes) {
+		return 0;
+	}
+
+	size_t total_bytes = _CSTORE->bytes + new_bytes;
+	if (total_bytes > _CSTORE->max_bytes) {
+		return 1;
+	}
+
+	return 0;
+}
+
 static void
 _cstore_lru_prune(struct fbr_cstore_head *head, size_t new_bytes)
 {
+	_cstore_ok();
+	assert_dev(_CSTORE->do_lru);
 	assert_dev(head);
 
 	if (!_CSTORE->max_bytes) {
 		return;
 	}
 
-	size_t total_bytes = _CSTORE->bytes + new_bytes;
 	size_t count = 0;
 
-	while (total_bytes > _CSTORE->max_bytes) {
+	while (_cstore_full(new_bytes)) {
 		if (TAILQ_EMPTY(&head->lru_list) || count > 5) {
 			break;
 		}
@@ -232,8 +251,6 @@ _cstore_lru_prune(struct fbr_cstore_head *head, size_t new_bytes)
 		}
 
 		fbr_atomic_add(&_CSTORE->lru_pruned, 1);
-
-		total_bytes = _CSTORE->bytes + new_bytes;
 	}
 }
 
@@ -261,7 +278,12 @@ fbr_cstore_insert(fbr_hash_t hash, size_t bytes)
 		return NULL;
 	}
 
-	_cstore_lru_prune(head, bytes);
+	if (_CSTORE->do_lru) {
+		_cstore_lru_prune(head, bytes);
+	} else if (_cstore_full(bytes)) {
+		pthread_mutex_unlock(&head->lock);
+		return NULL;
+	}
 
 	entry = _cstore_get_entry(head, hash);
 	assert_dev(entry->state == FBR_CSTORE_ENTRY_USED);
