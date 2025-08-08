@@ -169,7 +169,7 @@ fbr_hex2bin(const char *input, size_t input_len, void* output, size_t output_len
 	assert(input);
 	assert(input_len);
 	assert(output);
-	assert(output_len >= (input_len / 2) + 1);
+	assert(output_len >= input_len / 2);
 
 	size_t i = 0;
 	for (i = 0; i < input_len - 1; i += 2) {
