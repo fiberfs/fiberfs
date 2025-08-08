@@ -53,7 +53,7 @@ _random_init(struct fbr_test_context *ctx)
 }
 
 void
-fbr_test_cmd_random_range(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_random_range(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_random_init(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
@@ -74,7 +74,7 @@ fbr_test_cmd_random_range(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 }
 
 char *
-fbr_test_var_random(struct fbr_test_context *ctx)
+fbr_var_random(struct fbr_test_context *ctx)
 {
 	_random_init(ctx);
 

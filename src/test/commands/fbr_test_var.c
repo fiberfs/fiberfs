@@ -73,7 +73,7 @@ _var_get(struct fbr_test_context *ctx, size_t index)
 
 #define _VAR_GET(index)						\
 char *								\
-fbr_test_var_var##index(struct fbr_test_context *ctx)		\
+fbr_var_var##index(struct fbr_test_context *ctx)		\
 {								\
 	return _var_get(ctx, index);				\
 }
@@ -124,7 +124,7 @@ _var_set(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, size_t index)
 
 #define _VAR_SET(index)									\
 void											\
-fbr_test_cmd_set_var##index(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)	\
+fbr_cmd_set_var##index(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)	\
 {											\
 	_var_set(ctx, cmd, index);							\
 }

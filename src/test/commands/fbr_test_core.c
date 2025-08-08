@@ -15,7 +15,7 @@ static char TEST_COUNTER_STR[32];
 static unsigned int TEST_COUNTER_VALUE;
 
 void
-fbr_test_cmd_fiber_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_fiber_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct fbr_test *test = fbr_test_convert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
@@ -27,7 +27,7 @@ fbr_test_cmd_fiber_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_test_cmd_sleep_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_sleep_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
@@ -41,7 +41,7 @@ fbr_test_cmd_sleep_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_test_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
@@ -87,7 +87,7 @@ fbr_test_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_test_cmd_not_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_not_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
@@ -127,7 +127,7 @@ _compare_values(struct fbr_test_context *ctx, const char *s1, const char *s2,
 }
 
 void
-fbr_test_cmd_greater_than(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_greater_than(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
@@ -136,7 +136,7 @@ fbr_test_cmd_greater_than(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 }
 
 void
-fbr_test_cmd_greater_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_greater_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
@@ -145,7 +145,7 @@ fbr_test_cmd_greater_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 }
 
 void
-fbr_test_cmd_less_than(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_less_than(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
@@ -154,7 +154,7 @@ fbr_test_cmd_less_than(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_test_cmd_less_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_less_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
@@ -163,7 +163,7 @@ fbr_test_cmd_less_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_test_cmd_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -174,7 +174,7 @@ fbr_test_cmd_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_test_cmd_print(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_print(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 
@@ -184,7 +184,7 @@ fbr_test_cmd_print(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_test_cmd_set_timeout_sec(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_set_timeout_sec(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct fbr_test *test = fbr_test_convert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
@@ -198,7 +198,7 @@ fbr_test_cmd_set_timeout_sec(struct fbr_test_context *ctx, struct fbr_test_cmd *
 }
 
 void
-fbr_test_cmd_skip_if_valgrind(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_skip_if_valgrind(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -212,7 +212,7 @@ fbr_test_cmd_skip_if_valgrind(struct fbr_test_context *ctx, struct fbr_test_cmd 
 }
 
 char *
-fbr_test_var_test_counter(struct fbr_test_context *ctx)
+fbr_var_test_counter(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 

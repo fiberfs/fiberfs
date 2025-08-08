@@ -58,7 +58,7 @@ struct fbr_test_param {
 struct fbr_test_cmd;
 
 typedef void (fbr_test_cmd_f)(struct fbr_test_context *, struct fbr_test_cmd *);
-typedef char *(fbr_test_var_f)(struct fbr_test_context *);
+typedef char* (fbr_test_var_f)(struct fbr_test_context *);
 
 struct fbr_test_cmd {
 	unsigned int				magic;

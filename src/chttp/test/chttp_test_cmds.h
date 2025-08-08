@@ -3,10 +3,8 @@
  *
  */
 
-#ifndef CHTTP_TEST_CMDS_H_INCLUDED
-#define CHTTP_TEST_CMDS_H_INCLUDED
-
-#ifndef CHTTP_TEST_CMD
+#ifndef _CHTTP_TEST_CMDS_H_INCLUDED
+#define _CHTTP_TEST_CMDS_H_INCLUDED
 
 #include "chttp.h"
 #include "test/fbr_test.h"
@@ -24,7 +22,7 @@ struct chttp_test_context {
 	struct chttp_test_server	*server;
 	struct chttp_test_dns		*dns;
 	struct chttp_test_tcp_pool	*tcp_pool;
-	struct fbr_gzip		*gzip;
+	struct fbr_gzip			*gzip;
 	char				gzip_buf[CHTTP_TEST_GZIP_BUFLEN];
 
 	char				md5_server[CHTTP_TEST_MD5_BUFLEN];
@@ -61,7 +59,7 @@ void chttp_test_md5_store_client(struct fbr_test_context *ctx, struct chttp_test
 #define CHTTP_TEST_CMD(cmd)		fbr_test_cmd_f chttp_test_cmd_##cmd;
 #define CHTTP_TEST_VAR(var)		fbr_test_var_f chttp_test_var_##var;
 
-#endif /* CHTTP_TEST_CMD */
+#endif /* _CHTTP_TEST_CMDS_H_INCLUDED */
 
 CHTTP_TEST_CMD(chttp_test)
 CHTTP_TEST_CMD(connect_or_skip)
@@ -164,8 +162,3 @@ CHTTP_TEST_VAR(tcp_pool_deleted)
 CHTTP_TEST_VAR(tcp_pool_nuked)
 CHTTP_TEST_VAR(tcp_pool_lru)
 CHTTP_TEST_VAR(tcp_pool_err_alloc)
-
-#undef CHTTP_TEST_CMD
-#undef CHTTP_TEST_VAR
-
-#endif /* CHTTP_TEST_CMDS_H_INCLUDED */

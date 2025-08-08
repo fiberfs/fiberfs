@@ -17,7 +17,7 @@ _test_error_CRASH(void)
 }
 
 void
-fbr_test_cmd_test_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_test_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -34,7 +34,7 @@ _test_thread_error(void *arg)
 }
 
 void
-fbr_test_cmd_test_thread_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_test_thread_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -45,7 +45,7 @@ fbr_test_cmd_test_thread_error(struct fbr_test_context *ctx, struct fbr_test_cmd
 }
 
 void
-fbr_test_cmd_test_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_test_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -62,7 +62,7 @@ _test_thread_crash(void *arg)
 }
 
 void
-fbr_test_cmd_test_thread_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_test_thread_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -73,7 +73,7 @@ fbr_test_cmd_test_thread_crash(struct fbr_test_context *ctx, struct fbr_test_cmd
 }
 
 void
-fbr_test_cmd_test_fork_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_test_fork_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -87,7 +87,7 @@ fbr_test_cmd_test_fork_error(struct fbr_test_context *ctx, struct fbr_test_cmd *
 }
 
 void
-fbr_test_cmd_test_fork_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_test_fork_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -109,7 +109,7 @@ _error_finish_crash(struct fbr_test_context *ctx)
 }
 
 void
-fbr_test_cmd_test_finish_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_test_finish_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -118,7 +118,7 @@ fbr_test_cmd_test_finish_crash(struct fbr_test_context *ctx, struct fbr_test_cmd
 }
 
 void
-fbr_test_cmd_test_double_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_test_double_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -129,7 +129,7 @@ fbr_test_cmd_test_double_crash(struct fbr_test_context *ctx, struct fbr_test_cmd
 }
 
 void
-fbr_test_cmd_test_triple_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_test_triple_crash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -146,7 +146,7 @@ fbr_test_cmd_test_triple_crash(struct fbr_test_context *ctx, struct fbr_test_cmd
 }
 
 void
-fbr_test_cmd__exit(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd__exit(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);

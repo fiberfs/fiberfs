@@ -4,17 +4,13 @@
  *
  */
 
-#ifndef FBR_TEST_CMDS_H_INCLUDED
-#define FBR_TEST_CMDS_H_INCLUDED
-
-#ifndef FBR_TEST_CMD
+#ifndef _FBR_TEST_CMDS_H_INCLUDED
+#define _FBR_TEST_CMDS_H_INCLUDED
 
 #include "test/fbr_test.h"
+#include "test/fbr_test_cmd_declare.h"
 
-#define FBR_TEST_CMD(cmd)		fbr_test_cmd_f fbr_test_cmd_##cmd;
-#define FBR_TEST_VAR(var)		fbr_test_var_f fbr_test_var_##var;
-
-#endif /* FBR_TEST_CMD */
+#endif /* _FBR_TEST_CMDS_H_INCLUDED */
 
 FBR_TEST_CMD(fiber_test)
 FBR_TEST_CMD(skip)
@@ -71,8 +67,3 @@ FBR_TEST_CMD(test_triple_crash)
 FBR_TEST_CMD(_exit)
 
 FBR_TEST_VAR(test_counter)
-
-#undef FBR_TEST_CMD
-#undef FBR_TEST_VAR
-
-#endif /* FBR_TEST_CMDS_H_INCLUDED */

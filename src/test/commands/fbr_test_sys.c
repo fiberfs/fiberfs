@@ -133,7 +133,7 @@ fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot)
 }
 
 void
-fbr_test_cmd_sys_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_sys_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_init(ctx);
 	fbr_test_cmd_ok(cmd);
@@ -154,7 +154,7 @@ fbr_test_cmd_sys_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 }
 
 char *
-fbr_test_var_sys_tmpdir(struct fbr_test_context *ctx)
+fbr_var_sys_tmpdir(struct fbr_test_context *ctx)
 {
 	_sys_init(ctx);
 	assert(ctx->sys->tmpdir_str);
@@ -172,7 +172,7 @@ _sys_name_cmp(const void *v1, const void *v2)
 }
 
 void
-fbr_test_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_init(ctx);
 	fbr_test_cmd_ok(cmd);
@@ -272,7 +272,7 @@ fbr_test_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_test_cmd_sys_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_sys_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_init(ctx);
 	fbr_test_cmd_ok(cmd);
@@ -340,7 +340,7 @@ fbr_test_cmd_sys_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_test_cmd_sys_cat_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_sys_cat_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_init(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
@@ -386,7 +386,7 @@ fbr_test_cmd_sys_cat_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_test_cmd_sys_stat_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_sys_stat_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_init(ctx);
 	fbr_test_cmd_ok(cmd);
@@ -457,19 +457,19 @@ _sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append)
 }
 
 void
-fbr_test_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_write(ctx, cmd, 0);
 }
 
 void
-fbr_test_cmd_sys_append(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_sys_append(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_write(ctx, cmd, 1);
 }
 
 void
-fbr_test_cmd_sys_write_seek(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_sys_write_seek(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_init(ctx);
 	fbr_test_ERROR(cmd->param_count < 3, "Need 3 params");
@@ -510,7 +510,7 @@ fbr_test_cmd_sys_write_seek(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 }
 
 void
-fbr_test_cmd_sys_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_sys_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_init(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);

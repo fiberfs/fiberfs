@@ -52,7 +52,7 @@ _shell_init(struct fbr_test_context *ctx)
 }
 
 void
-fbr_test_cmd_shell(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_shell(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
@@ -68,7 +68,7 @@ fbr_test_cmd_shell(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_test_cmd_skip_shell_failure(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_skip_shell_failure(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
@@ -109,7 +109,7 @@ _test_shell_bg(void *arg)
 }
 
 void
-fbr_test_cmd_shell_bg(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_shell_bg(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_shell_init(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
@@ -156,7 +156,7 @@ _test_shell_waitall(struct fbr_test_shell *shell)
 }
 
 void
-fbr_test_cmd_shell_waitall(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_shell_waitall(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_shell_init(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
