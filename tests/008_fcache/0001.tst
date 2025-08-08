@@ -2,7 +2,5 @@ fiber_test "cstore"
 
 set_timeout_sec 25
 
-sys_mkdir_tmp
-cstore_init $sys_tmpdir
-
+cstore_init
 cstore_test

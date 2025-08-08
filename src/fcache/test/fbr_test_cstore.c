@@ -22,15 +22,22 @@ _test_cstore_finish(struct fbr_test_context *test_ctx)
 }
 
 void
+fbr_cstore_init(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	char *root = fbr_test_mkdir_tmp(ctx, NULL);
+
+	fbr_cache_store_init(root);
+}
+
+void
 fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
+	fbr_test_ERROR_param_count(cmd, 0);
 
-	// TODO do this interally if it doesnt exist...
-	char *root = cmd->params[0].value;
-
-	fbr_cache_store_init(root);
+	fbr_cstore_init(ctx);
 
 	fbr_test_register_finish(ctx, "cstore", _test_cstore_finish);
 }
