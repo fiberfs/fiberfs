@@ -10,6 +10,7 @@
 #include "cstore/fbr_cstore_api.h"
 
 #include "test/fbr_test.h"
+#include "log/test/fbr_test_log_cmds.h"
 
 extern struct fbr_cstore *_CSTORE;
 
@@ -29,6 +30,10 @@ fbr_test_cstore_init(struct fbr_test_context *ctx)
 	char *root = fbr_test_mkdir_tmp(ctx, NULL);
 
 	fbr_cstore_init(root);
+
+	fbr_test_log_printer_init(ctx, root, "^");
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore root: %s", _CSTORE->root);
 }
 
 void

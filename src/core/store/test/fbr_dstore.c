@@ -20,6 +20,7 @@
 #include "compress/fbr_gzip.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
+#include "cstore/test/fbr_test_cstore_cmds.h"
 #include "sys/fbr_sys.h"
 
 #include "test/fbr_test.h"
@@ -83,6 +84,8 @@ fbr_dstore_init(struct fbr_test_context *ctx)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "dstore root: %s", _DSTORE->root);
 
 	fbr_test_random_seed();
+
+	fbr_test_cstore_init(ctx);
 }
 
 static void

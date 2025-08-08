@@ -782,6 +782,9 @@ fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len)
 		case FBR_REQID_CORE:
 			fbr_strcpy(buffer, buffer_len, "CORE");
 			return;
+		case FBR_REQID_CSTORE:
+			fbr_strcpy(buffer, buffer_len, "CSTORE");
+			return;
 		case FBR_REQID_NONE:
 		case __FBR_REQID_MAX:
 			break;

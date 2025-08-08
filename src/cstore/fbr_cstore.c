@@ -76,6 +76,8 @@ fbr_cstore_init(const char *root_path)
 	_CSTORE->log = fbr_log_alloc(_CSTORE->root, fbr_log_default_size());
 	fbr_log_ok(_CSTORE->log);
 
+	fbr_log_print(_CSTORE->log, FBR_LOG_CSTORE, FBR_REQID_CSTORE, "init");
+
 	_cstore_ok();
 }
 
