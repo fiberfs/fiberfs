@@ -10,7 +10,8 @@
 #include "test/fbr_test.h"
 #include "test/fbr_test_cmd_declare.h"
 
-void fbr_test_log_printer_init(struct fbr_test_context *ctx, const char *logname);
+void fbr_test_log_printer_init(struct fbr_test_context *ctx, const char *logname,
+	const char *prefix);
 void fbr_test_log_printer_silent(int silent);
 size_t fbr_test_log_printer_lines(void);
 

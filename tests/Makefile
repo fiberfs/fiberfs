@@ -7,6 +7,7 @@ TESTS_CHTTP=$(sort $(wildcard 001_http/*.cht 002_http_live/*.cht))
 TESTS_JSON=$(sort $(wildcard 003_json/*.tst))
 TESTS_CORE=$(sort $(wildcard 004_*/*.tst 006_*/*.tst 007_*/*.tst 008_*/*.tst))
 TESTS_COREX=$(sort $(wildcard 004_core/*.tstx))
+TESTS_CSTORE=$(sort $(wildcard 008_cstore/*.tst))
 TESTS_ERROR=$(sort $(wildcard */*.tstf 005_*/*.tst))
 PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
@@ -55,6 +56,8 @@ json:			$(TESTS_JSON)
 core:			$(TESTS_CORE)
 
 corex:			$(TESTS_COREX)
+
+cstore:			$(TESTS_CSTORE)
 
 error:			$(TESTS_ERROR)
 

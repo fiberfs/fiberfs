@@ -9,6 +9,7 @@
 
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
+#include "log/fbr_log.h"
 
 struct fbr_cstore __CSTORE;
 struct fbr_cstore *_CSTORE = &__CSTORE;
@@ -71,6 +72,9 @@ fbr_cstore_init(const char *root_path)
 	size_t path_len = strlen(root_path);
 	assert(path_len < sizeof(_CSTORE->root));
 	memcpy(_CSTORE->root, root_path, path_len + 1);
+
+	_CSTORE->log = fbr_log_alloc(_CSTORE->root, fbr_log_default_size());
+	fbr_log_ok(_CSTORE->log);
 
 	_cstore_ok();
 }
@@ -371,6 +375,8 @@ fbr_cstore_free(void)
 
 	assert_zero(_CSTORE->entries);
 	assert_zero(_CSTORE->bytes);
+
+	fbr_log_free(_CSTORE->log);
 
 	fbr_ZERO(_CSTORE);
 }

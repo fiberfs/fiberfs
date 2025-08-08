@@ -28,6 +28,8 @@ struct fbr_test_log_printer {
 	int					thread_exit;
 	int					silent;
 	size_t					lines;
+	const char				*prefix;
+	struct fbr_test_log_printer		*next;
 };
 
 #define fbr_test_log_printer_ok(print)		fbr_magic_check(print, FBR_TEST_LOG_PRINT_MAGIC)
@@ -76,7 +78,7 @@ _test_log_printer_thread(void *arg)
 
 	printer->thread_running = 1;
 
-	fbr_test_logs("# log printer running (%s)", reader->log.shm_name);
+	fbr_test_logs("%s log printer running (%s)", printer->prefix, reader->log.shm_name);
 
 	unsigned int sleep_count = 0;
 
@@ -91,7 +93,7 @@ _test_log_printer_thread(void *arg)
 				break;
 			}
 			fbr_ASSERT(reader->cursor.status != FBR_LOG_CURSOR_OVERFLOW,
-				"### LOG OVERFLOW ###");
+				"%s ### LOG OVERFLOW ###", printer->prefix);
 			fbr_ASSERT(reader->cursor.status == FBR_LOG_CURSOR_EOF,
 				"cursor.status=%d", reader->cursor.status);
 
@@ -125,7 +127,8 @@ _test_log_printer_thread(void *arg)
 
 		const char *type_str = fbr_log_type_str(reader->cursor.tag.parts.class_data);
 
-		printf("#%.3f %s:%s %s\n", time, reqid_str, type_str, log_line->buffer);
+		printf("%s%.3f %s:%s %s\n", printer->prefix, time, reqid_str, type_str,
+			log_line->buffer);
 	}
 
 	return NULL;
@@ -135,40 +138,57 @@ static void
 _test_printer_finish(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
+	assert(test_ctx->printer);
 
 	struct fbr_test_log_printer *printer = test_ctx->printer;
-	fbr_test_log_printer_ok(printer);
+	while (printer) {
+		fbr_test_log_printer_ok(printer);
 
-	if (printer->thread_running) {
-		assert_zero(printer->thread_exit);
-		fbr_log_reader_ok(&printer->reader);
+		if (printer->thread_running) {
+			assert_zero(printer->thread_exit);
+			fbr_log_reader_ok(&printer->reader);
 
-		printer->thread_exit = 1;
+			printer->thread_exit = 1;
 
-		pt_assert(pthread_join(printer->thread, NULL));
+			pt_assert(pthread_join(printer->thread, NULL));
 
-		fbr_log_reader_free(&printer->reader);
+			fbr_log_reader_free(&printer->reader);
+		}
+
+		struct fbr_test_log_printer *next = printer->next;
+
+		fbr_ZERO(printer);
+		free(printer);
+
+		printer = next;
 	}
 
-	fbr_ZERO(printer);
-	free(printer);
 	test_ctx->printer = NULL;
 }
 
 void
-fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname)
+fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname,
+    const char *prefix)
 {
 	fbr_test_context_ok(test_ctx);
 	assert(logname);
+	assert(prefix);
 
-	if (test_ctx->printer) {
-		fbr_test_log_printer_ok(test_ctx->printer);
-		return;
+	struct fbr_test_log_printer *printer = test_ctx->printer;
+	while (printer) {
+		fbr_test_log_printer_ok(printer);
+
+		if (!strcmp(prefix, printer->prefix)) {
+			return;
+		}
+
+		printer = printer->next;
 	}
 
-	struct fbr_test_log_printer *printer = calloc(1, sizeof(*printer));
+	printer = calloc(1, sizeof(*printer));
 	assert(printer);
 	printer->magic = FBR_TEST_LOG_PRINT_MAGIC;
+	printer->prefix = prefix;
 	fbr_test_log_printer_ok(printer);
 
 	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {
@@ -182,9 +202,13 @@ fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname
 		}
 	}
 
-	test_ctx->printer = printer;
-
-	fbr_test_register_finish(test_ctx, "printer", _test_printer_finish);
+	if (!test_ctx->printer) {
+		test_ctx->printer = printer;
+		fbr_test_register_finish(test_ctx, "printer", _test_printer_finish);
+	} else {
+		printer->next = test_ctx->printer;
+		test_ctx->printer = printer;
+	}
 }
 
 void
@@ -192,9 +216,14 @@ fbr_test_log_printer_silent(int silent)
 {
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 	fbr_test_context_ok(test_ctx);
-	fbr_test_log_printer_ok(test_ctx->printer);
+	assert(test_ctx->printer);
 
-	test_ctx->printer->silent = silent;
+	struct fbr_test_log_printer *printer = test_ctx->printer;
+	while (printer) {
+		fbr_test_log_printer_ok(printer);
+		printer->silent = silent;
+		printer = printer->next;
+	}
 }
 
 size_t
@@ -202,9 +231,18 @@ fbr_test_log_printer_lines(void)
 {
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 	fbr_test_context_ok(test_ctx);
-	fbr_test_log_printer_ok(test_ctx->printer);
+	assert(test_ctx->printer);
 
-	return test_ctx->printer->lines;
+	size_t lines = 0;
+
+	struct fbr_test_log_printer *printer = test_ctx->printer;
+	while (printer) {
+		fbr_test_log_printer_ok(printer);
+		lines += printer->lines;
+		printer = printer->next;
+	}
+
+	return lines;
 }
 
 void
@@ -639,27 +677,38 @@ fbr_cmd_test_log_printer(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_random_seed();
 
 	char logname[100];
-	int ret = snprintf(logname, sizeof(logname), "/test/printer/%ld/%d", random(), getpid());
+	int ret = snprintf(logname, sizeof(logname), "/test/printer1/%ld/%d", random(), getpid());
 	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
-	struct fbr_log *log = fbr_log_alloc(logname, fbr_log_default_size());
-	fbr_log_ok(log);
+	struct fbr_log *log1 = fbr_log_alloc(logname, fbr_log_default_size());
+	fbr_log_ok(log1);
 
-	fbr_test_log_printer_init(ctx, logname);
+	fbr_test_log_printer_init(ctx, logname, "#");
 
-	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "One!");
-	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "Message two!");
-	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "Last message here, bye");
+	ret = snprintf(logname, sizeof(logname), "/test/printer2/%ld/%d", random(), getpid());
+	assert(ret > 0 && (size_t)ret < sizeof(logname));
 
-	fbr_log_free(log);
+	struct fbr_log *log2 = fbr_log_alloc(logname, fbr_log_default_size());
+	fbr_log_ok(log2);
+
+	fbr_test_log_printer_init(ctx, logname, "^");
+
+	fbr_log_print(log1, FBR_LOG_TEST, FBR_REQID_TEST, "One!");
+	fbr_log_print(log2, FBR_LOG_TEST, FBR_REQID_TEST, "HERE! (log2)");
+	fbr_log_print(log1, FBR_LOG_TEST, FBR_REQID_TEST, "Message two!");
+	fbr_log_print(log1, FBR_LOG_TEST, FBR_REQID_TEST, "Last message here, bye");
+	fbr_log_print(log2, FBR_LOG_TEST, FBR_REQID_TEST, "log2 done.");
+
+	fbr_log_free(log1);
+	fbr_log_free(log2);
 
 	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {
 		int max = 20;
-		while (max && fbr_test_log_printer_lines() != 3) {
+		while (max && fbr_test_log_printer_lines() != 5) {
 			fbr_test_sleep_ms(25);
 			max--;
 		}
-		assert(fbr_test_log_printer_lines() == 3);
+		assert(fbr_test_log_printer_lines() == 5);
 	} else {
 		assert_zero(fbr_test_log_printer_lines());
 	}

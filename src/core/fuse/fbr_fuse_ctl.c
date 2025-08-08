@@ -283,17 +283,14 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 
 	if (ctx->session) {
 		fuse_session_destroy(ctx->session);
-		ctx->session = NULL;
 	}
 
 	if (ctx->path) {
 		free(ctx->path);
-		ctx->path = NULL;
 	}
 
 	if (ctx->log) {
 		fbr_log_free(ctx->log);
-		ctx->log = NULL;
 	}
 
 	pt_assert(pthread_mutex_destroy(&ctx->mount_lock));

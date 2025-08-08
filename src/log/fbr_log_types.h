@@ -46,6 +46,7 @@ enum fbr_log_type {
 	FBR_LOG_OP_CREATE,
 	FBR_LOG_OP_RELEASE,
 	FBR_LOG_OP_WRITE,
+	FBR_LOG_CSTORE,
 	__FBR_LOG_TYPE_END
 };
 

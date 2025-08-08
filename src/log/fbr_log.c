@@ -750,6 +750,8 @@ fbr_log_type_str(enum fbr_log_type type)
 			return "OP_RELEASE";
 		case FBR_LOG_OP_WRITE:
 			return "OP_WRITE";
+		case FBR_LOG_CSTORE:
+			return "CSTORE";
 		case __FBR_LOG_TYPE_NONE:
 		case __FBR_LOG_TYPE_END:
 			break;

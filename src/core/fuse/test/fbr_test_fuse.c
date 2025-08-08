@@ -90,7 +90,7 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 		return ret;
 	}
 
-	fbr_test_log_printer_init(test_ctx, path);
+	fbr_test_log_printer_init(test_ctx, path, "#");
 
 	return ctx->error;
 }
@@ -153,7 +153,7 @@ fbr_test_fuse_mock(struct fbr_test_context *test_ctx)
 	fuse_ctx->log = fbr_log_alloc(fuse_ctx->path, fbr_log_default_size());
 	fbr_log_ok(fuse_ctx->log);
 
-	fbr_test_log_printer_init(test_ctx, fuse_ctx->path);
+	fbr_test_log_printer_init(test_ctx, fuse_ctx->path, "#");
 }
 
 struct fbr_fs *

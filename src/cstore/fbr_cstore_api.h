@@ -66,6 +66,8 @@ struct fbr_cstore {
 
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 
+	struct fbr_log				*log;
+
 	char					root[FBR_PATH_MAX];
 
 	size_t					max_bytes;
