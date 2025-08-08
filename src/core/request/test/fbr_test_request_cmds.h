@@ -4,30 +4,21 @@
  *
  */
 
-#ifndef FBR_TEST_REQUEST_CMDS_H_INCLUDED
-#define FBR_TEST_REQUEST_CMDS_H_INCLUDED
-
-#ifndef FBR_TEST_REQUEST_CMD
+#ifndef _FBR_TEST_REQUEST_CMDS_H_INCLUDED
+#define _FBR_TEST_REQUEST_CMDS_H_INCLUDED
 
 #include "test/fbr_test.h"
-
-#define FBR_TEST_REQUEST_CMD(cmd)	fbr_test_cmd_f fbr_cmd_##cmd;
-#define FBR_TEST_REQUEST_VAR(var)	fbr_test_var_f fbr_var_##var;
+#include "test/fbr_test_cmd_declare.h"
 
 struct fbr_request *fbr__test_request_mock(const char *function);
 
 #define fbr_test_request_mock()		fbr__test_request_mock(__func__)
 
-#endif /* FBR_TEST_REQUEST_CMD */
+#endif /* _FBR_TEST_REQUEST_CMDS_H_INCLUDED */
 
-FBR_TEST_REQUEST_CMD(workspace_test_asserts)
-FBR_TEST_REQUEST_CMD(workspace_test)
+FBR_TEST_CMD(workspace_test_asserts)
+FBR_TEST_CMD(workspace_test)
 
-FBR_TEST_REQUEST_CMD(request_test)
-FBR_TEST_REQUEST_CMD(request_test_thread)
-FBR_TEST_REQUEST_CMD(request_test_active)
-
-#undef FBR_TEST_REQUEST_CMD
-#undef FBR_TEST_REQUEST_VAR
-
-#endif /* FBR_TEST_REQUEST_CMDS_H_INCLUDED */
+FBR_TEST_CMD(request_test)
+FBR_TEST_CMD(request_test_thread)
+FBR_TEST_CMD(request_test_active)

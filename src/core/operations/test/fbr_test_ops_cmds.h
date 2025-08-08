@@ -4,23 +4,14 @@
  *
  */
 
-#ifndef FBR_TEST_OPS_CMDS_H_INCLUDED
-#define FBR_TEST_OPS_CMDS_H_INCLUDED
-
-#ifndef FBR_TEST_OPS_CMD
+#ifndef _FBR_TEST_OPS_CMDS_H_INCLUDED
+#define _FBR_TEST_OPS_CMDS_H_INCLUDED
 
 #include "test/fbr_test.h"
+#include "test/fbr_test_cmd_declare.h"
 
-#define FBR_TEST_OPS_CMD(cmd)	fbr_test_cmd_f fbr_cmd_##cmd;
-#define FBR_TEST_OPS_VAR(var)	fbr_test_var_f fbr_var_##var;
+#endif /* _FBR_TEST_OPS_CMDS_H_INCLUDED */
 
-#endif /* FBR_TEST_OPS_CMD */
-
-FBR_TEST_OPS_CMD(mkdir_op_test_mount)
-FBR_TEST_OPS_CMD(mkdir_test_fail)
-FBR_TEST_OPS_CMD(mkdir_test_remote)
-
-#undef FBR_TEST_OPS_CMD
-#undef FBR_TEST_OPS_VAR
-
-#endif /* FBR_TEST_OPS_CMDS_H_INCLUDED */
+FBR_TEST_CMD(mkdir_op_test_mount)
+FBR_TEST_CMD(mkdir_test_fail)
+FBR_TEST_CMD(mkdir_test_remote)

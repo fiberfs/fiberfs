@@ -4,23 +4,14 @@
  *
  */
 
-#ifndef FBR_TEST_FCACHE_CMDS_H_INCLUDED
-#define FBR_TEST_FCACHE_CMDS_H_INCLUDED
-
-#ifndef FBR_TEST_FCACHE_CMD
+#ifndef _FBR_TEST_FCACHE_CMDS_H_INCLUDED
+#define _FBR_TEST_FCACHE_CMDS_H_INCLUDED
 
 #include "test/fbr_test.h"
+#include "test/fbr_test_cmd_declare.h"
 
-#define FBR_TEST_FCACHE_CMD(cmd)	fbr_test_cmd_f fbr_cmd_##cmd;
-#define FBR_TEST_FCACHE_VAR(var)	fbr_test_var_f fbr_var_##var;
+#endif /* _FBR_TEST_FCACHE_CMDS_H_INCLUDED */
 
-#endif /* FBR_TEST_FCACHE_CMD */
-
-FBR_TEST_FCACHE_CMD(cstore_init)
-FBR_TEST_FCACHE_CMD(cstore_test)
-FBR_TEST_FCACHE_CMD(cstore_test_lru)
-
-#undef FBR_TEST_FCACHE_CMD
-#undef FBR_TEST_FCACHE_VAR
-
-#endif /* FBR_TEST_FCACHE_CMDS_H_INCLUDED */
+FBR_TEST_CMD(cstore_init)
+FBR_TEST_CMD(cstore_test)
+FBR_TEST_CMD(cstore_test_lru)

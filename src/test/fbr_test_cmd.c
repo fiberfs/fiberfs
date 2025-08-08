@@ -123,6 +123,8 @@ fbr_test_cmds_init(struct fbr_test *test)
 	assert(RB_EMPTY(&test->cmd_tree));
 
 #undef FBR_TEST_CMDS_H_INCLUDED
+#undef FBR_TEST_CMD
+#undef FBR_TEST_VAR
 #define FBR_TEST_CMD(cmd)					\
 	_test_cmd_register(test, #cmd, &fbr_test_cmd_##cmd);
 #define FBR_TEST_VAR(var)					\
@@ -143,60 +145,20 @@ fbr_test_cmds_init(struct fbr_test *test)
 	_test_var_register(test, "$" #var, &fjson_var_##var);
 #include "test/fjson_test_cmds.h"
 
-#undef FBR_TEST_FUSE_CMDS_H_INCLUDED
-#define FBR_TEST_FUSE_CMD(cmd)					\
+#undef FBR_TEST_CMD
+#undef FBR_TEST_VAR
+#define FBR_TEST_CMD(cmd)					\
 	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
-#define FBR_TEST_FUSE_VAR(var)					\
+#define FBR_TEST_VAR(var)					\
 	_test_var_register(test, "$" #var, &fbr_var_##var);
+
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
-
-#undef FBR_TEST_COREFS_CMDS_H_INCLUDED
-#define FBR_TEST_FS_CMD(cmd)					\
-	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
-#define FBR_TEST_FS_VAR(var)					\
-	_test_var_register(test, "$" #var, &fbr_var_##var);
 #include "core/fs/test/fbr_test_fs_cmds.h"
-
-#undef FBR_TEST_REQUEST_CMDS_H_INCLUDED
-#define FBR_TEST_REQUEST_CMD(cmd)				\
-	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
-#define FBR_TEST_REQUEST_VAR(var)				\
-	_test_var_register(test, "$" #var, &fbr_var_##var);
 #include "core/request/test/fbr_test_request_cmds.h"
-
-#undef FBR_TEST_UTILS_CMDS_H_INCLUDED
-#define FBR_TEST_UTILS_CMD(cmd)					\
-	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
-#define FBR_TEST_UTILS_VAR(var)					\
-	_test_var_register(test, "$" #var, &fbr_var_##var);
 #include "utils/test/fbr_test_util_cmds.h"
-
-#undef FBR_TEST_STORE_CMDS_H_INCLUDED
-#define FBR_TEST_STORE_CMD(cmd)					\
-	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
-#define FBR_TEST_STORE_VAR(var)					\
-	_test_var_register(test, "$" #var, &fbr_var_##var);
 #include "core/store/test/fbr_test_store_cmds.h"
-
-#undef FBR_TEST_LOG_CMDS_H_INCLUDED
-#define FBR_TEST_LOG_CMD(cmd)					\
-	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
-#define FBR_TEST_LOG_VAR(var)					\
-	_test_var_register(test, "$" #var, &fbr_var_##var);
 #include "log/test/fbr_test_log_cmds.h"
-
-#undef FBR_TEST_OPS_CMDS_H_INCLUDED
-#define FBR_TEST_OPS_CMD(cmd)					\
-	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
-#define FBR_TEST_OPS_VAR(var)					\
-	_test_var_register(test, "$" #var, &fbr_var_##var);
 #include "core/operations/test/fbr_test_ops_cmds.h"
-
-#undef FBR_TEST_FCACHE_CMDS_H_INCLUDED
-#define FBR_TEST_FCACHE_CMD(cmd)				\
-	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
-#define FBR_TEST_FCACHE_VAR(var)				\
-	_test_var_register(test, "$" #var, &fbr_var_##var);
 #include "fcache/test/fbr_test_fcache_cmds.h"
 
 	fbr_test_register_finish(test->context, "cmd", _test_cmds_free);
