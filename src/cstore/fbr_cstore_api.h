@@ -78,12 +78,13 @@ struct fbr_cstore {
 	size_t					lru_pruned;
 };
 
-void fbr_cstore_init(const char *root_path);
-void fbr_cstore_max_size(size_t max_bytes, int lru);
-struct fbr_cstore_entry *fbr_cstore_get(fbr_hash_t hash);
-struct fbr_cstore_entry *fbr_cstore_insert(fbr_hash_t hash, size_t bytes);
-void fbr_cstore_release(struct fbr_cstore_entry *entry);
-void fbr_cstore_free(void);
+void fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path);
+void fbr_cstore_max_size(struct fbr_cstore *cstore, size_t max_bytes, int lru);
+struct fbr_cstore_entry *fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash);
+struct fbr_cstore_entry *fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash,
+	size_t bytes);
+void fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
+void fbr_cstore_free(struct fbr_cstore *cstore);
 
 #define fbr_cstore_ok(cstore)			fbr_magic_check(cstore, FBR_CSTORE_MAGIC)
 #define fbr_cstore_head_ok(head)		fbr_magic_check(head, FBR_CSTORE_HEAD_MAGIC)

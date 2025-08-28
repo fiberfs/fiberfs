@@ -12,24 +12,27 @@
 #include "test/fbr_test.h"
 #include "log/test/fbr_test_log_cmds.h"
 
-extern struct fbr_cstore *_CSTORE;
+struct fbr_cstore __CSTORE;
+struct fbr_cstore *_CSTORE = &__CSTORE;
 
 static void
 _test_cstore_finish(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
 
-	fbr_cstore_free();
+	fbr_cstore_free(_CSTORE);
+	_CSTORE = NULL;
 }
 
 void
 fbr_test_cstore_init(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
+	fbr_object_empty(_CSTORE);
 
 	char *root = fbr_test_mkdir_tmp(ctx, NULL);
 
-	fbr_cstore_init(root);
+	fbr_cstore_init(_CSTORE, root);
 
 	fbr_test_log_printer_init(ctx, root, "^");
 	fbr_test_register_finish(ctx, "cstore", _test_cstore_finish);
@@ -64,6 +67,7 @@ _cstore_thread(void *arg)
 	assert_zero(_CSTORE_ENTRY_COUNTER);
 	assert_zero(_CSTORE_READ_COUNTER);
 	assert_zero(_CSTORE_BYTES_COUNTER);
+	fbr_cstore_ok(_CSTORE);
 
 	size_t id = fbr_atomic_add(&_CSTORE_THREAD_COUNT, 1);
 	size_t count = _CSTORE_ENTRY_MAX / _CSTORE_THREADS;
@@ -90,26 +94,26 @@ _cstore_thread(void *arg)
 			hash = random() % _CSTORE_ENTRY_MAX;
 		}
 
-		struct fbr_cstore_entry *entry = fbr_cstore_get(hash);
+		struct fbr_cstore_entry *entry = fbr_cstore_get(_CSTORE, hash);
 		if (!entry) {
 			size_t bytes = random() % _CSTORE_HASH_MAX_BYTES;
-			entry = fbr_cstore_insert(hash, bytes);
+			entry = fbr_cstore_insert(_CSTORE, hash, bytes);
 			if (entry) {
 				fbr_cstore_entry_ok(entry);
 				fbr_atomic_add(&_CSTORE_BYTES_COUNTER, bytes);
 				fbr_atomic_add(&_CSTORE_ENTRY_COUNTER, 1);
-				fbr_cstore_release(entry);
+				fbr_cstore_release(_CSTORE, entry);
 			} else {
-				entry = fbr_cstore_get(hash);
+				entry = fbr_cstore_get(_CSTORE, hash);
 				if (entry) {
 					fbr_cstore_entry_ok(entry);
-					fbr_cstore_release(entry);
+					fbr_cstore_release(_CSTORE, entry);
 				}
 			}
 		} else {
 			fbr_cstore_entry_ok(entry);
 			fbr_atomic_add(&_CSTORE_READ_COUNTER, 1);
-			fbr_cstore_release(entry);
+			fbr_cstore_release(_CSTORE, entry);
 		}
 	}
 
@@ -119,6 +123,8 @@ _cstore_thread(void *arg)
 static void
 _cstore_test(void)
 {
+	fbr_cstore_ok(_CSTORE);
+
 	fbr_test_random_seed();
 
 	_CSTORE_THREAD_COUNT = 0;
@@ -126,7 +132,7 @@ _cstore_test(void)
 	_CSTORE_READ_COUNTER = 0;
 	_CSTORE_BYTES_COUNTER = 0;
 
-	fbr_cstore_max_size(_CSTORE_MAX_BYTES, 1);
+	fbr_cstore_max_size(_CSTORE, _CSTORE_MAX_BYTES, 1);
 
 	fbr_test_logs("*** Starting threads");
 
