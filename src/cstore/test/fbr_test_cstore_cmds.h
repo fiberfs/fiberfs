@@ -16,3 +16,4 @@ void fbr_test_cstore_init(struct fbr_test_context *ctx);
 FBR_TEST_CMD(cstore_init)
 FBR_TEST_CMD(cstore_test)
 FBR_TEST_CMD(cstore_test_lru)
+FBR_TEST_CMD(cstore_state_test)

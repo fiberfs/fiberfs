@@ -214,3 +214,106 @@ fbr_cmd_cstore_test_lru(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_test_lru done");
 }
+
+#define _CSTORE_ST_THREADS	40
+#define _CSTORE_ST_HASHES	10
+size_t _CSTORE_ST_THREAD_COUNT;
+size_t _CSTORE_ST_COUNTER[_CSTORE_ST_HASHES];
+size_t _CSTORE_ST_COMPLETED;
+
+static void *
+_cstore_state_thread(void *arg)
+{
+	assert_zero(arg);
+	fbr_cstore_ok(_CSTORE);
+	assert_zero(_CSTORE_ST_COMPLETED);
+
+	size_t id = fbr_atomic_add(&_CSTORE_ST_THREAD_COUNT, 1);
+	while (_CSTORE_ST_THREAD_COUNT < _CSTORE_ST_THREADS) {
+		fbr_sleep_ms(0.1);
+	}
+	assert(_CSTORE_ST_THREAD_COUNT == _CSTORE_ST_THREADS);
+
+	fbr_test_logs(" ** State thread %zu running", id);
+
+	while (_CSTORE_ST_COMPLETED < _CSTORE_ST_HASHES) {
+		size_t hash = random() % _CSTORE_ST_HASHES;
+
+		struct fbr_cstore_entry *entry = fbr_cstore_get(_CSTORE, hash);
+		if (!entry) {
+			entry = fbr_cstore_insert(_CSTORE, hash, 100);
+			if (!entry) {
+				continue;
+			}
+		}
+		fbr_cstore_entry_ok(entry);
+
+		assert(hash < fbr_array_len(_CSTORE_ST_COUNTER));
+		size_t state = fbr_atomic_add(&_CSTORE_ST_COUNTER[hash], 1);
+		assert(state < 1000 * 1000 * 1000);
+
+		if (state >= 5) {
+			fbr_test_sleep_ms(10);
+		} else if (state == 4) {
+			fbr_test_sleep_ms(random() % 50);
+			fbr_cstore_set_loading(entry);
+			fbr_ASSERT(entry->state == FBR_CSTORE_LOADING,
+				"found final state %d", entry->state);
+			fbr_cstore_set_ok(entry);
+			fbr_atomic_add(&_CSTORE_ST_COMPLETED, 1);
+		} else {
+			assert(state > 0 && state < 4);
+
+			fbr_cstore_set_loading(entry);
+			fbr_ASSERT(entry->state >= FBR_CSTORE_LOADING,
+				"found state %d", entry->state);
+
+			if (entry->state == FBR_CSTORE_LOADING) {
+				fbr_test_sleep_ms(random() % 25);
+				fbr_cstore_set_error(entry);
+			}
+		}
+
+
+		fbr_cstore_release(_CSTORE, entry);
+	}
+
+	return NULL;
+}
+
+void
+fbr_cmd_cstore_state_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+	assert_zero(_CSTORE_ST_THREAD_COUNT);
+	static_ASSERT(_CSTORE_ST_HASHES < _CSTORE_ST_THREADS);
+
+	fbr_test_random_seed();
+	fbr_test_cstore_init(ctx);
+
+	fbr_test_logs("*** Starting threads");
+
+	pthread_t threads[_CSTORE_ST_THREADS];
+
+	for (size_t i = 0; i < fbr_array_len(threads); i++) {
+		pt_assert(pthread_create(&threads[i], NULL, _cstore_state_thread, NULL));
+	}
+
+	for (size_t i = 0; i < fbr_array_len(threads); i++) {
+		pt_assert(pthread_join(threads[i], NULL));
+	}
+	assert(_CSTORE_ST_THREAD_COUNT == _CSTORE_ST_THREADS);
+
+	fbr_test_logs("*** Threads done");
+
+	for (size_t i = 0; i < _CSTORE_ST_HASHES; i++) {
+		assert(_CSTORE_ST_COUNTER[i] >= 5);
+		struct fbr_cstore_entry *entry = fbr_cstore_get(_CSTORE, i);
+		fbr_cstore_entry_ok(entry);
+		assert(entry->state == FBR_CSTORE_OK);
+		fbr_cstore_release(_CSTORE, entry);
+	}
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_state_test done");
+}

@@ -371,7 +371,6 @@ fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
 	fbr_cstore_ok(cstore);
 	fbr_cstore_entry_ok(entry);
 	assert(entry->alloc == FBR_CSTORE_ENTRY_USED);
-	assert(entry->state != FBR_CSTORE_LOADING);
 
 	struct fbr_cstore_head *head = _cstore_get_head(cstore, entry->hash);
 	pt_assert(pthread_mutex_lock(&head->lock));
