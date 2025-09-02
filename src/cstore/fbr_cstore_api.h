@@ -16,7 +16,7 @@
 #define FBR_CSTORE_HEAD_COUNT			64
 #define FBR_CSTORE_SLAB_SIZE			128
 
-enum fbr_cstore_entry_state {
+enum fbr_cstore_alloc_state {
 	FBR_CSTORE_ENTRY_NONE = 0,
 	FBR_CSTORE_ENTRY_FREE,
 	FBR_CSTORE_ENTRY_USED
@@ -26,7 +26,7 @@ struct fbr_cstore_entry {
 	unsigned				magic;
 #define FBR_CSTORE_ENTRY_MAGIC			0xA59C372B
 
-	enum fbr_cstore_entry_state		state;
+	enum fbr_cstore_alloc_state		alloc;
 
 	fbr_hash_t				hash;
 	size_t					bytes;
