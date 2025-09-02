@@ -31,6 +31,10 @@ _cstore_add_slab(struct fbr_cstore_head *head)
 		entry->magic = FBR_CSTORE_ENTRY_MAGIC;
 		entry->alloc = FBR_CSTORE_ENTRY_FREE;
 
+		assert_dev(entry->state == FBR_CSTORE_NONE);
+		pt_assert(pthread_mutex_init(&entry->state_lock, NULL));
+		pt_assert(pthread_cond_init(&entry->state_cond, NULL));
+
 		TAILQ_INSERT_TAIL(&head->free_list, entry, list_entry);
 
 		fbr_cstore_entry_ok(entry);
@@ -114,7 +118,7 @@ _cstore_get_entry(struct fbr_cstore *cstore, struct fbr_cstore_head *head, fbr_h
 	struct fbr_cstore_entry *entry = TAILQ_FIRST(&head->free_list);
 	fbr_cstore_entry_ok(entry);
 	assert(entry->alloc == FBR_CSTORE_ENTRY_FREE);
-	assert_dev(entry->state == FBR_CSTORE_ERROR);
+	assert_dev(entry->state == FBR_CSTORE_NONE);
 
 	entry->hash = hash;
 	entry->alloc = FBR_CSTORE_ENTRY_USED;
@@ -156,7 +160,7 @@ fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash)
 
 	struct fbr_cstore_entry *entry = RB_FIND(fbr_cstore_tree, &head->tree, &find);
 	if (!entry) {
-		pthread_mutex_unlock(&head->lock);
+		pt_assert(pthread_mutex_unlock(&head->lock));
 		return NULL;
 	}
 
@@ -188,10 +192,12 @@ _cstore_entry_free(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 	assert_dev(entry);
 	assert_zero(entry->refcount);
 	assert_zero(entry->in_lru);
+	assert(entry->state != FBR_CSTORE_LOADING);
 
 	size_t bytes = entry->bytes;
 
 	entry->alloc = FBR_CSTORE_ENTRY_FREE;
+	entry->state = FBR_CSTORE_NONE;
 	entry->hash = 0;
 	entry->bytes = 0;
 
@@ -278,7 +284,7 @@ fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes)
 		assert_dev(entry->alloc == FBR_CSTORE_ENTRY_USED);
 		assert_dev(entry->refcount);
 
-		pthread_mutex_unlock(&head->lock);
+		pt_assert(pthread_mutex_unlock(&head->lock));
 
 		return NULL;
 	}
@@ -286,12 +292,13 @@ fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes)
 	if (cstore->do_lru) {
 		_cstore_lru_prune(cstore, head, bytes);
 	} else if (_cstore_full(cstore, bytes)) {
-		pthread_mutex_unlock(&head->lock);
+		pt_assert(pthread_mutex_unlock(&head->lock));
 		return NULL;
 	}
 
 	entry = _cstore_get_entry(cstore, head, hash);
 	assert_dev(entry->alloc == FBR_CSTORE_ENTRY_USED);
+	assert_dev(entry->state == FBR_CSTORE_NONE);
 	assert_dev(entry->in_lru);
 
 	// Caller takes a ref
@@ -307,11 +314,64 @@ fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes)
 }
 
 void
+fbr_cstore_set_loading(struct fbr_cstore_entry *entry)
+{
+	fbr_cstore_entry_ok(entry);
+
+	pt_assert(pthread_mutex_lock(&entry->state_lock));
+
+	while (entry->state != FBR_CSTORE_OK) {
+		switch (entry->state) {
+			case FBR_CSTORE_NONE:
+				entry->state = FBR_CSTORE_LOADING;
+				pt_assert(pthread_mutex_unlock(&entry->state_lock));
+				return;
+			case FBR_CSTORE_LOADING:
+				pt_assert(pthread_cond_wait(&entry->state_cond, &entry->state_lock));
+				break;
+			default:
+				fbr_ABORT("Invalid state: %d", entry->state);
+		}
+	}
+
+	pt_assert(pthread_mutex_unlock(&entry->state_lock));
+}
+
+static void
+_cstore_set_state(struct fbr_cstore_entry *entry, enum fbr_cstore_state state)
+{
+	fbr_cstore_entry_ok(entry);
+	assert(state == FBR_CSTORE_NONE || state == FBR_CSTORE_OK);
+
+	pt_assert(pthread_mutex_lock(&entry->state_lock));
+
+	assert(entry->state == FBR_CSTORE_LOADING);
+	entry->state = state;
+
+	pt_assert(pthread_cond_broadcast(&entry->state_cond));
+
+	pt_assert(pthread_mutex_unlock(&entry->state_lock));
+}
+
+void
+fbr_cstore_set_ok(struct fbr_cstore_entry *entry)
+{
+	_cstore_set_state(entry, FBR_CSTORE_OK);
+}
+
+void
+fbr_cstore_set_error(struct fbr_cstore_entry *entry)
+{
+	_cstore_set_state(entry, FBR_CSTORE_NONE);
+}
+
+void
 fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_entry_ok(entry);
 	assert(entry->alloc == FBR_CSTORE_ENTRY_USED);
+	assert(entry->state != FBR_CSTORE_LOADING);
 
 	struct fbr_cstore_head *head = _cstore_get_head(cstore, entry->hash);
 	pt_assert(pthread_mutex_lock(&head->lock));
@@ -345,6 +405,10 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 
 			for (size_t i = 0; i < slab->count; i++) {
 				struct fbr_cstore_entry *entry = &slab->entries[i];
+
+				pt_assert(pthread_mutex_destroy(&entry->state_lock));
+				pt_assert(pthread_cond_destroy(&entry->state_cond));
+
 				assert(entry->alloc);
 				if (entry->alloc == FBR_CSTORE_ENTRY_FREE) {
 					TAILQ_REMOVE(&head->free_list, entry, list_entry);
