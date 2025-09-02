@@ -22,11 +22,18 @@ enum fbr_cstore_alloc_state {
 	FBR_CSTORE_ENTRY_USED
 };
 
+enum fbr_cstore_state {
+	FBR_CSTORE_ERROR = 0,
+	FBR_CSTORE_FETCH,
+	FBR_CSTORE_OK
+};
+
 struct fbr_cstore_entry {
 	unsigned				magic;
 #define FBR_CSTORE_ENTRY_MAGIC			0xA59C372B
 
 	enum fbr_cstore_alloc_state		alloc;
+	enum fbr_cstore_state			state;
 
 	fbr_hash_t				hash;
 	size_t					bytes;

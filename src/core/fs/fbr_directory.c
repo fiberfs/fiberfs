@@ -757,12 +757,20 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode, struct fbr_direct
 
 	struct fbr_file *file = fbr_inode_take(fs, inode);
 	if (!file) {
-		return NULL;
-	} else if (file->state == FBR_FILE_EXPIRED || !S_ISDIR(file->mode)) {
-		fbr_inode_release(fs, &file);
+		fbr_rlog(FBR_LOG_FS, "directory inode: %lu not found", inode);
 		return NULL;
 	}
 	assert_dev(file->inode == inode);
+
+	if (file->state == FBR_FILE_EXPIRED) {
+		fbr_rlog(FBR_LOG_FS, "directory inode: %lu expired", inode);
+		fbr_inode_release(fs, &file);
+		return NULL;
+	} else if (!S_ISDIR(file->mode)) {
+		fbr_rlog(FBR_LOG_FS, "directory inode: %lu not a directory", inode);
+		fbr_inode_release(fs, &file);
+		return NULL;
+	}
 
 	struct fbr_path_name dirname;
 	char buf[FBR_PATH_MAX];

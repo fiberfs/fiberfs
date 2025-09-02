@@ -114,6 +114,7 @@ _cstore_get_entry(struct fbr_cstore *cstore, struct fbr_cstore_head *head, fbr_h
 	struct fbr_cstore_entry *entry = TAILQ_FIRST(&head->free_list);
 	fbr_cstore_entry_ok(entry);
 	assert(entry->alloc == FBR_CSTORE_ENTRY_FREE);
+	assert_dev(entry->state == FBR_CSTORE_ERROR);
 
 	entry->hash = hash;
 	entry->alloc = FBR_CSTORE_ENTRY_USED;
