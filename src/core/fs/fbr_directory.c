@@ -395,6 +395,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 		struct fbr_file *new_file = NULL;
 		int file_deleted = 0;
 		int file_expired = 0;
+		int file_inval = 0;
 
 		if (next) {
 			new_file = fbr_directory_find_file(next, filename.name,
@@ -406,7 +407,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 				file_expired = 1;
 			}
 		} else {
-			file_expired = 1;
+			file_inval = 1;
 		}
 
 		int ret;
@@ -419,10 +420,12 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 			ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
 				file->inode, filename.name, filename.len);
 			assert_dev(ret != -ENOSYS);
-		} else if (file_expired) {
+		} else if (file_expired || file_inval) {
 			fbr_rlog(FBR_LOG_DIR_EXP, "INVAL inode: %lu", file->inode);
 
-			file->state = FBR_FILE_EXPIRED;
+			if (file_expired) {
+				file->state = FBR_FILE_EXPIRED;
+			}
 
 			ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
 				directory->inode, filename.name, filename.len);
