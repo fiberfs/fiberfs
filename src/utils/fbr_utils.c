@@ -131,7 +131,8 @@ fbr_bin2hex(const void *input, size_t input_len, char *output, size_t output_len
 
 	for (i = 0; i < input_len; i++) {
 		assert_dev((i * 2) + 3 <= output_len);
-		int ret = snprintf(&output[i * 2], 3, "%.2x", ((const char*)input)[i]);
+		int ret = snprintf(&output[i * 2], 3, "%.2x",
+			(unsigned char)((const char*)input)[i]);
 		assert(ret == 2);
 	}
 

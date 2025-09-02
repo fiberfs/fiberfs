@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 
+#include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "test/fbr_test.h"
 

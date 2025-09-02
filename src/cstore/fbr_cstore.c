@@ -192,7 +192,7 @@ _cstore_entry_free(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 	assert_dev(entry);
 	assert_zero(entry->refcount);
 	assert_zero(entry->in_lru);
-	assert(entry->state != FBR_CSTORE_LOADING);
+	assert_zero(entry->state == FBR_CSTORE_LOADING);
 
 	size_t bytes = entry->bytes;
 

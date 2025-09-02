@@ -12,3 +12,4 @@
 #endif /* _FBR_TEST_UTILS_CMDS_H_INCLUDED */
 
 FBR_TEST_CMD(test_id_assert)
+FBR_TEST_CMD(test_hash)
