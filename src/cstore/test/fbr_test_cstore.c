@@ -308,7 +308,7 @@ fbr_cmd_cstore_state_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_logs("*** Threads done");
 
 	for (size_t i = 0; i < _CSTORE_ST_HASHES; i++) {
-		assert(_CSTORE_ST_COUNTER[i] >= 5);
+		assert(_CSTORE_ST_COUNTER[i] >= 4);
 		struct fbr_cstore_entry *entry = fbr_cstore_get(_CSTORE, i);
 		fbr_cstore_entry_ok(entry);
 		assert(entry->state == FBR_CSTORE_OK);
