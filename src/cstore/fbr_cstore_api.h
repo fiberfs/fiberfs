@@ -94,6 +94,7 @@ struct fbr_cstore_metadata {
 	char					path[FBR_PATH_MAX];
 	fbr_id_t				etag;
 	unsigned long				size;
+	unsigned long				offset;
 	int					gzipped;
 	char					_context;
 };
@@ -110,6 +111,8 @@ void fbr_cstore_set_error(struct fbr_cstore_entry *entry);
 void fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
 void fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
 void fbr_cstore_free(struct fbr_cstore *cstore);
+
+int fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata);
 
 void fbr_cstore_fuse_register(const char *root_path);
 struct fbr_cstore *fbr_cstore_find(void);

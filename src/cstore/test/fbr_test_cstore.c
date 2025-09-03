@@ -64,16 +64,47 @@ fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_cstore_init(ctx);
 }
 
+static void
+_cstore_debug_meta(const char *filename, struct fbr_cstore_metadata *metadata)
+{
+	assert_dev(filename);
+	assert_dev(metadata);
+	static_ASSERT(sizeof(FBR_CSTORE_DATA_DIR) == sizeof(FBR_CSTORE_META_DIR));
+
+	fbr_ZERO(metadata);
+
+	char meta_path[FBR_PATH_MAX];
+	int ret = snprintf(meta_path, sizeof(meta_path), "%s", filename);
+	assert(ret > 0 && (size_t)ret < sizeof(meta_path));
+
+	while (ret > 0) {
+		size_t s = sizeof(FBR_CSTORE_DATA_DIR) - 1;
+		if (!strncmp(meta_path + ret, FBR_CSTORE_DATA_DIR, s)) {
+			memcpy(meta_path + ret, FBR_CSTORE_META_DIR, s);
+			break;
+		}
+		ret--;
+	}
+	assert(ret);
+
+	ret = fbr_cstore_metadata_read(meta_path, metadata);
+	assert_zero(ret);
+}
+
 static int
 _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct FTW *info)
 {
 	(void)stat;
 	(void)info;
 
+	struct fbr_cstore_metadata metadata;
+
 	switch (flag) {
 		case FTW_F:
 		case FTW_SL:
-			fbr_test_logs("CSTORE_DEBUG file: %s", filename);
+			_cstore_debug_meta(filename, &metadata);
+			fbr_test_logs("CSTORE_DEBUG file: %s (%s:%lu)", filename, metadata.path,
+				metadata.offset);
 			break;
 		default:
 			break;

@@ -10,6 +10,7 @@
 #include "fiberfs.h"
 #include "fbr_cstore.h"
 #include "fbr_cstore_api.h"
+#include "fjson.h"
 #include "core/fs/fbr_fs.h"
 #include "utils/fbr_sys.h"
 
@@ -44,6 +45,13 @@ _cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata)
 	fbr_sys_write(fd, "\",\"s\":", 6);
 	fbr_sys_write(fd, buf, strlen(buf));
 
+	// o: offset
+	ret = snprintf(buf, sizeof(buf), "%lu", metadata->offset);
+	assert(ret > 0 && (size_t)ret < sizeof(buf));
+
+	fbr_sys_write(fd, ",\"o\":", 5);
+	fbr_sys_write(fd, buf, strlen(buf));
+
 	// g: gzipped
 	fbr_sys_write(fd, ",\"g\":", 5);
 
@@ -56,6 +64,126 @@ _cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata)
 	assert_zero(close(fd));
 
 	return 0;
+}
+
+static int
+_cstore_parse_metadata(struct fjson_context *ctx, void *priv)
+{
+	fjson_context_ok(ctx);
+	assert(priv);
+
+	struct fbr_cstore_metadata *metadata = (struct fbr_cstore_metadata*)priv;
+
+	struct fjson_token *token = fjson_get_token(ctx, 0);
+	fjson_token_ok(token);
+
+	assert_dev(ctx->tokens_pos >= 2);
+	size_t depth = ctx->tokens_pos - 2;
+
+	if (token->type == FJSON_TOKEN_OBJECT) {
+		if (depth != 0) {
+			return 1;
+		}
+		if (token->closed && token->length != 5) {
+			return 1;
+		}
+
+		return 0;
+	}
+	if (token->type == FJSON_TOKEN_LABEL) {
+		if (depth != 1 || token->svalue_len != 1) {
+			return 1;
+		}
+
+		metadata->_context = token->svalue[0];
+
+		return 0;
+	}
+	if (token->type == FJSON_TOKEN_STRING && metadata->_context == 'e') {
+		if (depth != 2) {
+			return 1;
+		}
+
+		metadata->etag = fbr_id_parse(token->svalue, token->svalue_len);
+		metadata->_context = '\0';
+
+		return 0;
+	} else if (token->type == FJSON_TOKEN_STRING && metadata->_context == 'p') {
+		if (depth != 2) {
+			return 1;
+		}
+
+		assert(token->svalue_len < sizeof(metadata->path));
+		memcpy(metadata->path, token->svalue, token->svalue_len);
+		metadata->path[token->svalue_len] = '\0';
+		metadata->_context = '\0';
+
+		return 0;
+	} else if (token->type == FJSON_TOKEN_NUMBER) {
+		if (depth != 2) {
+			return 1;
+		}
+
+		if (metadata->_context == 's') {
+			if (token->dvalue < 0) {
+				return 1;
+			}
+			metadata->size = (size_t)token->dvalue;
+		} else if (metadata->_context == 'o') {
+			if (token->dvalue < 0) {
+				return 1;
+			}
+			metadata->offset = (size_t)token->dvalue;
+		} else if (metadata->_context == 'g') {
+			if (token->dvalue != 0 && token->dvalue != 1) {
+				return 1;
+			}
+			metadata->gzipped = (int)token->dvalue;
+		} else {
+			return 1;
+		}
+
+		metadata->_context = '\0';
+
+		return 0;
+	}
+
+	return 1;
+}
+
+int
+fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata)
+{
+	assert(path);
+	assert(metadata);
+
+	fbr_ZERO(metadata);
+
+	int fd = open(path, O_RDONLY);
+
+	if (fd < 0) {
+		return 1;
+	}
+
+	char buffer[sizeof(*metadata) + 128];
+	ssize_t bytes = fbr_sys_read(fd, buffer, sizeof(buffer));
+	assert_zero(close(fd));
+
+	if (bytes <= 0 || (size_t)bytes >= sizeof(buffer)) {
+		return 1;
+	}
+
+	struct fjson_context json;
+	fjson_context_init(&json);
+	json.callback = &_cstore_parse_metadata;
+	json.callback_priv = metadata;
+
+	fjson_parse(&json, buffer, bytes);
+	int ret = json.error;
+
+	fjson_context_free(&json);
+
+	return ret;
 }
 
 static void
@@ -156,6 +284,7 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	fbr_ZERO(&metadata);
 	metadata.etag = wbuffer->id;
 	metadata.size = wbuffer->end;
+	metadata.offset = wbuffer->offset;
 	assert(filepath.len < FBR_PATH_MAX);
 	memcpy(metadata.path, filepath.name, filepath.len + 1);
 
