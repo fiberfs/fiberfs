@@ -10,7 +10,7 @@
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 
-void fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
+int fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
 
 fbr_hash_t fbr_chash_wbuffer(struct fbr_fs *fs, struct fbr_file *file,

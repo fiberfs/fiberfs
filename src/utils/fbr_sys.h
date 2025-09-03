@@ -7,6 +7,7 @@
 #define _FBR_SYS_H_INCLUDED_
 
 #include <stddef.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 struct FTW;

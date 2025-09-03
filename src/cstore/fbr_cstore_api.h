@@ -73,10 +73,11 @@ struct fbr_cstore {
 	unsigned				magic;
 #define FBR_CSTORE_MAGIC			0xC8747276
 
+	unsigned int				do_free:1;
+
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 
 	struct fbr_log				*log;
-
 	char					root[FBR_PATH_MAX];
 
 	size_t					max_bytes;
@@ -87,6 +88,7 @@ struct fbr_cstore {
 	size_t					lru_pruned;
 };
 
+struct fbr_cstore *fbr_cstore_alloc(const char *root_path);
 void fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path);
 void fbr_cstore_max_size(struct fbr_cstore *cstore, size_t max_bytes, int lru);
 struct fbr_cstore_entry *fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash);
@@ -97,6 +99,9 @@ void fbr_cstore_set_ok(struct fbr_cstore_entry *entry);
 void fbr_cstore_set_error(struct fbr_cstore_entry *entry);
 void fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
 void fbr_cstore_free(struct fbr_cstore *cstore);
+
+void fbr_cstore_fuse_register(const char *root_path);
+struct fbr_cstore *fbr_cstore_find(void);
 
 #define fbr_cstore_ok(cstore)			fbr_magic_check(cstore, FBR_CSTORE_MAGIC)
 #define fbr_cstore_head_ok(head)		fbr_magic_check(head, FBR_CSTORE_HEAD_MAGIC)

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
+#include "core/fuse/fbr_fuse.h"
 #include "cstore/fbr_cstore_api.h"
 
 #include "test/fbr_test.h"
@@ -19,6 +20,13 @@ static void
 _test_cstore_finish(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
+
+	if (fbr_fuse_has_context()) {
+		struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+		if (fuse_ctx->cstore == _CSTORE) {
+			fuse_ctx->cstore = NULL;
+		}
+	}
 
 	fbr_cstore_free(_CSTORE);
 	_CSTORE = NULL;
@@ -36,6 +44,12 @@ fbr_test_cstore_init(struct fbr_test_context *ctx)
 
 	fbr_test_log_printer_init(ctx, root, "^");
 	fbr_test_register_finish(ctx, "cstore", _test_cstore_finish);
+
+	if (fbr_fuse_has_context()) {
+		struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+		assert_zero(fuse_ctx->cstore);
+		fuse_ctx->cstore = _CSTORE;
+	}
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore root: %s", _CSTORE->root);
 }

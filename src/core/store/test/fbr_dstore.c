@@ -20,8 +20,9 @@
 #include "compress/fbr_gzip.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
+#include "cstore/fbr_cstore.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
-#include "sys/fbr_sys.h"
+#include "utils/fbr_sys.h"
 
 #include "test/fbr_test.h"
 
@@ -458,6 +459,9 @@ fbr_dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
 	fbr_fs_stat_add(&fs->stats.store_chunks);
 	fbr_fs_stat_add(&_DSTORE->chunks);
+
+	// TODO
+	fbr_cstore_wbuffer_write(fs, file, wbuffer);
 
 	_dstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_DONE);
 }

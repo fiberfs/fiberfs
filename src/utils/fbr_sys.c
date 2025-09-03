@@ -18,8 +18,9 @@
 static mode_t
 _sys_mode(const char *path)
 {
-	struct stat st;
+	assert(path);
 
+	struct stat st;
 	int ret = lstat(path, &st);
 
 	if (ret) {

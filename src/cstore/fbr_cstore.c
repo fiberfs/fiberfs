@@ -10,6 +10,7 @@
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
 #include "log/fbr_log.h"
+#include "utils/fbr_sys.h"
 
 static int _cstore_entry_cmp(const struct fbr_cstore_entry *e1, const struct fbr_cstore_entry *e2);
 
@@ -44,11 +45,27 @@ _cstore_add_slab(struct fbr_cstore_head *head)
 	head->slabs = slab;
 }
 
+struct fbr_cstore *
+fbr_cstore_alloc(const char *root_path)
+{
+	assert(root_path);
+
+	struct fbr_cstore *cstore = malloc(sizeof(*cstore));
+	assert(cstore);
+
+	fbr_cstore_init(cstore, root_path);
+
+	return cstore;
+}
+
 void
 fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 {
 	assert(cstore);
+	assert(root_path);
+	assert(fbr_sys_isdir(root_path));
 
+	fbr_ZERO(cstore);
 	cstore->magic = FBR_CSTORE_MAGIC;
 
 	for (size_t i = 0; i < fbr_array_len(cstore->heads); i++) {
@@ -442,5 +459,11 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 
 	fbr_log_free(cstore->log);
 
+	int do_free = cstore->do_free;
+
 	fbr_ZERO(cstore);
+
+	if (do_free) {
+		free(cstore);
+	}
 }

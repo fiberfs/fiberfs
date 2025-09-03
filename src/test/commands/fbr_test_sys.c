@@ -19,8 +19,8 @@
 #include "test/chttp_test_cmds.h"
 
 #include "fiberfs.h"
-#include "sys/fbr_sys.h"
 #include "test/fbr_test.h"
+#include "utils/fbr_sys.h"
 
 struct _sys_path {
 	unsigned int			magic;
