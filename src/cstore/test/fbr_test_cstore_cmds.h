@@ -10,6 +10,7 @@
 #include "test/fbr_test_cmd_declare.h"
 
 void fbr_test_cstore_init(struct fbr_test_context *ctx);
+void fbr_test_cstore_debug(void);
 
 #endif /* _FBR_TEST_FCACHE_CMDS_H_INCLUDED */
 

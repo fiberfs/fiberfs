@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include "fiberfs.h"
 #include "fbr_cstore.h"
@@ -82,13 +83,32 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 
 	int ret = fbr_mkdirs(path);
 	if (ret) {
+		fbr_cstore_set_error(entry);
 		fbr_cstore_release(cstore, entry);
 		return 1;
 	}
 
+	if (fbr_sys_exists(path)) {
+		fbr_cstore_set_error(entry);
+		fbr_cstore_release(cstore, entry);
+		return 1;
+	}
+
+	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	if (fd < 0) {
+		fbr_cstore_set_error(entry);
+		fbr_cstore_release(cstore, entry);
+		return 1;
+	}
+
+	fbr_sys_write(fd, wbuffer->buffer, wbuffer->end);
+	assert_zero(close(fd));
+
+	// TODO metadata and stats
+	// TODO should we remove the entry on error?
+
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
-
 
 	return 0;
 }

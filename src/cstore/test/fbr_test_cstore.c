@@ -9,6 +9,7 @@
 #include "fiberfs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "cstore/fbr_cstore_api.h"
+#include "utils/fbr_sys.h"
 
 #include "test/fbr_test.h"
 #include "log/test/fbr_test_log_cmds.h"
@@ -61,6 +62,40 @@ fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_test_cstore_init(ctx);
+}
+
+static int
+_cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct FTW *info)
+{
+	(void)stat;
+	(void)info;
+
+	switch (flag) {
+		case FTW_F:
+		case FTW_SL:
+			fbr_test_logs("CSTORE_DEBUG file: %s", filename);
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+void
+fbr_test_cstore_debug(void)
+{
+	fbr_cstore_ok(_CSTORE);
+
+	fbr_test_logs("CSTORE_DEBUG root: %s", _CSTORE->root);
+
+	char path[FBR_PATH_MAX];
+	size_t ret = snprintf(path, sizeof(path), "%s/%s",
+		_CSTORE->root,
+		FBR_CSTORE_DATA_DIR);
+	assert(ret < sizeof(path));
+
+	fbr_sys_nftw(path, _cstore_debug_cb);
 }
 
 #define _CSTORE_THREADS		4

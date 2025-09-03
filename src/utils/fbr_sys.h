@@ -6,6 +6,7 @@
 #ifndef _FBR_SYS_H_INCLUDED_
 #define _FBR_SYS_H_INCLUDED_
 
+#include <ftw.h>
 #include <stddef.h>
 #include <sys/stat.h>
 #include <sys/types.h>

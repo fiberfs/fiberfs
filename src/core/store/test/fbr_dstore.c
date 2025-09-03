@@ -142,6 +142,8 @@ fbr_dstore_debug(int show_meta)
 	assert(ret < sizeof(path));
 
 	fbr_sys_nftw(path, _dstore_debug_cb);
+
+	fbr_test_cstore_debug();
 }
 
 void

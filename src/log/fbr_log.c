@@ -752,6 +752,8 @@ fbr_log_type_str(enum fbr_log_type type)
 			return "OP_WRITE";
 		case FBR_LOG_CSTORE:
 			return "CSTORE";
+		case FBR_LOG_CS_DEBUG:
+			return "CSTORE_DEBUG";
 		case FBR_LOG_CS_WBUFFER:
 			return "CSTORE_WBUFFER";
 		case __FBR_LOG_TYPE_NONE:
