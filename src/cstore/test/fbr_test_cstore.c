@@ -162,7 +162,13 @@ _cstore_thread(void *arg)
 		} else {
 			fbr_cstore_entry_ok(entry);
 			fbr_atomic_add(&_CSTORE_READ_COUNTER, 1);
-			fbr_cstore_release(_CSTORE, entry);
+
+			if (random() % 10 == 0) {
+				fbr_atomic_sub(&_CSTORE_BYTES_COUNTER, entry->bytes);
+				fbr_cstore_remove(_CSTORE, entry);
+			} else {
+				fbr_cstore_release(_CSTORE, entry);
+			}
 		}
 	}
 
@@ -361,8 +367,10 @@ fbr_cmd_cstore_state_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 		struct fbr_cstore_entry *entry = fbr_cstore_get(_CSTORE, i);
 		fbr_cstore_entry_ok(entry);
 		assert(entry->state == FBR_CSTORE_OK);
-		fbr_cstore_release(_CSTORE, entry);
+		fbr_cstore_remove(_CSTORE, entry);
 	}
+
+	assert_zero(_CSTORE->entries);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_state_test done");
 }

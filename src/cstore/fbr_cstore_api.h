@@ -100,6 +100,7 @@ void fbr_cstore_set_loading(struct fbr_cstore_entry *entry);
 void fbr_cstore_set_ok(struct fbr_cstore_entry *entry);
 void fbr_cstore_set_error(struct fbr_cstore_entry *entry);
 void fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
+void fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
 void fbr_cstore_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_fuse_register(const char *root_path);

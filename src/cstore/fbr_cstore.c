@@ -382,8 +382,8 @@ fbr_cstore_set_error(struct fbr_cstore_entry *entry)
 	_cstore_set_state(entry, FBR_CSTORE_NONE);
 }
 
-void
-fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
+static void
+_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, int prune_lru)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_entry_ok(entry);
@@ -396,6 +396,16 @@ fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
 	assert(entry->refcount);
 	entry->refcount--;
 
+	if (prune_lru && entry->in_lru) {
+		TAILQ_REMOVE(&head->lru_list, entry, list_entry);
+
+		assert(entry->refcount);
+		entry->refcount--;
+		entry->in_lru = 0;
+
+		fbr_atomic_add(&cstore->lru_pruned, 1);
+	}
+
 	if (entry->refcount) {
 		pt_assert(pthread_mutex_unlock(&head->lock));
 		return;
@@ -404,6 +414,18 @@ fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
 	_cstore_entry_free(cstore, head, entry);
 
 	pt_assert(pthread_mutex_unlock(&head->lock));
+}
+
+void
+fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
+{
+	_cstore_release(cstore, entry, 0);
+}
+
+void
+fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
+{
+	_cstore_release(cstore, entry, 1);
 }
 
 void

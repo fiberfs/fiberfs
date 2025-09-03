@@ -72,7 +72,10 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 
 	struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, wbuffer->end);
 	if (!entry) {
-		return 1;
+		entry = fbr_cstore_get(cstore, hash);
+		if (!entry || entry->bytes != wbuffer->end) {
+			return 1;
+		}
 	}
 
 	fbr_cstore_set_loading(entry);
@@ -84,20 +87,20 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	int ret = fbr_mkdirs(path);
 	if (ret) {
 		fbr_cstore_set_error(entry);
-		fbr_cstore_release(cstore, entry);
+		fbr_cstore_remove(cstore, entry);
 		return 1;
 	}
 
 	if (fbr_sys_exists(path)) {
 		fbr_cstore_set_error(entry);
-		fbr_cstore_release(cstore, entry);
+		fbr_cstore_remove(cstore, entry);
 		return 1;
 	}
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_cstore_set_error(entry);
-		fbr_cstore_release(cstore, entry);
+		fbr_cstore_remove(cstore, entry);
 		return 1;
 	}
 
