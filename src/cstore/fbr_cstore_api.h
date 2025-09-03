@@ -15,6 +15,8 @@
 
 #define FBR_CSTORE_HEAD_COUNT			64
 #define FBR_CSTORE_SLAB_SIZE			128
+#define FBR_CSTORE_DATA_DIR			"data"
+#define FBR_CSTORE_META_DIR			"meta"
 
 enum fbr_cstore_alloc_state {
 	FBR_CSTORE_ENTRY_NONE = 0,

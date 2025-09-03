@@ -13,6 +13,7 @@
 #include <time.h>
 
 #define FBR_PATH_MAX				PATH_MAX
+#define FBR_HASH_SLEN				((sizeof(fbr_hash_t) * 2) + 1)
 
 typedef uint64_t fbr_hash_t;
 
