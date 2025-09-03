@@ -13,7 +13,52 @@
 #include "core/fs/fbr_fs.h"
 #include "utils/fbr_sys.h"
 
-void
+static int
+_cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata)
+{
+	assert_dev(path);
+	assert_dev(metadata);
+
+	int ret = fbr_mkdirs(path);
+	if (ret) {
+		return 1;
+	}
+
+	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+
+	// p: path
+	fbr_sys_write(fd, "{\"p\":\"", 6);
+	fbr_sys_write(fd, metadata->path, strlen(metadata->path));
+
+	// e: etag
+	char buf[FBR_ID_STRING_MAX];
+	fbr_id_string(metadata->etag, buf, sizeof(buf));
+
+	fbr_sys_write(fd, "\",\"e\":\"", 7);
+	fbr_sys_write(fd, buf, strlen(buf));
+
+	// s: size
+	ret = snprintf(buf, sizeof(buf), "%lu", metadata->size);
+	assert(ret > 0 && (size_t)ret < sizeof(buf));
+
+	fbr_sys_write(fd, "\",\"s\":", 6);
+	fbr_sys_write(fd, buf, strlen(buf));
+
+	// g: gzipped
+	fbr_sys_write(fd, ",\"g\":", 5);
+
+	if (metadata->gzipped) {
+		fbr_sys_write(fd, "1}", 2);
+	} else {
+		fbr_sys_write(fd, "0}", 2);
+	}
+
+	assert_zero(close(fd));
+
+	return 0;
+}
+
+static void
 _cstore_gen_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *output,
     size_t output_len)
 {
@@ -107,8 +152,25 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	fbr_sys_write(fd, wbuffer->buffer, wbuffer->end);
 	assert_zero(close(fd));
 
-	// TODO metadata and stats
-	// TODO should we remove the entry on error?
+	struct fbr_cstore_metadata metadata;
+	fbr_ZERO(&metadata);
+	metadata.etag = wbuffer->id;
+	metadata.size = wbuffer->end;
+	assert(filepath.len < FBR_PATH_MAX);
+	memcpy(metadata.path, filepath.name, filepath.len + 1);
+
+	_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+	ret = _cstore_metadata_write(path, &metadata);
+	if (ret) {
+		_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+		(void)unlink(path);
+
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+		return 1;
+	}
+
+	// TODO stats
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);

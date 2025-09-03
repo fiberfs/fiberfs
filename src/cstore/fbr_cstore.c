@@ -221,6 +221,8 @@ _cstore_entry_free(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 	void *ret = RB_REMOVE(fbr_cstore_tree, &head->tree, entry);
 	assert(ret == entry);
 
+	// TODO we need to delete the file
+
 	TAILQ_INSERT_HEAD(&head->free_list, entry, list_entry);
 
 	fbr_atomic_sub(&cstore->bytes, bytes);
@@ -242,6 +244,24 @@ _cstore_full(struct fbr_cstore *cstore, size_t new_bytes)
 	}
 
 	return 0;
+}
+
+static void
+_cstore_lru_delete(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
+    struct fbr_cstore_entry *entry)
+{
+	assert_dev(cstore);
+	assert_dev(head);
+	assert_dev(entry);
+	assert_dev(entry->in_lru);
+
+	TAILQ_REMOVE(&head->lru_list, entry, list_entry);
+
+	assert(entry->refcount);
+	entry->refcount--;
+	entry->in_lru = 0;
+
+	fbr_atomic_add(&cstore->lru_pruned, 1);
 }
 
 static void
@@ -268,17 +288,11 @@ _cstore_lru_prune(struct fbr_cstore *cstore, struct fbr_cstore_head *head, size_
 		assert(entry->alloc == FBR_CSTORE_ENTRY_USED);
 		assert(entry->in_lru);
 
-		TAILQ_REMOVE(&head->lru_list, entry, list_entry);
-
-		assert(entry->refcount);
-		entry->refcount--;
-		entry->in_lru = 0;
+		_cstore_lru_delete(cstore, head, entry);
 
 		if (!entry->refcount) {
 			_cstore_entry_free(cstore, head, entry);
 		}
-
-		fbr_atomic_add(&cstore->lru_pruned, 1);
 	}
 }
 
@@ -397,13 +411,7 @@ _cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, int p
 	entry->refcount--;
 
 	if (prune_lru && entry->in_lru) {
-		TAILQ_REMOVE(&head->lru_list, entry, list_entry);
-
-		assert(entry->refcount);
-		entry->refcount--;
-		entry->in_lru = 0;
-
-		fbr_atomic_add(&cstore->lru_pruned, 1);
+		_cstore_lru_delete(cstore, head, entry);
 	}
 
 	if (entry->refcount) {
