@@ -220,7 +220,7 @@ _cstore_entry_free(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 	fbr_atomic_sub(&cstore->bytes, entry->bytes);
 	fbr_atomic_sub(&cstore->entries, 1);
 
-	// TODO should we temporarily unlock here?
+	// TODO async?
 	if (cstore->delete_f) {
 		cstore->delete_f(cstore, entry);
 	}

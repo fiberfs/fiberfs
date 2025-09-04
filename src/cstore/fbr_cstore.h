@@ -16,6 +16,7 @@ struct fbr_cstore_entry;
 int fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
 void fbr_cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
+void fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
 
 fbr_hash_t fbr_chash_wbuffer(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);

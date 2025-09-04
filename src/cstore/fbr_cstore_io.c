@@ -293,3 +293,14 @@ fbr_cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entr
 	_cstore_gen_path(cstore, entry->hash, 1, path, sizeof(path));
 	(void)unlink(path);
 }
+
+void
+fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_chunk_ok(chunk);
+	assert(chunk->state == FBR_CHUNK_EMPTY);
+	assert(chunk->id);
+	assert_zero(chunk->external);
+}
