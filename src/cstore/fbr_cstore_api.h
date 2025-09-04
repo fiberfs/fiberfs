@@ -71,6 +71,10 @@ struct fbr_cstore_head {
 	pthread_mutex_t				lock;
 };
 
+struct fbr_cstore;
+typedef void (*fbr_cstore_delete_f)(struct fbr_cstore *cstore,
+	struct fbr_cstore_entry *entry);
+
 struct fbr_cstore {
 	unsigned				magic;
 #define FBR_CSTORE_MAGIC			0xC8747276
@@ -78,6 +82,8 @@ struct fbr_cstore {
 	unsigned int				do_free:1;
 
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
+
+	fbr_cstore_delete_f			delete_f;
 
 	struct fbr_log				*log;
 	char					root[FBR_PATH_MAX];

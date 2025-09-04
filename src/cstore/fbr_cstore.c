@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
+#include "fbr_cstore.h"
 #include "fbr_cstore_api.h"
 #include "log/fbr_log.h"
 #include "utils/fbr_sys.h"
@@ -91,6 +92,8 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 
 	cstore->log = fbr_log_alloc(cstore->root, fbr_log_default_size());
 	fbr_log_ok(cstore->log);
+
+	cstore->delete_f = fbr_cstore_delete_entry;
 
 	fbr_log_print(cstore->log, FBR_LOG_CSTORE, FBR_REQID_CSTORE, "init");
 
@@ -211,22 +214,25 @@ _cstore_entry_free(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 	assert_zero(entry->in_lru);
 	assert_zero(entry->state == FBR_CSTORE_LOADING);
 
-	size_t bytes = entry->bytes;
+	void *ret = RB_REMOVE(fbr_cstore_tree, &head->tree, entry);
+	assert(ret == entry);
+
+	fbr_atomic_sub(&cstore->bytes, entry->bytes);
+	fbr_atomic_sub(&cstore->entries, 1);
+
+	// TODO should we temporarily unlock here?
+	if (cstore->delete_f) {
+		cstore->delete_f(cstore, entry);
+	}
 
 	entry->alloc = FBR_CSTORE_ENTRY_FREE;
 	entry->state = FBR_CSTORE_NONE;
 	entry->hash = 0;
 	entry->bytes = 0;
 
-	void *ret = RB_REMOVE(fbr_cstore_tree, &head->tree, entry);
-	assert(ret == entry);
-
 	// TODO we need to delete the file
 
 	TAILQ_INSERT_HEAD(&head->free_list, entry, list_entry);
-
-	fbr_atomic_sub(&cstore->bytes, bytes);
-	fbr_atomic_sub(&cstore->entries, 1);
 }
 
 static int

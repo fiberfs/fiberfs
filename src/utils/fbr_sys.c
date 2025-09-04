@@ -82,7 +82,7 @@ fbr_sys_rmdir(const char *path)
 }
 
 int
-fbr_sys_nftw(const char *path, fbr_nftw_func_t func)
+fbr_sys_nftw(const char *path, fbr_nftw_f func)
 {
 	return nftw(path, func, 64, FTW_DEPTH | FTW_MOUNT | FTW_PHYS);
 }

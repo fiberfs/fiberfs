@@ -140,6 +140,15 @@ size_t _CSTORE_ENTRY_COUNTER;
 size_t _CSTORE_READ_COUNTER;
 size_t _CSTORE_BYTES_COUNTER;
 
+static void
+_cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
+{
+	fbr_cstore_ok(cstore);
+	fbr_cstore_entry_ok(entry);
+
+	fbr_atomic_sub(&_CSTORE_BYTES_COUNTER, entry->bytes);
+}
+
 static void *
 _cstore_thread(void *arg)
 {
@@ -195,7 +204,6 @@ _cstore_thread(void *arg)
 			fbr_atomic_add(&_CSTORE_READ_COUNTER, 1);
 
 			if (random() % 10 == 0) {
-				fbr_atomic_sub(&_CSTORE_BYTES_COUNTER, entry->bytes);
 				fbr_cstore_remove(_CSTORE, entry);
 			} else {
 				fbr_cstore_release(_CSTORE, entry);
@@ -219,6 +227,7 @@ _cstore_test(void)
 	_CSTORE_BYTES_COUNTER = 0;
 
 	fbr_cstore_max_size(_CSTORE, _CSTORE_MAX_BYTES, 1);
+	_CSTORE->delete_f = _cstore_delete_entry;
 
 	fbr_test_logs("*** Starting threads");
 

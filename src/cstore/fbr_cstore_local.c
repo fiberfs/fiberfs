@@ -306,3 +306,10 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 
 	return 0;
 }
+
+void
+fbr_cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
+{
+	fbr_cstore_ok(cstore);
+	fbr_cstore_entry_ok(entry);
+}
