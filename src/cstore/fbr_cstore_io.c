@@ -183,17 +183,37 @@ _cstore_gen_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char 
 	assert(ret > 0 && (size_t)ret < output_len);
 }
 
-int
+static void
+_cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
+    enum fbr_wbuffer_state state)
+{
+	assert_dev(fs);
+	assert_dev(wbuffer);
+	assert(state >= FBR_WBUFFER_DONE);
+
+	// TODO uncomment when switched over from dstore
+	return;
+
+	if (wbuffer->state == FBR_WBUFFER_READY) {
+		wbuffer->state = state;
+		return;
+	}
+
+	fbr_wbuffer_update(fs, wbuffer, state);
+}
+
+void
 fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_wbuffer_ok(wbuffer);
-	assert(wbuffer->state == FBR_WBUFFER_READY);
+	assert(wbuffer->state == FBR_WBUFFER_READY || wbuffer->state == FBR_WBUFFER_SYNC);
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	if (!cstore) {
-		return 1;
+		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		return;
 	}
 
 	fbr_hash_t hash = fbr_chash_wbuffer(fs, file, wbuffer);
@@ -219,34 +239,39 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	if (!entry) {
 		entry = fbr_cstore_get(cstore, hash);
 		if (!entry || entry->bytes != bytes) {
-			return 1;
+			_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+			return;
 		}
 	}
 
 	fbr_cstore_set_loading(entry);
 	if (entry->state != FBR_CSTORE_LOADING) {
 		fbr_cstore_release(cstore, entry);
-		return 1;
+		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		return;
 	}
 
 	int ret = fbr_mkdirs(path);
 	if (ret) {
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		return 1;
+		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		return;
 	}
 
 	if (fbr_sys_exists(path)) {
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		return 1;
+		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		return;
 	}
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		return 1;
+		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		return;
 	}
 
 	fbr_sys_write(fd, wbuffer->buffer, bytes);
@@ -267,7 +292,8 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		return 1;
+		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		return;
 	}
 
 	//fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
@@ -277,7 +303,9 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
 
-	return 0;
+	_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_DONE);
+
+	return;
 }
 
 void
