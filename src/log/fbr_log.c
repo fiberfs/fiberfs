@@ -754,6 +754,8 @@ fbr_log_type_str(enum fbr_log_type type)
 			return "CSTORE";
 		case FBR_LOG_CS_DEBUG:
 			return "CSTORE_DEBUG";
+		case FBR_LOG_CS_ASYNC:
+			return "CSTORE_ASYNC";
 		case FBR_LOG_CS_WBUFFER:
 			return "CSTORE_WBUFFER";
 		case __FBR_LOG_TYPE_NONE:
@@ -788,6 +790,9 @@ fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len)
 			return;
 		case FBR_REQID_CSTORE:
 			fbr_strcpy(buffer, buffer_len, "CSTORE");
+			return;
+		case FBR_REQID_CS_ASYNC:
+			fbr_strcpy(buffer, buffer_len, "CSTORE_ASYNC");
 			return;
 		case FBR_REQID_NONE:
 		case __FBR_REQID_MAX:

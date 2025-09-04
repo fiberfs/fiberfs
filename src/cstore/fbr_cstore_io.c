@@ -8,7 +8,6 @@
 #include <unistd.h>
 
 #include "fiberfs.h"
-#include "fbr_cstore.h"
 #include "fbr_cstore_api.h"
 #include "fjson.h"
 #include "core/fs/fbr_fs.h"
@@ -208,7 +207,8 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_wbuffer_ok(wbuffer);
-	assert(wbuffer->state == FBR_WBUFFER_READY || wbuffer->state == FBR_WBUFFER_SYNC);
+	// TODO uncomment when switched over from dstore
+	//assert(wbuffer->state == FBR_WBUFFER_READY || wbuffer->state == FBR_WBUFFER_SYNC);
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	if (!cstore) {

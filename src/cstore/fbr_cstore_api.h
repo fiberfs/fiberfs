@@ -10,6 +10,8 @@
 #include <pthread.h>
 
 #include "fiberfs.h"
+#include "fbr_cstore_io.h"
+#include "core/fs/fbr_fs.h"
 #include "data/queue.h"
 #include "data/tree.h"
 
@@ -84,6 +86,7 @@ struct fbr_cstore {
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 
 	fbr_cstore_delete_f			delete_f;
+	struct fbr_cstore_async			async;
 
 	struct fbr_log				*log;
 	char					root[FBR_PATH_MAX];
@@ -121,7 +124,9 @@ void fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entr
 void fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
 void fbr_cstore_free(struct fbr_cstore *cstore);
 
-int fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata);
+
+fbr_hash_t fbr_chash_wbuffer(struct fbr_fs *fs, struct fbr_file *file,
+	struct fbr_wbuffer *wbuffer);
 
 void fbr_cstore_fuse_register(const char *root_path);
 struct fbr_cstore *fbr_cstore_find(void);

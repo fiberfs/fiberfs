@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "fbr_cstore.h"
 #include "fbr_cstore_api.h"
 #include "log/fbr_log.h"
 #include "utils/fbr_sys.h"
@@ -96,6 +95,8 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	cstore->delete_f = fbr_cstore_delete_entry;
 
 	fbr_log_print(cstore->log, FBR_LOG_CSTORE, FBR_REQID_CSTORE, "init");
+
+	fbr_cstore_async_init(cstore);
 
 	fbr_cstore_ok(cstore);
 }
@@ -359,15 +360,15 @@ fbr_cstore_set_loading(struct fbr_cstore_entry *entry)
 
 	while (entry->state != FBR_CSTORE_OK) {
 		switch (entry->state) {
-			case FBR_CSTORE_NONE:
-				entry->state = FBR_CSTORE_LOADING;
-				pt_assert(pthread_mutex_unlock(&entry->state_lock));
-				return;
-			case FBR_CSTORE_LOADING:
-				pt_assert(pthread_cond_wait(&entry->state_cond, &entry->state_lock));
-				break;
-			default:
-				fbr_ABORT("Invalid state: %d", entry->state);
+		case FBR_CSTORE_NONE:
+			entry->state = FBR_CSTORE_LOADING;
+			pt_assert(pthread_mutex_unlock(&entry->state_lock));
+			return;
+		case FBR_CSTORE_LOADING:
+			pt_assert(pthread_cond_wait(&entry->state_cond, &entry->state_lock));
+			break;
+		default:
+			fbr_ABORT("Invalid state: %d", entry->state);
 		}
 	}
 
@@ -493,6 +494,7 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 	assert_zero(cstore->entries);
 	assert_zero(cstore->bytes);
 
+	fbr_cstore_async_free(cstore);
 	fbr_log_free(cstore->log);
 
 	int do_free = cstore->do_free;
