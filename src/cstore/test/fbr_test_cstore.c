@@ -103,8 +103,8 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 		case FTW_F:
 		case FTW_SL:
 			_cstore_debug_meta(filename, &metadata);
-			fbr_test_logs("CSTORE_DEBUG file: %s (%s:%lu)", filename, metadata.path,
-				metadata.offset);
+			fbr_test_logs("CSTORE_DEBUG file: %s (%s %lu:%lu)",
+				filename, metadata.path, metadata.offset, metadata.size);
 			break;
 		default:
 			break;

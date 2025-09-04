@@ -80,75 +80,46 @@ _cstore_parse_metadata(struct fjson_context *ctx, void *priv)
 	assert_dev(ctx->tokens_pos >= 2);
 	size_t depth = ctx->tokens_pos - 2;
 
-	if (token->type == FJSON_TOKEN_OBJECT) {
-		if (depth != 0) {
-			return 1;
+	if (depth == 1 && token->type == FJSON_TOKEN_LABEL) {
+		if (token->svalue_len != 1) {
+			metadata->_context = '\0';
+			return 0;
 		}
-		if (token->closed && token->length != 5) {
-			return 1;
-		}
-
-		return 0;
-	}
-	if (token->type == FJSON_TOKEN_LABEL) {
-		if (depth != 1 || token->svalue_len != 1) {
-			return 1;
-		}
-
 		metadata->_context = token->svalue[0];
-
+		return 0;
+	} else if (depth != 2) {
+		metadata->_context = '\0';
 		return 0;
 	}
-	if (token->type == FJSON_TOKEN_STRING && metadata->_context == 'e') {
-		if (depth != 2) {
-			return 1;
+
+	assert_dev(depth == 2);
+
+	if (token->type == FJSON_TOKEN_STRING) {
+		if (metadata->_context == 'e') {
+			metadata->etag = fbr_id_parse(token->svalue, token->svalue_len);
+		} else if (metadata->_context == 'p') {
+			assert(token->svalue_len < sizeof(metadata->path));
+			memcpy(metadata->path, token->svalue, token->svalue_len);
 		}
-
-		metadata->etag = fbr_id_parse(token->svalue, token->svalue_len);
-		metadata->_context = '\0';
-
-		return 0;
-	} else if (token->type == FJSON_TOKEN_STRING && metadata->_context == 'p') {
-		if (depth != 2) {
-			return 1;
-		}
-
-		assert(token->svalue_len < sizeof(metadata->path));
-		memcpy(metadata->path, token->svalue, token->svalue_len);
-		metadata->path[token->svalue_len] = '\0';
-		metadata->_context = '\0';
-
-		return 0;
 	} else if (token->type == FJSON_TOKEN_NUMBER) {
-		if (depth != 2) {
-			return 1;
-		}
-
 		if (metadata->_context == 's') {
-			if (token->dvalue < 0) {
-				return 1;
+			if (token->dvalue >= 0) {
+				metadata->size = (size_t)token->dvalue;
 			}
-			metadata->size = (size_t)token->dvalue;
 		} else if (metadata->_context == 'o') {
-			if (token->dvalue < 0) {
-				return 1;
+			if (token->dvalue >= 0) {
+				metadata->offset = (size_t)token->dvalue;
 			}
-			metadata->offset = (size_t)token->dvalue;
 		} else if (metadata->_context == 'g') {
-			if (token->dvalue != 0 && token->dvalue != 1) {
-				return 1;
+			if (token->dvalue == 0 || token->dvalue == 1) {
+				metadata->gzipped = (int)token->dvalue;
 			}
-			metadata->gzipped = (int)token->dvalue;
-		} else {
-			return 1;
 		}
-
-		metadata->_context = '\0';
-
-		return 0;
 	}
 
-	return 1;
+	metadata->_context = '\0';
+
+	return 0;
 }
 
 int
