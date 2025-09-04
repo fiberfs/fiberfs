@@ -197,6 +197,7 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	}
 
 	fbr_hash_t hash = fbr_chash_wbuffer(fs, file, wbuffer);
+	size_t bytes = wbuffer->end;
 
 	char buffer[FBR_PATH_MAX];
 	struct fbr_path_name filepath;
@@ -212,12 +213,12 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
 
 	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "%s %zu:%zu %lu %s",
-		filepath.name, wbuffer->offset, wbuffer->end, wbuffer->id, path);
+		filepath.name, wbuffer->offset, bytes, wbuffer->id, path);
 
-	struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, wbuffer->end);
+	struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, bytes);
 	if (!entry) {
 		entry = fbr_cstore_get(cstore, hash);
-		if (!entry || entry->bytes != wbuffer->end) {
+		if (!entry || entry->bytes != bytes) {
 			return 1;
 		}
 	}
@@ -248,13 +249,13 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 		return 1;
 	}
 
-	fbr_sys_write(fd, wbuffer->buffer, wbuffer->end);
+	fbr_sys_write(fd, wbuffer->buffer, bytes);
 	assert_zero(close(fd));
 
 	struct fbr_cstore_metadata metadata;
 	fbr_ZERO(&metadata);
 	metadata.etag = wbuffer->id;
-	metadata.size = wbuffer->end;
+	metadata.size = bytes;
 	metadata.offset = wbuffer->offset;
 	assert(filepath.len < FBR_PATH_MAX);
 	memcpy(metadata.path, filepath.name, filepath.len + 1);
@@ -262,15 +263,16 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
 	ret = _cstore_metadata_write(path, &metadata);
 	if (ret) {
-		_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
-		(void)unlink(path);
+		fbr_cstore_delete_entry(cstore, entry);
 
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		return 1;
 	}
 
-	// TODO stats
+	//fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
+	//fbr_fs_stat_add(&fs->stats.store_chunks);
+	fbr_fs_stat_add(&cstore->chunks);
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
@@ -283,4 +285,11 @@ fbr_cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entr
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_entry_ok(entry);
+
+	char path[FBR_PATH_MAX];
+	_cstore_gen_path(cstore, entry->hash, 0, path, sizeof(path));
+	(void)unlink(path);
+
+	_cstore_gen_path(cstore, entry->hash, 1, path, sizeof(path));
+	(void)unlink(path);
 }

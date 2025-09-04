@@ -89,11 +89,14 @@ struct fbr_cstore {
 	char					root[FBR_PATH_MAX];
 
 	size_t					max_bytes;
+	size_t					bytes;
 	int					do_lru;
 
 	size_t					entries;
-	size_t					bytes;
-	size_t					lru_pruned;
+	fbr_stats_t				lru_pruned;
+	fbr_stats_t				chunks;
+	fbr_stats_t				indexes;
+	fbr_stats_t				roots;
 };
 
 struct fbr_cstore_metadata {

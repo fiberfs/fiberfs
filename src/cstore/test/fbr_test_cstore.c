@@ -119,6 +119,13 @@ fbr_test_cstore_debug(void)
 	fbr_cstore_ok(_CSTORE);
 
 	fbr_test_logs("CSTORE_DEBUG root: %s", _CSTORE->root);
+	fbr_test_logs("CSTORE_DEBUG entries: %zu", _CSTORE->entries);
+	fbr_test_logs("CSTORE_DEBUG bytes: %zu", _CSTORE->bytes);
+	fbr_test_logs("CSTORE_DEBUG max_bytes: %zu", _CSTORE->max_bytes);
+	fbr_test_logs("CSTORE_DEBUG pruned: %lu", _CSTORE->lru_pruned);
+	fbr_test_logs("CSTORE_DEBUG chunks: %lu", _CSTORE->chunks);
+	fbr_test_logs("CSTORE_DEBUG indexes: %lu", _CSTORE->indexes);
+	fbr_test_logs("CSTORE_DEBUG roots: %lu", _CSTORE->roots);
 
 	char path[FBR_PATH_MAX];
 	size_t ret = snprintf(path, sizeof(path), "%s/%s",
@@ -265,7 +272,7 @@ _cstore_test(void)
 	fbr_test_logs("* _CSTORE->entries=%zu", _CSTORE->entries);
 	fbr_test_logs("* _CSTORE->max_bytes=%zu", _CSTORE->max_bytes);
 	fbr_test_logs("* _CSTORE->bytes=%zu", _CSTORE->bytes);
-	fbr_test_logs("* _CSTORE->lru_pruned=%zu", _CSTORE->lru_pruned);
+	fbr_test_logs("* _CSTORE->lru_pruned=%lu", _CSTORE->lru_pruned);
 	fbr_test_logs("* _CSTORE->slabs=%zu", slabs);
 
 	size_t entries = _CSTORE->entries + _CSTORE->lru_pruned;
