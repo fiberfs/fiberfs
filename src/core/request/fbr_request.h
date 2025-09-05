@@ -17,7 +17,8 @@
 #include "data/queue.h"
 
 #define FBR_REQUEST_POOL_MAX_SIZE		64
-#define FBR_REQUEST_ID_MIN			1024
+#define FBR_REQUEST_ID_THREAD_MIN		1000
+#define FBR_REQUEST_ID_MIN			3000
 
 struct fbr_request {
 	unsigned int				magic;
@@ -66,6 +67,9 @@ struct fbr_fuse_callbacks {
 	void (*forget_multi) (struct fbr_request *request, size_t count,
 		struct fuse_forget_data *forgets);
 };
+
+unsigned long fbr_request_id_gen(void);
+unsigned long fbr_request_id_thread_gen(void);
 
 void fbr_context_request_init(void);
 void fbr_context_request_finish(void);

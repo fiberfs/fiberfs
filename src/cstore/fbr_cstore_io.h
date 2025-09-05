@@ -13,10 +13,12 @@
 #include "core/fs/fbr_fs.h"
 #include "data/queue.h"
 
-#define FBR_CSTORE_ASYNC_QUEUE_LEN		4
+#define FBR_CSTORE_ASYNC_OPS_MAX		256
+#define FBR_CSTORE_ASYNC_OPS_DEFAULT		4
 
 enum fbr_cstore_op_type {
 	FBR_CSOP_NONE = 0,
+	FBR_CSOP_TEST,
 	FBR_CSOP_WBUFFER_WRITE,
 	FBR_CSOP_CHUNK_READ,
 	__FBR_CSOP_END
@@ -38,16 +40,17 @@ struct fbr_cstore_op {
 typedef void (*fbr_cstore_async_f)(struct fbr_cstore *cstore, struct fbr_cstore_op *op);
 
 struct fbr_cstore_async {
-	struct fbr_cstore_op			ops[FBR_CSTORE_ASYNC_QUEUE_LEN];
+	struct fbr_cstore_op			ops[FBR_CSTORE_ASYNC_OPS_MAX];
 
 	size_t					queue_len;
+	size_t					queue_max;
 	size_t					waiting;
 	pthread_mutex_t				queue_lock;
 	pthread_cond_t				queue_ready;
 	pthread_cond_t				todo_ready;
 	volatile int				exit;
 
-	pthread_t				threads[FBR_CSTORE_ASYNC_QUEUE_LEN];
+	pthread_t				threads[FBR_CSTORE_ASYNC_OPS_DEFAULT];
 	size_t					threads_running;
 
 	fbr_cstore_async_f			callback;
@@ -64,8 +67,11 @@ struct fbr_cstore_metadata;
 void fbr_cstore_async_init(struct fbr_cstore *cstore);
 void fbr_cstore_async_free(struct fbr_cstore *cstore);
 
+void fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type,
+	struct fbr_fs *fs, void *param1, void *param2, void *param3);
 void fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
+const char *fbr_cstore_async_type(enum fbr_cstore_op_type type);
 
 int fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata);
 void fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,

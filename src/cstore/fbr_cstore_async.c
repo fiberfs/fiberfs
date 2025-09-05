@@ -6,6 +6,7 @@
 
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
+#include "core/request/fbr_request.h"
 
 static void *_cstore_async_loop(void *arg);
 static void _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op);
@@ -28,10 +29,9 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 	TAILQ_INIT(&async->active_list);
 	TAILQ_INIT(&async->free_list);
 
-	// TODO this needs to be a configuration param
-	async->queue_len = fbr_array_len(async->ops);
+	async->queue_max = FBR_CSTORE_ASYNC_OPS_DEFAULT;
 
-	for (size_t i = 0; i < async->queue_len; i++) {
+	for (size_t i = 0; i < fbr_array_len(async->ops); i++) {
 		struct fbr_cstore_op *op = &async->ops[i];
 
 		op->magic = FBR_CSTORE_OP_MAGIC;
@@ -42,6 +42,7 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 		fbr_cstore_op_ok(op);
 	}
 
+	// TODO this needs to be configurable
 	size_t i;
 	for (i = 0; i < fbr_array_len(async->threads); i++) {
 		pt_assert(pthread_create(&async->threads[i], NULL, _cstore_async_loop, cstore));
@@ -52,13 +53,12 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 	}
 }
 
-static void
-_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, struct fbr_fs *fs,
+void
+fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, struct fbr_fs *fs,
     void *param1, void *param2, void *param3)
 {
 	fbr_cstore_ok(cstore);
 	assert(type > FBR_CSOP_NONE && type < __FBR_CSOP_END);
-	fbr_fs_ok(fs);
 
 	unsigned long request_id = FBR_REQID_CS_ASYNC;
 	struct fbr_request *request = fbr_request_get();
@@ -66,14 +66,16 @@ _cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, str
 		request_id = request->id;
 	}
 
-	fbr_log_print(cstore->log, FBR_LOG_CSTORE, request_id, "queue request: %d", type);
+	fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, request_id, "queue request: %s",
+		fbr_cstore_async_type(type));
 
 	struct fbr_cstore_async *async = &cstore->async;
 	pt_assert(pthread_mutex_lock(&async->queue_lock));
 
-	while (!async->queue_len) {
+	assert(async->queue_max);
+	while (async->queue_len >= async->queue_max) {
 		async->waiting++;
-		fbr_log_print(cstore->log, FBR_LOG_CSTORE, request_id, "waiting");
+		fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, request_id, "waiting");
 		pt_assert(pthread_cond_wait(&async->queue_ready, &async->queue_lock));
 		async->waiting--;
 	}
@@ -95,8 +97,8 @@ _cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, str
 	TAILQ_REMOVE(&async->free_list, op, entry);
 	TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
 
-	async->queue_len--;
-	assert(async->queue_len <= FBR_CSTORE_ASYNC_QUEUE_LEN);
+	async->queue_len++;
+	assert(async->queue_len <= FBR_CSTORE_ASYNC_OPS_MAX);
 
 	pt_assert(pthread_cond_signal(&async->todo_ready));
 
@@ -110,6 +112,8 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 	assert_dev(op);
 
 	switch (op->type) {
+		case FBR_CSOP_TEST:
+			break;
 		case FBR_CSOP_WBUFFER_WRITE:
 			fbr_cstore_wbuffer_write(op->fs, op->param1, op->param2);
 			break;
@@ -132,9 +136,8 @@ _cstore_async_loop(void *arg)
 
 	pt_assert(pthread_mutex_lock(&async->queue_lock));
 
-	// TODO this thread id overlaps request ids
 	async->threads_running++;
-	size_t thread_id = async->threads_running + (1024 * 1024);
+	size_t thread_id = fbr_request_id_thread_gen();
 
 	fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, thread_id, "thread running");
 
@@ -152,7 +155,8 @@ _cstore_async_loop(void *arg)
 
 		pt_assert(pthread_mutex_unlock(&async->queue_lock));
 
-		fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, thread_id, "calling op: %d", op->type);
+		fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, thread_id, "calling op: %s",
+			fbr_cstore_async_type(op->type));
 
 		assert(async->callback);
 		async->callback(cstore, op);
@@ -168,8 +172,8 @@ _cstore_async_loop(void *arg)
 		TAILQ_REMOVE(&async->active_list, op, entry);
 		TAILQ_INSERT_TAIL(&async->free_list, op, entry);
 
-		async->queue_len++;
-		assert(async->queue_len <= FBR_CSTORE_ASYNC_QUEUE_LEN);
+		async->queue_len--;
+		assert(async->queue_len <= FBR_CSTORE_ASYNC_OPS_MAX);
 
 		pt_assert(pthread_cond_signal(&async->queue_ready));
 	}
@@ -200,7 +204,7 @@ fbr_cstore_async_free(struct fbr_cstore *cstore)
 
 	assert_zero(async->threads_running);
 	assert_zero(async->waiting);
-	assert(async->queue_len == fbr_array_len(async->ops));
+	assert_zero(async->queue_len);
 	assert(TAILQ_EMPTY(&async->todo_list));
 	assert(TAILQ_EMPTY(&async->active_list));
 
@@ -230,5 +234,24 @@ fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	// TODO uncomment when switched over from dstore
 	//wbuffer->state = FBR_WBUFFER_SYNC;
 
-	_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_WRITE, fs, file, wbuffer, NULL);
+	fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_WRITE, fs, file, wbuffer, NULL);
+}
+
+const char *
+fbr_cstore_async_type(enum fbr_cstore_op_type type)
+{
+	switch (type) {
+		case FBR_CSOP_NONE:
+			return "NONE";
+		case FBR_CSOP_TEST:
+			return "TEST";
+		case FBR_CSOP_WBUFFER_WRITE:
+			return "WBUFFER_WRITE";
+		case FBR_CSOP_CHUNK_READ:
+			return "CHUNK_READ";
+		case __FBR_CSOP_END:
+			break;
+	}
+
+	return "ERROR";
 }

@@ -772,12 +772,6 @@ fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len)
 	assert(buffer);
 	assert(buffer_len);
 
-	if (request_id >= FBR_REQUEST_ID_MIN) {
-		int ret = snprintf(buffer, buffer_len, "%lu", request_id);
-		assert_dev(ret > 0 && (size_t)ret < buffer_len);
-		return;
-	}
-
 	switch (request_id) {
 		case FBR_REQID_TEST:
 			fbr_strcpy(buffer, buffer_len, "TEST");
@@ -799,5 +793,6 @@ fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len)
 			break;
 	}
 
-	fbr_strcpy(buffer, buffer_len, "UNKNOWN");
+	int ret = snprintf(buffer, buffer_len, "%lu", request_id);
+	assert_dev(ret > 0 && (size_t)ret < buffer_len);
 }
