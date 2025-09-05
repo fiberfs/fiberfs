@@ -64,6 +64,21 @@ fbr_cmd_test_log_allow_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_allow_debug: %d", _FBR_LOG_MASK_DEBUG);
 }
 
+void
+fbr_cmd_test_log_always_flush(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_log_ok(fuse_ctx->log);
+
+	fuse_ctx->log->always_flush = 1;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_always_flush: %d",
+		fuse_ctx->log->always_flush);
+}
+
 static void *
 _test_log_printer_thread(void *arg)
 {

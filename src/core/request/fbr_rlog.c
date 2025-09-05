@@ -130,6 +130,11 @@ _rlog_log(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, va_lis
 	rlog->lines++;
 	rlog->log_pos += FBR_TYPE_LENGTH(length) + 1;
 	assert(rlog->log_pos <= rlog->log_end);
+
+	struct fbr_log *log = _rlog_get_log();
+	if (log->always_flush) {
+		fbr_rlog_flush(rlog);
+	}
 }
 
 void __fbr_attr_printf(2)

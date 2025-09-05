@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
@@ -201,9 +202,6 @@ _cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 	assert_dev(wbuffer);
 	assert(state >= FBR_WBUFFER_DONE);
 
-	// TODO uncomment when switched over from dstore
-	return;
-
 	if (wbuffer->state == FBR_WBUFFER_READY) {
 		wbuffer->state = state;
 		return;
@@ -218,8 +216,7 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_wbuffer_ok(wbuffer);
-	// TODO uncomment when switched over from dstore
-	//assert(wbuffer->state == FBR_WBUFFER_READY || wbuffer->state == FBR_WBUFFER_SYNC);
+	assert(wbuffer->state == FBR_WBUFFER_READY || wbuffer->state == FBR_WBUFFER_SYNC);
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	if (!cstore) {
@@ -302,8 +299,8 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 		return;
 	}
 
-	//fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
-	//fbr_fs_stat_add(&fs->stats.store_chunks);
+	fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
+	fbr_fs_stat_add(&fs->stats.store_chunks);
 	fbr_fs_stat_add(&cstore->chunks);
 
 	fbr_cstore_set_ok(entry);
@@ -337,9 +334,6 @@ _cstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 	assert_dev(chunk);
 	assert(state == FBR_CHUNK_EMPTY || state == FBR_CHUNK_READY);
 
-	// TODO uncomment when switched over from dstore
-	return;
-
 	if (chunk->state == FBR_CHUNK_EMPTY) {
 		chunk->state = state;
 		return;
@@ -354,8 +348,7 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
-	// TODO uncomment when switched over from dstore
-	//assert(chunk->state == FBR_CHUNK_EMPTY || chunk->state == FBR_CHUNK_LOADING);
+	assert(chunk->state == FBR_CHUNK_EMPTY || chunk->state == FBR_CHUNK_LOADING);
 	assert(chunk->id);
 	assert_zero(chunk->external);
 
@@ -378,9 +371,75 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "%s %zu:%zu %lu %s",
 		filepath.name, chunk->offset, chunk->length, chunk->id, path);
 
-	//fbr_fs_stat_add_count(&fs->stats.fetch_bytes, chunk->length);
+	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+	if (!entry) {
+		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		return;
+	}
+
+	fbr_cstore_entry_ok(entry);
+	if (entry->state <= FBR_CSTORE_LOADING) {
+		// TODO
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error entry not ok");
+		fbr_cstore_release(cstore, entry);
+		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		return;
+	}
+	assert(entry->state == FBR_CSTORE_OK);
+
+	int fd = open(path, O_RDONLY);
+
+	if (fd < 0) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error open(chunk)");
+		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		fbr_cstore_release(cstore, entry);
+		return;
+	}
+
+	struct stat st;
+	int ret = fstat(fd, &st);
+
+	if (ret || (size_t)st.st_size != chunk->length) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error size");
+		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		fbr_cstore_release(cstore, entry);
+		assert_zero(close(fd));
+		return;
+	}
+
+	chunk->do_free = 1;
+	chunk->data = malloc(chunk->length);
+	assert(chunk->data);
+
+	ssize_t bytes = fbr_sys_read(fd, chunk->data, chunk->length);
+
+	if ((size_t)bytes != chunk->length) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error read()");
+		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		fbr_cstore_release(cstore, entry);
+		assert_zero(close(fd));
+		return;
+	}
+
+	assert_zero(close(fd));
+
+	if (fbr_is_dev()) {
+		struct fbr_cstore_metadata metadata;
+		_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+		ret = fbr_cstore_metadata_read(path, &metadata);
+		assert_zero_dev(ret);
+		assert_zero_dev(strcmp(metadata.path, filepath.name));
+		assert_dev(metadata.etag == chunk->id);
+		assert_dev(metadata.offset == chunk->offset);
+		assert_dev(metadata.size == chunk->length);
+		assert_zero_dev(metadata.gzipped)
+	}
+
+	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, chunk->length);
 
 	_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
+
+	fbr_cstore_release(cstore, entry);
 }
 
 void

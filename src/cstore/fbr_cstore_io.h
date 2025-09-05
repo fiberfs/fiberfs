@@ -71,6 +71,8 @@ void fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type t
 	struct fbr_fs *fs, void *param1, void *param2, void *param3);
 void fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
+void fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file,
+	struct fbr_chunk *chunk);
 const char *fbr_cstore_async_type(enum fbr_cstore_op_type type);
 
 int fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata);

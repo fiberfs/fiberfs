@@ -13,6 +13,7 @@
 #include "core/operations/fbr_operations.h"
 #include "core/request/fbr_request.h"
 #include "core/store/fbr_store.h"
+#include "cstore/fbr_cstore_io.h"
 
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
@@ -95,9 +96,9 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
 	.directory_load_f = fbr_directory_load,
-	.chunk_read_f = fbr_dstore_chunk_read,
-	.chunk_delete_f = fbr_dstore_chunk_delete,
-	.wbuffer_write_f = fbr_dstore_wbuffer_write,
+	.chunk_read_f = fbr_cstore_chunk_read,
+	.chunk_delete_f = fbr_cstore_chunk_delete,
+	.wbuffer_write_f = fbr_cstore_wbuffer_write,
 	.directory_flush_f = _test_fs_rw_directory_flush,
 	.index_write_f = fbr_dstore_index_root_write,
 	.index_read_f = fbr_dstore_index_read,

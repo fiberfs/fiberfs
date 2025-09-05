@@ -226,15 +226,34 @@ fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	if (!cstore) {
-		// TODO uncomment when switched over from dstore
-		//wbuffer->state = FBR_WBUFFER_ERROR;
+		wbuffer->state = FBR_WBUFFER_ERROR;
 		return;
 	}
 
-	// TODO uncomment when switched over from dstore
-	//wbuffer->state = FBR_WBUFFER_SYNC;
+	wbuffer->state = FBR_WBUFFER_SYNC;
 
 	fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_WRITE, fs, file, wbuffer, NULL);
+
+	fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, FBR_REQID_CS_ASYNC, "SYNC return");
+
+}
+
+void
+fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_chunk_ok(chunk);
+	assert(chunk->state == FBR_CHUNK_EMPTY);
+
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		return;
+	}
+
+	chunk->state = FBR_CHUNK_LOADING;
+
+	fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_READ, fs, file, chunk, NULL);
 }
 
 const char *

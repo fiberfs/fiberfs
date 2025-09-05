@@ -462,9 +462,6 @@ fbr_dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	fbr_fs_stat_add(&fs->stats.store_chunks);
 	fbr_fs_stat_add(&_DSTORE->chunks);
 
-	// TODO
-	fbr_cstore_wbuffer_write(fs, file, wbuffer);
-
 	_dstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_DONE);
 }
 
@@ -543,9 +540,6 @@ fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	fbr_ASSERT(!metadata.gzipped, "metadata.gzipped exists");
 
 	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, bytes);
-
-	// TODO
-	fbr_cstore_chunk_read(fs, file, chunk);
 
 	_dstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
 }
