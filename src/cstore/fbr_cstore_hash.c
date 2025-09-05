@@ -76,18 +76,18 @@ _chash_range(XXH3_state_t *hash, size_t offset, size_t length)
 */
 
 fbr_hash_t
-fbr_chash_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+fbr_chash_chunk(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t offset)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
-	fbr_wbuffer_ok(wbuffer);
+	assert(id);
 
 	XXH3_state_t hash;
 	XXH3_INITSTATE(&hash);
 	XXH3_64bits_reset(&hash);
 
 	_chash_fs(&hash, fs);
-	_chash_file_path(&hash, file, wbuffer->id, wbuffer->offset);
+	_chash_file_path(&hash, file, id, offset);
 
 	XXH64_hash_t result = XXH3_64bits_digest(&hash);
 	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));

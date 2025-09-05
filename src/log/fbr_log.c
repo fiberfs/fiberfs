@@ -758,6 +758,8 @@ fbr_log_type_str(enum fbr_log_type type)
 			return "CSTORE_ASYNC";
 		case FBR_LOG_CS_WBUFFER:
 			return "CSTORE_WBUFFER";
+		case FBR_LOG_CS_CHUNK:
+			return "CSTORE_CHUNK";
 		case __FBR_LOG_TYPE_NONE:
 		case __FBR_LOG_TYPE_END:
 			break;

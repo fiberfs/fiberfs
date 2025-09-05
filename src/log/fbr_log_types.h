@@ -52,6 +52,7 @@ enum fbr_log_type {
 	FBR_LOG_CS_DEBUG,
 	FBR_LOG_CS_ASYNC,
 	FBR_LOG_CS_WBUFFER,
+	FBR_LOG_CS_CHUNK,
 	__FBR_LOG_TYPE_END
 };
 

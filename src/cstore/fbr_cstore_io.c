@@ -13,6 +13,17 @@
 #include "core/fs/fbr_fs.h"
 #include "utils/fbr_sys.h"
 
+static unsigned int
+_cstore_request_id(unsigned int default_id)
+{
+	struct fbr_request *request = fbr_request_get();
+	if (request) {
+		return request->id;
+	}
+
+	return default_id;
+}
+
 static int
 _cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata)
 {
@@ -216,22 +227,17 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 		return;
 	}
 
-	fbr_hash_t hash = fbr_chash_wbuffer(fs, file, wbuffer);
+	fbr_hash_t hash = fbr_chash_chunk(fs, file, wbuffer->id, wbuffer->offset);
 	size_t bytes = wbuffer->end;
 
 	char buffer[FBR_PATH_MAX];
 	struct fbr_path_name filepath;
 	fbr_path_get_full(&file->path, &filepath, buffer, sizeof(buffer));
 
-	unsigned long request_id = FBR_REQID_CSTORE;
-	struct fbr_request *request = fbr_request_get();
-	if (request) {
-		request_id = request->id;
-	}
-
 	char path[FBR_PATH_MAX];
 	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
 
+	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "%s %zu:%zu %lu %s",
 		filepath.name, wbuffer->offset, bytes, wbuffer->id, path);
 
@@ -322,13 +328,93 @@ fbr_cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entr
 	(void)unlink(path);
 }
 
+static void
+_cstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk,
+    enum fbr_chunk_state state)
+{
+	assert_dev(fs);
+	assert_dev(file);
+	assert_dev(chunk);
+	assert(state == FBR_CHUNK_EMPTY || state == FBR_CHUNK_READY);
+
+	// TODO uncomment when switched over from dstore
+	return;
+
+	if (chunk->state == FBR_CHUNK_EMPTY) {
+		chunk->state = state;
+		return;
+	}
+
+	fbr_chunk_update(fs, file, chunk, state);
+}
+
 void
 fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
-	assert(chunk->state == FBR_CHUNK_EMPTY);
+	// TODO uncomment when switched over from dstore
+	//assert(chunk->state == FBR_CHUNK_EMPTY || chunk->state == FBR_CHUNK_LOADING);
 	assert(chunk->id);
 	assert_zero(chunk->external);
+
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		return;
+	}
+
+	fbr_hash_t hash = fbr_chash_chunk(fs, file, chunk->id, chunk->offset);
+
+	char buffer[FBR_PATH_MAX];
+	struct fbr_path_name filepath;
+	fbr_path_get_full(&file->path, &filepath, buffer, sizeof(buffer));
+
+	char path[FBR_PATH_MAX];
+	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+
+	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "%s %zu:%zu %lu %s",
+		filepath.name, chunk->offset, chunk->length, chunk->id, path);
+
+	//fbr_fs_stat_add_count(&fs->stats.fetch_bytes, chunk->length);
+
+	_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
+}
+
+void
+fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_chunk_ok(chunk);
+	assert_zero(chunk->external);
+
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		return;
+	}
+
+	fbr_hash_t hash = fbr_chash_chunk(fs, file, chunk->id, chunk->offset);
+
+	char buffer[FBR_PATH_MAX];
+	struct fbr_path_name filepath;
+	fbr_path_get_full(&file->path, &filepath, buffer, sizeof(buffer));
+
+	char path[FBR_PATH_MAX];
+	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+
+	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "DELETE %s %zu:%zu %lu %s",
+		filepath.name, chunk->offset, chunk->length, chunk->id, path);
+
+	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+	if (entry) {
+		fbr_cstore_remove(cstore, entry);
+	}
+
+	fbr_fs_stat_sub(&fs->stats.store_chunks);
+	fbr_fs_stat_sub(&cstore->chunks);
 }
