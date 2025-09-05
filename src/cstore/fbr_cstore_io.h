@@ -14,7 +14,7 @@
 #include "data/queue.h"
 
 #define FBR_CSTORE_ASYNC_OPS_MAX		256
-#define FBR_CSTORE_ASYNC_OPS_DEFAULT		4
+#define FBR_CSTORE_ASYNC_OPS_DEFAULT		16
 
 enum fbr_cstore_op_type {
 	FBR_CSOP_NONE = 0,

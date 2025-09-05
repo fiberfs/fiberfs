@@ -75,7 +75,7 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 	assert(async->queue_max);
 	while (async->queue_len >= async->queue_max) {
 		async->waiting++;
-		fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, request_id, "waiting");
+		//fbr_ABORT("ERROR we cannot block, we need to queue forever...");
 		pt_assert(pthread_cond_wait(&async->queue_ready, &async->queue_lock));
 		async->waiting--;
 	}
@@ -233,9 +233,6 @@ fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	wbuffer->state = FBR_WBUFFER_SYNC;
 
 	fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_WRITE, fs, file, wbuffer, NULL);
-
-	fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, FBR_REQID_CS_ASYNC, "SYNC return");
-
 }
 
 void
