@@ -18,6 +18,7 @@ fbr_wbuffer_init(struct fbr_fio *fio)
 	fbr_fio_ok(fio);
 
 	pt_assert(pthread_mutex_init(&fio->wbuffer_lock, NULL));
+	pt_assert(pthread_mutex_init(&fio->wbuffer_update_lock, NULL));
 	pt_assert(pthread_cond_init(&fio->wbuffer_update, NULL));
 
 	fio->wbuffers = NULL;
@@ -392,13 +393,13 @@ fbr_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer, enum fbr_wbuf
 	assert(wbuffer->state == FBR_WBUFFER_SYNC);
 	assert(state >= FBR_WBUFFER_DONE);
 
-	_wbuffer_LOCK(fs, wbuffer->fio);
+	fbr_fuse_LOCK(fs->fuse_ctx, &wbuffer->fio->wbuffer_update_lock);
 
 	wbuffer->state = state;
 
 	pt_assert(pthread_cond_broadcast(&wbuffer->fio->wbuffer_update));
 
-	_wbuffer_UNLOCK(wbuffer->fio);
+	pt_assert(pthread_mutex_unlock(&wbuffer->fio->wbuffer_update_lock));
 }
 
 static int
@@ -480,6 +481,7 @@ fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
 		assert_dev(wbuffer->state >= FBR_WBUFFER_READY);
+		assert_dev(wbuffer->state != FBR_WBUFFER_SYNC);
 
 		if (wbuffer->state == FBR_WBUFFER_ERROR ||
 			wbuffer->state == FBR_WBUFFER_READY) {
@@ -504,6 +506,8 @@ fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 	fbr_wbuffer_ok(wbuffers);
 	struct fbr_fio *fio = wbuffers->fio;
 	fbr_fio_ok(fio);
+
+	fbr_fuse_LOCK(fs->fuse_ctx, &fio->wbuffer_update_lock);
 
 	struct fbr_wbuffer *wbuffer = wbuffers;
 	while (wbuffer) {
@@ -530,8 +534,10 @@ fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 			break;
 		}
 
-		pt_assert(pthread_cond_wait(&fio->wbuffer_update, &fio->wbuffer_lock));
+		pt_assert(pthread_cond_wait(&fio->wbuffer_update, &fio->wbuffer_update_lock));
 	}
+
+	pt_assert(pthread_mutex_unlock(&fio->wbuffer_update_lock));
 
 	if (error) {
 		fbr_fs_stat_add(&fs->stats.flush_errors);
@@ -701,6 +707,7 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_file_ok(fio->file);
 
 	pt_assert(pthread_mutex_destroy(&fio->wbuffer_lock));
+	pt_assert(pthread_mutex_destroy(&fio->wbuffer_update_lock));
 	pt_assert(pthread_cond_destroy(&fio->wbuffer_update));
 
 	// TODO get rid of this

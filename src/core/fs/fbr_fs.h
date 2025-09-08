@@ -283,6 +283,7 @@ struct fbr_fio {
 	struct fbr_wbuffer			*wbuffers;
 
 	pthread_mutex_t				wbuffer_lock;
+	pthread_mutex_t				wbuffer_update_lock;
 	pthread_cond_t				wbuffer_update;
 };
 

@@ -10,6 +10,7 @@
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
+#include "cstore/fbr_cstore_io.h"
 
 #include "test/fbr_test.h"
 #include "fbr_test_store_cmds.h"
@@ -93,7 +94,7 @@ _write_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbu
 		return;
 	}
 
-	fbr_dstore_wbuffer_write(fs, file, wbuffer);
+	fbr_cstore_async_wbuffer_write(fs, file, wbuffer);
 }
 
 static int
@@ -110,8 +111,8 @@ _write_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
 }
 
 static const struct fbr_store_callbacks _WRITE_CALLBACKS = {
-	.chunk_read_f = fbr_dstore_chunk_read,
-	.chunk_delete_f = fbr_dstore_chunk_delete,
+	.chunk_read_f = fbr_cstore_async_chunk_read,
+	.chunk_delete_f = fbr_cstore_chunk_delete,
 	.wbuffer_write_f = _write_wbuffer,
 	.directory_flush_f = fbr_directory_flush,
 	.index_write_f = _write_index_root,
@@ -209,11 +210,15 @@ _write_test(void)
 {
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 
-	fbr_dstore_init(test_ctx);
-
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(test_ctx);
 	fbr_fs_ok(fs);
 	fbr_fs_set_store(fs, &_WRITE_CALLBACKS);
+
+	fbr_dstore_init(test_ctx);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+	fbr_log_ok(fuse_ctx->log);
+	fuse_ctx->log->always_flush = 1;
 
 	_DEBUG_WBUFFER_ALLOC_SIZE = _WBUFFER_SIZE;
 

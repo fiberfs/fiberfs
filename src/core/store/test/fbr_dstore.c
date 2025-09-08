@@ -428,7 +428,7 @@ _dstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 }
 
 void
-fbr_dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+fbr__dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	fbr_dstore_ok();
 	fbr_fs_ok(fs);
@@ -483,7 +483,7 @@ _dstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 }
 
 void
-fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+fbr__dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
 	fbr_dstore_ok();
 	fbr_fs_ok(fs);
@@ -545,7 +545,7 @@ fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 }
 
 void
-fbr_dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+fbr__dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);

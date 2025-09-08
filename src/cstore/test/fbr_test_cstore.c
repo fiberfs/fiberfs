@@ -136,6 +136,13 @@ fbr_test_cstore_debug(void)
 	fbr_sys_nftw(path, _cstore_debug_cb);
 }
 
+fbr_stats_t
+fbr_cstore_stat_chunks(void)
+{
+	fbr_cstore_ok(_CSTORE);
+	return _CSTORE->chunks;
+}
+
 #define _CSTORE_THREADS		4
 #define _CSTORE_RAND_THREADS	2
 #define _CSTORE_ALL_THREADS	(_CSTORE_THREADS + _CSTORE_RAND_THREADS)

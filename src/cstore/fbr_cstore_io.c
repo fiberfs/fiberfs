@@ -452,7 +452,6 @@ fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	if (!cstore) {
-		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		return;
 	}
 

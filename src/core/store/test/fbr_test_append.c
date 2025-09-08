@@ -10,16 +10,18 @@
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
+#include "cstore/fbr_cstore_io.h"
 
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/store/test/fbr_dstore.h"
+#include "cstore/test/fbr_test_cstore_cmds.h"
 
 static const struct fbr_store_callbacks _APPEND_TEST_CALLBACKS = {
-	.chunk_read_f = fbr_dstore_chunk_read,
-	.chunk_delete_f = fbr_dstore_chunk_delete,
-	.wbuffer_write_f = fbr_dstore_wbuffer_write,
+	.chunk_read_f = fbr_cstore_async_chunk_read,
+	.chunk_delete_f = fbr_cstore_chunk_delete,
+	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,
 	.directory_flush_f = fbr_directory_flush,
 	.index_write_f = fbr_dstore_index_root_write,
 	.index_read_f = fbr_dstore_index_read,
@@ -32,8 +34,6 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	fbr_dstore_init(ctx);
-
 	struct fbr_fs *fs_1 = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs_1);
 	fbr_fs_set_store(fs_1, &_APPEND_TEST_CALLBACKS);
@@ -41,6 +41,8 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fs *fs_2 = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs_2);
 	fbr_fs_set_store(fs_2, &_APPEND_TEST_CALLBACKS);
+
+	fbr_dstore_init(ctx);
 
 	fbr_test_logs("*** Allocating dir_fs1");
 
@@ -254,7 +256,7 @@ _append_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wb
 		return;
 	}
 
-	fbr_dstore_wbuffer_write(fs, file, wbuffer);
+	fbr_cstore_async_wbuffer_write(fs, file, wbuffer);
 }
 
 static int
@@ -271,8 +273,8 @@ _append_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
 }
 
 static const struct fbr_store_callbacks _APPEND_TEST_ERROR_CALLBACKS = {
-	.chunk_read_f = fbr_dstore_chunk_read,
-	.chunk_delete_f = fbr_dstore_chunk_delete,
+	.chunk_read_f = fbr_cstore_async_chunk_read,
+	.chunk_delete_f = fbr_cstore_chunk_delete,
 	.wbuffer_write_f = _append_wbuffer,
 	.directory_flush_f = fbr_directory_flush,
 	.index_write_f = _append_index_root,
@@ -471,15 +473,15 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 	if (!_APPEND_ERROR_TEST) {
-		fbr_test_ASSERT(fbr_dstore_stat_chunks() == _APPEND_COUNTER_MAX,
-			"chunks: %lu != %d", fbr_dstore_stat_chunks(), _APPEND_COUNTER_MAX);
+		fbr_test_ASSERT(fbr_cstore_stat_chunks() == _APPEND_COUNTER_MAX,
+			"chunks: %lu != %d", fbr_cstore_stat_chunks(), _APPEND_COUNTER_MAX);
 	} else {
 		size_t chunks = _APPEND_COUNTER_MAX;
 		if (chunks >= 10) {
 			chunks += _APPEND_COUNTER_MAX - 9;
 		}
-		fbr_test_ASSERT(fbr_dstore_stat_chunks() == chunks,
-			"chunks: %lu != %zu", fbr_dstore_stat_chunks(), chunks);
+		fbr_test_ASSERT(fbr_cstore_stat_chunks() == chunks,
+			"chunks: %lu != %zu", fbr_cstore_stat_chunks(), chunks);
 	}
 
 	assert(fbr_dstore_stat_roots() == 1);

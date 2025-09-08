@@ -111,16 +111,20 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 
 	switch (op->type) {
 		case FBR_CSOP_TEST:
-			break;
+			return;
 		case FBR_CSOP_WBUFFER_WRITE:
 			fbr_cstore_wbuffer_write(op->fs, op->param1, op->param2);
-			break;
+			return;
 		case FBR_CSOP_CHUNK_READ:
 			fbr_cstore_chunk_read(op->fs, op->param1, op->param2);
+			return;
+		case FBR_CSOP_NONE:
+		case __FBR_CSOP_END:
 			break;
-		default:
-			fbr_ABORT("bad async op: %d", op->type);
+
 	}
+
+	fbr_ABORT("bad async op: %d", op->type);
 }
 
 static void *
@@ -261,6 +265,8 @@ fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		return;
 	}
 }
+
+// TODO async chunk delete needs to make sure we are within the chunk lifetime
 
 const char *
 fbr_cstore_async_type(enum fbr_cstore_op_type type)
