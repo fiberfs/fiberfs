@@ -12,12 +12,14 @@
 
 #include "test/fbr_test.h"
 #include "fbr_test_cstore_cmds.h"
+#include "log/test/fbr_test_log_cmds.h"
 
 extern struct fbr_cstore *_CSTORE;
 
-#define _ASYNC_TEST_MAX		50
+#define _ASYNC_TEST_MAX		2500
 #define _ASYNC_TEST_THREADS	8
-size_t _ASYNC_TEST_COUNT;
+size_t _ASYNC_TEST_QUEUED;
+size_t _ASYNC_TEST_ERROR;
 size_t _ASYNC_TEST_CALLED;
 
 static void
@@ -25,9 +27,6 @@ _test_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_op_ok(op);
-
-	fbr_test_logs("async callback: %s queue_len: %zu waiting: %zu",
-		fbr_cstore_async_type(op->type), cstore->async.queue_len, cstore->async.waiting);
 
 	fbr_test_sleep_ms(random() % 2);
 
@@ -39,13 +38,14 @@ _cstore_state_thread(void *arg)
 {
 	assert_zero(arg);
 
-	while (1) {
-		size_t count = fbr_atomic_add(&_ASYNC_TEST_COUNT, 1);
-		if (count > _ASYNC_TEST_MAX) {
-			break;
+	while (_ASYNC_TEST_QUEUED < _ASYNC_TEST_MAX) {
+		int ret = fbr_cstore_async_queue(_CSTORE, FBR_CSOP_TEST, NULL, NULL, NULL, NULL);
+		if (ret) {
+			fbr_atomic_add(&_ASYNC_TEST_ERROR, 1);
+			fbr_test_sleep_ms(1);
+		} else {
+			fbr_atomic_add(&_ASYNC_TEST_QUEUED, 1);
 		}
-
-		fbr_cstore_async_queue(_CSTORE, FBR_CSOP_TEST, NULL, NULL, NULL, NULL);
 	}
 
 	return NULL;
@@ -62,8 +62,10 @@ fbr_cmd_cstore_async_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_cstore_init(ctx);
 	fbr_cstore_ok(_CSTORE);
 
+	fbr_test_log_printer_silent(1);
+
 	_CSTORE->async.callback = _test_async_op;
-	assert_zero(_ASYNC_TEST_COUNT);
+	assert_zero(_ASYNC_TEST_QUEUED);
 	assert_zero(_ASYNC_TEST_CALLED);
 
 	pthread_t threads[_ASYNC_TEST_THREADS];
@@ -76,10 +78,18 @@ fbr_cmd_cstore_async_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 		pt_assert(pthread_join(threads[i], NULL));
 	}
 
-	while (_ASYNC_TEST_CALLED < _ASYNC_TEST_MAX) {
+	size_t max = 1000;
+	while (_ASYNC_TEST_CALLED < _ASYNC_TEST_QUEUED && max) {
 		fbr_test_sleep_ms(1);
+		max--;
 	}
-	assert (_ASYNC_TEST_CALLED == _ASYNC_TEST_MAX);
+
+	fbr_test_logs("queued: %zu", _ASYNC_TEST_QUEUED);
+	fbr_test_logs("called: %zu", _ASYNC_TEST_CALLED);
+	fbr_test_logs("error: %zu", _ASYNC_TEST_ERROR);
+
+	assert(_ASYNC_TEST_CALLED >= _ASYNC_TEST_MAX);
+	assert(_ASYNC_TEST_CALLED == _ASYNC_TEST_QUEUED);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_async_test done");
 }

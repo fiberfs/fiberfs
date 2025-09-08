@@ -29,8 +29,6 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 	TAILQ_INIT(&async->active_list);
 	TAILQ_INIT(&async->free_list);
 
-	async->queue_max = FBR_CSTORE_ASYNC_OPS_DEFAULT;
-
 	for (size_t i = 0; i < fbr_array_len(async->ops); i++) {
 		struct fbr_cstore_op *op = &async->ops[i];
 
@@ -42,18 +40,18 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 		fbr_cstore_op_ok(op);
 	}
 
-	// TODO this needs to be configurable
-	size_t i;
-	for (i = 0; i < fbr_array_len(async->threads); i++) {
+	async->threads_max = FBR_CSTORE_ASYNC_THREAD_DEFAULT;
+
+	for (size_t i = 0; i < async->threads_max; i++) {
 		pt_assert(pthread_create(&async->threads[i], NULL, _cstore_async_loop, cstore));
 	}
 
-	while (async->threads_running != i) {
+	while (async->threads_running != async->threads_max) {
 		fbr_sleep_ms(0.1);
 	}
 }
 
-void
+int
 fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, struct fbr_fs *fs,
     void *param1, void *param2, void *param3)
 {
@@ -66,24 +64,20 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 		request_id = request->id;
 	}
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, request_id, "queue request: %s",
-		fbr_cstore_async_type(type));
-
 	struct fbr_cstore_async *async = &cstore->async;
 	pt_assert(pthread_mutex_lock(&async->queue_lock));
-
-	assert(async->queue_max);
-	while (async->queue_len >= async->queue_max) {
-		async->waiting++;
-		//fbr_ABORT("ERROR we cannot block, we need to queue forever...");
-		pt_assert(pthread_cond_wait(&async->queue_ready, &async->queue_lock));
-		async->waiting--;
-	}
 
 	// TODO how do we want to exit?
 	assert_zero(async->exit);
 
-	assert_zero(TAILQ_EMPTY(&async->free_list));
+	if (TAILQ_EMPTY(&async->free_list)) {
+		pt_assert(pthread_mutex_unlock(&async->queue_lock));
+		return 1;
+	}
+
+	fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, request_id, "queue request: %s",
+		fbr_cstore_async_type(type));
+
 	struct fbr_cstore_op *op = TAILQ_FIRST(&async->free_list);
 	fbr_cstore_op_ok(op);
 	assert_dev(op->type == FBR_CSOP_NONE);
@@ -98,11 +92,13 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 	TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
 
 	async->queue_len++;
-	assert(async->queue_len <= FBR_CSTORE_ASYNC_OPS_MAX);
+	assert(async->queue_len <= FBR_CSTORE_ASYNC_QUEUE_MAX);
 
 	pt_assert(pthread_cond_signal(&async->todo_ready));
 
 	pt_assert(pthread_mutex_unlock(&async->queue_lock));
+
+	return 0;
 }
 
 static void
@@ -138,10 +134,15 @@ _cstore_async_loop(void *arg)
 
 	async->threads_running++;
 	size_t thread_id = fbr_request_id_thread_gen();
+	size_t thread_pos = async->threads_running;
 
 	fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, thread_id, "thread running");
 
 	while (!async->exit) {
+		if (thread_pos > async->threads_max) {
+			break;
+		}
+
 		if (TAILQ_EMPTY(&async->todo_list)) {
 			pt_assert(pthread_cond_wait(&async->todo_ready, &async->queue_lock));
 			continue;
@@ -173,7 +174,7 @@ _cstore_async_loop(void *arg)
 		TAILQ_INSERT_TAIL(&async->free_list, op, entry);
 
 		async->queue_len--;
-		assert(async->queue_len <= FBR_CSTORE_ASYNC_OPS_MAX);
+		assert(async->queue_len <= FBR_CSTORE_ASYNC_QUEUE_MAX);
 
 		pt_assert(pthread_cond_signal(&async->queue_ready));
 	}
@@ -191,19 +192,17 @@ fbr_cstore_async_free(struct fbr_cstore *cstore)
 	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_async *async = &cstore->async;
-	assert(async->threads_running == fbr_array_len(async->threads));
 
 	pt_assert(pthread_mutex_lock(&async->queue_lock));
 	async->exit = 1;
 	pt_assert(pthread_cond_broadcast(&async->todo_ready));
 	pt_assert(pthread_mutex_unlock(&async->queue_lock));
 
-	for (size_t i = 0; i < fbr_array_len(async->threads); i++) {
+	for (size_t i = 0; i < async->threads_max; i++) {
 		pt_assert(pthread_join(async->threads[i], NULL));
 	}
 
 	assert_zero(async->threads_running);
-	assert_zero(async->waiting);
 	assert_zero(async->queue_len);
 	assert(TAILQ_EMPTY(&async->todo_list));
 	assert(TAILQ_EMPTY(&async->active_list));
@@ -232,7 +231,11 @@ fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 
 	wbuffer->state = FBR_WBUFFER_SYNC;
 
-	fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_WRITE, fs, file, wbuffer, NULL);
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_WRITE, fs, file, wbuffer, NULL);
+	if (ret) {
+		wbuffer->state = FBR_WBUFFER_ERROR;
+		return;
+	}
 }
 
 void
@@ -250,7 +253,11 @@ fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 
 	chunk->state = FBR_CHUNK_LOADING;
 
-	fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_READ, fs, file, chunk, NULL);
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_READ, fs, file, chunk, NULL);
+	if (ret) {
+		chunk->state = FBR_CHUNK_EMPTY;
+		return;
+	}
 }
 
 const char *
