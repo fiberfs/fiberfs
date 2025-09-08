@@ -29,7 +29,9 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 	TAILQ_INIT(&async->active_list);
 	TAILQ_INIT(&async->free_list);
 
-	for (size_t i = 0; i < fbr_array_len(async->ops); i++) {
+	async->queue_max = fbr_array_len(async->ops);
+
+	for (size_t i = 0; i < async->queue_max; i++) {
 		struct fbr_cstore_op *op = &async->ops[i];
 
 		op->magic = FBR_CSTORE_OP_MAGIC;
@@ -70,7 +72,7 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 	// TODO how do we want to exit?
 	assert_zero(async->exit);
 
-	if (TAILQ_EMPTY(&async->free_list)) {
+	if (TAILQ_EMPTY(&async->free_list) || async->queue_len >= async->queue_max) {
 		pt_assert(pthread_mutex_unlock(&async->queue_lock));
 		return 1;
 	}

@@ -44,6 +44,7 @@ struct fbr_cstore_async {
 	struct fbr_cstore_op			ops[FBR_CSTORE_ASYNC_QUEUE_MAX];
 
 	size_t					queue_len;
+	size_t					queue_max;
 	pthread_mutex_t				queue_lock;
 	pthread_cond_t				queue_ready;
 	pthread_cond_t				todo_ready;
