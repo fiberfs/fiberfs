@@ -800,7 +800,7 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_test_logs("DSTORE read index bytes in: %zu out: %zu", bytes_in, bytes_out);
 
 	// TODO
-	fbr_cstore_index_read(fs, directory);
+	//fbr_cstore_index_read(fs, directory);
 
 	return ret;
 }

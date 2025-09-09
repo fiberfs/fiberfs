@@ -400,6 +400,7 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error no entry");
 		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		return;
 	}
@@ -644,5 +645,163 @@ fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "READ %s %lu %s",
 		dirpath.len ? dirpath.name : "(root)", directory->version, path);
 
-	return 0;
+	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+	if (!entry) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error no entry");
+		return 1;
+	}
+
+	fbr_cstore_entry_ok(entry);
+	if (entry->state <= FBR_CSTORE_LOADING) {
+		// TODO wait for loading
+		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error ok state");
+		fbr_cstore_release(cstore, entry);
+		return 1;
+	}
+	assert(entry->state == FBR_CSTORE_OK);
+
+	struct fbr_cstore_metadata metadata;
+	_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+	int ret = fbr_cstore_metadata_read(path, &metadata);
+	if (ret) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error metadata");
+		fbr_cstore_remove(cstore, entry);
+		return 1;
+	}
+
+	if (metadata.etag != directory->version) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error bad version");
+		fbr_cstore_remove(cstore, entry);
+		return 1;
+	}
+
+	int fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error open()");
+		fbr_cstore_remove(cstore, entry);
+		return 1;
+	}
+
+	struct fbr_request *request = fbr_request_get();
+
+	struct fbr_reader reader;
+	fbr_reader_init(fs, &reader, request, metadata.gzipped);
+	struct fbr_buffer *output = reader.output;
+	fbr_buffer_ok(output);
+
+	struct fbr_index_parser parser;
+	fbr_index_parser_init(fs, &parser, directory);
+
+	struct fjson_context json;
+	fjson_context_init(&json);
+	json.callback = &fbr_index_parse_json;
+	json.callback_priv = &parser;
+
+	struct fbr_gzip gzip;
+	if (metadata.gzipped) {
+		fbr_gzip_inflate_init(&gzip);
+		assert_dev(gzip.status == FBR_GZIP_DONE);
+	}
+
+	ssize_t read_bytes = 0;
+	size_t bytes_in = 0, bytes_out = 0;
+
+	do {
+		if (metadata.gzipped) {
+			struct fbr_buffer *gbuffer = reader.buffer;
+			fbr_buffer_ok(gbuffer);
+
+			gbuffer->buffer_pos = 0;
+
+			assert(gzip.status <= FBR_GZIP_DONE);
+			if (gzip.status == FBR_GZIP_DONE) {
+				read_bytes = fbr_sys_read(fd, gbuffer->buffer,
+					gbuffer->buffer_len);
+
+				bytes_in += read_bytes;
+			}
+
+			if (read_bytes < 0) {
+				break;
+			}
+
+			unsigned char *input = (unsigned char *)gbuffer->buffer;
+			unsigned char *output_buf = (unsigned char *)output->buffer +
+				output->buffer_pos;
+			size_t input_len = read_bytes;
+			size_t output_len = output->buffer_len - output->buffer_pos;
+			size_t written;
+
+			if (gzip.status == FBR_GZIP_MORE_BUFFER || !read_bytes) {
+				input = NULL;
+				input_len = 0;
+			}
+
+			fbr_gzip_flate(&gzip, input, input_len, output_buf, output_len,
+				&written, 0);
+
+			if (gzip.status == FBR_GZIP_ERROR) {
+				break;
+			}
+
+			output->buffer_pos += written;
+			bytes_out += written;
+			assert_dev(output->buffer_pos <= output->buffer_len);
+		} else {
+			assert_zero_dev(reader.buffer);
+
+			unsigned char *output_buf = (unsigned char *)output->buffer +
+				output->buffer_pos;
+			size_t output_free = output->buffer_len - output->buffer_pos;
+
+			read_bytes = fbr_sys_read(fd, output_buf, output_free);
+			if (read_bytes < 0) {
+				break;
+			}
+
+			output->buffer_pos += read_bytes;
+			assert_dev(output->buffer_pos <= output->buffer_len);
+
+			bytes_in += read_bytes;
+			bytes_out += read_bytes;
+		}
+
+		fjson_parse_partial(&json, output->buffer, output->buffer_pos);
+
+		output->buffer_pos = fjson_shift(&json, output->buffer, output->buffer_pos,
+			output->buffer_len);
+	} while (read_bytes > 0 && !json.error);
+
+	assert_zero(close(fd));
+
+	fjson_parse(&json, output->buffer, output->buffer_pos);
+	assert(parser.magic == FBR_INDEX_PARSER_MAGIC);
+
+	ret = 0;
+
+	if (metadata.gzipped) {
+		if (gzip.status != FBR_GZIP_DONE) {
+			fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error gunzip");
+			ret = 1;
+		}
+	}
+	if (json.error) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error json");
+		ret = 1;
+	}
+
+	fjson_context_free(&json);
+	fbr_index_parser_free(&parser);
+	fbr_reader_free(fs, &reader);
+
+	if (metadata.gzipped) {
+		fbr_gzip_free(&gzip);
+	}
+
+	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "READ bytes in: %zu out: %zu",
+		bytes_in, bytes_out);
+
+	fbr_cstore_release(cstore, entry);
+
+	return ret;
 }
