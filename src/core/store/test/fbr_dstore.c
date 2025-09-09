@@ -641,6 +641,9 @@ fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, writer->bytes);
 	fbr_fs_stat_add(&_DSTORE->indexes);
+
+	// TODO
+	fbr_cstore_index_write(fs, directory, writer);
 }
 
 int
@@ -795,6 +798,9 @@ fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	}
 
 	fbr_test_logs("DSTORE read index bytes in: %zu out: %zu", bytes_in, bytes_out);
+
+	// TODO
+	fbr_cstore_index_read(fs, directory);
 
 	return ret;
 }

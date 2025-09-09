@@ -9,9 +9,10 @@
 #include <unistd.h>
 
 #include "fiberfs.h"
+#include "core/fs/fbr_fs.h"
+#include "core/store/fbr_store.h"
 #include "fbr_cstore_api.h"
 #include "fjson.h"
-#include "core/fs/fbr_fs.h"
 #include "utils/fbr_sys.h"
 
 static unsigned int
@@ -180,14 +181,14 @@ _cstore_gen_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char 
 	fbr_bin2hex(&hash, sizeof(hash), hash_str, sizeof(hash_str));
 	assert_dev(strlen(hash_str) > 4);
 
-	const char *subpath = FBR_CSTORE_DATA_DIR;
+	const char *sub_path = FBR_CSTORE_DATA_DIR;
 	if (metadata) {
-		subpath = FBR_CSTORE_META_DIR;
+		sub_path = FBR_CSTORE_META_DIR;
 	}
 
 	int ret = snprintf(output, output_len, "%s/%s/%.2s/%.2s/%s",
 		cstore->root,
-		subpath,
+		sub_path,
 		hash_str,
 		hash_str + 2,
 		hash_str + 4);
@@ -476,4 +477,60 @@ fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 
 	fbr_fs_stat_sub(&fs->stats.store_chunks);
 	fbr_fs_stat_sub(&cstore->chunks);
+}
+
+int
+fbr_cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_writer *writer)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	fbr_writer_ok(writer);
+	assert_dev(writer->output);
+	assert_zero_dev(writer->error);
+
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		return 1;
+	}
+
+	fbr_hash_t hash = fbr_chash_index(fs, directory);
+
+	struct fbr_path_name dirpath;
+	fbr_directory_name(directory, &dirpath);
+
+	char path[FBR_PATH_MAX];
+	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+
+	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE %s %lu %s",
+		dirpath.len ? dirpath.name : "(root)", directory->version, path);
+
+	return 0;
+}
+
+int
+fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		return 1;
+	}
+
+	fbr_hash_t hash = fbr_chash_index(fs, directory);
+
+	struct fbr_path_name dirpath;
+	fbr_directory_name(directory, &dirpath);
+
+	char path[FBR_PATH_MAX];
+	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+
+	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "READ %s %lu %s",
+		dirpath.len ? dirpath.name : "(root)", directory->version, path);
+
+	return 0;
 }
