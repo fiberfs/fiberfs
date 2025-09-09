@@ -266,8 +266,6 @@ fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	}
 }
 
-// TODO async chunk delete needs to make sure we are within the chunk lifetime
-
 const char *
 fbr_cstore_async_type(enum fbr_cstore_op_type type)
 {

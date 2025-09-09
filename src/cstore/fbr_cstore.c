@@ -448,6 +448,8 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
 
+	fbr_cstore_async_free(cstore);
+
 	for (size_t i = 0; i < fbr_array_len(cstore->heads); i++) {
 		struct fbr_cstore_head *head = &cstore->heads[i];
 		fbr_cstore_head_ok(head);
@@ -494,7 +496,6 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 	assert_zero(cstore->entries);
 	assert_zero(cstore->bytes);
 
-	fbr_cstore_async_free(cstore);
 	fbr_log_free(cstore->log);
 
 	int do_free = cstore->do_free;

@@ -442,6 +442,7 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	fbr_cstore_release(cstore, entry);
 }
 
+// TODO make async version which directly takes path, id, and offset
 void
 fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
