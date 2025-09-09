@@ -195,6 +195,46 @@ _cstore_gen_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char 
 	assert(ret > 0 && (size_t)ret < output_len);
 }
 
+static struct fbr_cstore_entry *
+_cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, const char *path)
+{
+	assert_dev(cstore);
+	assert_dev(path);
+
+	struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, bytes);
+	if (!entry) {
+		entry = fbr_cstore_get(cstore, hash);
+		if (!entry) {
+			return NULL;
+		} else if (entry->bytes != bytes) {
+			fbr_cstore_release(cstore, entry);
+			return NULL;
+		}
+	}
+
+	fbr_cstore_set_loading(entry);
+	if (entry->state != FBR_CSTORE_LOADING) {
+		fbr_cstore_release(cstore, entry);
+		return NULL;
+	}
+
+	// TODO skip re-making the root
+	int ret = fbr_mkdirs(path);
+	if (ret) {
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+		return NULL;
+	}
+
+	if (fbr_sys_exists(path)) {
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+		return NULL;
+	}
+
+	return entry;
+}
+
 static void
 _cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
     enum fbr_wbuffer_state state)
@@ -226,7 +266,7 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	}
 
 	fbr_hash_t hash = fbr_chash_chunk(fs, file, wbuffer->id, wbuffer->offset);
-	size_t bytes = wbuffer->end;
+	size_t wbuf_bytes = wbuffer->end;
 
 	char buffer[FBR_PATH_MAX];
 	struct fbr_path_name filepath;
@@ -237,63 +277,49 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 
 	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "%s %zu:%zu %lu %s",
-		filepath.name, wbuffer->offset, bytes, wbuffer->id, path);
+		filepath.name, wbuffer->offset, wbuf_bytes, wbuffer->id, path);
 
-	struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, bytes);
+	struct fbr_cstore_entry *entry = _cstore_get_loading(cstore, hash, wbuf_bytes, path);
 	if (!entry) {
-		entry = fbr_cstore_get(cstore, hash);
-		if (!entry || entry->bytes != bytes) {
-			_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
-			return;
-		}
-	}
-
-	fbr_cstore_set_loading(entry);
-	if (entry->state != FBR_CSTORE_LOADING) {
-		fbr_cstore_release(cstore, entry);
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error loading state");
 		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
 		return;
 	}
-
-	int ret = fbr_mkdirs(path);
-	if (ret) {
-		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
-		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
-		return;
-	}
-
-	if (fbr_sys_exists(path)) {
-		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
-		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
-		return;
-	}
+	fbr_cstore_entry_ok(entry);
+	assert(entry->state == FBR_CSTORE_LOADING);
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
 		return;
 	}
 
-	fbr_sys_write(fd, wbuffer->buffer, bytes);
+	size_t bytes = fbr_sys_write(fd, wbuffer->buffer, wbuf_bytes);
 	assert_zero(close(fd));
+
+	if (bytes != wbuf_bytes) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error bytes");
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		return;
+	}
 
 	struct fbr_cstore_metadata metadata;
 	fbr_ZERO(&metadata);
 	metadata.etag = wbuffer->id;
 	metadata.size = bytes;
 	metadata.offset = wbuffer->offset;
-	assert(filepath.len < FBR_PATH_MAX);
+	assert(filepath.len < sizeof(metadata.path));
 	memcpy(metadata.path, filepath.name, filepath.len + 1);
 
 	_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
-	ret = _cstore_metadata_write(path, &metadata);
+	int ret = _cstore_metadata_write(path, &metadata);
 	if (ret) {
-		fbr_cstore_delete_entry(cstore, entry);
-
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error metadata");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
@@ -380,8 +406,8 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 
 	fbr_cstore_entry_ok(entry);
 	if (entry->state <= FBR_CSTORE_LOADING) {
-		// TODO
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error entry not ok");
+		// TODO wait for loading
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error ok state");
 		fbr_cstore_release(cstore, entry);
 		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		return;
@@ -391,7 +417,7 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	int fd = open(path, O_RDONLY);
 
 	if (fd < 0) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error open(chunk)");
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error open()");
 		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		fbr_cstore_release(cstore, entry);
 		return;
@@ -479,6 +505,35 @@ fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 	fbr_fs_stat_sub(&cstore->chunks);
 }
 
+static int
+_cstore_writer(int fd, struct fbr_writer *writer)
+{
+	assert_dev(fd >= 0);
+	assert_dev(writer);
+
+	size_t bytes = 0;
+
+	struct fbr_buffer *output = writer->output;
+	while (output) {
+		fbr_buffer_ok(output);
+
+		if (output->buffer_pos) {
+			size_t written = fbr_sys_write(fd, output->buffer, output->buffer_pos);
+			if (written != output->buffer_pos) {
+				return 1;
+			}
+
+			bytes += written;
+		}
+
+		output = output->next;
+	}
+
+	assert(bytes == writer->bytes);
+
+	return 0;
+}
+
 int
 fbr_cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
     struct fbr_writer *writer)
@@ -505,6 +560,63 @@ fbr_cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE %s %lu %s",
 		dirpath.len ? dirpath.name : "(root)", directory->version, path);
+
+	struct fbr_cstore_entry *entry = _cstore_get_loading(cstore, hash,
+		writer->bytes, path);
+	if (!entry) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error loading state");
+		return 1;
+	}
+	fbr_cstore_entry_ok(entry);
+	assert(entry->state == FBR_CSTORE_LOADING);
+
+	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	if (fd < 0) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error open()");
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+		return 1;
+	}
+
+	int ret = _cstore_writer(fd, writer);
+	assert_zero(close(fd));
+
+	if (ret) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error writing");
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+		return 1;
+	}
+
+	struct fbr_cstore_metadata metadata;
+	fbr_ZERO(&metadata);
+	metadata.etag = directory->version;
+	metadata.size = writer->bytes;
+
+	char version[FBR_ID_STRING_MAX];
+	fbr_id_string(directory->version, version, sizeof(version));
+	char *root_sep = "";
+	if (dirpath.len) {
+		root_sep = "/";
+	}
+	ret = snprintf(metadata.path, sizeof(metadata.path), "%s%s.fiberfsindex.%s",
+		dirpath.name, root_sep, version);
+	assert(ret > 0 && (size_t)ret < sizeof(metadata.path));
+
+	_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+	ret = _cstore_metadata_write(path, &metadata);
+	if (ret) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error metadata");
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+		return 1;
+	}
+
+	fbr_cstore_set_ok(entry);
+	fbr_cstore_release(cstore, entry);
+
+	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, writer->bytes);
+	fbr_fs_stat_add(&cstore->indexes);
 
 	return 0;
 }

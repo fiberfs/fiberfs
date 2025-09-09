@@ -231,8 +231,6 @@ _cstore_entry_free(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 	entry->hash = 0;
 	entry->bytes = 0;
 
-	// TODO we need to delete the file
-
 	TAILQ_INSERT_HEAD(&head->free_list, entry, list_entry);
 }
 
