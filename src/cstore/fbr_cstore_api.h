@@ -36,6 +36,8 @@ struct fbr_cstore_entry {
 	unsigned				magic;
 #define FBR_CSTORE_ENTRY_MAGIC			0xA59C372B
 
+	unsigned int				is_root:1;
+
 	enum fbr_cstore_alloc_state		alloc;
 	enum fbr_cstore_state			state;
 	pthread_mutex_t				state_lock;
@@ -45,8 +47,7 @@ struct fbr_cstore_entry {
 	size_t					bytes;
 
 	fbr_refcount_t				refcount;
-	unsigned int				in_lru:1;
-	unsigned int				is_root:1;
+	int					in_lru;
 
 	RB_ENTRY(fbr_cstore_entry)		tree_entry;
 	TAILQ_ENTRY(fbr_cstore_entry)		list_entry;
