@@ -230,6 +230,7 @@ _cstore_entry_free(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 	entry->state = FBR_CSTORE_NONE;
 	entry->hash = 0;
 	entry->bytes = 0;
+	entry->is_root = 0;
 
 	TAILQ_INSERT_HEAD(&head->free_list, entry, list_entry);
 }
