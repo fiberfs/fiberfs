@@ -4,6 +4,8 @@ fiber_test "mkdir"
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
+test_log_allow_debug
+test_log_always_flush
 
 # mkdir
 

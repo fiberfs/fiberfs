@@ -593,6 +593,7 @@ fbr_cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_ZERO(&metadata);
 	metadata.etag = directory->version;
 	metadata.size = writer->bytes;
+	metadata.gzipped = writer->is_gzip;
 
 	char version[FBR_ID_STRING_MAX];
 	fbr_id_string(directory->version, version, sizeof(version));
@@ -675,6 +676,7 @@ fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		return 1;
 	}
 
+	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error open()");

@@ -43,6 +43,19 @@ fbr_fuse_has_context(void)
 	return 0;
 }
 
+int
+fbr_fuse_has_error(void)
+{
+	if (_FUSE_CTX) {
+		fbr_fuse_context_ok(_FUSE_CTX);
+		if (_FUSE_CTX->error) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 struct fbr_fuse_context *
 fbr_fuse_get_context(void)
 {

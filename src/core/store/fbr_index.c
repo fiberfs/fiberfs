@@ -490,9 +490,8 @@ fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len
 	assert(json_buf_len);
 
 	int json_version = _json_header_peek(json_buf, json_buf_len);
-	fbr_rlog(FBR_LOG_INDEX, "json version: %d", json_version);
-
 	if (json_version < 1 || json_version >= 10) {
+		fbr_rlog(FBR_LOG_INDEX, "bad json version: %d", json_version);
 		return 0;
 	}
 
@@ -511,6 +510,8 @@ fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len
 	}
 
 	fjson_context_free(&json);
+
+	fbr_rlog(FBR_LOG_INDEX, "parsed root: %lu", root_parser.root_version);
 
 	return root_parser.root_version;
 }
@@ -570,6 +571,7 @@ fbr_index_parser_init(struct fbr_fs *fs, struct fbr_index_parser *parser,
 	fbr_fs_ok(fs);
 	assert(parser);
 	fbr_directory_ok(directory);
+	assert_zero(directory->generation);
 
 	fbr_ZERO(parser);
 
@@ -665,7 +667,7 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 	assert_dev(token);
 	assert_dev(depth >= 5);
 
-	//_index_parse_debug(parser, token, depth);
+	_index_parse_debug(parser, token, depth);
 
 	struct fbr_fs *fs = parser->fs;
 	struct fbr_file *file = parser->file;
@@ -727,7 +729,7 @@ _index_parse_file_alloc(struct fbr_index_parser *parser, const char *filename, s
 	struct fbr_fs *fs = parser->fs;
 	struct fbr_directory *directory = parser->directory;
 
-	//fs->log("INDEX_PARSER file ALLOC: '%.*s'", (int)filename_len, filename);
+	fbr_rlog(FBR_LOG_DEBUG, "PARSER file ALLOC: '%.*s'", (int)filename_len, filename);
 
 	struct fbr_path_name filepath;
 	filepath.len = filename_len;
@@ -796,8 +798,12 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 			assert_dev(file->state >= FBR_FILE_OK);
 
 			if (fbr_file_has_wbuffer(file)) {
+				fbr_rlog(FBR_LOG_DEBUG, "PARSER merge candidate found");
 				assert_zero_dev(parser->merge);
 				parser->merge = file;
+			} else {
+				fbr_rlog(FBR_LOG_DEBUG, "PARSER dropping existing");
+				assert_zero_dev(parser->skip_add);
 			}
 
 			parser->file = NULL;
@@ -882,7 +888,7 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 	assert_dev(token);
 	assert_dev(depth >= 2);
 
-	//_index_parse_debug(parser, token, depth);
+	_index_parse_debug(parser, token, depth);
 
 	struct fbr_file *file = parser->file;
 	const char *val = token->svalue;
@@ -947,7 +953,7 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 	assert_dev(token);
 	assert_dev(depth >= 2);
 
-	//_index_parse_debug(parser, token, depth);
+	_index_parse_debug(parser, token, depth);
 
 	struct fbr_directory *directory = parser->directory;
 	struct fbr_directory *previous = directory->previous;
