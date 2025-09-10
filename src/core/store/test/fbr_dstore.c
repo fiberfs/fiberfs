@@ -252,7 +252,8 @@ _dstore_metadata_write(char *path, struct _dstore_metadata *metadata)
 
 	_dstore_mkdirs(path);
 
-	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	int fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+	assert(fd >= 0);
 
 	// e: etag
 	char buf[FBR_ID_STRING_MAX];

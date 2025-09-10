@@ -46,6 +46,7 @@ struct fbr_cstore_entry {
 
 	fbr_refcount_t				refcount;
 	unsigned int				in_lru:1;
+	unsigned int				is_root:1;
 
 	RB_ENTRY(fbr_cstore_entry)		tree_entry;
 	TAILQ_ENTRY(fbr_cstore_entry)		list_entry;
