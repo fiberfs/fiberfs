@@ -762,6 +762,8 @@ fbr_log_type_str(enum fbr_log_type type)
 			return "CSTORE_CHUNK";
 		case FBR_LOG_CS_INDEX:
 			return "CSTORE_INDEX";
+		case FBR_LOG_CS_ROOT:
+			return "CSTORE_ROOT";
 		case __FBR_LOG_TYPE_NONE:
 		case __FBR_LOG_TYPE_END:
 			break;

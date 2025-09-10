@@ -86,6 +86,7 @@ void fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fb
 int fbr_cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_writer *writer);
 int fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
+int fbr_cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t existing);
 
 #define fbr_cstore_op_ok(op)			fbr_magic_check(op, FBR_CSTORE_OP_MAGIC)
 

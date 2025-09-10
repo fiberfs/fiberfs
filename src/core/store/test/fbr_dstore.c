@@ -960,6 +960,9 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 
 	fbr_writer_free(fs, &json);
 
+	// TODO
+	fbr_cstore_root_write(fs, directory, existing);
+
 	return 0;
 }
 

@@ -286,7 +286,7 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 		return;
 	}
 	fbr_cstore_entry_ok(entry);
-	assert(entry->state == FBR_CSTORE_LOADING);
+	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
@@ -569,7 +569,7 @@ fbr_cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		return 1;
 	}
 	fbr_cstore_entry_ok(entry);
-	assert(entry->state == FBR_CSTORE_LOADING);
+	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
@@ -806,4 +806,117 @@ fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_cstore_release(cstore, entry);
 
 	return ret;
+}
+
+// TODO static
+void
+_cstore_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		return;
+	}
+
+	fbr_hash_t hash = fbr_chash_index(fs, directory);
+
+	struct fbr_path_name dirpath;
+	fbr_directory_name(directory, &dirpath);
+
+	char path[FBR_PATH_MAX];
+	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+
+	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "DELETE %s %lu %s",
+		dirpath.len ? dirpath.name : "(root)", directory->version, path);
+
+	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+	if (!entry) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error no entry");
+		return;
+	}
+
+	fbr_cstore_entry_ok(entry);
+	fbr_cstore_remove(cstore, entry);
+}
+
+int
+fbr_cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t existing)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert_dev(directory->version);
+
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		return 1;
+	}
+
+	fbr_hash_t hash = fbr_chash_root(fs, directory);
+
+	struct fbr_path_name dirpath;
+	fbr_directory_name(directory, &dirpath);
+
+	char path[FBR_PATH_MAX];
+	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+
+	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "WRITE %s %lu %lu %s",
+		dirpath.len ? dirpath.name : "(root)", existing, directory->version, path);
+
+	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+	if (!entry) {
+		if (existing) {
+			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id,
+				"error bad version want: %lu got: no entry", existing);
+			return 1;
+		}
+
+		entry = _cstore_get_loading(cstore, hash, 100, path);
+		if (!entry) {
+			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id,
+				"error loading state");
+			return 1;
+		}
+		fbr_cstore_entry_ok(entry);
+		assert_dev(entry->state == FBR_CSTORE_LOADING);
+
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+	} else {
+		fbr_cstore_entry_ok(entry);
+		if (entry->state <= FBR_CSTORE_LOADING) {
+			// TODO wait for loading
+			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "error ok state");
+			fbr_cstore_release(cstore, entry);
+			return 1;
+		}
+		assert(entry->state == FBR_CSTORE_OK);
+
+		struct fbr_cstore_metadata metadata;
+		_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+		int ret = fbr_cstore_metadata_read(path, &metadata);
+		if (ret) {
+			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "error metadata");
+			fbr_cstore_remove(cstore, entry);
+			return 1;
+		}
+
+		if (metadata.etag != existing) {
+			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id,
+				"error bad version want: %lu got: %lu", existing, metadata.etag);
+			fbr_cstore_remove(cstore, entry);
+			return 1;
+		}
+
+		// TODO switch entry ok to loading somehow
+
+		fbr_cstore_release(cstore, entry);
+	}
+
+	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "WRITE passed %lu", existing);
+
+	return 0;
 }
