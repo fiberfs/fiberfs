@@ -748,7 +748,7 @@ _index_parse_file_start(struct fbr_index_parser *parser, const char *filename, s
 	assert_dev(parser->directory);
 	assert_zero_dev(parser->file);
 	assert_zero_dev(parser->merge);
-	assert_zero_dev(parser->skip_add);
+	assert_zero_dev(parser->current_exists);
 	assert_dev(filename);
 
 	if (!filename_len) {
@@ -761,7 +761,7 @@ _index_parse_file_start(struct fbr_index_parser *parser, const char *filename, s
 	parser->file = fbr_directory_find_file(directory, filename, filename_len);
 
 	if (parser->file) {
-		parser->skip_add = 1;
+		parser->current_exists = 1;
 	} else if (previous && !parser->file) {
 		parser->file = fbr_directory_find_file(previous, filename, filename_len);
 	}
@@ -789,9 +789,18 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 
 	unsigned long generation = fbr_parse_ulong(token->svalue, token->svalue_len);
 
-	if (!generation || file->generation <= generation) {
+	int changed = 0;
+	if (!generation) {
+		changed = 1;
+	} else if (file->generation < generation) {
+		changed = 1;
+	} else if (fbr_file_has_wbuffer(file)) {
+		changed = 1;
+	}
+
+	if (changed) {
 		if (file->state == FBR_FILE_INIT) {
-			assert_zero_dev(parser->skip_add);
+			assert_zero_dev(parser->current_exists);
 			assert_zero_dev(file->generation);
 			file->generation = generation;
 		} else  {
@@ -802,8 +811,8 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 				assert_zero_dev(parser->merge);
 				parser->merge = file;
 			} else {
-				fbr_rlog(FBR_LOG_DEBUG, "PARSER dropping existing");
-				assert_zero_dev(parser->skip_add);
+				fbr_rlog(FBR_LOG_DEBUG, "PARSER dropping previous");
+				assert_zero_dev(parser->current_exists);
 			}
 
 			parser->file = NULL;
@@ -818,7 +827,7 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 	} else {
 		assert_dev(file->state >= FBR_FILE_OK);
 
-		if (!parser->skip_add) {
+		if (!parser->current_exists) {
 			fbr_directory_add_file(fs, directory, file);
 		}
 
@@ -846,7 +855,7 @@ _index_parse_file_end(struct fbr_index_parser *parser)
 
 		fbr_file_merge(fs, file, merge);
 
-		if (!parser->skip_add) {
+		if (!parser->current_exists) {
 			fbr_directory_add_file(fs, directory, merge);
 		}
 
@@ -859,7 +868,7 @@ _index_parse_file_end(struct fbr_index_parser *parser)
 
 		fbr_rlog(FBR_LOG_INDEX, "PARSER new no gen found, skipping");
 	} else if (file->state == FBR_FILE_INIT) {
-		assert_zero_dev(parser->skip_add);
+		assert_zero_dev(parser->current_exists);
 		assert_dev(file->generation);
 		file->state = FBR_FILE_OK;
 		fbr_directory_add_file(fs, directory, file);
@@ -876,7 +885,7 @@ _index_parse_file_end(struct fbr_index_parser *parser)
 
 	parser->file = NULL;
 	parser->merge = NULL;
-	parser->skip_add = 0;
+	parser->current_exists = 0;
 }
 
 static int
