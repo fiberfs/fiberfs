@@ -430,6 +430,7 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 		}
 	}
 	assert(entry->state == FBR_CSTORE_OK);
+	assert_dev(entry->hash == hash);
 	assert_zero(entry->is_root);
 
 	int fd = open(path, O_RDONLY);
@@ -679,6 +680,7 @@ fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		}
 	}
 	assert(entry->state == FBR_CSTORE_OK);
+	assert_dev(entry->hash == hash);
 	assert_zero(entry->is_root);
 
 	struct fbr_cstore_metadata metadata;
@@ -930,6 +932,7 @@ fbr_cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 		}
 		fbr_cstore_entry_ok(entry);
 		assert_dev(entry->state == FBR_CSTORE_LOADING);
+		assert_dev(entry->hash == hash);
 
 		entry->is_root = 1;
 	} else {
@@ -944,6 +947,7 @@ fbr_cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 			}
 		}
 		assert(entry->state == FBR_CSTORE_OK);
+		assert_dev(entry->hash == hash);
 		assert(entry->is_root);
 
 		pt_assert(pthread_mutex_lock(&entry->state_lock));
