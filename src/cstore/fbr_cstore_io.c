@@ -404,14 +404,15 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		return;
 	}
-
 	fbr_cstore_entry_ok(entry);
 	if (entry->state <= FBR_CSTORE_LOADING) {
-		// TODO wait for loading
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error ok state");
-		fbr_cstore_release(cstore, entry);
-		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
-		return;
+		enum fbr_cstore_state state = fbr_cstore_wait_loading(entry);
+		if (state == FBR_CSTORE_NONE) {
+			fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "error ok state");
+			fbr_cstore_release(cstore, entry);
+			_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+			return;
+		}
 	}
 	assert(entry->state == FBR_CSTORE_OK);
 
@@ -651,13 +652,14 @@ fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error no entry");
 		return 1;
 	}
-
 	fbr_cstore_entry_ok(entry);
 	if (entry->state <= FBR_CSTORE_LOADING) {
-		// TODO wait for loading
-		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error ok state");
-		fbr_cstore_release(cstore, entry);
-		return 1;
+		enum fbr_cstore_state state = fbr_cstore_wait_loading(entry);
+		if (state == FBR_CSTORE_NONE) {
+			fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "error ok state");
+			fbr_cstore_release(cstore, entry);
+			return 1;
+		}
 	}
 	assert(entry->state == FBR_CSTORE_OK);
 
@@ -888,10 +890,13 @@ fbr_cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 	} else {
 		fbr_cstore_entry_ok(entry);
 		if (entry->state <= FBR_CSTORE_LOADING) {
-			// TODO wait for loading
-			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "error ok state");
-			fbr_cstore_release(cstore, entry);
-			return 1;
+			enum fbr_cstore_state state = fbr_cstore_wait_loading(entry);
+			if (state == FBR_CSTORE_NONE) {
+				fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id,
+					"error ok state");
+				fbr_cstore_release(cstore, entry);
+				return 1;
+			}
 		}
 		assert(entry->state == FBR_CSTORE_OK);
 

@@ -329,6 +329,7 @@ fbr_cmd_cstore_test_lru(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 size_t _CSTORE_ST_THREAD_COUNT;
 size_t _CSTORE_ST_COUNTER[_CSTORE_ST_HASHES];
 size_t _CSTORE_ST_COMPLETED;
+size_t _CSTORE_ST_WAITING;
 
 static void *
 _cstore_state_thread(void *arg)
@@ -336,6 +337,7 @@ _cstore_state_thread(void *arg)
 	assert_zero(arg);
 	fbr_cstore_ok(_CSTORE);
 	assert_zero(_CSTORE_ST_COMPLETED);
+	assert_zero(_CSTORE_ST_WAITING);
 
 	size_t id = fbr_atomic_add(&_CSTORE_ST_THREAD_COUNT, 1);
 	while (_CSTORE_ST_THREAD_COUNT < _CSTORE_ST_THREADS) {
@@ -362,6 +364,9 @@ _cstore_state_thread(void *arg)
 		assert(state < 1000 * 1000 * 1000);
 
 		if (state >= 5) {
+			enum fbr_cstore_state state = fbr_cstore_wait_loading(entry);
+			assert(state == FBR_CSTORE_NONE || state == FBR_CSTORE_OK);
+			fbr_atomic_add(&_CSTORE_ST_WAITING, 1);
 			fbr_test_sleep_ms(10);
 		} else if (state == 4) {
 			fbr_test_sleep_ms(random() % 50);
@@ -425,6 +430,10 @@ fbr_cmd_cstore_state_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	}
 
 	assert_zero(_CSTORE->entries);
+
+	fbr_test_logs("threads: %zu", _CSTORE_ST_THREAD_COUNT);
+	fbr_test_logs("completed: %zu", _CSTORE_ST_COMPLETED);
+	fbr_test_logs("waiting: %zu", _CSTORE_ST_WAITING);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_state_test done");
 }

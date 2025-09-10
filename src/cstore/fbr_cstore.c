@@ -373,6 +373,24 @@ fbr_cstore_set_loading(struct fbr_cstore_entry *entry)
 	pt_assert(pthread_mutex_unlock(&entry->state_lock));
 }
 
+enum fbr_cstore_state
+fbr_cstore_wait_loading(struct fbr_cstore_entry *entry)
+{
+	fbr_cstore_entry_ok(entry);
+
+	pt_assert(pthread_mutex_lock(&entry->state_lock));
+
+	while (entry->state == FBR_CSTORE_LOADING) {
+		pt_assert(pthread_cond_wait(&entry->state_cond, &entry->state_lock));
+	}
+
+	enum fbr_cstore_state state = entry->state;
+
+	pt_assert(pthread_mutex_unlock(&entry->state_lock));
+
+	return state;
+}
+
 static void
 _cstore_set_state(struct fbr_cstore_entry *entry, enum fbr_cstore_state state)
 {
