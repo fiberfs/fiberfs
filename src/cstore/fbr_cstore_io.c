@@ -67,6 +67,13 @@ _cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata)
 	fbr_sys_write(fd, ",\"o\":", 5);
 	fbr_sys_write(fd, buf, strlen(buf));
 
+	// t: type
+	ret = snprintf(buf, sizeof(buf), "%d", metadata->type);
+	assert(ret > 0 && (size_t)ret < sizeof(buf));
+
+	fbr_sys_write(fd, ",\"t\":", 5);
+	fbr_sys_write(fd, buf, strlen(buf));
+
 	// g: gzipped
 	fbr_sys_write(fd, ",\"g\":", 5);
 
@@ -125,7 +132,11 @@ _cstore_parse_metadata(struct fjson_context *ctx, void *priv)
 			if (token->dvalue >= 0) {
 				metadata->offset = (size_t)token->dvalue;
 			}
-		} else if (metadata->_context == 'g') {
+		} else if (metadata->_context == 't') {
+			if (token->dvalue >= 0) {
+				metadata->type = (int)token->dvalue;
+			}
+		}else if (metadata->_context == 'g') {
 			if (token->dvalue == 0 || token->dvalue == 1) {
 				metadata->gzipped = (int)token->dvalue;
 			}
@@ -316,6 +327,7 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	metadata.etag = wbuffer->id;
 	metadata.size = bytes;
 	metadata.offset = wbuffer->offset;
+	metadata.type = FBR_CSTORE_FILE_CHUNK;
 	assert(filepath.len < sizeof(metadata.path));
 	memcpy(metadata.path, filepath.name, filepath.len + 1);
 
@@ -598,6 +610,7 @@ fbr_cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_ZERO(&metadata);
 	metadata.etag = directory->version;
 	metadata.size = writer->bytes;
+	metadata.type = FBR_CSTORE_FILE_INDEX;
 	metadata.gzipped = writer->is_gzip;
 
 	char version[FBR_ID_STRING_MAX];
@@ -959,6 +972,7 @@ fbr_cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 	struct fbr_cstore_metadata metadata;
 	fbr_ZERO(&metadata);
 	metadata.etag = directory->version;
+	metadata.type = FBR_CSTORE_FILE_ROOT;
 
 	char *root_sep = "";
 	if (dirpath.len) {

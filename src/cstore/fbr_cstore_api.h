@@ -103,11 +103,19 @@ struct fbr_cstore {
 	fbr_stats_t				roots;
 };
 
+enum fbr_cstore_entry_type {
+	FBR_CSTORE_FILE_NONE = 0,
+	FBR_CSTORE_FILE_CHUNK,
+	FBR_CSTORE_FILE_INDEX,
+	FBR_CSTORE_FILE_ROOT
+};
+
 struct fbr_cstore_metadata {
 	char					path[FBR_PATH_MAX];
 	fbr_id_t				etag;
 	unsigned long				size;
 	unsigned long				offset;
+	enum fbr_cstore_entry_type		type;
 	int					gzipped;
 	char					_context;
 };

@@ -103,8 +103,23 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 		case FTW_F:
 		case FTW_SL:
 			_cstore_debug_meta(filename, &metadata);
-			fbr_test_logs("CSTORE_DEBUG file: %s (%s %lu:%lu)",
-				filename, metadata.path, metadata.offset, metadata.size);
+			switch (metadata.type) {
+			case FBR_CSTORE_FILE_CHUNK:
+				fbr_test_logs("CSTORE_DEBUG file: %s (CHUNK %s %lu:%lu)",
+					filename, metadata.path, metadata.offset, metadata.size);
+				break;
+			case FBR_CSTORE_FILE_INDEX:
+				fbr_test_logs("CSTORE_DEBUG file: %s (INDEX %s %d)",
+					filename, metadata.path, metadata.gzipped);
+				break;
+			case FBR_CSTORE_FILE_ROOT:
+				fbr_test_logs("CSTORE_DEBUG file: %s (ROOT %s)",
+					filename, metadata.path);
+				assert_zero(metadata.gzipped);
+				break;
+			default:
+				fbr_ABORT("bad metadata type: %d", metadata.type);
+			}
 			break;
 		default:
 			break;
