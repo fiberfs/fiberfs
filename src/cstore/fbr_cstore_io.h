@@ -83,10 +83,11 @@ void fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 void fbr_cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
 void fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
 void fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
-int fbr_cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
-	struct fbr_writer *writer);
 int fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
-int fbr_cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t existing);
+int fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
+	struct fbr_writer *writer, struct fbr_directory *previous);
+fbr_id_t fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath);
+int fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 
 #define fbr_cstore_op_ok(op)			fbr_magic_check(op, FBR_CSTORE_OP_MAGIC)
 

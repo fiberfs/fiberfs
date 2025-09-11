@@ -108,6 +108,7 @@ _chash_directory_path(XXH3_state_t *hash, struct fbr_directory *directory)
 	if (dirpath.len) {
 		XXH3_64bits_update(hash, "/", 1);
 	}
+
 	XXH3_64bits_update(hash, ".fiberfsindex.", 14);
 
 	char id_buffer[FBR_ID_STRING_MAX];
@@ -136,34 +137,32 @@ fbr_chash_index(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 static void
-_chash_root_path(XXH3_state_t *hash, struct fbr_directory *directory)
+_chash_root_path(XXH3_state_t *hash, struct fbr_path_name *dirpath)
 {
 	assert_dev(hash);
-	assert_dev(directory);
+	assert_dev(dirpath);
 
-	struct fbr_path_name dirpath;
-	fbr_directory_name(directory, &dirpath);
+	XXH3_64bits_update(hash, dirpath->name, dirpath->len);
 
-	XXH3_64bits_update(hash, dirpath.name, dirpath.len);
-
-	if (dirpath.len) {
+	if (dirpath->len) {
 		XXH3_64bits_update(hash, "/", 1);
 	}
+
 	XXH3_64bits_update(hash, ".fiberfsroot", 13);
 }
 
 fbr_hash_t
-fbr_chash_root(struct fbr_fs *fs, struct fbr_directory *directory)
+fbr_chash_root(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 {
 	fbr_fs_ok(fs);
-	fbr_directory_ok(directory);
+	assert(dirpath);
 
 	XXH3_state_t hash;
 	XXH3_INITSTATE(&hash);
 	XXH3_64bits_reset(&hash);
 
 	_chash_fs(&hash, fs);
-	_chash_root_path(&hash, directory);
+	_chash_root_path(&hash, dirpath);
 
 	XXH64_hash_t result = XXH3_64bits_digest(&hash);
 	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));

@@ -138,7 +138,7 @@ void fbr_cstore_free(struct fbr_cstore *cstore);
 fbr_hash_t fbr_chash_chunk(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id,
 	size_t offset);
 fbr_hash_t fbr_chash_index(struct fbr_fs *fs, struct fbr_directory *directory);
-fbr_hash_t fbr_chash_root(struct fbr_fs *fs, struct fbr_directory *directory);
+fbr_hash_t fbr_chash_root(struct fbr_fs *fs, struct fbr_path_name *dirpath);
 
 void fbr_cstore_fuse_register(const char *root_path);
 struct fbr_cstore *fbr_cstore_find(void);

@@ -20,7 +20,6 @@
 #include "compress/fbr_gzip.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
-#include "cstore/fbr_cstore_io.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 #include "utils/fbr_sys.h"
 
@@ -608,8 +607,8 @@ _dstore_index_path(const struct fbr_directory *directory, int metadata, char *bu
 	assert(ret < buffer_len);
 }
 
-void
-fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
+static void
+_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
     struct fbr_writer *writer)
 {
 	fbr_fs_ok(fs);
@@ -642,9 +641,6 @@ fbr_dstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, writer->bytes);
 	fbr_fs_stat_add(&_DSTORE->indexes);
-
-	// TODO
-	fbr_cstore_index_write(fs, directory, writer);
 }
 
 int
@@ -846,35 +842,6 @@ fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 	return 0;
 }
 
-int
-fbr_dstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
-    struct fbr_writer *writer, struct fbr_directory *previous)
-{
-	fbr_fs_ok(fs);
-	fbr_directory_ok(directory);
-	fbr_writer_ok(writer);
-	assert_dev(writer->output);
-
-	fbr_dstore_index_write(fs, directory, writer);
-
-	fbr_id_t previous_version = 0;
-	if (previous) {
-		fbr_directory_ok(previous);
-		assert(previous->version);
-		previous_version = previous->version;
-	}
-
-	int ret = fbr_dstore_root_write(fs, directory, previous_version);
-
-	if (ret) {
-		_dstore_index_remove(fs, directory);
-	} else if (previous) {
-		_dstore_index_remove(fs, previous);
-	}
-
-	return ret;
-}
-
 static void
 _dstore_root_path(struct fbr_path_name *dirpath, int metadata, char *buffer, size_t buffer_len)
 {
@@ -901,8 +868,8 @@ _dstore_root_path(struct fbr_path_name *dirpath, int metadata, char *buffer, siz
 	assert(ret < buffer_len);
 }
 
-int
-fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t existing)
+static int
+_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t existing)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
@@ -950,6 +917,7 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 	}
 
 	int fd = open(root_path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+	assert(fd >= 0);
 
 	_dstore_writer(fd, &json);
 
@@ -961,10 +929,36 @@ fbr_dstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id
 
 	fbr_writer_free(fs, &json);
 
-	// TODO
-	fbr_cstore_root_write(fs, directory, existing);
-
 	return 0;
+}
+
+int
+fbr_dstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_writer *writer, struct fbr_directory *previous)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	fbr_writer_ok(writer);
+	assert_dev(writer->output);
+
+	_dstore_index_write(fs, directory, writer);
+
+	fbr_id_t previous_version = 0;
+	if (previous) {
+		fbr_directory_ok(previous);
+		assert(previous->version);
+		previous_version = previous->version;
+	}
+
+	int ret = _dstore_root_write(fs, directory, previous_version);
+
+	if (ret) {
+		_dstore_index_remove(fs, directory);
+	} else if (previous) {
+		_dstore_index_remove(fs, previous);
+	}
+
+	return ret;
 }
 
 fbr_id_t
