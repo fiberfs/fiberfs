@@ -100,10 +100,10 @@ static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
 	.chunk_delete_f = fbr_cstore_chunk_delete,
 	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,
 	.directory_flush_f = _test_fs_rw_directory_flush,
-	.index_write_f = fbr_dstore_index_root_write,
-	.index_read_f = fbr_dstore_index_read,
-	.index_delete_f = fbr_dstore_index_delete,
-	.root_read_f = fbr_dstore_root_read
+	.index_write_f = fbr_cstore_index_root_write,
+	.index_read_f = fbr_cstore_index_read,
+	.index_delete_f = fbr_cstore_index_delete,
+	.root_read_f = fbr_cstore_root_read
 };
 
 static void
@@ -152,9 +152,9 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	struct fbr_path_name dirpath;
 	fbr_directory_name(root, &dirpath);
-	fbr_id_t root_id = fbr_dstore_root_read(ctx->fs, &dirpath);
+	fbr_id_t root_id = fbr_cstore_root_read(ctx->fs, &dirpath);
 
-	fbr_test_logs("INIT fbr_dstore_root_read(): %lu", root_id);
+	fbr_test_logs("INIT fbr_cstore_root_read(): %lu", root_id);
 	fbr_ASSERT(root_id == root->version, "root version mismatch, found %lu, expected %lu",
 		root_id, root->version);
 

@@ -8,12 +8,13 @@
 #include "core/fs/fbr_fs.h"
 #include "core/operations/fbr_operations.h"
 #include "core/store/fbr_store.h"
+#include "cstore/fbr_cstore_io.h"
 
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
-#include "core/store/test/fbr_dstore.h"
+#include "cstore/test/fbr_test_cstore_cmds.h"
 
 int
 _test_mkdir_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
@@ -33,10 +34,10 @@ _test_mkdir_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *
 
 static const struct fbr_store_callbacks _TEST_MKDIR_CALLBACKS = {
 	.directory_flush_f = _test_mkdir_flush,
-	.index_write_f = fbr_dstore_index_root_write,
-	.index_read_f = fbr_dstore_index_read,
-	.index_delete_f = fbr_dstore_index_delete,
-	.root_read_f = fbr_dstore_root_read
+	.index_write_f = fbr_cstore_index_root_write,
+	.index_read_f = fbr_cstore_index_read,
+	.index_delete_f = fbr_cstore_index_delete,
+	.root_read_f = fbr_cstore_root_read
 };
 
 static void
@@ -47,7 +48,7 @@ _test_mkdir_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	assert(conn);
 
 	fbr_fs_set_store(ctx->fs, &_TEST_MKDIR_CALLBACKS);
-	fbr_dstore_init(fbr_test_get_ctx());
+	fbr_test_cstore_init(fbr_test_get_ctx());
 
 	fbr_test_fuse_root_alloc(ctx->fs);
 }

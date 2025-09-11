@@ -17,6 +17,8 @@
 struct fbr_cstore __CSTORE;
 struct fbr_cstore *_CSTORE = &__CSTORE;
 
+static char _CSTORE_STAT_BUF[32];
+
 static void
 _test_cstore_finish(struct fbr_test_context *test_ctx)
 {
@@ -151,11 +153,52 @@ fbr_test_cstore_debug(void)
 	fbr_sys_nftw(path, _cstore_debug_cb);
 }
 
+void
+fbr_cmd_cstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_cstore_debug();
+}
+
 fbr_stats_t
 fbr_cstore_stat_chunks(void)
 {
 	fbr_cstore_ok(_CSTORE);
 	return _CSTORE->chunks;
+}
+
+fbr_stats_t
+fbr_cstore_stat_indexes(void)
+{
+	fbr_cstore_ok(_CSTORE);
+	return _CSTORE->indexes;
+}
+
+fbr_stats_t
+fbr_cstore_stat_roots(void)
+{
+	fbr_cstore_ok(_CSTORE);
+	return _CSTORE->roots;
+}
+
+char *
+fbr_var_cstore_stat_indexes(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+	int ret = snprintf(_CSTORE_STAT_BUF, sizeof(_CSTORE_STAT_BUF), "%lu", _CSTORE->indexes);
+	assert(ret > 0 && (size_t)ret < sizeof(_CSTORE_STAT_BUF));
+	return _CSTORE_STAT_BUF;
+}
+
+char *
+fbr_var_cstore_stat_roots(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+	int ret = snprintf(_CSTORE_STAT_BUF, sizeof(_CSTORE_STAT_BUF), "%lu", _CSTORE->roots);
+	assert(ret > 0 && (size_t)ret < sizeof(_CSTORE_STAT_BUF));
+	return _CSTORE_STAT_BUF;
 }
 
 #define _CSTORE_THREADS		4
