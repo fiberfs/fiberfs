@@ -16,7 +16,7 @@
 #include "fbr_test_store_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
-#include "core/store/test/fbr_dstore.h"
+#include "core/store/test/fbr__dstore.h"
 
 struct _write_args {
 	struct fbr_fs *fs;

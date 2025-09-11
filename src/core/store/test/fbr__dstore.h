@@ -23,10 +23,10 @@ void fbr_dstore_debug(int show_meta);
 fbr_stats_t fbr_dstore_stat_roots(void);
 fbr_stats_t fbr_dstore_stat_indexes(void);
 fbr_stats_t fbr_dstore_stat_chunks(void);
-void fbr__dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
+void fbr_dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
-void fbr__dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
-void fbr__dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
+void fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
+void fbr_dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
 int fbr_dstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_dstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_dstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,

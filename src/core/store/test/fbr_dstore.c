@@ -15,7 +15,7 @@
 #include <unistd.h>
 
 #include "fiberfs.h"
-#include "fbr_dstore.h"
+#include "fbr__dstore.h"
 #include "fjson.h"
 #include "compress/fbr_gzip.h"
 #include "core/fs/fbr_fs.h"
@@ -428,7 +428,7 @@ _dstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 }
 
 void
-fbr__dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+fbr_dstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	fbr_dstore_ok();
 	fbr_fs_ok(fs);
@@ -483,7 +483,7 @@ _dstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 }
 
 void
-fbr__dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+fbr_dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
 	fbr_dstore_ok();
 	fbr_fs_ok(fs);
@@ -545,7 +545,7 @@ fbr__dstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chun
 }
 
 void
-fbr__dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+fbr_dstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);

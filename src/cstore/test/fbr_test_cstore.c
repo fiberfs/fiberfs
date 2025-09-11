@@ -163,21 +163,21 @@ fbr_cmd_cstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 fbr_stats_t
-fbr_cstore_stat_chunks(void)
+fbr_test_cstore_stat_chunks(void)
 {
 	fbr_cstore_ok(_CSTORE);
 	return _CSTORE->chunks;
 }
 
 fbr_stats_t
-fbr_cstore_stat_indexes(void)
+fbr_test_cstore_stat_indexes(void)
 {
 	fbr_cstore_ok(_CSTORE);
 	return _CSTORE->indexes;
 }
 
 fbr_stats_t
-fbr_cstore_stat_roots(void)
+fbr_test_cstore_stat_roots(void)
 {
 	fbr_cstore_ok(_CSTORE);
 	return _CSTORE->roots;

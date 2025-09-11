@@ -12,16 +12,16 @@
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
-#include "core/store/test/fbr_dstore.h"
+#include "cstore/test/fbr_test_cstore_cmds.h"
 
 static const struct fbr_store_callbacks _MERGE_TEST_CALLBACKS = {
 	.chunk_read_f = fbr_cstore_async_chunk_read,
 	.chunk_delete_f = fbr_cstore_chunk_delete,
 	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,
 	.directory_flush_f = fbr_directory_flush,
-	.index_write_f = fbr_dstore_index_root_write,
-	.index_read_f = fbr_dstore_index_read,
-	.root_read_f = fbr_dstore_root_read
+	.index_write_f = fbr_cstore_index_root_write,
+	.index_read_f = fbr_cstore_index_read,
+	.root_read_f = fbr_cstore_root_read
 };
 
 void
@@ -31,7 +31,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_test_fuse_mock(ctx);
-	fbr_dstore_init(ctx);
+	fbr_test_cstore_init(ctx);
 
 	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_1);
@@ -305,7 +305,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_stats(fs_2);
 	fbr_test_fs_inodes_debug(fs_2);
 	fbr_test_fs_dindex_debug(fs_2);
-	fbr_dstore_debug(0);
+	fbr_test_cstore_debug();
 
 	fbr_test_ERROR(fs_2->stats.directories, "non zero");
 	fbr_test_ERROR(fs_2->stats.directories_dindex, "non zero");

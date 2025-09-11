@@ -9,17 +9,18 @@
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
+#include "cstore/fbr_cstore_io.h"
 
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
-#include "core/store/test/fbr_dstore.h"
+#include "cstore/test/fbr_test_cstore_cmds.h"
 
 static const struct fbr_store_callbacks _INDEX_TEST_CALLBACKS = {
-	.index_write_f = fbr_dstore_index_root_write,
-	.index_read_f = fbr_dstore_index_read,
-	.root_read_f = fbr_dstore_root_read
+	.index_write_f = fbr_cstore_index_root_write,
+	.index_read_f = fbr_cstore_index_read,
+	.root_read_f = fbr_cstore_root_read
 };
 
 void
@@ -152,11 +153,10 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	fbr_dstore_init(ctx);
-
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
 
+	fbr_test_cstore_init(ctx);
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
 
 	fbr_test_logs("*** Allocating directory");
@@ -379,7 +379,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_stats(fs);
 	fbr_test_fs_inodes_debug(fs);
 	fbr_test_fs_dindex_debug(fs);
-	fbr_dstore_debug(1);
+	fbr_test_cstore_debug();
 
 	fbr_test_ERROR(fs->stats.directories, "non zero");
 	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
@@ -391,8 +391,8 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs->stats.flush_conflicts, "non zero");
 	fbr_test_ERROR(fs->stats.merges, "non zero");
 
-	assert(fbr_dstore_stat_roots() == 1);
-	assert(fbr_dstore_stat_indexes() == 1);
+	assert(fbr_test_cstore_stat_roots() == 1);
+	assert(fbr_test_cstore_stat_indexes() == 1);
 
 	fbr_request_pool_shutdown(fs);
 	fbr_fs_free(fs);
@@ -406,11 +406,10 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	fbr_dstore_init(ctx);
-
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
 
+	fbr_test_cstore_init(ctx);
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
 
 	fbr_test_logs("*** Allocating directory");
@@ -470,7 +469,7 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_stats(fs);
 	fbr_test_fs_inodes_debug(fs);
 	fbr_test_fs_dindex_debug(fs);
-	fbr_dstore_debug(0);
+	fbr_test_cstore_debug();
 
 	fbr_test_ERROR(fs->stats.directories, "non zero");
 	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
@@ -493,8 +492,8 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	fbr_dstore_init(ctx);
 	fbr_test_fuse_mock(ctx);
+	fbr_test_cstore_init(ctx);
 
 	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_1);
@@ -607,7 +606,7 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_stats(fs_2);
 	fbr_test_fs_inodes_debug(fs_2);
 	fbr_test_fs_dindex_debug(fs_2);
-	fbr_dstore_debug(0);
+	fbr_test_cstore_debug();
 
 	fbr_test_ERROR(fs_2->stats.directories, "non zero");
 	fbr_test_ERROR(fs_2->stats.directories_dindex, "non zero");
@@ -724,8 +723,8 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	fbr_dstore_init(ctx);
 	fbr_test_fuse_mock(ctx);
+	fbr_test_cstore_init(ctx);
 
 	pthread_t threads[_THREADS_MAX];
 	_THREAD_COUNT = 0;
@@ -742,7 +741,7 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 
 	fbr_test_logs("*** all threads joined");
 
-	fbr_dstore_debug(0);
+	fbr_test_cstore_debug();
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
@@ -772,8 +771,8 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_test_ERROR(fs->stats.flush_conflicts, "non zero");
 	fbr_test_ERROR(fs->stats.merges, "non zero");
 
-	assert(fbr_dstore_stat_roots() == 1);
-	assert(fbr_dstore_stat_indexes() == 1);
+	assert(fbr_test_cstore_stat_roots() == 1);
+	assert(fbr_test_cstore_stat_indexes() == 1);
 
 	fbr_fs_free(fs);
 
