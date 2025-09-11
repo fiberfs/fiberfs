@@ -16,7 +16,7 @@
 #include "fbr_test_store_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
-#include "core/store/test/fbr__dstore.h"
+#include "cstore/test/fbr_test_cstore_cmds.h"
 
 struct _write_args {
 	struct fbr_fs *fs;
@@ -107,7 +107,7 @@ _write_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
 		return EIO;
 	}
 
-	return fbr_dstore_index_root_write(fs, directory, writer, previous);
+	return fbr_cstore_index_root_write(fs, directory, writer, previous);
 }
 
 static const struct fbr_store_callbacks _WRITE_CALLBACKS = {
@@ -116,8 +116,8 @@ static const struct fbr_store_callbacks _WRITE_CALLBACKS = {
 	.wbuffer_write_f = _write_wbuffer,
 	.directory_flush_f = fbr_directory_flush,
 	.index_write_f = _write_index_root,
-	.index_read_f = fbr_dstore_index_read,
-	.root_read_f = fbr_dstore_root_read
+	.index_read_f = fbr_cstore_index_read,
+	.root_read_f = fbr_cstore_root_read
 };
 
 static void *
@@ -212,9 +212,9 @@ _write_test(void)
 
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(test_ctx);
 	fbr_fs_ok(fs);
-	fbr_fs_set_store(fs, &_WRITE_CALLBACKS);
 
-	fbr_dstore_init(test_ctx);
+	fbr_test_cstore_init(test_ctx);
+	fbr_fs_set_store(fs, &_WRITE_CALLBACKS);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 	fbr_log_ok(fuse_ctx->log);
@@ -290,7 +290,7 @@ _write_test(void)
 	fbr_fio_release(fs, fio);
 	fbr_test_index_request_finish();
 
-	fbr_dstore_debug(0);
+	fbr_test_cstore_debug();
 	assert(fs->stats.store_chunks > _FILE_SIZE / _WBUFFER_SIZE);
 
 	fbr_test_logs("*** Starting write threads");
@@ -384,7 +384,7 @@ _write_test(void)
 	fbr_test_fs_stats(fs);
 	fbr_test_fs_inodes_debug(fs);
 	fbr_test_fs_dindex_debug(fs);
-	fbr_dstore_debug(0);
+	fbr_test_cstore_debug();
 
 	fbr_test_ERROR(fs->stats.directories, "non zero");
 	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");

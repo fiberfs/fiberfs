@@ -552,7 +552,6 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 			ret = fs->store->index_read_f(fs, directory);
 		}
 	} while (ret == EAGAIN);
-	// TODO we can get rid of EAGAIN here?
 
 	if (ret) {
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
