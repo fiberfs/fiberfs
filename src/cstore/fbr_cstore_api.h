@@ -32,12 +32,18 @@ enum fbr_cstore_state {
 	FBR_CSTORE_OK
 };
 
+enum fbr_cstore_entry_type {
+	FBR_CSTORE_FILE_NONE = 0,
+	FBR_CSTORE_FILE_CHUNK,
+	FBR_CSTORE_FILE_INDEX,
+	FBR_CSTORE_FILE_ROOT
+};
+
 struct fbr_cstore_entry {
 	unsigned				magic;
 #define FBR_CSTORE_ENTRY_MAGIC			0xA59C372B
 
-	unsigned int				is_root:1;
-
+	enum fbr_cstore_entry_type		type;
 	enum fbr_cstore_alloc_state		alloc;
 	enum fbr_cstore_state			state;
 	pthread_mutex_t				state_lock;
@@ -102,13 +108,6 @@ struct fbr_cstore {
 	fbr_stats_t				chunks;
 	fbr_stats_t				indexes;
 	fbr_stats_t				roots;
-};
-
-enum fbr_cstore_entry_type {
-	FBR_CSTORE_FILE_NONE = 0,
-	FBR_CSTORE_FILE_CHUNK,
-	FBR_CSTORE_FILE_INDEX,
-	FBR_CSTORE_FILE_ROOT
 };
 
 struct fbr_cstore_metadata {

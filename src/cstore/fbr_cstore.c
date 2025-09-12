@@ -226,11 +226,11 @@ _cstore_entry_free(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 		cstore->delete_f(cstore, entry);
 	}
 
+	entry->type = FBR_CSTORE_FILE_NONE;
 	entry->alloc = FBR_CSTORE_ENTRY_FREE;
 	entry->state = FBR_CSTORE_NONE;
 	entry->hash = 0;
 	entry->bytes = 0;
-	entry->is_root = 0;
 
 	TAILQ_INSERT_HEAD(&head->free_list, entry, list_entry);
 }
@@ -334,6 +334,7 @@ fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes)
 	}
 
 	entry = _cstore_get_entry(cstore, head, hash);
+	assert_dev(entry->type == FBR_CSTORE_FILE_NONE);
 	assert_dev(entry->alloc == FBR_CSTORE_ENTRY_USED);
 	assert_dev(entry->state == FBR_CSTORE_NONE);
 	assert_dev(entry->in_lru);
