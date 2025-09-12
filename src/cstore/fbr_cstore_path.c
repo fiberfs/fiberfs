@@ -39,9 +39,9 @@ size_t
 fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *buffer,
     size_t buffer_len)
 {
-	assert_dev(cstore);
-	assert_dev(buffer);
-	assert_dev(buffer_len);
+	fbr_cstore_ok(cstore);
+	assert(buffer);
+	assert(buffer_len);
 
 	char hash_str[FBR_HASH_SLEN];
 	fbr_bin2hex(&hash, sizeof(hash), hash_str, sizeof(hash_str));
@@ -64,10 +64,10 @@ size_t
 fbr_cstore_path_chunk(struct fbr_cstore *cstore, const struct fbr_file *file, fbr_id_t id,
     size_t offset, int metadata, char *buffer, size_t buffer_len)
 {
-	assert_dev(file);
+	fbr_file_ok(file);
 	assert(id);
-	assert_dev(buffer);
-	assert_dev(buffer_len);
+	assert(buffer);
+	assert(buffer_len);
 
 	char filebuf[FBR_PATH_MAX];
 	struct fbr_path_name filepath;
@@ -95,9 +95,9 @@ size_t
 fbr_cstore_path_index(struct fbr_cstore *cstore, const struct fbr_directory *directory,
     int metadata, char *buffer, size_t buffer_len)
 {
-	assert_dev(directory);
-	assert_dev(buffer);
-	assert_dev(buffer_len);
+	fbr_directory_ok(directory);
+	assert(buffer);
+	assert(buffer_len);
 
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
@@ -129,9 +129,9 @@ size_t
 fbr_cstore_path_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath, int metadata,
     char *buffer, size_t buffer_len)
 {
-	assert_dev(dirpath);
-	assert_dev(buffer);
-	assert_dev(buffer_len);
+	assert(dirpath);
+	assert(buffer);
+	assert(buffer_len);
 
 	int ret = 0;
 
