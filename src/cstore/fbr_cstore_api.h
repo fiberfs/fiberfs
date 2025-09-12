@@ -134,10 +134,18 @@ void fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entr
 void fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
 void fbr_cstore_free(struct fbr_cstore *cstore);
 
-fbr_hash_t fbr_chash_chunk(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id,
+size_t fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *output,
+	size_t output_len);
+size_t fbr_cstore_path_chunk(struct fbr_cstore *cstore, const struct fbr_file *file, fbr_id_t id,
+	size_t offset, int metadata, char *buffer, size_t buffer_len);
+size_t fbr_cstore_path_index(struct fbr_cstore *cstore, const struct fbr_directory *directory,
+	int metadata, char *buffer, size_t buffer_len);
+size_t fbr_cstore_path_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath, int metadata,
+	char *buffer, size_t buffer_len);
+fbr_hash_t fbr_cstore_hash_chunk(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id,
 	size_t offset);
-fbr_hash_t fbr_chash_index(struct fbr_fs *fs, struct fbr_directory *directory);
-fbr_hash_t fbr_chash_root(struct fbr_fs *fs, struct fbr_path_name *dirpath);
+fbr_hash_t fbr_cstore_hash_index(struct fbr_fs *fs, struct fbr_directory *directory);
+fbr_hash_t fbr_cstore_hash_root(struct fbr_fs *fs, struct fbr_path_name *dirpath);
 
 void fbr_cstore_fuse_register(const char *root_path);
 struct fbr_cstore *fbr_cstore_find(void);

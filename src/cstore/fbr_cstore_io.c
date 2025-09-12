@@ -183,32 +183,6 @@ fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata)
 	return ret;
 }
 
-static void
-_cstore_gen_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *output,
-    size_t output_len)
-{
-	assert_dev(cstore);
-	assert_dev(output);
-	assert_dev(output_len);
-
-	char hash_str[FBR_HASH_SLEN];
-	fbr_bin2hex(&hash, sizeof(hash), hash_str, sizeof(hash_str));
-	assert_dev(strlen(hash_str) > 4);
-
-	const char *sub_path = FBR_CSTORE_DATA_DIR;
-	if (metadata) {
-		sub_path = FBR_CSTORE_META_DIR;
-	}
-
-	int ret = snprintf(output, output_len, "%s/%s/%.2s/%.2s/%s",
-		cstore->root,
-		sub_path,
-		hash_str,
-		hash_str + 2,
-		hash_str + 4);
-	assert(ret > 0 && (size_t)ret < output_len);
-}
-
 static struct fbr_cstore_entry *
 _cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, const char *path)
 {
@@ -304,19 +278,18 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 		return;
 	}
 
-	fbr_hash_t hash = fbr_chash_chunk(fs, file, wbuffer->id, wbuffer->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk(fs, file, wbuffer->id, wbuffer->offset);
 	size_t wbuf_bytes = wbuffer->end;
 
-	char buffer[FBR_PATH_MAX];
-	struct fbr_path_name filepath;
-	fbr_path_get_full(&file->path, &filepath, buffer, sizeof(buffer));
-
 	char path[FBR_PATH_MAX];
-	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+	char chunk_path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	size_t chunk_path_len = fbr_cstore_path_chunk(NULL, file, wbuffer->id, wbuffer->offset, 0,
+		chunk_path, sizeof(chunk_path));
 
 	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "%s %zu:%zu %lu %s",
-		filepath.name, wbuffer->offset, wbuf_bytes, wbuffer->id, path);
+	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "%s %zu %s",
+		chunk_path, wbuf_bytes, path);
 
 	struct fbr_cstore_entry *entry = _cstore_get_loading(cstore, hash, wbuf_bytes, path);
 	if (!entry) {
@@ -355,10 +328,10 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	metadata.size = bytes;
 	metadata.offset = wbuffer->offset;
 	metadata.type = entry->type;
-	assert(filepath.len < sizeof(metadata.path));
-	memcpy(metadata.path, filepath.name, filepath.len + 1);
+	assert(chunk_path_len < sizeof(metadata.path));
+	memcpy(metadata.path, chunk_path, chunk_path_len + 1);
 
-	_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = _cstore_metadata_write(path, &metadata);
 	if (ret) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR metadata");
@@ -387,10 +360,10 @@ fbr_cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entr
 	fbr_cstore_entry_ok(entry);
 
 	char path[FBR_PATH_MAX];
-	_cstore_gen_path(cstore, entry->hash, 0, path, sizeof(path));
+	fbr_cstore_path(cstore, entry->hash, 0, path, sizeof(path));
 	(void)unlink(path);
 
-	_cstore_gen_path(cstore, entry->hash, 1, path, sizeof(path));
+	fbr_cstore_path(cstore, entry->hash, 1, path, sizeof(path));
 	(void)unlink(path);
 }
 
@@ -427,18 +400,14 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 		return;
 	}
 
-	fbr_hash_t hash = fbr_chash_chunk(fs, file, chunk->id, chunk->offset);
-
-	char buffer[FBR_PATH_MAX];
-	struct fbr_path_name filepath;
-	fbr_path_get_full(&file->path, &filepath, buffer, sizeof(buffer));
+	fbr_hash_t hash = fbr_cstore_hash_chunk(fs, file, chunk->id, chunk->offset);
 
 	char path[FBR_PATH_MAX];
-	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
 	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "%s %zu:%zu %lu %s",
-		filepath.name, chunk->offset, chunk->length, chunk->id, path);
+	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "READ %s %zu:%zu %lu",
+		path, chunk->offset, chunk->length, chunk->id);
 
 	struct fbr_cstore_entry *entry = _cstore_get_ok(cstore, hash);
 	if (!entry) {
@@ -487,10 +456,9 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 
 	if (fbr_is_dev()) {
 		struct fbr_cstore_metadata metadata;
-		_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+		fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 		ret = fbr_cstore_metadata_read(path, &metadata);
 		assert_zero_dev(ret);
-		assert_zero_dev(strcmp(metadata.path, filepath.name));
 		assert_dev(metadata.etag == chunk->id);
 		assert_dev(metadata.offset == chunk->offset);
 		assert_dev(metadata.size == chunk->length);
@@ -519,18 +487,14 @@ fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 		return;
 	}
 
-	fbr_hash_t hash = fbr_chash_chunk(fs, file, chunk->id, chunk->offset);
-
-	char buffer[FBR_PATH_MAX];
-	struct fbr_path_name filepath;
-	fbr_path_get_full(&file->path, &filepath, buffer, sizeof(buffer));
+	fbr_hash_t hash = fbr_cstore_hash_chunk(fs, file, chunk->id, chunk->offset);
 
 	char path[FBR_PATH_MAX];
-	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
 	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "DELETE %s %zu:%zu %lu %s",
-		filepath.name, chunk->offset, chunk->length, chunk->id, path);
+	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "DELETE %s %zu:%zu %lu",
+		path, chunk->offset, chunk->length, chunk->id);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (entry) {
@@ -586,17 +550,17 @@ _cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		return 1;
 	}
 
-	fbr_hash_t hash = fbr_chash_index(fs, directory);
-
-	struct fbr_path_name dirpath;
-	fbr_directory_name(directory, &dirpath);
+	fbr_hash_t hash = fbr_cstore_hash_index(fs, directory);
 
 	char path[FBR_PATH_MAX];
-	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+	char index_path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	size_t index_path_len = fbr_cstore_path_index(NULL, directory, 0, index_path,
+		sizeof(index_path));
 
 	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE %s %lu %s",
-		dirpath.len ? dirpath.name : "(root)", directory->version, path);
+		index_path, directory->version, path);
 
 	struct fbr_cstore_entry *entry = _cstore_get_loading(cstore, hash,
 		writer->bytes, path);
@@ -633,18 +597,10 @@ _cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	metadata.size = writer->bytes;
 	metadata.type = entry->type;
 	metadata.gzipped = writer->is_gzip;
+	assert(index_path_len < sizeof(metadata.path));
+	memcpy(metadata.path, index_path, index_path_len + 1);
 
-	char version[FBR_ID_STRING_MAX];
-	fbr_id_string(directory->version, version, sizeof(version));
-	char *root_sep = "";
-	if (dirpath.len) {
-		root_sep = "/";
-	}
-	ret = snprintf(metadata.path, sizeof(metadata.path), "%s%s.fiberfsindex.%s",
-		dirpath.name, root_sep, version);
-	assert(ret > 0 && (size_t)ret < sizeof(metadata.path));
-
-	_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	ret = _cstore_metadata_write(path, &metadata);
 	if (ret) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR metadata");
@@ -673,17 +629,14 @@ fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		return 1;
 	}
 
-	fbr_hash_t hash = fbr_chash_index(fs, directory);
-
-	struct fbr_path_name dirpath;
-	fbr_directory_name(directory, &dirpath);
+	fbr_hash_t hash = fbr_cstore_hash_index(fs, directory);
 
 	char path[FBR_PATH_MAX];
-	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
 	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "READ %s %lu %s",
-		dirpath.len ? dirpath.name : "(root)", directory->version, path);
+	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "READ %s %lu",
+		path, directory->version);
 
 	struct fbr_cstore_entry *entry = _cstore_get_ok(cstore, hash);
 	if (!entry) {
@@ -695,7 +648,7 @@ fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_dev(entry->type == FBR_CSTORE_FILE_INDEX);
 
 	struct fbr_cstore_metadata metadata;
-	_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = fbr_cstore_metadata_read(path, &metadata);
 	if (ret) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR metadata");
@@ -711,7 +664,7 @@ fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		return 1;
 	}
 
-	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR open()");
@@ -854,17 +807,14 @@ _cstore_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 		return;
 	}
 
-	fbr_hash_t hash = fbr_chash_index(fs, directory);
-
-	struct fbr_path_name dirpath;
-	fbr_directory_name(directory, &dirpath);
+	fbr_hash_t hash = fbr_cstore_hash_index(fs, directory);
 
 	char path[FBR_PATH_MAX];
-	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
 	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "DELETE %s %lu %s",
-		dirpath.len ? dirpath.name : "(root)", directory->version, path);
+	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "DELETE %s %lu",
+		path, directory->version);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
@@ -922,14 +872,17 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
-	fbr_hash_t hash = fbr_chash_root(fs, &dirpath);
+	fbr_hash_t hash = fbr_cstore_hash_root(fs, &dirpath);
 
 	char path[FBR_PATH_MAX];
-	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+	char root_path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	size_t root_path_len = fbr_cstore_path_root(NULL, &dirpath, 0, root_path,
+		sizeof(root_path));
 
 	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "WRITE %s %lu %lu %s",
-		dirpath.len ? dirpath.name : "(root)", existing, directory->version, path);
+		root_path, existing, directory->version, path);
 
 	struct fbr_cstore_entry *entry = _cstore_get_ok(cstore, hash);
 	if (!entry) {
@@ -956,7 +909,7 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 		pt_assert(pthread_mutex_lock(&entry->state_lock));
 
 		struct fbr_cstore_metadata metadata;
-		_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+		fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 		int ret = fbr_cstore_metadata_read(path, &metadata);
 		if (ret) {
 			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR metadata");
@@ -980,24 +933,18 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 	fbr_ZERO(&metadata);
 	metadata.etag = directory->version;
 	metadata.type = entry->type;
+	assert(root_path_len < sizeof(metadata.path));
+	memcpy(metadata.path, root_path, root_path_len + 1);
 
-	char *root_sep = "";
-	if (dirpath.len) {
-		root_sep = "/";
-	}
-	int ret = snprintf(metadata.path, sizeof(metadata.path), "%s%s.fiberfsroot",
-		dirpath.name, root_sep);
-	assert(ret > 0 && (size_t)ret < sizeof(metadata.path));
-
-	_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
-	ret = _cstore_metadata_write(path, &metadata);
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+	int ret = _cstore_metadata_write(path, &metadata);
 	if (ret) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR write metadata");
 		_cstore_root_finish(cstore, entry, 1);
 		return 1;
 	}
 
-	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
 	char json_buf[128];
 	struct fbr_writer json;
@@ -1077,14 +1024,13 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 		return 0;
 	}
 
-	fbr_hash_t hash = fbr_chash_root(fs, dirpath);
+	fbr_hash_t hash = fbr_cstore_hash_root(fs, dirpath);
 
 	char path[FBR_PATH_MAX];
-	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
 	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "READ %s %s",
-		dirpath->len ? dirpath->name : "(root)", path);
+	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "READ %s", path);
 
 	struct fbr_cstore_entry *entry = _cstore_get_ok(cstore, hash);
 	if (!entry) {
@@ -1117,7 +1063,7 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	}
 
 	struct fbr_cstore_metadata metadata;
-	_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = fbr_cstore_metadata_read(path, &metadata);
 
 	pt_assert(pthread_mutex_unlock(&entry->state_lock));
@@ -1161,14 +1107,14 @@ _cstore_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
-	fbr_hash_t hash = fbr_chash_root(fs, &dirpath);
+	fbr_hash_t hash = fbr_cstore_hash_root(fs, &dirpath);
 
 	char path[FBR_PATH_MAX];
-	_cstore_gen_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
 	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "DELETE %s %lu %s",
-		dirpath.len ? dirpath.name : "(root)", directory->version, path);
+	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "DELETE %s %lu",
+		path, directory->version);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
@@ -1182,7 +1128,7 @@ _cstore_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	pt_assert(pthread_mutex_lock(&entry->state_lock));
 
 	struct fbr_cstore_metadata metadata;
-	_cstore_gen_path(cstore, hash, 1, path, sizeof(path));
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = fbr_cstore_metadata_read(path, &metadata);
 
 	pt_assert(pthread_mutex_unlock(&entry->state_lock));
