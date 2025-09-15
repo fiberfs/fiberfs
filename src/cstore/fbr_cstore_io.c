@@ -32,7 +32,7 @@ _cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata)
 	assert_dev(path);
 	assert_dev(metadata);
 
-	int ret = fbr_mkdirs(path);
+	int ret = fbr_sys_mkdirs(path);
 	if (ret) {
 		return 1;
 	}
@@ -207,7 +207,7 @@ _cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, co
 	}
 
 	// TODO skip re-making the root
-	int ret = fbr_mkdirs(path);
+	int ret = fbr_sys_mkdirs(path);
 	if (ret) {
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
@@ -423,7 +423,7 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	if (fd < 0) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR open()");
 		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
-		fbr_cstore_release(cstore, entry);
+		fbr_cstore_remove(cstore, entry);
 		return;
 	}
 
@@ -433,7 +433,7 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	if (ret || (size_t)st.st_size != chunk->length) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR size");
 		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
-		fbr_cstore_release(cstore, entry);
+		fbr_cstore_remove(cstore, entry);
 		assert_zero(close(fd));
 		return;
 	}
@@ -1047,7 +1047,7 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	if (fd < 0) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR open()");
 		pt_assert(pthread_mutex_unlock(&entry->state_lock));
-		fbr_cstore_release(cstore, entry);
+		fbr_cstore_remove(cstore, entry);
 		return 0;
 	}
 

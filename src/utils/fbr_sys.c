@@ -133,7 +133,7 @@ fbr_sys_read(int fd, void *buf, size_t buf_len)
 }
 
 int
-fbr_mkdirs(const char *path)
+fbr_sys_mkdirs(const char *path)
 {
 	assert(path);
 

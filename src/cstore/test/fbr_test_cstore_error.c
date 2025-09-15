@@ -100,11 +100,39 @@ fbr_cmd_cstore_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	ret = unlink(path);
 	assert_zero(ret);
 
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+	fbr_test_logs("*** file_1 meta: '%s'", path);
+	assert(fbr_sys_exists(path));
+
 	fio = fbr_fio_alloc(fs, file_1, 1);
 	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, 0, file_1->size);
 	assert_zero(vector);
 	fbr_fio_release(fs, fio);
 
+	assert_zero(fbr_sys_exists(path));
+	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+	assert_zero(entry);
+
+	fbr_test_logs("*** Write file_1 again");
+
+	fio = fbr_fio_alloc(fs, file_1, 0);
+	fbr_fio_ok(fio);
+	fbr_wbuffer_write(fs, fio, 0, "write1 again (2)", 16);
+	struct fbr_wbuffer *wbuffer = fio->wbuffers;
+	fbr_wbuffer_ok(wbuffer);
+	assert_zero(wbuffer->next);
+	hash = fbr_cstore_hash_chunk(fs, file_1, wbuffer->id, wbuffer->offset);
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	fbr_test_logs("*** file_1 new chunk: '%s'", path);
+	ret = fbr_sys_mkdirs(path);
+	assert_zero(ret);
+	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	assert(fd > 0);
+	assert_zero(close(fd));
+	ret = fbr_wbuffer_flush_fio(fs, fio);
+	assert(ret == EIO);
+	fbr_wbuffers_reset(fs, fio);
+	fbr_fio_release(fs, fio);
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Cleanup");
