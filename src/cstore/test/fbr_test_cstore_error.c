@@ -4,9 +4,12 @@
  *
  */
 
+#include <unistd.h>
+
 #include "fiberfs.h"
 #include "core/store/fbr_store.h"
 #include "cstore/fbr_cstore_api.h"
+#include "utils/fbr_sys.h"
 
 #include "test/fbr_test.h"
 #include "fbr_test_cstore_cmds.h"
@@ -76,11 +79,32 @@ fbr_cmd_cstore_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(ret);
 	fbr_fio_release(fs, fio);
 
+	fbr_test_logs("*** Read chunk error on file_1");
+
 	directory = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
 	assert(directory->generation == 2);
 	assert(fbr_directory_find_file(directory, "file_1", 6) == file_1);
+	struct fbr_chunk *chunk = file_1->body.chunks;
+	assert_zero(chunk->next);
+	assert(chunk->state == FBR_CHUNK_EMPTY);
+
+	char path[FBR_PATH_MAX];
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	fbr_cstore_ok(cstore);
+	fbr_hash_t hash = fbr_cstore_hash_chunk(fs, file_1, chunk->id, chunk->offset);
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	fbr_test_logs("*** file_1 chunk: '%s'", path);
+	assert(fbr_sys_exists(path));
+	ret = unlink(path);
+	assert_zero(ret);
+
+	fio = fbr_fio_alloc(fs, file_1, 1);
+	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, 0, file_1->size);
+	assert_zero(vector);
+	fbr_fio_release(fs, fio);
+
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Cleanup");
