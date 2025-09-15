@@ -33,7 +33,3 @@ FBR_TEST_CMD(merge_2fs_test)
 FBR_TEST_CMD(append_2fs_test)
 FBR_TEST_CMD(append_thread_test)
 FBR_TEST_CMD(append_thread_error_test)
-
-FBR_TEST_CMD(dstore_debug)
-FBR_TEST_VAR(dstore_stat_roots)
-FBR_TEST_VAR(dstore_stat_indexes)
