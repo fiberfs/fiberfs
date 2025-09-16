@@ -21,6 +21,7 @@ FBR_TEST_CMD(cstore_init)
 FBR_TEST_CMD(cstore_test)
 FBR_TEST_CMD(cstore_test_lru)
 FBR_TEST_CMD(cstore_state_test)
+FBR_TEST_CMD(cstore_wait_test)
 
 FBR_TEST_CMD(cstore_async_test)
 

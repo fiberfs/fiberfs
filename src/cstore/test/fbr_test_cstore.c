@@ -495,3 +495,102 @@ fbr_cmd_cstore_state_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_state_test done");
 }
+
+#define _CSTORE_WAIT_THREADS	12
+#define _CSTORE_WAIT_COUNT_MAX  500
+size_t _CSTORE_WAIT_THREAD_COUNT;
+size_t _CSTORE_WAIT_FIRST_LOAD;
+size_t _CSTORE_WAIT_COUNT;
+size_t _CSTORE_WAIT_METER;
+
+static void *
+_cstore_wait_thread(void *arg)
+{
+	assert_zero(arg);
+	fbr_cstore_ok(_CSTORE);
+
+	size_t id = fbr_atomic_add(&_CSTORE_WAIT_THREAD_COUNT, 1);
+	while (_CSTORE_WAIT_THREAD_COUNT < _CSTORE_WAIT_THREADS) {
+		fbr_sleep_ms(0.01);
+	}
+	assert(_CSTORE_WAIT_THREAD_COUNT == _CSTORE_WAIT_THREADS);
+
+	fbr_test_logs(" ** Wait thread %zu running", id);
+
+	for (size_t i = 0; i < _CSTORE_WAIT_COUNT_MAX; i++) {
+		struct fbr_cstore_entry *entry = fbr_cstore_get(_CSTORE, 1);
+		if (!entry) {
+			entry = fbr_cstore_insert(_CSTORE, 1, 100);
+			if (!entry) {
+				entry = fbr_cstore_get(_CSTORE, 1);
+			}
+		}
+		fbr_cstore_entry_ok(entry);
+
+		int ret = fbr_cstore_set_loading(entry);
+		if (!ret) {
+			fbr_test_logs("Initial loading hit!");
+			fbr_atomic_add(&_CSTORE_WAIT_FIRST_LOAD, 1);
+			fbr_cstore_set_ok(entry);
+			fbr_cstore_release(_CSTORE, entry);
+			continue;
+		}
+
+		fbr_cstore_reset_loading(entry);
+		assert(entry->state == FBR_CSTORE_LOADING);
+
+		assert_zero(_CSTORE_WAIT_METER);
+		fbr_atomic_add(&_CSTORE_WAIT_METER, 1);
+		fbr_sleep_ms(0.001);
+		assert(_CSTORE_WAIT_METER == 1);
+
+		_CSTORE_WAIT_COUNT++;
+		_CSTORE_WAIT_METER--;
+
+		fbr_cstore_set_ok(entry);
+		fbr_cstore_release(_CSTORE, entry);
+		fbr_sleep_ms(0.01);
+	}
+
+	return NULL;
+}
+
+void
+fbr_cmd_cstore_wait_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+	assert_zero(_CSTORE_WAIT_THREAD_COUNT);
+	assert_zero(_CSTORE_WAIT_FIRST_LOAD);
+	assert_zero(_CSTORE_WAIT_COUNT);
+	assert_zero(_CSTORE_WAIT_METER);
+
+	fbr_test_random_seed();
+	fbr_test_cstore_init(ctx);
+
+	fbr_test_logs("*** Starting threads");
+
+	pthread_t threads[_CSTORE_WAIT_THREADS];
+
+	for (size_t i = 0; i < fbr_array_len(threads); i++) {
+		pt_assert(pthread_create(&threads[i], NULL, _cstore_wait_thread, NULL));
+	}
+
+	for (size_t i = 0; i < fbr_array_len(threads); i++) {
+		pt_assert(pthread_join(threads[i], NULL));
+	}
+	assert(_CSTORE_WAIT_THREAD_COUNT == _CSTORE_WAIT_THREADS);
+
+	fbr_test_logs("*** Threads done");
+
+	fbr_test_logs("_CSTORE_WAIT_THREAD_COUNT: %zu", _CSTORE_WAIT_THREAD_COUNT);
+	fbr_test_logs("_CSTORE_WAIT_FIRST_LOAD: %zu", _CSTORE_WAIT_FIRST_LOAD);
+	fbr_test_logs("_CSTORE_WAIT_COUNT: %zu", _CSTORE_WAIT_COUNT);
+	fbr_test_logs("_CSTORE_WAIT_METER: %zu", _CSTORE_WAIT_METER);
+
+	assert(_CSTORE_WAIT_FIRST_LOAD == 1);
+	assert(_CSTORE_WAIT_COUNT);
+	assert_zero(_CSTORE_WAIT_METER);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_wait_test done");
+}
