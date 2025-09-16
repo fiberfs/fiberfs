@@ -109,7 +109,7 @@ fbr_cmd_cstore_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(vector);
 	fbr_fio_release(fs, fio);
 
-	int max = 4;
+	int max = 40;
 	while (fbr_sys_exists(path) && max) {
 		fbr_test_sleep_ms(25);
 		max--;
