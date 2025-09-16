@@ -27,7 +27,8 @@ enum fbr_cstore_alloc_state {
 };
 
 enum fbr_cstore_state {
-	FBR_CSTORE_NONE = 0,
+	FBR_CSTORE_NULL = 0,
+	FBR_CSTORE_NONE,
 	FBR_CSTORE_LOADING,
 	FBR_CSTORE_OK
 };

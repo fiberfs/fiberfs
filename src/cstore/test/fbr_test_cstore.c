@@ -261,6 +261,7 @@ _cstore_thread(void *arg)
 			entry = fbr_cstore_insert(_CSTORE, hash, bytes);
 			if (entry) {
 				fbr_cstore_entry_ok(entry);
+				assert(entry->state == FBR_CSTORE_LOADING);
 				fbr_atomic_add(&_CSTORE_BYTES_COUNTER, bytes);
 				fbr_atomic_add(&_CSTORE_ENTRY_COUNTER, 1);
 				fbr_cstore_set_ok(entry);

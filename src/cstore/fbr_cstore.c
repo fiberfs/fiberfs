@@ -31,8 +31,8 @@ _cstore_add_slab(struct fbr_cstore_head *head)
 
 		entry->magic = FBR_CSTORE_ENTRY_MAGIC;
 		entry->alloc = FBR_CSTORE_ENTRY_FREE;
+		entry->state = FBR_CSTORE_NONE;
 
-		assert_dev(entry->state == FBR_CSTORE_NONE);
 		pt_assert(pthread_mutex_init(&entry->state_lock, NULL));
 		pt_assert(pthread_cond_init(&entry->state_cond, NULL));
 
@@ -125,6 +125,17 @@ _cstore_entry_cmp(const struct fbr_cstore_entry *e1, const struct fbr_cstore_ent
 	return 0;
 }
 
+struct fbr_cstore_head *
+_cstore_get_head(struct fbr_cstore *cstore, fbr_hash_t hash)
+{
+	assert_dev(cstore);
+
+	struct fbr_cstore_head *head = &cstore->heads[hash % fbr_array_len(cstore->heads)];
+	fbr_cstore_head_ok(head);
+
+	return head;
+}
+
 static struct fbr_cstore_entry *
 _cstore_get_entry(struct fbr_cstore *cstore, struct fbr_cstore_head *head, fbr_hash_t hash)
 {
@@ -151,55 +162,6 @@ _cstore_get_entry(struct fbr_cstore *cstore, struct fbr_cstore_head *head, fbr_h
 	assert_zero(RB_INSERT(fbr_cstore_tree, &head->tree, entry));
 
 	fbr_atomic_add(&cstore->entries, 1);
-
-	return entry;
-}
-
-struct fbr_cstore_head *
-_cstore_get_head(struct fbr_cstore *cstore, fbr_hash_t hash)
-{
-	assert_dev(cstore);
-
-	struct fbr_cstore_head *head = &cstore->heads[hash % fbr_array_len(cstore->heads)];
-	fbr_cstore_head_ok(head);
-
-	return head;
-}
-
-struct fbr_cstore_entry *
-fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash)
-{
-	fbr_cstore_ok(cstore);
-
-	struct fbr_cstore_head *head = _cstore_get_head(cstore, hash);
-	pt_assert(pthread_mutex_lock(&head->lock));
-	fbr_cstore_head_ok(head);
-
-	struct fbr_cstore_entry find;
-	find.magic = FBR_CSTORE_ENTRY_MAGIC;
-	find.hash = hash;
-
-	struct fbr_cstore_entry *entry = RB_FIND(fbr_cstore_tree, &head->tree, &find);
-	if (!entry) {
-		pt_assert(pthread_mutex_unlock(&head->lock));
-		return NULL;
-	}
-
-	fbr_cstore_entry_ok(entry);
-	assert(entry->alloc == FBR_CSTORE_ENTRY_USED);
-	assert(entry->refcount);
-
-	entry->refcount++;
-	assert(entry->refcount);
-
-	if (entry->in_lru) {
-		if (TAILQ_FIRST(&head->lru_list) != entry) {
-			TAILQ_REMOVE(&head->lru_list, entry, list_entry);
-			TAILQ_INSERT_HEAD(&head->lru_list, entry, list_entry);
-		}
-	}
-
-	pt_assert(pthread_mutex_unlock(&head->lock));
 
 	return entry;
 }
@@ -399,6 +361,44 @@ fbr_cstore_wait_loading(struct fbr_cstore_entry *entry)
 	return state;
 }
 
+struct fbr_cstore_entry *
+fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash)
+{
+	fbr_cstore_ok(cstore);
+
+	struct fbr_cstore_head *head = _cstore_get_head(cstore, hash);
+	pt_assert(pthread_mutex_lock(&head->lock));
+	fbr_cstore_head_ok(head);
+
+	struct fbr_cstore_entry find;
+	find.magic = FBR_CSTORE_ENTRY_MAGIC;
+	find.hash = hash;
+
+	struct fbr_cstore_entry *entry = RB_FIND(fbr_cstore_tree, &head->tree, &find);
+	if (!entry) {
+		pt_assert(pthread_mutex_unlock(&head->lock));
+		return NULL;
+	}
+
+	fbr_cstore_entry_ok(entry);
+	assert(entry->alloc == FBR_CSTORE_ENTRY_USED);
+	assert(entry->refcount);
+
+	entry->refcount++;
+	assert(entry->refcount);
+
+	if (entry->in_lru) {
+		if (TAILQ_FIRST(&head->lru_list) != entry) {
+			TAILQ_REMOVE(&head->lru_list, entry, list_entry);
+			TAILQ_INSERT_HEAD(&head->lru_list, entry, list_entry);
+		}
+	}
+
+	pt_assert(pthread_mutex_unlock(&head->lock));
+
+	return entry;
+}
+
 void
 fbr_cstore_reset_loading(struct fbr_cstore_entry *entry)
 {
@@ -408,6 +408,8 @@ fbr_cstore_reset_loading(struct fbr_cstore_entry *entry)
 
 	while (1) {
 		switch (entry->state) {
+		case FBR_CSTORE_NULL:
+			fbr_ABORT("bad state");
 		case FBR_CSTORE_NONE:
 		case FBR_CSTORE_OK:
 			entry->state = FBR_CSTORE_LOADING;
