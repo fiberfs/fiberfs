@@ -507,8 +507,7 @@ _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_ino
 		if (*attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
 			fbr_rlog(FBR_LOG_ERROR, "flush_attempts limit hit on alloc");
 			return NULL;
-		}
-		if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
+		} else if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
 			fbr_rlog(FBR_LOG_ERROR, "flush_timeout_sec limit hit on alloc");
 			return NULL;
 		}
@@ -713,8 +712,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		if (attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
 			fbr_rlog(FBR_LOG_ERROR, "flush_attempts limit hit on write");
 			break;
-		}
-		if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
+		} else if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
 			fbr_rlog(FBR_LOG_ERROR, "flush_timeout_sec limit hit on write");
 			break;
 		}

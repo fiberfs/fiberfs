@@ -237,6 +237,7 @@ _cstore_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash)
 	}
 
 	fbr_cstore_entry_ok(entry);
+	assert(entry->type != FBR_CSTORE_FILE_ROOT);
 
 	enum fbr_cstore_state state = fbr_cstore_wait_loading(entry);
 	if (state == FBR_CSTORE_NONE) {
@@ -496,10 +497,14 @@ fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 		path, chunk->offset, chunk->length, chunk->id);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
-	if (entry) {
-		assert_dev(entry->type == FBR_CSTORE_FILE_CHUNK);
-		fbr_cstore_remove(cstore, entry);
+	if (!entry) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR no entry");
+		return;
 	}
+
+	fbr_cstore_entry_ok(entry);
+	assert_dev(entry->type == FBR_CSTORE_FILE_CHUNK);
+	fbr_cstore_remove(cstore, entry);
 
 	fbr_fs_stat_sub(&fs->stats.store_chunks);
 	fbr_fs_stat_sub(&cstore->chunks);
@@ -561,8 +566,7 @@ _cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE %s %lu %s",
 		index_path, directory->version, path);
 
-	struct fbr_cstore_entry *entry = _cstore_get_loading(cstore, hash,
-		writer->bytes, path);
+	struct fbr_cstore_entry *entry = _cstore_get_loading(cstore, hash, writer->bytes, path);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR loading state");
 		return 1;

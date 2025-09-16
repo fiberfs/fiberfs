@@ -528,8 +528,8 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
-	// TODO retry counter here
-
+	unsigned int attempts = 0;
+	double time_start = fbr_get_time();
 	int ret;
 
 	do {
@@ -546,10 +546,22 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		directory->version = version;
 
-		ret = 1;
+		ret = EIO;
 
 		if (fs->store->index_read_f) {
 			ret = fs->store->index_read_f(fs, directory);
+			if (!ret) {
+				break;
+			}
+		}
+
+		attempts++;
+		if (attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
+			fbr_rlog(FBR_LOG_ERROR, "flush_attempts limit hit on read");
+			ret = EIO;
+		} else if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
+			fbr_rlog(FBR_LOG_ERROR, "flush_timeout_sec limit hit on read");
+			ret = EIO;
 		}
 	} while (ret == EAGAIN);
 
