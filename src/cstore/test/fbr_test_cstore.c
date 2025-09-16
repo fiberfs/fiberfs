@@ -263,6 +263,7 @@ _cstore_thread(void *arg)
 				fbr_cstore_entry_ok(entry);
 				fbr_atomic_add(&_CSTORE_BYTES_COUNTER, bytes);
 				fbr_atomic_add(&_CSTORE_ENTRY_COUNTER, 1);
+				fbr_cstore_set_ok(entry);
 				fbr_cstore_release(_CSTORE, entry);
 			} else {
 				entry = fbr_cstore_get(_CSTORE, hash);
@@ -408,12 +409,15 @@ _cstore_state_thread(void *arg)
 	while (_CSTORE_ST_COMPLETED < _CSTORE_ST_HASHES) {
 		size_t hash = random() % _CSTORE_ST_HASHES;
 
+		int inserted = 0;
+
 		struct fbr_cstore_entry *entry = fbr_cstore_get(_CSTORE, hash);
 		if (!entry) {
 			entry = fbr_cstore_insert(_CSTORE, hash, 100);
 			if (!entry) {
 				continue;
 			}
+			inserted = 1;
 		}
 		fbr_cstore_entry_ok(entry);
 
@@ -428,7 +432,9 @@ _cstore_state_thread(void *arg)
 			fbr_test_sleep_ms(10);
 		} else if (state == 4) {
 			fbr_test_sleep_ms(random() % 50);
-			fbr_cstore_set_loading(entry);
+			if (!inserted) {
+				fbr_cstore_set_loading(entry);
+			}
 			fbr_ASSERT(entry->state == FBR_CSTORE_LOADING,
 				"found final state %d", entry->state);
 			fbr_cstore_set_ok(entry);
@@ -436,7 +442,9 @@ _cstore_state_thread(void *arg)
 		} else {
 			assert(state > 0 && state < 4);
 
-			fbr_cstore_set_loading(entry);
+			if (!inserted) {
+				fbr_cstore_set_loading(entry);
+			}
 			fbr_ASSERT(entry->state >= FBR_CSTORE_LOADING,
 				"found state %d", entry->state);
 
@@ -523,17 +531,22 @@ _cstore_wait_thread(void *arg)
 			entry = fbr_cstore_insert(_CSTORE, 1, 100);
 			if (!entry) {
 				entry = fbr_cstore_get(_CSTORE, 1);
-			}
-		}
-		fbr_cstore_entry_ok(entry);
+				fbr_cstore_entry_ok(entry);
+			} else {
+				fbr_cstore_entry_ok(entry);
+				assert(entry->state == FBR_CSTORE_LOADING);
 
-		int ret = fbr_cstore_set_loading(entry);
-		if (!ret) {
-			fbr_test_logs("Initial loading hit!");
-			fbr_atomic_add(&_CSTORE_WAIT_FIRST_LOAD, 1);
-			fbr_cstore_set_ok(entry);
-			fbr_cstore_release(_CSTORE, entry);
-			continue;
+				fbr_test_logs("Initial loading hit!");
+				fbr_atomic_add(&_CSTORE_WAIT_FIRST_LOAD, 1);
+
+				fbr_cstore_set_ok(entry);
+				fbr_cstore_release(_CSTORE, entry);
+
+				continue;
+			}
+		} else {
+			int ret = fbr_cstore_set_loading(entry);
+			assert(ret);
 		}
 
 		fbr_cstore_reset_loading(entry);

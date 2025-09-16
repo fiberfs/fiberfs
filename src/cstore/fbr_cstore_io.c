@@ -197,16 +197,20 @@ _cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, co
 			fbr_cstore_release(cstore, entry);
 			return NULL;
 		}
+
+		int ret = fbr_cstore_set_loading(entry);
+		if (ret) {
+			fbr_cstore_release(cstore, entry);
+			return NULL;
+		}
 	}
 
-	int ret = fbr_cstore_set_loading(entry);
-	if (ret) {
-		fbr_cstore_release(cstore, entry);
-		return NULL;
-	}
+	fbr_cstore_entry_ok(entry);
+	assert(entry->state == FBR_CSTORE_LOADING);
+	assert(entry->type == FBR_CSTORE_FILE_NONE);
 
 	// TODO skip re-making the root
-	ret = fbr_sys_mkdirs(path);
+	int ret = fbr_sys_mkdirs(path);
 	if (ret) {
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
@@ -870,10 +874,9 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 
 		entry->type = FBR_CSTORE_FILE_ROOT;
 	} else {
-		assert_dev(entry->type == FBR_CSTORE_FILE_ROOT);
-
 		fbr_cstore_reset_loading(entry);
 		fbr_cstore_entry_ok(entry);
+		assert_dev(entry->type == FBR_CSTORE_FILE_ROOT);
 		assert_dev(entry->state == FBR_CSTORE_LOADING);
 
 		struct fbr_cstore_metadata metadata;

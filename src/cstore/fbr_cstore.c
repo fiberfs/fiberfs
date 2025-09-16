@@ -346,6 +346,8 @@ fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes)
 	entry->bytes = bytes;
 	fbr_atomic_add(&cstore->bytes, bytes);
 
+	entry->state = FBR_CSTORE_LOADING;
+
 	pt_assert(pthread_mutex_unlock(&head->lock));
 
 	return entry;
@@ -366,6 +368,7 @@ fbr_cstore_set_loading(struct fbr_cstore_entry *entry)
 			return 0;
 		case FBR_CSTORE_LOADING:
 			pt_assert(pthread_cond_wait(&entry->state_cond, &entry->state_lock));
+			fbr_cstore_entry_ok(entry);
 			break;
 		default:
 			fbr_ABORT("Invalid state: %d", entry->state);
@@ -386,6 +389,7 @@ fbr_cstore_wait_loading(struct fbr_cstore_entry *entry)
 
 	while (entry->state == FBR_CSTORE_LOADING) {
 		pt_assert(pthread_cond_wait(&entry->state_cond, &entry->state_lock));
+		fbr_cstore_entry_ok(entry);
 	}
 
 	enum fbr_cstore_state state = entry->state;
@@ -411,6 +415,7 @@ fbr_cstore_reset_loading(struct fbr_cstore_entry *entry)
 			return;
 		case FBR_CSTORE_LOADING:
 			pt_assert(pthread_cond_wait(&entry->state_cond, &entry->state_lock));
+			fbr_cstore_entry_ok(entry);
 			break;
 		}
 	}
