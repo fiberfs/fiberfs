@@ -351,7 +351,7 @@ fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes)
 	return entry;
 }
 
-void
+int
 fbr_cstore_set_loading(struct fbr_cstore_entry *entry)
 {
 	fbr_cstore_entry_ok(entry);
@@ -363,7 +363,7 @@ fbr_cstore_set_loading(struct fbr_cstore_entry *entry)
 		case FBR_CSTORE_NONE:
 			entry->state = FBR_CSTORE_LOADING;
 			pt_assert(pthread_mutex_unlock(&entry->state_lock));
-			return;
+			return 0;
 		case FBR_CSTORE_LOADING:
 			pt_assert(pthread_cond_wait(&entry->state_cond, &entry->state_lock));
 			break;
@@ -373,6 +373,8 @@ fbr_cstore_set_loading(struct fbr_cstore_entry *entry)
 	}
 
 	pt_assert(pthread_mutex_unlock(&entry->state_lock));
+
+	return 1;
 }
 
 enum fbr_cstore_state
@@ -391,6 +393,29 @@ fbr_cstore_wait_loading(struct fbr_cstore_entry *entry)
 	pt_assert(pthread_mutex_unlock(&entry->state_lock));
 
 	return state;
+}
+
+void
+fbr_cstore_reset_loading(struct fbr_cstore_entry *entry)
+{
+	fbr_cstore_entry_ok(entry);
+
+	pt_assert(pthread_mutex_lock(&entry->state_lock));
+
+	while (1) {
+		switch (entry->state) {
+		case FBR_CSTORE_NONE:
+		case FBR_CSTORE_OK:
+			entry->state = FBR_CSTORE_LOADING;
+			pt_assert(pthread_mutex_unlock(&entry->state_lock));
+			return;
+		case FBR_CSTORE_LOADING:
+			pt_assert(pthread_cond_wait(&entry->state_cond, &entry->state_lock));
+			break;
+		}
+	}
+
+	fbr_ABORT("bad logic");
 }
 
 static void
