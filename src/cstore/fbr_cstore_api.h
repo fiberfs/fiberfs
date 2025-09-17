@@ -40,11 +40,14 @@ enum fbr_cstore_entry_type {
 	FBR_CSTORE_FILE_ROOT
 };
 
+struct fbr_cstore_loader {
+	int					loaded;
+};
+
 struct fbr_cstore_entry {
 	unsigned				magic;
 #define FBR_CSTORE_ENTRY_MAGIC			0xA59C372B
 
-	enum fbr_cstore_entry_type		type;
 	enum fbr_cstore_alloc_state		alloc;
 	enum fbr_cstore_state			state;
 	pthread_mutex_t				state_lock;
@@ -96,6 +99,7 @@ struct fbr_cstore {
 
 	fbr_cstore_delete_f			delete_f;
 	struct fbr_cstore_async			async;
+	struct fbr_cstore_loader		loader;
 
 	struct fbr_log				*log;
 	char					root[FBR_PATH_MAX];

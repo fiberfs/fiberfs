@@ -189,7 +189,6 @@ _cstore_entry_free(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 		cstore->delete_f(cstore, entry);
 	}
 
-	entry->type = FBR_CSTORE_FILE_NONE;
 	entry->alloc = FBR_CSTORE_ENTRY_FREE;
 	entry->state = FBR_CSTORE_NONE;
 	entry->hash = 0;
@@ -297,7 +296,6 @@ fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes)
 	}
 
 	entry = _cstore_get_entry(cstore, head, hash);
-	assert_dev(entry->type == FBR_CSTORE_FILE_NONE);
 	assert_dev(entry->alloc == FBR_CSTORE_ENTRY_USED);
 	assert_dev(entry->state == FBR_CSTORE_NONE);
 	assert_dev(entry->in_lru);
@@ -377,6 +375,9 @@ fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash)
 
 	struct fbr_cstore_entry *entry = RB_FIND(fbr_cstore_tree, &head->tree, &find);
 	if (!entry) {
+		if (!cstore->loader.loaded) {
+			// TODO call loader
+		}
 		pt_assert(pthread_mutex_unlock(&head->lock));
 		return NULL;
 	}
