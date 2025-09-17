@@ -410,7 +410,7 @@ _cstore_state_thread(void *arg)
 	while (_CSTORE_ST_COMPLETED < _CSTORE_ST_HASHES) {
 		size_t hash = random() % _CSTORE_ST_HASHES;
 
-		int inserted = 0;
+		int loading = 0;
 
 		struct fbr_cstore_entry *entry = fbr_cstore_get(_CSTORE, hash);
 		if (!entry) {
@@ -418,10 +418,10 @@ _cstore_state_thread(void *arg)
 			if (!entry) {
 				continue;
 			}
-			inserted = 1;
+			loading = 1;
 		}
 		fbr_cstore_entry_ok(entry);
-		if (inserted) {
+		if (loading) {
 			assert(entry->state == FBR_CSTORE_LOADING);
 		}
 
@@ -436,22 +436,23 @@ _cstore_state_thread(void *arg)
 			fbr_test_sleep_ms(10);
 		} else if (state == 4) {
 			fbr_test_sleep_ms(random() % 50);
-			if (!inserted) {
-				fbr_cstore_set_loading(entry);
+			if (!loading) {
+				loading = fbr_cstore_set_loading(entry);
 			}
+			assert(loading);
 			fbr_ASSERT(entry->state == FBR_CSTORE_LOADING,
 				"found final state %d", entry->state);
 			fbr_cstore_set_ok(entry);
 			fbr_atomic_add(&_CSTORE_ST_COMPLETED, 1);
 		} else {
 			assert(state > 0 && state < 4);
-			if (!inserted) {
-				fbr_cstore_set_loading(entry);
+			if (!loading) {
+				loading = fbr_cstore_set_loading(entry);
 			}
 			fbr_ASSERT(entry->state >= FBR_CSTORE_LOADING,
 				"found state %d", entry->state);
 
-			if (entry->state == FBR_CSTORE_LOADING) {
+			if (loading) {
 				fbr_test_sleep_ms(random() % 25);
 				fbr_cstore_set_error(entry);
 			}
@@ -548,8 +549,8 @@ _cstore_wait_thread(void *arg)
 				continue;
 			}
 		} else {
-			int ret = fbr_cstore_set_loading(entry);
-			assert(ret);
+			int loading = fbr_cstore_set_loading(entry);
+			assert_zero(loading);
 		}
 
 		fbr_cstore_reset_loading(entry);

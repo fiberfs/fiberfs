@@ -199,8 +199,8 @@ _cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, co
 			return NULL;
 		}
 
-		int ret = fbr_cstore_set_loading(entry);
-		if (ret) {
+		int loading = fbr_cstore_set_loading(entry);
+		if (!loading) {
 			fbr_cstore_release(cstore, entry);
 			return NULL;
 		}

@@ -340,7 +340,7 @@ fbr_cstore_set_loading(struct fbr_cstore_entry *entry)
 		case FBR_CSTORE_NONE:
 			entry->state = FBR_CSTORE_LOADING;
 			pt_assert(pthread_mutex_unlock(&entry->state_lock));
-			return 0;
+			return 1;
 		case FBR_CSTORE_LOADING:
 			pt_assert(pthread_cond_wait(&entry->state_cond, &entry->state_lock));
 			fbr_cstore_entry_ok(entry);
@@ -352,7 +352,7 @@ fbr_cstore_set_loading(struct fbr_cstore_entry *entry)
 
 	pt_assert(pthread_mutex_unlock(&entry->state_lock));
 
-	return 1;
+	return 0;
 }
 
 enum fbr_cstore_state
