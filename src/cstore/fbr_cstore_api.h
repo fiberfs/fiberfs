@@ -40,8 +40,14 @@ enum fbr_cstore_entry_type {
 	FBR_CSTORE_FILE_ROOT
 };
 
+enum fbr_cstore_loader_state {
+	FBR_CSTORE_LOADER_NONE = 0,
+	FBR_CSTORE_LOADER_READING,
+	FBR_CSTORE_LOADER_DONE
+};
+
 struct fbr_cstore_loader {
-	int					loaded;
+	enum fbr_cstore_loader_state		state;
 };
 
 struct fbr_cstore_entry {
@@ -141,7 +147,6 @@ void fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry
 void fbr_cstore_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_loader_init(struct fbr_cstore *cstore);
-size_t fbr_cstore_exists(struct fbr_cstore *cstore, fbr_hash_t hash);
 void fbr_cstore_loader_free(struct fbr_cstore *cstore);
 
 size_t fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *output,

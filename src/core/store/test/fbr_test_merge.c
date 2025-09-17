@@ -14,16 +14,6 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
-static const struct fbr_store_callbacks _MERGE_TEST_CALLBACKS = {
-	.chunk_read_f = fbr_cstore_async_chunk_read,
-	.chunk_delete_f = fbr_cstore_chunk_delete,
-	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,
-	.directory_flush_f = fbr_directory_flush,
-	.index_write_f = fbr_cstore_index_root_write,
-	.index_read_f = fbr_cstore_index_read,
-	.root_read_f = fbr_cstore_root_read
-};
-
 void
 fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -35,11 +25,11 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_1);
-	fbr_fs_set_store(fs_1, &_MERGE_TEST_CALLBACKS);
+	fbr_fs_set_store(fs_1, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	struct fbr_fs *fs_2 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_2);
-	fbr_fs_set_store(fs_2, &_MERGE_TEST_CALLBACKS);
+	fbr_fs_set_store(fs_2, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	fbr_test_logs("*** Allocating dir_fs1 and file.merge2");
 

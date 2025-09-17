@@ -61,6 +61,8 @@ struct fbr_cstore_async {
 	TAILQ_HEAD(, fbr_cstore_op)		free_list;
 };
 
+extern const struct fbr_store_callbacks *FBR_CSTORE_DEFAULT_CALLBACKS;
+
 struct fbr_cstore;
 struct fbr_cstore_entry;
 struct fbr_cstore_metadata;

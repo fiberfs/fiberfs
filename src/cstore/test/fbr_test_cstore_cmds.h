@@ -24,8 +24,8 @@ FBR_TEST_CMD(cstore_state_test)
 FBR_TEST_CMD(cstore_wait_test)
 
 FBR_TEST_CMD(cstore_async_test)
-
-FBR_TEST_CMD(cstore_error)
+FBR_TEST_CMD(cstore_error_test)
+FBR_TEST_CMD(cstore_loader_test)
 
 FBR_TEST_CMD(cstore_debug)
 FBR_TEST_VAR(cstore_stat_indexes)

@@ -126,6 +126,27 @@ _cstore_entry_cmp(const struct fbr_cstore_entry *e1, const struct fbr_cstore_ent
 	return 0;
 }
 
+static size_t
+_cstore_exists(struct fbr_cstore *cstore, fbr_hash_t hash)
+{
+	fbr_cstore_ok(cstore);
+
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+
+	struct stat st;
+	int ret = lstat(path, &st);
+	if (ret) {
+		return 0;
+	}
+
+	if (!S_ISREG(st.st_mode)) {
+		return 0;
+	}
+
+	return st.st_size;
+}
+
 struct fbr_cstore_head *
 _cstore_get_head(struct fbr_cstore *cstore, fbr_hash_t hash)
 {
@@ -389,8 +410,8 @@ fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash)
 
 	struct fbr_cstore_entry *entry = RB_FIND(fbr_cstore_tree, &head->tree, &find);
 	if (!entry) {
-		if (!cstore->loader.loaded) {
-			size_t bytes = fbr_cstore_exists(cstore, hash);
+		if (cstore->loader.state == FBR_CSTORE_LOADER_READING) {
+			size_t bytes = _cstore_exists(cstore, hash);
 			if (bytes) {
 				entry = _cstore_insert_entry(cstore, head, hash, bytes);
 				if (entry) {

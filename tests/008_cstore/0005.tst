@@ -1,3 +1,3 @@
 fiber_test "cstore error"
 
-cstore_error
+cstore_error_test

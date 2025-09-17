@@ -16,19 +16,8 @@
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
-static const struct fbr_store_callbacks _CSTORE_ERR_CALLBACKS = {
-	.chunk_read_f = fbr_cstore_async_chunk_read,
-	.chunk_delete_f = fbr_cstore_chunk_delete,
-	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,
-	.directory_flush_f = fbr_directory_flush,
-	.index_write_f = fbr_cstore_index_root_write,
-	.index_read_f = fbr_cstore_index_read,
-	.index_delete_f = fbr_cstore_index_delete,
-	.root_read_f = fbr_cstore_root_read
-};
-
 void
-fbr_cmd_cstore_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -38,7 +27,7 @@ fbr_cmd_cstore_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
 	fbr_test_cstore_init(ctx);
-	fbr_fs_set_store(fs, &_CSTORE_ERR_CALLBACKS);
+	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(directory);
@@ -259,5 +248,5 @@ fbr_cmd_cstore_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_fs_free(fs);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_error done");
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_error_test done");
 }

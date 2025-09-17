@@ -17,16 +17,6 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
-static const struct fbr_store_callbacks _APPEND_TEST_CALLBACKS = {
-	.chunk_read_f = fbr_cstore_async_chunk_read,
-	.chunk_delete_f = fbr_cstore_chunk_delete,
-	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,
-	.directory_flush_f = fbr_directory_flush,
-	.index_write_f = fbr_cstore_index_root_write,
-	.index_read_f = fbr_cstore_index_read,
-	.root_read_f = fbr_cstore_root_read
-};
-
 void
 fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -36,11 +26,11 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fs *fs_1 = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs_1);
 	fbr_test_cstore_init(ctx);
-	fbr_fs_set_store(fs_1, &_APPEND_TEST_CALLBACKS);
+	fbr_fs_set_store(fs_1, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	struct fbr_fs *fs_2 = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs_2);
-	fbr_fs_set_store(fs_2, &_APPEND_TEST_CALLBACKS);
+	fbr_fs_set_store(fs_2, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	fbr_test_logs("*** Allocating dir_fs1");
 
@@ -298,7 +288,7 @@ _append_thread(void *arg)
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
 	if (!_APPEND_ERROR_TEST) {
-		fbr_fs_set_store(fs, &_APPEND_TEST_CALLBACKS);
+		fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 	} else {
 		fbr_fs_set_store(fs, &_APPEND_TEST_ERROR_CALLBACKS);
 	}
@@ -388,7 +378,7 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
-	fbr_fs_set_store(fs, &_APPEND_TEST_CALLBACKS);
+	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	fbr_test_logs("*** Allocating root");
 
