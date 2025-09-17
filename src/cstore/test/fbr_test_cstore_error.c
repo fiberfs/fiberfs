@@ -118,7 +118,7 @@ fbr_cmd_cstore_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	assert_zero(entry);
 
-	fbr_test_logs("*** Write file_1 again");
+	fbr_test_logs("*** Write file_1 again error");
 
 	fio = fbr_fio_alloc(fs, file_1, 0);
 	fbr_fio_ok(fio);
@@ -126,6 +126,7 @@ fbr_cmd_cstore_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_wbuffer *wbuffer = fio->wbuffers;
 	fbr_wbuffer_ok(wbuffer);
 	assert_zero(wbuffer->next);
+
 	hash = fbr_cstore_hash_chunk(fs, file_1, wbuffer->id, wbuffer->offset);
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 	fbr_test_logs("*** file_1 new chunk: '%s'", path);
@@ -134,11 +135,110 @@ fbr_cmd_cstore_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	assert(fd > 0);
 	assert_zero(close(fd));
+
 	ret = fbr_wbuffer_flush_fio(fs, fio);
 	assert(ret == EIO);
 	fbr_wbuffers_reset(fs, fio);
 	fbr_fio_release(fs, fio);
 	fbr_dindex_release(fs, &directory);
+
+	fbr_test_logs("*** mkdir dir2");
+
+	struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_OK);
+	assert(root->generation == 2);
+
+	// Alloc root dir2 file
+	struct fbr_path_name dir2name;
+	fbr_path_name_init(&dir2name, "dir2");
+	struct fbr_file *dir2file = fbr_file_alloc_new(fs, root, &dir2name);
+	assert_dev(dir2file->state == FBR_FILE_INIT);
+	dir2file->mode = S_IFDIR;
+	fbr_inode_add(fs, dir2file);
+	fbr_inode_t dir2inode = dir2file->inode;
+
+	// Write empty index
+	struct fbr_directory *dir2 = fbr_directory_alloc(fs, &dir2name, dir2inode);
+	fbr_directory_ok(dir2);
+	assert(dir2->state == FBR_DIRSTATE_LOADING);
+	dir2->generation = 1;
+	fbr_index_data_init(fs, &index_data, dir2, NULL, NULL, NULL, FBR_FLUSH_NONE);
+	ret = fbr_index_write(fs, &index_data);
+	assert_zero(ret);
+	fbr_directory_set_state(fs, dir2, FBR_DIRSTATE_OK);
+	fbr_index_data_free(&index_data);
+	fbr_dindex_release(fs, &dir2);
+
+	// Flush root
+	assert(fs->store);
+	assert(fs->store->directory_flush_f);
+	ret = fs->store->directory_flush_f(fs, dir2file, NULL, FBR_FLUSH_NONE);
+	assert_zero(ret);
+	assert(dir2file->state == FBR_FILE_OK);
+
+	fbr_inode_release(fs, &dir2file);
+	fbr_dindex_release(fs, &root);
+
+	fbr_test_logs("*** Write index error on dir2");
+
+	dir2 = fbr_directory_alloc(fs, &dir2name, dir2inode);
+	fbr_directory_ok(dir2);
+	assert(dir2->state == FBR_DIRSTATE_LOADING);
+	fbr_directory_ok(dir2->previous);
+	assert(dir2->previous->generation == 1);
+	dir2->generation = 2;
+
+	hash = fbr_cstore_hash_index(fs, dir2);
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	fbr_test_logs("*** dir2 new index: '%s'", path);
+	ret = fbr_sys_mkdirs(path);
+	assert_zero(ret);
+	fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	assert(fd > 0);
+	assert_zero(close(fd));
+
+	fbr_index_data_init(fs, &index_data, dir2, dir2->previous, NULL, NULL, FBR_FLUSH_NONE);
+	ret = fbr_index_write(fs, &index_data);
+	assert(ret);
+	fbr_directory_set_state(fs, dir2, FBR_DIRSTATE_ERROR);
+	fbr_index_data_free(&index_data);
+	fbr_dindex_release(fs, &dir2);
+
+	fbr_test_logs("*** Read index error on dir2");
+
+	dir2 = fbr_dindex_take(fs, &dir2name, 0);
+	fbr_directory_ok(dir2);
+	assert(dir2->generation == 1);
+	assert_zero(dir2->previous);
+	fbr_dindex_release(fs, &dir2);
+
+	// Generation match...
+	dir2 = fbr_directory_alloc(fs, &dir2name, dir2inode);
+	fbr_directory_ok(dir2);
+	assert(dir2->state == FBR_DIRSTATE_LOADING);
+	fbr_directory_ok(dir2->previous);
+	assert(dir2->previous->generation == 1);
+	fbr_index_read(fs, dir2);
+	assert(dir2->state == FBR_DIRSTATE_ERROR);
+	fbr_dindex_release(fs, &dir2);
+
+	hash = fbr_cstore_hash_root(fs, &dir2name);
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	fbr_test_logs("*** dir2 root: '%s'", path);
+	assert(fbr_sys_exists(path));
+	ret = unlink(path);
+	assert_zero(ret);
+
+	// dir2 root error
+	dir2 = fbr_directory_alloc(fs, &dir2name, dir2inode);
+	fbr_directory_ok(dir2);
+	assert(dir2->state == FBR_DIRSTATE_LOADING);
+	fbr_directory_ok(dir2->previous);
+	assert(dir2->previous->generation == 1);
+	fbr_index_read(fs, dir2);
+	assert(dir2->state == FBR_DIRSTATE_ERROR);
+	fbr_dindex_release(fs, &dir2);
 
 	fbr_test_logs("*** Cleanup");
 
@@ -154,8 +254,8 @@ fbr_cmd_cstore_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs->stats.files, "non zero");
 	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
-	assert(fbr_test_cstore_stat_roots() == 1);
-	assert(fbr_test_cstore_stat_indexes() == 1);
+	assert(fbr_test_cstore_stat_roots() == 2);
+	assert(fbr_test_cstore_stat_indexes() == 2);
 
 	fbr_fs_free(fs);
 

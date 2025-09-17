@@ -167,6 +167,7 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert_zero(ret);
 	assert(file->state == FBR_FILE_OK);
 
+	fbr_inode_release(fs_remote, &file);
 	fbr_dindex_release(fs_remote, &root);
 	fbr_fs_free(fs_remote);
 
