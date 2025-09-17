@@ -116,9 +116,10 @@ struct fbr_cstore {
 
 	size_t					entries;
 	fbr_stats_t				lru_pruned;
-	fbr_stats_t				chunks;
-	fbr_stats_t				indexes;
-	fbr_stats_t				roots;
+
+	fbr_stats_t				wr_chunks;
+	fbr_stats_t				wr_indexes;
+	fbr_stats_t				wr_roots;
 };
 
 struct fbr_cstore_metadata {

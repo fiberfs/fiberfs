@@ -105,6 +105,7 @@ _test_log_printer_thread(void *arg)
 
 		if (!log_line) {
 			if (reader->cursor.status == FBR_LOG_CURSOR_EXIT) {
+				//printf("%s CURSOR EXIT\n", printer->prefix);
 				break;
 			}
 			fbr_ASSERT(reader->cursor.status != FBR_LOG_CURSOR_OVERFLOW,
@@ -113,6 +114,7 @@ _test_log_printer_thread(void *arg)
 				"cursor.status=%d", reader->cursor.status);
 
 			if (printer->thread_exit) {
+				//printf("%s PRINTER EXIT\n", printer->prefix);
 				break;
 			}
 
