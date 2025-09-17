@@ -512,6 +512,7 @@ fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 	struct fbr_wbuffer *wbuffer = wbuffers;
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
+		assert(wbuffer->end);
 
 		if (wbuffer->state == FBR_WBUFFER_WRITING) {
 			wbuffer->state = FBR_WBUFFER_READY;

@@ -187,6 +187,7 @@ _cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, co
 {
 	assert_dev(cstore);
 	assert_dev(path);
+	assert_dev(bytes);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, bytes);
 	if (!entry) {
@@ -278,6 +279,7 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 
 	fbr_hash_t hash = fbr_cstore_hash_chunk(fs, file, wbuffer->id, wbuffer->offset);
 	size_t wbuf_bytes = wbuffer->end;
+	assert_dev(wbuf_bytes);
 
 	char path[FBR_PATH_MAX];
 	char chunk_path[FBR_PATH_MAX];
@@ -387,6 +389,7 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_EMPTY || chunk->state == FBR_CHUNK_LOADING);
+	assert(chunk->length);
 	assert(chunk->id);
 	assert_zero(chunk->external);
 

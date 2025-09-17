@@ -257,7 +257,7 @@ _cstore_thread(void *arg)
 
 		struct fbr_cstore_entry *entry = fbr_cstore_get(_CSTORE, hash);
 		if (!entry) {
-			size_t bytes = random() % _CSTORE_HASH_MAX_BYTES;
+			size_t bytes = (random() % _CSTORE_HASH_MAX_BYTES) + 1;
 			entry = fbr_cstore_insert(_CSTORE, hash, bytes);
 			if (entry) {
 				fbr_cstore_entry_ok(entry);
@@ -421,6 +421,9 @@ _cstore_state_thread(void *arg)
 			inserted = 1;
 		}
 		fbr_cstore_entry_ok(entry);
+		if (inserted) {
+			assert(entry->state == FBR_CSTORE_LOADING);
+		}
 
 		assert(hash < fbr_array_len(_CSTORE_ST_COUNTER));
 		size_t state = fbr_atomic_add(&_CSTORE_ST_COUNTER[hash], 1);
@@ -442,7 +445,6 @@ _cstore_state_thread(void *arg)
 			fbr_atomic_add(&_CSTORE_ST_COMPLETED, 1);
 		} else {
 			assert(state > 0 && state < 4);
-
 			if (!inserted) {
 				fbr_cstore_set_loading(entry);
 			}

@@ -149,7 +149,7 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 	for (size_t i = 0; i < chunks->length; i++) {
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
-		assert_dev(chunk->length);
+		assert(chunk->length);
 
 		fbr_chunk_take(chunk);
 

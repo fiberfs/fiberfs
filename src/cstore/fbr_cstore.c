@@ -138,7 +138,7 @@ _cstore_get_head(struct fbr_cstore *cstore, fbr_hash_t hash)
 }
 
 static struct fbr_cstore_entry *
-_cstore_get_entry(struct fbr_cstore *cstore, struct fbr_cstore_head *head, fbr_hash_t hash)
+_cstore_alloc_entry(struct fbr_cstore *cstore, struct fbr_cstore_head *head, fbr_hash_t hash)
 {
 	assert(cstore);
 	fbr_cstore_head_ok(head);
@@ -264,10 +264,43 @@ _cstore_lru_prune(struct fbr_cstore *cstore, struct fbr_cstore_head *head, size_
 	}
 }
 
+static struct fbr_cstore_entry *
+_cstore_insert_entry(struct fbr_cstore *cstore, struct fbr_cstore_head *head, fbr_hash_t hash,
+    size_t bytes)
+{
+	assert_dev(cstore);
+	assert_dev(head);
+	assert_dev(bytes);
+
+	if (cstore->do_lru) {
+		_cstore_lru_prune(cstore, head, bytes);
+	} else if (_cstore_full(cstore, bytes)) {
+		pt_assert(pthread_mutex_unlock(&head->lock));
+		return NULL;
+	}
+
+	struct fbr_cstore_entry *entry = _cstore_alloc_entry(cstore, head, hash);
+	assert_dev(entry->alloc == FBR_CSTORE_ENTRY_USED);
+	assert_dev(entry->state == FBR_CSTORE_NONE);
+	assert_dev(entry->in_lru);
+
+	// Caller takes a ref
+	entry->refcount++;
+	assert(entry->refcount);
+
+	entry->bytes = bytes;
+	fbr_atomic_add(&cstore->bytes, bytes);
+
+	entry->state = FBR_CSTORE_LOADING;
+
+	return entry;
+}
+
 struct fbr_cstore_entry *
 fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes)
 {
 	fbr_cstore_ok(cstore);
+	assert(bytes);
 
 	struct fbr_cstore_head *head = _cstore_get_head(cstore, hash);
 	pt_assert(pthread_mutex_lock(&head->lock));
@@ -288,26 +321,7 @@ fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes)
 		return NULL;
 	}
 
-	if (cstore->do_lru) {
-		_cstore_lru_prune(cstore, head, bytes);
-	} else if (_cstore_full(cstore, bytes)) {
-		pt_assert(pthread_mutex_unlock(&head->lock));
-		return NULL;
-	}
-
-	entry = _cstore_get_entry(cstore, head, hash);
-	assert_dev(entry->alloc == FBR_CSTORE_ENTRY_USED);
-	assert_dev(entry->state == FBR_CSTORE_NONE);
-	assert_dev(entry->in_lru);
-
-	// Caller takes a ref
-	entry->refcount++;
-	assert(entry->refcount);
-
-	entry->bytes = bytes;
-	fbr_atomic_add(&cstore->bytes, bytes);
-
-	entry->state = FBR_CSTORE_LOADING;
+	entry = _cstore_insert_entry(cstore, head, hash, bytes);
 
 	pt_assert(pthread_mutex_unlock(&head->lock));
 
@@ -376,10 +390,18 @@ fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash)
 	struct fbr_cstore_entry *entry = RB_FIND(fbr_cstore_tree, &head->tree, &find);
 	if (!entry) {
 		if (!cstore->loader.loaded) {
-			// TODO call loader
+			size_t bytes = fbr_cstore_exists(cstore, hash);
+			if (bytes) {
+				entry = _cstore_insert_entry(cstore, head, hash, bytes);
+				if (entry) {
+					entry->state = FBR_CSTORE_OK;
+				}
+			}
 		}
+
 		pt_assert(pthread_mutex_unlock(&head->lock));
-		return NULL;
+
+		return entry;
 	}
 
 	fbr_cstore_entry_ok(entry);

@@ -141,6 +141,7 @@ void fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry
 void fbr_cstore_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_loader_init(struct fbr_cstore *cstore);
+size_t fbr_cstore_exists(struct fbr_cstore *cstore, fbr_hash_t hash);
 void fbr_cstore_loader_free(struct fbr_cstore *cstore);
 
 size_t fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *output,
