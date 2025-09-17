@@ -45,19 +45,6 @@ _cstore_add_slab(struct fbr_cstore_head *head)
 	head->slabs = slab;
 }
 
-struct fbr_cstore *
-fbr_cstore_alloc(const char *root_path)
-{
-	assert(root_path);
-
-	struct fbr_cstore *cstore = malloc(sizeof(*cstore));
-	assert(cstore);
-
-	fbr_cstore_init(cstore, root_path);
-
-	return cstore;
-}
-
 void
 fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 {
@@ -97,8 +84,22 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	fbr_log_print(cstore->log, FBR_LOG_CSTORE, FBR_REQID_CSTORE, "init");
 
 	fbr_cstore_async_init(cstore);
+	fbr_cstore_loader_init(cstore);
 
 	fbr_cstore_ok(cstore);
+}
+
+struct fbr_cstore *
+fbr_cstore_alloc(const char *root_path)
+{
+	assert(root_path);
+
+	struct fbr_cstore *cstore = malloc(sizeof(*cstore));
+	assert(cstore);
+
+	fbr_cstore_init(cstore, root_path);
+
+	return cstore;
 }
 
 void
@@ -498,6 +499,7 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
 
+	fbr_cstore_loader_free(cstore);
 	fbr_cstore_async_free(cstore);
 
 	for (size_t i = 0; i < fbr_array_len(cstore->heads); i++) {
