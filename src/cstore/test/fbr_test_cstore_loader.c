@@ -52,7 +52,8 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 0);
 	fbr_fio_ok(fio);
-	fbr_wbuffer_write(fs, fio, 0, "File Contents.", 14);
+	char *file_contents = "File Contents.";
+	fbr_wbuffer_write(fs, fio, 0, file_contents, 14);
 	ret = fbr_wbuffer_flush_fio(fs, fio);
 	assert_zero(ret);
 	fbr_fio_release(fs, fio);
@@ -67,7 +68,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	//fbr_fs_release_all(fs, 1);
 	//fbr_test_fs_stats(fs);
 	fbr_test_cstore_debug();
-
+	assert(_CSTORE->entries == 3);
 	fbr_fs_free(fs);
 
 	fbr_test_logs("*** Allocating fs again");
@@ -77,8 +78,35 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_cstore_reload(ctx);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
+	// TODO
+	_CSTORE->loader.state = FBR_CSTORE_LOADER_READING;
+
+	fbr_test_logs("*** Read root");
+
+	assert(fs->store);
+	assert(fs->store->directory_load_f);
+	root = fs->store->directory_load_f(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_OK);
+	assert(root->file_count == 1);
+
+	file = fbr_directory_find_file(root, filename.name, filename.len);
+	fbr_file_ok(file);
+	assert(file->size == 14);
+	char buffer[15];
+	size_t bytes = fbr_test_fs_read(fs, file, 0, buffer, sizeof(buffer));
+	assert(bytes == 14);
+	buffer[14] = '\0';
+	assert_zero(strcmp(buffer, file_contents));
+
+	fbr_test_logs("*** %s: '%s'", filename.name, buffer);
+
+	fbr_dindex_release(fs, &root);
+
 	fbr_test_logs("*** Cleanup 2");
 
+	fbr_test_cstore_debug();
+	assert(_CSTORE->entries == 3);
 	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_loader_test done");

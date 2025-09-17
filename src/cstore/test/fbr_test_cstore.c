@@ -80,6 +80,9 @@ fbr_test_cstore_reload(struct fbr_test_context *ctx)
 	assert(ret < sizeof(root));
 
 	_test_cstore_finish(ctx);
+
+	fbr_test_sleep_ms(50);
+
 	_CSTORE = &__CSTORE;
 	_test_cstore_init(ctx, root, "&", 0);
 }
