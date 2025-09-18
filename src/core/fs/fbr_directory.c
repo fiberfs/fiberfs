@@ -804,10 +804,7 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode, struct fbr_direct
 	}
 
 	if (!directory) {
-		if (fs->store->directory_load_f) {
-			directory = fs->store->directory_load_f(fs, &dirname, inode);
-		}
-
+		directory = fbr_directory_load(fs, &dirname, inode);
 		if (!directory) {
 			return NULL;
 		}

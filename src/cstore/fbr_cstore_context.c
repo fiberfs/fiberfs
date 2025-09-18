@@ -10,7 +10,6 @@
 #include "core/store/fbr_store.h"
 
 static const struct fbr_store_callbacks _CSTORE_DEFAULT_CALLBACKS = {
-	.directory_load_f = fbr_directory_load,
 	.chunk_read_f = fbr_cstore_async_chunk_read,
 	.chunk_delete_f = fbr_cstore_chunk_delete,
 	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,

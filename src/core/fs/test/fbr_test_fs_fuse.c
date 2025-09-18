@@ -29,18 +29,25 @@ static int _TEST_FD = -1;
 
 static int _TEST_FS_ALLOW_CRASH;
 
-static void
+static int
 _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
+	assert_zero(directory->file_count);
 
 	struct fbr_path_name dirname;
 	fbr_directory_name(directory, &dirname);
 
 	fbr_test_logs("** INIT LOADING inode: %lu directory: '%.*s':%zu",
 		directory->inode, (int)dirname.len, dirname.name, dirname.len);
+
+	if (!directory->version) {
+		directory->version = fbr_id_gen();
+	}
+
+	directory->generation = 1;
 
 	size_t depth = 0;
 
@@ -179,7 +186,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		file->state = FBR_FILE_OK;
 	}
 
-	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+	return 0;
 }
 
 static struct fbr_directory *
@@ -200,7 +207,9 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 	}
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
-		_test_fs_init_contents(fs, directory);
+		int ret = _test_fs_init_contents(fs, directory);
+		assert_zero(ret);
+		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	} else if (directory->state == FBR_DIRSTATE_ERROR) {
 		fbr_test_logs("** INIT ERROR inode: %lu directory: '%.*s':%zu",
 			directory->inode, (int)dirname->len, dirname->name, dirname->len);
@@ -216,6 +225,7 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 
 	return directory;
 }
+
 
 static void
 _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
@@ -252,8 +262,8 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 }
 
 static const struct fbr_store_callbacks _TEST_FS_STORE_CALLBACKS = {
-	.directory_load_f = _test_fs_init_directory,
-	.chunk_read_f = _test_fs_chunk_gen
+	.chunk_read_f = _test_fs_chunk_gen,
+	.index_read_f = _test_fs_init_contents
 };
 
 static void

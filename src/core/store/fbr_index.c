@@ -533,18 +533,19 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	int ret;
 
 	do {
-		fbr_id_t version = 0;
-
 		if (fs->store->root_read_f) {
-			version = fs->store->root_read_f(fs, &dirpath);
-		}
+			fbr_id_t version = fs->store->root_read_f(fs, &dirpath);
 
-		if (version == 0) {
-			fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
-			return;
-		}
+			if (version == 0) {
+				fbr_directory_set_state(fs, directory,
+					FBR_DIRSTATE_ERROR);
+				return;
+			}
 
-		directory->version = version;
+			directory->version = version;
+		} else {
+			directory->version = 0;
+		}
 
 		ret = EIO;
 

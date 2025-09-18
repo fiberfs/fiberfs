@@ -621,6 +621,8 @@ fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
+	assert(directory->version);
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	if (!cstore) {

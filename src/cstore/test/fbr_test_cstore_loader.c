@@ -83,9 +83,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_logs("*** Read root");
 
-	assert(fs->store);
-	assert(fs->store->directory_load_f);
-	root = fs->store->directory_load_f(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+	root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
 	assert(root->file_count == 1);
