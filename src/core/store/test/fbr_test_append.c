@@ -224,8 +224,8 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 #define _APPEND_COUNTER_MAX	64
 size_t _APPEND_THREAD_COUNT;
 size_t _APPEND_COUNTER;
-size_t _APPEND_ERROR_TEST;
-size_t _APPEND_ERROR_WBUFFER;
+ssize_t _APPEND_ERROR_TEST;
+ssize_t _APPEND_ERROR_WBUFFER;
 size_t _APPEND_ERROR_FLUSH;
 
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
@@ -236,7 +236,7 @@ _append_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wb
 	fbr_wbuffer_ok(wbuffer);
 	assert(wbuffer->state == FBR_WBUFFER_READY);
 
-	if (_APPEND_ERROR_WBUFFER && !(random() % 2)) {
+	if (_APPEND_ERROR_WBUFFER > 0 && !(random() % 2)) {
 		fbr_test_logs("*** ERROR WBUFFER offset: %zu id: %lu",
 			wbuffer->offset, wbuffer->id);
 		fbr_atomic_sub(&_APPEND_ERROR_WBUFFER, 1);
@@ -251,7 +251,7 @@ static int
 _append_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
     struct fbr_writer *writer, struct fbr_directory *previous)
 {
-	if (_APPEND_ERROR_FLUSH && !(random() % 2)) {
+	if (_APPEND_ERROR_FLUSH > 0 && !(random() % 2)) {
 		fbr_test_logs("*** ERROR FLUSH");
 		fbr_atomic_sub(&_APPEND_ERROR_FLUSH, 1);
 		return EIO;
