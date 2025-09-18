@@ -189,7 +189,7 @@ _cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, co
 	assert_dev(path);
 	assert_dev(bytes);
 
-	struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, bytes);
+	struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, bytes, 1);
 	if (!entry) {
 		entry = fbr_cstore_get(cstore, hash);
 		if (!entry) {

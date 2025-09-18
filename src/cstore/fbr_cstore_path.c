@@ -61,6 +61,29 @@ fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *
 }
 
 size_t
+fbr_cstore_path_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata, char *buffer,
+    size_t buffer_len)
+{
+	fbr_cstore_ok(cstore);
+	assert(buffer);
+	assert(buffer_len);
+
+	char hash_str[3];
+	size_t hash_len = fbr_bin2hex(&dir, sizeof(dir), hash_str, sizeof(hash_str));
+	assert_dev(hash_len + 1 == sizeof(hash_str));
+
+	const char *sub_path = _cstore_sub_path(metadata);
+
+	int ret = snprintf(buffer, buffer_len, "%s/%s/%s",
+		cstore->root,
+		sub_path,
+		hash_str);
+	assert(ret > 0 && (size_t)ret < buffer_len);
+
+	return (size_t)ret;
+}
+
+size_t
 fbr_cstore_path_chunk(struct fbr_cstore *cstore, const struct fbr_file *file, fbr_id_t id,
     size_t offset, int metadata, char *buffer, size_t buffer_len)
 {

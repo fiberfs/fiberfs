@@ -287,7 +287,7 @@ _cstore_lru_prune(struct fbr_cstore *cstore, struct fbr_cstore_head *head, size_
 
 static struct fbr_cstore_entry *
 _cstore_insert_entry(struct fbr_cstore *cstore, struct fbr_cstore_head *head, fbr_hash_t hash,
-    size_t bytes)
+    size_t bytes, int loading)
 {
 	assert_dev(cstore);
 	assert_dev(head);
@@ -312,13 +312,17 @@ _cstore_insert_entry(struct fbr_cstore *cstore, struct fbr_cstore_head *head, fb
 	entry->bytes = bytes;
 	fbr_atomic_add(&cstore->bytes, bytes);
 
-	entry->state = FBR_CSTORE_LOADING;
+	if (loading) {
+		entry->state = FBR_CSTORE_LOADING;
+	} else {
+		entry->state = FBR_CSTORE_OK;
+	}
 
 	return entry;
 }
 
 struct fbr_cstore_entry *
-fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes)
+fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, int loading)
 {
 	fbr_cstore_ok(cstore);
 	assert(bytes);
@@ -342,7 +346,7 @@ fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes)
 		return NULL;
 	}
 
-	entry = _cstore_insert_entry(cstore, head, hash, bytes);
+	entry = _cstore_insert_entry(cstore, head, hash, bytes, loading);
 
 	pt_assert(pthread_mutex_unlock(&head->lock));
 
@@ -413,9 +417,8 @@ fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash)
 		if (cstore->loader.state == FBR_CSTORE_LOADER_READING) {
 			size_t bytes = _cstore_exists(cstore, hash);
 			if (bytes) {
-				entry = _cstore_insert_entry(cstore, head, hash, bytes);
+				entry = _cstore_insert_entry(cstore, head, hash, bytes, 0);
 				if (entry) {
-					entry->state = FBR_CSTORE_OK;
 					fbr_fs_stat_add(&cstore->lazy_loaded);
 				}
 			}

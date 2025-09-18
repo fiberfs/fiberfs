@@ -157,7 +157,7 @@ void fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path);
 void fbr_cstore_max_size(struct fbr_cstore *cstore, size_t max_bytes, int lru);
 struct fbr_cstore_entry *fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash);
 struct fbr_cstore_entry *fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash,
-	size_t bytes);
+	size_t bytes, int loading);
 int fbr_cstore_set_loading(struct fbr_cstore_entry *entry);
 enum fbr_cstore_state fbr_cstore_wait_loading(struct fbr_cstore_entry *entry);
 void fbr_cstore_reset_loading(struct fbr_cstore_entry *entry);
@@ -172,6 +172,8 @@ void fbr_cstore_loader_free(struct fbr_cstore *cstore);
 
 size_t fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *output,
 	size_t output_len);
+size_t fbr_cstore_path_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata,
+	char *buffer, size_t buffer_len);
 size_t fbr_cstore_path_chunk(struct fbr_cstore *cstore, const struct fbr_file *file, fbr_id_t id,
 	size_t offset, int metadata, char *buffer, size_t buffer_len);
 size_t fbr_cstore_path_index(struct fbr_cstore *cstore, const struct fbr_directory *directory,
