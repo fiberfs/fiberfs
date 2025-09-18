@@ -16,11 +16,10 @@
 
 extern struct fbr_cstore *_CSTORE;
 
-void
-fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+static void
+_test_cstore_loader(struct fbr_test_context *ctx)
 {
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
+	assert_dev(ctx);
 
 	fbr_test_logs("*** Allocating fs, root, and file");
 
@@ -78,9 +77,6 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_cstore_reload(ctx);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
-	// TODO
-	_CSTORE->loader.state = FBR_CSTORE_LOADER_READING;
-
 	fbr_test_logs("*** Read root");
 
 	root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
@@ -105,7 +101,37 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_cstore_debug();
 	assert(_CSTORE->entries == 3);
+
+	if (_CSTORE_CONFIG.loader_threads) {
+		// TODO
+	} else {
+		assert_zero(_CSTORE->loaded);
+		assert(_CSTORE->lazy_loaded == 3);
+	}
+
 	fbr_fs_free(fs);
+}
+
+void
+fbr_cmd_cstore_loader_test_nothread(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_CSTORE_CONFIG.loader_threads = 0;
+
+	_test_cstore_loader(ctx);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_loader_test_nothread done");
+}
+
+void
+fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_test_cstore_loader(ctx);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_loader_test done");
 }

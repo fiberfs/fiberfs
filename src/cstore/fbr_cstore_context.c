@@ -9,6 +9,11 @@
 #include "core/fuse/fbr_fuse.h"
 #include "core/store/fbr_store.h"
 
+struct fbr_cstore_config _CSTORE_CONFIG = {
+	FBR_CSTORE_ASYNC_THREAD_DEFAULT,
+	FBR_CSTORE_LOAD_THREAD_DEFAULT
+};
+
 static const struct fbr_store_callbacks _CSTORE_DEFAULT_CALLBACKS = {
 	.chunk_read_f = fbr_cstore_async_chunk_read,
 	.chunk_delete_f = fbr_cstore_chunk_delete,

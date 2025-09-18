@@ -19,6 +19,8 @@
 #define FBR_CSTORE_SLAB_SIZE			128
 #define FBR_CSTORE_DATA_DIR			"data"
 #define FBR_CSTORE_META_DIR			"meta"
+#define FBR_CSTORE_LOAD_THREAD_MAX		32
+#define FBR_CSTORE_LOAD_THREAD_DEFAULT		4
 
 enum fbr_cstore_alloc_state {
 	FBR_CSTORE_ENTRY_NONE = 0,
@@ -46,8 +48,17 @@ enum fbr_cstore_loader_state {
 	FBR_CSTORE_LOADER_DONE
 };
 
+
+
 struct fbr_cstore_loader {
 	enum fbr_cstore_loader_state		state;
+
+	volatile int				stop;
+
+	size_t					thread_count;
+	size_t					thread_pos;
+	size_t					thread_done;
+	pthread_t				threads[FBR_CSTORE_LOAD_THREAD_MAX];
 };
 
 struct fbr_cstore_entry {
@@ -116,7 +127,9 @@ struct fbr_cstore {
 
 	size_t					entries;
 	fbr_stats_t				lru_pruned;
-
+	fbr_stats_t				removed;
+	fbr_stats_t				loaded;
+	fbr_stats_t				lazy_loaded;
 	fbr_stats_t				wr_chunks;
 	fbr_stats_t				wr_indexes;
 	fbr_stats_t				wr_roots;
@@ -131,6 +144,13 @@ struct fbr_cstore_metadata {
 	int					gzipped;
 	char					_context;
 };
+
+struct fbr_cstore_config {
+	size_t					async_threads;
+	size_t					loader_threads;
+};
+
+extern struct fbr_cstore_config _CSTORE_CONFIG;
 
 struct fbr_cstore *fbr_cstore_alloc(const char *root_path);
 void fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path);

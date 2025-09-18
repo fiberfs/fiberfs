@@ -170,6 +170,9 @@ fbr_test_cstore_debug(void)
 	fbr_test_logs("CSTORE_DEBUG bytes: %zu", _CSTORE->bytes);
 	fbr_test_logs("CSTORE_DEBUG max_bytes: %zu", _CSTORE->max_bytes);
 	fbr_test_logs("CSTORE_DEBUG pruned: %lu", _CSTORE->lru_pruned);
+	fbr_test_logs("CSTORE_DEBUG removed: %lu", _CSTORE->removed);
+	fbr_test_logs("CSTORE_DEBUG loaded: %lu", _CSTORE->loaded);
+	fbr_test_logs("CSTORE_DEBUG lazy: %lu", _CSTORE->lazy_loaded);
 	fbr_test_logs("CSTORE_DEBUG chunks: %lu", _CSTORE->wr_chunks);
 	fbr_test_logs("CSTORE_DEBUG indexes: %lu", _CSTORE->wr_indexes);
 	fbr_test_logs("CSTORE_DEBUG roots: %lu", _CSTORE->wr_roots);

@@ -11,7 +11,7 @@
 #include "fiberfs.h"
 #include "fjson.h"
 
-struct fjson_token _FJSON_TOKEN_BAD = {
+static struct fjson_token _FJSON_TOKEN_BAD = {
 	FJSON_TOKEN_MAGIC,
 	FJSON_TOKEN_UNDEF,
 	0,
@@ -82,8 +82,8 @@ _set_error(struct fjson_context *ctx, enum fjson_state error, const char *msg)
 static inline struct fjson_token *
 _bad_token(void)
 {
-	assert(_FJSON_TOKEN_BAD.type == FJSON_TOKEN_UNDEF);
-	assert_zero(_FJSON_TOKEN_BAD.length);
+	assert_dev(_FJSON_TOKEN_BAD.type == FJSON_TOKEN_UNDEF);
+	assert_zero_dev(_FJSON_TOKEN_BAD.length);
 	return &_FJSON_TOKEN_BAD;
 }
 
