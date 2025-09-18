@@ -264,7 +264,6 @@ static const struct fbr_store_callbacks _APPEND_TEST_ERROR_CALLBACKS = {
 	.chunk_read_f = fbr_cstore_async_chunk_read,
 	.chunk_delete_f = fbr_cstore_chunk_delete,
 	.wbuffer_write_f = _append_wbuffer,
-	.directory_flush_f = fbr_directory_flush,
 	.index_write_f = _append_index_root,
 	.index_read_f = fbr_cstore_index_read,
 	.root_read_f = fbr_cstore_root_read

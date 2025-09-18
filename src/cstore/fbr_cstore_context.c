@@ -13,7 +13,6 @@ static const struct fbr_store_callbacks _CSTORE_DEFAULT_CALLBACKS = {
 	.chunk_read_f = fbr_cstore_async_chunk_read,
 	.chunk_delete_f = fbr_cstore_chunk_delete,
 	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,
-	.directory_flush_f = fbr_directory_flush,
 	.index_write_f = fbr_cstore_index_root_write,
 	.index_read_f = fbr_cstore_index_read,
 	.index_delete_f = fbr_cstore_index_delete,

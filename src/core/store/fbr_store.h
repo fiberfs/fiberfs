@@ -116,13 +116,16 @@ struct fbr_store_callbacks {
 		struct fbr_chunk *chunk);
 	void (*wbuffer_write_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_wbuffer *wbuffer);
-	int (*directory_flush_f)(struct fbr_fs *fs, struct fbr_file *file,
-		struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
 	int (*index_write_f)(struct fbr_fs *fs, struct fbr_directory *directory,
 		struct fbr_writer *writer, struct fbr_directory *previous);
 	int (*index_read_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 	int (*index_delete_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 	fbr_id_t (*root_read_f)(struct fbr_fs *fs, struct fbr_path_name *dirpath);
+
+	struct {
+		int (*directory_flush_f)(struct fbr_fs *fs, struct fbr_file *file,
+			struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
+	} optional;
 };
 
 struct fjson_context;

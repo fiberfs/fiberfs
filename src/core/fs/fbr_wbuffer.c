@@ -592,13 +592,10 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 		return error;
 	}
 
-	if (fs->store->directory_flush_f) {
-		int ret = fs->store->directory_flush_f(fs, file, fio->wbuffers, flags);
-		if (ret) {
-			error = ret;
-		}
+	if (fs->store->optional.directory_flush_f) {
+		error = fs->store->optional.directory_flush_f(fs, file, fio->wbuffers, flags);
 	} else {
-		error = EINVAL;
+		error = fbr_directory_flush(fs, file, fio->wbuffers, flags);
 	}
 
 	if (!error) {

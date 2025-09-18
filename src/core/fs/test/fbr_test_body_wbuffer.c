@@ -403,7 +403,7 @@ _test_fio_read_thread(void *arg)
 static const struct fbr_store_callbacks _TEST_WBUFFER_CALLBACKS = {
 	.chunk_read_f = _test_concurrent_gen_wbuffer,
 	.wbuffer_write_f = _test_concurrent_store,
-	.directory_flush_f = _test_flush_directory
+	.optional.directory_flush_f = _test_flush_directory
 };
 
 static void

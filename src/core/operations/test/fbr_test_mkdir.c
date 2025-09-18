@@ -33,11 +33,11 @@ _test_mkdir_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *
 }
 
 static const struct fbr_store_callbacks _TEST_MKDIR_CALLBACKS = {
-	.directory_flush_f = _test_mkdir_flush,
 	.index_write_f = fbr_cstore_index_root_write,
 	.index_read_f = fbr_cstore_index_read,
 	.index_delete_f = fbr_cstore_index_delete,
-	.root_read_f = fbr_cstore_root_read
+	.root_read_f = fbr_cstore_root_read,
+	.optional.directory_flush_f = _test_mkdir_flush,
 };
 
 static void
@@ -162,8 +162,8 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	// flush parent
 	assert(fs_remote->store);
-	assert(fs_remote->store->directory_flush_f);
-	ret = fs_remote->store->directory_flush_f(fs_remote, file, NULL, FBR_FLUSH_NONE);
+	assert(fs_remote->store->optional.directory_flush_f);
+	ret = fs_remote->store->optional.directory_flush_f(fs_remote, file, NULL, FBR_FLUSH_NONE);
 	assert_zero(ret);
 	assert(file->state == FBR_FILE_OK);
 

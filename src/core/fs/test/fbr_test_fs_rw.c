@@ -98,11 +98,11 @@ static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
 	.chunk_read_f = fbr_cstore_async_chunk_read,
 	.chunk_delete_f = fbr_cstore_chunk_delete,
 	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,
-	.directory_flush_f = _test_fs_rw_directory_flush,
 	.index_write_f = fbr_cstore_index_root_write,
 	.index_read_f = fbr_cstore_index_read,
 	.index_delete_f = fbr_cstore_index_delete,
-	.root_read_f = fbr_cstore_root_read
+	.root_read_f = fbr_cstore_root_read,
+	.optional.directory_flush_f = _test_fs_rw_directory_flush,
 };
 
 static void
