@@ -25,7 +25,7 @@ fbr_gzip_inflate_init(struct fbr_gzip *gzip)
 	fbr_zlib_inflate_init(gzip);
 #else
 	(void)gzip;
-	fbr_ABORT("gzip not configured")
+	fbr_ABORT("gzip not configured");
 #endif
 }
 
@@ -36,7 +36,7 @@ fbr_gzip_deflate_init(struct fbr_gzip *gzip)
 	fbr_zlib_deflate_init(gzip);
 #else
 	(void)gzip;
-	fbr_ABORT("gzip not configured")
+	fbr_ABORT("gzip not configured");
 #endif
 }
 
@@ -46,7 +46,7 @@ fbr_gzip_inflate_alloc(void)
 #ifdef FBR_ZLIB
 	return fbr_zlib_alloc(FBR_ZLIB_INFLATE);
 #else
-	fbr_ABORT("gzip not configured")
+	fbr_ABORT("gzip not configured");
 	return NULL;
 #endif
 }
@@ -57,7 +57,7 @@ fbr_gzip_deflate_alloc(void)
 #ifdef FBR_ZLIB
 	return fbr_zlib_alloc(FBR_ZLIB_DEFLATE);
 #else
-	fbr_ABORT("gzip not configured")
+	fbr_ABORT("gzip not configured");
 	return NULL;
 #endif
 }
@@ -78,7 +78,7 @@ fbr_gzip_flate(struct fbr_gzip *gzip, const void *input, size_t input_len, void 
 	(void)output_len;
 	(void)written;
 	(void)finish_deflate;
-	fbr_ABORT("gzip not configured")
+	fbr_ABORT("gzip not configured");
 	return;
 #endif
 }
@@ -90,7 +90,7 @@ fbr_gzip_free(void *gzip_priv)
 	fbr_zlib_free(gzip_priv);
 #else
 	(void)gzip_priv;
-	fbr_ABORT("gzip not configured")
+	fbr_ABORT("gzip not configured");
 #endif
 }
 
@@ -130,7 +130,7 @@ chttp_gzip_register(struct chttp_context *ctx, struct fbr_gzip *gzip, void *buff
 	(void)gzip;
 	(void)buffer;
 	(void)buffer_len;
-	chttp_ABORT("gzip not configured")
+	chttp_ABORT("gzip not configured");
 #endif
 }
 
@@ -143,7 +143,7 @@ chttp_gzip_read_body(struct chttp_context *ctx, void *output, size_t output_len)
 	(void)ctx;
 	(void)output;
 	(void)output_len;
-	chttp_ABORT("gzip not configured")
+	chttp_ABORT("gzip not configured");
 	return 0;
 #endif
 }
@@ -159,7 +159,7 @@ chttp_gzip_send_chunk(struct fbr_gzip *gzip, struct chttp_addr *addr, const void
 	(void)addr;
 	(void)input;
 	(void)input_len;
-	chttp_ABORT("gzip not configured")
+	chttp_ABORT("gzip not configured");
 	return;
 #endif
 }
