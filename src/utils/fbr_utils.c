@@ -39,28 +39,36 @@ fbr_get_time(void)
 	struct timespec ts;
 	assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
 
-	double timestamp = (double)ts.tv_sec;
-	timestamp += (double)ts.tv_nsec / (1000 * 1000 * 1000);
+	return fbr_convert_timespec(&ts);
+}
+
+double
+fbr_convert_timespec(struct timespec *ts)
+{
+	assert(ts);
+
+	double timestamp = (double)ts->tv_sec;
+	timestamp += (double)ts->tv_nsec / (1000 * 1000 * 1000);
 
 	return timestamp;
 }
 
 void
-fbr_timespec_add_clock(struct timespec *value)
+fbr_timespec_add_clock(struct timespec *ts)
 {
-	assert(value);
+	assert(ts);
 
 	struct timespec now;
 	assert_zero(clock_gettime(CLOCK_REALTIME, &now));
 
 	long ns = 1000L * 1000L * 1000L;
 
-	value->tv_nsec += now.tv_nsec;
-	assert_dev(value->tv_nsec / ns <= 1);
-	value->tv_sec += value->tv_nsec / ns;
-	value->tv_sec += now.tv_sec;
-	value->tv_nsec %= ns;
-	assert_dev(value->tv_nsec < ns);
+	ts->tv_nsec += now.tv_nsec;
+	assert_dev(ts->tv_nsec / ns <= 1);
+	ts->tv_sec += ts->tv_nsec / ns;
+	ts->tv_sec += now.tv_sec;
+	ts->tv_nsec %= ns;
+	assert_dev(ts->tv_nsec < ns);
 }
 
 unsigned long

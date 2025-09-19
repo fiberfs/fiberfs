@@ -116,6 +116,11 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 			continue;
 		}
 
+		double modified = fbr_convert_timespec(&st.st_mtim);
+		if (modified > cstore->loader.start_time) {
+			continue;
+		}
+
 		fbr_hash_t hash;
 		char *hash_buf = (char*)&hash;
 		size_t hash_len = fbr_hex2bin(entry->d_name, 12, hash_buf + 2, sizeof(hash) - 2);
