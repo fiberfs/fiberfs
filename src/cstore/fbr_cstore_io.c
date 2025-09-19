@@ -37,6 +37,8 @@ _cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata)
 		return 1;
 	}
 
+	metadata->timestamp = fbr_get_time();
+
 	int fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		return 1;
@@ -47,17 +49,24 @@ _cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata)
 	fbr_sys_write(fd, metadata->path, strlen(metadata->path));
 
 	// e: etag
-	char buf[FBR_ID_STRING_MAX];
+	char buf[64];
 	fbr_id_string(metadata->etag, buf, sizeof(buf));
 
 	fbr_sys_write(fd, "\",\"e\":\"", 7);
+	fbr_sys_write(fd, buf, strlen(buf));
+
+	// i: timestamp
+	ret = snprintf(buf, sizeof(buf), "%f", metadata->timestamp);
+	assert(ret > 0 && (size_t)ret < sizeof(buf));
+
+	fbr_sys_write(fd, "\",\"i\":", 6);
 	fbr_sys_write(fd, buf, strlen(buf));
 
 	// s: size
 	ret = snprintf(buf, sizeof(buf), "%lu", metadata->size);
 	assert(ret > 0 && (size_t)ret < sizeof(buf));
 
-	fbr_sys_write(fd, "\",\"s\":", 6);
+	fbr_sys_write(fd, ",\"s\":", 5);
 	fbr_sys_write(fd, buf, strlen(buf));
 
 	// o: offset
@@ -124,7 +133,9 @@ _cstore_parse_metadata(struct fjson_context *ctx, void *priv)
 			memcpy(metadata->path, token->svalue, token->svalue_len);
 		}
 	} else if (token->type == FJSON_TOKEN_NUMBER) {
-		if (metadata->_context == 's') {
+		if (metadata->_context == 'i') {
+			metadata->timestamp = token->dvalue;
+		} else if (metadata->_context == 's') {
 			if (token->dvalue >= 0) {
 				metadata->size = (size_t)token->dvalue;
 			}

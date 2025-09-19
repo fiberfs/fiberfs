@@ -8,6 +8,7 @@
 
 #include <dirent.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -27,12 +28,11 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 
 	fbr_ZERO(loader);
 	loader->state = FBR_CSTORE_LOADER_READING;
+	loader->start_time = fbr_get_time();
 	loader->thread_count = _CSTORE_CONFIG.loader_threads;
+	assert(loader->thread_count);
 
-	if (!loader->thread_count) {
-		assert(fbr_is_test());
-		return;
-	} else if (loader->thread_count > FBR_CSTORE_LOAD_THREAD_MAX) {
+	if (loader->thread_count > FBR_CSTORE_LOAD_THREAD_MAX) {
 		loader->thread_count = FBR_CSTORE_LOAD_THREAD_MAX;
 	}
 	while (256 % loader->thread_count) {
@@ -43,6 +43,9 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 		pt_assert(pthread_create(&loader->threads[i], NULL, _cstore_load_thread,
 			cstore));
 	}
+
+	fbr_log_print(cstore->log, FBR_LOG_CS_LOADER, FBR_REQID_CSTORE,
+		"spawned %zu loader threads", loader->thread_count);
 }
 
 static void
@@ -152,10 +155,14 @@ _cstore_load_thread(void *arg)
 	size_t dir_end = dir_start + dir_count - 1;
 	assert_dev(dir_end < 256);
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_LOADER, thread_id, "thread %zu running (%zu/%zu)",
-		pos, dir_start, dir_end);
-
 	size_t insertions = 0;
+
+	// If testing, randomly delay the loader a bit
+	if (fbr_is_test()) {
+		if (random() % 3 == 0) {
+			fbr_sleep_ms(250);
+		}
+	}
 
 	while (!loader->stop && dir_start <= dir_end) {
 		assert_dev(dir_start < 256);
@@ -169,14 +176,23 @@ _cstore_load_thread(void *arg)
 		dir_start++;
 	}
 
+	if (insertions) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_LOADER, thread_id,
+			"thread %zu inserted: %zu", pos, insertions);
+		}
+
 	size_t count = fbr_atomic_add(&loader->thread_done, 1);
 	if (count == loader->thread_count) {
 		assert_dev(loader->state == FBR_CSTORE_LOADER_READING);
 		loader->state = FBR_CSTORE_LOADER_DONE;
-	}
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_LOADER, thread_id, "thread %zu inserted: %zu",
-		pos, insertions);
+		double time_spent = fbr_get_time() - loader->start_time;
+		fbr_log_print(cstore->log, FBR_LOG_CS_LOADER, thread_id, "COMPLETED "
+			"loaded: %zu lazy: %lu time: %.3fs",
+			cstore->loaded, cstore->lazy_loaded, time_spent);
+
+		// TODO cleanup metadata here ?
+	}
 
 	return NULL;
 }
@@ -196,7 +212,7 @@ fbr_cstore_loader_free(struct fbr_cstore *cstore)
 
 	assert(loader->thread_pos == loader->thread_count);
 	assert_dev(loader->thread_done == loader->thread_count);
-	assert_dev(!loader->thread_count || loader->state == FBR_CSTORE_LOADER_DONE);
+	assert_dev(loader->state == FBR_CSTORE_LOADER_DONE);
 
 	fbr_ZERO(loader);
 }

@@ -39,7 +39,10 @@ fbr_get_time(void)
 	struct timespec ts;
 	assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
 
-	return (double)ts.tv_sec + ((double)ts.tv_nsec / (1000 * 1000 * 1000));
+	double timestamp = (double)ts.tv_sec;
+	timestamp += (double)ts.tv_nsec / (1000 * 1000 * 1000);
+
+	return timestamp;
 }
 
 void

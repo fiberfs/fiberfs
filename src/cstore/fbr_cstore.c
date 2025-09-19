@@ -6,6 +6,7 @@
 
 #include <pthread.h>
 #include <stdlib.h>
+#include <sys/vfs.h>
 
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
@@ -54,6 +55,11 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 
 	fbr_ZERO(cstore);
 	cstore->magic = FBR_CSTORE_MAGIC;
+
+	struct statfs fs;
+	int ret = statfs(root_path, &fs);
+	assert_zero(ret);
+	// TODO check f_fsid and make sure its not fiberfs (via fuse->statfs)
 
 	for (size_t i = 0; i < fbr_array_len(cstore->heads); i++) {
 		struct fbr_cstore_head *head = &cstore->heads[i];

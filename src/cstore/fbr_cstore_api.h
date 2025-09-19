@@ -54,6 +54,7 @@ struct fbr_cstore_loader {
 	enum fbr_cstore_loader_state		state;
 
 	volatile int				stop;
+	double					start_time;
 
 	size_t					thread_count;
 	size_t					thread_pos;
@@ -138,6 +139,7 @@ struct fbr_cstore {
 struct fbr_cstore_metadata {
 	char					path[FBR_PATH_MAX];
 	fbr_id_t				etag;
+	double					timestamp;
 	unsigned long				size;
 	unsigned long				offset;
 	enum fbr_cstore_entry_type		type;
