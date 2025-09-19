@@ -89,10 +89,10 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_
 	assert(dirpath);
 
 	if (inode == FBR_INODE_ROOT) {
-		assert_zero_dev(dirpath->len);
+		assert_zero_dev(dirpath->length);
 		_directory_root_init(fs);
 	} else {
-		assert_dev(dirpath->len);
+		assert_dev(dirpath->length);
 	}
 
 	struct fbr_directory *directory = calloc(1, sizeof(*directory));
@@ -358,7 +358,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 			directory->refcounts.in_dindex,
 				directory->refcounts.in_lru,
 				directory->refcounts.fs,
-			(int)dirname.len, dirname.name, dirname.len,
+			(int)dirname.length, dirname.name, dirname.length,
 			next->inode, next->generation);
 	} else {
 		fbr_rlog(FBR_LOG_DIR_EXP, "inode: %lu(%lu) refcount: %u+%u+%u path: '%.*s':%zu"
@@ -367,7 +367,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 			directory->refcounts.in_dindex,
 				directory->refcounts.in_lru,
 				directory->refcounts.fs,
-			(int)dirname.len, dirname.name, dirname.len);
+			(int)dirname.length, dirname.name, dirname.length);
 	}
 
 	if (!fs->fuse_ctx) {
@@ -399,7 +399,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		if (next) {
 			new_file = fbr_directory_find_file(next, filename.name,
-				filename.len);
+				filename.length);
 
 			if (!new_file) {
 				file_deleted = 1;
@@ -418,7 +418,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 			file->state = FBR_FILE_EXPIRED;
 
 			ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
-				file->inode, filename.name, filename.len);
+				file->inode, filename.name, filename.length);
 			assert_dev(ret != -ENOSYS);
 		} else if (file_expired || file_inval) {
 			fbr_rlog(FBR_LOG_DIR_EXP, "INVAL inode: %lu", file->inode);
@@ -428,7 +428,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 			}
 
 			ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
-				directory->inode, filename.name, filename.len);
+				directory->inode, filename.name, filename.length);
 			assert_dev(ret != -ENOSYS);
 		}
 	}
@@ -651,7 +651,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			file->state = FBR_FILE_OK;
 
 			struct fbr_file *existing = fbr_directory_find_file(new_directory,
-				filename.name, filename.len);
+				filename.name, filename.length);
 
 			if (!existing) {
 				file->generation = 1;
@@ -664,7 +664,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			}
 		} else {
 			assert_dev(file == fbr_directory_find_file(new_directory, filename.name,
-				filename.len));
+				filename.length));
 			file->generation++;
 		}
 
@@ -779,7 +779,7 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode, struct fbr_direct
 
 	fbr_inode_release(fs, &file);
 
-	fbr_rlog(FBR_LOG_FS, "directory found: '%s':%zu (inode: %lu)", dirname.name, dirname.len,
+	fbr_rlog(FBR_LOG_FS, "directory found: '%s':%zu (inode: %lu)", dirname.name, dirname.length,
 		inode);
 
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 0);

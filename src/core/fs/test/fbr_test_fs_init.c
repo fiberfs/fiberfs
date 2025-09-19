@@ -90,7 +90,7 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	struct fbr_path_name name;
 	fbr_directory_name(root, &name);
 
-	fbr_test_ERROR(name.len, "root dirname has length");
+	fbr_test_ERROR(name.length, "root dirname has length");
 	fbr_test_ASSERT(name.name, "dirname is null");
 	fbr_test_ERROR(strcmp(name.name, ""), "root dirname not empty")
 
@@ -102,7 +102,7 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_ASSERT(root->file == root_file, "Bad root file");
 	fbr_test_ERROR(root_file->parent_inode, "root has a parent inode");
 	fbr_test_ASSERT(root_file->state == FBR_FILE_OK, "root_file not FBR_FILE_OK");
-	fbr_test_ERROR(name.len, "root_file name has length");
+	fbr_test_ERROR(name.length, "root_file name has length");
 	fbr_test_ASSERT(name.name, "filename is null");
 	fbr_test_ERROR(strcmp(name.name, ""), "root_file not empty")
 

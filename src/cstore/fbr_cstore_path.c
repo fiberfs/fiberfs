@@ -135,7 +135,7 @@ fbr_cstore_path_index(struct fbr_cstore *cstore, const struct fbr_directory *dir
 	}
 
 	char *root_sep = "";
-	if (dirpath.len) {
+	if (dirpath.length) {
 		root_sep = "/";
 	}
 
@@ -163,7 +163,7 @@ fbr_cstore_path_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath, i
 	}
 
 	char *root_sep = "";
-	if (dirpath->len) {
+	if (dirpath->length) {
 		root_sep = "/";
 	}
 

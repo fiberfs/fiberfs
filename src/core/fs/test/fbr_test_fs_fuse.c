@@ -41,7 +41,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_directory_name(directory, &dirname);
 
 	fbr_test_logs("** INIT LOADING inode: %lu directory: '%.*s':%zu",
-		directory->inode, (int)dirname.len, dirname.name, dirname.len);
+		directory->inode, (int)dirname.length, dirname.name, dirname.length);
 
 	if (!directory->version) {
 		directory->version = fbr_id_gen();
@@ -51,7 +51,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	size_t depth = 0;
 
-	while(dirname.len) {
+	while(dirname.length) {
 		fbr_path_name_parent(&dirname, &dirname);
 		depth++;
 		assert(depth < 1000);
@@ -199,10 +199,10 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 	struct fbr_directory *directory = NULL;
 
 	if (inode == FBR_INODE_ROOT) {
-		assert_zero(dirname->len);
+		assert_zero(dirname->length);
 		directory = fbr_directory_root_alloc(fs);
 	} else {
-		assert(dirname->len);
+		assert(dirname->length);
 		directory = fbr_directory_alloc(fs, dirname, inode);
 	}
 
@@ -212,13 +212,13 @@ _test_fs_init_directory(struct fbr_fs *fs, const struct fbr_path_name *dirname, 
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	} else if (directory->state == FBR_DIRSTATE_ERROR) {
 		fbr_test_logs("** INIT ERROR inode: %lu directory: '%.*s':%zu",
-			directory->inode, (int)dirname->len, dirname->name, dirname->len);
+			directory->inode, (int)dirname->length, dirname->name, dirname->length);
 		fbr_dindex_release(fs, &directory);
 		return NULL;
 	} else {
 		assert(directory->state == FBR_DIRSTATE_OK);
 		fbr_test_logs("** INIT OK inode: %lu directory: '%.*s':%zu",
-			directory->inode, (int)dirname->len, dirname->name, dirname->len);
+			directory->inode, (int)dirname->length, dirname->name, dirname->length);
 	}
 
 	fbr_ASSERT(directory->state == FBR_DIRSTATE_OK, "directory->state: %d", directory->state);

@@ -134,7 +134,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs1->generation == 2);
 	assert(dir_fs1->file_count == 1);
 
-	file = fbr_directory_find_file(dir_fs1, filename.name, filename.len);
+	file = fbr_directory_find_file(dir_fs1, filename.name, filename.length);
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_OK);
 	assert(file->size == 3);
@@ -165,7 +165,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs2->generation == 4);
 	assert(dir_fs2->file_count == 1);
 
-	file = fbr_directory_find_file(dir_fs2, filename.name, filename.len);
+	file = fbr_directory_find_file(dir_fs2, filename.name, filename.length);
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_OK);
 	assert(file->size == 10);
@@ -311,7 +311,7 @@ _append_thread(void *arg)
 		fbr_directory_ok(root);
 		assert(root->state == FBR_DIRSTATE_OK);
 
-		struct fbr_file *file = fbr_directory_find_file(root, filename.name, filename.len);
+		struct fbr_file *file = fbr_directory_find_file(root, filename.name, filename.length);
 		if (file) {
 			fbr_file_ok(file);
 			assert(file->state == FBR_FILE_OK);

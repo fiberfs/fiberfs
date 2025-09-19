@@ -206,7 +206,7 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
 
-	fbr_writer_add(fs, json, filename.name, filename.len);
+	fbr_writer_add(fs, json, filename.name, filename.length);
 
 	// j: file generation
 	fbr_writer_add(fs, json, "\",\"j\":", 6);
@@ -744,7 +744,7 @@ _index_parse_file_alloc(struct fbr_index_parser *parser, const char *filename, s
 	fbr_rlog(FBR_LOG_DEBUG, "PARSER file ALLOC: '%.*s'", (int)filename_len, filename);
 
 	struct fbr_path_name filepath;
-	filepath.len = filename_len;
+	filepath.length = filename_len;
 	filepath.name = filename;
 
 	parser->file = fbr_file_alloc_new(fs, directory, &filepath);
@@ -832,7 +832,7 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 			struct fbr_path_name filename;
 			fbr_path_get_file(&file->path, &filename);
 
-			_index_parse_file_alloc(parser, filename.name, filename.len);
+			_index_parse_file_alloc(parser, filename.name, filename.length);
 
 			parser->file->generation = generation;
 		}

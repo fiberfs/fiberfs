@@ -83,11 +83,11 @@ _test_path_print_dir(struct fbr_test_context *ctx, struct fbr_directory *directo
 
 	fbr_directory_name(directory, &dirname);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory dirname: '%.*s':%zu",
-		(int)dirname.len, dirname.name, dirname.len);
+		(int)dirname.length, dirname.name, dirname.length);
 
 	fbr_path_name_parent(&dirname, &fullparent);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "directory fullparent: '%.*s':%zu",
-		(int)fullparent.len, fullparent.name, fullparent.len);
+		(int)fullparent.length, fullparent.name, fullparent.length);
 
 	fbr_test_ERROR(fbr_path_name_str_cmp(&dirname, d_check), "dirname isnt '%s'", d_check);
 }
@@ -106,7 +106,7 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char 
 
 	fbr_path_get_dir(path, &dirname);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s dirname: '%.*s':%zu", name,
-		(int)dirname.len, dirname.name, dirname.len);
+		(int)dirname.length, dirname.name, dirname.length);
 
 	const char *filename = fbr_path_get_file(path, NULL);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s filename: '%s'", name, filename);
@@ -117,7 +117,7 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char 
 
 	fbr_path_name_parent(&fullpath, &fullparent);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullparent: '%.*s':%zu", name,
-		(int)fullparent.len, fullparent.name, fullparent.len);
+		(int)fullparent.length, fullparent.name, fullparent.length);
 
 	fbr_test_ASSERT(path->layout.value == layout, "layout isnt %d", layout);
 	fbr_test_ERROR(fbr_path_name_str_cmp(&dirname, d_check), "dirname isnt '%s'", d_check);

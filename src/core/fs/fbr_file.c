@@ -28,7 +28,7 @@ _file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 		dirname = parent->path;
 	} else {
 		assert_zero(fs->root_file);
-		assert_zero(filename->len);
+		assert_zero(filename->length);
 
 		dirname = fbr_path_shared_alloc(FBR_DIRNAME_ROOT);
 	}

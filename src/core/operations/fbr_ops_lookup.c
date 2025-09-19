@@ -47,7 +47,7 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 	if (fbr_is_dev()) {
 		struct fbr_path_name filename;
 		fbr_path_get_file(&file->path, &filename);
-		assert(name_len == filename.len);
+		assert(name_len == filename.length);
 		assert_zero(strcmp(name, filename.name));
 	}
 

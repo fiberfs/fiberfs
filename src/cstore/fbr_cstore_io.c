@@ -1065,7 +1065,7 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	}
 
 	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "READ %s version=%ld",
-		dirpath->len ? dirpath->name : "(root)", version);
+		dirpath->length ? dirpath->name : "(root)", version);
 
 	fbr_cstore_release(cstore, entry);
 

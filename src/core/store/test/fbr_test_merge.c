@@ -140,7 +140,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs2->generation == 3);
 	assert(dir_fs2->file_count == 2);
 
-	file2 = fbr_directory_find_file(dir_fs2, filename2.name, filename2.len);
+	file2 = fbr_directory_find_file(dir_fs2, filename2.name, filename2.length);
 	fbr_file_ok(file2);
 	assert(file2->state == FBR_FILE_OK);
 	assert(file2->generation == 1);
@@ -171,7 +171,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs1->generation == 2);
 	assert(dir_fs1->file_count == 2);
 
-	file2 = fbr_directory_find_file(dir_fs1, filename2.name, filename2.len);
+	file2 = fbr_directory_find_file(dir_fs1, filename2.name, filename2.length);
 	fbr_file_ok(file2);
 	assert(file2->state == FBR_FILE_OK);
 	assert(file2->generation == 1);
@@ -209,7 +209,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs1->generation == 5);
 	assert(dir_fs1->file_count == 2);
 
-	file1 = fbr_directory_find_file(dir_fs1, filename1.name, filename1.len);
+	file1 = fbr_directory_find_file(dir_fs1, filename1.name, filename1.length);
 	fbr_file_ok(file1);
 	assert(file1->state == FBR_FILE_OK);
 	assert(file1->size == 10);
@@ -220,7 +220,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(bytes == 10, "Found %zu", bytes);
 	fbr_test_ASSERT(!memcmp(buffer, "ABCDE67890", bytes), "Body mismatch '%.*s'", 10, buffer);
 
-	file2 = fbr_directory_find_file(dir_fs1, filename2.name, filename2.len);
+	file2 = fbr_directory_find_file(dir_fs1, filename2.name, filename2.length);
 	fbr_file_ok(file2);
 	assert(file2->state == FBR_FILE_OK);
 	assert(file2->size == 20);
@@ -246,7 +246,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs2->generation == 5);
 	assert(dir_fs2->file_count == 2);
 
-	file1 = fbr_directory_find_file(dir_fs2, filename1.name, filename1.len);
+	file1 = fbr_directory_find_file(dir_fs2, filename1.name, filename1.length);
 	fbr_file_ok(file1);
 	assert(file1->state == FBR_FILE_OK);
 	assert(file1->size == 10);
@@ -256,7 +256,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(bytes == 10, "Found %zu", bytes);
 	fbr_test_ASSERT(!memcmp(buffer, "ABCDE67890", bytes), "Body mismatch '%.*s'", 10, buffer);
 
-	file2 = fbr_directory_find_file(dir_fs2, filename2.name, filename2.len);
+	file2 = fbr_directory_find_file(dir_fs2, filename2.name, filename2.length);
 	fbr_file_ok(file2);
 	assert(file2->state == FBR_FILE_OK);
 	assert(file2->size == 20);

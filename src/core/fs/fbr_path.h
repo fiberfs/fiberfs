@@ -70,7 +70,7 @@ struct fbr_path {
 };
 
 struct fbr_path_name {
-	size_t					len;
+	size_t					length;
 	const char				*name;
 };
 

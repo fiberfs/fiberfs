@@ -85,7 +85,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert(root->state == FBR_DIRSTATE_OK);
 	assert(root->file_count == 1);
 
-	file = fbr_directory_find_file(root, filename.name, filename.len);
+	file = fbr_directory_find_file(root, filename.name, filename.length);
 	fbr_file_ok(file);
 	assert(file->size == 14);
 	char buffer[15];

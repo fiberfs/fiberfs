@@ -335,7 +335,7 @@ _write_test(void)
 	assert(directory->state == FBR_DIRSTATE_OK);
 	assert(directory->file_count == 1);
 
-	file = fbr_directory_find_file(directory, filename.name, filename.len);
+	file = fbr_directory_find_file(directory, filename.name, filename.length);
 	fbr_file_ok(file);
 
 	fbr_test_logs("*** directory->generation: %lu", directory->generation);

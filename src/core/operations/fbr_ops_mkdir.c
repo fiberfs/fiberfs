@@ -35,7 +35,7 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	struct fbr_path_name dirname;
 	fbr_path_name_init(&dirname, name);
 
-	struct fbr_file *duplicate = fbr_directory_find_file(directory, dirname.name, dirname.len);
+	struct fbr_file *duplicate = fbr_directory_find_file(directory, dirname.name, dirname.length);
 	if (duplicate) {
 		fbr_fuse_reply_err(request, EEXIST);
 
