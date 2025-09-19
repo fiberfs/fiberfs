@@ -127,10 +127,11 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 		if (entry) {
 			fbr_cstore_entry_ok(entry);
 			assert_dev(entry->state == FBR_CSTORE_OK);
-			fbr_cstore_release(cstore, entry);
 
-			insertions++;
 			fbr_atomic_add(&cstore->loaded, 1);
+			insertions++;
+
+			fbr_cstore_release(cstore, entry);
 		}
 	}
 
