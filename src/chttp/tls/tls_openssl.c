@@ -3,15 +3,15 @@
  *
  */
 
-#include "chttp.h"
-#include "tls_openssl_test_key.h"
-#include "tls_openssl.h"
-
 #ifdef CHTTP_OPENSSL
 
 #include <openssl/ssl.h>
 #include <poll.h>
 #include <pthread.h>
+
+#include "chttp.h"
+#include "tls_openssl.h"
+#include "tls_openssl_test_key.h"
 
 enum chttp_openssl_type {
 	CHTTP_OPENSSL_NONE = 0,
@@ -66,12 +66,13 @@ struct chttp_openssl_ctx _OPENSSL_SERVER_CTX = {
 static void
 _openssl_init(struct chttp_openssl_ctx *ctx)
 {
-	const SSL_METHOD *method = NULL;
 
 	chttp_openssl_ctx_ok(ctx);
 	assert_zero(ctx->ssl_ctx);
 	assert_zero(ctx->initialized);
 	assert_zero(ctx->failed);
+
+	const SSL_METHOD *method = NULL;
 
 	switch (ctx->type) {
 		case CHTTP_OPENSSL_CLIENT:
@@ -81,7 +82,7 @@ _openssl_init(struct chttp_openssl_ctx *ctx)
 			method = TLS_server_method();
 			break;
 		default:
-			chttp_ABORT("bad openssl ctx type");
+			fbr_ABORT("bad openssl ctx type");
 	}
 
 	assert(method);
@@ -108,11 +109,11 @@ _openssl_init_lock(struct chttp_openssl_ctx *ctx)
 	chttp_openssl_ctx_ok(ctx);
 
 	if (!ctx->initialized) {
-		assert_zero(pthread_mutex_lock(&ctx->lock));
+		pt_assert(pthread_mutex_lock(&ctx->lock));
 		if (!ctx->initialized && !ctx->failed) {
 			_openssl_init(ctx);
 		}
-		assert_zero(pthread_mutex_unlock(&ctx->lock));
+		pt_assert(pthread_mutex_unlock(&ctx->lock));
 	}
 	assert(ctx->initialized || ctx->failed);
 }
@@ -122,7 +123,7 @@ _openssl_free(struct chttp_openssl_ctx *ctx)
 {
 	chttp_openssl_ctx_ok(ctx);
 
-	assert_zero(pthread_mutex_lock(&ctx->lock));
+	pt_assert(pthread_mutex_lock(&ctx->lock));
 
 	if (ctx->initialized) {
 		assert(ctx->ssl_ctx);
@@ -135,7 +136,7 @@ _openssl_free(struct chttp_openssl_ctx *ctx)
 
 	assert_zero(ctx->ssl_ctx);
 
-	assert_zero(pthread_mutex_unlock(&ctx->lock));
+	pt_assert(pthread_mutex_unlock(&ctx->lock));
 }
 
 void
@@ -148,10 +149,6 @@ chttp_openssl_free(void)
 static void
 _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 {
-	SSL *ssl;
-	int ret, ssl_ret, timeout_ms;
-	short events;
-
 	chttp_addr_connected(addr);
 	assert(addr->tls);
 	assert(addr->time_start);
@@ -175,9 +172,10 @@ _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 		return;
 	}
 
+	SSL *ssl;
 	chttp_openssl_connected(addr, ssl);
 
-	ret = SSL_set_fd(ssl, addr->sock);
+	int ret = SSL_set_fd(ssl, addr->sock);
 
 	if (ret != 1) {
 		chttp_tcp_error(addr, CHTTP_ERR_TLS_INIT);
@@ -195,7 +193,7 @@ _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 
 			break;
 		default:
-			chttp_ABORT("bad openssl ctx type");
+			fbr_ABORT("bad openssl ctx type");
 	}
 
 	if (addr->timeout_connect_ms > 0) {
@@ -214,8 +212,8 @@ _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 
 		assert(ret < 0);
 
-		events = 0;
-		ssl_ret = SSL_get_error(ssl, ret);
+		short events = 0;
+		int ssl_ret = SSL_get_error(ssl, ret);
 
 		switch (ssl_ret) {
 			case SSL_ERROR_WANT_READ:
@@ -233,8 +231,8 @@ _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 		assert(events);
 		assert(addr->timeout_connect_ms);
 
-		timeout_ms =  addr->timeout_connect_ms -
-			((chttp_get_time() - addr->time_start) * 1000);
+		int timeout_ms =  addr->timeout_connect_ms -
+			((fbr_get_time() - addr->time_start) * 1000);
 
 		if (timeout_ms <= 0) {
 			chttp_tcp_error(addr, CHTTP_ERR_TLS_HANDSHAKE);
@@ -273,15 +271,13 @@ chttp_openssl_accept(struct chttp_addr *addr)
 void
 chttp_openssl_close(struct chttp_addr *addr)
 {
-	SSL *ssl;
-
 	chttp_addr_ok(addr);
 
 	if (!addr->tls_priv) {
 		return;
 	}
 
-	ssl = (SSL*)addr->tls_priv;
+	SSL *ssl = (SSL*)addr->tls_priv;
 
 	SSL_free(ssl);
 
@@ -291,17 +287,17 @@ chttp_openssl_close(struct chttp_addr *addr)
 void
 chttp_openssl_write(struct chttp_addr *addr, const void *buf, size_t buf_len)
 {
-	SSL *ssl;
-	size_t bytes;
-	int ret;
 
 	chttp_addr_connected(addr);
 	assert_zero(addr->nonblocking);
-	chttp_openssl_connected(addr, ssl);
 	assert(buf);
 	assert(buf_len);
 
-	ret = SSL_write_ex(ssl, buf, buf_len, &bytes);
+	SSL *ssl;
+	chttp_openssl_connected(addr, ssl);
+
+	size_t bytes;
+	int ret = SSL_write_ex(ssl, buf, buf_len, &bytes);
 
 	if (ret <= 0) {
 		chttp_tcp_error(addr, CHTTP_ERR_NETWORK);
@@ -314,18 +310,17 @@ chttp_openssl_write(struct chttp_addr *addr, const void *buf, size_t buf_len)
 size_t
 chttp_openssl_read(struct chttp_addr *addr, void *buf, size_t buf_len)
 {
-	SSL *ssl;
-	size_t bytes;
-	int ret, ssl_ret;
-
 	chttp_addr_connected(addr);
 	assert_zero(addr->nonblocking);
-	chttp_openssl_connected(addr, ssl);
 	assert(buf);
 	assert(buf_len);
 
-	ret = SSL_read_ex(ssl, buf, buf_len, &bytes);
-	ssl_ret = SSL_get_error(ssl, ret);
+	SSL *ssl;
+	chttp_openssl_connected(addr, ssl);
+
+	size_t bytes;
+	int ret = SSL_read_ex(ssl, buf, buf_len, &bytes);
+	int ssl_ret = SSL_get_error(ssl, ret);
 
 	if (ssl_ret == SSL_ERROR_ZERO_RETURN) {
 		assert_zero(bytes);
@@ -336,6 +331,13 @@ chttp_openssl_read(struct chttp_addr *addr, void *buf, size_t buf_len)
 	}
 
 	return bytes;
+}
+
+#else /* CHTTP_OPENSSL */
+
+void
+chttp_openssl_error(void)
+{
 }
 
 #endif /* CHTTP_OPENSSL */

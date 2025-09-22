@@ -3,11 +3,11 @@
  *
  */
 
-#include "chttp.h"
-
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
+
+#include "chttp.h"
 
 const char *_CHTTP_HEADER_FIRST	 = "_FIRST";
 const char *CHTTP_HEADER_REASON	 = "_REASON";
@@ -20,16 +20,16 @@ chttp_set_version(struct chttp_context *ctx, enum chttp_version version)
 	chttp_context_ok(ctx);
 
 	if (version >= _CHTTP_H_VERSION_ERROR) {
-		chttp_ABORT("invalid version");
+		fbr_ABORT("invalid version");
 	}
 
 	// TODO
 	if (version >= CHTTP_H_VERSION_2_0) {
-		chttp_ABORT("HTTP2+ not supported");
+		fbr_ABORT("HTTP2+ not supported");
 	}
 
 	if (ctx->state != CHTTP_STATE_NONE) {
-		chttp_ABORT("invalid state, version must be set first");
+		fbr_ABORT("invalid state, version must be set first");
 	}
 
 	ctx->version = version;
@@ -43,7 +43,7 @@ chttp_set_method(struct chttp_context *ctx, const char *method)
 	assert_zero(ctx->data_start.dpage);
 
 	if (ctx->state != CHTTP_STATE_NONE) {
-		chttp_ABORT("invalid state, method must before url or headers");
+		fbr_ABORT("invalid state, method must before url or headers");
 	}
 
 	if (!strcmp(method, "HEAD")) {
@@ -73,7 +73,7 @@ _setup_request(struct chttp_context *ctx)
 			chttp_dpage_append(ctx, " HTTP/1.1\r\n", 11);
 			break;
 		default:
-			chttp_ABORT("bad version");
+			fbr_ABORT("bad version");
 	}
 
 	ctx->state = CHTTP_STATE_INIT_HEADER;
@@ -92,7 +92,7 @@ chttp_set_url(struct chttp_context *ctx, const char *url)
 	}
 
 	if (ctx->state != CHTTP_STATE_INIT_METHOD) {
-		chttp_ABORT("invalid state, method must after method and before headers");
+		fbr_ABORT("invalid state, method must after method and before headers");
 	}
 
 	chttp_dpage_append(ctx, " ", 1);
@@ -104,16 +104,13 @@ chttp_set_url(struct chttp_context *ctx, const char *url)
 void
 chttp_header_add(struct chttp_context *ctx, const char *name, const char *value)
 {
-	size_t name_len, value_len;
-	struct chttp_dpage *dpage;
-	char *len_end;
 
 	chttp_context_ok(ctx);
 	assert(name && *name);
 	assert(value);
 
 	if (ctx->state != CHTTP_STATE_INIT_HEADER) {
-		chttp_ABORT("invalid state, headers must be set last before sending");
+		fbr_ABORT("invalid state, headers must be set last before sending");
 	}
 
 	if (!strcasecmp(name, "host")) {
@@ -123,6 +120,7 @@ chttp_header_add(struct chttp_context *ctx, const char *name, const char *value)
 	} else if (!strcasecmp(name, "accept-encoding")) {
 		ctx->gzip = 0;
 	} else if (!strcasecmp(name, "content-length")) {
+		char *len_end;
 		errno = 0;
 		ctx->length = strtol(value, &len_end, 10);
 
@@ -134,10 +132,10 @@ chttp_header_add(struct chttp_context *ctx, const char *name, const char *value)
 		ctx->want_100 = 1;
 	}
 
-	name_len = strlen(name);
-	value_len = strlen(value);
+	size_t name_len = strlen(name);
+	size_t value_len = strlen(value);
 
-	dpage = chttp_dpage_get(ctx, name_len + 2 + value_len + 2);
+	struct chttp_dpage *dpage = chttp_dpage_get(ctx, name_len + 2 + value_len + 2);
 
 	chttp_dpage_append(ctx, name, name_len);
 	chttp_dpage_append(ctx, ": ", 2);
@@ -154,7 +152,7 @@ chttp_header_add(struct chttp_context *ctx, const char *name, const char *value)
  */
 int
 chttp_header_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, size_t *end,
-	int has_return, int *binary)
+    int has_return, int *binary)
 {
 	chttp_dpage_ok(dpage);
 	assert(start < dpage->offset);
@@ -201,15 +199,11 @@ chttp_header_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, size_
 void
 chttp_header_delete(struct chttp_context *ctx, const char *name)
 {
-	struct chttp_dpage *dpage;
-	size_t name_len, start, mid, end, tail;
-	int first, error;
-
 	chttp_context_ok(ctx);
 	assert(name && *name);
 
 	if (ctx->state != CHTTP_STATE_INIT_HEADER) {
-		chttp_ABORT("invalid state, headers must be deleted last before sending");
+		fbr_ABORT("invalid state, headers must be deleted last before sending");
 	}
 
 	if (!strcasecmp(name, "host")) {
@@ -222,15 +216,16 @@ chttp_header_delete(struct chttp_context *ctx, const char *name)
 		ctx->want_100 = 0;
 	}
 
-	name_len = strlen(name);
-	first = 1;
+	struct chttp_dpage *dpage;
+	size_t name_len = strlen(name);
+	int first = 1;
 
 	for (dpage = ctx->dpage; dpage; dpage = dpage->next) {
 		chttp_dpage_ok(dpage);
 
-		for (start = 0; start < dpage->offset; start++) {
-			error = chttp_header_endline(dpage, start, &mid, &end, 1, NULL);
-
+		for (size_t start = 0; start < dpage->offset; start++) {
+			size_t mid, end;
+			int error = chttp_header_endline(dpage, start, &mid, &end, 1, NULL);
 			if (error) {
 				assert(first);
 				break;
@@ -249,7 +244,7 @@ chttp_header_delete(struct chttp_context *ctx, const char *name)
 			}
 
 			// Shift the tail up the dpage
-			tail = dpage->offset - end - 1;
+			size_t tail = dpage->offset - end - 1;
 			assert(tail < dpage->offset);
 
 			if (tail) {
@@ -267,20 +262,17 @@ chttp_header_delete(struct chttp_context *ctx, const char *name)
 static void
 _parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 {
-	struct chttp_dpage *dpage;
-	size_t len, count, i;
-
 	chttp_context_ok(ctx);
 	chttp_dpage_ok(ctx->dpage_last);
 	assert_zero(ctx->seen_first);
 
-	dpage = ctx->dpage_last;
-	len = end - start;
+	struct chttp_dpage *dpage = ctx->dpage_last;
+	size_t len = end - start;
+	size_t count = 0;
 
-	// TODO remove
-	assert(strlen((char*)&dpage->data[start]) == len);
+	assert_dev(strlen((char*)&dpage->data[start]) == len);
 
-	for (i = start, count = 0; i < end; i++) {
+	for (size_t i = start; i < end; i++) {
 		if (dpage->data[i] < ' ') {
 			chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 			return;
@@ -304,19 +296,15 @@ _parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 static void
 _parse_response_status(struct chttp_context *ctx, size_t start, size_t end)
 {
-	struct chttp_dpage *dpage;
-	size_t len;
-
 	chttp_context_ok(ctx);
 	chttp_dpage_ok(ctx->dpage_last);
 	assert_zero(ctx->status);
 	assert_zero(ctx->seen_first);
 
-	dpage = ctx->dpage_last;
-	len = end - start;
+	struct chttp_dpage *dpage = ctx->dpage_last;
+	size_t len = end - start;
 
-	// TODO remove
-	assert(strlen((char*)&dpage->data[start]) == len);
+	assert_dev(strlen((char*)&dpage->data[start]) == len);
 
 	if (len < 14) {
 		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
@@ -377,16 +365,12 @@ _parse_response_status(struct chttp_context *ctx, size_t start, size_t end)
 static void
 _header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 {
-	struct chttp_dpage *dpage;
-	size_t start, end, i;
-	int binary, error;
-
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_HEADERS);
 	chttp_dpage_ok(ctx->dpage_last);
 	assert(func);
 
-	dpage = ctx->dpage_last;
+	struct chttp_dpage *dpage = ctx->dpage_last;
 
 	// First parse
 	if (!ctx->data_start.dpage) {
@@ -397,10 +381,12 @@ _header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 		chttp_dpage_ptr_set(&ctx->data_start, dpage, 0, 0);
 	}
 
-	start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
+	size_t start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
 
 	for (; start < dpage->offset; start++) {
-		error = chttp_header_endline(dpage, start, NULL, &end, 1, &binary);
+		size_t end;
+		int binary;
+		int error = chttp_header_endline(dpage, start, NULL, &end, 1, &binary);
 
 		// Incomplete line
 		if (error < 0) {
@@ -414,7 +400,7 @@ _header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 
 		dpage->data[end - 1] = '\0';
 
-		for (i = end - 2; i > start; i--) {
+		for (size_t i = end - 2; i > start; i--) {
 			if (dpage->data[i] == ' ') {
 				dpage->data[i] = '\0';
 			} else {
@@ -472,24 +458,22 @@ chttp_header_parse_request(struct chttp_context *ctx)
 const char *
 chttp_header_get_pos(struct chttp_context *ctx, const char *name, size_t pos)
 {
-	struct chttp_dpage *dpage;
-	size_t name_len, start, mid, end;
-	int first;
-
 	chttp_context_ok(ctx);
 	assert(name && *name);
 
 	if (ctx->state < CHTTP_STATE_BODY || ctx->state > CHTTP_STATE_CLOSED) {
-		chttp_ABORT("invalid state, headers must be read after receiving");
+		fbr_ABORT("invalid state, headers must be read after receiving");
 	}
 
-	name_len = strlen(name);
-	first = 1;
+	struct chttp_dpage *dpage;
+	size_t name_len = strlen(name);
+	int first = 1;
 
 	for (dpage = ctx->dpage; dpage; dpage = dpage->next) {
 		chttp_dpage_ok(dpage);
 
-		for (start = 0; start < dpage->offset; start++) {
+		for (size_t start = 0; start < dpage->offset; start++) {
+			size_t mid, end;
 			assert_zero(chttp_header_endline(dpage, start, &mid, &end, 0, NULL));
 
 			end--;

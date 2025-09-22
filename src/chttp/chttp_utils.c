@@ -3,12 +3,12 @@
  *
  */
 
-#include "chttp.h"
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
+#include "chttp.h"
 
 void
 chttp_context_debug(struct chttp_context *ctx)
@@ -26,7 +26,7 @@ chttp_context_debug(struct chttp_context *ctx)
 		(void*)ctx->hostname.dpage, ctx->hostname.offset, ctx->hostname.length,
 		ctx->status, ctx->length, ctx->do_free, ctx->has_host, ctx->close, ctx->chunked,
 		ctx->gzip,
-		ctx->addr.tls, ctx->addr.reused, chttp_get_time() - ctx->addr.time_start);
+		ctx->addr.tls, ctx->addr.reused, fbr_get_time() - ctx->addr.time_start);
 
 	chttp_dpage_debug(ctx->dpage);
 }
@@ -88,46 +88,6 @@ chttp_print_hex(void *buf, size_t buf_len)
 	printf("\n");
 }
 
-size_t
-chttp_safe_add(size_t *dest, size_t value)
-{
-	assert(dest);
-
-        return __sync_add_and_fetch(dest, value);
-}
-
-void
-chttp_do_abort(const char *function, const char *file, int line, const char *reason)
-{
-	(void)file;
-	(void)line;
-
-	fprintf(stderr, "%s:%d %s(): %s\n", file, line, function, reason);
-
-	abort();
-}
-
-void __chttp_attr_printf_p(5)
-chttp_do_assert(int cond, const char *function, const char *file, int line,
-    const char *fmt, ...)
-{
-	va_list ap;
-
-	if (cond) {
-		return;
-	}
-
-	fprintf(stderr, "%s:%d %s(): Assertion failed\n", file, line, function);
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-
-	printf("\n");
-
-	abort();
-}
-
 const char *
 chttp_error_msg(struct chttp_context *ctx)
 {
@@ -187,18 +147,8 @@ chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port)
 			*port = ntohs(((struct sockaddr_in6*)sa)->sin6_port);
 			break;
 		default:
-			chttp_ABORT("Invalid sockaddr family");
+			fbr_ABORT("Invalid sockaddr family");
 	}
-}
-
-double
-chttp_get_time(void)
-{
-	struct timespec ts;
-
-        assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
-
-        return ts.tv_sec + ((double)ts.tv_nsec / (1000 * 1000 * 1000));
 }
 
 size_t

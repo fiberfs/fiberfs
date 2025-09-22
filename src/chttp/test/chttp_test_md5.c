@@ -5,10 +5,10 @@
  *
  */
 
+#include <stdlib.h>
+
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
-
-#include <stdlib.h>
 
 static unsigned char _MD5_PADDING[64] = {
 	0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -56,7 +56,7 @@ static unsigned char _MD5_PADDING[64] = {
 void
 chttp_test_md5_init(struct chttp_test_md5 *md5)
 {
-	chttp_ZERO(md5);
+	fbr_ZERO(md5);
 
 	md5->i[0] = 0;
 	md5->i[1] = 0;

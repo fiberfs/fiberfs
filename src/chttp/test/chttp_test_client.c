@@ -3,13 +3,13 @@
  *
  */
 
+#include <stdlib.h>
+
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
 #include "compress/fbr_gzip.h"
 #include "network/chttp_tcp_pool.h"
 #include "tls/chttp_tls.h"
-
-#include <stdlib.h>
 
 static inline struct chttp_context *
 _test_context_ok(struct fbr_test_context *ctx)
@@ -26,19 +26,17 @@ _test_context_ok(struct fbr_test_context *ctx)
 static void
 _test_client_finish(struct fbr_test_context *ctx)
 {
-	struct chttp_context *chttp;
-	size_t allocs = 0;
-	struct chttp_dpage *dpage;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR(chttp->error, "chttp context has an error (%s)",
 		chttp_error_msg(chttp));
+
+	size_t allocs = 0;
 
 	if (chttp->do_free) {
 		allocs++;
 	}
 
-	dpage = chttp->dpage;
+	struct chttp_dpage *dpage = chttp->dpage;
 	while(dpage) {
 		if (dpage->free) {
 			allocs++;
@@ -83,13 +81,13 @@ chttp_test_cmd_chttp_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 void
 chttp_test_cmd_chttp_init_dynamic(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	long size = 0;
-
 	fbr_test_context_ok(ctx);
 	chttp_test_context_ok(ctx->chttp_test);
 
 	fbr_test_ERROR(cmd->param_count > 1, "too many parameters");
 	fbr_test_ERROR(ctx->chttp_test->chttp != NULL, "chttp context exists");
+
+	long size = 0;
 
 	if (cmd->param_count == 1) {
 		size = fbr_test_parse_long(cmd->params[0].value);
@@ -109,14 +107,11 @@ chttp_test_cmd_chttp_init_dynamic(struct fbr_test_context *ctx, struct fbr_test_
 void
 chttp_test_cmd_chttp_timeout_connect_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-	int timeout;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	chttp_addr_ok(&chttp->addr);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	timeout = (int)fbr_test_parse_long(cmd->params[0].value);
+	int timeout = (int)fbr_test_parse_long(cmd->params[0].value);
 
 	fbr_test_ERROR(chttp->addr.state != CHTTP_ADDR_RESOLVED,
 		"Address must be resolved first");
@@ -127,14 +122,11 @@ chttp_test_cmd_chttp_timeout_connect_ms(struct fbr_test_context *ctx, struct fbr
 void
 chttp_test_cmd_chttp_timeout_transfer_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-	int timeout;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	chttp_addr_ok(&chttp->addr);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	timeout = (int)fbr_test_parse_long(cmd->params[0].value);
+	int timeout = (int)fbr_test_parse_long(cmd->params[0].value);
 
 	fbr_test_ERROR(chttp->addr.state != CHTTP_ADDR_RESOLVED, "Address must be resolved first");
 
@@ -144,13 +136,10 @@ chttp_test_cmd_chttp_timeout_transfer_ms(struct fbr_test_context *ctx, struct fb
 void
 chttp_test_cmd_chttp_version(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-	long version;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	version = fbr_test_parse_long(cmd->params[0].value);
+	long version = fbr_test_parse_long(cmd->params[0].value);
 
 	switch (version) {
 		case 10:
@@ -167,9 +156,7 @@ chttp_test_cmd_chttp_version(struct fbr_test_context *ctx, struct fbr_test_cmd *
 void
 chttp_test_cmd_chttp_method(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	chttp_set_method(chttp, cmd->params[0].value);
@@ -178,9 +165,7 @@ chttp_test_cmd_chttp_method(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 void
 chttp_test_cmd_chttp_url(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	chttp_set_url(chttp, cmd->params[0].value);
@@ -189,9 +174,7 @@ chttp_test_cmd_chttp_url(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 void
 chttp_test_cmd_chttp_add_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
 
 	fbr_test_unescape(&cmd->params[1]);
@@ -202,9 +185,7 @@ chttp_test_cmd_chttp_add_header(struct fbr_test_context *ctx, struct fbr_test_cm
 void
 chttp_test_cmd_chttp_delete_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	chttp_header_delete(chttp, cmd->params[0].value);
@@ -213,16 +194,13 @@ chttp_test_cmd_chttp_delete_header(struct fbr_test_context *ctx, struct fbr_test
 void
 chttp_test_cmd_chttp_connect(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-	long port;
-	int tls = 0, outport;
-	char name[256];
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR(cmd->param_count > 3, "too many parameters");
 	fbr_test_ERROR(cmd->param_count < 2, "missing parameters");
 	fbr_test_ERROR_string(cmd->params[0].value);
 	fbr_test_ERROR_string(cmd->params[1].value);
+
+	int tls = 0;
 
 	if (cmd->param_count >= 3) {
 		fbr_test_ERROR_string(cmd->params[2].value);
@@ -231,13 +209,15 @@ chttp_test_cmd_chttp_connect(struct fbr_test_context *ctx, struct fbr_test_cmd *
 		}
 	}
 
-	port = fbr_test_parse_long(cmd->params[1].value);
+	long port = fbr_test_parse_long(cmd->params[1].value);
 	fbr_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
 
 	chttp_connect(chttp, cmd->params[0].value, cmd->params[0].len, port, tls);
 
 	fbr_test_ERROR(chttp->error, "connection failed: %s", chttp_error_msg(chttp));
 
+	char name[256];
+	int outport;
 	chttp_sa_string(&chttp->addr.sa, name, sizeof(name), &outport);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "lookup made to %s:%ld => %s:%d",
@@ -247,9 +227,7 @@ chttp_test_cmd_chttp_connect(struct fbr_test_context *ctx, struct fbr_test_cmd *
 char *
 chttp_test_var_chttp_reused(struct fbr_test_context *ctx)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	chttp_addr_ok(&chttp->addr);
 
 	if (chttp->addr.reused) {
@@ -262,9 +240,7 @@ chttp_test_var_chttp_reused(struct fbr_test_context *ctx)
 void
 chttp_test_cmd_chttp_new_connection(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	chttp->new_conn = 1;
@@ -275,9 +251,7 @@ chttp_test_cmd_chttp_new_connection(struct fbr_test_context *ctx, struct fbr_tes
 void
 chttp_test_cmd_chttp_enable_gzip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	chttp->gzip = 1;
@@ -288,9 +262,7 @@ chttp_test_cmd_chttp_enable_gzip(struct fbr_test_context *ctx, struct fbr_test_c
 void
 chttp_test_cmd_chttp_send_only(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	chttp_send(chttp);
@@ -301,9 +273,7 @@ chttp_test_cmd_chttp_send_only(struct fbr_test_context *ctx, struct fbr_test_cmd
 void
 chttp_test_cmd_chttp_send_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	chttp_body_send(chttp, cmd->params[0].value, cmd->params[0].len);
@@ -314,15 +284,13 @@ chttp_test_cmd_chttp_send_body(struct fbr_test_context *ctx, struct fbr_test_cmd
 void
 chttp_test_cmd_chttp_send_body_chunkgzip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-	struct fbr_gzip gzip;
-	char buf[1024];
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 	assert(chttp->state == CHTTP_STATE_SENT);
 	chttp_addr_connected(&chttp->addr);
 
+	struct fbr_gzip gzip;
+	char buf[1024];
 	fbr_gzip_deflate_init(&gzip);
 	chttp_gzip_register(NULL, &gzip, buf, sizeof(buf));
 
@@ -339,12 +307,9 @@ chttp_test_cmd_chttp_send_body_chunkgzip(struct fbr_test_context *ctx, struct fb
 void
 chttp_test_cmd_chttp_receive(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-	struct fbr_test *test;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
-	test = fbr_test_convert(ctx);
+	struct fbr_test *test = fbr_test_convert(ctx);
 
 	chttp_receive(chttp);
 
@@ -359,9 +324,7 @@ chttp_test_cmd_chttp_receive(struct fbr_test_context *ctx, struct fbr_test_cmd *
 void
 chttp_test_cmd_chttp_send(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	chttp_test_cmd_chttp_send_only(ctx, cmd);
@@ -373,13 +336,10 @@ chttp_test_cmd_chttp_send(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 void
 chttp_test_cmd_chttp_status_match(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-	long status;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	status = fbr_test_parse_long(cmd->params[0].value);
+	long status = fbr_test_parse_long(cmd->params[0].value);
 	fbr_test_ERROR(status <= 0 || status > 999, "invalid status");
 
 	fbr_test_ERROR(chttp->status != status,
@@ -392,16 +352,13 @@ static void
 _test_header_match(struct fbr_test_context *ctx, const char *header, const char *expected,
     int sub)
 {
-	struct chttp_context *chttp;
-	const char *header_value, *dup;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	assert(header);
 
-	header_value = chttp_header_get(chttp, header);
+	const char *header_value = chttp_header_get(chttp, header);
 	fbr_test_ERROR(!header_value, "header %s not found", header);
 
-	dup = chttp_header_get_pos(chttp, header, 1);
+	const char *dup = chttp_header_get_pos(chttp, header, 1);
 	fbr_test_warn(dup != NULL, "duplicate %s header found", header);
 
 	if (!expected) {
@@ -464,14 +421,11 @@ chttp_test_cmd_chttp_header_exists(struct fbr_test_context *ctx, struct fbr_test
 void
 chttp_test_cmd_chttp_version_match(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-	long version;
-	enum chttp_version expected = 0;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	version = fbr_test_parse_long(cmd->params[0].value);
+	long version = fbr_test_parse_long(cmd->params[0].value);
+	enum chttp_version expected = 0;
 
 	switch (version) {
 		case 10:
@@ -491,17 +445,15 @@ chttp_test_cmd_chttp_version_match(struct fbr_test_context *ctx, struct fbr_test
 static void
 _test_body_match(struct fbr_test_context *ctx, const char *expected, int sub, size_t size)
 {
-	struct chttp_context *chttp;
-	char *body, gzip_buf[4096];
-	size_t read, body_len, old_size, calls;
-	struct fbr_gzip *gzip;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR(chttp->state != CHTTP_STATE_BODY, "chttp no body found");
 
-	body = NULL;
-	body_len = 0;
-	calls = 0;
+	char gzip_buf[4096];
+	struct fbr_gzip *gzip;
+	char *body = NULL;
+	size_t read;
+	size_t body_len = 0;
+	size_t calls = 0;
 
 	if (size == 0) {
 		size = 1024;
@@ -514,7 +466,7 @@ _test_body_match(struct fbr_test_context *ctx, const char *expected, int sub, si
 
 	do {
 		if (calls) {
-			old_size = size;
+			size_t old_size = size;
 			size *= 2;
 			assert(size / 2 == old_size);
 		}
@@ -561,11 +513,11 @@ _test_body_match(struct fbr_test_context *ctx, const char *expected, int sub, si
 void
 chttp_test_cmd_chttp_body_match(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	long size = 0;
-
 	_test_context_ok(ctx);
 	fbr_test_ERROR(cmd->param_count > 2, "too many parameters");
 	fbr_test_ERROR(cmd->param_count < 1, "missing parameters");
+
+	long size = 0;
 
 	if (cmd->param_count == 2) {
 		size = fbr_test_parse_long(cmd->params[1].value);
@@ -578,11 +530,11 @@ chttp_test_cmd_chttp_body_match(struct fbr_test_context *ctx, struct fbr_test_cm
 void
 chttp_test_cmd_chttp_body_submatch(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	long size = 0;
-
 	_test_context_ok(ctx);
 	fbr_test_ERROR(cmd->param_count > 2, "too many parameters");
 	fbr_test_ERROR(cmd->param_count < 1, "missing parameters");
+
+	long size = 0;
 
 	if (cmd->param_count == 2) {
 		size = fbr_test_parse_long(cmd->params[1].value);
@@ -605,20 +557,21 @@ void
 chttp_test_cmd_chttp_body_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_context *chttp;
-	struct chttp_test_md5 md5;
-	uint8_t buf[8192];
-	size_t body_len, len, calls;
-	struct fbr_gzip *gzip;
-	char gzip_buf[4096];
 
 	chttp = _test_context_ok(ctx);
 	fbr_test_ERROR(chttp->state != CHTTP_STATE_BODY, "chttp no body found");
 	fbr_test_ERROR_param_count(cmd, 0);
 
+	uint8_t buf[8192];
+	size_t len;
+	struct fbr_gzip *gzip;
+	char gzip_buf[4096];
+
+	struct chttp_test_md5 md5;
 	chttp_test_md5_init(&md5);
 
-	body_len = 0;
-	calls = 0;
+	size_t body_len = 0;
+	size_t calls = 0;
 
 	if (chttp->gzip && fbr_gzip_enabled()) {
 		gzip = fbr_gzip_inflate_alloc();
@@ -649,9 +602,7 @@ chttp_test_cmd_chttp_body_md5(struct fbr_test_context *ctx, struct fbr_test_cmd 
 void
 chttp_test_cmd_chttp_take_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_test_ERROR(!chttp->error, "chttp error not found");
@@ -666,9 +617,7 @@ chttp_test_cmd_chttp_take_error(struct fbr_test_context *ctx, struct fbr_test_cm
 void
 chttp_test_cmd_chttp_reset(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-
-	chttp = _test_context_ok(ctx);
+	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	chttp_context_reset(chttp);

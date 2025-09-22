@@ -3,10 +3,6 @@
  *
  */
 
-#include "chttp.h"
-#include "dns/chttp_dns.h"
-#include "tls/chttp_tls.h"
-
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -14,6 +10,10 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/ioctl.h>
+
+#include "chttp.h"
+#include "dns/chttp_dns.h"
+#include "tls/chttp_tls.h"
 
 void _tcp_set_timeouts(struct chttp_addr *addr);
 
@@ -30,8 +30,7 @@ _tcp_get_port(struct chttp_addr *addr)
 			addr->listen_port = ntohs(addr->sa6.sin6_port);
 			break;
 		default:
-			chttp_ABORT("_tcp_get_port() bad sa_family")
-			return;
+			fbr_ABORT("_tcp_get_port() bad sa_family");
 	}
 
 	assert(addr->listen_port > 0);
@@ -40,12 +39,10 @@ _tcp_get_port(struct chttp_addr *addr)
 int
 chttp_tcp_listen(struct chttp_addr *addr, const char *ip, int port, int queue_len)
 {
-	int ret, val;
-
 	chttp_addr_ok(addr);
 	assert(addr->sock == -1);
 
-	ret = chttp_dns_resolve(addr, ip, strlen(ip), port, 0);
+	int ret = chttp_dns_resolve(addr, ip, strlen(ip), port, 0);
 
 	if (ret) {
 		addr->error = CHTTP_ERR_DNS;
@@ -65,7 +62,7 @@ chttp_tcp_listen(struct chttp_addr *addr, const char *ip, int port, int queue_le
 	addr->listen = 1;
 	addr->resolved = 0;
 
-	val = 1;
+	int val = 1;
 	(void)setsockopt(addr->sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
 
 	ret = bind(addr->sock, &addr->sa, addr->len);

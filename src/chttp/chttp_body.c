@@ -3,20 +3,17 @@
  *
  */
 
-#include "chttp.h"
-#include "compress/fbr_gzip.h"
-
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "chttp.h"
+#include "compress/fbr_gzip.h"
+
 static void
 _body_chunk_end(struct chttp_context *ctx)
 {
-	size_t start, end;
-	int error;
-
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_BODY);
 	assert(ctx->chunked);
@@ -26,8 +23,9 @@ _body_chunk_end(struct chttp_context *ctx)
 	if (ctx->data_start.dpage) {
 		chttp_dpage_ok(ctx->data_start.dpage);
 
-		start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
-		error = chttp_header_endline(ctx->dpage_last, start, NULL, &end, 1, NULL);
+		size_t start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
+		size_t end;
+		int error = chttp_header_endline(ctx->dpage_last, start, NULL, &end, 1, NULL);
 
 		if (error > 0) {
 			chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
@@ -74,10 +72,6 @@ _body_chunk_end(struct chttp_context *ctx)
 static void
 _body_chunk_start(struct chttp_context *ctx)
 {
-	size_t start, end;
-	int error;
-	char *len_start, *len_end;
-
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_BODY);
 	assert(ctx->chunked);
@@ -87,8 +81,9 @@ _body_chunk_start(struct chttp_context *ctx)
 	if (ctx->data_start.dpage) {
 		chttp_dpage_ok(ctx->data_start.dpage);
 
-		start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
-		error = chttp_header_endline(ctx->dpage_last, start, NULL, &end, 1, NULL);
+		size_t start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
+		size_t end;
+		int error = chttp_header_endline(ctx->dpage_last, start, NULL, &end, 1, NULL);
 
 		if (error > 0) {
 			chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
@@ -97,7 +92,8 @@ _body_chunk_start(struct chttp_context *ctx)
 			chttp_dpage_shift_full(ctx);
 		} else {
 			errno = 0;
-			len_start = (char*)&ctx->dpage_last->data[start];
+			char *len_start = (char*)&ctx->dpage_last->data[start];
+			char *len_end;
 			ctx->length = strtol(len_start, &len_end, 16);
 
 			if (ctx->length < 0 || ctx->length == LONG_MAX || errno ||
@@ -160,9 +156,6 @@ _body_chunk_parse(struct chttp_context *ctx)
 void
 chttp_body_init(struct chttp_context *ctx, enum chttp_body_type type)
 {
-	const char *header = NULL;
-	char *len_end;
-
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_BODY);
 	assert_zero(ctx->chunked);
@@ -172,7 +165,7 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_body_type type)
 		ctx->close = 1;
 	}
 
-	header = chttp_header_get(ctx, "connection");
+	const char *header = chttp_header_get(ctx, "connection");
 
 	if (header && !strcasecmp(header, "close")) {
 		ctx->close = 1;
@@ -223,6 +216,7 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_body_type type)
 	header = chttp_header_get(ctx, "content-length");
 
 	if (header) {
+		char *len_end;
 		errno = 0;
 		ctx->length = strtol(header, &len_end, 10);
 
@@ -257,8 +251,6 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_body_type type)
 size_t
 chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
-	size_t start, ret_dpage, ret, len;
-
 	chttp_context_ok(ctx);
 	assert(ctx->state >= CHTTP_STATE_BODY);
 	assert(buf);
@@ -269,14 +261,14 @@ chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 	assert(ctx->length);
 
-	ret_dpage = 0;
-	ret = 0;
+	size_t ret_dpage = 0;
+	size_t ret = 0;
 
 	if (ctx->data_start.dpage) {
 		chttp_dpage_ok(ctx->data_start.dpage);
 		assert(ctx->length);
 
-		start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
+		size_t start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
 
 		// Figure out how much data we have left
 		ret_dpage = ctx->dpage_last->offset - start;
@@ -342,7 +334,7 @@ chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 	chttp_dpage_reset_end(ctx);
 
-	len = buf_len;
+	size_t len = buf_len;
 
 	if (ctx->length >= 0 && len > (size_t)ctx->length) {
 		len = ctx->length;

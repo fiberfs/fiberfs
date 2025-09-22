@@ -3,15 +3,14 @@
  *
  */
 
-#include "test/fbr_test.h"
-#include "test/chttp_test_cmds.h"
-#include "network/chttp_tcp_pool.h"
-
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "test/fbr_test.h"
+#include "test/chttp_test_cmds.h"
+#include "network/chttp_tcp_pool.h"
 
 extern double _TCP_POOL_AGE_SEC;
 extern size_t _TCP_POOL_SIZE;
@@ -31,7 +30,7 @@ _tcp_pool_finish(struct fbr_test_context *ctx)
 	assert(ctx->chttp_test->tcp_pool);
 	assert(ctx->chttp_test->tcp_pool->magic == _TCP_POOL_MAGIC);
 
-	chttp_ZERO(ctx->chttp_test->tcp_pool);
+	fbr_ZERO(ctx->chttp_test->tcp_pool);
 	free(ctx->chttp_test->tcp_pool);
 
 	ctx->chttp_test->tcp_pool = NULL;
@@ -60,12 +59,10 @@ _tcp_pool_init(struct fbr_test_context *ctx)
 void
 chttp_test_cmd_tcp_pool_age_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	long ttl;
-
 	assert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	ttl = fbr_test_parse_long(cmd->params[0].value);
+	long ttl = fbr_test_parse_long(cmd->params[0].value);
 
 	_TCP_POOL_AGE_SEC = ((double)ttl) / 1000;
 
@@ -75,12 +72,10 @@ chttp_test_cmd_tcp_pool_age_ms(struct fbr_test_context *ctx, struct fbr_test_cmd
 void
 chttp_test_cmd_tcp_pool_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	long size;
-
 	assert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	size = fbr_test_parse_long(cmd->params[0].value);
+	long size = fbr_test_parse_long(cmd->params[0].value);
 	assert(size > 0);
 
 	_TCP_POOL_SIZE = size;
@@ -111,14 +106,12 @@ chttp_test_cmd_tcp_pool_fake_connect(struct fbr_test_context *ctx, struct fbr_te
 static void
 _tcp_pool_debug(void)
 {
-	struct chttp_tcp_pool_entry *entry, *temp;
-	size_t free_size = 0, lru_size = 0, pool_size = 0, count;
-	char host[256];
-	int port;
-
 	chttp_tcp_pool_ok();
 
 	printf("_TCP_POOL\n");
+
+	struct chttp_tcp_pool_entry *entry, *temp;
+	size_t free_size = 0, lru_size = 0, pool_size = 0;
 
 	TAILQ_FOREACH(entry, &_TCP_POOL.free_list, list_entry) {
 		assert_zero(entry->magic);
@@ -126,6 +119,9 @@ _tcp_pool_debug(void)
 	}
 
 	printf("\t_TCP_POOL.free_list=%zu\n", free_size);
+
+	char host[256];
+	int port;
 
 	TAILQ_FOREACH(entry, &_TCP_POOL.lru_list, list_entry) {
 		chttp_pool_entry_ok(entry);
@@ -136,13 +132,13 @@ _tcp_pool_debug(void)
 		chttp_sa_string(&entry->addr.sa, host, sizeof(host), &port);
 
 		printf("\t_TCP_POOL.lru_list: %s:%d age=%lf *ptr=%p\n", host, port,
-			entry->expiration - chttp_get_time(), (void*)entry);
+			entry->expiration - fbr_get_time(), (void*)entry);
 	}
 
 	printf("\t_TCP_POOL.lru_list=%zu\n", lru_size);
 
 	RB_FOREACH_SAFE(entry, chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, temp) {
-		count = 0;
+		size_t count = 0;
 
 		while (entry) {
 			chttp_pool_entry_ok(entry);
@@ -153,7 +149,7 @@ _tcp_pool_debug(void)
 			chttp_sa_string(&entry->addr.sa, host, sizeof(host), &port);
 
 			printf("\t_TCP_POOL.pool_tree: %zu %s:%d age=%lf *ptr=%p fd=%d\n",
-				count, host, port, entry->expiration - chttp_get_time(),
+				count, host, port, entry->expiration - fbr_get_time(),
 				(void*)entry, entry->addr.sock);
 
 			entry = entry->next;
@@ -178,10 +174,8 @@ void
 chttp_test_cmd_tcp_pool_debug(struct fbr_test_context *ctx,
     struct fbr_test_cmd *cmd)
 {
-	struct fbr_test *test;
-
 	fbr_test_ERROR_param_count(cmd, 0);
-	test = fbr_test_convert(ctx);
+	struct fbr_test *test = fbr_test_convert(ctx);
 
 	_tcp_pool_init(ctx);
 

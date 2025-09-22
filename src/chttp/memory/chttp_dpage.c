@@ -3,9 +3,9 @@
  *
  */
 
-#include "chttp.h"
-
 #include <stdlib.h>
+
+#include "chttp.h"
 
 size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE = 0;
 
@@ -30,12 +30,10 @@ chttp_dpage_size(int min)
 struct chttp_dpage *
 chttp_dpage_alloc(size_t dpage_size)
 {
-	struct chttp_dpage *dpage;
-
 	dpage_size += sizeof(struct chttp_dpage);
 	assert(dpage_size > sizeof(struct chttp_dpage));
 
-	dpage = malloc(dpage_size);
+	struct chttp_dpage *dpage = malloc(dpage_size);
 	assert(dpage);
 
 	chttp_dpage_init(dpage, dpage_size);
@@ -74,7 +72,7 @@ chttp_dpage_init(struct chttp_dpage *dpage, size_t dpage_size)
 	assert(dpage);
 	assert(dpage_size > sizeof(struct chttp_dpage));
 
-	chttp_ZERO(dpage);
+	fbr_ZERO(dpage);
 
 	dpage->magic = CHTTP_DPAGE_MAGIC;
 	dpage->length = dpage_size - sizeof(struct chttp_dpage);
@@ -83,9 +81,9 @@ chttp_dpage_init(struct chttp_dpage *dpage, size_t dpage_size)
 void
 chttp_dpage_reset_all(struct chttp_context *ctx)
 {
-	struct chttp_dpage *dpage;
-
 	chttp_context_ok(ctx);
+
+	struct chttp_dpage *dpage;
 
 	for (dpage = ctx->dpage; dpage; dpage = dpage->next) {
 		chttp_dpage_ok(dpage);
@@ -104,13 +102,11 @@ chttp_dpage_reset_all(struct chttp_context *ctx)
 void
 chttp_dpage_reset_end(struct chttp_context *ctx)
 {
-	struct chttp_dpage *dpage;
-
 	chttp_context_ok(ctx);
 	chttp_dpage_ok(ctx->data_end.dpage);
 	assert_zero(ctx->data_start.dpage);
 
-	dpage = ctx->data_end.dpage;
+	struct chttp_dpage *dpage = ctx->data_end.dpage;
 	dpage->offset = ctx->data_end.offset;
 	ctx->dpage_last = dpage;
 
@@ -123,12 +119,9 @@ chttp_dpage_reset_end(struct chttp_context *ctx)
 struct chttp_dpage *
 chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 {
-	struct chttp_dpage *dpage;
-	size_t dpage_size;
-
 	chttp_context_ok(ctx);
 
-	dpage = ctx->dpage_last;
+	struct chttp_dpage *dpage = ctx->dpage_last;
 
 	while (dpage) {
 		chttp_dpage_ok(dpage);
@@ -146,7 +139,7 @@ chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 		dpage = dpage->next;
 	}
 
-	dpage_size = chttp_dpage_size(1);
+	size_t dpage_size = chttp_dpage_size(1);
 
 	if (bytes >= dpage_size) {
 		dpage_size += bytes;
@@ -162,12 +155,10 @@ chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 void
 chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_len)
 {
-	struct chttp_dpage *dpage;
-
 	chttp_context_ok(ctx);
 	assert(buffer_len < (10 * 1024 * 1024)); // 10MB
 
-	dpage = chttp_dpage_get(ctx, buffer_len);
+	struct chttp_dpage *dpage = chttp_dpage_get(ctx, buffer_len);
 	chttp_dpage_ok(dpage);
 	assert(buffer_len <= dpage->length);
 	assert(dpage->offset + buffer_len <= dpage->length);
@@ -181,12 +172,10 @@ void
 chttp_dpage_append_mark(struct chttp_context *ctx, const void *buffer, size_t buffer_len,
     struct chttp_dpage_ptr *dptr)
 {
-	struct chttp_dpage *dpage;
-
 	chttp_context_ok(ctx);
 	assert(dptr);
 
-	dpage = chttp_dpage_get(ctx, buffer_len);
+	struct chttp_dpage *dpage = chttp_dpage_get(ctx, buffer_len);
 	chttp_dpage_ok(dpage);
 
 	chttp_dpage_ptr_set(dptr, dpage, dpage->offset, buffer_len);
@@ -199,14 +188,10 @@ chttp_dpage_append_mark(struct chttp_context *ctx, const void *buffer, size_t bu
 void
 chttp_dpage_shift_full(struct chttp_context *ctx)
 {
-	struct chttp_dpage *dpage, *dpage_new;
-	size_t start, leftover_len;
-	uint8_t *leftover;
-
 	chttp_context_ok(ctx);
 	chttp_dpage_ok(ctx->data_start.dpage);
 
-	dpage = ctx->dpage_last;
+	struct chttp_dpage *dpage = ctx->dpage_last;
 
 	chttp_dpage_ok(dpage);
 
@@ -214,13 +199,15 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 		return;
 	}
 
-	start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
-	leftover_len = dpage->offset - start;
+	size_t start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
+	size_t leftover_len = dpage->offset - start;
 
 	// Incomplete line
 	if (leftover_len) {
-		leftover = chttp_dpage_ptr_convert(ctx, &ctx->data_start);
+		uint8_t *leftover = chttp_dpage_ptr_convert(ctx, &ctx->data_start);
 		chttp_dpage_ptr_reset(&ctx->data_start);
+
+		struct chttp_dpage *dpage_new;
 
 		// Try and shift back
 		if (ctx->data_end.dpage && ctx->data_end.dpage != dpage && dpage->offset) {
@@ -276,7 +263,7 @@ chttp_dpage_ptr_reset(struct chttp_dpage_ptr *dptr)
 {
 	assert(dptr);
 
-	chttp_ZERO(dptr);
+	fbr_ZERO(dptr);
 }
 
 size_t
@@ -294,9 +281,7 @@ chttp_dpage_ptr_offset(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr)
 uint8_t *
 chttp_dpage_ptr_convert(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr)
 {
-	size_t offset;
-
-	offset = chttp_dpage_ptr_offset(ctx, dptr);
+	size_t offset = chttp_dpage_ptr_offset(ctx, dptr);
 
 	return dptr->dpage->data + offset;
 }
@@ -304,18 +289,15 @@ chttp_dpage_ptr_convert(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr)
 void
 chttp_dpage_free(struct chttp_dpage *dpage)
 {
-	struct chttp_dpage *curr;
-	int do_free;
-
 	while (dpage) {
 		chttp_dpage_ok(dpage);
 
-		curr = dpage;
+		struct chttp_dpage *curr = dpage;
 		dpage = curr->next;
 
-		do_free = curr->free;
+		int do_free = curr->free;
 
-		chttp_ZERO(curr);
+		fbr_ZERO(curr);
 
 		if (do_free) {
 			free(curr);

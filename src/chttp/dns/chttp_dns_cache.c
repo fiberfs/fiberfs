@@ -3,11 +3,11 @@
  *
  */
 
+#include <stdio.h>
+
 #include "chttp.h"
 #include "dns/chttp_dns.h"
 #include "dns/chttp_dns_cache.h"
-
-#include <stdio.h>
 
 long _DNS_CACHE_TTL = CHTTP_DNS_CACHE_TTL;
 size_t _DNS_CACHE_SIZE = CHTTP_DNS_CACHE_SIZE;
@@ -32,21 +32,19 @@ static inline void
 _dns_cache_LOCK(void)
 {
 	chttp_dns_cache_ok();
-	assert_zero(pthread_mutex_lock(&_DNS_CACHE.lock));
+	pt_assert(pthread_mutex_lock(&_DNS_CACHE.lock));
 }
 
 static inline void
 _dns_cache_UNLOCK(void)
 {
 	chttp_dns_cache_ok();
-	assert_zero(pthread_mutex_unlock(&_DNS_CACHE.lock));
+	pt_assert(pthread_mutex_unlock(&_DNS_CACHE.lock));
 }
 
 static void
 _dns_cache_init(void)
 {
-	size_t i;
-
 	chttp_dns_cache_ok();
 	assert_zero(_DNS_CACHE.initialized);
 	assert(_DNS_CACHE_SIZE <= CHTTP_DNS_CACHE_SIZE);
@@ -56,7 +54,7 @@ _dns_cache_init(void)
 	assert(TAILQ_EMPTY(&_DNS_CACHE.lru_list));
 
 	/* Create the free_list */
-	for (i = 0; i < _DNS_CACHE_SIZE; i++) {
+	for (size_t i = 0; i < _DNS_CACHE_SIZE; i++) {
 		assert_zero(_DNS_CACHE.entries[i].magic);
 		TAILQ_INSERT_TAIL(&_DNS_CACHE.free_list, &_DNS_CACHE.entries[i], list_entry);
 	}
@@ -77,10 +75,6 @@ int
 chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest, int port,
     unsigned int flags)
 {
-	struct chttp_dns_cache_entry *addr_head, *addr, find;
-	size_t pos;
-	double now;
-
 	chttp_dns_cache_ok();
 	assert(host);
 	assert(host_len);
@@ -91,7 +85,7 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	}
 
 	if (host_len >= CHTTP_DNS_CACHE_HOST_MAX) {
-		chttp_safe_add(&_DNS_CACHE.stats.err_too_long, 1);
+		fbr_atomic_add(&_DNS_CACHE.stats.err_too_long, 1);
 		return 0;
 	}
 
@@ -104,11 +98,12 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 
 	_DNS_CACHE.stats.lookups++;
 
+	struct chttp_dns_cache_entry find;
 	find.magic = CHTTP_DNS_CACHE_ENTRY_MAGIC;
 	strncpy(find.hostname, host, host_len + 1);
 
-	addr_head = RB_FIND(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, &find);
-
+	struct chttp_dns_cache_entry *addr_head = RB_FIND(chttp_dns_cache_tree,
+		&_DNS_CACHE.cache_tree, &find);
 	if (!addr_head) {
 		_dns_cache_UNLOCK();
 		return 0;
@@ -116,8 +111,8 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 
 	chttp_dns_entry_ok(addr_head);
 
-	addr = addr_head;
-	pos = 0;
+	struct chttp_dns_cache_entry *addr = addr_head;
+	size_t pos = 0;
 
 	// Calculate next for RR
 	if (!(flags & DNS_DISABLE_RR)) {
@@ -143,7 +138,7 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 		_DNS_CACHE.stats.lru++;
 	}
 
-	now = chttp_get_time();
+	double now = fbr_get_time();
 	assert(addr_head->expiration);
 
 	if (addr_head->expiration < now) {
@@ -172,20 +167,18 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 static void
 _dns_free_entry(struct chttp_dns_cache_entry *dns_head)
 {
-	struct chttp_dns_cache_entry *dns_entry, *dns_temp;
-
 	chttp_dns_cache_ok();
 
-	dns_entry = dns_head;
+	struct chttp_dns_cache_entry *dns_entry = dns_head;
 
 	while (dns_entry) {
 		chttp_dns_entry_ok(dns_entry);
 
-		dns_temp = dns_entry;
+		struct chttp_dns_cache_entry *dns_temp = dns_entry;
 		dns_entry = dns_entry->next;
 
 		chttp_addr_reset(&dns_temp->addr);
-		chttp_ZERO(dns_temp);
+		fbr_ZERO(dns_temp);
 
 		TAILQ_INSERT_TAIL(&_DNS_CACHE.free_list, dns_temp, list_entry);
 	}
@@ -206,9 +199,9 @@ _dns_remove_entry(struct chttp_dns_cache_entry *dns_entry)
 static struct chttp_dns_cache_entry *
 _dns_get_entry(void)
 {
-	struct chttp_dns_cache_entry *entry;
-
 	chttp_dns_cache_ok();
+
+	struct chttp_dns_cache_entry *entry;
 
 	if (!TAILQ_EMPTY(&_DNS_CACHE.free_list)) {
 		entry = TAILQ_FIRST(&_DNS_CACHE.free_list);
@@ -237,10 +230,6 @@ _dns_get_entry(void)
 void
 chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_list)
 {
-	struct addrinfo *ai_entry;
-	struct chttp_dns_cache_entry *dns_entry, *dns_head, *dns_last;
-	size_t count;
-
 	chttp_dns_cache_ok();
 	assert(_DNS_CACHE.initialized);
 	assert(host);
@@ -252,7 +241,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	}
 
 	if (host_len >= CHTTP_DNS_CACHE_HOST_MAX) {
-		chttp_safe_add(&_DNS_CACHE.stats.err_too_long, 1);
+		fbr_atomic_add(&_DNS_CACHE.stats.err_too_long, 1);
 		return;
 	}
 
@@ -263,13 +252,14 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	}
 	assert(_DNS_CACHE.initialized);
 
-	dns_head = NULL;
-	dns_last = NULL;
-	count = 0;
+	struct addrinfo *ai_entry;
+	struct chttp_dns_cache_entry *dns_head = NULL;
+	struct chttp_dns_cache_entry *dns_last = NULL;
+	struct chttp_dns_cache_entry *dns_entry;
+	size_t count = 0;
 
 	for (ai_entry = ai_list; ai_entry; ai_entry = ai_entry->ai_next) {
 		dns_entry = _dns_get_entry();
-
 		if (!dns_entry) {
 			_dns_free_entry(dns_head);
 			_DNS_CACHE.stats.err_alloc++;
@@ -283,7 +273,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 			dns_last->next = dns_entry;
 		}
 
-		chttp_ZERO(dns_entry);
+		fbr_ZERO(dns_entry);
 		dns_entry->magic = CHTTP_DNS_CACHE_ENTRY_MAGIC;
 
 		chttp_dns_copy(&dns_entry->addr, ai_entry->ai_addr, 0);
@@ -300,7 +290,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	assert(dns_head);
 
 	dns_head->length = count;
-	dns_head->expiration = chttp_get_time() + _DNS_CACHE_TTL;
+	dns_head->expiration = fbr_get_time() + _DNS_CACHE_TTL;
 	strncpy(dns_head->hostname, host, host_len + 1);
 
 	TAILQ_INSERT_HEAD(&_DNS_CACHE.lru_list, dns_head, list_entry);

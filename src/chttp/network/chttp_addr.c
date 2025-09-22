@@ -21,7 +21,7 @@ chttp_addr_init(struct chttp_addr *addr)
 void
 chttp_addr_reset(struct chttp_addr *addr)
 {
-	chttp_ZERO(addr);
+	fbr_ZERO(addr);
 }
 
 void

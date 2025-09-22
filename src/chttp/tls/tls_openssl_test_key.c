@@ -3,17 +3,16 @@
  *
  */
 
-#include "tls_openssl_test_key.h"
-
-#include <assert.h>
-
 #ifdef CHTTP_OPENSSL
 
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 
-const char *_TLS_OPENSSL_TEST_CERT =
+#include "fiberfs.h"
+#include "tls_openssl_test_key.h"
+
+static const char *_TLS_OPENSSL_TEST_CERT =
 	"-----BEGIN CERTIFICATE-----\n"
 	"MIIF5zCCA8+gAwIBAgIUHBpcPafJIKc1u7VBHIvk8sW6/w4wDQYJKoZIhvcNAQEL\n"
 	"BQAwgYExCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQK\n"
@@ -49,7 +48,7 @@ const char *_TLS_OPENSSL_TEST_CERT =
 	"p02qexPDQBjZRfS7zjsvkcvn4OavWTM+A5k0\n"
 	"-----END CERTIFICATE-----\n";
 
-const char *_TLS_OPENSSL_TEST_KEY =
+static const char *_TLS_OPENSSL_TEST_KEY =
 	"-----BEGIN PRIVATE KEY-----\n"
 	"MIIJQwIBADANBgkqhkiG9w0BAQEFAASCCS0wggkpAgEAAoICAQC5CGbWRvK2eV9I\n"
 	"e1OYP2LRyYuOMbCtmkiZXcOTZh8VAsZskaSUyevdiKaneSgHSfNAe2RojAnlQAnk\n"
@@ -106,22 +105,16 @@ const char *_TLS_OPENSSL_TEST_KEY =
 void
 chttp_openssl_test_key(void *ctx_priv)
 {
-	SSL_CTX *ctx;
-	BIO *bio;
-	X509 *cert;
-	EVP_PKEY *key;
-	int ret;
-
 	assert(ctx_priv);
-	ctx = (SSL_CTX*)ctx_priv;
+	SSL_CTX *ctx = (SSL_CTX*)ctx_priv;
 
-	bio = BIO_new_mem_buf(_TLS_OPENSSL_TEST_CERT, -1);
+	BIO *bio = BIO_new_mem_buf(_TLS_OPENSSL_TEST_CERT, -1);
 	assert(bio);
 
-	cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
+	X509 *cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
 	assert(cert);
 
-	ret = SSL_CTX_use_certificate(ctx, cert);
+	int ret = SSL_CTX_use_certificate(ctx, cert);
 	assert(ret == 1);
 
 	BIO_free(bio);
@@ -130,7 +123,7 @@ chttp_openssl_test_key(void *ctx_priv)
 	bio = BIO_new_mem_buf(_TLS_OPENSSL_TEST_KEY, -1);
 	assert(bio);
 
-	key = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL);
+	EVP_PKEY *key = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL);
 	assert(key);
 
 	ret = SSL_CTX_use_PrivateKey(ctx, key);
@@ -138,6 +131,13 @@ chttp_openssl_test_key(void *ctx_priv)
 
 	BIO_free(bio);
 	EVP_PKEY_free(key);
+}
+
+#else /* CHTTP_OPENSSL */
+
+void
+chttp_openssl_test_key_error(void)
+{
 }
 
 #endif /* CHTTP_OPENSSL */

@@ -3,9 +3,9 @@
  *
  */
 
-#include "chttp.h"
-
 #include <stdlib.h>
+
+#include "chttp.h"
 
 static void
 _context_init_size(struct chttp_context *ctx, size_t dpage_size)
@@ -25,9 +25,7 @@ _context_init_size(struct chttp_context *ctx, size_t dpage_size)
 static struct chttp_context *
 _context_alloc_size(size_t dpage_size)
 {
-	struct chttp_context *ctx;
-
-	ctx = malloc(CHTTP_CTX_SIZE + dpage_size);
+	struct chttp_context *ctx = malloc(CHTTP_CTX_SIZE + dpage_size);
 	assert(ctx);
 
 	_context_init_size(ctx, dpage_size);
@@ -54,12 +52,10 @@ chttp_context_init(struct chttp_context *ctx)
 struct chttp_context *
 chttp_context_init_buf(void *buffer, size_t buffer_len)
 {
-	struct chttp_context *ctx;
-
 	assert(buffer);
 	assert(buffer_len >= CHTTP_CTX_SIZE);
 
-	ctx = buffer;
+	struct chttp_context *ctx = buffer;
 
 	_context_init_size(ctx, buffer_len - CHTTP_CTX_SIZE);
 
@@ -69,8 +65,6 @@ chttp_context_init_buf(void *buffer, size_t buffer_len)
 void
 chttp_context_reset(struct chttp_context *ctx)
 {
-	size_t off_start, off_end;
-
 	chttp_context_ok(ctx);
 
 	if (ctx->state < CHTTP_STATE_DONE) {
@@ -84,8 +78,8 @@ chttp_context_reset(struct chttp_context *ctx)
 
 	chttp_addr_reset(&ctx->addr);
 
-	off_start = offsetof(struct chttp_context, state);
-	off_end = offsetof(struct chttp_context, _data);
+	size_t off_start = offsetof(struct chttp_context, state);
+	size_t off_end = offsetof(struct chttp_context, _data);
 
 	memset((char*)ctx + off_start, 0, off_end - off_start);
 }
@@ -93,14 +87,12 @@ chttp_context_reset(struct chttp_context *ctx)
 void
 chttp_context_free(struct chttp_context *ctx)
 {
-	int do_free;
-
 	chttp_context_ok(ctx);
 
 	chttp_context_reset(ctx);
 	chttp_dpage_free(ctx->dpage);
 
-	do_free = ctx->do_free;
+	int do_free = ctx->do_free;
 
 	explicit_bzero(ctx, CHTTP_CTX_SIZE);
 

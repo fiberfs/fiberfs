@@ -3,17 +3,17 @@
  *
  */
 
-#include "compress/fbr_gzip.h"
-#include "dns/chttp_dns.h"
-#include "test/fbr_test.h"
-#include "test/chttp_test_cmds.h"
-#include "tls/chttp_tls.h"
-
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
+#include "compress/fbr_gzip.h"
+#include "dns/chttp_dns.h"
+#include "test/fbr_test.h"
+#include "test/chttp_test_cmds.h"
+#include "tls/chttp_tls.h"
 
 static void
 _finish_test(struct fbr_test_context *ctx)
@@ -27,7 +27,7 @@ _finish_test(struct fbr_test_context *ctx)
 	fbr_test_ERROR(ctx->chttp_test->tcp_pool != NULL, "tcp_pool detected");
 	fbr_test_ERROR(ctx->chttp_test->gzip != NULL, "gzip detected");
 
-	chttp_ZERO(ctx->chttp_test);
+	fbr_ZERO(ctx->chttp_test);
 	free(ctx->chttp_test);
 	ctx->chttp_test = NULL;
 }
@@ -49,9 +49,7 @@ chttp_test_init(struct fbr_test_context *ctx)
 void
 chttp_test_cmd_chttp_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct fbr_test *test;
-
-	test = fbr_test_convert(ctx);
+	struct fbr_test *test = fbr_test_convert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 	fbr_test_ERROR(test->cmd_count != 1, "test file must begin with chttp_test");
 
@@ -63,19 +61,15 @@ chttp_test_cmd_chttp_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 void
 chttp_test_cmd_connect_or_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_addr addr;
-	char *host;
-	long port;
-	int ret;
-
 	assert(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
 
-	host = cmd->params[0].value;
-	port = fbr_test_parse_long(cmd->params[1].value);
+	char *host = cmd->params[0].value;
+	long port = fbr_test_parse_long(cmd->params[1].value);
 	fbr_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
 
-	ret = chttp_dns_resolve(&addr, host, strlen(host), port, 0);
+	struct chttp_addr addr;
+	int ret = chttp_dns_resolve(&addr, host, strlen(host), port, 0);
 
 	if (ret) {
 		fbr_test_skip(ctx);

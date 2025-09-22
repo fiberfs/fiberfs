@@ -3,9 +3,6 @@
  *
  */
 
-#include "chttp.h"
-#include "tls/chttp_tls.h"
-
 #include <errno.h>
 #include <poll.h>
 #include <stdarg.h>
@@ -15,15 +12,16 @@
 #include <netinet/tcp.h>
 #include <sys/ioctl.h>
 
+#include "chttp.h"
+#include "tls/chttp_tls.h"
+
 void
 chttp_tcp_set_nonblocking(struct chttp_addr *addr)
 {
-	int val, ret;
-
 	chttp_addr_connected(addr);
 
-	val = 1;
-	ret = ioctl(addr->sock, FIONBIO, &val);
+	int val = 1;
+	int ret = ioctl(addr->sock, FIONBIO, &val);
 	assert_zero(ret);
 
 	addr->nonblocking = 1;
@@ -32,12 +30,10 @@ chttp_tcp_set_nonblocking(struct chttp_addr *addr)
 void
 chttp_tcp_set_blocking(struct chttp_addr *addr)
 {
-	int val, ret;
-
 	chttp_addr_connected(addr);
 
-	val = 0;
-	ret = ioctl(addr->sock, FIONBIO, &val);
+	int val = 0;
+	int ret = ioctl(addr->sock, FIONBIO, &val);
 	assert_zero(ret);
 
 	addr->nonblocking = 0;
@@ -46,13 +42,12 @@ chttp_tcp_set_blocking(struct chttp_addr *addr)
 void
 chttp_tcp_poll(struct chttp_addr *addr, short events, int timeout_msec)
 {
-	struct pollfd fds[1];
-
 	chttp_addr_connected(addr);
 	assert(addr->nonblocking);
 	assert(events);
 	assert(timeout_msec > 0);
 
+	struct pollfd fds[1];
 	fds[0].fd = addr->sock;
 	fds[0].events = events;
 	fds[0].revents = 0;
@@ -64,9 +59,6 @@ chttp_tcp_poll(struct chttp_addr *addr, short events, int timeout_msec)
 static int
 _tcp_poll_connected(struct chttp_addr *addr)
 {
-	int error, ret;
-	socklen_t error_len;
-
 	chttp_tcp_poll(addr, POLLWRNORM, addr->timeout_connect_ms);
 
 	if (addr->poll_result <= 0) {
@@ -78,9 +70,10 @@ _tcp_poll_connected(struct chttp_addr *addr)
 		return 1;
 	}
 
-	error_len = sizeof(error);
+	int error;
+	socklen_t error_len = sizeof(error);
 
-	ret = getsockopt(addr->sock, SOL_SOCKET, SO_ERROR, &error, &error_len);
+	int ret = getsockopt(addr->sock, SOL_SOCKET, SO_ERROR, &error, &error_len);
 	assert_zero(ret);
 
 	if (error) {
@@ -97,7 +90,7 @@ _tcp_set_timeouts(struct chttp_addr *addr)
 
 	chttp_addr_connected(addr);
 
-	addr->time_start = chttp_get_time();
+	addr->time_start = fbr_get_time();
 
 	timeout.tv_sec = addr->timeout_transfer_ms / 1000;
 	timeout.tv_usec = (addr->timeout_transfer_ms % 1000) * 1000;
@@ -111,8 +104,6 @@ _tcp_set_timeouts(struct chttp_addr *addr)
 int
 chttp_tcp_connect(struct chttp_addr *addr)
 {
-	int val, ret;
-
 	chttp_addr_resolved(addr);
 
 	addr->sock = socket(addr->sa.sa_family, SOCK_STREAM, 0);
@@ -122,7 +113,7 @@ chttp_tcp_connect(struct chttp_addr *addr)
 		return 1;
 	}
 
-	val = 1;
+	int val = 1;
 	(void)setsockopt(addr->sock, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
 	val = 1;
 	(void)setsockopt(addr->sock, IPPROTO_TCP, TCP_FASTOPEN, &val, sizeof(val));
@@ -136,7 +127,7 @@ chttp_tcp_connect(struct chttp_addr *addr)
 	val = connect(addr->sock, &addr->sa, addr->len);
 
 	if (val && errno == EINPROGRESS && addr->nonblocking) {
-		ret = _tcp_poll_connected(addr);
+		int ret = _tcp_poll_connected(addr);
 
 		if (ret <= 0) {
 			chttp_tcp_close(addr);
@@ -174,9 +165,6 @@ chttp_tcp_connect(struct chttp_addr *addr)
 void
 chttp_tcp_send(struct chttp_addr *addr, const void *buf, size_t buf_len)
 {
-	ssize_t ret;
-	size_t written = 0;
-
 	chttp_addr_connected(addr);
 	assert_zero(addr->nonblocking);
 	assert_zero(addr->listen);
@@ -188,8 +176,10 @@ chttp_tcp_send(struct chttp_addr *addr, const void *buf, size_t buf_len)
 		return;
 	}
 
+	size_t written = 0;
+
 	while (written < buf_len) {
-		ret = send(addr->sock, (uint8_t*)buf + written, buf_len - written,
+		ssize_t ret = send(addr->sock, (uint8_t*)buf + written, buf_len - written,
 			MSG_NOSIGNAL);
 
 		if (ret <= 0) {
@@ -206,13 +196,11 @@ chttp_tcp_send(struct chttp_addr *addr, const void *buf, size_t buf_len)
 void
 chttp_tcp_read(struct chttp_context *ctx)
 {
-	size_t ret;
-
 	chttp_context_ok(ctx);
 	chttp_dpage_ok(ctx->dpage_last);
 	assert(ctx->dpage_last->offset < ctx->dpage_last->length);
 
-	ret = chttp_tcp_read_ctx(ctx, ctx->dpage_last->data + ctx->dpage_last->offset,
+	size_t ret = chttp_tcp_read_ctx(ctx, ctx->dpage_last->data + ctx->dpage_last->offset,
 		ctx->dpage_last->length - ctx->dpage_last->offset);
 
 	if (ctx->error) {
@@ -226,13 +214,11 @@ chttp_tcp_read(struct chttp_context *ctx)
 size_t
 chttp_tcp_read_ctx(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
-	size_t ret;
-
 	chttp_context_ok(ctx);
 	assert(buf);
 	assert(buf_len);
 
-	ret = chttp_tcp_read_buf(&ctx->addr, buf, buf_len);
+	size_t ret = chttp_tcp_read_buf(&ctx->addr, buf, buf_len);
 	chttp_tcp_error_check(ctx);
 
 	if (ctx->error) {
@@ -250,17 +236,16 @@ chttp_tcp_read_ctx(struct chttp_context *ctx, void *buf, size_t buf_len)
 size_t
 chttp_tcp_read_buf(struct chttp_addr *addr, void *buf, size_t buf_len)
 {
-	size_t bytes;
-	ssize_t ret;
-
 	chttp_addr_connected(addr);
 	assert_zero(addr->nonblocking);
 	assert_zero(addr->listen);
 	assert(buf);
 	assert(buf_len);
 
+	ssize_t ret;
+
 	if (addr->tls) {
-		bytes = chttp_tls_read(addr, buf, buf_len);
+		size_t bytes = chttp_tls_read(addr, buf, buf_len);
 
 		if (addr->error) {
 			return 0;

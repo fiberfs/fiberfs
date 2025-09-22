@@ -7,17 +7,13 @@
 #ifndef _CHTTP_H_INCLUDED_
 #define _CHTTP_H_INCLUDED_
 
-// TODO
-// re-align with fbr style
-// move to pt_assert
-
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
+#include "fiberfs.h"
 #include "memory/chttp_dpage.h"
 #include "network/chttp_network.h"
-#include "utils/fbr_assert.h"
 
 #define CHTTP_VERSION			"0.3.0"
 
@@ -152,26 +148,10 @@ void chttp_body_send(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *dpage);
 void chttp_print_hex(void *buf, size_t buf_len);
-size_t chttp_safe_add(size_t *dest, size_t value);
-void chttp_do_abort(const char *function, const char *file, int line, const char *reason);
-void __chttp_attr_printf_p(5) chttp_do_assert(int cond, const char *function,
-	const char *file, int line, const char *fmt, ...);
 const char *chttp_error_msg(struct chttp_context *ctx);
 void chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port);
-double chttp_get_time(void);
 size_t chttp_make_chunk(char *buffer, unsigned int buffer_len);
 
-#define chttp_context_ok(ctx)						\
-	do {								\
-		assert(ctx);						\
-		assert((ctx)->magic == CHTTP_CTX_MAGIC);		\
-	} while (0)
-#define chttp_ABORT(reason)						\
-	chttp_do_abort(__func__, __FILE__, __LINE__, reason);
-#define chttp_ASSERT(cond, fmt, ...)					\
-	chttp_do_assert(cond, __func__, __FILE__, __LINE__, fmt,	\
-		##__VA_ARGS__);
-#define chttp_ZERO(p)							\
-	explicit_bzero(p, sizeof(*(p)))
+#define chttp_context_ok(ctx)		fbr_magic_check(ctx, CHTTP_CTX_MAGIC)
 
 #endif /* _CHTTP_H_INCLUDED_ */

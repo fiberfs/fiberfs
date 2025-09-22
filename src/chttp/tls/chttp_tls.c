@@ -31,7 +31,7 @@ chttp_tls_connect(struct chttp_addr *addr)
 	chttp_openssl_connect(addr);
 #else
 	(void)addr;
-	chttp_ABORT("TLS not configured");
+	fbr_ABORT("TLS not configured");
 #endif
 }
 
@@ -42,7 +42,7 @@ chttp_tls_accept(struct chttp_addr *addr)
 	chttp_openssl_accept(addr);
 #else
 	(void)addr;
-	chttp_ABORT("TLS not configured");
+	fbr_ABORT("TLS not configured");
 #endif
 }
 
@@ -53,7 +53,7 @@ chttp_tls_close(struct chttp_addr *addr)
 	chttp_openssl_close(addr);
 #else
 	(void)addr;
-	chttp_ABORT("TLS not configured");
+	fbr_ABORT("TLS not configured");
 #endif
 }
 
@@ -66,7 +66,7 @@ chttp_tls_write(struct chttp_addr *addr, const void *buf, size_t buf_len)
 	(void)addr;
 	(void)buf;
 	(void)buf_len;
-	chttp_ABORT("TLS not configured");
+	fbr_ABORT("TLS not configured");
 #endif
 }
 
@@ -79,7 +79,7 @@ chttp_tls_read(struct chttp_addr *addr, void *buf, size_t buf_len)
 	(void)addr;
 	(void)buf;
 	(void)buf_len;
-	chttp_ABORT("TLS not configured");
+	fbr_ABORT("TLS not configured");
 	return 0;
 #endif
 }

@@ -36,7 +36,7 @@ chttp_dns_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port)
 			addr_dest->sa6.sin6_port = htons(port);
 			break;
 		default:
-			chttp_ABORT("Incorrect address type");
+			fbr_ABORT("Incorrect address type");
 	}
 
 	addr_dest->state = CHTTP_ADDR_RESOLVED;
@@ -47,10 +47,6 @@ int
 chttp_dns_resolve(struct chttp_addr *addr, const char *host, size_t host_len, int port,
     unsigned int flags)
 {
-	struct addrinfo *ai_res_list;
-	struct addrinfo hints;
-	int ret;
-
 	assert(addr);
 	assert(host);
 	assert(host_len);
@@ -59,7 +55,7 @@ chttp_dns_resolve(struct chttp_addr *addr, const char *host, size_t host_len, in
 	chttp_addr_reset(addr);
 
 	if (!(flags & DNS_FRESH_LOOKUP)) {
-		ret = chttp_dns_cache_lookup(host, host_len, addr, port, flags);
+		int ret = chttp_dns_cache_lookup(host, host_len, addr, port, flags);
 
 		if (ret) {
 			chttp_addr_resolved(addr);
@@ -67,11 +63,13 @@ chttp_dns_resolve(struct chttp_addr *addr, const char *host, size_t host_len, in
 		}
 	}
 
-	chttp_ZERO(&hints);
+	struct addrinfo hints;
+	fbr_ZERO(&hints);
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	ret = getaddrinfo(host, NULL, &hints, &ai_res_list);
+	struct addrinfo *ai_res_list;
+	int ret = getaddrinfo(host, NULL, &hints, &ai_res_list);
 
 	if (ret) {
 		return 1;
@@ -98,12 +96,9 @@ void
 chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port,
     unsigned int flags)
 {
-	int ret;
-
 	chttp_context_ok(ctx);
 
-	ret = chttp_dns_resolve(&ctx->addr, host, host_len, port, flags);
-
+	int ret = chttp_dns_resolve(&ctx->addr, host, host_len, port, flags);
 	if (ret) {
 		chttp_error(ctx, CHTTP_ERR_DNS);
 		return;

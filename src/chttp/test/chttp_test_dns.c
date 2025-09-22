@@ -3,12 +3,12 @@
  *
  */
 
+#include <stdlib.h>
+
 #include "dns/chttp_dns.h"
 #include "dns/chttp_dns_cache.h"
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
-
-#include <stdlib.h>
 
 extern long _DNS_CACHE_TTL;
 extern size_t _DNS_CACHE_SIZE;
@@ -29,7 +29,7 @@ _dns_finish(struct fbr_test_context *ctx)
 	assert(ctx->chttp_test->dns);
 	assert(ctx->chttp_test->dns->magic == _DNS_MAGIC);
 
-	chttp_ZERO(ctx->chttp_test->dns);
+	fbr_ZERO(ctx->chttp_test->dns);
 	free(ctx->chttp_test->dns);
 
 	ctx->chttp_test->dns = NULL;
@@ -56,12 +56,10 @@ _dns_init(struct fbr_test_context *ctx)
 void
 chttp_test_cmd_dns_ttl(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	long ttl;
-
 	assert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	ttl = fbr_test_parse_long(cmd->params[0].value);
+	long ttl = fbr_test_parse_long(cmd->params[0].value);
 
 	_DNS_CACHE_TTL = ttl;
 
@@ -71,12 +69,10 @@ chttp_test_cmd_dns_ttl(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 void
 chttp_test_cmd_dns_cache_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	long size;
-
 	assert(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	size = fbr_test_parse_long(cmd->params[0].value);
+	long size = fbr_test_parse_long(cmd->params[0].value);
 	assert(size > 0);
 
 	_DNS_CACHE_SIZE = size;
@@ -87,22 +83,20 @@ chttp_test_cmd_dns_cache_size(struct fbr_test_context *ctx, struct fbr_test_cmd 
 void
 chttp_test_cmd_dns_lookup_or_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct chttp_addr addr, *paddr;
-	long flags = 0;
-	int  ret;
-
 	_dns_init(ctx);
 	fbr_test_ERROR(cmd->param_count < 1 || cmd->param_count > 2,
 		"invalid parameter count");
 
+	long flags = 0;
 	if (cmd->param_count == 2) {
 		flags = fbr_test_parse_long(cmd->params[1].value);
 		fbr_test_ERROR(flags < 0, "flags needs to be a positive number");
 	}
 
-	paddr = &addr;
+	struct chttp_addr addr;
+	struct chttp_addr *paddr = &addr;
 
-	ret = chttp_dns_resolve(&addr, cmd->params[0].value, cmd->params[0].len, 1, flags);
+	int ret = chttp_dns_resolve(&addr, cmd->params[0].value, cmd->params[0].len, 1, flags);
 
 	if (ret) {
 		fbr_test_skip(ctx);
@@ -123,9 +117,7 @@ chttp_test_cmd_dns_lookup_or_skip(struct fbr_test_context *ctx, struct fbr_test_
 void
 chttp_test_cmd_dns_lookup(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct fbr_test *test;
-
-	test = fbr_test_convert(ctx);
+	struct fbr_test *test = fbr_test_convert(ctx);
 
 	chttp_test_cmd_dns_lookup_or_skip(ctx, cmd);
 
@@ -135,15 +127,13 @@ chttp_test_cmd_dns_lookup(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 void
 chttp_dns_cache_debug(void)
 {
-	struct chttp_dns_cache_entry *dns_entry, *dns_temp;
-	size_t tree_count = 0, tree_sub_count = 0;
-	size_t lru_count = 0, lru_sub_count = 0, free_count = 0, sub_count;
-	char name[256];
-	int port;
-
 	chttp_dns_cache_ok();
 
 	printf("_DNS_CACHE\n");
+
+	struct chttp_dns_cache_entry *dns_entry, *dns_temp;
+	size_t tree_count = 0, tree_sub_count = 0;
+	size_t lru_count = 0, lru_sub_count = 0, free_count = 0, sub_count;
 
 	RB_FOREACH(dns_entry, chttp_dns_cache_tree, &_DNS_CACHE.cache_tree) {
 		chttp_dns_entry_ok(dns_entry);
@@ -156,6 +146,9 @@ chttp_dns_cache_debug(void)
 		sub_count = 1;
 
 		chttp_addr_ok(&dns_entry->addr);
+
+		char name[256];
+		int port;
 		chttp_sa_string(&dns_entry->addr.sa, name, sizeof(name), &port);
 		printf("\t\t%s:%d\n", name, port);
 
@@ -217,11 +210,9 @@ chttp_dns_cache_debug(void)
 void
 chttp_test_cmd_dns_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	struct fbr_test *test;
-
 	_dns_init(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
-	test = fbr_test_convert(ctx);
+	struct fbr_test *test = fbr_test_convert(ctx);
 
 	if (test->verbocity >= FBR_LOG_VERBOSE) {
 		chttp_dns_cache_debug();
