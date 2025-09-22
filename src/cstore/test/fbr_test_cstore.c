@@ -168,6 +168,7 @@ void
 fbr_test_cstore_debug(void)
 {
 	fbr_cstore_ok(_CSTORE);
+	assert_zero(_CSTORE->async.queue_len);
 
 	fbr_test_logs("CSTORE_DEBUG root: %s", _CSTORE->root);
 	fbr_test_logs("CSTORE_DEBUG entries: %zu", _CSTORE->entries);
