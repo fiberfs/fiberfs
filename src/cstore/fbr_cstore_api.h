@@ -4,13 +4,14 @@
  *
  */
 
-#ifndef _FBR_CSTORE_STORE_H_INCLUDED_
-#define _FBR_CSTORE_STORE_H_INCLUDED_
+#ifndef _FBR_CSTORE_API_H_INCLUDED_
+#define _FBR_CSTORE_API_H_INCLUDED_
 
 #include <pthread.h>
 
 #include "fiberfs.h"
 #include "fbr_cstore_io.h"
+#include "server/fbr_cstore_server.h"
 #include "core/fs/fbr_fs.h"
 #include "data/queue.h"
 #include "data/tree.h"
@@ -118,6 +119,7 @@ struct fbr_cstore {
 	fbr_cstore_delete_f			delete_f;
 	struct fbr_cstore_async			async;
 	struct fbr_cstore_loader		loader;
+	struct fbr_cstore_server		server;
 
 	struct fbr_log				*log;
 	char					root[FBR_PATH_MAX];
@@ -151,6 +153,8 @@ struct fbr_cstore_metadata {
 struct fbr_cstore_config {
 	size_t					async_threads;
 	size_t					loader_threads;
+
+	int					server;
 };
 
 extern struct fbr_cstore_config _CSTORE_CONFIG;
@@ -195,4 +199,4 @@ struct fbr_cstore *fbr_cstore_find(void);
 #define fbr_cstore_head_ok(head)		fbr_magic_check(head, FBR_CSTORE_HEAD_MAGIC)
 #define fbr_cstore_entry_ok(entry)		fbr_magic_check(entry, FBR_CSTORE_ENTRY_MAGIC)
 
-#endif /* _FBR_CSTORE_STORE_H_INCLUDED_ */
+#endif /* _FBR_CSTORE_API_H_INCLUDED_ */

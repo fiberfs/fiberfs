@@ -92,6 +92,11 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	fbr_cstore_async_init(cstore);
 	fbr_cstore_loader_init(cstore);
 
+	if (_CSTORE_CONFIG.server) {
+		fbr_cstore_server_init(cstore);
+		assert_dev(cstore->server.valid);
+	}
+
 	fbr_cstore_ok(cstore);
 }
 
@@ -554,6 +559,10 @@ void
 fbr_cstore_free(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
+
+	if (cstore->server.valid) {
+		fbr_cstore_server_free(cstore);
+	}
 
 	fbr_cstore_loader_free(cstore);
 	fbr_cstore_async_free(cstore);

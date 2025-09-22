@@ -24,7 +24,8 @@ FJSON_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FJSON_CLIENT)))
 FJSON_SRC:=$(wildcard fjson/*.c)
 FJSON_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(FJSON_SRC)))
 
-CSTORE_SRC:=$(wildcard cstore/*.c)
+CSTORE_SRC:=$(wildcard cstore/*.c cstore/*/*.c)
+CSTORE_SRC:=$(filter-out $(TEST_SRC), $(CSTORE_SRC))
 CSTORE_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(CSTORE_SRC)))
 
 UTILS_SRC=$(wildcard utils/*.c compress/*.c)

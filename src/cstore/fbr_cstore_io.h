@@ -4,8 +4,8 @@
  *
  */
 
-#ifndef _FBR_CSTORE_H_INCLUDED_
-#define _FBR_CSTORE_H_INCLUDED_
+#ifndef _FBR_CSTORE_IO_H_INCLUDED_
+#define _FBR_CSTORE_IO_H_INCLUDED_
 
 #include <pthread.h>
 
@@ -93,4 +93,4 @@ int fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 
 #define fbr_cstore_op_ok(op)			fbr_magic_check(op, FBR_CSTORE_OP_MAGIC)
 
-#endif /* _FBR_CSTORE_H_INCLUDED_ */
+#endif /* _FBR_CSTORE_IO_H_INCLUDED_ */
