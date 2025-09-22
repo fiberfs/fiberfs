@@ -169,6 +169,7 @@ fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata)
 
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
+		metadata->error = 1;
 		return 1;
 	}
 
@@ -177,6 +178,7 @@ fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata)
 	assert_zero(close(fd));
 
 	if (bytes <= 0 || (size_t)bytes >= sizeof(buffer)) {
+		metadata->error = 2;
 		return 1;
 	}
 
@@ -189,6 +191,10 @@ fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata)
 	int ret = json.error;
 
 	fjson_context_free(&json);
+
+	if (ret) {
+		metadata->error = ret;
+	}
 
 	return ret;
 }

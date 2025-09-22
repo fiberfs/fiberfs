@@ -120,7 +120,10 @@ _cstore_debug_meta(const char *filename, struct fbr_cstore_metadata *metadata)
 	assert(ret);
 
 	ret = fbr_cstore_metadata_read(meta_path, metadata);
-	assert_zero(ret);
+	//assert_zero(ret);
+	if (ret) {
+		metadata->type = FBR_CSTORE_FILE_NONE;
+	}
 }
 
 static int
@@ -150,7 +153,8 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 				assert_zero(metadata.gzipped);
 				break;
 			default:
-				fbr_ABORT("bad metadata type: %d", metadata.type);
+				fbr_ABORT("CSTORE_DEBUG file: %s (BAD metadata error: %d)",
+					filename, metadata.error);
 			}
 			break;
 		default:

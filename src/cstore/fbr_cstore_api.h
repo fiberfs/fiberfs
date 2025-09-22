@@ -144,6 +144,7 @@ struct fbr_cstore_metadata {
 	unsigned long				offset;
 	enum fbr_cstore_entry_type		type;
 	int					gzipped;
+	int					error;
 	char					_context;
 };
 
