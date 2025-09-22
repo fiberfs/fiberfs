@@ -97,6 +97,21 @@ fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 static void
+_test_cstore_wait(void)
+{
+	fbr_cstore_ok(_CSTORE);
+
+	int max = 40;
+
+	while (_CSTORE->async.queue_len && max) {
+		fbr_test_sleep_ms(25);
+		max--;
+	}
+
+	assert_zero(_CSTORE->async.queue_len);
+}
+
+static void
 _cstore_debug_meta(const char *filename, struct fbr_cstore_metadata *metadata)
 {
 	assert_dev(filename);
@@ -168,7 +183,8 @@ void
 fbr_test_cstore_debug(void)
 {
 	fbr_cstore_ok(_CSTORE);
-	assert_zero(_CSTORE->async.queue_len);
+
+	_test_cstore_wait();
 
 	fbr_test_logs("CSTORE_DEBUG root: %s", _CSTORE->root);
 	fbr_test_logs("CSTORE_DEBUG entries: %zu", _CSTORE->entries);
