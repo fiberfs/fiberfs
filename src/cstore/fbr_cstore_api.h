@@ -22,7 +22,7 @@
 #define FBR_CSTORE_META_DIR			"meta"
 #define FBR_CSTORE_LOAD_THREAD_MAX		32
 #define FBR_CSTORE_LOAD_THREAD_DEFAULT		4
-#define FBR_CSTORE_LOAD_TIME_BUFFER		2.0
+#define FBR_CSTORE_LOAD_TIME_BUFFER		1.1
 
 enum fbr_cstore_alloc_state {
 	FBR_CSTORE_ENTRY_NONE = 0,

@@ -72,7 +72,7 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 		return 0;
 	}
 
-	struct dirent *entry;
+	struct dirent *dentry;
 	char subpath[FBR_PATH_MAX];
 	size_t insertions = 0;
 	int subdir = 1;
@@ -81,22 +81,22 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 		subdir = 0;
 	}
 
-	while ((entry = readdir(dir)) != NULL) {
-		if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
+	while ((dentry = readdir(dir)) != NULL) {
+		if (!strcmp(dentry->d_name, ".") || !strcmp(dentry->d_name, "..")) {
 			continue;
 		}
 
 		if (subdir == 1) {
-			if (entry->d_type != DT_DIR || strlen(entry->d_name) != 2) {
-				_cstore_remove(path, entry->d_name);
+			if (dentry->d_type != DT_DIR || strlen(dentry->d_name) != 2) {
+				_cstore_remove(path, dentry->d_name);
 				continue;
 			}
 
 			unsigned char hash;
-			size_t hash_len = fbr_hex2bin(entry->d_name, 2, &hash, sizeof(hash));
+			size_t hash_len = fbr_hex2bin(dentry->d_name, 2, &hash, sizeof(hash));
 			assert(hash_len == 1);
 
-			int ret = snprintf(subpath, sizeof(subpath), "%s/%s", path, entry->d_name);
+			int ret = snprintf(subpath, sizeof(subpath), "%s/%s", path, dentry->d_name);
 			assert(ret > 0 && (size_t)ret < sizeof(subpath));
 
 			insertions += _cstore_scan_dir(cstore, subpath, h1, hash);
@@ -104,15 +104,15 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 			continue;
 		}
 
-		if (entry->d_type != DT_REG || strlen(entry->d_name) != 12) {
-			_cstore_remove(path, entry->d_name);
+		if (dentry->d_type != DT_REG || strlen(dentry->d_name) != 12) {
+			_cstore_remove(path, dentry->d_name);
 			continue;
 		}
 
 		struct stat st;
 		int ret = lstat(path, &st);
 		if (ret || st.st_size <= 0) {
-			_cstore_remove(path, entry->d_name);
+			_cstore_remove(path, dentry->d_name);
 			continue;
 		}
 
@@ -124,20 +124,20 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 
 		fbr_hash_t hash;
 		char *hash_buf = (char*)&hash;
-		size_t hash_len = fbr_hex2bin(entry->d_name, 12, hash_buf + 2, sizeof(hash) - 2);
+		size_t hash_len = fbr_hex2bin(dentry->d_name, 12, hash_buf + 2, sizeof(hash) - 2);
 		assert(hash_len + 2 == sizeof(hash));
 		hash_buf[0] = h1;
 		hash_buf[1] = (unsigned char)h2;
 
-		struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, st.st_size, 0);
-		if (entry) {
-			fbr_cstore_entry_ok(entry);
-			assert_dev(entry->state == FBR_CSTORE_OK);
+		struct fbr_cstore_entry *centry = fbr_cstore_insert(cstore, hash, st.st_size, 0);
+		if (centry) {
+			fbr_cstore_entry_ok(centry);
+			assert_dev(centry->state == FBR_CSTORE_OK);
 
 			fbr_atomic_add(&cstore->loaded, 1);
 			insertions++;
 
-			fbr_cstore_release(cstore, entry);
+			fbr_cstore_release(cstore, centry);
 		}
 	}
 
