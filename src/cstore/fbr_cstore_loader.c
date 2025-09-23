@@ -28,7 +28,7 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 
 	fbr_ZERO(loader);
 	loader->state = FBR_CSTORE_LOADER_READING;
-	loader->start_time = fbr_get_time();
+	loader->start_time = fbr_get_time() - FBR_CSTORE_LOAD_TIME_BUFFER;
 	loader->thread_count = _CSTORE_CONFIG.loader_threads;
 	assert(loader->thread_count);
 
@@ -111,11 +111,12 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 
 		struct stat st;
 		int ret = lstat(path, &st);
-		if (ret || st.st_size == 0) {
+		if (ret || st.st_size <= 0) {
 			_cstore_remove(path, entry->d_name);
 			continue;
 		}
 
+		assert_dev(cstore->loader.start_time);
 		double modified = fbr_convert_timespec(&st.st_mtim);
 		if (modified > cstore->loader.start_time) {
 			continue;

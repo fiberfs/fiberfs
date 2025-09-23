@@ -212,13 +212,13 @@ _cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, co
 		if (!entry) {
 			return NULL;
 		} else if (entry->bytes != bytes) {
-			fbr_cstore_release(cstore, entry);
+			fbr_cstore_remove(cstore, entry);
 			return NULL;
 		}
 
 		int loading = fbr_cstore_set_loading(entry);
 		if (!loading) {
-			fbr_cstore_release(cstore, entry);
+			fbr_cstore_remove(cstore, entry);
 			return NULL;
 		}
 	}
@@ -879,6 +879,7 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 			return EAGAIN;
 		}
 
+		// TODO this will remove on error
 		entry = _cstore_get_loading(cstore, hash, 100, path);
 		if (!entry) {
 			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id,

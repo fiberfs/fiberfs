@@ -71,6 +71,9 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert(_CSTORE->entries == 3);
 	fbr_fs_free(fs);
 
+	fbr_test_logs("*** Sleep %f", FBR_CSTORE_LOAD_TIME_BUFFER);
+	fbr_sleep_ms(FBR_CSTORE_LOAD_TIME_BUFFER * 1010);
+
 	fbr_test_logs("*** Allocating fs again");
 
 	fs = fbr_test_fuse_mock_fs(ctx);
