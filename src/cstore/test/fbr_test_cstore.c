@@ -482,7 +482,10 @@ _cstore_state_thread(void *arg)
 		assert(state < 1000 * 1000 * 1000);
 
 		if (state >= 5) {
-			assert_zero(loading);
+			if (loading) {
+				assert(entry->state == FBR_CSTORE_LOADING);
+				fbr_cstore_set_error(entry);
+			}
 			enum fbr_cstore_state state = fbr_cstore_wait_loading(entry);
 			assert(state == FBR_CSTORE_NONE || state == FBR_CSTORE_OK);
 			fbr_atomic_add(&_CSTORE_ST_WAITING, 1);
