@@ -473,17 +473,16 @@ _cstore_state_thread(void *arg)
 				continue;
 			}
 			loading = 1;
-		}
-		fbr_cstore_entry_ok(entry);
-		if (loading) {
 			assert(entry->state == FBR_CSTORE_LOADING);
 		}
+		fbr_cstore_entry_ok(entry);
 
 		assert(hash < fbr_array_len(_CSTORE_ST_COUNTER));
 		size_t state = fbr_atomic_add(&_CSTORE_ST_COUNTER[hash], 1);
 		assert(state < 1000 * 1000 * 1000);
 
 		if (state >= 5) {
+			assert_zero(loading);
 			enum fbr_cstore_state state = fbr_cstore_wait_loading(entry);
 			assert(state == FBR_CSTORE_NONE || state == FBR_CSTORE_OK);
 			fbr_atomic_add(&_CSTORE_ST_WAITING, 1);
@@ -507,6 +506,7 @@ _cstore_state_thread(void *arg)
 				"found state %d", entry->state);
 
 			if (loading) {
+				assert(entry->state == FBR_CSTORE_LOADING);
 				fbr_test_sleep_ms(random() % 25);
 				fbr_cstore_set_error(entry);
 			}
