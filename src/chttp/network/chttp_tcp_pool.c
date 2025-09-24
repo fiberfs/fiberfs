@@ -270,10 +270,8 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 
 	// Prune expired connections
 	if (head) {
-		chttp_pool_entry_ok(head);
-		chttp_addr_connected(&head->addr);
-
-		if (head->expiration < now) {
+		while (head && head->expiration < now) {
+			chttp_pool_entry_ok(head);
 			head = _tcp_pool_remove_entry(head);
 			_TCP_POOL.stats.expired++;
 		}
@@ -282,6 +280,8 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 			assert_zero(RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
 			TAILQ_INSERT_HEAD(&_TCP_POOL.lru_list, entry, list_entry);
 		} else {
+			chttp_pool_entry_ok(head);
+
 			// Add entry to the back
 			while (head->next) {
 				chttp_pool_entry_ok(head->next);

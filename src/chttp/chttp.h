@@ -7,6 +7,9 @@
 #ifndef _CHTTP_H_INCLUDED_
 #define _CHTTP_H_INCLUDED_
 
+// TODO
+// Convert magic checks to fiber style
+
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
