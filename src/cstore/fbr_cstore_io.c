@@ -459,32 +459,37 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 
 	ssize_t bytes = fbr_sys_read(fd, chunk->data, chunk->length);
 
+	assert_zero(close(fd));
+
 	if ((size_t)bytes != chunk->length) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR read()");
 		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
-		fbr_cstore_release(cstore, entry);
-		assert_zero(close(fd));
+		fbr_cstore_remove(cstore, entry);
 		return;
 	}
 
-	assert_zero(close(fd));
+	struct fbr_cstore_metadata metadata;
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+	ret = fbr_cstore_metadata_read(path, &metadata);
 
-	if (fbr_is_dev()) {
-		struct fbr_cstore_metadata metadata;
-		fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
-		ret = fbr_cstore_metadata_read(path, &metadata);
-		assert_zero_dev(ret);
-		assert_dev(metadata.etag == chunk->id);
-		assert_dev(metadata.offset == chunk->offset);
-		assert_dev(metadata.size == chunk->length);
-		assert_dev(metadata.type == FBR_CSTORE_FILE_CHUNK);
-		assert_zero_dev(metadata.gzipped)
+	assert_zero_dev(ret);
+	assert_dev(metadata.etag == chunk->id);
+	assert_dev(metadata.offset == chunk->offset);
+	assert_dev(metadata.size == chunk->length);
+	assert_dev(metadata.type == FBR_CSTORE_FILE_CHUNK);
+	assert_zero_dev(metadata.gzipped);
+
+	if (ret || metadata.size != chunk->length || metadata.offset == chunk->offset ||
+	    metadata.etag != chunk->id || metadata.gzipped) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR metadata");
+		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		fbr_cstore_remove(cstore, entry);
+		return;
 	}
 
 	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, chunk->length);
 
 	_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
-
 	fbr_cstore_release(cstore, entry);
 }
 
