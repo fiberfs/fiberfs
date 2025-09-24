@@ -380,7 +380,7 @@ fbr_log_batch(struct fbr_log *log, void *buffer, size_t buffer_len, size_t count
 
 	fbr_memory_sync();
 
-	assert(((struct fbr_log_tag*)data)->parts.class == FBR_LOG_TAG_EOF);
+	assert_dev(((struct fbr_log_tag*)data)->parts.class == FBR_LOG_TAG_EOF);
 
 	*data = fbr_log_tag_gen(noop_seq, FBR_LOG_TAG_NOOP, 0, 0);
 }
