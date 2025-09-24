@@ -84,7 +84,7 @@ _fuse_mount_thread(void *arg)
 	assert(ctx->session);
 	assert_zero(ctx->running);
 
-	pthread_setname_np(pthread_self(), "fiberfs_fuse_session");
+	//pthread_setname_np(pthread_self(), "fiberfs_fuse_session");
 
 	struct fuse_loop_config config;
 	fbr_ZERO(&config);
