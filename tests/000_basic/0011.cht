@@ -1,7 +1,7 @@
 chttp_test "TCP pool tests 2"
 
 tcp_pool_size 5
-tcp_pool_age_ms 200
+tcp_pool_age_ms 400
 
 dns_lookup_or_skip dns02.nulltech.systems
 
@@ -47,21 +47,21 @@ chttp_connect dns02.nulltech.systems 2
 tcp_pool_fake_connect
 chttp_reset
 
-tcp_pool_debug
+#tcp_pool_debug
 
-sleep_ms 300
-
-chttp_connect dns02.nulltech.systems 2
-tcp_pool_fake_connect
-chttp_reset
-
-tcp_pool_debug
+sleep_ms 420
 
 chttp_connect dns02.nulltech.systems 2
 tcp_pool_fake_connect
 chttp_reset
 
-tcp_pool_debug
+#tcp_pool_debug
+
+chttp_connect dns02.nulltech.systems 2
+tcp_pool_fake_connect
+chttp_reset
+
+#tcp_pool_debug
 
 chttp_url /
 chttp_connect dns02.nulltech.systems 2
