@@ -10,8 +10,8 @@
 #include <pthread.h>
 
 #include "chttp.h"
-#include "tls_openssl.h"
-#include "tls_openssl_test_key.h"
+#include "chttp_tls_openssl.h"
+#include "chttp_tls_openssl_test_key.h"
 
 enum chttp_openssl_type {
 	CHTTP_OPENSSL_NONE = 0,

@@ -4,7 +4,7 @@
  */
 
 #include "chttp.h"
-#include "tls_openssl.h"
+#include "chttp_tls_openssl.h"
 
 int
 chttp_tls_enabled(void)

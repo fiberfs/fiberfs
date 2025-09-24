@@ -10,7 +10,7 @@
 #include <openssl/pem.h>
 
 #include "fiberfs.h"
-#include "tls_openssl_test_key.h"
+#include "chttp_tls_openssl_test_key.h"
 
 static const char *_TLS_OPENSSL_TEST_CERT =
 	"-----BEGIN CERTIFICATE-----\n"
