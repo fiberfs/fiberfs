@@ -9,7 +9,7 @@
 #include <stdio.h>
 
 #include "chttp.h"
-#include "compress/fbr_gzip.h"
+#include "compress/chttp_gzip.h"
 
 static void
 _body_chunk_end(struct chttp_context *ctx)

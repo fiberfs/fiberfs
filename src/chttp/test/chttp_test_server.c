@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "compress/fbr_gzip.h"
+#include "compress/chttp_gzip.h"
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
 #include "tls/chttp_tls.h"

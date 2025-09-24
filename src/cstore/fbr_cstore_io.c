@@ -479,7 +479,7 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	assert_dev(metadata.type == FBR_CSTORE_FILE_CHUNK);
 	assert_zero_dev(metadata.gzipped);
 
-	if (ret || metadata.size != chunk->length || metadata.offset == chunk->offset ||
+	if (ret || metadata.size != chunk->length || metadata.offset != chunk->offset ||
 	    metadata.etag != chunk->id || metadata.gzipped) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR metadata");
 		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);

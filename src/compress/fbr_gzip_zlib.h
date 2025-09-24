@@ -46,13 +46,7 @@ int fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t inp
 	unsigned char *output, size_t output_len, size_t *written, int finish_deflate);
 void fbr_zlib_free(struct fbr_zlib *zlib);
 
-struct chttp_context;
-struct chttp_addr;
-
-size_t chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t output_len);
-void chttp_zlib_send_chunk(struct fbr_zlib *zlib, struct chttp_addr *addr,
-	const unsigned char *input, size_t input_len);
-void chttp_zlib_register(struct fbr_zlib *zlib, unsigned char *buffer, size_t buffer_len);
+#define fbr_zlib_ok(zlib)	fbr_magic_check(zlib, FBR_ZLIB_MAGIC)
 
 #endif /* FBR_ZLIB */
 
