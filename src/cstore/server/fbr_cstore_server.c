@@ -77,7 +77,7 @@ _cstore_worker_loop(void *arg)
 	fbr_thread_name("fbr_worker");
 
 	fbr_log_print(server->cstore->log, FBR_LOG_CS_WORKER, worker->thread_id,
-		"worker %zu running", worker->thread_pos);
+		"running on port %d", server->port);
 
 	while (!server->exit) {
 		if (worker->thread_pos > server->workers_max) {
