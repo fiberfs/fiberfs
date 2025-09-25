@@ -20,6 +20,23 @@ fbr_cstore_server_init(struct fbr_cstore *cstore)
 
 	fbr_ZERO(server);
 	server->valid = 1;
+	server->address = FBR_CSTORE_SERVER_LISTEN;
+	server->port = _CSTORE_CONFIG.server_port;
+	server->tls = _CSTORE_CONFIG.server_tls;
+
+	// TODO we need random port
+	// TODO we need to listen on all available interfaces
+	// TODO we need to listen and work on multiple protocols
+	assert(server->port > 0);
+
+	chttp_addr_init(&server->addr);
+	int ret = chttp_tcp_listen(&server->addr, server->address, server->port, 16);
+	fbr_ASSERT(!ret && !server->addr.error, "listen() error");
+	chttp_addr_connected(&server->addr);
+
+	if (server->tls) {
+		server->addr.tls = 1;
+	}
 
 	server->workers_max = _CSTORE_CONFIG.server_workers;
 
@@ -30,6 +47,9 @@ fbr_cstore_server_init(struct fbr_cstore *cstore)
 	while (server->workers_running != server->workers_max) {
 		fbr_sleep_ms(0.1);
 	}
+
+	fbr_log_print(cstore->log, FBR_LOG_CS_SERVER, FBR_REQID_CSTORE,
+		"server listening on %s:%d (tls: %d)", server->address, server->port, server->tls);
 }
 
 static void *
@@ -90,6 +110,8 @@ fbr_cstore_server_free(struct fbr_cstore *cstore)
 	assert(server->valid);
 
 	server->exit = 1;
+
+	chttp_tcp_close(&server->addr);
 
 	for (size_t i = 0; i < server->workers_max; i++) {
 		pt_assert(pthread_join(server->workers[i], NULL));

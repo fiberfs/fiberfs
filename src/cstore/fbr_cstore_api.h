@@ -157,6 +157,7 @@ struct fbr_cstore_config {
 
 	int					server;
 	int					server_port;
+	int					server_tls;
 	size_t					server_workers;
 };
 

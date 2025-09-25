@@ -9,6 +9,10 @@
 
 #include <pthread.h>
 
+#include "network/chttp_network.h"
+
+#define FBR_CSTORE_SERVER_PORT			5691
+#define FBR_CSTORE_SERVER_LISTEN		"127.0.0.1"
 #define FBR_CSTORE_WORKER_MAX			256
 #define FBR_CSTORE_WORKER_DEFAULT		4
 
@@ -16,7 +20,10 @@ struct fbr_cstore_server {
 	int					valid;
 	volatile int				exit;
 
+	struct chttp_addr			addr;
+	const char				*address;
 	int					port;
+	int					tls;
 
 	pthread_t				workers[FBR_CSTORE_WORKER_MAX];
 	size_t					workers_max;
