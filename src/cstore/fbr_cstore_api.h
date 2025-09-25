@@ -11,7 +11,6 @@
 
 #include "fiberfs.h"
 #include "fbr_cstore_io.h"
-#include "server/fbr_cstore_server.h"
 #include "core/fs/fbr_fs.h"
 #include "data/queue.h"
 #include "data/tree.h"
@@ -120,7 +119,7 @@ struct fbr_cstore {
 	fbr_cstore_delete_f			delete_f;
 	struct fbr_cstore_async			async;
 	struct fbr_cstore_loader		loader;
-	struct fbr_cstore_server		server;
+	struct fbr_cstore_server		*servers;
 
 	struct fbr_log				*log;
 	char					root[FBR_PATH_MAX];

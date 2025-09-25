@@ -10,6 +10,7 @@
 
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
+#include "server/fbr_cstore_server.h"
 #include "log/fbr_log.h"
 #include "utils/fbr_sys.h"
 
@@ -93,8 +94,9 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	fbr_cstore_loader_init(cstore);
 
 	if (_CSTORE_CONFIG.server) {
-		fbr_cstore_server_init(cstore);
-		assert_dev(cstore->server.valid);
+		// TODO fix this to pass in the proper params
+		fbr_cstore_server_alloc(cstore, FBR_CSTORE_SERVER_LISTEN, FBR_CSTORE_SERVER_PORT,
+			_CSTORE_CONFIG.server_tls);
 	}
 
 	fbr_cstore_ok(cstore);
@@ -566,9 +568,7 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
 
-	if (cstore->server.valid) {
-		fbr_cstore_server_free(cstore);
-	}
+	fbr_cstore_servers_free(cstore);
 
 	fbr_cstore_loader_free(cstore);
 	fbr_cstore_async_free(cstore);

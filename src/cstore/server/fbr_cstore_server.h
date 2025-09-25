@@ -17,17 +17,22 @@
 #define FBR_CSTORE_WORKER_DEFAULT		4
 
 struct fbr_cstore_server {
-	int					valid;
+	unsigned int				magic;
+#define FBR_CSTORE_SERVER_MAGIC			0xAE4606E0
+
 	volatile int				exit;
 
+	struct fbr_cstore			*cstore;
+
 	struct chttp_addr			addr;
-	const char				*address;
 	int					port;
 	int					tls;
 
 	pthread_t				workers[FBR_CSTORE_WORKER_MAX];
 	size_t					workers_max;
 	size_t					workers_running;
+
+	struct fbr_cstore_server		*next;
 };
 
 struct fbr_cstore;
@@ -36,7 +41,7 @@ struct fbr_cstore_worker {
 	unsigned int				magic;
 #define FBR_CSTORE_WORKER_MAGIC			0x0AC4F92D
 
-	struct fbr_cstore			*cstore;
+	struct fbr_cstore_server		*server;
 	struct fbr_workspace			*workspace;
 	struct fbr_rlog				*rlog;
 
@@ -47,15 +52,15 @@ struct fbr_cstore_worker {
 	unsigned long				request_id;
 };
 
-void fbr_cstore_server_init(struct fbr_cstore *cstore);
-void fbr_cstore_server_free(struct fbr_cstore *cstore);
+void fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls);
+void fbr_cstore_servers_free(struct fbr_cstore *cstore);
 
-struct fbr_cstore_worker *fbr_cstore_worker_alloc(struct fbr_cstore *cstore);
+struct fbr_cstore_worker *fbr_cstore_worker_alloc(struct fbr_cstore_server *server);
 void fbr_cstore_worker_init(struct fbr_cstore_worker *worker);
 void fbr_cstore_worker_finish(struct fbr_cstore_worker *worker);
 void fbr_cstore_worker_free(struct fbr_cstore_worker *worker);
 
-#define fbr_cstore_worker_ok(worker)		\
-	fbr_magic_check(worker, FBR_CSTORE_WORKER_MAGIC)
+#define fbr_cstore_server_ok(server)		fbr_magic_check(server, FBR_CSTORE_SERVER_MAGIC)
+#define fbr_cstore_worker_ok(worker)		fbr_magic_check(worker, FBR_CSTORE_WORKER_MAGIC)
 
 #endif /* _FBR_CSTORE_SERVER_H_INCLUDED_ */

@@ -363,8 +363,7 @@ _cstore_test(void)
 	fbr_cstore_ok(_CSTORE);
 
 	assert_zero(_CSTORE_CONFIG.server);
-	assert_zero(_CSTORE->server.valid);
-	assert_zero(_CSTORE->server.workers_running);
+	assert_zero(_CSTORE->servers);
 
 	fbr_test_random_seed();
 

@@ -12,9 +12,9 @@
 #include "cstore/fbr_cstore_api.h"
 
 struct fbr_cstore_worker *
-fbr_cstore_worker_alloc(struct fbr_cstore *cstore)
+fbr_cstore_worker_alloc(struct fbr_cstore_server *server)
 {
-	fbr_cstore_ok(cstore);
+	fbr_cstore_server_ok(server);
 
 	size_t workspace_size = fbr_workspace_size();
 	struct fbr_cstore_worker *worker = calloc(1, sizeof(*worker) + workspace_size);
@@ -22,7 +22,7 @@ fbr_cstore_worker_alloc(struct fbr_cstore *cstore)
 
 	worker->magic = FBR_CSTORE_WORKER_MAGIC;
 	worker->workspace = fbr_workspace_init(worker + 1, workspace_size);
-	worker->cstore = cstore;
+	worker->server = server;
 
 	return worker;
 }

@@ -6,6 +6,7 @@
 
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
+#include "server/fbr_cstore_server.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/store/fbr_store.h"
 
