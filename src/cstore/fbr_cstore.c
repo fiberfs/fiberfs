@@ -164,7 +164,7 @@ _cstore_exists(struct fbr_cstore *cstore, fbr_hash_t hash)
 	return st.st_size;
 }
 
-struct fbr_cstore_head *
+static struct fbr_cstore_head *
 _cstore_get_head(struct fbr_cstore *cstore, fbr_hash_t hash)
 {
 	assert_dev(cstore);

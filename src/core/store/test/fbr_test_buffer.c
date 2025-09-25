@@ -16,7 +16,7 @@
 static char _ONE_BUFFER[10000];
 static int _INIT;
 
-void
+static void
 _test_init(void)
 {
 	if (_INIT) {
@@ -28,7 +28,7 @@ _test_init(void)
 	memset(_ONE_BUFFER, '1', sizeof(_ONE_BUFFER));
 }
 
-int
+static int
 _test_memcmp(char *buffer, size_t buffer_len, char *check, size_t check_len)
 {
 	assert(buffer);

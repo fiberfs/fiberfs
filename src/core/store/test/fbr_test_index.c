@@ -625,7 +625,7 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 #define _THREADS_MAX 4
 static size_t _THREAD_COUNT;
 
-void *
+static void *
 _index_thread(void *arg)
 {
 	assert_zero(arg);

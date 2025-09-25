@@ -23,6 +23,11 @@ struct fbr_cstore_server {
 	size_t					workers_running;
 };
 
+struct fbr_cstore_worker {
+	unsigned int				magic;
+#define FBR_CSTORE_WORKER_MAGIC			0x0AC4F92D
+};
+
 struct fbr_cstore;
 
 void fbr_cstore_server_init(struct fbr_cstore *cstore);

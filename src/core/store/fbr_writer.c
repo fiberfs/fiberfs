@@ -328,7 +328,7 @@ _output_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, si
 	}
 }
 
-struct fbr_buffer *
+static struct fbr_buffer *
 _buffer_get(struct fbr_writer *writer)
 {
 	assert_dev(writer);

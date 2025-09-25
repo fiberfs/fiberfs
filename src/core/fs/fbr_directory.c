@@ -463,7 +463,7 @@ fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_dir
 	assert_dev(dest->file_count == source->file_count);
 }
 
-struct fbr_directory *
+static struct fbr_directory *
 _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_inode_t inode,
     struct fbr_directory **previous, unsigned int *attempts, double time_start)
 {

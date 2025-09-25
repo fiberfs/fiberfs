@@ -15,7 +15,7 @@
 
 static const struct fbr_store_callbacks _STORE_CALLBACKS_EMPTY;
 
-void
+static void
 _fs_config_init(struct fbr_fs *fs)
 {
 	assert_dev(fs);
