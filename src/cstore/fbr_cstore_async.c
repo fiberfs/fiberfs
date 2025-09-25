@@ -4,6 +4,8 @@
  *
  */
 
+#include <stdio.h>
+
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
 #include "core/request/fbr_request.h"
@@ -141,6 +143,8 @@ _cstore_async_loop(void *arg)
 	async->threads_running++;
 	size_t thread_id = fbr_request_id_thread_gen();
 	size_t thread_pos = async->threads_running;
+
+	fbr_thread_name("fbr_async");
 
 	fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, thread_id, "thread running");
 

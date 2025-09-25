@@ -21,8 +21,8 @@ _cstore_sub_path(int metadata)
 	return FBR_CSTORE_DATA_DIR;
 }
 
-static int
-_cstore_root_path(struct fbr_cstore *cstore, int metadata, char *buffer, size_t buffer_len)
+size_t
+fbr_cstore_path_data(struct fbr_cstore *cstore, int metadata, char *buffer, size_t buffer_len)
 {
 	fbr_cstore_ok(cstore);
 	assert_dev(buffer);
@@ -32,7 +32,7 @@ _cstore_root_path(struct fbr_cstore *cstore, int metadata, char *buffer, size_t 
 	int ret = snprintf(buffer, buffer_len, "%s/%s/", cstore->root, sub_path);
 	assert(ret > 0 && (size_t)ret < buffer_len);
 
-	return ret;
+	return (size_t)ret;
 }
 
 size_t
@@ -102,7 +102,7 @@ fbr_cstore_path_chunk(struct fbr_cstore *cstore, const struct fbr_file *file, fb
 	int ret = 0;
 
 	if (cstore) {
-		ret = _cstore_root_path(cstore, metadata, buffer, buffer_len);
+		ret = fbr_cstore_path_data(cstore, metadata, buffer, buffer_len);
 	}
 
 	ret += snprintf(buffer + ret, buffer_len - ret, "%s.%s.%zu",
@@ -131,7 +131,7 @@ fbr_cstore_path_index(struct fbr_cstore *cstore, const struct fbr_directory *dir
 	int ret = 0;
 
 	if (cstore) {
-		ret = _cstore_root_path(cstore, metadata, buffer, buffer_len);
+		ret = fbr_cstore_path_data(cstore, metadata, buffer, buffer_len);
 	}
 
 	char *root_sep = "";
@@ -159,7 +159,7 @@ fbr_cstore_path_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath, i
 	int ret = 0;
 
 	if (cstore) {
-		ret = _cstore_root_path(cstore, metadata, buffer, buffer_len);
+		ret = fbr_cstore_path_data(cstore, metadata, buffer, buffer_len);
 	}
 
 	char *root_sep = "";

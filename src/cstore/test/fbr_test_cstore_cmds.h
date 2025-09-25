@@ -10,6 +10,7 @@
 #include "test/fbr_test_cmd_declare.h"
 
 void fbr_test_cstore_init(struct fbr_test_context *ctx);
+void fbr_test_cstore_init_loader(struct fbr_test_context *ctx);
 void fbr_test_cstore_reload(struct fbr_test_context *ctx);
 void fbr_test_cstore_debug(void);
 fbr_stats_t fbr_test_cstore_stat_chunks(void);
@@ -27,6 +28,8 @@ FBR_TEST_CMD(cstore_wait_test)
 FBR_TEST_CMD(cstore_async_test)
 FBR_TEST_CMD(cstore_error_test)
 FBR_TEST_CMD(cstore_loader_test)
+
+FBR_TEST_CMD(cstore_enable_server)
 
 FBR_TEST_CMD(cstore_debug)
 FBR_TEST_VAR(cstore_stat_indexes)

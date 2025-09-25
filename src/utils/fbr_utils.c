@@ -4,8 +4,11 @@
  *
  */
 
+#define _GNU_SOURCE
+
 #include <errno.h>
 #include <limits.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -190,4 +193,12 @@ fbr_hex2bin(const char *input, size_t input_len, void* output, size_t output_len
 	}
 
 	return (i / 2);
+}
+
+void
+fbr_thread_name(const char *name)
+{
+	assert(name);
+	int ret = pthread_setname_np(pthread_self(), name);
+	assert_zero_dev(ret);
 }

@@ -16,6 +16,7 @@
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
 #include "core/request/fbr_request.h"
+#include "utils/fbr_sys.h"
 
 static void *_cstore_load_thread(void *arg);
 
@@ -25,8 +26,15 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_loader *loader = &cstore->loader;
-
 	fbr_ZERO(loader);
+
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path_data(cstore, 0, path, sizeof(path));
+	if (!fbr_sys_isdir(path)) {
+		loader->state = FBR_CSTORE_LOADER_DONE;
+		return;
+	}
+
 	loader->state = FBR_CSTORE_LOADER_READING;
 	loader->start_time = fbr_get_time() - FBR_CSTORE_LOAD_TIME_BUFFER;
 	loader->thread_count = _CSTORE_CONFIG.loader_threads;

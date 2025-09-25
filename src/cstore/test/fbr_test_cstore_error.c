@@ -28,8 +28,10 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
-	fbr_test_cstore_init(ctx);
+	fbr_test_cstore_init_loader(ctx);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
+
+	assert(_CSTORE->loader.start_time);
 
 	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(directory);

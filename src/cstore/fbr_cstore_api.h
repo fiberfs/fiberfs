@@ -156,6 +156,8 @@ struct fbr_cstore_config {
 	size_t					loader_threads;
 
 	int					server;
+	int					server_port;
+	size_t					server_workers;
 };
 
 extern struct fbr_cstore_config _CSTORE_CONFIG;
@@ -178,6 +180,8 @@ void fbr_cstore_free(struct fbr_cstore *cstore);
 void fbr_cstore_loader_init(struct fbr_cstore *cstore);
 void fbr_cstore_loader_free(struct fbr_cstore *cstore);
 
+size_t fbr_cstore_path_data(struct fbr_cstore *cstore, int metadata, char *buffer,
+	size_t buffer_len);
 size_t fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *output,
 	size_t output_len);
 size_t fbr_cstore_path_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata,

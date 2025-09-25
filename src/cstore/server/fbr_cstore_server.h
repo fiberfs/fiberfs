@@ -7,8 +7,20 @@
 #ifndef _FBR_CSTORE_SERVER_H_INCLUDED_
 #define _FBR_CSTORE_SERVER_H_INCLUDED_
 
+#include <pthread.h>
+
+#define FBR_CSTORE_WORKER_MAX			256
+#define FBR_CSTORE_WORKER_DEFAULT		4
+
 struct fbr_cstore_server {
-	int				valid;
+	int					valid;
+	volatile int				exit;
+
+	int					port;
+
+	pthread_t				workers[FBR_CSTORE_WORKER_MAX];
+	size_t					workers_max;
+	size_t					workers_running;
 };
 
 struct fbr_cstore;

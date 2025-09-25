@@ -70,6 +70,21 @@ fbr_test_cstore_init(struct fbr_test_context *ctx)
 }
 
 void
+fbr_test_cstore_init_loader(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	char *root = fbr_test_mkdir_tmp(ctx, NULL);
+
+	char data_path[FBR_PATH_MAX];
+	int ret = snprintf(data_path, sizeof(data_path), "%s/%s/", root, FBR_CSTORE_DATA_DIR);
+	assert(ret > 0 && (size_t)ret < sizeof(data_path));
+	fbr_sys_mkdirs(data_path);
+
+	_test_cstore_init(ctx, root, "^", 1);
+}
+
+void
 fbr_test_cstore_reload(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
@@ -346,6 +361,10 @@ static void
 _cstore_test(void)
 {
 	fbr_cstore_ok(_CSTORE);
+
+	assert_zero(_CSTORE_CONFIG.server);
+	assert_zero(_CSTORE->server.valid);
+	assert_zero(_CSTORE->server.workers_running);
 
 	fbr_test_random_seed();
 

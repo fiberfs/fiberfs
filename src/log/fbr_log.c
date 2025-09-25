@@ -756,6 +756,8 @@ fbr_log_type_str(enum fbr_log_type type)
 			return "CSTORE_DEBUG";
 		case FBR_LOG_CS_ASYNC:
 			return "CSTORE_ASYNC";
+		case FBR_LOG_CS_WORKER:
+			return "CSTORE_WORKER";
 		case FBR_LOG_CS_WBUFFER:
 			return "CSTORE_WBUFFER";
 		case FBR_LOG_CS_LOADER:
