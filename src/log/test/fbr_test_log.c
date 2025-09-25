@@ -32,7 +32,8 @@ struct fbr_test_log_printer {
 	struct fbr_test_log_printer		*next;
 };
 
-#define fbr_test_log_printer_ok(print)		fbr_magic_check(print, FBR_TEST_LOG_PRINT_MAGIC)
+#define fbr_test_log_printer_ok(print)		\
+	fbr_magic_check(print, FBR_TEST_LOG_PRINT_MAGIC)
 
 extern size_t _FBR_LOG_DEFAULT_SIZE;
 extern int _FBR_LOG_MASK_DEBUG;

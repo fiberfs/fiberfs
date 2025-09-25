@@ -34,6 +34,7 @@ void fbr_rlog_flush(struct fbr_rlog *rlog);
 void __fbr_attr_printf(2) fbr_rlog(enum fbr_log_type type, const char *fmt, ...);
 void fbr_rlog_free(struct fbr_rlog **rlog);
 
-#define fbr_rlog_ok(rlog)			fbr_magic_check(rlog, FBR_RLOG_MAGIC)
+#define fbr_rlog_ok(rlog)	\
+	fbr_magic_check(rlog, FBR_RLOG_MAGIC)
 
 #endif /* _FBR_RLOG_H_INCLUDED_ */

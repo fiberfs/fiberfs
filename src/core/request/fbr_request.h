@@ -96,8 +96,8 @@ void fbr_fuse_reply_create(struct fbr_request *request, const struct fuse_entry_
     const struct fuse_file_info *fi);
 void fbr_fuse_reply_write(struct fbr_request *request, size_t count);
 
-#define fbr_request_ok(request)		fbr_magic_check(request, FBR_REQUEST_MAGIC)
-
+#define fbr_request_ok(request)						\
+	fbr_magic_check(request, FBR_REQUEST_MAGIC)
 #define fbr_request_valid(request)					\
 {									\
 	fbr_request_ok(request);					\

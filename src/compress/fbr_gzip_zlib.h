@@ -46,7 +46,8 @@ int fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t inp
 	unsigned char *output, size_t output_len, size_t *written, int finish_deflate);
 void fbr_zlib_free(struct fbr_zlib *zlib);
 
-#define fbr_zlib_ok(zlib)	fbr_magic_check(zlib, FBR_ZLIB_MAGIC)
+#define fbr_zlib_ok(zlib)	\
+	fbr_magic_check(zlib, FBR_ZLIB_MAGIC)
 
 #endif /* FBR_ZLIB */
 

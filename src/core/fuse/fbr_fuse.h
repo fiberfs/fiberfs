@@ -59,8 +59,8 @@ void fbr_fuse_unmount_signal(void);
 
 void fbr_fuse_LOCK(struct fbr_fuse_context *fuse_ctx, pthread_mutex_t *lock);
 
-#define fbr_fuse_context_ok(ctx)	fbr_magic_check(ctx, FBR_FUSE_CTX_MAGIC)
-
+#define fbr_fuse_context_ok(ctx)				\
+	fbr_magic_check(ctx, FBR_FUSE_CTX_MAGIC)
 #define fbr_fuse_mounted(ctx)					\
 {								\
 	fbr_fuse_context_ok(ctx);				\
