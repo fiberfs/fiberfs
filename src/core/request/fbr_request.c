@@ -105,6 +105,7 @@ _request_init(struct fbr_request *request, fuse_req_t fuse_req, const char *name
 		fbr_fuse_context_ok(request->fuse_ctx);
 	}
 
+	fbr_workspace_ok(request->workspace);
 	assert_dev(request->workspace->free >= FBR_WORKSPACE_MIN_SIZE);
 	assert_zero_dev(request->workspace->pos);
 

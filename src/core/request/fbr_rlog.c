@@ -10,6 +10,7 @@
 #include "fiberfs.h"
 #include "fbr_request.h"
 #include "core/fuse/fbr_fuse.h"
+#include "cstore/fbr_cstore_api.h"
 #include "log/fbr_log.h"
 
 static void
@@ -27,14 +28,14 @@ _rlog_init(struct fbr_rlog *rlog, size_t rlog_size, unsigned long request_id)
 	rlog->log_end = rlog->data + ((rlog_size - sizeof(*rlog)) / FBR_LOG_TYPE_SIZE);
 	rlog->log_pos = rlog->data;
 	assert(rlog->log_pos < rlog->log_end);
-
-	fbr_rlog_ok(rlog);
 }
 
 void
 fbr_rlog_workspace_alloc(struct fbr_request *request)
 {
 	fbr_request_ok(request);
+	fbr_fuse_context_ok(request->fuse_ctx);
+	assert_dev(request->id);
 	assert_zero(request->rlog);
 
 	// TODO pull this from fs->config
@@ -44,20 +45,38 @@ fbr_rlog_workspace_alloc(struct fbr_request *request)
 	assert(request->rlog);
 
 	_rlog_init(request->rlog, rlog_size, request->id);
+	fbr_rlog_ok(request->rlog);
+
+	request->rlog->log = request->fuse_ctx->log;
+	fbr_log_ok(request->rlog->log);
 }
 
-static struct fbr_log *
-_rlog_get_log(void)
+void
+fbr_wlog_workspace_alloc(struct fbr_cstore_worker *worker)
 {
-	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
-	fbr_log_ok(fuse_ctx->log);
-	return fuse_ctx->log;
+	fbr_cstore_worker_ok(worker);
+	fbr_cstore_ok(worker->cstore);
+	assert_dev(worker->request_id);
+	assert_zero(worker->rlog);
+
+	// TODO see above
+	size_t rlog_size = FBR_RLOG_MIN_SIZE;
+
+	worker->rlog = fbr_workspace_alloc(worker->workspace, rlog_size);
+	assert(worker->rlog);
+
+	_rlog_init(worker->rlog, rlog_size, worker->request_id);
+	fbr_rlog_ok(worker->rlog);
+
+	worker->rlog->log = worker->cstore->log;
+	fbr_log_ok(worker->rlog->log);
 }
 
 void
 fbr_rlog_flush(struct fbr_rlog *rlog)
 {
 	fbr_rlog_ok(rlog);
+	fbr_log_ok(rlog->log);
 
 	if (!rlog->lines) {
 		assert_dev(rlog->log_pos == rlog->data);
@@ -67,8 +86,7 @@ fbr_rlog_flush(struct fbr_rlog *rlog)
 	assert(rlog->log_pos > rlog->data);
 	size_t length = (rlog->log_pos - rlog->data) * FBR_LOG_TYPE_SIZE;
 
-	struct fbr_log *log = _rlog_get_log();
-	fbr_log_batch(log, rlog->data, length, rlog->lines);
+	fbr_log_batch(rlog->log, rlog->data, length, rlog->lines);
 
 	rlog->log_pos = rlog->data;
 	rlog->lines = 0;
@@ -85,6 +103,7 @@ static void
 _rlog_log(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, va_list ap)
 {
 	assert_dev(rlog);
+	assert_dev(rlog->log);
 	assert(rlog->log_pos <= rlog->log_end);
 	assert_dev(rlog->request_id);
 	assert_dev(type);
@@ -131,8 +150,7 @@ _rlog_log(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, va_lis
 	rlog->log_pos += FBR_TYPE_LENGTH(length) + 1;
 	assert(rlog->log_pos <= rlog->log_end);
 
-	struct fbr_log *log = _rlog_get_log();
-	if (log->always_flush) {
+	if (rlog->log->always_flush) {
 		fbr_rlog_flush(rlog);
 	}
 }
@@ -162,6 +180,26 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 
 		fbr_log_vprint(fuse_ctx->log, type, FBR_REQID_CORE, fmt, ap);
 	}
+
+	va_end(ap);
+}
+
+void __fbr_attr_printf(3)
+fbr_rdlog(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, ...)
+{
+	fbr_rlog_ok(rlog);
+	fbr_log_ok(rlog->log);
+	assert(type);
+	assert(fmt && *fmt);
+
+	if (fbr_log_type_masked(type)) {
+		return;
+	}
+
+	va_list ap;
+	va_start(ap, fmt);
+
+	_rlog_log(rlog, type, fmt, ap);
 
 	va_end(ap);
 }
