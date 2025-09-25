@@ -68,15 +68,11 @@ void chttp_tcp_pool_close(void);
 
 RB_PROTOTYPE(chttp_tcp_pool_tree, chttp_tcp_pool_entry, tree_entry, _tcp_pool_cmp)
 
-#define chttp_tcp_pool_ok()							\
-	do {									\
-		assert(_TCP_POOL.magic == CHTTP_TCP_POOL_MAGIC);		\
-	} while (0)
-
-#define chttp_pool_entry_ok(pool_entry)						\
-	do {									\
-		assert(pool_entry);						\
-		assert((pool_entry)->magic == CHTTP_TCP_POOL_ENTRY_MAGIC);	\
-	} while (0)
+#define chttp_tcp_pool_ok()						\
+{									\
+	assert(_TCP_POOL.magic == CHTTP_TCP_POOL_MAGIC);		\
+}
+#define chttp_pool_entry_ok(pool_entry)					\
+	fbr_magic_check(pool_entry, CHTTP_TCP_POOL_ENTRY_MAGIC)
 
 #endif /* _CHTTP_TCP_POOL_H_INCLUDED_ */

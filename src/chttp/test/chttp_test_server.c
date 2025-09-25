@@ -54,11 +54,8 @@ struct chttp_test_server {
 	pthread_cond_t				flush_signal;
 };
 
-#define _server_ok(server)						\
-	do {								\
-		assert(server);						\
-		assert((server)->magic == _SERVER_MAGIC);		\
-	} while (0)
+#define _server_ok(server)	\
+	fbr_magic_check(server, _SERVER_MAGIC)
 
 extern const char *_CHTTP_HEADER_FIRST;
 

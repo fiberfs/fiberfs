@@ -76,15 +76,11 @@ RB_PROTOTYPE(chttp_dns_cache_tree, chttp_dns_cache_entry, tree_entry, _dns_cache
 
 extern struct chttp_dns_cache _DNS_CACHE;
 
-#define chttp_dns_cache_ok()							\
-	do {									\
-		assert(_DNS_CACHE.magic == CHTTP_DNS_CACHE_MAGIC);		\
-	} while (0)
-
-#define chttp_dns_entry_ok(dns_entry)						\
-	do {									\
-		assert(dns_entry);						\
-		assert((dns_entry)->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);	\
-	} while (0)
+#define chttp_dns_cache_ok()						\
+{									\
+	assert(_DNS_CACHE.magic == CHTTP_DNS_CACHE_MAGIC);		\
+}
+#define chttp_dns_entry_ok(dns_entry)					\
+	fbr_magic_check(dns_entry, CHTTP_DNS_CACHE_ENTRY_MAGIC)
 
 #endif /* _CHTTP_DNS_CACHE_H_INCLUDED_ */

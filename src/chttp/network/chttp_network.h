@@ -73,23 +73,20 @@ void chttp_tcp_close(struct chttp_addr *addr);
 void chttp_tcp_error(struct chttp_addr *addr, int error);
 void chttp_tcp_error_check(struct chttp_context *ctx);
 
-#define chttp_addr_ok(addr)						\
-	do {								\
-		assert(addr);						\
-		assert((addr)->magic == CHTTP_ADDR_MAGIC);		\
-	} while (0)
-#define chttp_addr_connected(addr)					\
-	do {								\
-		chttp_addr_ok(addr);					\
-		assert((addr)->state == CHTTP_ADDR_CONNECTED);		\
-		assert((addr)->sock >= 0);				\
-		assert_zero((addr)->error);				\
-	} while (0)
-#define chttp_addr_resolved(addr)					\
-	do {								\
-		chttp_addr_ok(addr);					\
-		assert((addr)->state == CHTTP_ADDR_RESOLVED);		\
-		assert((addr)->sock == -1);				\
-	} while (0)
+#define chttp_addr_ok(addr)					\
+	fbr_magic_check(addr, CHTTP_ADDR_MAGIC)
+#define chttp_addr_connected(addr)				\
+{								\
+	chttp_addr_ok(addr);					\
+	assert((addr)->state == CHTTP_ADDR_CONNECTED);		\
+	assert((addr)->sock >= 0);				\
+	assert_zero((addr)->error);				\
+}
+#define chttp_addr_resolved(addr)				\
+{								\
+	chttp_addr_ok(addr);					\
+	assert((addr)->state == CHTTP_ADDR_RESOLVED);		\
+	assert((addr)->sock == -1);				\
+}
 
 #endif /* _CHTTP_NETWORK_H_INCLUDED_ */

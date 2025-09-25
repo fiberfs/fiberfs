@@ -52,10 +52,7 @@ uint8_t *chttp_dpage_ptr_convert(struct chttp_context *ctx, struct chttp_dpage_p
 void chttp_dpage_free(struct chttp_dpage *dpage);
 extern size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE;
 
-#define chttp_dpage_ok(dpage)						\
-	do {								\
-		assert(dpage);						\
-		assert((dpage)->magic == CHTTP_DPAGE_MAGIC);		\
-	} while (0)
+#define chttp_dpage_ok(dpage)	\
+	fbr_magic_check(dpage, CHTTP_DPAGE_MAGIC)
 
 #endif /* _CHTTP_DPAGE_H_INCLUDED_ */

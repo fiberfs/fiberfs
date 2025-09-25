@@ -771,6 +771,8 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_test_ERROR(fs->stats.flush_conflicts, "non zero");
 	fbr_test_ERROR(fs->stats.merges, "non zero");
 
+	fbr_test_cstore_debug();
+
 	assert(fbr_test_cstore_stat_roots() == 1);
 	assert(fbr_test_cstore_stat_indexes() == 1);
 

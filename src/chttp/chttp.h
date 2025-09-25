@@ -7,9 +7,6 @@
 #ifndef _CHTTP_H_INCLUDED_
 #define _CHTTP_H_INCLUDED_
 
-// TODO
-// Convert magic checks to fiber style
-
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -155,6 +152,7 @@ const char *chttp_error_msg(struct chttp_context *ctx);
 void chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port);
 size_t chttp_make_chunk(char *buffer, unsigned int buffer_len);
 
-#define chttp_context_ok(ctx)		fbr_magic_check(ctx, CHTTP_CTX_MAGIC)
+#define chttp_context_ok(ctx)	\
+	fbr_magic_check(ctx, CHTTP_CTX_MAGIC)
 
 #endif /* _CHTTP_H_INCLUDED_ */

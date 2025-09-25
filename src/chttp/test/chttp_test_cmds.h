@@ -50,11 +50,8 @@ void chttp_test_md5_store(struct chttp_test_md5 *md5, char *md5_buf);
 void chttp_test_md5_store_server(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
 void chttp_test_md5_store_client(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
 
-#define chttp_test_context_ok(context)					\
-	do {								\
-		assert(context);					\
-		assert((context)->magic == CHTTP_TEST_CONTEXT_MAGIC);	\
-	} while (0)
+#define chttp_test_context_ok(context)		\
+	fbr_magic_check(context, CHTTP_TEST_CONTEXT_MAGIC)
 
 #define CHTTP_TEST_CMD(cmd)		fbr_test_cmd_f chttp_test_cmd_##cmd;
 #define CHTTP_TEST_VAR(var)		fbr_test_var_f chttp_test_var_##var;
