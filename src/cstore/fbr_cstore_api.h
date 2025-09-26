@@ -155,6 +155,7 @@ struct fbr_cstore_config {
 	size_t					loader_threads;
 
 	int					server;
+	char					server_address[128];
 	int					server_port;
 	int					server_tls;
 	size_t					server_workers;

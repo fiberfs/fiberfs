@@ -11,8 +11,8 @@
 
 #include "network/chttp_network.h"
 
+#define FBR_CSTORE_SERVER_ADDRESS		"127.0.0.1"
 #define FBR_CSTORE_SERVER_PORT			5691
-#define FBR_CSTORE_SERVER_LISTEN		"127.0.0.1"
 #define FBR_CSTORE_WORKER_MAX			256
 #define FBR_CSTORE_WORKER_DEFAULT		4
 

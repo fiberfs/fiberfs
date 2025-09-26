@@ -94,9 +94,8 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	fbr_cstore_loader_init(cstore);
 
 	if (_CSTORE_CONFIG.server) {
-		// TODO fix this to pass in the proper params
-		fbr_cstore_server_alloc(cstore, FBR_CSTORE_SERVER_LISTEN, FBR_CSTORE_SERVER_PORT,
-			_CSTORE_CONFIG.server_tls);
+		fbr_cstore_server_alloc(cstore, _CSTORE_CONFIG.server_address,
+			_CSTORE_CONFIG.server_port, _CSTORE_CONFIG.server_tls);
 	}
 
 	fbr_cstore_ok(cstore);

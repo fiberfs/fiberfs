@@ -30,16 +30,16 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 	server->port = port;
 	server->tls = tls;
 
-	// TODO we need to support a random port
-	// TODO we need to bind to all addresses
-	assert(server->port > 0);
+	// TODO we need to support binding on all addresses
 
 	chttp_addr_init(&server->addr);
 	int ret = chttp_tcp_listen(&server->addr, address, server->port, 16);
 	fbr_ASSERT(!ret, "listen() error %d", ret);
-	assert_zero_dev(server->addr.error);
 	chttp_addr_connected(&server->addr);
+	assert_zero_dev(server->addr.error);
+	assert_dev(server->addr.listen);
 
+	server->port = server->addr.listen_port;
 	if (server->tls) {
 		server->addr.tls = 1;
 	}
@@ -114,8 +114,8 @@ _cstore_worker_accept(struct fbr_cstore_worker *worker)
 		return;
 	}
 
-	assert_zero_dev(worker->remote_addr.error);
 	chttp_addr_connected(&worker->remote_addr);
+	assert_zero_dev(worker->remote_addr.error);
 
 	char remote[128];
 	int remote_port;

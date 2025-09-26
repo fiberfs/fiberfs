@@ -131,6 +131,9 @@ void
 chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port)
 {
 	assert(sa);
+	assert(buf);
+	assert(buf_len);
+	assert(port);
 
 	buf[0] = '\0';
 	*port = -1;

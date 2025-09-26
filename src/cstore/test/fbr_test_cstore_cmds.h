@@ -30,6 +30,9 @@ FBR_TEST_CMD(cstore_error_test)
 FBR_TEST_CMD(cstore_loader_test)
 
 FBR_TEST_CMD(cstore_enable_server)
+FBR_TEST_VAR(cstore_server_host)
+FBR_TEST_VAR(cstore_server_port)
+FBR_TEST_VAR(cstore_server_tls)
 
 FBR_TEST_CMD(cstore_debug)
 FBR_TEST_VAR(cstore_stat_indexes)
