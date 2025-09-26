@@ -124,7 +124,13 @@ _cstore_worker_accept(struct fbr_cstore_worker *worker)
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "connection made %s:%d to %d",
 		remote, remote_port, worker->server->port);
 
-	chttp_tcp_close(&worker->remote_addr);
+	fbr_cstore_proc_http(worker);
+
+	if (worker->remote_addr.state == CHTTP_ADDR_CONNECTED) {
+		// TODO keep alive on a queue somewhere
+		chttp_tcp_close(&worker->remote_addr);
+	}
+
 	fbr_cstore_worker_finish(worker);
 }
 

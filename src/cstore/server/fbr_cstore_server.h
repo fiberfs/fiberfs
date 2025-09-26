@@ -62,6 +62,8 @@ void fbr_cstore_worker_init(struct fbr_cstore_worker *worker);
 void fbr_cstore_worker_finish(struct fbr_cstore_worker *worker);
 void fbr_cstore_worker_free(struct fbr_cstore_worker *worker);
 
+void fbr_cstore_proc_http(struct fbr_cstore_worker *worker);
+
 #define fbr_cstore_server_ok(server)		fbr_magic_check(server, FBR_CSTORE_SERVER_MAGIC)
 #define fbr_cstore_worker_ok(worker)		fbr_magic_check(worker, FBR_CSTORE_WORKER_MAGIC)
 
