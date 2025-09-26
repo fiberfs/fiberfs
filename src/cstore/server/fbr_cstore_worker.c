@@ -24,6 +24,8 @@ fbr_cstore_worker_alloc(struct fbr_cstore_server *server)
 	worker->workspace = fbr_workspace_init(worker + 1, workspace_size);
 	worker->server = server;
 
+	chttp_addr_init(&worker->remote_addr);
+
 	return worker;
 }
 

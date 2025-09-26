@@ -5,13 +5,15 @@
  */
 
 #include <stdlib.h>
+#include <sys/socket.h>
 
 #include "fiberfs.h"
+#include "chttp.h"
 #include "fbr_cstore_server.h"
 #include "cstore/fbr_cstore_api.h"
 
 static void *_cstore_worker_loop(void *arg);
-static void _cstore_worker_process(struct fbr_cstore_worker *worker);
+static void _cstore_worker_accept(struct fbr_cstore_worker *worker);
 
 void
 fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls)
@@ -34,7 +36,8 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 
 	chttp_addr_init(&server->addr);
 	int ret = chttp_tcp_listen(&server->addr, address, server->port, 16);
-	fbr_ASSERT(!ret && !server->addr.error, "listen() error");
+	fbr_ASSERT(!ret, "listen() error %d", ret);
+	assert_zero_dev(server->addr.error);
 	chttp_addr_connected(&server->addr);
 
 	if (server->tls) {
@@ -84,7 +87,7 @@ _cstore_worker_loop(void *arg)
 			break;
 		}
 
-		_cstore_worker_process(worker);
+		_cstore_worker_accept(worker);
 	}
 
 	fbr_cstore_worker_free(worker);
@@ -95,16 +98,33 @@ _cstore_worker_loop(void *arg)
 }
 
 static void
-_cstore_worker_process(struct fbr_cstore_worker *worker)
+_cstore_worker_accept(struct fbr_cstore_worker *worker)
 {
 	fbr_cstore_worker_ok(worker);
+	fbr_cstore_server_ok(worker->server);
 
 	fbr_cstore_worker_init(worker);
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "process %lu", worker->thread_id);
 
-	fbr_sleep_ms(250);
+	int ret = chttp_tcp_accept(&worker->remote_addr, &worker->server->addr);
+	if (ret) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "accept() error %d", ret);
+		fbr_cstore_worker_finish(worker);
+		return;
+	}
 
+	assert_zero_dev(worker->remote_addr.error);
+	chttp_addr_connected(&worker->remote_addr);
+
+	char remote[128];
+	int remote_port;
+	chttp_sa_string(&worker->remote_addr.sa, remote, sizeof(remote), &remote_port);
+
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "connection made %s:%d to %d",
+		remote, remote_port, worker->server->port);
+
+	chttp_tcp_close(&worker->remote_addr);
 	fbr_cstore_worker_finish(worker);
 }
 
@@ -121,6 +141,7 @@ fbr_cstore_servers_free(struct fbr_cstore *cstore)
 
 		server->exit = 1;
 
+		(void)shutdown(server->addr.sock, SHUT_RDWR);
 		chttp_tcp_close(&server->addr);
 
 		for (size_t i = 0; i < server->workers_max; i++) {

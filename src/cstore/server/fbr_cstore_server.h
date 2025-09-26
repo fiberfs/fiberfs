@@ -50,6 +50,8 @@ struct fbr_cstore_worker {
 
 	double					time_start;
 	unsigned long				request_id;
+
+	struct chttp_addr			remote_addr;
 };
 
 void fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls);

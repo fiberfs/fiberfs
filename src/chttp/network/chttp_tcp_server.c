@@ -99,6 +99,7 @@ int
 chttp_tcp_accept(struct chttp_addr *addr, struct chttp_addr *server_addr)
 {
 	chttp_addr_ok(addr);
+	assert(addr->state == CHTTP_ADDR_NONE);
 	assert(addr->sock == -1);
 	chttp_addr_connected(server_addr);
 	assert(server_addr->listen);
