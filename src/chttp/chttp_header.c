@@ -6,11 +6,12 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "chttp.h"
 
-const char *_CHTTP_HEADER_FIRST	 = "_FIRST";
-const char *CHTTP_HEADER_REASON	 = "_REASON";
+const char *_CHTTP_HEADER_FIRST  = "_FIRST";
+const char *_CHTTP_HEADER_REASON = "_REASON";
 
 typedef void (chttp_parse_f)(struct chttp_context*, size_t, size_t);
 
@@ -484,6 +485,7 @@ chttp_header_get_pos(struct chttp_context *ctx, const char *name, size_t pos)
 			}
 
 			if (first && name == _CHTTP_HEADER_FIRST) {
+				assert_dev(ctx->request);
 				assert_zero(start);
 
 				if (pos) {
@@ -491,7 +493,8 @@ chttp_header_get_pos(struct chttp_context *ctx, const char *name, size_t pos)
 				}
 
 				return ((char*)dpage->data);
-			} else if (first && name == CHTTP_HEADER_REASON) {
+			} else if (first && name == _CHTTP_HEADER_REASON) {
+				assert_zero_dev(ctx->request);
 				assert_zero(start);
 				assert(end >= 14);
 
@@ -544,4 +547,54 @@ chttp_header_get(struct chttp_context *ctx, const char *name)
 	chttp_context_ok(ctx);
 
 	return chttp_header_get_pos(ctx, name, 0);
+}
+
+const char *
+chttp_header_get_reason(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+	assert_zero(ctx->request);
+
+	return chttp_header_get_pos(ctx, _CHTTP_HEADER_REASON, 0);
+}
+
+const char *
+chttp_header_get_method(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+	assert(ctx->request);
+
+	return chttp_header_get_pos(ctx, _CHTTP_HEADER_FIRST, 0);
+}
+
+const char *
+chttp_header_get_url(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+	assert(ctx->request);
+
+	const char *method = chttp_header_get_method(ctx);
+	if (!method) {
+		return NULL;
+	}
+
+	size_t len = strlen(method);
+
+	return (method + len + 1);
+}
+
+const char *
+chttp_header_get_version(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+	assert(ctx->request);
+
+	const char *url = chttp_header_get_url(ctx);
+	if (!url) {
+		return NULL;
+	}
+
+	size_t len = strlen(url);
+
+	return (url + len + 1);
 }

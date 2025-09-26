@@ -11,6 +11,8 @@
 #include "network/chttp_tcp_pool.h"
 #include "tls/chttp_tls.h"
 
+static const char *_TEST_REASON = "_REASON";
+
 static inline struct chttp_context *
 _test_context_ok(struct fbr_test_context *ctx)
 {
@@ -318,6 +320,8 @@ chttp_test_cmd_chttp_receive(struct fbr_test_context *ctx, struct fbr_test_cmd *
 		printf("--- ");
 		chttp_context_debug(chttp);
 	}
+
+	assert_zero(chttp->request);
 }
 
 void
@@ -354,7 +358,14 @@ _test_header_match(struct fbr_test_context *ctx, const char *header, const char 
 	struct chttp_context *chttp = _test_context_ok(ctx);
 	assert(header);
 
-	const char *header_value = chttp_header_get(chttp, header);
+	const char *header_value;
+
+	if (header == _TEST_REASON) {
+		header_value = chttp_header_get_reason(chttp);
+	} else {
+		header_value = chttp_header_get(chttp, header);
+	}
+
 	fbr_test_ERROR(!header_value, "header %s not found", header);
 
 	const char *dup = chttp_header_get_pos(chttp, header, 1);
@@ -383,7 +394,7 @@ chttp_test_cmd_chttp_reason_match(struct fbr_test_context *ctx, struct fbr_test_
 	_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	_test_header_match(ctx, CHTTP_HEADER_REASON, cmd->params[0].value, 0);
+	_test_header_match(ctx, _TEST_REASON, cmd->params[0].value, 0);
 }
 
 void

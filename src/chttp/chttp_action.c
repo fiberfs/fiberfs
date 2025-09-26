@@ -198,6 +198,10 @@ chttp_parse(struct chttp_context *ctx, enum chttp_request_type type)
 
 	chttp_dpage_reset_all(ctx);
 
+	if (type == CHTTP_REQUEST) {
+		ctx->request = 1;
+	}
+
 	do {
 		chttp_tcp_read(ctx);
 

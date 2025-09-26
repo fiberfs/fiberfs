@@ -104,6 +104,7 @@ struct chttp_context {
 	unsigned int			gzip:1;
 	unsigned int			want_100:1;
 	unsigned int			sent_100:1;
+	unsigned int			request:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
@@ -124,12 +125,15 @@ void chttp_set_version(struct chttp_context *ctx, enum chttp_version version);
 void chttp_set_method(struct chttp_context *ctx, const char *method);
 void chttp_set_url(struct chttp_context *ctx, const char *url);
 
-extern const char *CHTTP_HEADER_REASON;
 void chttp_header_add(struct chttp_context *ctx, const char *name, const char *value);
 void chttp_header_delete(struct chttp_context *ctx, const char *name);
 void chttp_header_parse(struct chttp_context *ctx, enum chttp_request_type type);
 const char *chttp_header_get(struct chttp_context *ctx, const char *name);
 const char *chttp_header_get_pos(struct chttp_context *ctx, const char *name, size_t pos);
+const char *chttp_header_get_reason(struct chttp_context *ctx);
+const char *chttp_header_get_method(struct chttp_context *ctx);
+const char *chttp_header_get_url(struct chttp_context *ctx);
+const char *chttp_header_get_version(struct chttp_context *ctx);
 int chttp_header_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, size_t *end,
 	int has_return, int *binary);
 

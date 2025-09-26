@@ -57,8 +57,6 @@ struct chttp_test_server {
 #define _server_ok(server)	\
 	fbr_magic_check(server, _SERVER_MAGIC)
 
-extern const char *_CHTTP_HEADER_FIRST;
-
 static void *_server_thread(void *arg);
 
 static inline struct chttp_test_server *
@@ -440,6 +438,7 @@ chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test
 	chttp_addr_move(&server->chttp->addr, &server->addr);
 
 	chttp_parse(server->chttp, CHTTP_REQUEST);
+	assert(server->chttp->request);
 
 	if (server->chttp->sent_100) {
 		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* 100 acked");
@@ -471,7 +470,6 @@ _server_match_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	const char *header, *header_value, *expected, *dup;
 	header = header_value = expected = NULL;
-	size_t len;
 	int sub = 0;
 
 	if (!strcmp(cmd->name, "server_method_match")) {
@@ -479,7 +477,8 @@ _server_match_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		header = "_METHOD";
 		expected = cmd->params[0].value;
-		header_value = chttp_header_get(server->chttp, _CHTTP_HEADER_FIRST);
+
+		header_value = chttp_header_get_method(server->chttp);
 		dup = NULL;
 	} else if (!strcmp(cmd->name, "server_url_match")) {
 		assert(cmd->param_count == 1);
@@ -487,10 +486,7 @@ _server_match_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		header = "_URL";
 		expected = cmd->params[0].value;
 
-		header_value = chttp_header_get(server->chttp, _CHTTP_HEADER_FIRST);
-		assert(header_value);
-		len = strlen(header_value);
-		header_value += len + 1;
+		header_value = chttp_header_get_url(server->chttp);
 		dup = NULL;
 	} else if (!strcmp(cmd->name, "server_version_match")) {
 		assert(cmd->param_count == 1);
@@ -498,12 +494,7 @@ _server_match_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		header = "_VERSION";
 		expected = cmd->params[0].value;
 
-		header_value = chttp_header_get(server->chttp, _CHTTP_HEADER_FIRST);
-		assert(header_value);
-		len = strlen(header_value);
-		header_value += len + 1;
-		len = strlen(header_value);
-		header_value += len + 1;
+		header_value = chttp_header_get_version(server->chttp);
 		dup = NULL;
 	} else if (!strcmp(cmd->name, "server_header_match")) {
 		assert(cmd->param_count == 2);

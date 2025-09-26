@@ -13,9 +13,6 @@
 #include "core/request/fbr_workspace.h"
 #include "cstore/fbr_cstore_api.h"
 
-// TODO fix this
-extern const char *_CHTTP_HEADER_FIRST;
-
 void
 fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 {
@@ -44,11 +41,8 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 		return;
 	}
 
-	const char *method = chttp_header_get(http, _CHTTP_HEADER_FIRST);
-	assert(method);
-	size_t len = strlen(method);
-	assert(len);
-	const char *url = method + len + 1;
+	const char *method = chttp_header_get_method(http);
+	const char *url = chttp_header_get_url(http);
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "http %s request parsed url: %s",
 		method, url);
