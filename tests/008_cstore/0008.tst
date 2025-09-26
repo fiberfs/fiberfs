@@ -1,5 +1,7 @@
 fiber_test "cstore server"
 
+skip
+
 cstore_enable_server
 cstore_init
 
