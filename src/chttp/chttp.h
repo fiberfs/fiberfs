@@ -61,6 +61,13 @@ enum chttp_error {
 	CHTTP_ERR_BUFFER
 };
 
+// TODO rename this and align with header parsing
+enum chttp_body_type {
+	CHTTP_BODY_NONE = 0,
+	CHTTP_BODY_REQUEST,
+	CHTTP_BODY_RESPONSE,
+};
+
 struct chttp_context {
 	unsigned int			magic;
 #define CHTTP_CTX_MAGIC			0x81D0C9BA
@@ -97,6 +104,7 @@ struct chttp_context {
 	unsigned int			new_conn:1;
 	unsigned int			gzip:1;
 	unsigned int			want_100:1;
+	unsigned int			sent_100:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
@@ -131,14 +139,9 @@ void chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len,
 	int tls);
 void chttp_send(struct chttp_context *ctx);
 void chttp_receive(struct chttp_context *ctx);
+void chttp_parse(struct chttp_context *ctx, enum chttp_body_type type);
 void chttp_error(struct chttp_context *ctx, enum chttp_error error);
 void chttp_finish(struct chttp_context *ctx);
-
-enum chttp_body_type {
-	CHTTP_BODY_NONE = 0,
-	CHTTP_BODY_REQUEST,
-	CHTTP_BODY_RESPONSE,
-};
 
 void chttp_body_init(struct chttp_context *ctx, enum chttp_body_type type);
 size_t chttp_body_read(struct chttp_context *ctx, void *buf, size_t buf_len);

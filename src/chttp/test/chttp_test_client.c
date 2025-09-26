@@ -27,8 +27,7 @@ static void
 _test_client_finish(struct fbr_test_context *ctx)
 {
 	struct chttp_context *chttp = _test_context_ok(ctx);
-	fbr_test_ERROR(chttp->error, "chttp context has an error (%s)",
-		chttp_error_msg(chttp));
+	fbr_finish_ERROR(chttp->error, "chttp context has an error");
 
 	size_t allocs = 0;
 

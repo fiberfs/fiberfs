@@ -8,7 +8,7 @@ server_read_request
 server_method_match PUT
 server_url_match /everything
 server_header_match expect 100-continue
-server_body_match "This is gzipped with TLS"
+server_body_match "This is gzipped with NO TLS"
 server_send_response 200 ALL "all done"
 
 chttp_init
@@ -25,7 +25,7 @@ chttp_send_only
 chttp_receive
 chttp_status_match 100
 # body
-chttp_send_body_chunkgzip "This is gzipped with TLS"
+chttp_send_body_chunkgzip "This is gzipped with NO TLS"
 # response
 chttp_receive
 chttp_status_match 200

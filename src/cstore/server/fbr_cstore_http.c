@@ -33,37 +33,16 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 	chttp_context_init_buf(http, chttp_size);
 	chttp_context_ok(http);
 
-	// TODO move this into chttp
-
-	http->state = CHTTP_STATE_HEADERS;
 	chttp_addr_move(&http->addr, &worker->remote_addr);
+	chttp_parse(http, CHTTP_BODY_REQUEST);
 
-	do {
-		chttp_tcp_read(http);
-
-		if (http->state >= CHTTP_STATE_CLOSED) {
-			assert_dev(http->error);
-			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "ERROR %s",
-				chttp_error_msg(http));
-			chttp_context_free(http);
-			return;
-		}
-
-		chttp_header_parse_request(http);
-
-		if (http->error) {
-			assert_dev(http->state >= CHTTP_STATE_CLOSED);
-			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "ERROR %s",
-				chttp_error_msg(http));
-			chttp_context_free(http);
-			return;
-		}
-	} while (http->state == CHTTP_STATE_HEADERS);
-
-	assert_zero(http->error);
-	assert(http->state == CHTTP_STATE_BODY);
-
-	// TODO 100-continue
+	if (http->error) {
+		assert_dev(http->state >= CHTTP_STATE_CLOSED);
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "ERROR %s",
+			chttp_error_msg(http));
+		chttp_context_free(http);
+		return;
+	}
 
 	const char *method = chttp_header_get(http, _CHTTP_HEADER_FIRST);
 	assert(method);
@@ -73,8 +52,6 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "http %s request parsed url: %s",
 		method, url);
-
-	chttp_body_init(http, CHTTP_BODY_REQUEST);
 
 	if (http->state == CHTTP_STATE_IDLE) {
 		chttp_addr_move(&worker->remote_addr, &http->addr);

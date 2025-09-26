@@ -436,35 +436,14 @@ chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test
 	chttp_context_init_buf(server->chttp, sizeof(struct chttp_context));
 
 	server->chttp->do_free = 1;
-	server->chttp->state = CHTTP_STATE_HEADERS;
 
 	chttp_addr_move(&server->chttp->addr, &server->addr);
 
-	do {
-		chttp_tcp_read(server->chttp);
-		fbr_test_ERROR(server->chttp->state >= CHTTP_STATE_CLOSED,
-			"server read network error");
+	chttp_parse(server->chttp, CHTTP_BODY_REQUEST);
 
-		chttp_header_parse_request(server->chttp);
-		fbr_test_ERROR(server->chttp->error, "*SERVER* error: %s",
-			chttp_error_msg(server->chttp));
-
-		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* got headers");
-	} while (server->chttp->state == CHTTP_STATE_HEADERS);
-
-	assert_zero(server->chttp->error);
-	assert(server->chttp->state == CHTTP_STATE_BODY);
-
-	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* headers ready");
-
-	const char *expect = chttp_header_get(server->chttp, "expect");
-
-	if (expect && !strcasecmp(expect, "100-continue")) {
-		chttp_tcp_send(&server->chttp->addr, "HTTP/1.1 100 Continue\r\n\r\n", 25);
+	if (server->chttp->sent_100) {
 		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* 100 acked");
 	}
-
-	chttp_body_init(server->chttp, CHTTP_BODY_REQUEST);
 
 	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* body ready");
 

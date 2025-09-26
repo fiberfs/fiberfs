@@ -174,10 +174,27 @@ chttp_receive(struct chttp_context *ctx)
 		return;
 	}
 
+	ctx->state = CHTTP_STATE_HEADERS;
+
+	chttp_parse(ctx, CHTTP_BODY_RESPONSE);
+}
+
+void
+chttp_parse(struct chttp_context *ctx, enum chttp_body_type type)
+{
+	chttp_context_ok(ctx);
+
+	if (ctx->state == CHTTP_STATE_NONE) {
+		ctx->state = CHTTP_STATE_HEADERS;
+	}
+
+	fbr_ASSERT(ctx->state == CHTTP_STATE_HEADERS, "invalid state, request must be sent");
+	chttp_addr_connected(&ctx->addr);
+
 	ctx->status = 0;
 	ctx->chunked = 0;
 	ctx->seen_first = 0;
-	ctx->state = CHTTP_STATE_HEADERS;
+	ctx->sent_100 = 0;
 
 	chttp_dpage_reset_all(ctx);
 
@@ -192,7 +209,16 @@ chttp_receive(struct chttp_context *ctx)
 			return;
 		}
 
-		chttp_header_parse_response(ctx);
+		switch (type) {
+			case CHTTP_BODY_REQUEST:
+				chttp_header_parse_request(ctx);
+				break;
+			case CHTTP_BODY_RESPONSE:
+				chttp_header_parse_response(ctx);
+				break;
+			default:
+				fbr_ABORT("bad body type: %d", type);
+		}
 
 		if (ctx->error) {
 			return;
@@ -202,11 +228,16 @@ chttp_receive(struct chttp_context *ctx)
 	assert(ctx->state == CHTTP_STATE_BODY);
 	chttp_dpage_ok(ctx->data_end.dpage);
 
-	chttp_body_init(ctx, CHTTP_BODY_RESPONSE);
+	if (type == CHTTP_BODY_REQUEST) {
+		const char *expect = chttp_header_get(ctx, "expect");
 
-	if (ctx->error) {
-		return;
+		if (expect && !strcasecmp(expect, "100-continue")) {
+			chttp_tcp_send(&ctx->addr, "HTTP/1.1 100 Continue\r\n\r\n", 25);
+			ctx->sent_100 = 1;
+		}
 	}
+
+	chttp_body_init(ctx, type);
 }
 
 void
