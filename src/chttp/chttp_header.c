@@ -440,19 +440,20 @@ _header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 }
 
 void
-chttp_header_parse_response(struct chttp_context *ctx)
+chttp_header_parse(struct chttp_context *ctx, enum chttp_request_type type)
 {
 	chttp_context_ok(ctx);
 
-	_header_parse(ctx, &_parse_response_status);
-}
-
-void
-chttp_header_parse_request(struct chttp_context *ctx)
-{
-	chttp_context_ok(ctx);
-
-	_header_parse(ctx, &_parse_request_url);
+	switch (type) {
+		case CHTTP_REQUEST:
+			_header_parse(ctx, &_parse_request_url);
+			break;
+		case CHTTP_RESPONSE:
+			_header_parse(ctx, &_parse_response_status);
+			break;
+		default:
+			fbr_ABORT("bad chttp_request_type: %d", type);
+	}
 }
 
 const char *

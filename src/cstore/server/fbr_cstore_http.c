@@ -34,7 +34,7 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 	chttp_context_ok(http);
 
 	chttp_addr_move(&http->addr, &worker->remote_addr);
-	chttp_parse(http, CHTTP_BODY_REQUEST);
+	chttp_parse(http, CHTTP_REQUEST);
 
 	if (http->error) {
 		assert_dev(http->state >= CHTTP_STATE_CLOSED);

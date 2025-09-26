@@ -439,7 +439,7 @@ chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test
 
 	chttp_addr_move(&server->chttp->addr, &server->addr);
 
-	chttp_parse(server->chttp, CHTTP_BODY_REQUEST);
+	chttp_parse(server->chttp, CHTTP_REQUEST);
 
 	if (server->chttp->sent_100) {
 		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* 100 acked");

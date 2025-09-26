@@ -61,11 +61,10 @@ enum chttp_error {
 	CHTTP_ERR_BUFFER
 };
 
-// TODO rename this and align with header parsing
-enum chttp_body_type {
-	CHTTP_BODY_NONE = 0,
-	CHTTP_BODY_REQUEST,
-	CHTTP_BODY_RESPONSE,
+enum chttp_request_type {
+	CHTTP_REQUEST_NONE = 0,
+	CHTTP_REQUEST,
+	CHTTP_RESPONSE,
 };
 
 struct chttp_context {
@@ -128,8 +127,7 @@ void chttp_set_url(struct chttp_context *ctx, const char *url);
 extern const char *CHTTP_HEADER_REASON;
 void chttp_header_add(struct chttp_context *ctx, const char *name, const char *value);
 void chttp_header_delete(struct chttp_context *ctx, const char *name);
-void chttp_header_parse_response(struct chttp_context *ctx);
-void chttp_header_parse_request(struct chttp_context *ctx);
+void chttp_header_parse(struct chttp_context *ctx, enum chttp_request_type type);
 const char *chttp_header_get(struct chttp_context *ctx, const char *name);
 const char *chttp_header_get_pos(struct chttp_context *ctx, const char *name, size_t pos);
 int chttp_header_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, size_t *end,
@@ -139,11 +137,11 @@ void chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len,
 	int tls);
 void chttp_send(struct chttp_context *ctx);
 void chttp_receive(struct chttp_context *ctx);
-void chttp_parse(struct chttp_context *ctx, enum chttp_body_type type);
+void chttp_parse(struct chttp_context *ctx, enum chttp_request_type type);
 void chttp_error(struct chttp_context *ctx, enum chttp_error error);
 void chttp_finish(struct chttp_context *ctx);
 
-void chttp_body_init(struct chttp_context *ctx, enum chttp_body_type type);
+void chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type);
 size_t chttp_body_read(struct chttp_context *ctx, void *buf, size_t buf_len);
 size_t chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_body_send(struct chttp_context *ctx, void *buf, size_t buf_len);

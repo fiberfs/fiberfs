@@ -176,11 +176,11 @@ chttp_receive(struct chttp_context *ctx)
 
 	ctx->state = CHTTP_STATE_HEADERS;
 
-	chttp_parse(ctx, CHTTP_BODY_RESPONSE);
+	chttp_parse(ctx, CHTTP_RESPONSE);
 }
 
 void
-chttp_parse(struct chttp_context *ctx, enum chttp_body_type type)
+chttp_parse(struct chttp_context *ctx, enum chttp_request_type type)
 {
 	chttp_context_ok(ctx);
 
@@ -209,16 +209,7 @@ chttp_parse(struct chttp_context *ctx, enum chttp_body_type type)
 			return;
 		}
 
-		switch (type) {
-			case CHTTP_BODY_REQUEST:
-				chttp_header_parse_request(ctx);
-				break;
-			case CHTTP_BODY_RESPONSE:
-				chttp_header_parse_response(ctx);
-				break;
-			default:
-				fbr_ABORT("bad body type: %d", type);
-		}
+		chttp_header_parse(ctx, type);
 
 		if (ctx->error) {
 			return;
@@ -228,7 +219,7 @@ chttp_parse(struct chttp_context *ctx, enum chttp_body_type type)
 	assert(ctx->state == CHTTP_STATE_BODY);
 	chttp_dpage_ok(ctx->data_end.dpage);
 
-	if (type == CHTTP_BODY_REQUEST) {
+	if (type == CHTTP_REQUEST) {
 		const char *expect = chttp_header_get(ctx, "expect");
 
 		if (expect && !strcasecmp(expect, "100-continue")) {

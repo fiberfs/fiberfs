@@ -154,12 +154,12 @@ _body_chunk_parse(struct chttp_context *ctx)
 }
 
 void
-chttp_body_init(struct chttp_context *ctx, enum chttp_body_type type)
+chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type)
 {
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_BODY);
 	assert_zero(ctx->chunked);
-	assert(type > CHTTP_BODY_NONE);
+	assert(type > CHTTP_REQUEST_NONE);
 
 	if (ctx->version == CHTTP_H_VERSION_1_0) {
 		ctx->close = 1;
@@ -233,7 +233,7 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_body_type type)
 		return;
 	}
 
-	if (type == CHTTP_BODY_REQUEST) {
+	if (type == CHTTP_REQUEST) {
 		ctx->state = CHTTP_STATE_IDLE;
 		return;
 	}
