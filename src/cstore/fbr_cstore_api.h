@@ -163,6 +163,7 @@ struct fbr_cstore_config {
 	int					server_port;
 	int					server_tls;
 	size_t					server_workers;
+	size_t					server_workers_accept;
 };
 
 extern struct fbr_cstore_config _CSTORE_CONFIG;

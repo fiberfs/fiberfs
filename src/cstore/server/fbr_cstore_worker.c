@@ -51,6 +51,10 @@ fbr_cstore_task_add(struct fbr_cstore *cstore, enum fbr_cstore_task_type type, v
 
 	struct fbr_cstore_tasks *tasks = &cstore->tasks;
 
+	if (tasks->exit) {
+		return;
+	}
+
 	pt_assert(pthread_mutex_lock(&tasks->lock));
 
 	struct fbr_cstore_task_entry *task = _cstore_task_alloc(tasks);
@@ -165,7 +169,12 @@ _cstore_worker_loop(void *arg)
 	while (!tasks->exit) {
 		if (!tasks->task_queue_len) {
 			assert_dev(TAILQ_EMPTY(&tasks->task_queue));
+			tasks->workers_idle++;
+
 			pt_assert(pthread_cond_wait(&tasks->cond, &tasks->lock));
+
+			tasks->workers_idle--;
+
 			continue;
 		}
 

@@ -18,6 +18,7 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 	fbr_cstore_ok(cstore);
 	assert(address);
 	assert(port >= 0);
+	static_ASSERT(FBR_CSTORE_WORKERS_ACCEPT_DEFAULT < FBR_CSTORE_WORKERS_DEFAULT);
 
 	struct fbr_cstore_server *server = calloc(1, sizeof(*server));
 	assert(server);
@@ -45,9 +46,13 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 		"server listening on %s:%d (tls: %d)", address, server->port, server->tls);
 
 	fbr_cstore_worker_add(cstore, _CSTORE_CONFIG.server_workers);
-	// TODO
-	fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_ACCEPT, server);
-	fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_ACCEPT, server);
+
+	static_ASSERT(FBR_CSTORE_WORKERS_ACCEPT_DEFAULT < FBR_CSTORE_WORKERS_DEFAULT);
+	assert(_CSTORE_CONFIG.server_workers_accept > 0);
+	assert(_CSTORE_CONFIG.server_workers_accept < _CSTORE_CONFIG.server_workers);
+	for (size_t i = 0; i < _CSTORE_CONFIG.server_workers_accept; i++) {
+		fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_ACCEPT, server);
+	}
 
 	server->next = cstore->servers;
 	cstore->servers = server;
@@ -65,6 +70,9 @@ fbr_cstore_server_accept(struct fbr_cstore_worker *worker)
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "server accept() %lu", worker->thread_id);
 
 	int ret = chttp_tcp_accept(&worker->remote_addr, &server->addr);
+
+	fbr_cstore_task_add(worker->cstore, FBR_CSTORE_TASK_ACCEPT, server);
+
 	if (ret) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "accept() error %d", ret);
 		return;
