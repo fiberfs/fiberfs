@@ -199,8 +199,22 @@ fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata)
 	return ret;
 }
 
+void
+_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, int remove)
+{
+	assert_dev(cstore);
+	assert_dev(entry);
+
+	if (remove) {
+		fbr_cstore_remove(cstore, entry);
+	} else {
+		fbr_cstore_release(cstore, entry);
+	}
+}
+
 static struct fbr_cstore_entry *
-_cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, const char *path)
+_cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, const char *path,
+    int remove_on_error)
 {
 	assert_dev(cstore);
 	assert_dev(path);
@@ -212,13 +226,13 @@ _cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, co
 		if (!entry) {
 			return NULL;
 		} else if (entry->bytes != bytes) {
-			fbr_cstore_remove(cstore, entry);
+			_cstore_release(cstore, entry, remove_on_error);
 			return NULL;
 		}
 
 		int loading = fbr_cstore_set_loading(entry);
 		if (!loading) {
-			fbr_cstore_remove(cstore, entry);
+			_cstore_release(cstore, entry, remove_on_error);
 			return NULL;
 		}
 	}
@@ -230,13 +244,13 @@ _cstore_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, co
 	int ret = fbr_sys_mkdirs(path);
 	if (ret) {
 		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
+		_cstore_release(cstore, entry, remove_on_error);
 		return NULL;
 	}
 
 	if (fbr_sys_exists(path)) {
 		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
+		_cstore_release(cstore, entry, remove_on_error);
 		return NULL;
 	}
 
@@ -308,7 +322,7 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "%s %zu %s",
 		chunk_path, wbuf_bytes, path);
 
-	struct fbr_cstore_entry *entry = _cstore_get_loading(cstore, hash, wbuf_bytes, path);
+	struct fbr_cstore_entry *entry = _cstore_get_loading(cstore, hash, wbuf_bytes, path, 1);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR loading state");
 		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
@@ -585,7 +599,7 @@ _cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE %s %lu %s",
 		index_path, directory->version, path);
 
-	struct fbr_cstore_entry *entry = _cstore_get_loading(cstore, hash, writer->bytes, path);
+	struct fbr_cstore_entry *entry = _cstore_get_loading(cstore, hash, writer->bytes, path, 1);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR loading state");
 		return 1;
@@ -884,8 +898,7 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 			return EAGAIN;
 		}
 
-		// TODO this will remove on error
-		entry = _cstore_get_loading(cstore, hash, 100, path);
+		entry = _cstore_get_loading(cstore, hash, 100, path, 0);
 		if (!entry) {
 			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id,
 				"ERROR loading state");
