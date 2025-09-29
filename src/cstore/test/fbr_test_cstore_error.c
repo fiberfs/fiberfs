@@ -249,8 +249,8 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
 	assert(fbr_test_cstore_stat_roots() == 2);
 	assert(fbr_test_cstore_stat_indexes() == 2);
-	assert_zero(_CSTORE->loaded);
-	assert_zero(_CSTORE->lazy_loaded);
+	assert_zero(_CSTORE->stats.loaded);
+	assert_zero(_CSTORE->stats.lazy_loaded);
 
 	fbr_fs_free(fs);
 

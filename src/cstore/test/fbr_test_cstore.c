@@ -205,13 +205,13 @@ fbr_test_cstore_debug(void)
 	fbr_test_logs("CSTORE_DEBUG entries: %zu", _CSTORE->entries);
 	fbr_test_logs("CSTORE_DEBUG bytes: %zu", _CSTORE->bytes);
 	fbr_test_logs("CSTORE_DEBUG max_bytes: %zu", _CSTORE->max_bytes);
-	fbr_test_logs("CSTORE_DEBUG pruned: %lu", _CSTORE->lru_pruned);
-	fbr_test_logs("CSTORE_DEBUG removed: %lu", _CSTORE->removed);
-	fbr_test_logs("CSTORE_DEBUG loaded: %lu", _CSTORE->loaded);
-	fbr_test_logs("CSTORE_DEBUG lazy: %lu", _CSTORE->lazy_loaded);
-	fbr_test_logs("CSTORE_DEBUG chunks: %lu", _CSTORE->wr_chunks);
-	fbr_test_logs("CSTORE_DEBUG indexes: %lu", _CSTORE->wr_indexes);
-	fbr_test_logs("CSTORE_DEBUG roots: %lu", _CSTORE->wr_roots);
+	fbr_test_logs("CSTORE_DEBUG pruned: %lu", _CSTORE->stats.lru_pruned);
+	fbr_test_logs("CSTORE_DEBUG removed: %lu", _CSTORE->stats.removed);
+	fbr_test_logs("CSTORE_DEBUG loaded: %lu", _CSTORE->stats.loaded);
+	fbr_test_logs("CSTORE_DEBUG lazy: %lu", _CSTORE->stats.lazy_loaded);
+	fbr_test_logs("CSTORE_DEBUG chunks: %lu", _CSTORE->stats.wr_chunks);
+	fbr_test_logs("CSTORE_DEBUG indexes: %lu", _CSTORE->stats.wr_indexes);
+	fbr_test_logs("CSTORE_DEBUG roots: %lu", _CSTORE->stats.wr_roots);
 
 	char path[FBR_PATH_MAX];
 	size_t ret = snprintf(path, sizeof(path), "%s/%s",
@@ -235,28 +235,29 @@ fbr_stats_t
 fbr_test_cstore_stat_chunks(void)
 {
 	fbr_cstore_ok(_CSTORE);
-	return _CSTORE->wr_chunks;
+	return _CSTORE->stats.wr_chunks;
 }
 
 fbr_stats_t
 fbr_test_cstore_stat_indexes(void)
 {
 	fbr_cstore_ok(_CSTORE);
-	return _CSTORE->wr_indexes;
+	return _CSTORE->stats.wr_indexes;
 }
 
 fbr_stats_t
 fbr_test_cstore_stat_roots(void)
 {
 	fbr_cstore_ok(_CSTORE);
-	return _CSTORE->wr_roots;
+	return _CSTORE->stats.wr_roots;
 }
 
 char *
 fbr_var_cstore_stat_indexes(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	int ret = snprintf(_CSTORE_STAT_BUF, sizeof(_CSTORE_STAT_BUF), "%lu", _CSTORE->wr_indexes);
+	int ret = snprintf(_CSTORE_STAT_BUF, sizeof(_CSTORE_STAT_BUF), "%lu",
+		fbr_test_cstore_stat_indexes());
 	assert(ret > 0 && (size_t)ret < sizeof(_CSTORE_STAT_BUF));
 	return _CSTORE_STAT_BUF;
 }
@@ -265,7 +266,8 @@ char *
 fbr_var_cstore_stat_roots(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	int ret = snprintf(_CSTORE_STAT_BUF, sizeof(_CSTORE_STAT_BUF), "%lu", _CSTORE->wr_roots);
+	int ret = snprintf(_CSTORE_STAT_BUF, sizeof(_CSTORE_STAT_BUF), "%lu",
+		fbr_test_cstore_stat_roots());
 	assert(ret > 0 && (size_t)ret < sizeof(_CSTORE_STAT_BUF));
 	return _CSTORE_STAT_BUF;
 }
@@ -411,10 +413,10 @@ _cstore_test(void)
 	fbr_test_logs("* _CSTORE->entries=%zu", _CSTORE->entries);
 	fbr_test_logs("* _CSTORE->max_bytes=%zu", _CSTORE->max_bytes);
 	fbr_test_logs("* _CSTORE->bytes=%zu", _CSTORE->bytes);
-	fbr_test_logs("* _CSTORE->lru_pruned=%lu", _CSTORE->lru_pruned);
+	fbr_test_logs("* _CSTORE->lru_pruned=%lu", _CSTORE->stats.lru_pruned);
 	fbr_test_logs("* _CSTORE->slabs=%zu", slabs);
 
-	size_t entries = _CSTORE->entries + _CSTORE->lru_pruned;
+	size_t entries = _CSTORE->entries + _CSTORE->stats.lru_pruned;
 
 	fbr_ASSERT(_CSTORE_ENTRY_COUNTER == entries, "inserted: %zu, found %zu",
 		_CSTORE_ENTRY_COUNTER, entries);

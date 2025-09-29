@@ -372,7 +372,7 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 
 	fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
 	fbr_fs_stat_add(&fs->stats.store_chunks);
-	fbr_fs_stat_add(&cstore->wr_chunks);
+	fbr_fs_stat_add(&cstore->stats.wr_chunks);
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
@@ -540,7 +540,7 @@ fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 	fbr_cstore_remove(cstore, entry);
 
 	fbr_fs_stat_sub(&fs->stats.store_chunks);
-	fbr_fs_stat_sub(&cstore->wr_chunks);
+	fbr_fs_stat_sub(&cstore->stats.wr_chunks);
 }
 
 static int
@@ -647,7 +647,7 @@ _cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_cstore_release(cstore, entry);
 
 	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, writer->bytes);
-	fbr_fs_stat_add(&cstore->wr_indexes);
+	fbr_fs_stat_add(&cstore->stats.wr_indexes);
 
 	return 0;
 }
@@ -860,7 +860,7 @@ _cstore_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_cstore_entry_ok(entry);
 	fbr_cstore_remove(cstore, entry);
 
-	fbr_fs_stat_sub(&cstore->wr_indexes);
+	fbr_fs_stat_sub(&cstore->stats.wr_indexes);
 }
 
 static int
@@ -959,7 +959,7 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 		path, directory->version, existing);
 
 	if (!fbr_sys_exists(path)) {
-		fbr_fs_stat_add(&cstore->wr_roots);
+		fbr_fs_stat_add(&cstore->stats.wr_roots);
 	}
 
 	int fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
@@ -1146,7 +1146,7 @@ _cstore_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	fbr_cstore_remove(cstore, entry);
 
-	fbr_fs_stat_sub(&cstore->wr_roots);
+	fbr_fs_stat_sub(&cstore->stats.wr_roots);
 
 	return 0;
 }

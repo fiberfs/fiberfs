@@ -106,15 +106,17 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_cstore_debug();
 	assert(_CSTORE->entries == 3);
 
-	size_t loaded = _CSTORE->loaded + _CSTORE->lazy_loaded;
+	size_t loaded = _CSTORE->stats.loaded + _CSTORE->stats.lazy_loaded;
 	int checks = 40;
 	while (loaded < 3 && checks) {
 		fbr_test_sleep_ms(25);
-		loaded = _CSTORE->loaded + _CSTORE->lazy_loaded;
+		loaded = _CSTORE->stats.loaded + _CSTORE->stats.lazy_loaded;
 		checks--;
 	}
-	fbr_test_logs("loaded: %zu (%zu+%zu)", loaded, _CSTORE->loaded, _CSTORE->lazy_loaded);
-	fbr_ASSERT(loaded == 3, "loaded: %lu lazy: %lu", _CSTORE->loaded, _CSTORE->lazy_loaded);
+	fbr_test_logs("loaded: %zu (%zu+%zu)", loaded, _CSTORE->stats.loaded,
+		_CSTORE->stats.lazy_loaded);
+	fbr_ASSERT(loaded == 3, "loaded: %lu lazy: %lu", _CSTORE->stats.loaded,
+		_CSTORE->stats.lazy_loaded);
 
 	fbr_fs_free(fs);
 

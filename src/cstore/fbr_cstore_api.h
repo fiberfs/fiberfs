@@ -126,17 +126,19 @@ struct fbr_cstore {
 
 	size_t					max_bytes;
 	size_t					bytes;
+	size_t					entries;
 	int					do_lru;
 
-	size_t					entries;
-	fbr_stats_t				lru_pruned;
-	fbr_stats_t				removed;
-	fbr_stats_t				loaded;
-	fbr_stats_t				lazy_loaded;
-	fbr_stats_t				wr_chunks;
-	fbr_stats_t				wr_indexes;
-	fbr_stats_t				wr_roots;
-};
+	struct {
+		fbr_stats_t			lru_pruned;
+		fbr_stats_t			removed;
+		fbr_stats_t			loaded;
+		fbr_stats_t			lazy_loaded;
+		fbr_stats_t			wr_chunks;
+		fbr_stats_t			wr_indexes;
+		fbr_stats_t			wr_roots;
+	} stats;
+	};
 
 struct fbr_cstore_metadata {
 	char					path[FBR_PATH_MAX];

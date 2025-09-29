@@ -142,7 +142,7 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 			fbr_cstore_entry_ok(centry);
 			assert_dev(centry->state == FBR_CSTORE_OK);
 
-			fbr_atomic_add(&cstore->loaded, 1);
+			fbr_atomic_add(&cstore->stats.loaded, 1);
 			insertions++;
 
 			fbr_cstore_release(cstore, centry);
@@ -204,7 +204,7 @@ _cstore_load_thread(void *arg)
 		double time_spent = fbr_get_time() - loader->start_time;
 		fbr_log_print(cstore->log, FBR_LOG_CS_LOADER, thread_id, "COMPLETED "
 			"loaded: %zu lazy: %lu time: %.3fs",
-			cstore->loaded, cstore->lazy_loaded, time_spent);
+			cstore->stats.loaded, cstore->stats.lazy_loaded, time_spent);
 
 		// TODO cleanup metadata here ?
 	}

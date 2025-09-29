@@ -268,7 +268,7 @@ _cstore_lru_delete(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 	entry->refcount--;
 	entry->in_lru = 0;
 
-	fbr_atomic_add(&cstore->lru_pruned, 1);
+	fbr_atomic_add(&cstore->stats.lru_pruned, 1);
 }
 
 static void
@@ -437,7 +437,7 @@ fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash)
 			if (bytes) {
 				entry = _cstore_insert_entry(cstore, head, hash, bytes, 0);
 				if (entry) {
-					fbr_fs_stat_add(&cstore->lazy_loaded);
+					fbr_fs_stat_add(&cstore->stats.lazy_loaded);
 				}
 			}
 		}
@@ -559,7 +559,7 @@ fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
 {
 	_cstore_release(cstore, entry, 1);
 
-	fbr_fs_stat_add(&cstore->removed);
+	fbr_fs_stat_add(&cstore->stats.removed);
 }
 
 void
