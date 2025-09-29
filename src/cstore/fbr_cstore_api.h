@@ -14,6 +14,7 @@
 #include "core/fs/fbr_fs.h"
 #include "data/queue.h"
 #include "data/tree.h"
+#include "server/fbr_cstore_server.h"
 
 #define FBR_CSTORE_HEAD_COUNT			64
 #define FBR_CSTORE_SLAB_SIZE			128
@@ -119,6 +120,7 @@ struct fbr_cstore {
 	fbr_cstore_delete_f			delete_f;
 	struct fbr_cstore_async			async;
 	struct fbr_cstore_loader		loader;
+	struct fbr_cstore_tasks			tasks;
 	struct fbr_cstore_server		*servers;
 
 	struct fbr_log				*log;

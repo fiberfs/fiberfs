@@ -9,28 +9,56 @@
 
 #include <pthread.h>
 
+#include "data/queue.h"
 #include "network/chttp_network.h"
 
 #define FBR_CSTORE_SERVER_ADDRESS		"127.0.0.1"
 #define FBR_CSTORE_SERVER_PORT			5691
-#define FBR_CSTORE_WORKER_MAX			256
+#define FBR_CSTORE_TASKS_MAX			256
 #define FBR_CSTORE_WORKER_DEFAULT		4
+
+enum fbr_cstore_task_type {
+	FBR_CSTORE_TASK_NONE = 0,
+	FBR_CSTORE_TASK_ACCEPT
+};
+
+struct fbr_cstore_task_entry {
+	unsigned int				magic;
+#define FBR_CSTORE_TASK_ENTRY_MAGIC		0x825DDF00
+
+	enum fbr_cstore_task_type		type;
+
+	void					*param;
+
+	TAILQ_ENTRY(fbr_cstore_task_entry)	entry;
+};
+
+struct fbr_cstore_tasks {
+	struct fbr_cstore_task_entry		free_tasks[FBR_CSTORE_TASKS_MAX];
+
+	TAILQ_HEAD(, fbr_cstore_task_entry)	task_queue;
+	size_t					task_queue_len;
+
+	pthread_mutex_t				lock;
+	pthread_cond_t				cond;
+
+	pthread_t				workers[FBR_CSTORE_TASKS_MAX];
+	size_t					workers_count;
+	size_t					workers_running;
+	size_t					workers_idle;
+
+	int					exit;
+};
 
 struct fbr_cstore_server {
 	unsigned int				magic;
 #define FBR_CSTORE_SERVER_MAGIC			0xAE4606E0
-
-	volatile int				exit;
 
 	struct fbr_cstore			*cstore;
 
 	struct chttp_addr			addr;
 	int					port;
 	int					tls;
-
-	pthread_t				workers[FBR_CSTORE_WORKER_MAX];
-	size_t					workers_max;
-	size_t					workers_running;
 
 	struct fbr_cstore_server		*next;
 };
@@ -41,9 +69,10 @@ struct fbr_cstore_worker {
 	unsigned int				magic;
 #define FBR_CSTORE_WORKER_MAGIC			0x0AC4F92D
 
-	struct fbr_cstore_server		*server;
+	struct fbr_cstore			*cstore;
 	struct fbr_workspace			*workspace;
 	struct fbr_rlog				*rlog;
+	struct fbr_cstore_task_entry		*task;
 
 	unsigned long				thread_id;
 	unsigned long				thread_pos;
@@ -55,16 +84,19 @@ struct fbr_cstore_worker {
 };
 
 void fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls);
+void fbr_cstore_server_accept(struct fbr_cstore_worker *worker);
 void fbr_cstore_servers_free(struct fbr_cstore *cstore);
 
-struct fbr_cstore_worker *fbr_cstore_worker_alloc(struct fbr_cstore_server *server);
-void fbr_cstore_worker_init(struct fbr_cstore_worker *worker);
-void fbr_cstore_worker_finish(struct fbr_cstore_worker *worker);
-void fbr_cstore_worker_free(struct fbr_cstore_worker *worker);
+void fbr_cstore_tasks_alloc(struct fbr_cstore *cstore);
+void fbr_cstore_task_add(struct fbr_cstore *cstore, enum fbr_cstore_task_type type, void *param);
+void fbr_cstore_tasks_free(struct fbr_cstore *cstore);
+
+void fbr_cstore_worker_add(struct fbr_cstore *cstore, size_t count);
 
 void fbr_cstore_proc_http(struct fbr_cstore_worker *worker);
 
 #define fbr_cstore_server_ok(server)		fbr_magic_check(server, FBR_CSTORE_SERVER_MAGIC)
 #define fbr_cstore_worker_ok(worker)		fbr_magic_check(worker, FBR_CSTORE_WORKER_MAGIC)
+#define fbr_cstore_task_ok(task)		fbr_magic_check(task, FBR_CSTORE_TASK_ENTRY_MAGIC)
 
 #endif /* _FBR_CSTORE_SERVER_H_INCLUDED_ */

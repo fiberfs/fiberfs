@@ -4,6 +4,7 @@
  */
 
 #include <stdlib.h>
+#include <sys/socket.h>
 
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
@@ -29,6 +30,13 @@ static void
 _test_client_finish(struct fbr_test_context *ctx)
 {
 	struct chttp_context *chttp = _test_context_ok(ctx);
+
+	if (chttp->state < CHTTP_STATE_IDLE && chttp->addr.state == CHTTP_ADDR_CONNECTED) {
+		fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "chttp addr is hung");
+		shutdown(chttp->addr.sock, SHUT_RDWR);
+		fbr_test_sleep_ms(25);
+	}
+
 	fbr_finish_ERROR(chttp->error, "chttp context has an error");
 
 	size_t allocs = 0;

@@ -19,6 +19,8 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 	fbr_cstore_worker_ok(worker);
 	chttp_addr_connected(&worker->remote_addr);
 
+	worker->time_start = fbr_get_time();
+
 	// TODO make this a param
 	size_t chttp_size = 4096;
 	struct chttp_context *http = fbr_workspace_alloc(worker->workspace, chttp_size);
