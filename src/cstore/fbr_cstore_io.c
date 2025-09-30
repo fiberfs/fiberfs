@@ -1304,19 +1304,29 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	}
 
 	size_t bytes = 0;
+	int fallback = 0;
 
 	while (bytes < length) {
-		/*
 		ssize_t ret = splice(request->addr.sock, NULL, fd, NULL, length, SPLICE_F_MOVE);
 		if (ret < 0) {
+			if (bytes == 0 && errno == EINVAL) {
+				fallback = 1;
+				break;
+			}
+
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR splice %d %s",
 				errno, strerror(errno));
+
 			break;
 		} else if (ret == 0) {
 			break;
 		}
-		*/
 
+		bytes += (size_t)ret;
+	}
+
+	while (fallback && bytes < length) {
+		// TODO needs to be bigger
 		char buffer[4096];
 		size_t ret = chttp_body_read(request, buffer, sizeof(buffer));
 		if (request->error) {
@@ -1351,12 +1361,13 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 		return 1;
 	}
 
-	/*
-	request->length = 0;
-	request->state = CHTTP_STATE_IDLE;
-	*/
+	if (!fallback) {
+		request->length = 0;
+		request->state = CHTTP_STATE_IDLE;
+	}
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE wrote %zu bytes", bytes);
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE wrote %zu bytes (%s)", bytes,
+		fallback ? "read/write" : "splice");
 
 	struct fbr_cstore_metadata metadata;
 	fbr_ZERO(&metadata);
