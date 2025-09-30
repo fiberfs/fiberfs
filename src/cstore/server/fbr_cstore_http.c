@@ -14,6 +14,19 @@
 #include "cstore/fbr_cstore_api.h"
 
 void
+_http_send_400(struct chttp_context *http)
+{
+	assert_dev(http);
+	static_ASSERT(sizeof(FIBERFS_VERSION) == 6);
+
+	chttp_tcp_send(&http->addr,
+		"HTTP/1.1 400 Bad Request\r\n"
+		"Server: fiberfs cstore " FIBERFS_VERSION "\r\n"
+		"Content-Length: 0\r\n"
+		"Connection: close\r\n\r\n", 96);
+}
+
+void
 fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 {
 	fbr_cstore_worker_ok(worker);
@@ -46,23 +59,38 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 	const char *method = chttp_header_get_method(http);
 	const char *url = chttp_header_get_url(http);
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "http %s request parsed url: %s",
-		method, url);
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "http %s url: %s", method, url);
 
-	if (http->state == CHTTP_STATE_IDLE) {
-		chttp_addr_move(&worker->remote_addr, &http->addr);
-	} else {
-		assert(http->state == CHTTP_STATE_BODY);
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "TODO request body detected");
+	if (http->version != CHTTP_H_VERSION_1_1) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad http version");
 		chttp_context_free(http);
 		return;
 	}
 
-	chttp_context_free(http);
-	chttp_addr_connected(&worker->remote_addr);
+	if (!strcmp(method, "GET") && http->state == CHTTP_STATE_IDLE) {
+		if (!strcmp(url, "/")) {
+			_http_send_400(http);
+			chttp_context_free(http);
+			return;
+		}
 
-	// TODO temporary
-	chttp_tcp_send(&worker->remote_addr, "HTTP/1.1 200 OK\r\n", 17);
-	chttp_tcp_send(&worker->remote_addr, "Server: fiberfs cstore\r\n", 24);
-	chttp_tcp_send(&worker->remote_addr, "Content-Length: 0\r\n\r\n", 21);
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Get (TODO)");
+	} else if (!strcmp(method, "PUT") && http->state == CHTTP_STATE_BODY) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Insert (TODO)");
+	} else if (http->state == CHTTP_STATE_IDLE) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (400)");
+		_http_send_400(http);
+		chttp_context_free(http);
+		return;
+	} else {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (closing)");
+		chttp_context_free(http);
+		return;
+	}
+
+	if (http->addr.state == CHTTP_ADDR_CONNECTED && !http->close) {
+		chttp_addr_move(&worker->remote_addr, &http->addr);
+	}
+
+	chttp_context_free(http);
 }

@@ -92,6 +92,7 @@ fbr_cstore_server_accept(struct fbr_cstore_worker *worker)
 
 	if (worker->remote_addr.state == CHTTP_ADDR_CONNECTED) {
 		// TODO keep alive on a queue somewhere
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "keep alive detected");
 		chttp_tcp_close(&worker->remote_addr);
 	}
 }

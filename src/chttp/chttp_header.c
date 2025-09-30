@@ -285,6 +285,17 @@ _parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 				chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 				return;
 			}
+
+			if (count == 2) {
+				if (!strncasecmp((char*)&dpage->data[i + 1], "HTTP/1.", 7)) {
+					char version = dpage->data[i + 8];
+					if (version == '1') {
+						ctx->version = CHTTP_H_VERSION_1_1;
+					} else if (version == '0') {
+						ctx->version = CHTTP_H_VERSION_1_0;
+					}
+				}
+			}
 		}
 	}
 

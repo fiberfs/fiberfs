@@ -182,6 +182,8 @@ _hash_fs(XXH3_state_t *hash, struct fbr_fs *fs)
 	assert_dev(fs);
 
 	// TODO
+	// Hash the s3 hostname
+	// Hash the url prefix including end slash. If no prefix, just hash a slash
 }
 
 /*

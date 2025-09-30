@@ -24,7 +24,7 @@ fbr_cstore_tasks_alloc(struct fbr_cstore *cstore)
 	pt_assert(pthread_cond_init(&tasks->cond, NULL));
 }
 
-// Note: must have tasks lock
+// Note: tasks->lock required
 static struct fbr_cstore_task_entry *
 _cstore_task_alloc(struct fbr_cstore_tasks *tasks)
 {
@@ -73,7 +73,7 @@ fbr_cstore_task_add(struct fbr_cstore *cstore, enum fbr_cstore_task_type type, v
 	pt_assert(pthread_mutex_unlock(&tasks->lock));
 }
 
-// Note: must have tasks lock
+// Note: tasks->lock required
 static void
 _cstore_task_free(struct fbr_cstore_worker *worker)
 {
