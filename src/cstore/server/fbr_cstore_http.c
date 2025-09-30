@@ -13,7 +13,7 @@
 #include "core/request/fbr_workspace.h"
 #include "cstore/fbr_cstore_api.h"
 
-void
+static void
 _http_send_200(struct chttp_context *http)
 {
 	assert_dev(http);
@@ -26,7 +26,7 @@ _http_send_200(struct chttp_context *http)
 		"Connection: close\r\n\r\n", 87);
 }
 
-void
+static void
 _http_send_400(struct chttp_context *http)
 {
 	assert_dev(http);
@@ -39,7 +39,8 @@ _http_send_400(struct chttp_context *http)
 		"Connection: close\r\n\r\n", 96);
 }
 
-void
+/*
+static void
 _http_send_500(struct chttp_context *http)
 {
 	assert_dev(http);
@@ -51,6 +52,7 @@ _http_send_500(struct chttp_context *http)
 		"Content-Length: 0\r\n"
 		"Connection: close\r\n\r\n", 90);
 }
+*/
 
 void
 fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
@@ -114,7 +116,6 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 
 		int ret = fbr_cstore_url_write(worker, http);
 		if (ret) {
-			_http_send_500(http);
 			chttp_context_free(http);
 			return;
 		}
@@ -135,6 +136,8 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 	    !http->close) {
 		chttp_addr_move(&worker->remote_addr, &http->addr);
 	}
+
+	// TODO, we may have some pipeline...
 
 	chttp_context_free(http);
 }

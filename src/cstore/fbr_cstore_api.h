@@ -147,7 +147,7 @@ struct fbr_cstore_metadata {
 	fbr_id_t				etag;
 	double					timestamp;
 	unsigned long				size;
-	unsigned long				offset;
+	size_t					offset;
 	enum fbr_cstore_entry_type		type;
 	int					gzipped;
 	int					error;
@@ -202,7 +202,7 @@ fbr_hash_t fbr_cstore_hash_chunk(struct fbr_fs *fs, struct fbr_file *file, fbr_i
 	size_t offset);
 fbr_hash_t fbr_cstore_hash_index(struct fbr_fs *fs, struct fbr_directory *directory);
 fbr_hash_t fbr_cstore_hash_root(struct fbr_fs *fs, struct fbr_path_name *dirpath);
-fbr_hash_t fbr_cstore_hash_url(const char *host, const char *url);
+fbr_hash_t fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t url_len);
 
 void fbr_cstore_fuse_register(const char *root_path);
 struct fbr_cstore *fbr_cstore_find(void);

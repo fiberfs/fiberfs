@@ -15,7 +15,7 @@ chttp_context_debug(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
-	printf("\tchttp_ctx state=%d error=%d (%s) version=%d data_last=%p\n"
+	printf("chttp_ctx state=%d error=%d (%s) version=%d data_last=%p\n"
 		"\tdata_start=%p:%zu:%zu data_end=%p:%zu:%zu\n"
 		"\thostname=%p:%zu:%zu\n"
 		"\tstatus=%d length=%ld do_free=%u has_host=%u close=%u chunked=%u\n"

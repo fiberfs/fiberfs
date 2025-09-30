@@ -282,7 +282,7 @@ fbr_cstore_hash_root(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 }
 
 fbr_hash_t
-fbr_cstore_hash_url(const char *host, const char *url)
+fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t url_len)
 {
 	assert(host);
 	assert(url);
@@ -291,11 +291,10 @@ fbr_cstore_hash_url(const char *host, const char *url)
 	XXH3_INITSTATE(&hash);
 	XXH3_64bits_reset(&hash);
 
-	size_t length = strlen(host);
-	XXH3_64bits_update(&hash, host, length + 1);
-
-	length = strlen(url);
-	XXH3_64bits_update(&hash, url, length + 1);
+	XXH3_64bits_update(&hash, host, host_len);
+	XXH3_64bits_update(&hash, "", 1);
+	XXH3_64bits_update(&hash, url, url_len);
+	XXH3_64bits_update(&hash, "", 1);
 
 	XXH64_hash_t result = XXH3_64bits_digest(&hash);
 	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
