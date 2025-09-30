@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "fiberfs.h"
+#include "chttp.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
 #include "fbr_cstore_api.h"
@@ -1164,6 +1165,94 @@ fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 	}
 
 	_cstore_index_remove(fs, directory);
+
+	return 0;
+}
+
+int
+fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *request)
+{
+	fbr_cstore_worker_ok(worker);
+	chttp_context_ok(request);
+	assert(request->state == CHTTP_STATE_BODY);
+	assert_zero(request->chunked);
+
+	struct fbr_cstore *cstore = worker->cstore;
+	fbr_cstore_ok(cstore);
+
+	size_t length = request->length;
+	const char *url = chttp_header_get_url(request);
+	const char *host = chttp_header_get(request, "Host");
+	const char *etag = chttp_header_get(request, "ETag");
+	assert(length);
+	assert(url);
+	assert(host);
+	assert(etag);
+
+	fbr_id_t etag_id = fbr_id_parse(etag, strlen(etag));
+	if (!etag_id) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR etag");
+		return 1;
+	}
+
+	fbr_hash_t hash = fbr_cstore_hash_url(host, url);
+
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s %s", host, url, path);
+
+	struct fbr_cstore_entry *entry = _cstore_get_loading(cstore, hash, length, path, 1);
+	if (!entry) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR loading state");
+		return 1;
+	}
+	fbr_cstore_entry_ok(entry);
+	assert_dev(entry->state == FBR_CSTORE_LOADING);
+
+	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	if (fd < 0) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR open()");
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+		return 1;
+	}
+
+	//size_t bytes = fbr_sys_write(fd, wbuffer->buffer, wbuf_bytes);
+	size_t bytes = length;
+	assert_zero(close(fd));
+
+	if (bytes != length) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR bytes");
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+		return 1;
+	}
+
+	struct fbr_cstore_metadata metadata;
+	fbr_ZERO(&metadata);
+	metadata.etag = etag_id;
+	metadata.size = length;
+	// TODO
+	//metadata.offset = ;
+	metadata.type = FBR_CSTORE_FILE_CHUNK;
+	size_t url_len = strlen(url);
+	assert(url_len < sizeof(metadata.path));
+	memcpy(metadata.path, url, url_len + 1);
+
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+	int ret = _cstore_metadata_write(path, &metadata);
+	if (ret) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR metadata");
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+		return 1;
+	}
+
+	// TODO stats
+
+	fbr_cstore_set_ok(entry);
+	fbr_cstore_release(cstore, entry);
 
 	return 0;
 }

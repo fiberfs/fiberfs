@@ -170,8 +170,9 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 			_cstore_debug_meta(filename, &metadata);
 			switch (metadata.type) {
 			case FBR_CSTORE_FILE_CHUNK:
-				fbr_test_logs("CSTORE_DEBUG file: %s (CHUNK %s size: %lu)",
-					filename, metadata.path, metadata.size);
+				fbr_test_logs("CSTORE_DEBUG file: %s (CHUNK %s size: %ld [%lu])",
+					filename, metadata.path, stat->st_size, metadata.size);
+				assert((unsigned long)stat->st_size == metadata.size);
 				break;
 			case FBR_CSTORE_FILE_INDEX:
 				fbr_test_logs("CSTORE_DEBUG file: %s (INDEX %s gzip: %d)",

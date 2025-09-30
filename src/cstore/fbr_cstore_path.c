@@ -182,7 +182,7 @@ _hash_fs(XXH3_state_t *hash, struct fbr_fs *fs)
 	assert_dev(fs);
 
 	// TODO
-	// Hash the s3 hostname
+	// Hash the s3 hostname + null
 	// Hash the url prefix including end slash. If no prefix, just hash a slash
 }
 
@@ -277,6 +277,30 @@ fbr_cstore_hash_root(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 
 	XXH64_hash_t result = XXH3_64bits_digest(&hash);
 	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
+
+	return (fbr_hash_t)result;
+}
+
+fbr_hash_t
+fbr_cstore_hash_url(const char *host, const char *url)
+{
+	assert(host);
+	assert(url);
+
+	XXH3_state_t hash;
+	XXH3_INITSTATE(&hash);
+	XXH3_64bits_reset(&hash);
+
+	size_t length = strlen(host);
+	XXH3_64bits_update(&hash, host, length + 1);
+
+	length = strlen(url);
+	XXH3_64bits_update(&hash, url, length + 1);
+
+	XXH64_hash_t result = XXH3_64bits_digest(&hash);
+	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
+
+	// TODO external
 
 	return (fbr_hash_t)result;
 }

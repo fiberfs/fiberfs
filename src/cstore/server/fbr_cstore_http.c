@@ -14,6 +14,19 @@
 #include "cstore/fbr_cstore_api.h"
 
 void
+_http_send_200(struct chttp_context *http)
+{
+	assert_dev(http);
+	static_ASSERT(sizeof(FIBERFS_VERSION) == 6);
+
+	chttp_tcp_send(&http->addr,
+		"HTTP/1.1 200 OK\r\n"
+		"Server: fiberfs cstore " FIBERFS_VERSION "\r\n"
+		"Content-Length: 0\r\n"
+		"Connection: close\r\n\r\n", 87);
+}
+
+void
 _http_send_400(struct chttp_context *http)
 {
 	assert_dev(http);
@@ -24,6 +37,19 @@ _http_send_400(struct chttp_context *http)
 		"Server: fiberfs cstore " FIBERFS_VERSION "\r\n"
 		"Content-Length: 0\r\n"
 		"Connection: close\r\n\r\n", 96);
+}
+
+void
+_http_send_500(struct chttp_context *http)
+{
+	assert_dev(http);
+	static_ASSERT(sizeof(FIBERFS_VERSION) == 6);
+
+	chttp_tcp_send(&http->addr,
+		"HTTP/1.1 500 Error\r\n"
+		"Server: fiberfs cstore " FIBERFS_VERSION "\r\n"
+		"Content-Length: 0\r\n"
+		"Connection: close\r\n\r\n", 90);
 }
 
 void
@@ -76,7 +102,24 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Get (TODO)");
 	} else if (!strcmp(method, "PUT") && http->state == CHTTP_STATE_BODY) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Insert (TODO)");
+		if (http->chunked) {
+			_http_send_400(http);
+			chttp_context_free(http);
+			return;
+		} else if (!chttp_header_get(http, "Host") || !chttp_header_get(http, "ETag")) {
+			_http_send_400(http);
+			chttp_context_free(http);
+			return;
+		}
+
+		int ret = fbr_cstore_url_write(worker, http);
+		if (ret) {
+			_http_send_500(http);
+			chttp_context_free(http);
+			return;
+		}
+
+		_http_send_200(http);
 	} else if (http->state == CHTTP_STATE_IDLE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (400)");
 		_http_send_400(http);
@@ -88,7 +131,8 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 		return;
 	}
 
-	if (http->addr.state == CHTTP_ADDR_CONNECTED && !http->close) {
+	if (http->state == CHTTP_STATE_IDLE && http->addr.state == CHTTP_ADDR_CONNECTED &&
+	    !http->close) {
 		chttp_addr_move(&worker->remote_addr, &http->addr);
 	}
 

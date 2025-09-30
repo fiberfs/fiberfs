@@ -67,6 +67,7 @@ struct fbr_cstore;
 struct fbr_cstore_entry;
 struct fbr_cstore_metadata;
 struct fbr_writer;
+struct chttp_context;
 
 void fbr_cstore_async_init(struct fbr_cstore *cstore);
 void fbr_cstore_async_free(struct fbr_cstore *cstore);
@@ -90,6 +91,8 @@ int fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directo
 	struct fbr_writer *writer, struct fbr_directory *previous);
 fbr_id_t fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath);
 int fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
+
+int fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *request);
 
 #define fbr_cstore_op_ok(op)			fbr_magic_check(op, FBR_CSTORE_OP_MAGIC)
 

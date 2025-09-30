@@ -448,7 +448,7 @@ chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test
 
 	if (test->verbocity == FBR_LOG_VERY_VERBOSE) {
 		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
-		chttp_dpage_debug(server->chttp->dpage);
+		chttp_context_debug(server->chttp);
 	}
 
 	if (server->chttp->state == CHTTP_STATE_IDLE) {
