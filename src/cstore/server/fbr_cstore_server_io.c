@@ -153,7 +153,6 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 
 	size_t bytes = 0;
 	int fallback_rw = 0;
-
 	if (cstore->cant_splice) {
 		fallback_rw = 1;
 	}

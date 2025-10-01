@@ -4,6 +4,7 @@
  *
  */
 
+#include <stdio.h>
 #include <string.h>
 
 #include "fiberfs.h"
@@ -14,45 +15,30 @@
 #include "cstore/fbr_cstore_api.h"
 
 static void
-_http_send_200(struct chttp_context *http)
+_http_send_code(struct chttp_context *http, int status, const char *reason)
 {
 	assert_dev(http);
-	static_ASSERT(sizeof(FIBERFS_VERSION) == 6);
+	assert(status >= 100 && status <= 999);
+	assert(reason);
 
-	chttp_tcp_send(&http->addr,
-		"HTTP/1.1 200 OK\r\n"
-		"Server: fiberfs cstore " FIBERFS_VERSION "\r\n"
-		"Content-Length: 0\r\n"
-		"Connection: close\r\n\r\n", 87);
+	const char *close = "";
+	if (status >= 400) {
+		http->close = 1;
+	}
+	if (http->close) {
+		close = "Connection: close\r\n";
+	}
+
+	char buffer[1024];
+	int bytes = snprintf(buffer, sizeof(buffer),
+		"HTTP/1.1 %d %s\r\n"
+		"Server: fiberfs cstore %s\r\n"
+		"%s"
+		"Content-Length: 0\r\n\r\n", status, reason, FIBERFS_VERSION, close);
+	assert(bytes > 0 && (size_t)bytes < sizeof(buffer));
+
+	chttp_tcp_send(&http->addr, buffer, bytes);
 }
-
-static void
-_http_send_400(struct chttp_context *http)
-{
-	assert_dev(http);
-	static_ASSERT(sizeof(FIBERFS_VERSION) == 6);
-
-	chttp_tcp_send(&http->addr,
-		"HTTP/1.1 400 Bad Request\r\n"
-		"Server: fiberfs cstore " FIBERFS_VERSION "\r\n"
-		"Content-Length: 0\r\n"
-		"Connection: close\r\n\r\n", 96);
-}
-
-/*
-static void
-_http_send_500(struct chttp_context *http)
-{
-	assert_dev(http);
-	static_ASSERT(sizeof(FIBERFS_VERSION) == 6);
-
-	chttp_tcp_send(&http->addr,
-		"HTTP/1.1 500 Error\r\n"
-		"Server: fiberfs cstore " FIBERFS_VERSION "\r\n"
-		"Content-Length: 0\r\n"
-		"Connection: close\r\n\r\n", 90);
-}
-*/
 
 void
 fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
@@ -97,7 +83,7 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 
 	if (!strcmp(method, "GET") && http->state == CHTTP_STATE_IDLE) {
 		if (!strcmp(url, "/")) {
-			_http_send_400(http);
+			_http_send_code(http, 400, "Bad Request");
 			chttp_context_free(http);
 			return;
 		}
@@ -105,11 +91,11 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Get (TODO)");
 	} else if (!strcmp(method, "PUT") && http->state == CHTTP_STATE_BODY) {
 		if (http->chunked) {
-			_http_send_400(http);
+			_http_send_code(http, 400, "Bad Request");
 			chttp_context_free(http);
 			return;
 		} else if (!chttp_header_get(http, "Host") || !chttp_header_get(http, "ETag")) {
-			_http_send_400(http);
+			_http_send_code(http, 400, "Bad Request");
 			chttp_context_free(http);
 			return;
 		}
@@ -120,10 +106,10 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 			return;
 		}
 
-		_http_send_200(http);
+		_http_send_code(http, 200, "OK");
 	} else if (http->state == CHTTP_STATE_IDLE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (400)");
-		_http_send_400(http);
+		_http_send_code(http, 400, "Bad Request");
 		chttp_context_free(http);
 		return;
 	} else {
