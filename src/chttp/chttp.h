@@ -155,7 +155,7 @@ void chttp_dpage_debug(struct chttp_dpage *dpage);
 void chttp_print_hex(void *buf, size_t buf_len);
 const char *chttp_error_msg(struct chttp_context *ctx);
 void chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port);
-size_t chttp_make_chunk(char *buffer, unsigned int buffer_len);
+size_t chttp_make_chunk(char *buffer, size_t buffer_len, unsigned int chunk_len);
 
 #define chttp_context_ok(ctx)	\
 	fbr_magic_check(ctx, CHTTP_CTX_MAGIC)

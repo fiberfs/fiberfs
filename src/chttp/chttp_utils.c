@@ -155,14 +155,14 @@ chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port)
 }
 
 size_t
-chttp_make_chunk(char *buffer, unsigned int buffer_len)
+chttp_make_chunk(char *buffer, size_t buffer_len, unsigned int chunk_len)
 {
 	size_t ret;
 
 	assert(buffer);
 	assert(buffer_len);
 
-	ret = snprintf(buffer, buffer_len, "%x", buffer_len);
+	ret = snprintf(buffer, buffer_len, "%x", chunk_len);
 
 	if (ret + 2 > buffer_len) {
 		return 0;
@@ -171,7 +171,7 @@ chttp_make_chunk(char *buffer, unsigned int buffer_len)
 	buffer[ret++] = '\r';
 	buffer[ret++] = '\n';
 
-	assert(ret <= buffer_len);
+	assert_dev(ret <= buffer_len);
 
 	return ret;
 }

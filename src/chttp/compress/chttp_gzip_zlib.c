@@ -114,7 +114,8 @@ chttp_zlib_send_chunk(struct fbr_zlib *zlib, struct chttp_addr *addr, const unsi
 	assert(zlib->status == FBR_GZIP_DONE);
 
 	do {
-		max_chunklen = chttp_make_chunk((char*)zlib->buffer, zlib->buffer_len);
+		max_chunklen = chttp_make_chunk((char*)zlib->buffer, zlib->buffer_len,
+			zlib->buffer_len);
 		assert(max_chunklen);
 		assert(zlib->buffer_len > max_chunklen + 2);
 
@@ -127,7 +128,7 @@ chttp_zlib_send_chunk(struct fbr_zlib *zlib, struct chttp_addr *addr, const unsi
 		}
 
 		if (written > 0) {
-			chunklen = chttp_make_chunk((char*)zlib->buffer, written);
+			chunklen = chttp_make_chunk((char*)zlib->buffer, max_chunklen + 2, written);
 			assert(chunklen);
 			assert(chunklen <= max_chunklen);
 
