@@ -135,6 +135,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s %s", host, url, path);
 
+	// TODO look at HTTP conditionals
+
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, length, path, 1);
 	if (!entry) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR loading state");

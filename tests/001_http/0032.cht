@@ -1,6 +1,9 @@
 chttp_test "Closed connection"
 
 server_init
+
+# Immediate close
+
 server_accept
 server_close
 
@@ -11,6 +14,8 @@ chttp_send
 chttp_take_error
 chttp_reset
 
+# Close after read
+
 server_accept
 server_read_request
 server_close
@@ -18,4 +23,26 @@ server_close
 chttp_url /
 chttp_connect $server_host $server_port
 chttp_send
+chttp_take_error
+chttp_reset
+
+# Close after successful response
+
+server_accept
+server_read_request
+server_send_response
+
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+equal $chttp_reused 0
+chttp_status_match 200
+chttp_reset
+
+server_close
+
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+equal $chttp_reused 1
 chttp_take_error

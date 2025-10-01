@@ -18,8 +18,8 @@ static void
 _http_send_code(struct chttp_context *http, int status, const char *reason)
 {
 	assert_dev(http);
-	assert(status >= 100 && status <= 999);
-	assert(reason);
+	assert_dev(status >= 100 && status <= 999);
+	assert_dev(reason);
 
 	const char *close = "";
 	if (status >= 400) {
@@ -89,6 +89,7 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 		}
 
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Get (TODO)");
+		_http_send_code(http, 400, "GET is TODO");
 	} else if (!strcmp(method, "PUT") && http->state == CHTTP_STATE_BODY) {
 		if (http->chunked) {
 			_http_send_code(http, 400, "Bad Request");
