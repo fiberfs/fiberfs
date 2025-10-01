@@ -97,6 +97,7 @@ fbr_id_t fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath);
 int fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 
 int fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *request);
+int fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *request);
 
 #define fbr_cstore_op_ok(op)			fbr_magic_check(op, FBR_CSTORE_OP_MAGIC)
 

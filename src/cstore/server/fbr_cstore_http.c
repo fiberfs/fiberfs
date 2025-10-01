@@ -86,10 +86,20 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 			_http_send_code(http, 400, "Bad Request");
 			chttp_context_free(http);
 			return;
+		} else if (!chttp_header_get(http, "Host") || !chttp_header_get(http, "ETag")) {
+			_http_send_code(http, 400, "Bad Request");
+			chttp_context_free(http);
+			return;
 		}
 
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Get (TODO)");
-		_http_send_code(http, 400, "GET is TODO");
+		int ret = fbr_cstore_url_read(worker, http);
+		if (ret) {
+			if (ret == 1) {
+				_http_send_code(http, 400, "Bad Request");
+			}
+			chttp_context_free(http);
+			return;
+		}
 	} else if (!strcmp(method, "PUT") && http->state == CHTTP_STATE_BODY) {
 		if (http->chunked) {
 			_http_send_code(http, 400, "Bad Request");

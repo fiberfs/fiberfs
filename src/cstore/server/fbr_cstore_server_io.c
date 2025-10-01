@@ -67,7 +67,7 @@ _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, s
 				}
 
 				*offset = fbr_parse_ulong(&url[i], url_len - i);
-				if (!offset) {
+				if (!*offset) {
 					if (url[i] != '0' || i + 1 < url_len) {
 						continue;
 					}
@@ -108,12 +108,9 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	const char *etag = chttp_header_get(request, "ETag");
 	assert(etag);
 	size_t etag_len = strlen(etag);
-	if (etag_len && etag[etag_len - 1] == '\"') {
-		etag_len--;
-	}
-	if (etag[0] == '\"') {
+	if (etag_len >= 2 && etag[etag_len - 1] == '\"' && etag[0] == '\"') {
 		etag++;
-		etag_len--;
+		etag_len -= 2;
 	}
 
 	fbr_id_t etag_id = fbr_id_parse(etag, etag_len);
@@ -133,7 +130,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s %s", host, url, path);
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s %s %d", host, url, path,
+		file_type);
 
 	// TODO look at HTTP conditionals
 
@@ -246,4 +244,51 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	fbr_cstore_release(cstore, entry);
 
 	return 0;
+}
+
+int
+fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *request)
+{
+	fbr_cstore_worker_ok(worker);
+	chttp_context_ok(request);
+	assert(request->state == CHTTP_STATE_IDLE);
+	assert_zero(request->chunked);
+	chttp_addr_connected(&request->addr);
+
+	struct fbr_cstore *cstore = worker->cstore;
+	fbr_cstore_ok(cstore);
+
+	const char *url = chttp_header_get_url(request);
+	assert(url);
+	size_t url_len = strlen(url);
+
+	const char *host = chttp_header_get(request, "Host");
+	assert(host);
+	size_t host_len = strlen(host);
+
+	const char *etag = chttp_header_get(request, "ETag");
+	assert(etag);
+	size_t etag_len = strlen(etag);
+	if (etag_len >= 2 && etag[etag_len - 1] == '\"' && etag[0] == '\"') {
+		etag++;
+		etag_len -= 2;
+	}
+
+	size_t offset;
+
+	enum fbr_cstore_entry_type file_type = _parse_url(url, url_len, etag, etag_len, &offset);
+	if (file_type == FBR_CSTORE_FILE_NONE) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url");
+		return 1;
+	}
+
+	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
+
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s %s %d", host, url, path,
+		file_type);
+
+	return 1;
 }
