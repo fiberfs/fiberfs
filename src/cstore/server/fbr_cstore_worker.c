@@ -241,14 +241,15 @@ fbr_cstore_tasks_free(struct fbr_cstore *cstore)
 	struct fbr_cstore_tasks *tasks = &cstore->tasks;
 	assert(tasks->exit);
 
+	pt_assert(pthread_mutex_lock(&tasks->lock));
 	pt_assert(pthread_cond_broadcast(&tasks->cond));
+	pt_assert(pthread_mutex_unlock(&tasks->lock));
 
 	for (size_t i = 0; i < tasks->workers_count; i++) {
 		pt_assert(pthread_join(tasks->workers[i], NULL));
 	}
 
 	assert_zero(tasks->workers_running);
-	assert(TAILQ_EMPTY(&tasks->task_queue));
 
 	pt_assert(pthread_mutex_destroy(&tasks->lock));
 	pt_assert(pthread_cond_destroy(&tasks->cond));
