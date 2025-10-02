@@ -10,7 +10,7 @@
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
-#include "cstore/fbr_cstore_callback.h"
+#include "cstore/fbr_cstore_api.h"
 
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
@@ -244,7 +244,7 @@ _append_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wb
 		return;
 	}
 
-	fbr_cstore_wbuffer_write(fs, file, wbuffer);
+	fbr_cstore_io_wbuffer_write(fs, file, wbuffer);
 }
 
 static int
@@ -261,7 +261,7 @@ _append_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
 }
 
 static const struct fbr_store_callbacks _APPEND_TEST_ERROR_CALLBACKS = {
-	.chunk_read_f = fbr_cstore_chunk_read,
+	.chunk_read_f = fbr_cstore_io_chunk_read,
 	.chunk_delete_f = fbr_cstore_chunk_delete,
 	.wbuffer_write_f = _append_wbuffer,
 	.index_write_f = _append_index_root,
