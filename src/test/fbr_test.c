@@ -4,9 +4,11 @@
  *
  */
 
+#include <fcntl.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
@@ -105,6 +107,10 @@ _test_run_test_file(void *arg)
 	test->ft_file = fopen(test->test_file, "r");
 	fbr_test_ERROR(!test->ft_file, "invalid file %s", test->test_file);
 
+	int fd = fileno(test->ft_file);
+	assert(fd >= 0);
+	fcntl(fd, F_SETFD, fcntl(fd, F_GETFD) | FD_CLOEXEC);
+
 	while (fbr_test_readline(test, 0)) {
 		fbr_test_parse_cmd(test);
 
@@ -139,6 +145,16 @@ _test_run_test_file(void *arg)
 	test->stopped = 1;
 
 	return NULL;
+}
+
+static void
+_test_cleanup(void)
+{
+	if (fbr_test_is_valgrind()) {
+		(void)close(0);
+		(void)close(1);
+		(void)close(2);
+	}
 }
 
 int
@@ -214,6 +230,7 @@ fbr_test_main(int argc, char **argv)
 		} else {
 			fbr_test_log(NULL, FBR_LOG_FORCE, "FAILED");
 		}
+		_test_cleanup();
 		return 1;
 	} else if (skip) {
 		if (forked) {
@@ -223,6 +240,7 @@ fbr_test_main(int argc, char **argv)
 		} else {
 			fbr_test_log(NULL, FBR_LOG_FORCE, "SKIPPED");
 		}
+		_test_cleanup();
 		return 0;
 	}
 
@@ -233,6 +251,8 @@ fbr_test_main(int argc, char **argv)
 	} else {
 		fbr_test_log(NULL, FBR_LOG_FORCE, "PASSED");
 	}
+
+	_test_cleanup();
 
 	return 0;
 }

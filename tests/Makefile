@@ -11,6 +11,7 @@ TESTS_CSTORE=$(sort $(wildcard 008_cstore/*.tst))
 TESTS_ERROR=$(sort $(wildcard */*.tstf 005_*/*.tst))
 PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
+#VALGRIND=valgrind --error-exitcode=1 --leak-check=full --track-fds=yes -q
 FAIL_CMD=timeout 2 bash -c
 FAIL_OUT=>/dev/null 2>&1
 GDB=gdb --args
