@@ -116,12 +116,9 @@ fbr_cstore_servers_shutdown(struct fbr_cstore *cstore)
 	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_server *server = cstore->servers;
-
 	while (server) {
 		fbr_cstore_server_ok(server);
-
 		_cstore_server_shutdown(server);
-
 		server = server->next;
 	}
 }

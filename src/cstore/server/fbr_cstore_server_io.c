@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/sendfile.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
@@ -229,6 +230,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	assert(url_len < sizeof(metadata.path));
 	memcpy(metadata.path, url, url_len + 1);
 
+	// TODO gzip
+
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = fbr_cstore_metadata_write(path, &metadata);
 	if (ret) {
@@ -274,6 +277,12 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 		etag_len -= 2;
 	}
 
+	fbr_id_t etag_id = fbr_id_parse(etag, etag_len);
+	if (!etag_id) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR etag");
+		return 1;
+	}
+
 	size_t offset;
 
 	enum fbr_cstore_entry_type file_type = _parse_url(url, url_len, etag, etag_len, &offset);
@@ -290,5 +299,90 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s %s %d", host, url, path,
 		file_type);
 
-	return 1;
+	struct fbr_cstore_entry *entry = fbr_cstore_io_get_ok(cstore, hash);
+	if (!entry) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR ok state");
+		return 1;
+	}
+
+	assert_dev(entry->state == FBR_CSTORE_OK);
+
+	int fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR open()");
+		fbr_cstore_remove(cstore, entry);
+		return 1;
+	}
+
+	struct stat st;
+	int ret = fstat(fd, &st);
+	if (ret) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR stat()");
+		fbr_cstore_remove(cstore, entry);
+		assert_zero(close(fd));
+		return 1;
+	}
+
+	size_t size = (size_t)st.st_size;
+
+	struct fbr_cstore_metadata metadata;
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+	ret = fbr_cstore_metadata_read(path, &metadata);
+
+	assert_zero_dev(ret);
+	assert_dev(metadata.etag == etag_id);
+	assert_dev(metadata.offset == offset);
+	assert_dev(metadata.size == size);
+	assert_dev(metadata.type == file_type);
+
+	if (ret || metadata.size != size || metadata.offset != offset ||
+	    metadata.etag != etag_id) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR metadata()");
+		fbr_cstore_remove(cstore, entry);
+		assert_zero(close(fd));
+		return 1;
+	}
+
+	char buffer[1024];
+	int header_len = snprintf(buffer, sizeof(buffer),
+		"HTTP/1.1 200 OK\r\n"
+		"Server: fiberfs cstore %s\r\n"
+		"Content-Length: %zu\r\n\r\n", FIBERFS_VERSION, size);
+	assert(header_len > 0 && (size_t)header_len < sizeof(buffer));
+
+	chttp_tcp_send(&request->addr, buffer, header_len);
+	chttp_tcp_error_check(request);
+
+	if (request->error) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR send() headers");
+		fbr_cstore_release(cstore, entry);
+		assert_zero(close(fd));
+		return -1;
+	}
+
+	size_t bytes = 0;
+	off_t off = 0;
+	while (bytes < size) {
+		ssize_t ret = sendfile(request->addr.sock, fd, &off, size - bytes);
+		if (ret <= 0) {
+			break;
+		}
+
+		bytes += ret;
+	}
+
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ read %zu bytes (sendfile)", bytes);
+
+	if (bytes != size) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR sendfile()");
+		fbr_cstore_release(cstore, entry);
+		assert_zero(close(fd));
+		chttp_error(request, CHTTP_ERR_NETWORK);
+		return -1;
+	}
+
+	assert_zero(close(fd));
+	fbr_cstore_release(cstore, entry);
+
+	return 0;
 }

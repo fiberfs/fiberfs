@@ -258,8 +258,8 @@ fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t byt
 	return entry;
 }
 
-static struct fbr_cstore_entry *
-_cstore_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash)
+struct fbr_cstore_entry *
+fbr_cstore_io_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash)
 {
 	assert_dev(cstore);
 
@@ -440,7 +440,7 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "READ %s %zu:%zu %lu",
 		path, chunk->offset, chunk->length, chunk->id);
 
-	struct fbr_cstore_entry *entry = _cstore_get_ok(cstore, hash);
+	struct fbr_cstore_entry *entry = fbr_cstore_io_get_ok(cstore, hash);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR ok state");
 		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
@@ -675,7 +675,7 @@ fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "READ %s %lu",
 		path, directory->version);
 
-	struct fbr_cstore_entry *entry = _cstore_get_ok(cstore, hash);
+	struct fbr_cstore_entry *entry = fbr_cstore_io_get_ok(cstore, hash);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR ok state");
 		return EAGAIN;

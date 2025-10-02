@@ -84,6 +84,7 @@ int fbr_cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata);
 int fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata);
 struct fbr_cstore_entry *fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash,
 	size_t bytes, const char *path, int remove_on_error);
+struct fbr_cstore_entry *fbr_cstore_io_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash);
 
 void fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
