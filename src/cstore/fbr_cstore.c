@@ -91,10 +91,10 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	fbr_log_print(cstore->log, FBR_LOG_CSTORE, FBR_REQID_CSTORE, "init");
 
 	fbr_cstore_async_init(cstore);
-	fbr_cstore_tasks_alloc(cstore);
 	fbr_cstore_loader_init(cstore);
 
 	if (_CSTORE_CONFIG.server) {
+		fbr_cstore_tasks_alloc(cstore);
 		fbr_cstore_server_alloc(cstore, _CSTORE_CONFIG.server_address,
 			_CSTORE_CONFIG.server_port, _CSTORE_CONFIG.server_tls);
 	}
@@ -568,10 +568,10 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
 
+	fbr_cstore_tasks_free(cstore);
 	fbr_cstore_servers_free(cstore);
 
 	fbr_cstore_loader_free(cstore);
-	fbr_cstore_tasks_free(cstore);
 	fbr_cstore_async_free(cstore);
 
 	for (size_t i = 0; i < fbr_array_len(cstore->heads); i++) {

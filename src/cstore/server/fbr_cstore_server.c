@@ -97,13 +97,39 @@ fbr_cstore_server_accept(struct fbr_cstore_worker *worker)
 	}
 }
 
+static void
+_cstore_server_shutdown(struct fbr_cstore_server *server)
+{
+	assert_dev(server);
+
+	if (server->addr.state == CHTTP_ADDR_CONNECTED) {
+		(void)shutdown(server->addr.sock, SHUT_RDWR);
+		chttp_tcp_close(&server->addr);
+	}
+
+	assert_dev(server->addr.state == CHTTP_ADDR_NONE);
+}
+
+void
+fbr_cstore_servers_shutdown(struct fbr_cstore *cstore)
+{
+	fbr_cstore_ok(cstore);
+
+	struct fbr_cstore_server *server = cstore->servers;
+
+	while (server) {
+		fbr_cstore_server_ok(server);
+
+		_cstore_server_shutdown(server);
+
+		server = server->next;
+	}
+}
+
 void
 fbr_cstore_servers_free(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
-	assert_zero(cstore->tasks.exit);
-
-	cstore->tasks.exit = 1;
 
 	while (cstore->servers) {
 		struct fbr_cstore_server *server = cstore->servers;
@@ -111,8 +137,7 @@ fbr_cstore_servers_free(struct fbr_cstore *cstore)
 
 		cstore->servers = server->next;
 
-		(void)shutdown(server->addr.sock, SHUT_RDWR);
-		chttp_tcp_close(&server->addr);
+		_cstore_server_shutdown(server);
 
 		fbr_ZERO(server);
 		free(server);

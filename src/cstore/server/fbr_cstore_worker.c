@@ -22,6 +22,8 @@ fbr_cstore_tasks_alloc(struct fbr_cstore *cstore)
 	TAILQ_INIT(&tasks->task_queue);
 	pt_assert(pthread_mutex_init(&tasks->lock, NULL));
 	pt_assert(pthread_cond_init(&tasks->cond, NULL));
+
+	tasks->init = 1;
 }
 
 // Note: tasks->lock required
@@ -50,6 +52,7 @@ fbr_cstore_task_add(struct fbr_cstore *cstore, enum fbr_cstore_task_type type, v
 	assert(param);
 
 	struct fbr_cstore_tasks *tasks = &cstore->tasks;
+	assert(tasks->init);
 
 	if (tasks->exit) {
 		return;
@@ -219,6 +222,7 @@ fbr_cstore_worker_add(struct fbr_cstore *cstore, size_t count)
 	assert(count);
 
 	struct fbr_cstore_tasks *tasks = &cstore->tasks;
+	assert(tasks->init);
 
 	tasks->workers_count += count;
 	assert(tasks->workers_count <= FBR_CSTORE_TASKS_MAX);
@@ -239,7 +243,14 @@ fbr_cstore_tasks_free(struct fbr_cstore *cstore)
 	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_tasks *tasks = &cstore->tasks;
-	assert(tasks->exit);
+
+	if (!tasks->init) {
+		return;
+	}
+
+	tasks->exit = 1;
+
+	fbr_cstore_servers_shutdown(cstore);
 
 	pt_assert(pthread_mutex_lock(&tasks->lock));
 	pt_assert(pthread_cond_broadcast(&tasks->cond));

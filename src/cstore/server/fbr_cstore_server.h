@@ -48,6 +48,7 @@ struct fbr_cstore_tasks {
 	size_t					workers_running;
 	size_t					workers_idle;
 
+	int					init;
 	int					exit;
 };
 
@@ -86,6 +87,7 @@ struct fbr_cstore_worker {
 
 void fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls);
 void fbr_cstore_server_accept(struct fbr_cstore_worker *worker);
+void fbr_cstore_servers_shutdown(struct fbr_cstore *cstore);
 void fbr_cstore_servers_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_tasks_alloc(struct fbr_cstore *cstore);
