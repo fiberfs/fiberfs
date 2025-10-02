@@ -15,6 +15,7 @@
 #include "core/fs/fbr_fs.h"
 #include "data/queue.h"
 #include "data/tree.h"
+#include "s3/fbr_cstore_s3.h"
 #include "server/fbr_cstore_server.h"
 
 #define FBR_CSTORE_HEAD_COUNT			64
@@ -166,6 +167,8 @@ struct fbr_cstore_config {
 	int					server_tls;
 	size_t					server_workers;
 	size_t					server_workers_accept;
+
+	struct fbr_cstore_s3			s3;
 };
 
 extern struct fbr_cstore_config _CSTORE_CONFIG;
