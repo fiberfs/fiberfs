@@ -9,7 +9,7 @@
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
-#include "cstore/fbr_cstore_io.h"
+#include "cstore/fbr_cstore_callback.h"
 
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"

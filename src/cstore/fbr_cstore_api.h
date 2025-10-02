@@ -10,6 +10,7 @@
 #include <pthread.h>
 
 #include "fiberfs.h"
+#include "fbr_cstore_callback.h"
 #include "fbr_cstore_io.h"
 #include "core/fs/fbr_fs.h"
 #include "data/queue.h"

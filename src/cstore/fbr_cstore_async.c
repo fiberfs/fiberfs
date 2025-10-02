@@ -115,10 +115,10 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 		case FBR_CSOP_TEST:
 			return;
 		case FBR_CSOP_WBUFFER_WRITE:
-			fbr_cstore_wbuffer_write(op->fs, op->param1, op->param2);
+			fbr_cstore_io_wbuffer_write(op->fs, op->param1, op->param2);
 			return;
 		case FBR_CSOP_CHUNK_READ:
-			fbr_cstore_chunk_read(op->fs, op->param1, op->param2);
+			fbr_cstore_io_chunk_read(op->fs, op->param1, op->param2);
 			return;
 		case FBR_CSOP_NONE:
 		case __FBR_CSOP_END:

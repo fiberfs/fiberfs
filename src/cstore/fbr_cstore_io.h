@@ -61,8 +61,6 @@ struct fbr_cstore_async {
 	TAILQ_HEAD(, fbr_cstore_op)		free_list;
 };
 
-extern const struct fbr_store_callbacks *FBR_CSTORE_DEFAULT_CALLBACKS;
-
 struct fbr_cstore;
 struct fbr_cstore_entry;
 struct fbr_cstore_metadata;
@@ -86,16 +84,16 @@ struct fbr_cstore_entry *fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fb
 	size_t bytes, const char *path, int remove_on_error);
 struct fbr_cstore_entry *fbr_cstore_io_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash);
 
-void fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
+void fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
-void fbr_cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
-void fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
-void fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
-int fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
-int fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
+void fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
+void fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
+void fbr_cstore_io_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
+int fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
+int fbr_cstore_io_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_writer *writer, struct fbr_directory *previous);
-fbr_id_t fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath);
-int fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
+fbr_id_t fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath);
+int fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 
 int fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *request);
 int fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *request);

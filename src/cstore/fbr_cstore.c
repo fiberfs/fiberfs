@@ -86,7 +86,7 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	cstore->log = fbr_log_alloc(cstore->root, fbr_log_default_size());
 	fbr_log_ok(cstore->log);
 
-	cstore->delete_f = fbr_cstore_delete_entry;
+	cstore->delete_f = fbr_cstore_io_delete_entry;
 
 	fbr_log_print(cstore->log, FBR_LOG_CSTORE, FBR_REQID_CSTORE, "init");
 

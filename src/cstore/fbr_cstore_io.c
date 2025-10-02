@@ -296,7 +296,7 @@ _cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 }
 
 void
-fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
+fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -384,7 +384,7 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 }
 
 void
-fbr_cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
+fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_entry_ok(entry);
@@ -415,7 +415,7 @@ _cstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk 
 }
 
 void
-fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -510,7 +510,7 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 
 // TODO make async version which directly takes path, id, and offset
 void
-fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+fbr_cstore_io_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
@@ -654,7 +654,7 @@ _cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 }
 
 int
-fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
+fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
@@ -991,7 +991,7 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 }
 
 int
-fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
+fbr_cstore_io_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
     struct fbr_writer *writer, struct fbr_directory *previous)
 {
 	fbr_fs_ok(fs);
@@ -1022,7 +1022,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 }
 
 fbr_id_t
-fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
+fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 {
 	fbr_fs_ok(fs);
 	assert(dirpath);
@@ -1153,7 +1153,7 @@ _cstore_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 int
-fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
+fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
