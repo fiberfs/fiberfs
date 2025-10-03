@@ -60,11 +60,9 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 	char name[128];
 	struct fbr_path_name filename;
 	struct fbr_file *file;
-	int ret;
 
 	if (!depth) {
-		ret = snprintf(name, sizeof(name), "fiber_zero");
-		assert((size_t)ret < sizeof(name));
+		fbr_bprintf(name, "fiber_zero");
 
 		fbr_path_name_init(&filename, name);
 
@@ -76,8 +74,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		file->generation = fbr_id_gen();
 		file->state = FBR_FILE_OK;
 
-		ret = snprintf(name, sizeof(name), "fiber_zero1");
-		assert((size_t)ret < sizeof(name));
+		fbr_bprintf(name, "fiber_zero1");
 
 		fbr_path_name_init(&filename, name);
 
@@ -89,8 +86,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		file->generation = fbr_id_gen();
 		file->state = FBR_FILE_OK;
 
-		ret = snprintf(name, sizeof(name), "fiber_big");
-		assert((size_t)ret < sizeof(name));
+		fbr_bprintf(name, "fiber_big");
 
 		fbr_path_name_init(&filename, name);
 
@@ -111,8 +107,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 		file->generation = fbr_id_gen();
 		file->state = FBR_FILE_OK;
 
-		ret = snprintf(name, sizeof(name), "fiber_small");
-		assert((size_t)ret < sizeof(name));
+		fbr_bprintf(name, "fiber_small");
 
 		fbr_path_name_init(&filename, name);
 
@@ -133,8 +128,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 	for (size_t i = 0; i < 4; i++) {
 		mode_t fmode = S_IFREG | 0444;
 
-		ret = snprintf(name, sizeof(name), "fiber_%zu%zu", depth, i + 1);
-		assert((size_t)ret < sizeof(name));
+		fbr_bprintf(name, "fiber_%zu%zu", depth, i + 1);
 
 		fbr_path_name_init(&filename, name);
 
@@ -174,8 +168,7 @@ _test_fs_init_contents(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		mode_t fmode = S_IFDIR | 0555;
 
-		ret = snprintf(name, sizeof(name), "fiber_dir%zu%zu", depth, i + 1);
-		assert((size_t)ret < sizeof(name));
+		fbr_bprintf(name, "fiber_dir%zu%zu", depth, i + 1);
 
 		fbr_path_name_init(&filename, name);
 

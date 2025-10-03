@@ -114,8 +114,7 @@ fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot)
 	do {
 		long random = fbr_test_gen_random(100000, 999999999);
 
-		size_t len = snprintf(entry->path, sizeof(entry->path), "%s/_fbrtmp%ld", tmproot, random);
-		assert(len < sizeof(entry->path));
+		fbr_bprintf(entry->path, "%s/_fbrtmp%ld", tmproot, random);
 
 		exists = fbr_sys_exists(entry->path);
 		attempts++;
@@ -215,11 +214,10 @@ fbr_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		char *name = malloc(name_len);
 		assert(name);
 
-		int ret = snprintf(name, name_len, "%s:%s ",
+		size_t ret = fbr_snprintf(name, name_len, "%s:%s ",
 			dentry->d_name,
 			dentry->d_type == DT_REG ? "file" :
 				dentry->d_type == DT_DIR ? "dir" : "other");
-		fbr_test_ASSERT(ret < (int)name_len, "snprintf name overflow");
 
 		names[names_len] = name;
 		names_len++;

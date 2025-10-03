@@ -23,17 +23,14 @@ fbr_cstore_s3_wbuffer_write(struct fbr_cstore *cstore, struct chttp_context *req
 	fbr_wbuffer_ok(wbuffer);
 
 	char buffer[FBR_PATH_MAX];
-	int ret = snprintf(buffer, sizeof(buffer), "%s/%s", cstore->s3.prefix, path);
-	assert(ret > 0 && (size_t)ret < sizeof(buffer));
+	fbr_bprintf(buffer, "%s/%s", cstore->s3.prefix, path);
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 
 	chttp_set_method(request, "PUT");
 	chttp_set_url(request, buffer);
 
-	// TODO turn this into a helper
-	ret = snprintf(buffer, sizeof(buffer), "%zu", wbuffer->end);
-	assert(ret > 0 && (size_t)ret < sizeof(buffer));
+	fbr_bprintf(buffer, "%zu", wbuffer->end);
 
 	chttp_header_add(request, "Content-Length", buffer);
 

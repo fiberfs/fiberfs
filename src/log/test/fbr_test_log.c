@@ -387,8 +387,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_random_seed();
 
 	char logname[100];
-	int ret = snprintf(logname, sizeof(logname), "/test/init/%ld/%d", random(), getpid());
-	assert(ret > 0 && (size_t)ret < sizeof(logname));
+	fbr_bprintf(logname, "/test/init/%ld/%d", random(), getpid());
 
 	struct fbr_log *log = fbr_log_alloc(logname, fbr_log_default_size());
 	fbr_log_ok(log);
@@ -517,8 +516,7 @@ fbr_cmd_test_log_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_random_seed();
 
 	char logname[100];
-	int ret = snprintf(logname, sizeof(logname), "/test/loop/%ld/%d", random(), getpid());
-	assert(ret > 0 && (size_t)ret < sizeof(logname));
+	fbr_bprintf(logname, "/test/loop/%ld/%d", random(), getpid());
 
 	struct fbr_log *log = fbr_log_alloc(logname, fbr_log_default_size() +
 		(random() % (fbr_log_default_size() * 3)));
@@ -695,20 +693,17 @@ fbr_cmd_test_log_printer(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_random_seed();
 
 	char logname[100];
-	int ret = snprintf(logname, sizeof(logname), "/test/printer1/%ld/%d", random(), getpid());
-	assert(ret > 0 && (size_t)ret < sizeof(logname));
+	fbr_bprintf(logname, "/test/printer1/%ld/%d", random(), getpid());
 	struct fbr_log *log1 = fbr_log_alloc(logname, fbr_log_default_size());
 	fbr_log_ok(log1);
 	fbr_test_log_printer_init(ctx, logname, "#");
 
-	ret = snprintf(logname, sizeof(logname), "/test/printer2/%ld/%d", random(), getpid());
-	assert(ret > 0 && (size_t)ret < sizeof(logname));
+	fbr_bprintf(logname, "/test/printer2/%ld/%d", random(), getpid());
 	struct fbr_log *log2 = fbr_log_alloc(logname, fbr_log_default_size());
 	fbr_log_ok(log2);
 	fbr_test_log_printer_init(ctx, logname, "^");
 
-	ret = snprintf(logname, sizeof(logname), "/test/printer3/%ld/%d", random(), getpid());
-	assert(ret > 0 && (size_t)ret < sizeof(logname));
+	fbr_bprintf(logname, "/test/printer3/%ld/%d", random(), getpid());
 	struct fbr_log *log3 = fbr_log_alloc(logname, fbr_log_default_size());
 	fbr_log_ok(log3);
 	fbr_test_log_printer_init(ctx, logname, "!=");

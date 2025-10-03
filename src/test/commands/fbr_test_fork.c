@@ -37,8 +37,7 @@ fbr_test_fork(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 	char tstfile[FBR_PATH_MAX + 1];
-	int ret = snprintf(tstfile, sizeof(tstfile), "%s/" _FORK_TST_FILE, tmpdir);
-	fbr_test_ASSERT(ret < (int)sizeof(tstfile), "snprintf overflow %d", ret);
+	fbr_bprintf(tstfile, "%s/" _FORK_TST_FILE, tmpdir);
 
 	FILE *f = fopen(tstfile, "w");
 	fbr_test_ASSERT(f, "fopen failed");
@@ -64,18 +63,17 @@ fbr_test_fork(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	bytes = fwrite("\n", 1, 1, f);
 	assert(bytes == 1);
 
-	ret = fclose(f);
+	int ret = fclose(f);
 	assert_zero(ret);
 
 	char cmd_test[1024];
-	ret = snprintf(cmd_test, sizeof(cmd_test),
+	fbr_bprintf(cmd_test,
 		"%s%s%s %s%s%s%s%s",
 		valgrind ? valgrind : "", valgrind ? " " : "",
 		test->prog_name,
 		flags ? flags : "", flags ? " " : "",
 		_FORK_TST_FLAGS, strlen(_FORK_TST_FLAGS) ? " " : "",
 		tstfile);
-	fbr_test_ASSERT(ret < (int)sizeof(cmd_test), "snprintf cmd_test overflow %d", ret);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fork cmd: '%s'", cmd_test);
 

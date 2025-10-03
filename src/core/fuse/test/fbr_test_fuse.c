@@ -146,9 +146,7 @@ fbr_test_fuse_mock(struct fbr_test_context *test_ctx)
 	fbr_test_random_seed();
 
 	char mock_name[100];
-	int ret = snprintf(mock_name, sizeof(mock_name), "/fuse/mock/%ld/%d", random(),
-		getpid());
-	assert(ret > 0 && (size_t)ret < sizeof(mock_name));
+	fbr_bprintf(mock_name, "/fuse/mock/%ld/%d", random(), getpid());
 	fuse_ctx->path = strdup(mock_name);
 	assert(fuse_ctx->path);
 

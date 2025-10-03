@@ -194,8 +194,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		// random file
 
 		char name2[FBR_PATH_MAX];
-		int ret = snprintf(name2, sizeof(name2), "%s.txt", name);
-		assert((size_t)ret < sizeof(name2));
+		fbr_bprintf(name2, "%s.txt", name);
 
 		strncat(sfull, ".txt", sizeof(sfull) - strlen(sfull) - 1);
 

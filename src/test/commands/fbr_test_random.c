@@ -80,8 +80,7 @@ fbr_var_random(struct fbr_test_context *ctx)
 
 	long rval = fbr_test_gen_random(ctx->random->low, ctx->random->high);
 
-	int ret = snprintf(ctx->random->random_str, sizeof(ctx->random->random_str), "%ld", rval);
-	assert((size_t)ret < sizeof(ctx->random->random_str));
+	fbr_bprintf(ctx->random->random_str, "%ld", rval);
 
 	return ctx->random->random_str;
 }

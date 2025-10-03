@@ -41,8 +41,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	for (size_t i = 1; i <= 5; i++) {
 		char buffer[32];
-		int ret = snprintf(buffer, sizeof(buffer), "file_%zu", i);
-		assert(ret > 0 && (size_t)ret < sizeof(buffer));
+		fbr_bprintf(buffer, "file_%zu", i);
 		struct fbr_path_name filename;
 		fbr_path_name_init(&filename, buffer);
 		struct fbr_file *file = fbr_file_alloc(fs, directory, &filename);

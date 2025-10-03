@@ -47,29 +47,25 @@ fbr_cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata)
 	fbr_sys_write(fd, buf, strlen(buf));
 
 	// i: timestamp
-	ret = snprintf(buf, sizeof(buf), "%f", metadata->timestamp);
-	assert(ret > 0 && (size_t)ret < sizeof(buf));
+	fbr_bprintf(buf, "%f", metadata->timestamp);
 
 	fbr_sys_write(fd, "\",\"i\":", 6);
 	fbr_sys_write(fd, buf, strlen(buf));
 
 	// s: size
-	ret = snprintf(buf, sizeof(buf), "%lu", metadata->size);
-	assert(ret > 0 && (size_t)ret < sizeof(buf));
+	fbr_bprintf(buf, "%lu", metadata->size);
 
 	fbr_sys_write(fd, ",\"s\":", 5);
 	fbr_sys_write(fd, buf, strlen(buf));
 
 	// o: offset
-	ret = snprintf(buf, sizeof(buf), "%zu", metadata->offset);
-	assert(ret > 0 && (size_t)ret < sizeof(buf));
+	fbr_bprintf(buf, "%zu", metadata->offset);
 
 	fbr_sys_write(fd, ",\"o\":", 5);
 	fbr_sys_write(fd, buf, strlen(buf));
 
 	// t: type
-	ret = snprintf(buf, sizeof(buf), "%d", metadata->type);
-	assert(ret > 0 && (size_t)ret < sizeof(buf));
+	fbr_bprintf(buf, "%d", metadata->type);
 
 	fbr_sys_write(fd, ",\"t\":", 5);
 	fbr_sys_write(fd, buf, strlen(buf));

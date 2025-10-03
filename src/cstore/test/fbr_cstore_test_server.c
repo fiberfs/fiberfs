@@ -23,13 +23,9 @@ fbr_cmd_cstore_enable_server(struct fbr_test_context *ctx, struct fbr_test_cmd *
 
 	_CSTORE_CONFIG.server = 1;
 
-	size_t ret;
-
 	if (cmd->param_count >= 1) {
 		fbr_test_ERROR_string(cmd->params[0].value);
-		ret = snprintf(_CSTORE_CONFIG.server_address, sizeof(_CSTORE_CONFIG.server_address),
-			"%s", cmd->params[0].value);
-		assert(ret < sizeof(_CSTORE_CONFIG.server_address));
+		fbr_bprintf(_CSTORE_CONFIG.server_address, "%s", cmd->params[0].value);
 		fbr_test_logs("cstore_enable_server address: %s", _CSTORE_CONFIG.server_address);
 	}
 	if (cmd->param_count >= 2) {
@@ -89,9 +85,7 @@ fbr_var_cstore_server_port(struct fbr_test_context *ctx)
 	chttp_addr_connected(&server->addr);
 	assert(server->port > 0);
 
-	size_t ret = snprintf(tcstore->port_str, sizeof(tcstore->port_str),
-		"%d", server->port);
-	assert(ret < sizeof(tcstore->port_str));
+	fbr_bprintf(tcstore->port_str, "%d", server->port);
 
 	return tcstore->port_str;
 }

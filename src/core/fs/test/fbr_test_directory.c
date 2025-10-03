@@ -129,8 +129,7 @@ _dir_test_alloc(void *arg)
 			directory->previous ? directory->previous->generation: 0);
 
 		char namebuf[128];
-		ssize_t ret = snprintf(namebuf, sizeof(namebuf), "file_%lu", generation);
-		assert((size_t)ret < sizeof(namebuf));
+		fbr_bprintf(namebuf, "file_%lu", generation);
 
 		struct fbr_path_name filename;
 

@@ -104,8 +104,7 @@ _log_shared_name(const char *name, char *buffer, size_t buffer_len)
 	assert_dev(buffer);
 	assert_dev(buffer_len);
 
-	int ret = snprintf(buffer, buffer_len, "/fiberfs:%s", name);
-	assert(ret > 0 && (size_t)ret < buffer_len);
+	fbr_snprintf(buffer, buffer_len, "/fiberfs:%s", name);
 
 	for (size_t i = 1; buffer[i]; i++) {
 		if (buffer[i] == '/') {
@@ -805,6 +804,5 @@ fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len)
 			break;
 	}
 
-	int ret = snprintf(buffer, buffer_len, "%lu", request_id);
-	assert_dev(ret > 0 && (size_t)ret < buffer_len);
+	fbr_snprintf(buffer, buffer_len, "%lu", request_id);
 }

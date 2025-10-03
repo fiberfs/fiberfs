@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -128,8 +129,25 @@ fbr_strcpy(char *dest, size_t dest_len, char *source)
 	assert(dest_len);
 	assert(source);
 
-	int ret = snprintf(dest, dest_len, "%s", source);
-	assert_dev(ret >= 0 && (size_t)ret < dest_len);
+	fbr_snprintf(dest, dest_len, "%s", source);
+}
+
+size_t __fbr_attr_printf(3)
+fbr_snprintf(char *buffer, size_t size, const char *format, ...)
+{
+	assert(buffer);
+	assert(size);
+	assert(format);
+
+	va_list ap;
+	va_start(ap, format);
+
+	int ret = vsnprintf(buffer, size, format, ap);
+	assert(ret >= 0 && (size_t)ret < size);
+
+	va_end(ap);
+
+	return (size_t)ret;
 }
 
 size_t

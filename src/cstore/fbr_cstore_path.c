@@ -29,10 +29,9 @@ fbr_cstore_path_data(struct fbr_cstore *cstore, int metadata, char *buffer, size
 	assert_dev(buffer_len);
 
 	const char *sub_path = _cstore_sub_path(metadata);
-	int ret = snprintf(buffer, buffer_len, "%s/%s/", cstore->root, sub_path);
-	assert(ret > 0 && (size_t)ret < buffer_len);
+	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/%s/", cstore->root, sub_path);
 
-	return (size_t)ret;
+	return ret;
 }
 
 size_t
@@ -49,15 +48,14 @@ fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *
 
 	const char *sub_path = _cstore_sub_path(metadata);
 
-	int ret = snprintf(buffer, buffer_len, "%s/%s/%.2s/%.2s/%s",
+	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/%s/%.2s/%.2s/%s",
 		cstore->root,
 		sub_path,
 		hash_str,
 		hash_str + 2,
 		hash_str + 4);
-	assert(ret > 0 && (size_t)ret < buffer_len);
 
-	return (size_t)ret;
+	return ret;
 }
 
 size_t
@@ -74,13 +72,12 @@ fbr_cstore_path_loader(struct fbr_cstore *cstore, unsigned char dir, int metadat
 
 	const char *sub_path = _cstore_sub_path(metadata);
 
-	int ret = snprintf(buffer, buffer_len, "%s/%s/%s",
+	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/%s/%s",
 		cstore->root,
 		sub_path,
 		hash_str);
-	assert(ret > 0 && (size_t)ret < buffer_len);
 
-	return (size_t)ret;
+	return ret;
 }
 
 size_t
@@ -99,19 +96,19 @@ fbr_cstore_path_chunk(struct fbr_cstore *cstore, const struct fbr_file *file, fb
 	char chunk_id[FBR_ID_STRING_MAX];
 	fbr_id_string(id, chunk_id, sizeof(chunk_id));
 
-	int ret = 0;
+	size_t ret = 0;
 
 	if (cstore) {
 		ret = fbr_cstore_path_data(cstore, metadata, buffer, buffer_len);
 	}
 
-	ret += snprintf(buffer + ret, buffer_len - ret, "%s.%s.%zu",
+	ret += fbr_snprintf(buffer + ret, buffer_len - ret, "%s.%s.%zu",
 		filepath.name,
 		chunk_id,
 		offset);
-	assert(ret > 0 && (size_t)ret < buffer_len);
+	assert(ret < buffer_len);
 
-	return (size_t)ret;
+	return ret;
 }
 
 size_t
@@ -128,7 +125,7 @@ fbr_cstore_path_index(struct fbr_cstore *cstore, const struct fbr_directory *dir
 	char version[FBR_ID_STRING_MAX];
 	fbr_id_string(directory->version, version, sizeof(version));
 
-	int ret = 0;
+	size_t ret = 0;
 
 	if (cstore) {
 		ret = fbr_cstore_path_data(cstore, metadata, buffer, buffer_len);
@@ -139,13 +136,13 @@ fbr_cstore_path_index(struct fbr_cstore *cstore, const struct fbr_directory *dir
 		root_sep = "/";
 	}
 
-	ret += snprintf(buffer + ret, buffer_len - ret, "%s%s.fiberfsindex.%s",
+	ret += fbr_snprintf(buffer + ret, buffer_len - ret, "%s%s.fiberfsindex.%s",
 		dirpath.name,
 		root_sep,
 		version);
-	assert(ret > 0 && (size_t)ret < buffer_len);
+	assert(ret < buffer_len);
 
-	return (size_t)ret;
+	return ret;
 }
 
 size_t
@@ -156,7 +153,7 @@ fbr_cstore_path_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath, i
 	assert(buffer);
 	assert(buffer_len);
 
-	int ret = 0;
+	size_t ret = 0;
 
 	if (cstore) {
 		ret = fbr_cstore_path_data(cstore, metadata, buffer, buffer_len);
@@ -167,12 +164,12 @@ fbr_cstore_path_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath, i
 		root_sep = "/";
 	}
 
-	ret += snprintf(buffer + ret, buffer_len - ret, "%s%s.fiberfsroot",
+	ret += fbr_snprintf(buffer + ret, buffer_len - ret, "%s%s.fiberfsroot",
 		dirpath->name,
 		root_sep);
-	assert(ret > 0 && (size_t)ret < buffer_len);
+	assert(ret < buffer_len);
 
-	return (size_t)ret;
+	return ret;
 }
 
 static void

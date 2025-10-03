@@ -344,11 +344,10 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 	}
 
 	char buffer[1024];
-	int header_len = snprintf(buffer, sizeof(buffer),
+	size_t header_len = fbr_bprintf(buffer,
 		"HTTP/1.1 200 OK\r\n"
 		"Server: fiberfs cstore %s\r\n"
 		"Content-Length: %zu\r\n\r\n", FIBERFS_VERSION, size);
-	assert(header_len > 0 && (size_t)header_len < sizeof(buffer));
 
 	chttp_tcp_send(&request->addr, buffer, header_len);
 	chttp_tcp_error_check(request);

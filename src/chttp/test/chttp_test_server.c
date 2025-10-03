@@ -254,8 +254,7 @@ _server_init_socket(struct chttp_test_server *server)
 		server->saddr.tls = 1;
 	}
 
-	val = snprintf(server->port_str, sizeof(server->port_str), "%d", server->saddr.listen_port);
-	assert((size_t)val < sizeof(server->port_str));
+	fbr_bprintf(server->port_str, "%d", server->saddr.listen_port);
 
 	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* socket port: %d",
 		server->saddr.listen_port);
@@ -284,9 +283,9 @@ chttp_test_cmd_server_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	if (cmd->param_count >= 1) {
 		fbr_test_ERROR_string(cmd->params[0].value);
-		snprintf(server->ip_str, sizeof(server->ip_str), "%s", cmd->params[0].value);
+		fbr_bprintf(server->ip_str, "%s", cmd->params[0].value);
 	} else {
-		snprintf(server->ip_str, sizeof(server->ip_str), "%s", _SERVER_IP_DEFAULT);
+		fbr_bprintf(server->ip_str, "%s", _SERVER_IP_DEFAULT);
 	}
 	fbr_test_ERROR_string(server->ip_str);
 
@@ -694,11 +693,10 @@ _server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
 
 	va_list ap;
 	char buf[256];
-	size_t len;
 
 	va_start(ap, fmt);
 
-	len = vsnprintf(buf, sizeof(buf), fmt, ap);
+	size_t len = vsnprintf(buf, sizeof(buf), fmt, ap);
 	assert(len < sizeof(buf));
 
 	_server_send_buf(server, buf, len);

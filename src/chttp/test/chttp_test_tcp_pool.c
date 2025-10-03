@@ -191,8 +191,7 @@ chttp_test_var_tcp_pool_##name(struct fbr_test_context *ctx)			\
 	_tcp_pool_init(ctx);							\
 	chttp_tcp_pool_ok();							\
 										\
-	snprintf(ctx->chttp_test->tcp_pool->stat_str,				\
-		sizeof(ctx->chttp_test->tcp_pool->stat_str), "%zu",		\
+	fbr_bprintf(ctx->chttp_test->tcp_pool->stat_str, "%zu",			\
 		_TCP_POOL.stats.name);						\
 										\
 	return ctx->chttp_test->tcp_pool->stat_str;				\

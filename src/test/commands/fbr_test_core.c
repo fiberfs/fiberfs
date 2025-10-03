@@ -218,7 +218,7 @@ fbr_var_test_counter(struct fbr_test_context *ctx)
 
 	fbr_atomic_add(&TEST_COUNTER_VALUE, 1);
 
-	snprintf(TEST_COUNTER_STR, sizeof(TEST_COUNTER_STR), "%u", TEST_COUNTER_VALUE);
+	fbr_bprintf(TEST_COUNTER_STR, "%u", TEST_COUNTER_VALUE);
 
 	return TEST_COUNTER_STR;
 }

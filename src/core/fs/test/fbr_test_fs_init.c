@@ -272,8 +272,7 @@ fbr_var_fs_test_stat_##name(struct fbr_test_context *ctx)			\
 	struct fbr_fs *fs = fuse_ctx->fs;					\
 	fbr_fs_ok(fs);								\
 										\
-	snprintf(test_fuse->stat_str, sizeof(test_fuse->stat_str), "%lu",	\
-		fs->stats.name);						\
+	fbr_bprintf(test_fuse->stat_str, "%lu",	fs->stats.name);		\
 	return test_fuse->stat_str;						\
 }
 

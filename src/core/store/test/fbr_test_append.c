@@ -326,13 +326,11 @@ _append_thread(void *arg)
 
 		char buffer[32];
 		if (!_APPEND_ERROR_TEST) {
-			size_t buffer_len = snprintf(buffer, sizeof(buffer), "%zu ", count);
-			assert(buffer_len < sizeof(buffer));
+			size_t buffer_len = fbr_bprintf(buffer, "%zu ", count);
 			fbr_wbuffer_write(fs, fio, 0, buffer, buffer_len);
 			assert_zero(fio->wbuffers->next);
 		} else {
-			size_t buffer_len = snprintf(buffer, sizeof(buffer), "%zu", count);
-			assert(buffer_len < sizeof(buffer));
+			size_t buffer_len = fbr_bprintf(buffer, "%zu", count);
 			fbr_wbuffer_write(fs, fio, file->size, buffer, buffer_len);
 			fbr_wbuffer_write(fs, fio, file->size + buffer_len, " ", 1);
 			if (buffer_len == 2) {

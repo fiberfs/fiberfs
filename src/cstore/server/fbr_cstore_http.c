@@ -30,12 +30,11 @@ _http_send_code(struct chttp_context *http, int status, const char *reason)
 	}
 
 	char buffer[1024];
-	int bytes = snprintf(buffer, sizeof(buffer),
+	size_t bytes = fbr_bprintf(buffer,
 		"HTTP/1.1 %d %s\r\n"
 		"Server: fiberfs cstore %s\r\n"
 		"%s"
 		"Content-Length: 0\r\n\r\n", status, reason, FIBERFS_VERSION, close);
-	assert(bytes > 0 && (size_t)bytes < sizeof(buffer));
 
 	chttp_tcp_send(&http->addr, buffer, bytes);
 }

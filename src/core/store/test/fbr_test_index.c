@@ -47,8 +47,7 @@ _index_add_file(struct fbr_fs *fs, struct fbr_directory *directory, int verbose)
 	size_t id = directory->file_count;
 
 	char filename_buf[100];
-	int ret = snprintf(filename_buf, sizeof(filename_buf), "file_%zu", id);
-	assert(ret > 0 && (size_t)ret < sizeof(filename_buf));
+	fbr_bprintf(filename_buf, "file_%zu", id);
 
 	if (verbose) {
 		fbr_test_logs(" ** Adding file: %s", filename_buf);
@@ -97,12 +96,10 @@ _index_validate_directory(struct fbr_directory *directory, int verbose)
 	size_t byte_count = 0;
 
 	for (size_t i = 0; i < directory->file_count; i++) {
-		int ret = snprintf(filename, sizeof(filename), "file_%zu", i);
-		assert(ret > 0 && (size_t)ret < sizeof(filename));
-
+		size_t len = fbr_bprintf(filename, "file_%zu", i);
 		size_t size = i * 4096;
 
-		struct fbr_file *file = fbr_directory_find_file(directory, filename, ret);
+		struct fbr_file *file = fbr_directory_find_file(directory, filename, len);
 		fbr_file_ok(file);
 		fbr_test_ASSERT(file->size == size, "Bad file size %s %lu", filename, file->size);
 		fbr_test_ASSERT(file->mode == (S_IFREG | 0444), "Bad file mode %s %u", filename,

@@ -125,8 +125,7 @@ fbr_test_cstore_init_loader(struct fbr_test_context *ctx)
 	char *root = fbr_test_mkdir_tmp(ctx, NULL);
 
 	char data_path[FBR_PATH_MAX];
-	int ret = snprintf(data_path, sizeof(data_path), "%s/%s/", root, FBR_CSTORE_DATA_DIR);
-	assert(ret > 0 && (size_t)ret < sizeof(data_path));
+	fbr_bprintf(data_path, "%s/%s/", root, FBR_CSTORE_DATA_DIR);
 	fbr_sys_mkdirs(data_path);
 
 	_test_cstore_init(ctx, root, "^", 1);
@@ -141,8 +140,7 @@ fbr_test_cstore_reload(struct fbr_test_context *ctx)
 	fbr_cstore_ok(_CSTORE);
 
 	char root[FBR_PATH_MAX];
-	size_t ret = snprintf(root, sizeof(root), "%s", _CSTORE->root);
-	assert(ret < sizeof(root));
+	fbr_bprintf(root, "%s", _CSTORE->root);
 
 	_test_cstore_finish(ctx);
 
@@ -185,8 +183,7 @@ _cstore_debug_meta(const char *filename, struct fbr_cstore_metadata *metadata)
 	fbr_ZERO(metadata);
 
 	char meta_path[FBR_PATH_MAX];
-	int ret = snprintf(meta_path, sizeof(meta_path), "%s", filename);
-	assert(ret > 0 && (size_t)ret < sizeof(meta_path));
+	size_t ret = fbr_bprintf(meta_path, "%s", filename);
 
 	while (ret > 0) {
 		size_t s = sizeof(FBR_CSTORE_DATA_DIR) - 1;
@@ -264,10 +261,7 @@ fbr_test_cstore_debug(void)
 	fbr_test_logs("CSTORE_DEBUG roots: %lu", _CSTORE->stats.wr_roots);
 
 	char path[FBR_PATH_MAX];
-	size_t ret = snprintf(path, sizeof(path), "%s/%s",
-		_CSTORE->root,
-		FBR_CSTORE_DATA_DIR);
-	assert(ret < sizeof(path));
+	fbr_bprintf(path, "%s/%s", _CSTORE->root, FBR_CSTORE_DATA_DIR);
 
 	fbr_sys_nftw(path, _cstore_debug_cb);
 }
@@ -310,9 +304,7 @@ fbr_var_cstore_stat_indexes(struct fbr_test_context *ctx)
 	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
 	assert(tcstore);
 
-	int ret = snprintf(tcstore->stat_buf, sizeof(tcstore->stat_buf), "%lu",
-		fbr_test_cstore_stat_indexes());
-	assert(ret > 0 && (size_t)ret < sizeof(tcstore->stat_buf));
+	fbr_bprintf(tcstore->stat_buf, "%lu", fbr_test_cstore_stat_indexes());
 
 	return tcstore->stat_buf;
 }
@@ -325,9 +317,7 @@ fbr_var_cstore_stat_roots(struct fbr_test_context *ctx)
 	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
 	assert(tcstore);
 
-	int ret = snprintf(tcstore->stat_buf, sizeof(tcstore->stat_buf), "%lu",
-		fbr_test_cstore_stat_roots());
-	assert(ret > 0 && (size_t)ret < sizeof(tcstore->stat_buf));
+	fbr_bprintf(tcstore->stat_buf, "%lu", fbr_test_cstore_stat_roots());
 
 	return tcstore->stat_buf;
 }

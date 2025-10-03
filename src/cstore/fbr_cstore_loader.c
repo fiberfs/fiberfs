@@ -63,8 +63,7 @@ _cstore_remove(const char *path, const char *file)
 	assert_dev(file);
 
 	char filepath[FBR_PATH_MAX];
-	int ret = snprintf(filepath, sizeof(filepath), "%s/%s", path, file);
-	assert(ret > 0 && (size_t)ret < sizeof(filepath));
+	fbr_bprintf(filepath, "%s/%s", path, file);
 
 	(void)unlink(filepath);
 }
@@ -104,8 +103,7 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 			size_t hash_len = fbr_hex2bin(dentry->d_name, 2, &hash, sizeof(hash));
 			assert(hash_len == 1);
 
-			int ret = snprintf(subpath, sizeof(subpath), "%s/%s", path, dentry->d_name);
-			assert(ret > 0 && (size_t)ret < sizeof(subpath));
+			fbr_bprintf(subpath, "%s/%s", path, dentry->d_name);
 
 			insertions += _cstore_scan_dir(cstore, subpath, h1, hash);
 

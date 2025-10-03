@@ -79,7 +79,7 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id3_string=%s", id3_string);
 
 	char now[FBR_ID_PART_CHAR_MAX + 1];
-	snprintf(now, sizeof(now), "%ld", (long)fbr_get_time());
+	fbr_bprintf(now, "%ld", (long)fbr_get_time());
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "timestamp_=%s", now);
 
 	fbr_id_t id1_parsed = fbr_id_parse(id1_string, strlen(id1_string));
@@ -103,30 +103,30 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	id_max.parts.random_parts.other = FBR_ID_OTHERBITS_MAX;
 
 	char _id_max[FBR_ID_STRING_MAX];
-	int _id_max_len = snprintf(_id_max, sizeof(_id_max), "%lu", id_max.value);
+	size_t _id_max_len = fbr_bprintf(_id_max, "%lu", id_max.value);
 	assert((size_t)_id_max_len < sizeof(_id_max));
 
 	char id_max_string[FBR_ID_STRING_MAX];
 	size_t id_max_len = fbr_id_string(id_max.value, id_max_string, sizeof(id_max_string));
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_max=%lu:%d", id_max.value, _id_max_len);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_max=%lu:%zu", id_max.value, _id_max_len);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_max_string=%s", id_max_string);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_max_len=%zu", id_max_len);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "FBR_ID_STRING_MAX=%d", FBR_ID_STRING_MAX);
 
 	char id_custom[FBR_ID_STRING_MAX];
-	int id_custom_len = snprintf(id_custom, sizeof(id_custom), FBR_ID_PRINTF_FMT,
+	size_t id_custom_len = fbr_bprintf(id_custom, FBR_ID_PRINTF_FMT,
 		(fbr_id_part_t)FBR_ID_TIMEBITS_MAX,
 		(fbr_id_part_t)((FBR_ID_RANDBITS_MAX << FBR_ID_OTHERBITS) | FBR_ID_OTHERBITS_MAX));
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_custom=%s", id_custom);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_custom_len=%d", id_custom_len);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_custom_len=%zu", id_custom_len);
 
 	char rand_max[FBR_ID_PART_CHAR_MAX + 1];
-	int rand_max_len = snprintf(rand_max, sizeof(rand_max), "%u", UINT32_MAX);
+	size_t rand_max_len = fbr_bprintf(rand_max, "%u", UINT32_MAX);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "rand_max=%s", rand_max);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "rand_max_len=%d", rand_max_len);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "rand_max_len=%zu", rand_max_len);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "UINT32_MAX=%u", UINT32_MAX);
 
 	fbr_test_ASSERT(sizeof(fbr_id_part_t) * 2 == sizeof(fbr_id_t),
