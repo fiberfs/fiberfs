@@ -57,7 +57,7 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 	} else if (ctx->state == CHTTP_STATE_INIT_HEADER) {
 		if (!ctx->has_host && ctx->version > CHTTP_H_VERSION_1_0) {
 			chttp_header_add(ctx, "Host", host);
-			assert(ctx->has_host);
+			assert_dev(ctx->has_host);
 		}
 	} else {
 		// TODO explain better

@@ -22,6 +22,7 @@ struct fbr_cstore_config _CSTORE_CONFIG = {
 	{
 		"",
 		"",
+		0,
 		0, 0
 	}
 };
@@ -61,4 +62,15 @@ fbr_cstore_find(void)
 	}
 
 	return NULL;
+}
+
+unsigned int
+fbr_cstore_request_id(unsigned int default_id)
+{
+	struct fbr_request *request = fbr_request_get();
+	if (request) {
+		return request->id;
+	}
+
+	return default_id;
 }

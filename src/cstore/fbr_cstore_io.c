@@ -10,22 +10,12 @@
 #include <unistd.h>
 
 #include "fiberfs.h"
+#include "chttp.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
 #include "fbr_cstore_api.h"
 #include "fjson.h"
 #include "utils/fbr_sys.h"
-
-static unsigned int
-_cstore_request_id(unsigned int default_id)
-{
-	struct fbr_request *request = fbr_request_get();
-	if (request) {
-		return request->id;
-	}
-
-	return default_id;
-}
 
 int
 fbr_cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata)
@@ -279,8 +269,8 @@ fbr_cstore_io_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash)
 	return entry;
 }
 
-static void
-_cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
+void
+fbr_cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
     enum fbr_wbuffer_state state)
 {
 	assert_dev(fs);
@@ -305,7 +295,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	if (!cstore) {
-		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
 		return;
 	}
 
@@ -319,25 +309,33 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	size_t chunk_path_len = fbr_cstore_path_chunk(NULL, file, wbuffer->id, wbuffer->offset, 0,
 		chunk_path, sizeof(chunk_path));
 
-	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "%s %zu %s",
 		chunk_path, wbuf_bytes, path);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, wbuf_bytes, path, 1);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR loading state");
-		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
 		return;
 	}
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
+
+	struct chttp_context s3_request;
+	chttp_context_init(&s3_request);
+	assert_dev(s3_request.state == CHTTP_STATE_NONE);
+
+	if (cstore->s3.enabled) {
+		fbr_cstore_s3_wbuffer_write(cstore, &s3_request, chunk_path, wbuffer);
+	}
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, wbuffer, 1);
 		return;
 	}
 
@@ -348,7 +346,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR bytes");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, wbuffer, 1);
 		return;
 	}
 
@@ -367,7 +365,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR metadata");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, wbuffer, 1);
 		return;
 	}
 
@@ -378,7 +376,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
 
-	_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_DONE);
+	fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, wbuffer, 0);
 
 	return;
 }
@@ -436,7 +434,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "READ %s %zu:%zu %lu",
 		path, chunk->offset, chunk->length, chunk->id);
 
@@ -527,7 +525,7 @@ fbr_cstore_io_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "DELETE %s %zu:%zu %lu",
 		path, chunk->offset, chunk->length, chunk->id);
 
@@ -596,7 +594,7 @@ _cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	size_t index_path_len = fbr_cstore_path_index(NULL, directory, 0, index_path,
 		sizeof(index_path));
 
-	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE %s %lu %s",
 		index_path, directory->version, path);
 
@@ -671,7 +669,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "READ %s %lu",
 		path, directory->version);
 
@@ -848,7 +846,7 @@ _cstore_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "DELETE %s %lu",
 		path, directory->version);
 
@@ -887,7 +885,7 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 	size_t root_path_len = fbr_cstore_path_root(NULL, &dirpath, 0, root_path,
 		sizeof(root_path));
 
-	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "WRITE %s %lu %lu %s",
 		root_path, existing, directory->version, path);
 
@@ -1037,7 +1035,7 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "READ %s", path);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
@@ -1119,7 +1117,7 @@ _cstore_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	unsigned long request_id = _cstore_request_id(FBR_REQID_CSTORE);
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "DELETE %s %lu",
 		path, directory->version);
 

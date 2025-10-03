@@ -55,12 +55,17 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	assert(fbr_sys_isdir(root_path));
 
 	fbr_ZERO(cstore);
-	cstore->magic = FBR_CSTORE_MAGIC;
 
 	struct statfs fs;
 	int ret = statfs(root_path, &fs);
 	assert_zero(ret);
 	// TODO check f_fsid and make sure its not fiberfs (via fuse->statfs)
+
+	cstore->magic = FBR_CSTORE_MAGIC;
+
+	if (_CSTORE_CONFIG.s3.enabled) {
+		memcpy(&cstore->s3, &_CSTORE_CONFIG.s3, sizeof(cstore->s3));
+	}
 
 	for (size_t i = 0; i < fbr_array_len(cstore->heads); i++) {
 		struct fbr_cstore_head *head = &cstore->heads[i];
