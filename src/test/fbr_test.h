@@ -44,6 +44,7 @@ struct fbr_test_context {
 	struct fbr_test_var			*var;
 	struct fbr_test_shell			*shell;
 	struct chttp_test_context		*chttp_test;
+	struct fbr_test_cstore			*cstore;
 };
 
 struct fbr_test_param {

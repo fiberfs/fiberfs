@@ -7,7 +7,11 @@
 #ifndef _FBR_TEST_FCACHE_CMDS_H_INCLUDED
 #define _FBR_TEST_FCACHE_CMDS_H_INCLUDED
 
+#include "cstore/fbr_cstore_api.h"
 #include "test/fbr_test_cmd_declare.h"
+
+struct fbr_test_cstore *fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t position);
+struct fbr_cstore *fbr_test_cstore_get(struct fbr_test_context *ctx, size_t position);
 
 void fbr_test_cstore_init(struct fbr_test_context *ctx);
 void fbr_test_cstore_init_loader(struct fbr_test_context *ctx);
@@ -16,6 +20,19 @@ void fbr_test_cstore_debug(void);
 fbr_stats_t fbr_test_cstore_stat_chunks(void);
 fbr_stats_t fbr_test_cstore_stat_indexes(void);
 fbr_stats_t fbr_test_cstore_stat_roots(void);
+
+struct fbr_test_cstore {
+	unsigned int			magic;
+#define _TEST_CSTORE_MAGIC		0x57A22B5D
+
+	struct fbr_cstore		cstore;
+
+	char 				stat_buf[32];
+	char				ip_str[128];
+	char				port_str[16];
+
+	struct fbr_test_cstore		*next;
+};
 
 #endif /* _FBR_TEST_FCACHE_CMDS_H_INCLUDED */
 

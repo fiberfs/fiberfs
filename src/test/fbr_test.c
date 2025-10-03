@@ -41,6 +41,7 @@ _finish_test(struct fbr_test_context *ctx)
 	fbr_finish_ERROR(ctx->var != NULL, "var detected");
 	fbr_finish_ERROR(ctx->shell != NULL, "shell detected");
 	fbr_finish_ERROR(ctx->chttp_test != NULL, "chttp_test detected");
+	fbr_finish_ERROR(ctx->cstore != NULL, "cstore detected");
 
 	if (test->ft_file) {
 		fclose(test->ft_file);

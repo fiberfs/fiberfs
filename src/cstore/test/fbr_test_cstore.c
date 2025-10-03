@@ -12,17 +12,16 @@
 #include "utils/fbr_sys.h"
 
 #include "test/fbr_test.h"
+#include "fbr_test_cstore_cmds.h"
 #include "log/test/fbr_test_log_cmds.h"
 
-struct fbr_cstore __CSTORE;
-struct fbr_cstore *_CSTORE = &__CSTORE;
-
-static char _CSTORE_STAT_BUF[32];
+struct fbr_cstore *_CSTORE;
 
 static void
 _test_cstore_finish(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
+	assert(test_ctx->cstore);
 
 	if (fbr_fuse_has_context()) {
 		struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
@@ -31,8 +30,20 @@ _test_cstore_finish(struct fbr_test_context *test_ctx)
 		}
 	}
 
-	fbr_cstore_free(_CSTORE);
 	_CSTORE = NULL;
+
+	while(test_ctx->cstore) {
+		struct fbr_test_cstore *tcstore = test_ctx->cstore;
+		fbr_magic_check(tcstore, _TEST_CSTORE_MAGIC);
+
+		test_ctx->cstore = tcstore->next;
+
+		fbr_cstore_free(&tcstore->cstore);
+		fbr_ZERO(&tcstore->magic);
+		free(tcstore);
+	}
+
+	assert_zero(test_ctx->cstore);
 }
 
 static void
@@ -40,7 +51,15 @@ _test_cstore_init(struct fbr_test_context *ctx, const char *root, const char *lo
     int finish)
 {
 	assert_dev(ctx);
-	fbr_object_empty(_CSTORE);
+	assert_zero(ctx->cstore);
+	assert_zero(_CSTORE);
+
+	struct fbr_test_cstore *tcstore = calloc(1, sizeof(*tcstore));
+	assert(tcstore);
+	tcstore->magic = _TEST_CSTORE_MAGIC;
+	ctx->cstore = tcstore;
+
+	_CSTORE = &tcstore->cstore;
 
 	fbr_cstore_init(_CSTORE, root);
 
@@ -57,6 +76,35 @@ _test_cstore_init(struct fbr_test_context *ctx, const char *root, const char *lo
 	}
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore root: %s", _CSTORE->root);
+}
+
+struct fbr_test_cstore *
+fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t position)
+{
+	fbr_test_context_ok(ctx);
+
+	struct fbr_test_cstore *tcstore = ctx->cstore;
+	fbr_magic_check(tcstore, _TEST_CSTORE_MAGIC);
+
+	while (position) {
+		tcstore = tcstore->next;
+		fbr_magic_check(tcstore, _TEST_CSTORE_MAGIC);
+		position--;
+	}
+
+	return tcstore;
+}
+
+struct fbr_cstore *
+fbr_test_cstore_get(struct fbr_test_context *ctx, size_t position)
+{
+	fbr_test_context_ok(ctx);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, position);
+	assert(tcstore);
+	fbr_cstore_ok(&tcstore->cstore);
+
+	return &tcstore->cstore;
 }
 
 void
@@ -88,6 +136,8 @@ void
 fbr_test_cstore_reload(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
+	fbr_magic_check(ctx->cstore, _TEST_CSTORE_MAGIC);
+	assert_zero(ctx->cstore->next);
 	fbr_cstore_ok(_CSTORE);
 
 	char root[FBR_PATH_MAX];
@@ -98,7 +148,6 @@ fbr_test_cstore_reload(struct fbr_test_context *ctx)
 
 	fbr_test_sleep_ms(50);
 
-	_CSTORE = &__CSTORE;
 	_test_cstore_init(ctx, root, "&", 0);
 }
 
@@ -257,20 +306,30 @@ char *
 fbr_var_cstore_stat_indexes(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	int ret = snprintf(_CSTORE_STAT_BUF, sizeof(_CSTORE_STAT_BUF), "%lu",
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
+	assert(tcstore);
+
+	int ret = snprintf(tcstore->stat_buf, sizeof(tcstore->stat_buf), "%lu",
 		fbr_test_cstore_stat_indexes());
-	assert(ret > 0 && (size_t)ret < sizeof(_CSTORE_STAT_BUF));
-	return _CSTORE_STAT_BUF;
+	assert(ret > 0 && (size_t)ret < sizeof(tcstore->stat_buf));
+
+	return tcstore->stat_buf;
 }
 
 char *
 fbr_var_cstore_stat_roots(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	int ret = snprintf(_CSTORE_STAT_BUF, sizeof(_CSTORE_STAT_BUF), "%lu",
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
+	assert(tcstore);
+
+	int ret = snprintf(tcstore->stat_buf, sizeof(tcstore->stat_buf), "%lu",
 		fbr_test_cstore_stat_roots());
-	assert(ret > 0 && (size_t)ret < sizeof(_CSTORE_STAT_BUF));
-	return _CSTORE_STAT_BUF;
+	assert(ret > 0 && (size_t)ret < sizeof(tcstore->stat_buf));
+
+	return tcstore->stat_buf;
 }
 
 #define _CSTORE_THREADS		4

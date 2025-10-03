@@ -10,11 +10,7 @@
 #include "cstore/server/fbr_cstore_server.h"
 
 #include "test/fbr_test.h"
-
-struct {
-	char		ip_str[128];
-	char		port_str[16];
-} _CS_TEST_SERVER;
+#include "fbr_test_cstore_cmds.h"
 
 extern struct fbr_cstore *_CSTORE;
 
@@ -68,14 +64,17 @@ fbr_var_cstore_server_host(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
+	assert(tcstore);
+
 	struct fbr_cstore_server *server = _get_server(-1);
 	chttp_addr_connected(&server->addr);
 
 	int port;
-	chttp_sa_string(&server->addr.sa, _CS_TEST_SERVER.ip_str, sizeof(_CS_TEST_SERVER.ip_str),
+	chttp_sa_string(&server->addr.sa, tcstore->ip_str, sizeof(tcstore->ip_str),
 		&port);
 
-	return _CS_TEST_SERVER.ip_str;
+	return tcstore->ip_str;
 }
 
 char *
@@ -83,15 +82,18 @@ fbr_var_cstore_server_port(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
+	assert(tcstore);
+
 	struct fbr_cstore_server *server = _get_server(-1);
 	chttp_addr_connected(&server->addr);
 	assert(server->port > 0);
 
-	size_t ret = snprintf(_CS_TEST_SERVER.port_str, sizeof(_CS_TEST_SERVER.port_str),
+	size_t ret = snprintf(tcstore->port_str, sizeof(tcstore->port_str),
 		"%d", server->port);
-	assert(ret < sizeof(_CS_TEST_SERVER.port_str));
+	assert(ret < sizeof(tcstore->port_str));
 
-	return _CS_TEST_SERVER.port_str;
+	return tcstore->port_str;
 }
 
 char *
