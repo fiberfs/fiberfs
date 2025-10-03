@@ -34,8 +34,8 @@ void fbr_thread_name(const char *name);
 #define _FBR_STRINGIFY(_value)			#_value
 #define FBR_STRINGIFY(value)			_FBR_STRINGIFY(value)
 
-#define fbr_bprintf(buffer, fmt, ...)					\
-	fbr_snprintf(buffer, sizeof(buffer), fmt, ##__VA_ARGS__)
+#define fbr_bprintf(buf, fmt, ...)					\
+	fbr_snprintf(buf, sizeof(buf), fmt, ##__VA_ARGS__)
 #define fbr_atomic_add(dest_ptr, value)					\
 	__sync_add_and_fetch(dest_ptr, value);
 #define fbr_atomic_sub(dest_ptr, value)					\
