@@ -13,6 +13,19 @@
 #include "core/store/fbr_store.h"
 
 void
+_s3_write_url(struct fbr_cstore *cstore, const char *path, struct chttp_context *request)
+{
+	assert_dev(cstore);
+	assert_dev(path);
+	assert_dev(request);
+
+	char buffer[FBR_PATH_MAX];
+	fbr_bprintf(buffer, "%s/%s", cstore->s3.prefix, path);
+
+	chttp_set_url(request, buffer);
+}
+
+void
 fbr_cstore_s3_wbuffer_write(struct fbr_cstore *cstore, struct chttp_context *request,
     const char *path, struct fbr_wbuffer *wbuffer)
 {
@@ -22,14 +35,12 @@ fbr_cstore_s3_wbuffer_write(struct fbr_cstore *cstore, struct chttp_context *req
 	assert(path);
 	fbr_wbuffer_ok(wbuffer);
 
-	char buffer[FBR_PATH_MAX];
-	fbr_bprintf(buffer, "%s/%s", cstore->s3.prefix, path);
-
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 
 	chttp_set_method(request, "PUT");
-	chttp_set_url(request, buffer);
+	_s3_write_url(cstore, path, request);
 
+	char buffer[32];
 	fbr_bprintf(buffer, "%zu", wbuffer->end);
 
 	chttp_header_add(request, "Content-Length", buffer);
@@ -90,4 +101,41 @@ fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	}
 
 	chttp_context_free(request);
+}
+
+void
+fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fbr_file *file,
+    struct fbr_chunk *chunk)
+{
+	fbr_fs_ok(fs);
+	fbr_cstore_ok(cstore);
+	fbr_file_ok(file);
+	fbr_chunk_ok(chunk);
+	assert(chunk->state == FBR_CHUNK_EMPTY || chunk->state == FBR_CHUNK_LOADING);
+	assert_zero(chunk->external);
+
+	if (!cstore->s3.enabled) {
+		fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		return;
+	}
+
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
+	fbr_hash_t hash = fbr_cstore_hash_chunk(fs, file, chunk->id, chunk->offset);
+
+	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, chunk->length,
+		NULL, 1);
+	if (!entry) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR s3 loading state");
+		fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		return;
+	}
+	fbr_cstore_entry_ok(entry);
+	assert_dev(entry->state == FBR_CSTORE_LOADING);
+
+	// TODO ok
+	fbr_cstore_set_error(entry);
+	fbr_cstore_release(cstore, entry);
+
+	// TODO READY
+	fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 }

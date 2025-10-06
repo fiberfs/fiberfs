@@ -21,5 +21,7 @@ void fbr_cstore_s3_wbuffer_write(struct fbr_cstore *cstore, struct chttp_context
 	const char *path, struct fbr_wbuffer *wbuffer);
 void fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct chttp_context *request, struct fbr_wbuffer *wbuffer, int error);
+void fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
+	struct fbr_file *file, struct fbr_chunk *chunk);
 
 #endif /* _FBR_CSTORE_S3_H_INCLUDED_ */

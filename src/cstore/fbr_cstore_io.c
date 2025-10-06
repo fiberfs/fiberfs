@@ -204,7 +204,6 @@ fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t byt
     const char *path, int remove_on_error)
 {
 	assert_dev(cstore);
-	assert_dev(path);
 	assert_dev(bytes);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, bytes, 1);
@@ -226,6 +225,10 @@ fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t byt
 
 	fbr_cstore_entry_ok(entry);
 	assert(entry->state == FBR_CSTORE_LOADING);
+
+	if (!path) {
+		return entry;
+	}
 
 	// TODO skip re-making the root
 	int ret = fbr_sys_mkdirs(path);
@@ -261,6 +264,8 @@ fbr_cstore_io_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash)
 		fbr_cstore_release(cstore, entry);
 		return NULL;
 	}
+
+	assert(state == FBR_CSTORE_OK);
 
 	return entry;
 }
@@ -391,8 +396,8 @@ fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *e
 	(void)unlink(path);
 }
 
-static void
-_cstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk,
+void
+fbr_cstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk,
     enum fbr_chunk_state state)
 {
 	assert_dev(fs);
@@ -421,7 +426,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	if (!cstore) {
-		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		return;
 	}
 
@@ -437,7 +442,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_ok(cstore, hash);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR ok state");
-		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
 		return;
 	}
 
@@ -446,8 +451,8 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR open()");
-		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
 		return;
 	}
 
@@ -456,9 +461,9 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 
 	if (ret || (size_t)st.st_size != chunk->length) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR size");
-		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		fbr_cstore_remove(cstore, entry);
 		assert_zero(close(fd));
+		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
 		return;
 	}
 
@@ -472,8 +477,8 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 
 	if ((size_t)bytes != chunk->length) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR read()");
-		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
 		return;
 	}
 
@@ -491,14 +496,14 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	if (ret || metadata.size != chunk->length || metadata.offset != chunk->offset ||
 	    metadata.etag != chunk->id || metadata.gzipped) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR metadata");
-		_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
 		return;
 	}
 
 	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, chunk->length);
 
-	_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
+	fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
 	fbr_cstore_release(cstore, entry);
 }
 

@@ -85,6 +85,8 @@ struct fbr_cstore_entry *fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fb
 struct fbr_cstore_entry *fbr_cstore_io_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash);
 void fbr_cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 	enum fbr_wbuffer_state state);
+void fbr_cstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk,
+	enum fbr_chunk_state state);
 
 void fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
