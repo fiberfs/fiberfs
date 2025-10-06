@@ -17,7 +17,7 @@ struct fbr_cstore_s3 {
 	unsigned int		tls:1;
 };
 
-void fbr_cstore_s3_wbuffer_write(struct fbr_cstore *cstore, struct chttp_context *request,
+void fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	const char *path, struct fbr_wbuffer *wbuffer);
 void fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct chttp_context *request, struct fbr_wbuffer *wbuffer, int error);

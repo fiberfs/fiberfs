@@ -328,7 +328,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	assert_dev(s3_request.state == CHTTP_STATE_NONE);
 
 	if (cstore->s3.enabled) {
-		fbr_cstore_s3_wbuffer_write(cstore, &s3_request, chunk_path, wbuffer);
+		fbr_cstore_s3_wbuffer_send(cstore, &s3_request, chunk_path, wbuffer);
 	}
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
