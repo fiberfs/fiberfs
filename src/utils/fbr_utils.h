@@ -46,7 +46,6 @@ void fbr_thread_name(const char *name);
 	__sync_synchronize()
 #define fbr_zero(ptr)							\
 	explicit_bzero(ptr, sizeof(*(ptr)))
-
 #define fbr_array_len(array)						\
 	(sizeof(array) / sizeof(*(array)))
 

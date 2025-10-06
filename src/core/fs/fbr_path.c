@@ -161,9 +161,6 @@ fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir)
 			result_dir->name = path->embed.data;
 			return;
 		case FBR_PATH_EMBED_FILE:
-			result_dir->length = 0;
-			result_dir->name = "";
-			return;
 		case FBR_PATH_FILE_PTR:
 			result_dir->length = 0;
 			result_dir->name = "";
@@ -237,9 +234,6 @@ fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result, cha
 		case FBR_PATH_NULL:
 			return NULL;
 		case FBR_PATH_EMBED_DIR:
-			result->length = path->embed.len;
-			result->name = path->embed.data;
-			return result->name;
 		case FBR_PATH_EMBED_FILE:
 			result->length = path->embed.len;
 			result->name = path->embed.data;
