@@ -391,7 +391,7 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	pt_assert(pthread_mutex_destroy(&file->lock));
 	pt_assert(pthread_cond_destroy(&file->update));
 
-	fbr_ZERO(file);
+	fbr_zero(file);
 	free(file);
 
 	fbr_fs_stat_sub(&fs->stats.files);
@@ -494,7 +494,7 @@ _file_ptr_slab_free(struct fbr_file_ptr_slab *ptr_slab)
 		}
 	}
 
-	fbr_ZERO(ptr_slab);
+	fbr_zero(ptr_slab);
 	free(ptr_slab);
 }
 
@@ -527,7 +527,7 @@ fbr_file_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st)
 	fbr_file_ok(file);
 	assert(st);
 
-	fbr_ZERO(st);
+	fbr_zero(st);
 
 	fbr_file_LOCK(fs, file);
 

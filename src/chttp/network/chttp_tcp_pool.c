@@ -115,7 +115,7 @@ _tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry)
 	struct chttp_tcp_pool_entry *next = entry->next;
 
 	chttp_addr_reset(&entry->addr);
-	fbr_ZERO(entry);
+	fbr_zero(entry);
 	TAILQ_INSERT_TAIL(&_TCP_POOL.free_list, entry, list_entry);
 
 	_TCP_POOL.stats.deleted++;
@@ -219,7 +219,7 @@ _tcp_pool_get_entry(void)
 		assert_zero(TAILQ_EMPTY(&_TCP_POOL.free_list));
 		TAILQ_REMOVE(&_TCP_POOL.free_list, entry, list_entry);
 
-		fbr_ZERO(entry);
+		fbr_zero(entry);
 		entry->magic = CHTTP_TCP_POOL_ENTRY_MAGIC;
 
 		_TCP_POOL.stats.nuked++;

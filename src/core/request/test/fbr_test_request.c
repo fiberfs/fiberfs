@@ -24,7 +24,7 @@ fbr__test_request_mock(const char *function)
 	fbr_request_ok(request);
 
 	fbr_request_take_fuse(request);
-	fbr_ZERO(&request->thread);
+	fbr_zero(&request->thread);
 	request->not_fuse = 1;
 
 	assert(fbr_request_get() == request);

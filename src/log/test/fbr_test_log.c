@@ -175,7 +175,7 @@ _test_printer_finish(struct fbr_test_context *test_ctx)
 
 		struct fbr_test_log_printer *next = printer->next;
 
-		fbr_ZERO(printer);
+		fbr_zero(printer);
 		free(printer);
 
 		printer = next;

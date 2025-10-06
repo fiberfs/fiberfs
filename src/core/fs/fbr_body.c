@@ -494,7 +494,7 @@ _body_chunk_slab_free(struct fbr_chunk_slab *slab)
 		assert_zero_dev(chunk->refcount);
 		assert(chunk->state <= FBR_CHUNK_EMPTY);
 
-		fbr_ZERO(chunk);
+		fbr_zero(chunk);
 	}
 
 	free(slab);
@@ -521,5 +521,5 @@ fbr_body_free(struct fbr_body *body)
 		_body_chunk_slab_free(slab);
 	}
 
-	fbr_ZERO(body);
+	fbr_zero(body);
 }

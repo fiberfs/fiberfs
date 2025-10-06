@@ -282,6 +282,6 @@ fbr_chunk_list_free(struct fbr_chunk_list *chunks)
 {
 	fbr_chunk_list_ok(chunks);
 
-	fbr_ZERO(chunks);
+	fbr_zero(chunks);
 	free(chunks);
 }

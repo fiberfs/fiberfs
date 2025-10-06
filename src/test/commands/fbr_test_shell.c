@@ -26,7 +26,7 @@ _shell_finish(struct fbr_test_context *ctx)
 
 	free(ctx->shell->threads);
 
-	fbr_ZERO(ctx->shell);
+	fbr_zero(ctx->shell);
 	free(ctx->shell);
 
 	ctx->shell = NULL;

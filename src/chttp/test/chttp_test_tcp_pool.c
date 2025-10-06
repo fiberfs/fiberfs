@@ -30,7 +30,7 @@ _tcp_pool_finish(struct fbr_test_context *ctx)
 	assert(ctx->chttp_test->tcp_pool);
 	assert(ctx->chttp_test->tcp_pool->magic == _TCP_POOL_MAGIC);
 
-	fbr_ZERO(ctx->chttp_test->tcp_pool);
+	fbr_zero(ctx->chttp_test->tcp_pool);
 	free(ctx->chttp_test->tcp_pool);
 
 	ctx->chttp_test->tcp_pool = NULL;

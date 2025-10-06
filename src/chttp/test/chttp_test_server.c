@@ -109,7 +109,7 @@ _server_cmdentry_free(struct _server_cmdentry *cmdentry)
 		free((char*)cmdentry->cmd.params[i].value);
 	}
 
-	fbr_ZERO(cmdentry);
+	fbr_zero(cmdentry);
 	free(cmdentry);
 }
 
@@ -223,7 +223,7 @@ _server_finish(struct fbr_test_context *ctx)
 	assert(server->addr.state == CHTTP_ADDR_NONE);
 	assert(server->addr.sock == -1);
 
-	fbr_ZERO(server);
+	fbr_zero(server);
 	free(server);
 
 	ctx->chttp_test->server = NULL;

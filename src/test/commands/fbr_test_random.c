@@ -23,7 +23,7 @@ _random_finish(struct fbr_test_context *ctx)
 	fbr_test_context_ok(ctx);
 	fbr_magic_check(ctx->random, _RANDOM_MAGIC);
 
-	fbr_ZERO(ctx->random);
+	fbr_zero(ctx->random);
 	free(ctx->random);
 
 	ctx->random = NULL;

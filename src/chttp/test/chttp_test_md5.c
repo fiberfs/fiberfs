@@ -56,7 +56,7 @@ static unsigned char _MD5_PADDING[64] = {
 void
 chttp_test_md5_init(struct chttp_test_md5 *md5)
 {
-	fbr_ZERO(md5);
+	fbr_zero(md5);
 
 	md5->i[0] = 0;
 	md5->i[1] = 0;

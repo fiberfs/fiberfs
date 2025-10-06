@@ -58,13 +58,13 @@ _sys_finish(struct fbr_test_context *ctx)
 		fbr_test_warn(fbr_sys_exists(entry->path), "tmpdir couldn't be removed %s",
 			entry->path);
 
-		fbr_ZERO(entry);
+		fbr_zero(entry);
 		free(entry);
 	}
 
 	assert_zero(ctx->sys->dirs);
 
-	fbr_ZERO(ctx->sys);
+	fbr_zero(ctx->sys);
 	free(ctx->sys);
 
 	ctx->sys = NULL;

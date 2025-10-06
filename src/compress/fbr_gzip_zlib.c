@@ -17,7 +17,7 @@ fbr_zlib_inflate_init(struct fbr_zlib *zlib)
 {
 	assert(zlib);
 
-	fbr_ZERO(zlib);
+	fbr_zero(zlib);
 
 	zlib->magic = FBR_ZLIB_MAGIC;
 	zlib->type = FBR_ZLIB_INFLATE;
@@ -39,7 +39,7 @@ fbr_zlib_deflate_init(struct fbr_zlib *zlib)
 {
 	assert(zlib);
 
-	fbr_ZERO(zlib);
+	fbr_zero(zlib);
 
 	zlib->magic = FBR_ZLIB_MAGIC;
 	zlib->type = FBR_ZLIB_DEFLATE;
@@ -189,7 +189,7 @@ fbr_zlib_free(struct fbr_zlib *zlib)
 			break;
 	}
 
-	fbr_ZERO(zlib);
+	fbr_zero(zlib);
 
 	if (do_free) {
 		free(zlib);

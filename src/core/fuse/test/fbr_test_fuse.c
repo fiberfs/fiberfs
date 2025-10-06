@@ -36,7 +36,7 @@ _fuse_finish(struct fbr_test_context *test_ctx)
 
 	fbr_fuse_free(fuse_ctx);
 
-	fbr_ZERO(test_ctx->test_fuse);
+	fbr_zero(test_ctx->test_fuse);
 	free(test_ctx->test_fuse);
 
 	test_ctx->test_fuse = NULL;
@@ -52,7 +52,7 @@ _fuse_init(struct fbr_test_context *test_ctx)
 		struct fbr_test_fuse *test_fuse = malloc(sizeof(*test_fuse));
 		assert(test_fuse);
 
-		fbr_ZERO(test_fuse);
+		fbr_zero(test_fuse);
 		test_fuse->magic = FBR_TEST_FUSE_MAGIC;
 
 		test_ctx->test_fuse = test_fuse;

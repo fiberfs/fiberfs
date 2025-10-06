@@ -54,7 +54,7 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	assert(root_path);
 	assert(fbr_sys_isdir(root_path));
 
-	fbr_ZERO(cstore);
+	fbr_zero(cstore);
 
 	struct statfs fs;
 	int ret = statfs(root_path, &fs);
@@ -609,7 +609,7 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 				}
 			}
 
-			fbr_ZERO(slab);
+			fbr_zero(slab);
 			free(slab);
 		}
 
@@ -619,7 +619,7 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 		assert(TAILQ_EMPTY(&head->lru_list));
 		assert(RB_EMPTY(&head->tree));
 
-		fbr_ZERO(head);
+		fbr_zero(head);
 	}
 
 	assert_zero(cstore->entries);
@@ -629,7 +629,7 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 
 	int do_free = cstore->do_free;
 
-	fbr_ZERO(cstore);
+	fbr_zero(cstore);
 
 	if (do_free) {
 		free(cstore);

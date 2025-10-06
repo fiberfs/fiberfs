@@ -246,7 +246,7 @@ fbr_test_parse_cmd(struct fbr_test *test)
 	assert(test->line_buf_len);
 
 	struct fbr_test_cmd *cmd = &test->cmd;
-	fbr_ZERO(cmd);
+	fbr_zero(cmd);
 	cmd->magic = FBR_TEST_CMD_MAGIC;
 	cmd->name = test->line_buf;
 

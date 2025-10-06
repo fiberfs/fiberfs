@@ -294,12 +294,12 @@ fbr_inodes_free_all(struct fbr_fs *fs)
 
 		pt_assert(pthread_mutex_destroy(&head->lock));
 
-		fbr_ZERO(head);
+		fbr_zero(head);
 	}
 
 	assert_zero_dev(fs->stats.files_inodes);
 
-	fbr_ZERO(inodes);
+	fbr_zero(inodes);
 	free(inodes);
 	fs->inodes = NULL;
 }

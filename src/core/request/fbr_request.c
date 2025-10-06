@@ -245,7 +245,7 @@ _request_free(struct fbr_request *request)
 
 	fbr_workspace_free(request->workspace);
 
-	fbr_ZERO(request);
+	fbr_zero(request);
 	free(request);
 }
 
@@ -301,7 +301,7 @@ fbr_request_free(struct fbr_request *request)
 	request->name = NULL;
 	request->id = 0;
 
-	fbr_ZERO(&request->thread);
+	fbr_zero(&request->thread);
 
 	fbr_rlog_free(&request->rlog);
 	fbr_workspace_reset(request->workspace);
@@ -375,7 +375,7 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 		if (request->thread) {
 			fbr_rlog(FBR_LOG_REQUEST, "id: %lu sending SIGQUIT", request->id);
 			pthread_kill(request->thread, SIGQUIT);
-			fbr_ZERO(&request->thread);
+			fbr_zero(&request->thread);
 		}
 	}
 

@@ -114,7 +114,7 @@ _writer_init(struct fbr_writer *writer)
 {
 	assert_dev(writer);
 
-	fbr_ZERO(writer);
+	fbr_zero(writer);
 	writer->magic = FBR_WRITER_MAGIC;
 }
 
@@ -207,7 +207,7 @@ fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer)
 		fbr_gzip_free(&writer->gzip);
 	}
 
-	fbr_ZERO(writer);
+	fbr_zero(writer);
 }
 
 static void

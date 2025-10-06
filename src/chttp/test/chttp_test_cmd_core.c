@@ -27,7 +27,7 @@ _finish_test(struct fbr_test_context *ctx)
 	fbr_test_ERROR(ctx->chttp_test->tcp_pool != NULL, "tcp_pool detected");
 	fbr_test_ERROR(ctx->chttp_test->gzip != NULL, "gzip detected");
 
-	fbr_ZERO(ctx->chttp_test);
+	fbr_zero(ctx->chttp_test);
 	free(ctx->chttp_test);
 	ctx->chttp_test = NULL;
 }

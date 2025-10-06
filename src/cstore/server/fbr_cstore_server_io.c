@@ -222,7 +222,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 		fallback_rw ? "read/write" : "splice");
 
 	struct fbr_cstore_metadata metadata;
-	fbr_ZERO(&metadata);
+	fbr_zero(&metadata);
 	metadata.etag = etag_id;
 	metadata.size = length;
 	metadata.offset = offset;

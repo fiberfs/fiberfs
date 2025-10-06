@@ -124,7 +124,7 @@ fbr_path_init_dir(struct fbr_path *path, const char *dirname, size_t dirname_len
 	assert(path);
 	assert(dirname);
 
-	fbr_ZERO(path);
+	fbr_zero(path);
 
 	path->layout.value = FBR_PATH_DIR_PTR;
 	path->ptr.value_len = dirname_len;
@@ -138,7 +138,7 @@ fbr_path_init_file(struct fbr_path *path, const char *filename, size_t filename_
 	assert(path);
 	assert(filename);
 
-	fbr_ZERO(path);
+	fbr_zero(path);
 
 	path->layout.value = FBR_PATH_FILE_PTR;
 	path->ptr.value_len = filename_len;
@@ -151,7 +151,7 @@ fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir)
 	assert(path);
 	assert(result_dir);
 
-	fbr_ZERO(result_dir);
+	fbr_zero(result_dir);
 
 	switch (path->layout.value) {
 		case FBR_PATH_NULL:
@@ -190,7 +190,7 @@ fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file
 		result_file = &_result;
 	}
 
-	fbr_ZERO(result_file);
+	fbr_zero(result_file);
 
 	switch (path->layout.value) {
 		case FBR_PATH_NULL:
@@ -231,7 +231,7 @@ fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result, cha
 		result = &_result;
 	}
 
-	fbr_ZERO(result);
+	fbr_zero(result);
 
 	switch (path->layout.value) {
 		case FBR_PATH_NULL:
@@ -406,7 +406,7 @@ fbr_path_free(struct fbr_path *path)
 		fbr_path_shared_release(path->split_ptr.dirname);
 	}
 
-	fbr_ZERO(path);
+	fbr_zero(path);
 }
 
 void
@@ -490,6 +490,6 @@ fbr_path_shared_release(struct fbr_path_shared *shared)
 	assert_dev(shared->value.name);
 	free((char*)shared->value.name);
 
-	fbr_ZERO(shared);
+	fbr_zero(shared);
 	free(shared);
 }

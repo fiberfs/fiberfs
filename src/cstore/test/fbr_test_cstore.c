@@ -39,7 +39,7 @@ _test_cstore_finish(struct fbr_test_context *test_ctx)
 		test_ctx->cstore = tcstore->next;
 
 		fbr_cstore_free(&tcstore->cstore);
-		fbr_ZERO(&tcstore->magic);
+		fbr_zero(&tcstore->magic);
 		free(tcstore);
 	}
 
@@ -180,7 +180,7 @@ _cstore_debug_meta(const char *filename, struct fbr_cstore_metadata *metadata)
 	assert_dev(metadata);
 	static_ASSERT(sizeof(FBR_CSTORE_DATA_DIR) == sizeof(FBR_CSTORE_META_DIR));
 
-	fbr_ZERO(metadata);
+	fbr_zero(metadata);
 
 	char meta_path[FBR_PATH_MAX];
 	size_t ret = fbr_bprintf(meta_path, "%s", filename);

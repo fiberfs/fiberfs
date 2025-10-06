@@ -593,7 +593,7 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 
 		pt_assert(pthread_mutex_destroy(&dirhead->lock));
 
-		fbr_ZERO(dirhead);
+		fbr_zero(dirhead);
 	}
 
 	assert_zero_dev(fs->stats.directories_dindex);
@@ -602,7 +602,7 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 	assert_zero(dindex->lru_len);
 	pt_assert(pthread_mutex_destroy(&dindex->lru_lock));
 
-	fbr_ZERO(dindex);
+	fbr_zero(dindex);
 	free(dindex);
 	fs->dindex = NULL;
 }

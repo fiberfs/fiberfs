@@ -44,9 +44,8 @@ void fbr_thread_name(const char *name);
 	__sync_val_compare_and_swap(dest_ptr, old_value, new_value)
 #define fbr_memory_sync()						\
 	__sync_synchronize()
-
-#define fbr_ZERO(p)							\
-	explicit_bzero(p, sizeof(*(p)))
+#define fbr_zero(ptr)							\
+	explicit_bzero(ptr, sizeof(*(ptr)))
 
 #define fbr_array_len(array)						\
 	(sizeof(array) / sizeof(*(array)))

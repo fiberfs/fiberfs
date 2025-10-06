@@ -22,7 +22,7 @@ _rlog_init(struct fbr_rlog *rlog, size_t rlog_size, unsigned long request_id)
 	assert(rlog_size < FBR_LOG_SEGMENT_MIN_SIZE); // TODO
 	assert(rlog_size <= USHRT_MAX);
 
-	fbr_ZERO(rlog);
+	fbr_zero(rlog);
 
 	rlog->magic = FBR_RLOG_MAGIC;
 	rlog->request_id = request_id;
@@ -216,5 +216,5 @@ fbr_rlog_free(struct fbr_rlog **rlog_p)
 
 	fbr_rlog_flush(rlog);
 
-	fbr_ZERO(rlog);
+	fbr_zero(rlog);
 }

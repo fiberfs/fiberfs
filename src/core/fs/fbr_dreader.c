@@ -37,7 +37,7 @@ fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader)
 	fbr_dindex_release(fs, &reader->directory);
 	assert_zero_dev(reader->directory);
 
-	fbr_ZERO(reader);
+	fbr_zero(reader);
 	free(reader);
 }
 
@@ -47,7 +47,7 @@ fbr_dirbuffer_init(struct fbr_dirbuffer *dbuf, size_t fuse_size)
 	assert(dbuf);
 	assert(fuse_size);
 
-	fbr_ZERO(dbuf);
+	fbr_zero(dbuf);
 
 	dbuf->max = sizeof(dbuf->buffer);
 	if (dbuf->max > fuse_size) {

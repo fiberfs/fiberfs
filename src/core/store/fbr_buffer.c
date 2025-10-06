@@ -16,7 +16,7 @@ fbr_buffer_init(struct fbr_fs *fs, struct fbr_buffer *fbuf, char *buffer, size_t
 	assert(fbuf);
 	assert(buffer_len);
 
-	fbr_ZERO(fbuf);
+	fbr_zero(fbuf);
 	fbuf->magic = FBR_BUFFER_MAGIC;
 
 	if (!buffer) {
@@ -60,7 +60,7 @@ fbr_buffers_free(struct fbr_buffer *fbuf)
 
 		int do_free = fbuf->do_free;
 
-		fbr_ZERO(fbuf);
+		fbr_zero(fbuf);
 
 		if (do_free) {
 			free(fbuf);

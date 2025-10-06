@@ -35,7 +35,7 @@ void
 fbr_setup_crash_signals(void)
 {
 	struct sigaction sa;
-	fbr_ZERO(&sa);
+	fbr_zero(&sa);
 	sa.sa_sigaction = fbr_signal_catcher;
 	sa.sa_flags = SA_SIGINFO;
 

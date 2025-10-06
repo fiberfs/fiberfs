@@ -31,7 +31,7 @@ fbr_workspace_init(void *buffer, size_t size)
 
 	struct fbr_workspace *workspace = (struct fbr_workspace*)buffer;
 
-	fbr_ZERO(workspace);
+	fbr_zero(workspace);
 	workspace->magic = FBR_WORKSPACE_MAGIC;
 	workspace->data = (uint8_t*)(workspace + 1);
 	workspace->size = size - sizeof(*workspace);
@@ -54,7 +54,7 @@ fbr_workspace_reset(struct fbr_workspace *workspace)
 
 		struct fbr_workspace_ptr *next = ptr->next;
 
-		fbr_ZERO(ptr);
+		fbr_zero(ptr);
 		free(ptr);
 
 		ptr = next;
@@ -74,7 +74,7 @@ fbr_workspace_free(struct fbr_workspace *workspace)
 	fbr_workspace_ok(workspace);
 
 	fbr_workspace_reset(workspace);
-	fbr_ZERO(workspace);
+	fbr_zero(workspace);
 }
 
 static void *

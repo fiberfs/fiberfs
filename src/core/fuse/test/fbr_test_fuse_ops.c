@@ -93,7 +93,7 @@ static int
 _test_stat(fuse_ino_t ino, struct stat *st_attr)
 {
 	assert(st_attr);
-	fbr_ZERO(st_attr);
+	fbr_zero(st_attr);
 
 	const char *name;
 
@@ -146,7 +146,7 @@ _test_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 	}
 
 	struct fuse_entry_param entry;
-	fbr_ZERO(&entry);
+	fbr_zero(&entry);
 	entry.attr_timeout = _TEST_OPS_FUSE_TTL_SEC;
 	entry.entry_timeout = _TEST_OPS_FUSE_TTL_SEC;
 	entry.ino = _test_ino(name);

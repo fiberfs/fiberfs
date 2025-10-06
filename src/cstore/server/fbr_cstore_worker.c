@@ -17,7 +17,7 @@ fbr_cstore_tasks_alloc(struct fbr_cstore *cstore)
 	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_tasks *tasks = &cstore->tasks;
-	fbr_ZERO(tasks);
+	fbr_zero(tasks);
 
 	TAILQ_INIT(&tasks->task_queue);
 	pt_assert(pthread_mutex_init(&tasks->lock, NULL));
@@ -83,7 +83,7 @@ _cstore_task_free(struct fbr_cstore_worker *worker)
 	assert_dev(worker);
 	fbr_cstore_task_ok(worker->task);
 
-	fbr_ZERO(worker->task);
+	fbr_zero(worker->task);
 	worker->task = NULL;
 }
 
@@ -143,7 +143,7 @@ _cstore_worker_free(struct fbr_cstore_worker *worker)
 
 	fbr_workspace_free(worker->workspace);
 
-	fbr_ZERO(worker);
+	fbr_zero(worker);
 	free(worker);
 }
 
@@ -265,5 +265,5 @@ fbr_cstore_tasks_free(struct fbr_cstore *cstore)
 	pt_assert(pthread_mutex_destroy(&tasks->lock));
 	pt_assert(pthread_cond_destroy(&tasks->cond));
 
-	fbr_ZERO(tasks);
+	fbr_zero(tasks);
 }

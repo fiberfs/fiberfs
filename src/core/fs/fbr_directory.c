@@ -229,7 +229,7 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 	pt_assert(pthread_cond_destroy(&directory->update));
 	fbr_path_shared_release(directory->path);
 
-	fbr_ZERO(directory);
+	fbr_zero(directory);
 	free(directory);
 
 	fbr_fs_stat_sub(&fs->stats.directories);

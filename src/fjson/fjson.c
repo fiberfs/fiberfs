@@ -30,7 +30,7 @@ fjson_context_init(struct fjson_context *ctx)
 {
 	assert(ctx);
 
-	fbr_ZERO(ctx);
+	fbr_zero(ctx);
 	ctx->magic = FJSON_CTX_MAGIC;
 
 	fjson_context_ok(ctx);
@@ -58,7 +58,7 @@ fjson_context_free(struct fjson_context *ctx)
 
 	int do_free = ctx->do_free;
 
-	fbr_ZERO(ctx);
+	fbr_zero(ctx);
 
 	if (do_free) {
 		free(ctx);
@@ -114,7 +114,7 @@ _pop_token(struct fjson_context *ctx)
 	struct fjson_token *token = &ctx->tokens[ctx->tokens_pos];
 	fjson_token_ok(token);
 
-	fbr_ZERO(token);
+	fbr_zero(token);
 }
 
 static void

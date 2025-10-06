@@ -178,7 +178,7 @@ _dns_free_entry(struct chttp_dns_cache_entry *dns_head)
 		dns_entry = dns_entry->next;
 
 		chttp_addr_reset(&dns_temp->addr);
-		fbr_ZERO(dns_temp);
+		fbr_zero(dns_temp);
 
 		TAILQ_INSERT_TAIL(&_DNS_CACHE.free_list, dns_temp, list_entry);
 	}
@@ -273,7 +273,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 			dns_last->next = dns_entry;
 		}
 
-		fbr_ZERO(dns_entry);
+		fbr_zero(dns_entry);
 		dns_entry->magic = CHTTP_DNS_CACHE_ENTRY_MAGIC;
 
 		chttp_dns_copy(&dns_entry->addr, ai_entry->ai_addr, 0);

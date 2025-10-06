@@ -140,7 +140,7 @@ _json_body_modified_gen(struct fbr_fs *fs, struct fbr_writer *json,
 			i++;
 
 			struct fbr_chunk chunk;
-			fbr_ZERO(&chunk);
+			fbr_zero(&chunk);
 			chunk.state = FBR_CHUNK_WBUFFER;
 			chunk.id = wbuffer->id;
 			chunk.offset = wbuffer->offset;
@@ -291,7 +291,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	assert(index_data);
 	fbr_directory_ok(directory);
 
-	fbr_ZERO(index_data);
+	fbr_zero(index_data);
 
 	index_data->directory = directory;
 	index_data->previous = previous;
@@ -363,7 +363,7 @@ fbr_index_data_free(struct fbr_index_data *index_data)
 		fbr_chunk_list_free(index_data->removed);
 	}
 
-	fbr_ZERO(index_data);
+	fbr_zero(index_data);
 }
 
 // Note: if doing file IO, file->lock needed
@@ -585,7 +585,7 @@ fbr_index_parser_init(struct fbr_fs *fs, struct fbr_index_parser *parser,
 	fbr_directory_ok(directory);
 	assert_zero(directory->generation);
 
-	fbr_ZERO(parser);
+	fbr_zero(parser);
 
 	parser->magic = FBR_INDEX_PARSER_MAGIC;
 	parser->fs = fs;
@@ -598,7 +598,7 @@ void
 fbr_index_parser_free(struct fbr_index_parser *parser)
 {
 	fbr_index_parser_ok(parser);
-	fbr_ZERO(parser);
+	fbr_zero(parser);
 }
 
 static inline int
@@ -712,7 +712,7 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 						parser->chunk.offset, parser->chunk.length,
 						(parser->chunk.external > 0) ? 1 : 0);
 				}
-				fbr_ZERO(&parser->chunk);
+				fbr_zero(&parser->chunk);
 			}
 			break;
 		case FJSON_TOKEN_ARRAY:

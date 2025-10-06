@@ -280,7 +280,7 @@ _fio_bufvec_zero(struct fuse_bufvec *bufvec, size_t length)
 		struct fuse_buf *buf = &bufvec->buf[bufvec->idx];
 		bufvec->idx++;
 
-		fbr_ZERO(buf);
+		fbr_zero(buf);
 
 		buf->mem = _ZERO_FILL;
 		buf->size = zero_length;
@@ -418,7 +418,7 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 		struct fuse_buf *buf = &bufvec->buf[bufvec->idx];
 		bufvec->idx++;
 
-		fbr_ZERO(buf);
+		fbr_zero(buf);
 
 		buf->mem = chunk->data + chunk_offset;
 		buf->size = chunk_length;
@@ -472,11 +472,11 @@ fbr_fio_vector_free(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_chunk_vec
 	size_t size = vector->size;
 
 	if (vector->bufvec) {
-		fbr_ZERO(vector->bufvec);
+		fbr_zero(vector->bufvec);
 		free(vector->bufvec);
 	}
 
-	fbr_ZERO(vector);
+	fbr_zero(vector);
 	free(vector);
 
 	// Try to keep more chunks around incase of slow parallel reads
@@ -553,6 +553,6 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_inode_release(fs, &fio->file);
 	assert_zero_dev(fio->file);
 
-	fbr_ZERO(fio);
+	fbr_zero(fio);
 	free(fio);
 }

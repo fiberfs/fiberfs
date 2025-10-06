@@ -51,7 +51,7 @@ _test_cmd_alloc(struct fbr_test *test)
 	assert(test->cmds_pos < test->cmds_size);
 
 	struct fbr_test_cmdentry *entry = &test->cmds[test->cmds_pos];
-	fbr_ZERO(entry);
+	fbr_zero(entry);
 	entry->magic = FBR_TEST_ENTRY_MAGIC;
 
 	test->cmds_pos++;
@@ -104,7 +104,7 @@ _test_cmds_free(struct fbr_test_context *ctx)
 
 		RB_REMOVE(fbr_test_tree, &test->cmd_tree, entry);
 
-		fbr_ZERO(entry);
+		fbr_zero(entry);
 	}
 
 	assert(RB_EMPTY(&test->cmd_tree));

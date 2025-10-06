@@ -458,14 +458,14 @@ _wbuffer_delete_chunk(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 
 	if (fs->store->chunk_delete_f) {
 		struct fbr_chunk chunk;
-		fbr_ZERO(&chunk);
+		fbr_zero(&chunk);
 		chunk.magic = FBR_CHUNK_MAGIC;
 		chunk.id = wbuffer->id;
 		chunk.offset = wbuffer->offset;
 
 		fs->store->chunk_delete_f(fs, file, &chunk);
 
-		fbr_ZERO(&chunk);
+		fbr_zero(&chunk);
 	}
 }
 
@@ -676,7 +676,7 @@ fbr_wbuffers_reset(struct fbr_fs *fs, struct fbr_fio *fio)
 			fbr_chunk_release(wbuffer->chunk);
 		}
 
-		fbr_ZERO(wbuffer);
+		fbr_zero(wbuffer);
 		free(wbuffer);
 
 		wbuffer = next;

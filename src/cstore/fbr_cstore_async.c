@@ -20,7 +20,7 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 
 	struct fbr_cstore_async *async = &cstore->async;
 
-	fbr_ZERO(async);
+	fbr_zero(async);
 	pt_assert(pthread_mutex_init(&async->queue_lock, NULL));
 	pt_assert(pthread_cond_init(&async->queue_ready, NULL));
 	pt_assert(pthread_cond_init(&async->todo_ready, NULL));
@@ -221,7 +221,7 @@ fbr_cstore_async_free(struct fbr_cstore *cstore)
 	pt_assert(pthread_cond_destroy(&async->queue_ready));
 	pt_assert(pthread_cond_destroy(&async->todo_ready));
 
-	fbr_ZERO(async);
+	fbr_zero(async);
 }
 
 void

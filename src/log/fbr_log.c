@@ -35,7 +35,7 @@ _log_init(struct fbr_log *log)
 {
 	assert_dev(log);
 
-	fbr_ZERO(log);
+	fbr_zero(log);
 
 	log->magic = FBR_LOG_MAGIC;
 	log->shm_fd = -1;
@@ -64,7 +64,7 @@ _log_header_init(struct fbr_log *log, void *data, size_t size)
 
 	struct fbr_log_header *header = data;
 
-	fbr_ZERO(header);
+	fbr_zero(header);
 
 	header->magic = FBR_LOG_HEADER_MAGIC;
 	header->version = FBR_LOG_VERSION;
@@ -506,7 +506,7 @@ fbr_log_free(struct fbr_log *log)
 
 	_log_close(log);
 
-	fbr_ZERO(log);
+	fbr_zero(log);
 	free(log);
 }
 
@@ -526,7 +526,7 @@ fbr_log_print_buf(void *buffer, size_t buffer_len, enum fbr_log_type type,
 	}
 
 	struct fbr_log_line *log_line = (struct fbr_log_line*)buffer;
-	fbr_ZERO(log_line);
+	fbr_zero(log_line);
 	log_line->magic = FBR_LOGLINE_MAGIC;
 	log_line->request_id = request_id;
 	log_line->timestamp = fbr_get_time();
@@ -585,7 +585,7 @@ void
 fbr_log_cursor_init(struct fbr_log_cursor *cursor)
 {
 	assert(cursor);
-	fbr_ZERO(cursor);
+	fbr_zero(cursor);
 }
 
 void
@@ -594,7 +594,7 @@ fbr_log_reader_init(struct fbr_log_reader *reader, const char *name)
 	assert(reader);
 	assert(name && *name);
 
-	fbr_ZERO(reader);
+	fbr_zero(reader);
 	reader->magic = FBR_LOG_READER_MAGIC;
 
 	_log_init(&reader->log);
@@ -662,7 +662,7 @@ void
 fbr_log_cursor_close(struct fbr_log_cursor *cursor)
 {
 	assert(cursor);
-	fbr_ZERO(cursor);
+	fbr_zero(cursor);
 }
 
 void
@@ -674,7 +674,7 @@ fbr_log_reader_free(struct fbr_log_reader *reader)
 
 	fbr_log_cursor_close(&reader->cursor);
 	_log_close(&reader->log);
-	fbr_ZERO(reader);
+	fbr_zero(reader);
 }
 
 int

@@ -152,7 +152,7 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(id3 == id3_parsed, "id3 != id3_parsed");
 
 	struct fbr_id id_rand1;
-	fbr_ZERO(&id_rand1);
+	fbr_zero(&id_rand1);
 	id_rand1.parts.random_parts.random = random() % FBR_ID_RANDBITS_MAX;
 	id_rand1.parts.random_parts.other = random() & FBR_ID_OTHERBITS_MAX;
 	char id_rand1_string[FBR_ID_STRING_MAX];
@@ -161,7 +161,7 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_id_cast(id_rand1.value);
 
 	struct fbr_id id_rand2;
-	fbr_ZERO(&id_rand2);
+	fbr_zero(&id_rand2);
 	id_rand2.parts.timestamp = (random() * random() ) % FBR_ID_TIMEBITS_MAX;
 	char id_rand2_string[FBR_ID_STRING_MAX];
 	fbr_id_string(id_rand2.value, id_rand2_string, sizeof(id_rand2_string));

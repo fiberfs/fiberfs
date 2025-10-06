@@ -58,7 +58,7 @@ fbr_context_abort(void)
 		return;
 	}
 
-	fbr_ZERO(&request->thread);
+	fbr_zero(&request->thread);
 
 	if (request->fuse_ctx) {
 		request->fuse_ctx->error = 1;

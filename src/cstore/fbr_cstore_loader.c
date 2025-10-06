@@ -26,7 +26,7 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_loader *loader = &cstore->loader;
-	fbr_ZERO(loader);
+	fbr_zero(loader);
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path_data(cstore, 0, path, sizeof(path));
@@ -227,5 +227,5 @@ fbr_cstore_loader_free(struct fbr_cstore *cstore)
 	assert_dev(loader->thread_done == loader->thread_count);
 	assert_dev(loader->state == FBR_CSTORE_LOADER_DONE);
 
-	fbr_ZERO(loader);
+	fbr_zero(loader);
 }

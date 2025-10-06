@@ -24,7 +24,7 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 {
 	assert(ctx);
 
-	fbr_ZERO(ctx);
+	fbr_zero(ctx);
 	ctx->magic = FBR_FUSE_CTX_MAGIC;
 	ctx->init = 1;
 
@@ -87,7 +87,7 @@ _fuse_mount_thread(void *arg)
 	fbr_thread_name("fbr_fuse_sess");
 
 	struct fuse_loop_config config;
-	fbr_ZERO(&config);
+	fbr_zero(&config);
 	config.max_idle_threads = 16;
 
 	ctx->exit_value = fuse_session_loop_mt(ctx->session, &config);
@@ -314,5 +314,5 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 
 	pt_assert(pthread_mutex_destroy(&ctx->mount_lock));
 
-	fbr_ZERO(ctx);
+	fbr_zero(ctx);
 }

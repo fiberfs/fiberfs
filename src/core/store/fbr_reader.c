@@ -15,7 +15,7 @@ _reader_init(struct fbr_reader *reader)
 {
 	assert_dev(reader);
 
-	fbr_ZERO(reader);
+	fbr_zero(reader);
 	reader->magic = FBR_READER_MAGIC;
 }
 
@@ -78,5 +78,5 @@ fbr_reader_free(struct fbr_fs *fs, struct fbr_reader *reader)
 	fbr_buffers_free(reader->buffer);
 	fbr_buffers_free(reader->output);
 
-	fbr_ZERO(reader);
+	fbr_zero(reader);
 }

@@ -349,11 +349,11 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(removed->list[2]->id == 3);
 
 	struct fbr_wbuffer wbuffer1;
-	fbr_ZERO(&wbuffer1);
+	fbr_zero(&wbuffer1);
 	wbuffer1.magic = FBR_WBUFFER_MAGIC;
 	wbuffer1.chunk = _get_chunk(file, 1);
 	struct fbr_wbuffer wbuffer2;
-	fbr_ZERO(&wbuffer2);
+	fbr_zero(&wbuffer2);
 	wbuffer2.magic = FBR_WBUFFER_MAGIC;
 	wbuffer2.chunk = _get_chunk(file, 5);
 

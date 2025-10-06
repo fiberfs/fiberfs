@@ -80,7 +80,7 @@ fbr_id_parse(const char *buffer, size_t buffer_len)
 	}
 
 	struct fbr_id id;
-	fbr_ZERO(&id);
+	fbr_zero(&id);
 	id.parts.full_random = rand;
 
 	if (buffer_len > FBR_ID_PART_CHAR_MAX) {

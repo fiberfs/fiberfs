@@ -152,7 +152,7 @@ fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata)
 	assert(path);
 	assert(metadata);
 
-	fbr_ZERO(metadata);
+	fbr_zero(metadata);
 
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
@@ -347,7 +347,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	}
 
 	struct fbr_cstore_metadata metadata;
-	fbr_ZERO(&metadata);
+	fbr_zero(&metadata);
 	metadata.etag = wbuffer->id;
 	metadata.size = bytes;
 	metadata.offset = wbuffer->offset;
@@ -621,7 +621,7 @@ _cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	}
 
 	struct fbr_cstore_metadata metadata;
-	fbr_ZERO(&metadata);
+	fbr_zero(&metadata);
 	metadata.etag = directory->version;
 	metadata.size = writer->bytes;
 	metadata.type = FBR_CSTORE_FILE_INDEX;
@@ -928,7 +928,7 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "WRITE passed %lu", existing);
 
 	struct fbr_cstore_metadata metadata;
-	fbr_ZERO(&metadata);
+	fbr_zero(&metadata);
 	metadata.etag = directory->version;
 	metadata.type = FBR_CSTORE_FILE_ROOT;
 	assert(root_path_len < sizeof(metadata.path));

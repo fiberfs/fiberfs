@@ -68,14 +68,14 @@ _fuse_err_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 
 	if (ino == _ERR_FILE_INODE) {
 		struct stat st;
-		fbr_ZERO(&st);
+		fbr_zero(&st);
 		st.st_ino = _ERR_FILE_INODE;
 		st.st_mode = S_IFREG | 0444;
 		fbr_fuse_reply_attr(request, &st, fbr_fs_dentry_ttl(fs));
 		return;
 	} else if (ino == _ERR_DIR_INODE) {
 		struct stat st;
-		fbr_ZERO(&st);
+		fbr_zero(&st);
 		st.st_ino = _ERR_DIR_INODE;
 		st.st_mode = S_IFDIR | 0555;
 		fbr_fuse_reply_attr(request, &st, fbr_fs_dentry_ttl(fs));
@@ -128,7 +128,7 @@ _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 		fbr_test_logs("** LOOKUP filename: '%s'", _ERR_FILENAME);
 
 		struct fuse_entry_param entry;
-		fbr_ZERO(&entry);
+		fbr_zero(&entry);
 		entry.ino = _ERR_FILE_INODE;
 		entry.attr.st_ino = _ERR_FILE_INODE;
 		entry.attr.st_mode = S_IFREG | 0444;
@@ -152,7 +152,7 @@ _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 		fbr_test_logs("** LOOKUP dir _ERR_STATE: %d", _ERR_STATE);
 
 		struct fuse_entry_param entry;
-		fbr_ZERO(&entry);
+		fbr_zero(&entry);
 		entry.ino = _ERR_DIR_INODE;
 		entry.attr.st_ino = _ERR_DIR_INODE;
 		entry.attr.st_mode = S_IFDIR | 0555;

@@ -29,7 +29,7 @@ _dns_finish(struct fbr_test_context *ctx)
 	assert(ctx->chttp_test->dns);
 	assert(ctx->chttp_test->dns->magic == _DNS_MAGIC);
 
-	fbr_ZERO(ctx->chttp_test->dns);
+	fbr_zero(ctx->chttp_test->dns);
 	free(ctx->chttp_test->dns);
 
 	ctx->chttp_test->dns = NULL;

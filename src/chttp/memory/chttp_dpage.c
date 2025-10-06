@@ -72,7 +72,7 @@ chttp_dpage_init(struct chttp_dpage *dpage, size_t dpage_size)
 	assert(dpage);
 	assert(dpage_size > sizeof(struct chttp_dpage));
 
-	fbr_ZERO(dpage);
+	fbr_zero(dpage);
 
 	dpage->magic = CHTTP_DPAGE_MAGIC;
 	dpage->length = dpage_size - sizeof(struct chttp_dpage);
@@ -263,7 +263,7 @@ chttp_dpage_ptr_reset(struct chttp_dpage_ptr *dptr)
 {
 	assert(dptr);
 
-	fbr_ZERO(dptr);
+	fbr_zero(dptr);
 }
 
 size_t
@@ -297,7 +297,7 @@ chttp_dpage_free(struct chttp_dpage *dpage)
 
 		int do_free = curr->free;
 
-		fbr_ZERO(curr);
+		fbr_zero(curr);
 
 		if (do_free) {
 			free(curr);

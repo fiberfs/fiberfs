@@ -124,7 +124,7 @@ fbr_cstore_servers_free(struct fbr_cstore *cstore)
 		(void)shutdown(server->addr.sock, SHUT_RDWR);
 		chttp_tcp_close(&server->addr);
 
-		fbr_ZERO(server);
+		fbr_zero(server);
 		free(server);
 	}
 }

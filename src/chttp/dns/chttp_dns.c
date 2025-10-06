@@ -64,7 +64,7 @@ chttp_dns_resolve(struct chttp_addr *addr, const char *host, size_t host_len, in
 	}
 
 	struct addrinfo hints;
-	fbr_ZERO(&hints);
+	fbr_zero(&hints);
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 

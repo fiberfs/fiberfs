@@ -48,13 +48,13 @@ _finish_test(struct fbr_test_context *ctx)
 		test->ft_file = NULL;
 	}
 
-	fbr_ZERO(test->context);
+	fbr_zero(test->context);
 	ctx = NULL;
 
 	free(test->context);
 	free(test->line_raw);
 
-	fbr_ZERO(test);
+	fbr_zero(test);
 }
 
 static void
@@ -62,7 +62,7 @@ _init_test(struct fbr_test *test)
 {
 	assert(test);
 
-	fbr_ZERO(test);
+	fbr_zero(test);
 
 	test->magic = FBR_TEST_MAGIC;
 	test->timeout_ms = FBR_TEST_DEFAULT_TIMEOUT_SEC * 1000;
@@ -323,7 +323,7 @@ fbr_test_run_all_finish(struct fbr_test *test)
 
 		finish->func(test->context);
 
-		fbr_ZERO(finish);
+		fbr_zero(finish);
 		free(finish);
 	}
 

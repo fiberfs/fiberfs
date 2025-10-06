@@ -150,7 +150,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	fi->keep_cache = 1;
 
 	struct fuse_entry_param entry;
-	fbr_ZERO(&entry);
+	fbr_zero(&entry);
 	entry.attr_timeout = fbr_fs_dentry_ttl(fs);
 	entry.entry_timeout = fbr_fs_dentry_ttl(fs);
 	entry.ino = file->inode;

@@ -29,7 +29,7 @@ _var_finish(struct fbr_test_context *ctx)
 		}
 	}
 
-	fbr_ZERO(ctx->var);
+	fbr_zero(ctx->var);
 	free(ctx->var);
 
 	ctx->var = NULL;
