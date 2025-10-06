@@ -39,11 +39,11 @@ fbr_cmd_cstore_enable_server(struct fbr_test_context *ctx, struct fbr_test_cmd *
 }
 
 struct fbr_cstore_server *
-_get_server(int pos)
+_get_server(struct fbr_cstore *cstore, int pos)
 {
-	fbr_cstore_ok(_CSTORE);
+	fbr_cstore_ok(cstore);
 
-	struct fbr_cstore_server *server = _CSTORE->servers;
+	struct fbr_cstore_server *server = cstore->servers;
 	fbr_cstore_server_ok(server);
 
 	while (server->next && pos != 0) {
@@ -55,15 +55,12 @@ _get_server(int pos)
 	return server;
 }
 
-char *
-fbr_var_cstore_server_host(struct fbr_test_context *ctx)
+static char *
+_test_server_host(struct fbr_test_cstore *tcstore)
 {
-	fbr_test_context_ok(ctx);
+	fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
 
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
-	assert(tcstore);
-
-	struct fbr_cstore_server *server = _get_server(-1);
+	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, -1);
 	chttp_addr_connected(&server->addr);
 
 	int port;
@@ -74,14 +71,38 @@ fbr_var_cstore_server_host(struct fbr_test_context *ctx)
 }
 
 char *
-fbr_var_cstore_server_port(struct fbr_test_context *ctx)
+fbr_var_cstore_server_host(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 
 	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
-	assert(tcstore);
+	return _test_server_host(tcstore);
+}
 
-	struct fbr_cstore_server *server = _get_server(-1);
+char *
+fbr_var_cstore_1_server_host(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 1);
+	return _test_server_host(tcstore);
+}
+
+char *
+fbr_var_cstore_2_server_host(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 2);
+	return _test_server_host(tcstore);
+}
+
+static char *
+_test_server_port(struct fbr_test_cstore *tcstore)
+{
+	fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
+
+	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, -1);
 	chttp_addr_connected(&server->addr);
 	assert(server->port > 0);
 
@@ -91,11 +112,38 @@ fbr_var_cstore_server_port(struct fbr_test_context *ctx)
 }
 
 char *
-fbr_var_cstore_server_tls(struct fbr_test_context *ctx)
+fbr_var_cstore_server_port(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 
-	struct fbr_cstore_server *server = _get_server(-1);
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
+	return _test_server_port(tcstore);
+}
+
+char *
+fbr_var_cstore_1_server_port(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 1);
+	return _test_server_port(tcstore);
+}
+
+char *
+fbr_var_cstore_2_server_port(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 2);
+	return _test_server_port(tcstore);
+}
+
+static char *
+_test_server_tls(struct fbr_test_cstore *tcstore)
+{
+	fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
+
+	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, -1);
 	chttp_addr_connected(&server->addr);
 
 	if (server->tls) {
@@ -104,4 +152,31 @@ fbr_var_cstore_server_tls(struct fbr_test_context *ctx)
 	}
 
 	return "0";
+}
+
+char *
+fbr_var_cstore_server_tls(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
+	return _test_server_tls(tcstore);
+}
+
+char *
+fbr_var_cstore_1_server_tls(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 1);
+	return _test_server_tls(tcstore);
+}
+
+char *
+fbr_var_cstore_2_server_tls(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 2);
+	return _test_server_tls(tcstore);
 }

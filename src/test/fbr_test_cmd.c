@@ -20,7 +20,7 @@
 #include "log/test/fbr_test_log_cmds.h"
 #include "utils/test/fbr_test_util_cmds.h"
 
-#define FBR_TEST_COMMAND_MAX		256
+#define FBR_TEST_COMMAND_MAX		500
 
 static int _test_entry_cmp(const struct fbr_test_cmdentry *k1,
     const struct fbr_test_cmdentry *k2);

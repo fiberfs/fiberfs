@@ -34,7 +34,7 @@ _test_cstore_finish(struct fbr_test_context *test_ctx)
 
 	while(test_ctx->cstore) {
 		struct fbr_test_cstore *tcstore = test_ctx->cstore;
-		fbr_magic_check(tcstore, _TEST_CSTORE_MAGIC);
+		fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
 
 		test_ctx->cstore = tcstore->next;
 
@@ -47,35 +47,40 @@ _test_cstore_finish(struct fbr_test_context *test_ctx)
 }
 
 static void
-_test_cstore_init(struct fbr_test_context *ctx, const char *root, const char *log_prefix,
-    int finish)
+_test_cstore_init(struct fbr_test_context *ctx, const char *root, const char *log_prefix)
 {
 	assert_dev(ctx);
-	assert_zero(ctx->cstore);
-	assert_zero(_CSTORE);
 
 	struct fbr_test_cstore *tcstore = calloc(1, sizeof(*tcstore));
 	assert(tcstore);
-	tcstore->magic = _TEST_CSTORE_MAGIC;
-	ctx->cstore = tcstore;
+	tcstore->magic = FBR_TEST_CSTORE_MAGIC;
 
-	_CSTORE = &tcstore->cstore;
-
-	fbr_cstore_init(_CSTORE, root);
-
-	fbr_test_log_printer_init(ctx, root, log_prefix);
-
-	if (finish) {
-		fbr_test_register_finish(ctx, "cstore", _test_cstore_finish);
+	if (!ctx->cstore) {
+		assert_zero(_CSTORE);
+		ctx->cstore = tcstore;
+		_CSTORE = &tcstore->cstore;
+	} else {
+		struct fbr_test_cstore *last = ctx->cstore;
+		fbr_magic_check(last, FBR_TEST_CSTORE_MAGIC);
+		while (last->next) {
+			last = last->next;
+			fbr_magic_check(last, FBR_TEST_CSTORE_MAGIC);
+		}
+		last->next = tcstore;
 	}
 
-	if (fbr_fuse_has_context()) {
+	fbr_cstore_init(&tcstore->cstore, root);
+	fbr_test_log_printer_init(ctx, root, log_prefix);
+	fbr_test_register_finish(ctx, "cstore", _test_cstore_finish);
+
+	if (fbr_fuse_has_context() && ctx->cstore == tcstore) {
 		struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 		assert_zero(fuse_ctx->cstore);
 		fuse_ctx->cstore = _CSTORE;
 	}
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore root: %s", _CSTORE->root);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore root: %s (%s)", tcstore->cstore.root,
+		log_prefix);
 }
 
 struct fbr_test_cstore *
@@ -84,11 +89,11 @@ fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t position)
 	fbr_test_context_ok(ctx);
 
 	struct fbr_test_cstore *tcstore = ctx->cstore;
-	fbr_magic_check(tcstore, _TEST_CSTORE_MAGIC);
+	fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
 
 	while (position) {
 		tcstore = tcstore->next;
-		fbr_magic_check(tcstore, _TEST_CSTORE_MAGIC);
+		fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
 		position--;
 	}
 
@@ -114,7 +119,7 @@ fbr_test_cstore_init(struct fbr_test_context *ctx)
 
 	char *root = fbr_test_mkdir_tmp(ctx, NULL);
 
-	_test_cstore_init(ctx, root, "^", 1);
+	_test_cstore_init(ctx, root, "^");
 }
 
 void
@@ -128,14 +133,14 @@ fbr_test_cstore_init_loader(struct fbr_test_context *ctx)
 	fbr_bprintf(data_path, "%s/%s/", root, FBR_CSTORE_DATA_DIR);
 	fbr_sys_mkdirs(data_path);
 
-	_test_cstore_init(ctx, root, "^", 1);
+	_test_cstore_init(ctx, root, "^");
 }
 
 void
 fbr_test_cstore_reload(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	fbr_magic_check(ctx->cstore, _TEST_CSTORE_MAGIC);
+	fbr_magic_check(ctx->cstore, FBR_TEST_CSTORE_MAGIC);
 	assert_zero(ctx->cstore->next);
 	fbr_cstore_ok(_CSTORE);
 
@@ -146,7 +151,7 @@ fbr_test_cstore_reload(struct fbr_test_context *ctx)
 
 	fbr_test_sleep_ms(50);
 
-	_test_cstore_init(ctx, root, "&", 0);
+	_test_cstore_init(ctx, root, "&");
 }
 
 void
@@ -156,6 +161,28 @@ fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_test_cstore_init(ctx);
+}
+
+void
+fbr_cmd_cstore_init_1(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	char *root = fbr_test_mkdir_tmp(ctx, NULL);
+
+	_test_cstore_init(ctx, root, "c1^");
+}
+
+void
+fbr_cmd_cstore_init_2(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	char *root = fbr_test_mkdir_tmp(ctx, NULL);
+
+	_test_cstore_init(ctx, root, "c2^");
 }
 
 static void

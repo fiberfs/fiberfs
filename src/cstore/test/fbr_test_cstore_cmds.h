@@ -23,7 +23,7 @@ fbr_stats_t fbr_test_cstore_stat_roots(void);
 
 struct fbr_test_cstore {
 	unsigned int			magic;
-#define _TEST_CSTORE_MAGIC		0x57A22B5D
+#define FBR_TEST_CSTORE_MAGIC		0x57A22B5D
 
 	struct fbr_cstore		cstore;
 
@@ -37,6 +37,8 @@ struct fbr_test_cstore {
 #endif /* _FBR_TEST_FCACHE_CMDS_H_INCLUDED */
 
 FBR_TEST_CMD(cstore_init)
+FBR_TEST_CMD(cstore_init_1)
+FBR_TEST_CMD(cstore_init_2)
 FBR_TEST_CMD(cstore_test)
 FBR_TEST_CMD(cstore_test_lru)
 FBR_TEST_CMD(cstore_state_test)
@@ -50,6 +52,12 @@ FBR_TEST_CMD(cstore_enable_server)
 FBR_TEST_VAR(cstore_server_host)
 FBR_TEST_VAR(cstore_server_port)
 FBR_TEST_VAR(cstore_server_tls)
+FBR_TEST_VAR(cstore_1_server_host)
+FBR_TEST_VAR(cstore_1_server_port)
+FBR_TEST_VAR(cstore_1_server_tls)
+FBR_TEST_VAR(cstore_2_server_host)
+FBR_TEST_VAR(cstore_2_server_port)
+FBR_TEST_VAR(cstore_2_server_tls)
 
 FBR_TEST_CMD(cstore_debug)
 FBR_TEST_VAR(cstore_stat_indexes)
