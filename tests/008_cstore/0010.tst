@@ -14,3 +14,4 @@ sys_write $var1 "test1"
 sleep_ms 100
 
 cstore_debug
+cstore_debug 1

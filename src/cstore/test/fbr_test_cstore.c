@@ -202,18 +202,18 @@ fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 static void
-_test_cstore_wait(void)
+_test_cstore_wait(struct fbr_cstore *cstore)
 {
-	fbr_cstore_ok(_CSTORE);
+	fbr_cstore_ok(cstore);
 
 	int max = 40;
 
-	while (_CSTORE->async.queue_len && max) {
+	while (cstore->async.queue_len && max) {
 		fbr_test_sleep_ms(25);
 		max--;
 	}
 
-	assert_zero(_CSTORE->async.queue_len);
+	assert_zero(cstore->async.queue_len);
 }
 
 static void
@@ -285,26 +285,26 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 }
 
 void
-fbr_test_cstore_debug(void)
+fbr_test_cstore_debug(struct fbr_cstore *cstore)
 {
-	fbr_cstore_ok(_CSTORE);
+	fbr_cstore_ok(cstore);
 
-	_test_cstore_wait();
+	_test_cstore_wait(cstore);
 
-	fbr_test_logs("CSTORE_DEBUG root: %s", _CSTORE->root);
-	fbr_test_logs("CSTORE_DEBUG entries: %zu", _CSTORE->entries);
-	fbr_test_logs("CSTORE_DEBUG bytes: %zu", _CSTORE->bytes);
-	fbr_test_logs("CSTORE_DEBUG max_bytes: %zu", _CSTORE->max_bytes);
-	fbr_test_logs("CSTORE_DEBUG pruned: %lu", _CSTORE->stats.lru_pruned);
-	fbr_test_logs("CSTORE_DEBUG removed: %lu", _CSTORE->stats.removed);
-	fbr_test_logs("CSTORE_DEBUG loaded: %lu", _CSTORE->stats.loaded);
-	fbr_test_logs("CSTORE_DEBUG lazy: %lu", _CSTORE->stats.lazy_loaded);
-	fbr_test_logs("CSTORE_DEBUG chunks: %lu", _CSTORE->stats.wr_chunks);
-	fbr_test_logs("CSTORE_DEBUG indexes: %lu", _CSTORE->stats.wr_indexes);
-	fbr_test_logs("CSTORE_DEBUG roots: %lu", _CSTORE->stats.wr_roots);
+	fbr_test_logs("CSTORE_DEBUG root: %s", cstore->root);
+	fbr_test_logs("CSTORE_DEBUG entries: %zu", cstore->entries);
+	fbr_test_logs("CSTORE_DEBUG bytes: %zu", cstore->bytes);
+	fbr_test_logs("CSTORE_DEBUG max_bytes: %zu", cstore->max_bytes);
+	fbr_test_logs("CSTORE_DEBUG pruned: %lu", cstore->stats.lru_pruned);
+	fbr_test_logs("CSTORE_DEBUG removed: %lu", cstore->stats.removed);
+	fbr_test_logs("CSTORE_DEBUG loaded: %lu", cstore->stats.loaded);
+	fbr_test_logs("CSTORE_DEBUG lazy: %lu", cstore->stats.lazy_loaded);
+	fbr_test_logs("CSTORE_DEBUG chunks: %lu", cstore->stats.wr_chunks);
+	fbr_test_logs("CSTORE_DEBUG indexes: %lu", cstore->stats.wr_indexes);
+	fbr_test_logs("CSTORE_DEBUG roots: %lu", cstore->stats.wr_roots);
 
 	char path[FBR_PATH_MAX];
-	fbr_bprintf(path, "%s/%s", _CSTORE->root, FBR_CSTORE_DATA_DIR);
+	fbr_bprintf(path, "%s/%s", cstore->root, FBR_CSTORE_DATA_DIR);
 
 	fbr_sys_nftw(path, _cstore_debug_cb);
 }
@@ -313,9 +313,20 @@ void
 fbr_cmd_cstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
+	fbr_test_cmd_ok(cmd);
+	assert(cmd->param_count <= 1);
 
-	fbr_test_cstore_debug();
+	long index = 0;
+	if (cmd->param_count >= 1) {
+		index = fbr_test_parse_long(cmd->params[0].value);
+	}
+	assert(index >= 0);
+
+	fbr_test_logs("CSTORE_DEBUG %lu", index);
+
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
+
+	fbr_test_cstore_debug(cstore);
 }
 
 fbr_stats_t

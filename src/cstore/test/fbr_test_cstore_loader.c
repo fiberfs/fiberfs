@@ -67,7 +67,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	//fbr_fs_release_all(fs, 1);
 	//fbr_test_fs_stats(fs);
-	fbr_test_cstore_debug();
+	fbr_test_cstore_debug(fbr_test_cstore_get(ctx, 0));
 	assert(_CSTORE->entries == 3);
 	fbr_fs_free(fs);
 
@@ -103,7 +103,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_logs("*** Cleanup 2");
 
-	fbr_test_cstore_debug();
+	fbr_test_cstore_debug(fbr_test_cstore_get(ctx, 0));
 	assert(_CSTORE->entries == 3);
 
 	size_t loaded = _CSTORE->stats.loaded + _CSTORE->stats.lazy_loaded;

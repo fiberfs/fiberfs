@@ -295,7 +295,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_stats(fs_2);
 	fbr_test_fs_inodes_debug(fs_2);
 	fbr_test_fs_dindex_debug(fs_2);
-	fbr_test_cstore_debug();
+	fbr_test_cstore_debug(fbr_test_cstore_get(ctx, 0));
 
 	fbr_test_ERROR(fs_2->stats.directories, "non zero");
 	fbr_test_ERROR(fs_2->stats.directories_dindex, "non zero");

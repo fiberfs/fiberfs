@@ -238,7 +238,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_fs_stats(fs);
 	fbr_test_fs_inodes_debug(fs);
 	fbr_test_fs_dindex_debug(fs);
-	fbr_test_cstore_debug();
+	fbr_test_cstore_debug(fbr_test_cstore_get(ctx, 0));
 
 	fbr_test_ERROR(fs->stats.directories, "non zero");
 	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
