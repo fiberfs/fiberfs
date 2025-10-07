@@ -126,6 +126,7 @@ struct fbr_cstore {
 	struct fbr_cstore_tasks			tasks;
 	struct fbr_cstore_server		*servers;
 	struct fbr_cstore_s3			s3;
+	struct fbr_cstore_cluster		cluster;
 
 	struct fbr_log				*log;
 	char					root[FBR_PATH_MAX];

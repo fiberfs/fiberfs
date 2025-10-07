@@ -31,6 +31,7 @@ _test_cstore_finish(struct fbr_test_context *test_ctx)
 	}
 
 	_CSTORE = NULL;
+	fbr_cstore_s3_free(&_CSTORE_CONFIG.s3);
 
 	while(test_ctx->cstore) {
 		struct fbr_test_cstore *tcstore = test_ctx->cstore;
@@ -164,7 +165,7 @@ fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	size_t index = 0;
 
 	if (cmd->param_count >= 1) {
-		index = (size_t)fbr_parse_ulong(cmd->params[0].value, cmd->params[0].len);
+		index = (size_t)fbr_test_parse_long(cmd->params[0].value);
 		assert(index < FBR_CSTORE_MAX_CSTORES);
 	}
 

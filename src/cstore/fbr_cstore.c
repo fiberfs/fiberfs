@@ -64,8 +64,11 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	cstore->magic = FBR_CSTORE_MAGIC;
 
 	if (_CSTORE_CONFIG.s3.enabled) {
-		memcpy(&cstore->s3, &_CSTORE_CONFIG.s3, sizeof(cstore->s3));
+		fbr_cstore_s3_init(&cstore->s3, _CSTORE_CONFIG.s3.host, _CSTORE_CONFIG.s3.port,
+			_CSTORE_CONFIG.s3.tls, _CSTORE_CONFIG.s3.prefix);
 	}
+
+	fbr_cstore_cluster_init(cstore);
 
 	for (size_t i = 0; i < fbr_array_len(cstore->heads); i++) {
 		struct fbr_cstore_head *head = &cstore->heads[i];
@@ -578,6 +581,8 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 
 	fbr_cstore_loader_free(cstore);
 	fbr_cstore_async_free(cstore);
+	fbr_cstore_cluster_free(cstore);
+	fbr_cstore_s3_free(&cstore->s3);
 
 	for (size_t i = 0; i < fbr_array_len(cstore->heads); i++) {
 		struct fbr_cstore_head *head = &cstore->heads[i];

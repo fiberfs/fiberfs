@@ -4,14 +4,109 @@
  *
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "fiberfs.h"
 #include "chttp.h"
 #include "cstore/fbr_cstore_api.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
+
+void
+fbr_cstore_s3_init(struct fbr_cstore_s3 *s3, const char *host, int port, int tls,
+    const char *prefix)
+{
+	assert(s3);
+	assert(host);
+	assert(port > 0 && port <= USHRT_MAX);
+
+	fbr_zero(s3);
+
+	s3->host = strdup(host);
+	s3->port = port;
+	s3->tls = tls ? 1 : 0;
+	s3->enabled = 1;
+
+	if (prefix) {
+		s3->prefix = strdup(prefix);
+	}
+}
+
+void
+fbr_cstore_s3_free(struct fbr_cstore_s3 *s3)
+{
+	assert(s3);
+
+	if (!s3->enabled) {
+		return;
+	}
+
+	free(s3->host);
+	free(s3->prefix);
+
+	fbr_zero(s3);
+}
+
+void
+fbr_cstore_cluster_init(struct fbr_cstore *cstore)
+{
+	fbr_cstore_ok(cstore);
+
+	assert_zero_dev(cstore->cluster.backends);
+	assert_zero_dev(cstore->cluster.size);
+}
+
+void
+fbr_cstore_cluster_add(struct fbr_cstore *cstore, const char *host, int port, int tls)
+{
+	fbr_cstore_ok(cstore);
+	assert(host);
+	assert(port > 0 && port <= USHRT_MAX);
+
+	size_t host_len = strlen(host);
+	struct fbr_cstore_backend *backend = malloc(sizeof(*backend) + host_len + 1);
+	assert(backend);
+
+	fbr_zero(backend);
+	backend->magic = FBR_CSTORE_BACKEND_MAGIC;
+	backend->port = port;
+	backend->tls = tls ? 1 : 0;
+
+	fbr_strcpy(backend->host, host_len + 1, host);
+
+	fbr_cstore_backend_ok(backend);
+
+	struct fbr_cstore_cluster *cluster = &cstore->cluster;
+	cluster->size++;
+	assert(cluster->size < 100000);
+	cluster->backends = realloc(cluster->backends, sizeof(backend) * cluster->size);
+	assert(cluster->backends);
+
+	cluster->backends[cluster->size - 1] = backend;
+}
+
+void
+fbr_cstore_cluster_free(struct fbr_cstore *cstore)
+{
+	fbr_cstore_ok(cstore);
+
+	struct fbr_cstore_cluster *cluster = &cstore->cluster;
+	for (size_t i = 0; i < cluster->size; i++) {
+		struct fbr_cstore_backend *backend = cluster->backends[i];
+		fbr_cstore_backend_ok(backend);
+
+		fbr_zero(backend);
+		free(backend);
+		cluster->backends[i] = NULL;
+	}
+
+	free(cluster->backends);
+	fbr_zero(cluster);
+}
+
 
 static void
 _s3_write_url(struct fbr_cstore *cstore, const char *path, struct chttp_context *request)

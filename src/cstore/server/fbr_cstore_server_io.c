@@ -20,7 +20,7 @@
 #include "cstore/fbr_cstore_api.h"
 #include "utils/fbr_sys.h"
 
-enum fbr_cstore_entry_type
+static enum fbr_cstore_entry_type
 _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, size_t *offset)
 {
 	assert_dev(url);

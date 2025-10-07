@@ -16,7 +16,7 @@
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
-int
+static int
 _test_mkdir_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
     enum fbr_flush_flags flags)
 {

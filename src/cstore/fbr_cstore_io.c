@@ -186,7 +186,7 @@ fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata)
 	return ret;
 }
 
-void
+static void
 _cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, int remove)
 {
 	assert_dev(cstore);
