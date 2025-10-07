@@ -169,8 +169,6 @@ struct fbr_cstore_config {
 	int					server_tls;
 	size_t					server_workers;
 	size_t					server_workers_accept;
-
-	struct fbr_cstore_s3			s3;
 };
 
 extern struct fbr_cstore_config _CSTORE_CONFIG;

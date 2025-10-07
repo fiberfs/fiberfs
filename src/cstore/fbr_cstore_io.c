@@ -379,7 +379,8 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 
 	fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, wbuffer, 0);
 
-	return;
+	// TODO on an s3 error, linux will retry the flush, cstore cannot get a loading state,
+	//      and we fail early. We need to get gen a new id on EIO.
 }
 
 void

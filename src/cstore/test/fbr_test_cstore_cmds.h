@@ -10,8 +10,8 @@
 #include "cstore/fbr_cstore_api.h"
 #include "test/fbr_test_cmd_declare.h"
 
-struct fbr_test_cstore *fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t position);
-struct fbr_cstore *fbr_test_cstore_get(struct fbr_test_context *ctx, size_t position);
+struct fbr_test_cstore *fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t index);
+struct fbr_cstore *fbr_test_cstore_get(struct fbr_test_context *ctx, size_t index);
 
 void fbr_test_cstore_register(void);
 void fbr_test_cstore_unregister(void);
@@ -55,6 +55,7 @@ FBR_TEST_VAR(cstore_stat_indexes)
 FBR_TEST_VAR(cstore_stat_roots)
 
 FBR_TEST_CMD(cstore_enable_server)
+FBR_TEST_CMD(cstore_set_s3)
 
 FBR_TEST_VAR(cstore_0_server_host)
 FBR_TEST_VAR(cstore_0_server_port)

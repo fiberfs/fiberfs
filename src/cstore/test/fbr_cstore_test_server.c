@@ -43,26 +43,29 @@ fbr_cmd_cstore_set_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
-	assert(cmd->param_count <= 4);
+	assert(cmd->param_count <= 5);
 
-	const char *host = cmd->params[0].value;
-	long port = fbr_test_parse_long(cmd->params[1].value);
+	long index = fbr_test_parse_long(cmd->params[0].value);
+	const char *host = cmd->params[1].value;
+	long port = fbr_test_parse_long(cmd->params[2].value);
 	long tls = 0;
 	const char *prefix = NULL;
 
-	if (cmd->param_count >= 3) {
-		tls = fbr_test_parse_long(cmd->params[2].value);
-	}
 	if (cmd->param_count >= 4) {
-		prefix = cmd->params[3].value;
+		tls = fbr_test_parse_long(cmd->params[3].value);
+	}
+	if (cmd->param_count >= 5) {
+		prefix = cmd->params[4].value;
 	}
 
-	fbr_cstore_s3_init(&_CSTORE_CONFIG.s3, host, port, tls, prefix);
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
+
+	fbr_cstore_s3_init(cstore, host, port, tls, prefix);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_set_s3: %s:%d/%s %d",
-		_CSTORE_CONFIG.s3.host, _CSTORE_CONFIG.s3.port,
-		_CSTORE_CONFIG.s3.prefix ? _CSTORE_CONFIG.s3.prefix : "",
-		_CSTORE_CONFIG.s3.tls);
+		cstore->s3.host, cstore->s3.port,
+		cstore->s3.prefix ? cstore->s3.prefix : "",
+		cstore->s3.tls);
 }
 
 static struct fbr_cstore_server *

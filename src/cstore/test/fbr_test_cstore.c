@@ -24,7 +24,6 @@ _test_cstore_finish(struct fbr_test_context *test_ctx)
 	assert(test_ctx->cstore);
 
 	fbr_test_cstore_unregister();
-	fbr_cstore_s3_free(&_CSTORE_CONFIG.s3);
 
 	_CSTORE = NULL;
 

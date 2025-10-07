@@ -33,9 +33,9 @@ struct fbr_cstore_cluster {
 	size_t				size;
 };
 
-void fbr_cstore_s3_init(struct fbr_cstore_s3 *s3, const char *host, int port, int tls,
+void fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tls,
 	const char *prefix);
-void fbr_cstore_s3_free(struct fbr_cstore_s3 *s3);
+void fbr_cstore_s3_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_cluster_init(struct fbr_cstore *cstore);
 void fbr_cstore_cluster_add(struct fbr_cstore *cstore, const char *host, int port, int tls);
