@@ -18,6 +18,7 @@
 #include "test/fbr_test.h"
 #include "fbr_test_fuse_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
+#include "cstore/test/fbr_test_cstore_cmds.h"
 #include "log/test/fbr_test_log_cmds.h"
 
 extern struct fbr_fuse_context *_FUSE_CTX;
@@ -33,6 +34,8 @@ _fuse_finish(struct fbr_test_context *test_ctx)
 
 	fbr_fuse_unmount(fuse_ctx);
 	fbr_finish_ERROR(fuse_ctx->error, "fuse context has an error flag");
+
+	fbr_test_cstore_unregister();
 
 	fbr_fuse_free(fuse_ctx);
 
@@ -93,6 +96,7 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 	}
 
 	fbr_test_log_printer_init(test_ctx, path, "#");
+	fbr_test_cstore_register();
 
 	return ctx->error;
 }

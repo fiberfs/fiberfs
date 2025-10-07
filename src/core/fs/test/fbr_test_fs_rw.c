@@ -139,14 +139,9 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_index_data_init(NULL, &index_data, root, NULL, NULL, NULL, FBR_FLUSH_NONE);
 
 	int ret = fbr_index_write(ctx->fs, &index_data);
-	if (ret) {
-		fbr_test_logs("INIT fbr_index_write(root) failed");
-		fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_ERROR);
-		ctx->error = 1;
-	} else {
-		fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
-	}
+	fbr_ASSERT(!ret, "INIT fbr_index_write(root) failed");
 
+	fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
 	fbr_index_data_free(&index_data);
 
 	struct fbr_path_name dirpath;

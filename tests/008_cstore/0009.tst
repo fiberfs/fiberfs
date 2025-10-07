@@ -1,4 +1,4 @@
-fiber_test "cstore server PUT"
+fiber_test "cstore server PUT/GET"
 
 cstore_enable_server 127.0.0.1 0
 cstore_init

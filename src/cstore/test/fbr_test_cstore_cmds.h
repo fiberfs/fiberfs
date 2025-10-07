@@ -13,6 +13,8 @@
 struct fbr_test_cstore *fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t position);
 struct fbr_cstore *fbr_test_cstore_get(struct fbr_test_context *ctx, size_t position);
 
+void fbr_test_cstore_register(void);
+void fbr_test_cstore_unregister(void);
 void fbr_test_cstore_init(struct fbr_test_context *ctx);
 void fbr_test_cstore_init_loader(struct fbr_test_context *ctx);
 void fbr_test_cstore_reload(struct fbr_test_context *ctx);

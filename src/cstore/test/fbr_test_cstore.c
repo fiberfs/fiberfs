@@ -23,15 +23,10 @@ _test_cstore_finish(struct fbr_test_context *test_ctx)
 	fbr_test_context_ok(test_ctx);
 	assert(test_ctx->cstore);
 
-	if (fbr_fuse_has_context()) {
-		struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
-		if (fuse_ctx->cstore == _CSTORE) {
-			fuse_ctx->cstore = NULL;
-		}
-	}
+	fbr_test_cstore_unregister();
+	fbr_cstore_s3_free(&_CSTORE_CONFIG.s3);
 
 	_CSTORE = NULL;
-	fbr_cstore_s3_free(&_CSTORE_CONFIG.s3);
 
 	while(test_ctx->cstore) {
 		struct fbr_test_cstore *tcstore = test_ctx->cstore;
@@ -45,6 +40,39 @@ _test_cstore_finish(struct fbr_test_context *test_ctx)
 	}
 
 	assert_zero(test_ctx->cstore);
+}
+
+void
+fbr_test_cstore_register(void)
+{
+	assert(fbr_is_test());
+
+	if (!_CSTORE) {
+		return;
+	}
+
+	fbr_cstore_ok(_CSTORE);
+
+	if (fbr_fuse_has_context()) {
+		struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+		if (!fuse_ctx->cstore) {
+			fuse_ctx->cstore = _CSTORE;
+		}
+		assert(fuse_ctx->cstore == _CSTORE);
+	}
+}
+
+void
+fbr_test_cstore_unregister(void)
+{
+	assert(fbr_is_test());
+
+	if (fbr_fuse_has_context()) {
+		struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+		if (fuse_ctx->cstore == _CSTORE) {
+			fuse_ctx->cstore = NULL;
+		}
+	}
 }
 
 static void
@@ -73,12 +101,7 @@ _test_cstore_init(struct fbr_test_context *ctx, const char *root, const char *lo
 	fbr_cstore_init(&tcstore->cstore, root);
 	fbr_test_log_printer_init(ctx, root, log_prefix);
 	fbr_test_register_finish(ctx, "cstore", _test_cstore_finish);
-
-	if (fbr_fuse_has_context() && ctx->cstore == tcstore) {
-		struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
-		assert_zero(fuse_ctx->cstore);
-		fuse_ctx->cstore = _CSTORE;
-	}
+	fbr_test_cstore_register();
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore root: %s (%s)", tcstore->cstore.root,
 		log_prefix);
