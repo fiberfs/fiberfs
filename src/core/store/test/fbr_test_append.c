@@ -204,7 +204,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_stats(fs_2);
 	fbr_test_fs_inodes_debug(fs_2);
 	fbr_test_fs_dindex_debug(fs_2);
-	fbr_test_cstore_debug(fbr_test_cstore_get(ctx, 0));
+	fbr_test_cstore_debug_0();
 
 	assert_zero(fs_2->stats.directories);
 	assert_zero(fs_2->stats.directories_dindex);
@@ -480,7 +480,7 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_fs_release_all(fs, 1);
 	fbr_fs_free(fs);
-	fbr_test_cstore_debug(fbr_test_cstore_get(ctx, 0));
+	fbr_test_cstore_debug_0();
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "append_thread_test done%s",
 		_APPEND_ERROR_TEST ? " (ERROR TEST)" : "");

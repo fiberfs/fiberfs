@@ -310,6 +310,16 @@ fbr_test_cstore_debug(struct fbr_cstore *cstore)
 }
 
 void
+fbr_test_cstore_debug_0(void)
+{
+	struct fbr_test_context *ctx = fbr_test_get_ctx();
+
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
+
+	fbr_test_cstore_debug(cstore);
+}
+
+void
 fbr_cmd_cstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
