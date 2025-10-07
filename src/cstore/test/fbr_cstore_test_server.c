@@ -70,32 +70,20 @@ _test_server_host(struct fbr_test_cstore *tcstore)
 	return tcstore->ip_str;
 }
 
-char *
-fbr_var_cstore_server_host(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
-	return _test_server_host(tcstore);
+#define _CSTORE_SERVER_HOST(index)						\
+char *										\
+fbr_var_cstore_##index##_server_host(struct fbr_test_context *ctx)		\
+{										\
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);	\
+	return _test_server_host(tcstore);					\
 }
 
-char *
-fbr_var_cstore_1_server_host(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 1);
-	return _test_server_host(tcstore);
-}
-
-char *
-fbr_var_cstore_2_server_host(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 2);
-	return _test_server_host(tcstore);
-}
+_CSTORE_SERVER_HOST(0)
+_CSTORE_SERVER_HOST(1)
+_CSTORE_SERVER_HOST(2)
+_CSTORE_SERVER_HOST(3)
+_CSTORE_SERVER_HOST(4)
+_CSTORE_SERVER_HOST(5)
 
 static char *
 _test_server_port(struct fbr_test_cstore *tcstore)
@@ -111,32 +99,20 @@ _test_server_port(struct fbr_test_cstore *tcstore)
 	return tcstore->port_str;
 }
 
-char *
-fbr_var_cstore_server_port(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
-	return _test_server_port(tcstore);
+#define _CSTORE_SERVER_PORT(index)						\
+char *										\
+fbr_var_cstore_##index##_server_port(struct fbr_test_context *ctx)		\
+{										\
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);	\
+	return _test_server_port(tcstore);					\
 }
 
-char *
-fbr_var_cstore_1_server_port(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 1);
-	return _test_server_port(tcstore);
-}
-
-char *
-fbr_var_cstore_2_server_port(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 2);
-	return _test_server_port(tcstore);
-}
+_CSTORE_SERVER_PORT(0)
+_CSTORE_SERVER_PORT(1)
+_CSTORE_SERVER_PORT(2)
+_CSTORE_SERVER_PORT(3)
+_CSTORE_SERVER_PORT(4)
+_CSTORE_SERVER_PORT(5)
 
 static char *
 _test_server_tls(struct fbr_test_cstore *tcstore)
@@ -154,29 +130,17 @@ _test_server_tls(struct fbr_test_cstore *tcstore)
 	return "0";
 }
 
-char *
-fbr_var_cstore_server_tls(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
-	return _test_server_tls(tcstore);
+#define _CSTORE_SERVER_TLS(index)						\
+char *										\
+fbr_var_cstore_##index##_server_tls(struct fbr_test_context *ctx)		\
+{										\
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);	\
+	return _test_server_tls(tcstore);					\
 }
 
-char *
-fbr_var_cstore_1_server_tls(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 1);
-	return _test_server_tls(tcstore);
-}
-
-char *
-fbr_var_cstore_2_server_tls(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 2);
-	return _test_server_tls(tcstore);
-}
+_CSTORE_SERVER_TLS(0)
+_CSTORE_SERVER_TLS(1)
+_CSTORE_SERVER_TLS(2)
+_CSTORE_SERVER_TLS(3)
+_CSTORE_SERVER_TLS(4)
+_CSTORE_SERVER_TLS(5)

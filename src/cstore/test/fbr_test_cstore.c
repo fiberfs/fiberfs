@@ -84,28 +84,29 @@ _test_cstore_init(struct fbr_test_context *ctx, const char *root, const char *lo
 }
 
 struct fbr_test_cstore *
-fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t position)
+fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t index)
 {
 	fbr_test_context_ok(ctx);
+	assert(index < FBR_CSTORE_MAX_CSTORES);
 
 	struct fbr_test_cstore *tcstore = ctx->cstore;
 	fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
 
-	while (position) {
+	while (index) {
 		tcstore = tcstore->next;
 		fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
-		position--;
+		index--;
 	}
 
 	return tcstore;
 }
 
 struct fbr_cstore *
-fbr_test_cstore_get(struct fbr_test_context *ctx, size_t position)
+fbr_test_cstore_get(struct fbr_test_context *ctx, size_t index)
 {
 	fbr_test_context_ok(ctx);
 
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, position);
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);
 	assert(tcstore);
 	fbr_cstore_ok(&tcstore->cstore);
 
@@ -158,31 +159,23 @@ void
 fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
+	assert(cmd->param_count <= 1);
 
-	fbr_test_cstore_init(ctx);
-}
+	size_t index = 0;
 
-void
-fbr_cmd_cstore_init_1(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
+	if (cmd->param_count >= 1) {
+		index = (size_t)fbr_parse_ulong(cmd->params[0].value, cmd->params[0].len);
+		assert(index < FBR_CSTORE_MAX_CSTORES);
+	}
 
-	char *root = fbr_test_mkdir_tmp(ctx, NULL);
-
-	_test_cstore_init(ctx, root, "c1^");
-}
-
-void
-fbr_cmd_cstore_init_2(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
-
-	char *root = fbr_test_mkdir_tmp(ctx, NULL);
-
-	_test_cstore_init(ctx, root, "c2^");
+	if (!index) {
+		fbr_test_cstore_init(ctx);
+	} else {
+		char *root = fbr_test_mkdir_tmp(ctx, NULL);
+		char prefix[8];
+		fbr_bprintf(prefix, "c%zu^", index);
+		_test_cstore_init(ctx, root, prefix);
+	}
 }
 
 static void

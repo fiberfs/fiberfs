@@ -123,7 +123,7 @@ fbr_hash(const void *buffer, size_t buffer_len)
 }
 
 void
-fbr_strcpy(char *dest, size_t dest_len, char *source)
+fbr_strcpy(char *dest, size_t dest_len, const char *source)
 {
 	assert(dest);
 	assert(dest_len);

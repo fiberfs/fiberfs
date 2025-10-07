@@ -28,7 +28,7 @@ struct fbr_test_log_printer {
 	int					thread_exit;
 	int					silent;
 	size_t					lines;
-	const char				*prefix;
+	char					prefix[8];
 	struct fbr_test_log_printer		*next;
 };
 
@@ -206,7 +206,9 @@ fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname
 	printer = calloc(1, sizeof(*printer));
 	assert(printer);
 	printer->magic = FBR_TEST_LOG_PRINT_MAGIC;
-	printer->prefix = prefix;
+
+	assert(strlen(prefix) < sizeof(printer->prefix));
+	fbr_strbcpy(printer->prefix, prefix);
 	fbr_test_log_printer_ok(printer);
 
 	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {

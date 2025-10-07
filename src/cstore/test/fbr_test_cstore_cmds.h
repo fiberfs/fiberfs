@@ -21,6 +21,8 @@ fbr_stats_t fbr_test_cstore_stat_chunks(void);
 fbr_stats_t fbr_test_cstore_stat_indexes(void);
 fbr_stats_t fbr_test_cstore_stat_roots(void);
 
+#define FBR_CSTORE_MAX_CSTORES		6
+
 struct fbr_test_cstore {
 	unsigned int			magic;
 #define FBR_TEST_CSTORE_MAGIC		0x57A22B5D
@@ -37,8 +39,6 @@ struct fbr_test_cstore {
 #endif /* _FBR_TEST_FCACHE_CMDS_H_INCLUDED */
 
 FBR_TEST_CMD(cstore_init)
-FBR_TEST_CMD(cstore_init_1)
-FBR_TEST_CMD(cstore_init_2)
 FBR_TEST_CMD(cstore_test)
 FBR_TEST_CMD(cstore_test_lru)
 FBR_TEST_CMD(cstore_state_test)
@@ -48,17 +48,27 @@ FBR_TEST_CMD(cstore_async_test)
 FBR_TEST_CMD(cstore_error_test)
 FBR_TEST_CMD(cstore_loader_test)
 
+FBR_TEST_CMD(cstore_debug)
+FBR_TEST_VAR(cstore_stat_indexes)
+FBR_TEST_VAR(cstore_stat_roots)
+
 FBR_TEST_CMD(cstore_enable_server)
-FBR_TEST_VAR(cstore_server_host)
-FBR_TEST_VAR(cstore_server_port)
-FBR_TEST_VAR(cstore_server_tls)
+
+FBR_TEST_VAR(cstore_0_server_host)
+FBR_TEST_VAR(cstore_0_server_port)
+FBR_TEST_VAR(cstore_0_server_tls)
 FBR_TEST_VAR(cstore_1_server_host)
 FBR_TEST_VAR(cstore_1_server_port)
 FBR_TEST_VAR(cstore_1_server_tls)
 FBR_TEST_VAR(cstore_2_server_host)
 FBR_TEST_VAR(cstore_2_server_port)
 FBR_TEST_VAR(cstore_2_server_tls)
-
-FBR_TEST_CMD(cstore_debug)
-FBR_TEST_VAR(cstore_stat_indexes)
-FBR_TEST_VAR(cstore_stat_roots)
+FBR_TEST_VAR(cstore_3_server_host)
+FBR_TEST_VAR(cstore_3_server_port)
+FBR_TEST_VAR(cstore_3_server_tls)
+FBR_TEST_VAR(cstore_4_server_host)
+FBR_TEST_VAR(cstore_4_server_port)
+FBR_TEST_VAR(cstore_4_server_tls)
+FBR_TEST_VAR(cstore_5_server_host)
+FBR_TEST_VAR(cstore_5_server_port)
+FBR_TEST_VAR(cstore_5_server_tls)
