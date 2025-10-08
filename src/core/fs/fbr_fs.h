@@ -501,9 +501,9 @@ void fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 void fbr_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 	enum fbr_wbuffer_state state);
 void fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_file *file,
-	struct fbr_wbuffer *wbuffers, int revert_write);
+	struct fbr_wbuffer *wbuffers, int revert_write, int have_file_lock);
 int fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file,
-	struct fbr_wbuffer *wbuffers, int revert_on_error);
+	struct fbr_wbuffer *wbuffers, int revert_on_error, int have_file_lock);
 int fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffers_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
 	int chunk_add);

@@ -144,13 +144,14 @@ _s3_write_file_url(struct fbr_cstore *cstore, struct fbr_file *file, struct chtt
 	_s3_write_url(cstore, filepath.name, request);
 }
 
-void
-fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
+static int
+_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
     const char *path, struct fbr_wbuffer *wbuffer)
 {
 	fbr_cstore_ok(cstore);
 	assert(cstore->s3.enabled);
 	chttp_context_ok(request);
+	assert_dev(request->state == CHTTP_STATE_NONE);
 	assert(path);
 	fbr_wbuffer_ok(wbuffer);
 
@@ -184,23 +185,38 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *requ
 	if (request->error) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id,
 			"ERROR chttp connection %s", cstore->s3.host);
-		return;
+		return 1;
 	}
 
 	chttp_send(request);
 	if (request->error) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "ERROR chttp send");
-		return;
+		// Retry
+		return -1;
 	}
 
 	chttp_body_send(request, wbuffer->buffer, wbuffer->end);
 	if (request->error) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "ERROR chttp body");
-		return;
+		// Retry
+		return -1;
 	}
 
 	assert_zero_dev(request->length);
 	assert_dev(request->state == CHTTP_STATE_SENT);
+
+	return 0;
+}
+
+void
+fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
+    const char *path, struct fbr_wbuffer *wbuffer)
+{
+	int ret = _s3_wbuffer_send(cstore, request, path, wbuffer);
+	if (ret < 0) {
+		chttp_context_reset(request);
+		_s3_wbuffer_send(cstore, request, path, wbuffer);
+	}
 }
 
 void

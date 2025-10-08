@@ -9,7 +9,8 @@ sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 
 set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "test1"
+sys_write $var1 "test1test2test3"
+sys_append $var1 "test4test5"
 
 sleep_ms 100
 

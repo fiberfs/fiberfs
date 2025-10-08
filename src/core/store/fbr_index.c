@@ -388,7 +388,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 
 	if (fbr_fs_is_flag(index_data->flags, FBR_FLUSH_DELAY_WRITE)) {
 		int ret = fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers,
-			do_append);
+			do_append, 1);
 		if (ret) {
 			return ret;
 		}
@@ -418,7 +418,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	}
 
 	if (ret && do_append) {
-		fbr_wbuffers_error_reset(fs, index_data->file, index_data->wbuffers, 1);
+		fbr_wbuffers_error_reset(fs, index_data->file, index_data->wbuffers, 1, 1);
 	}
 
 	if (!ret && index_data->removed) {
