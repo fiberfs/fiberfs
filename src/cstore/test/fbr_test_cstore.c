@@ -291,6 +291,12 @@ fbr_test_cstore_debug(struct fbr_cstore *cstore)
 
 	_test_cstore_wait(cstore);
 
+	struct fbr_cstore_server *server = cstore->servers;
+	while (server) {
+		fbr_test_logs("CSTORE_DEBUG port: %d", server->port);
+		server = server->next;
+	}
+
 	fbr_test_logs("CSTORE_DEBUG root: %s", cstore->root);
 	fbr_test_logs("CSTORE_DEBUG entries: %zu", cstore->entries);
 	fbr_test_logs("CSTORE_DEBUG bytes: %zu", cstore->bytes);
@@ -332,7 +338,7 @@ fbr_cmd_cstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 	assert(index >= 0);
 
-	fbr_test_logs("CSTORE_DEBUG %lu", index);
+	fbr_test_logs("CSTORE_DEBUG OBJECT: %lu", index);
 
 	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
 
