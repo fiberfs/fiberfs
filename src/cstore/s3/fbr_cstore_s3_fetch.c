@@ -160,7 +160,7 @@ _s3_write_file_url(struct fbr_cstore *cstore, struct fbr_file *file, struct fbr_
 
 static int
 _s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
-    const char *path, struct fbr_wbuffer *wbuffer)
+    const char *path, struct fbr_wbuffer *wbuffer, int retries)
 {
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(request);
@@ -177,6 +177,10 @@ _s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	// TODO
 	request->addr.timeout_connect_ms = 3000;
 	request->addr.timeout_transfer_ms = 5000;
+
+	if (retries) {
+		request->new_conn = 1;
+	}
 
 	chttp_set_method(request, "PUT");
 	_s3_write_url(cstore, path, request);
@@ -229,10 +233,10 @@ void
 fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
     const char *path, struct fbr_wbuffer *wbuffer)
 {
-	int ret = _s3_wbuffer_send(cstore, request, path, wbuffer);
+	int ret = _s3_wbuffer_send(cstore, request, path, wbuffer, 0);
 	if (ret < 0) {
 		chttp_context_reset(request);
-		_s3_wbuffer_send(cstore, request, path, wbuffer);
+		_s3_wbuffer_send(cstore, request, path, wbuffer, 1);
 	}
 }
 
@@ -334,6 +338,9 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	while (retries <= 1) {
 		chttp_context_init(&request);
 
+		if (retries) {
+			request.new_conn = 1;
+		}
 		retries++;
 
 		chttp_set_method(&request, "GET");
@@ -498,6 +505,9 @@ fbr_cstore_s3_chunk_delete(struct fbr_cstore *cstore, const char *path, fbr_id_t
 	while (retries <= 1) {
 		chttp_context_init(&request);
 
+		if (retries) {
+			request.new_conn = 1;
+		}
 		retries++;
 
 		chttp_set_method(&request, "DELETE");
