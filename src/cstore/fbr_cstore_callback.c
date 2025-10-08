@@ -12,7 +12,7 @@
 void
 fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
-	fbr_cstore_async_chunk_read(fs, file, chunk);
+	fbr_cstore_io_chunk_read(fs, file, chunk);
 }
 
 void
@@ -33,7 +33,7 @@ void
 fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
     struct fbr_wbuffer *wbuffer)
 {
-	fbr_cstore_async_wbuffer_write(fs, file, wbuffer);
+	fbr_cstore_io_wbuffer_write(fs, file, wbuffer);
 }
 
 int
