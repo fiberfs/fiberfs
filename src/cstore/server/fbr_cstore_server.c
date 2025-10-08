@@ -67,14 +67,11 @@ fbr_cstore_server_accept(struct fbr_cstore_worker *worker)
 	struct fbr_cstore_server *server = worker->task->param;
 	fbr_cstore_server_ok(server);
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "server accept() %lu", worker->thread_id);
-
 	int ret = chttp_tcp_accept(&worker->remote_addr, &server->addr);
 
 	fbr_cstore_task_add(worker->cstore, FBR_CSTORE_TASK_ACCEPT, server);
 
 	if (ret) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "accept() error %d", ret);
 		return;
 	}
 
@@ -85,7 +82,7 @@ fbr_cstore_server_accept(struct fbr_cstore_worker *worker)
 	int remote_port;
 	chttp_sa_string(&worker->remote_addr.sa, remote, sizeof(remote), &remote_port);
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "connection made %s:%d to %d",
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "connection made from %s:%d to %d",
 		remote, remote_port, server->port);
 
 	fbr_cstore_proc_http(worker);
