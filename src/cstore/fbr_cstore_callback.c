@@ -40,7 +40,31 @@ int
 fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
     struct fbr_writer *writer, struct fbr_directory *previous)
 {
-	return fbr_cstore_io_index_root_write(fs, directory, writer, previous);
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	fbr_writer_ok(writer);
+	assert_dev(writer->output);
+
+	int ret = fbr_cstore_io_index_write(fs, directory, writer);
+	if (ret) {
+		return ret;
+	}
+
+	fbr_id_t previous_version = 0;
+	if (previous) {
+		fbr_directory_ok(previous);
+		assert(previous->version);
+		previous_version = previous->version;
+	}
+
+	ret = fbr_cstore_io_root_write(fs, directory, previous_version);
+	if (ret) {
+		fbr_cstore_io_index_remove(fs, directory);
+	} else if (previous) {
+		fbr_cstore_io_index_remove(fs, previous);
+	}
+
+	return ret;
 }
 
 int
