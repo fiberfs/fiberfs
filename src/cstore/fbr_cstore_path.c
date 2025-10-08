@@ -81,17 +81,13 @@ fbr_cstore_path_loader(struct fbr_cstore *cstore, unsigned char dir, int metadat
 }
 
 size_t
-fbr_cstore_path_chunk(struct fbr_cstore *cstore, const struct fbr_file *file, fbr_id_t id,
+fbr_cstore_path_chunk_path(struct fbr_cstore *cstore, const char *file_path, fbr_id_t id,
     size_t offset, int metadata, char *buffer, size_t buffer_len)
 {
-	fbr_file_ok(file);
+	assert(file_path);
 	assert(id);
 	assert(buffer);
 	assert(buffer_len);
-
-	char filebuf[FBR_PATH_MAX];
-	struct fbr_path_name filepath;
-	fbr_path_get_full(&file->path, &filepath, filebuf, sizeof(filebuf));
 
 	char chunk_id[FBR_ID_STRING_MAX];
 	fbr_id_string(id, chunk_id, sizeof(chunk_id));
@@ -103,12 +99,26 @@ fbr_cstore_path_chunk(struct fbr_cstore *cstore, const struct fbr_file *file, fb
 	}
 
 	ret += fbr_snprintf(buffer + ret, buffer_len - ret, "%s.%s.%zu",
-		filepath.name,
+		file_path,
 		chunk_id,
 		offset);
 	assert(ret < buffer_len);
 
 	return ret;
+}
+
+size_t
+fbr_cstore_path_chunk_file(struct fbr_cstore *cstore, const struct fbr_file *file, fbr_id_t id,
+    size_t offset, int metadata, char *buffer, size_t buffer_len)
+{
+	fbr_file_ok(file);
+
+	char filebuf[FBR_PATH_MAX];
+	struct fbr_path_name filepath;
+	fbr_path_get_full(&file->path, &filepath, filebuf, sizeof(filebuf));
+
+	return fbr_cstore_path_chunk_path(cstore, filepath.name, id, offset, metadata, buffer,
+		buffer_len);
 }
 
 size_t
@@ -228,7 +238,35 @@ _hash_range(XXH3_state_t *hash, size_t offset, size_t length)
 */
 
 fbr_hash_t
-fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id, size_t offset)
+fbr_cstore_hash_chunk_path(struct fbr_cstore *cstore, const char *file_path, fbr_id_t id,
+    size_t offset)
+{
+	fbr_cstore_ok(cstore);
+	assert(file_path);
+	assert(id);
+
+	XXH3_state_t hash;
+	XXH3_INITSTATE(&hash);
+	XXH3_64bits_reset(&hash);
+
+	_hash_s3(&hash, cstore);
+
+	char buffer[FBR_PATH_MAX];
+	size_t len = fbr_cstore_path_chunk_path(NULL, file_path, id, offset, 0, buffer,
+		sizeof(buffer));
+	XXH3_64bits_update(&hash, buffer, len + 1);
+
+	XXH64_hash_t result = XXH3_64bits_digest(&hash);
+	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
+
+	// TODO external
+
+	return (fbr_hash_t)result;
+}
+
+fbr_hash_t
+fbr_cstore_hash_chunk_file(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
+    size_t offset)
 {
 	fbr_cstore_ok(cstore);
 	fbr_file_ok(file);
@@ -241,7 +279,7 @@ fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t
 	_hash_s3(&hash, cstore);
 
 	char buffer[FBR_PATH_MAX];
-	size_t len = fbr_cstore_path_chunk(NULL, file, id, offset, 0, buffer, sizeof(buffer));
+	size_t len = fbr_cstore_path_chunk_file(NULL, file, id, offset, 0, buffer, sizeof(buffer));
 	XXH3_64bits_update(&hash, buffer, len + 1);
 
 	XXH64_hash_t result = XXH3_64bits_digest(&hash);

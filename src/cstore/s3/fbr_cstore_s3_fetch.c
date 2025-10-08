@@ -33,8 +33,17 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 	s3->tls = tls ? 1 : 0;
 	s3->enabled = 1;
 
-	if (prefix) {
-		s3->prefix = strdup(prefix);
+	if (prefix && *prefix) {
+		size_t len = strlen(prefix);
+		assert(len);
+		if (prefix[len - 1] == '/') {
+			s3->prefix = strdup(prefix);
+		} else {
+			len += 2;
+			s3->prefix = malloc(len);
+			assert(s3->prefix);
+			fbr_snprintf(s3->prefix, len, "%s/", prefix);
+		}
 	}
 }
 
@@ -117,6 +126,8 @@ static void
 _s3_write_url(struct fbr_cstore *cstore, const char *path, struct chttp_context *request)
 {
 	assert_dev(cstore);
+	assert_dev(cstore->s3.enabled);
+	assert_dev(cstore->s3.host);
 	assert_dev(path);
 	assert_dev(request);
 
@@ -142,7 +153,7 @@ _s3_write_file_url(struct fbr_cstore *cstore, struct fbr_file *file, struct fbr_
 	assert_dev(request);
 
 	char buffer[FBR_PATH_MAX];
-	fbr_cstore_path_chunk(NULL, file, chunk->id, chunk->offset, 0, buffer, sizeof(buffer));
+	fbr_cstore_path_chunk_file(NULL, file, chunk->id, chunk->offset, 0, buffer, sizeof(buffer));
 
 	_s3_write_url(cstore, buffer, request);
 }
@@ -305,7 +316,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	}
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk_file(cstore, file, chunk->id, chunk->offset);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, chunk->length,
 		NULL, 1);
@@ -449,7 +460,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	metadata.offset = chunk->offset;
 	metadata.type = FBR_CSTORE_FILE_CHUNK;
 
-	fbr_cstore_path_chunk(NULL, file, chunk->id, chunk->offset, 0, path, sizeof(path));
+	fbr_cstore_path_chunk_file(NULL, file, chunk->id, chunk->offset, 0, path, sizeof(path));
 	fbr_strbcpy(metadata.path, path);
 
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
@@ -490,8 +501,7 @@ fbr_cstore_s3_chunk_delete(struct fbr_cstore *cstore, const char *path, fbr_id_t
 		retries++;
 
 		chttp_set_method(&request, "DELETE");
-		chttp_set_url(&request, path);
-		chttp_header_add(&request, "Host", cstore->s3.host);
+		_s3_write_url(cstore, path, &request);
 
 		chttp_dpage_ok(request.dpage);
 		int url_len = 4;

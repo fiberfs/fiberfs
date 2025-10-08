@@ -300,14 +300,14 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		return;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, wbuffer->id, wbuffer->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk_file(cstore, file, wbuffer->id, wbuffer->offset);
 	size_t wbuf_bytes = wbuffer->end;
 	assert_dev(wbuf_bytes);
 
 	char path[FBR_PATH_MAX];
 	char chunk_path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-	fbr_cstore_path_chunk(NULL, file, wbuffer->id, wbuffer->offset, 0, chunk_path,
+	fbr_cstore_path_chunk_file(NULL, file, wbuffer->id, wbuffer->offset, 0, chunk_path,
 		sizeof(chunk_path));
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
@@ -423,7 +423,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 		return;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk_file(cstore, file, chunk->id, chunk->offset);
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
@@ -500,28 +500,26 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	fbr_cstore_release(cstore, entry);
 }
 
-// TODO make async version which directly takes path, id, and offset
 void
-fbr_cstore_io_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
+fbr_cstore_io_chunk_delete(struct fbr_fs *fs, const char *file_path, fbr_id_t id, size_t offset)
 {
 	fbr_fs_ok(fs);
-	fbr_file_ok(file);
-	fbr_chunk_ok(chunk);
-	assert_zero(chunk->external);
+	assert(file_path && *file_path);
+	assert(id);
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	if (!cstore) {
 		return;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk_path(cstore, file_path, id, offset);
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "DELETE %s %zu:%zu %lu",
-		path, chunk->offset, chunk->length, chunk->id);
+	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "DELETE %s %s %lu %zu",
+		file_path, path, id, offset);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
@@ -534,6 +532,9 @@ fbr_cstore_io_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 
 	fbr_fs_stat_sub(&fs->stats.store_chunks);
 	fbr_fs_stat_sub(&cstore->stats.wr_chunks);
+
+	fbr_cstore_path_chunk_path(NULL, file_path, id, offset, 0, path, sizeof(path));
+	fbr_cstore_s3_chunk_delete(cstore, file_path, id);
 }
 
 static int
