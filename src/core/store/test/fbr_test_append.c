@@ -457,6 +457,8 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_test_ASSERT(checks[i], "%zu missing from check", i);
 	}
 
+	fbr_test_cstore_debug_0();
+
 	if (!_APPEND_ERROR_TEST) {
 		fbr_test_ASSERT(fbr_test_cstore_stat_chunks() == _APPEND_COUNTER_MAX,
 			"chunks: %lu != %d", fbr_test_cstore_stat_chunks(), _APPEND_COUNTER_MAX);
