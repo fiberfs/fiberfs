@@ -300,7 +300,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		return;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_chunk(fs, file, wbuffer->id, wbuffer->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, wbuffer->id, wbuffer->offset);
 	size_t wbuf_bytes = wbuffer->end;
 	assert_dev(wbuf_bytes);
 
@@ -325,11 +325,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 
 	struct chttp_context s3_request;
 	chttp_context_init(&s3_request);
-	assert_dev(s3_request.state == CHTTP_STATE_NONE);
-
-	if (cstore->s3.enabled) {
-		fbr_cstore_s3_wbuffer_send(cstore, &s3_request, chunk_path, wbuffer);
-	}
+	fbr_cstore_s3_wbuffer_send(cstore, &s3_request, chunk_path, wbuffer);
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
@@ -377,9 +373,6 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_release(cstore, entry);
 
 	fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, wbuffer, 0);
-
-	// TODO on an s3 error, linux will retry the flush, cstore cannot get a loading state,
-	//      and we fail early. We need to get gen a new id on EIO.
 }
 
 void
@@ -430,7 +423,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 		return;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_chunk(fs, file, chunk->id, chunk->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset);
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
@@ -521,7 +514,7 @@ fbr_cstore_io_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_
 		return;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_chunk(fs, file, chunk->id, chunk->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset);
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
@@ -587,7 +580,7 @@ _cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		return 1;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_index(fs, directory);
+	fbr_hash_t hash = fbr_cstore_hash_index(cstore, directory);
 
 	char path[FBR_PATH_MAX];
 	char index_path[FBR_PATH_MAX];
@@ -663,7 +656,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		return 1;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_index(fs, directory);
+	fbr_hash_t hash = fbr_cstore_hash_index(cstore, directory);
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
@@ -840,7 +833,7 @@ _cstore_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 		return;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_index(fs, directory);
+	fbr_hash_t hash = fbr_cstore_hash_index(cstore, directory);
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
@@ -876,7 +869,7 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
-	fbr_hash_t hash = fbr_cstore_hash_root(fs, &dirpath);
+	fbr_hash_t hash = fbr_cstore_hash_root(cstore, &dirpath);
 
 	char path[FBR_PATH_MAX];
 	char root_path[FBR_PATH_MAX];
@@ -1027,7 +1020,7 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 		return 0;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_root(fs, dirpath);
+	fbr_hash_t hash = fbr_cstore_hash_root(cstore, dirpath);
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
@@ -1109,7 +1102,7 @@ _cstore_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
-	fbr_hash_t hash = fbr_cstore_hash_root(fs, &dirpath);
+	fbr_hash_t hash = fbr_cstore_hash_root(cstore, &dirpath);
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));

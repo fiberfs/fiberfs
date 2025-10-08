@@ -85,7 +85,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	char path[FBR_PATH_MAX];
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	fbr_cstore_ok(cstore);
-	fbr_hash_t hash = fbr_cstore_hash_chunk(fs, file_1, chunk->id, chunk->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file_1, chunk->id, chunk->offset);
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 	fbr_test_logs("*** file_1 chunk: '%s'", path);
 	assert(fbr_sys_exists(path));
@@ -119,7 +119,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_wbuffer_ok(wbuffer);
 	assert_zero(wbuffer->next);
 
-	hash = fbr_cstore_hash_chunk(fs, file_1, wbuffer->id, wbuffer->offset);
+	hash = fbr_cstore_hash_chunk(cstore, file_1, wbuffer->id, wbuffer->offset);
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 	fbr_test_logs("*** file_1 new chunk: '%s'", path);
 	ret = fbr_sys_mkdirs(path);
@@ -181,7 +181,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert(dir2->previous->generation == 1);
 	dir2->generation = 2;
 
-	hash = fbr_cstore_hash_index(fs, dir2);
+	hash = fbr_cstore_hash_index(cstore, dir2);
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 	fbr_test_logs("*** dir2 new index: '%s'", path);
 	ret = fbr_sys_mkdirs(path);
@@ -215,7 +215,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert(dir2->state == FBR_DIRSTATE_ERROR);
 	fbr_dindex_release(fs, &dir2);
 
-	hash = fbr_cstore_hash_root(fs, &dir2name);
+	hash = fbr_cstore_hash_root(cstore, &dir2name);
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 	fbr_test_logs("*** dir2 root: '%s'", path);
 	assert(fbr_sys_exists(path));

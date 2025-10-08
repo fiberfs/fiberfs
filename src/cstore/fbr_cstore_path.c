@@ -173,14 +173,30 @@ fbr_cstore_path_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath, i
 }
 
 static void
-_hash_fs(XXH3_state_t *hash, struct fbr_fs *fs)
+_hash_s3(XXH3_state_t *hash, struct fbr_cstore *cstore)
 {
 	assert_dev(hash);
-	assert_dev(fs);
+	assert_dev(cstore);
 
-	// TODO
-	// Hash the s3 hostname + null
-	// Hash the url prefix including end slash. If no prefix, just hash a slash
+	// host + NULL + ( [/prefix/] | / )
+
+	if (!cstore->s3.enabled) {
+		XXH3_64bits_update(hash, "", 1);
+		XXH3_64bits_update(hash, "/", 1);
+		return;
+	}
+
+	assert(cstore->s3.host);
+	size_t len = strlen(cstore->s3.host);
+	XXH3_64bits_update(hash, cstore->s3.host, len + 1);
+
+	if (cstore->s3.prefix) {
+		len = strlen(cstore->s3.prefix);
+		assert_dev(cstore->s3.prefix[len - 1] == '/');
+		XXH3_64bits_update(hash, cstore->s3.prefix, len);
+	} else {
+		XXH3_64bits_update(hash, "/", 1);
+	}
 }
 
 /*
@@ -212,9 +228,9 @@ _hash_range(XXH3_state_t *hash, size_t offset, size_t length)
 */
 
 fbr_hash_t
-fbr_cstore_hash_chunk(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t offset)
+fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id, size_t offset)
 {
-	fbr_fs_ok(fs);
+	fbr_cstore_ok(cstore);
 	fbr_file_ok(file);
 	assert(id);
 
@@ -222,7 +238,7 @@ fbr_cstore_hash_chunk(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, siz
 	XXH3_INITSTATE(&hash);
 	XXH3_64bits_reset(&hash);
 
-	_hash_fs(&hash, fs);
+	_hash_s3(&hash, cstore);
 
 	char buffer[FBR_PATH_MAX];
 	size_t len = fbr_cstore_path_chunk(NULL, file, id, offset, 0, buffer, sizeof(buffer));
@@ -231,20 +247,22 @@ fbr_cstore_hash_chunk(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, siz
 	XXH64_hash_t result = XXH3_64bits_digest(&hash);
 	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
 
+	// TODO external
+
 	return (fbr_hash_t)result;
 }
 
 fbr_hash_t
-fbr_cstore_hash_index(struct fbr_fs *fs, struct fbr_directory *directory)
+fbr_cstore_hash_index(struct fbr_cstore *cstore, struct fbr_directory *directory)
 {
-	fbr_fs_ok(fs);
+	fbr_cstore_ok(cstore);
 	fbr_directory_ok(directory);
 
 	XXH3_state_t hash;
 	XXH3_INITSTATE(&hash);
 	XXH3_64bits_reset(&hash);
 
-	_hash_fs(&hash, fs);
+	_hash_s3(&hash, cstore);
 
 	char buffer[FBR_PATH_MAX];
 	size_t len = fbr_cstore_path_index(NULL, directory, 0, buffer, sizeof(buffer));
@@ -257,16 +275,16 @@ fbr_cstore_hash_index(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 fbr_hash_t
-fbr_cstore_hash_root(struct fbr_fs *fs, struct fbr_path_name *dirpath)
+fbr_cstore_hash_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath)
 {
-	fbr_fs_ok(fs);
+	fbr_cstore_ok(cstore);
 	assert(dirpath);
 
 	XXH3_state_t hash;
 	XXH3_INITSTATE(&hash);
 	XXH3_64bits_reset(&hash);
 
-	_hash_fs(&hash, fs);
+	_hash_s3(&hash, cstore);
 
 	char buffer[FBR_PATH_MAX];
 	size_t len = fbr_cstore_path_root(NULL, dirpath, 0, buffer, sizeof(buffer));
