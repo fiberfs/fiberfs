@@ -112,7 +112,7 @@ _write_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
 
 static const struct fbr_store_callbacks _WRITE_CALLBACKS = {
 	.chunk_read_f = fbr_cstore_chunk_read,
-	.chunk_delete_f = fbr_cstore_chunk_delete,
+	.chunk_delete_f = fbr_cstore_async_chunk_delete,
 	.wbuffer_write_f = _write_wbuffer,
 	.index_write_f = _write_index_root,
 	.index_read_f = fbr_cstore_index_read,

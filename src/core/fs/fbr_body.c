@@ -279,7 +279,6 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 			continue;
 		}
 
-		// TODO async?
 		if (fs->store->chunk_delete_f) {
 			fs->store->chunk_delete_f(fs, file, chunk);
 		}

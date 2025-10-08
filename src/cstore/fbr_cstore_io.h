@@ -22,23 +22,29 @@ enum fbr_cstore_op_type {
 	FBR_CSOP_TEST,
 	FBR_CSOP_WBUFFER_WRITE,
 	FBR_CSOP_CHUNK_READ,
+	FBR_CSOP_CHUNK_DELETE,
 	__FBR_CSOP_END
 };
+
+struct fbr_cstore_op;
+
+typedef void (*fbr_cstore_async_f)(struct fbr_cstore *cstore, struct fbr_cstore_op *op);
+typedef void (*fbr_cstore_async_done_f)(struct fbr_cstore_op *op);
 
 struct fbr_cstore_op {
 	unsigned				magic;
 #define FBR_CSTORE_OP_MAGIC			0x08BDFC3F
 
 	enum fbr_cstore_op_type			type;
-	struct fbr_fs				*fs;
+	void					*param0;
 	void					*param1;
 	void					*param2;
 	void					*param3;
 
+	fbr_cstore_async_done_f			done;
+
 	TAILQ_ENTRY(fbr_cstore_op)		entry;
 };
-
-typedef void (*fbr_cstore_async_f)(struct fbr_cstore *cstore, struct fbr_cstore_op *op);
 
 struct fbr_cstore_async {
 	struct fbr_cstore_op			ops[FBR_CSTORE_ASYNC_QUEUE_MAX];
@@ -46,7 +52,6 @@ struct fbr_cstore_async {
 	size_t					queue_len;
 	size_t					queue_max;
 	pthread_mutex_t				queue_lock;
-	pthread_cond_t				queue_ready;
 	pthread_cond_t				todo_ready;
 	volatile int				exit;
 
@@ -71,10 +76,12 @@ void fbr_cstore_async_init(struct fbr_cstore *cstore);
 void fbr_cstore_async_free(struct fbr_cstore *cstore);
 
 int fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type,
-	struct fbr_fs *fs, void *param1, void *param2, void *param3);
+	void *param0, void *param1, void *param2, void *param3, fbr_cstore_async_done_f done);
 void fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
 void fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file,
+	struct fbr_chunk *chunk);
+void fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_chunk *chunk);
 const char *fbr_cstore_async_type(enum fbr_cstore_op_type type);
 

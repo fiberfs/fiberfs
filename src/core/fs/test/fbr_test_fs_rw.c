@@ -96,7 +96,7 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
 	.chunk_read_f = fbr_cstore_chunk_read,
-	.chunk_delete_f = fbr_cstore_chunk_delete,
+	.chunk_delete_f = fbr_cstore_async_chunk_delete,
 	.wbuffer_write_f = fbr_cstore_wbuffer_write,
 	.index_write_f = fbr_cstore_index_root_write,
 	.index_read_f = fbr_cstore_index_read,

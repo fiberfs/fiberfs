@@ -18,7 +18,9 @@ fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk
 void
 fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {
+	fbr_fs_ok(fs);
 	fbr_file_ok(file);
+	fbr_chunk_ok(chunk);
 
 	char buffer[FBR_PATH_MAX];
 	struct fbr_path_name filepath;
