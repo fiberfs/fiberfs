@@ -289,7 +289,7 @@ _write_test(void)
 	fbr_fio_release(fs, fio);
 	fbr_test_index_request_finish();
 
-	//fbr_test_cstore_debug();
+	fbr_test_cstore_debug_0();
 	assert(fs->stats.store_chunks > _FILE_SIZE / _WBUFFER_SIZE);
 
 	fbr_test_logs("*** Starting write threads");
@@ -383,7 +383,7 @@ _write_test(void)
 	fbr_test_fs_stats(fs);
 	fbr_test_fs_inodes_debug(fs);
 	fbr_test_fs_dindex_debug(fs);
-	//fbr_test_cstore_debug();
+	fbr_test_cstore_debug_0();
 
 	fbr_test_ERROR(fs->stats.directories, "non zero");
 	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
