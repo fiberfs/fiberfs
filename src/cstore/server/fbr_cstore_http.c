@@ -46,8 +46,8 @@ _http_print(struct fbr_rlog *rlog, struct chttp_context *http)
 	assert_dev(http);
 
 	fbr_rdlog(rlog, FBR_LOG_CS_WORKER,
-		"state: %d error: %d status: %d length: %ld chunk: %u gzip: %u tls: %u",
-		http->state, http->error, http->status, http->length, http->chunked,
+		"state: %d error: %d ver: %d status: %d length: %ld chunk: %u gzip: %u tls: %u",
+		http->state, http->error, http->version, http->status, http->length, http->chunked,
 		http->gzip, http->addr.tls);
 
 	struct chttp_dpage *dpage = http->dpage;
@@ -124,6 +124,7 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 			chttp_context_free(http);
 			return;
 		} else if (!chttp_header_get(http, "Host") || !chttp_header_get(http, "ETag")) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (headers)");
 			_http_send_code(http, 400, "Bad Request");
 			chttp_context_free(http);
 			return;
@@ -139,10 +140,12 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 		}
 	} else if (!strcmp(method, "PUT") && http->state == CHTTP_STATE_BODY) {
 		if (http->chunked) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (chunked)");
 			_http_send_code(http, 400, "Bad Request");
 			chttp_context_free(http);
 			return;
 		} else if (!chttp_header_get(http, "Host") || !chttp_header_get(http, "ETag")) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (headers)");
 			_http_send_code(http, 400, "Bad Request");
 			chttp_context_free(http);
 			return;

@@ -14,13 +14,14 @@
 #include "cstore/fbr_cstore_api.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
+#include "utils/fbr_sys.h"
 
 void
 fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tls,
     const char *prefix)
 {
 	fbr_cstore_ok(cstore);
-	assert(host);
+	assert(host && *host);
 	assert(port > 0 && port <= USHRT_MAX);
 
 	struct fbr_cstore_s3 *s3 = &cstore->s3;
@@ -128,20 +129,22 @@ _s3_write_url(struct fbr_cstore *cstore, const char *path, struct chttp_context 
 	fbr_bprintf(buffer, "%s/%s", prefix, path);
 
 	chttp_set_url(request, buffer);
+	chttp_header_add(request, "Host", cstore->s3.host);
 }
 
 static void
-_s3_write_file_url(struct fbr_cstore *cstore, struct fbr_file *file, struct chttp_context *request)
+_s3_write_file_url(struct fbr_cstore *cstore, struct fbr_file *file, struct fbr_chunk *chunk,
+    struct chttp_context *request)
 {
 	assert_dev(cstore);
 	assert_dev(file);
+	assert_dev(chunk);
 	assert_dev(request);
 
 	char buffer[FBR_PATH_MAX];
-	struct fbr_path_name filepath;
-	fbr_path_get_full(&file->path, &filepath, buffer, sizeof(buffer));
+	fbr_cstore_path_chunk(NULL, file, chunk->id, chunk->offset, 0, buffer, sizeof(buffer));
 
-	_s3_write_url(cstore, filepath.name, request);
+	_s3_write_url(cstore, buffer, request);
 }
 
 static int
@@ -262,9 +265,24 @@ _s3_chunk_error(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fbr_cstore_
     struct fbr_file *file, struct fbr_chunk *chunk, struct chttp_context *request)
 {
 	fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
+
 	fbr_cstore_set_error(entry);
 	fbr_cstore_release(cstore, entry);
+
 	chttp_context_free(request);
+}
+
+static inline void
+_s3_chunk_write_error(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fbr_cstore_entry *entry,
+    struct fbr_file *file, struct fbr_chunk *chunk)
+{
+	fbr_file_LOCK(fs, file);
+	fbr_chunk_release(chunk);
+	fbr_file_UNLOCK(file);
+	fbr_inode_release(fs, &file);
+
+	fbr_cstore_set_error(entry);
+	fbr_cstore_remove(cstore, entry);
 }
 
 void
@@ -296,39 +314,63 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
+	int retries = 0;
 	struct chttp_context request;
-	chttp_context_init(&request);
 
-	chttp_set_method(&request, "GET");
-	_s3_write_file_url(cstore, file, &request);
+	while (retries <= 1) {
+		chttp_context_init(&request);
 
-	// TODO headers
+		retries++;
 
-	chttp_connect(&request, cstore->s3.host, strlen(cstore->s3.host), cstore->s3.port,
-		cstore->s3.tls);
-	if (request.error) {
-		_s3_chunk_error(fs, cstore, entry, file, chunk, &request);
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id,
-			"ERROR chttp connection %s", cstore->s3.host);
-		return;
+		chttp_set_method(&request, "GET");
+		_s3_write_file_url(cstore, file, chunk, &request);
+
+		chttp_dpage_ok(request.dpage);
+		int url_len = 4;
+		while (request.dpage->data[url_len] > ' ') {
+			url_len++;
+		}
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "S3 %.*s (%d)",
+			url_len, request.dpage->data, retries);
+
+		char buffer[32];
+		fbr_cstore_etag(chunk->id, buffer, sizeof(buffer));
+		chttp_header_add(&request, "ETag", buffer);
+
+		chttp_connect(&request, cstore->s3.host, strlen(cstore->s3.host), cstore->s3.port,
+			cstore->s3.tls);
+		if (request.error) {
+			_s3_chunk_error(fs, cstore, entry, file, chunk, &request);
+			fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id,
+				"ERROR chttp connection %s", cstore->s3.host);
+			return;
+		}
+
+		chttp_send(&request);
+		if (request.error) {
+			fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id,
+				"ERROR chttp send: %s", chttp_error_msg(&request));
+			continue;
+		}
+
+		chttp_receive(&request);
+		if (request.error) {
+			fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id,
+				"ERROR chttp recv: %s", chttp_error_msg(&request));
+			continue;
+		}
+
+		break;
 	}
-
-	chttp_send(&request);
-	if (request.error) {
-		_s3_chunk_error(fs, cstore, entry, file, chunk, &request);
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR chttp send");
-		return;
-	}
-
-	chttp_receive(&request);
 
 	if (request.error || request.status != 200) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id,
+			"ERROR chttp: %d %d", request.error, request.status);
 		_s3_chunk_error(fs, cstore, entry, file, chunk, &request);
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR chttp response");
 		return;
 	} else if (!request.chunked && (size_t)request.length != chunk->length) {
-		_s3_chunk_error(fs, cstore, entry, file, chunk, &request);
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR chttp length");
+		_s3_chunk_error(fs, cstore, entry, file, chunk, &request);
 		return;
 	}
 
@@ -346,10 +388,14 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	}
 
 	if (request.error || bytes != chunk->length || request.state < CHTTP_STATE_IDLE) {
-		_s3_chunk_error(fs, cstore, entry, file, chunk, &request);
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR chttp bytes");
+		_s3_chunk_error(fs, cstore, entry, file, chunk, &request);
 		return;
 	}
+
+	chttp_context_free(&request);
+
+	// Take a chunk ref and write it to the cstore
 
 	fbr_file_ref_inode(fs, file);
 	fbr_file_LOCK(fs, file);
@@ -358,7 +404,58 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
 
-	// TODO write chunk here
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+
+	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "WRITE S3 chunk: %s",
+		path);
+
+	int ret = fbr_sys_mkdirs(path);
+	if (ret) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR write mkdir");
+		_s3_chunk_write_error(fs, cstore, entry, file, chunk);
+		return;
+	}
+
+	if (fbr_sys_exists(path)) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR write exists");
+		_s3_chunk_write_error(fs, cstore, entry, file, chunk);
+		return;
+	}
+
+	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	if (fd < 0) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR write open()");
+		_s3_chunk_write_error(fs, cstore, entry, file, chunk);
+		return;
+	}
+
+	bytes = fbr_sys_write(fd, chunk->data, chunk->length);
+	assert_zero(close(fd));
+
+	if (bytes != chunk->length) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR write bytes");
+		_s3_chunk_write_error(fs, cstore, entry, file, chunk);
+		return;
+	}
+
+	struct fbr_cstore_metadata metadata;
+	fbr_zero(&metadata);
+	metadata.etag = chunk->id;
+	metadata.size = bytes;
+	metadata.offset = chunk->offset;
+	metadata.type = FBR_CSTORE_FILE_CHUNK;
+
+	fbr_cstore_path_chunk(NULL, file, chunk->id, chunk->offset, 0, path, sizeof(path));
+	fbr_strbcpy(metadata.path, path);
+
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+	ret = fbr_cstore_metadata_write(path, &metadata);
+	if (ret) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR write metadata");
+		_s3_chunk_write_error(fs, cstore, entry, file, chunk);
+		return;
+	}
 
 	fbr_file_LOCK(fs, file);
 	fbr_chunk_release(chunk);
@@ -367,6 +464,4 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
-
-	chttp_context_free(&request);
 }

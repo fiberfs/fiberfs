@@ -55,6 +55,8 @@ FBR_TEST_CMD(cstore_debug)
 FBR_TEST_VAR(cstore_stat_indexes)
 FBR_TEST_VAR(cstore_stat_roots)
 
+FBR_TEST_CMD(cstore_set_lru)
+FBR_TEST_CMD(cstore_dirty_rm)
 FBR_TEST_CMD(cstore_enable_server)
 FBR_TEST_CMD(cstore_set_s3)
 

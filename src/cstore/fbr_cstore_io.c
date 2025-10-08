@@ -307,8 +307,8 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	char path[FBR_PATH_MAX];
 	char chunk_path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-	size_t chunk_path_len = fbr_cstore_path_chunk(NULL, file, wbuffer->id, wbuffer->offset, 0,
-		chunk_path, sizeof(chunk_path));
+	fbr_cstore_path_chunk(NULL, file, wbuffer->id, wbuffer->offset, 0, chunk_path,
+		sizeof(chunk_path));
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "%s %zu %s",
@@ -357,8 +357,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	metadata.size = bytes;
 	metadata.offset = wbuffer->offset;
 	metadata.type = FBR_CSTORE_FILE_CHUNK;
-	assert(chunk_path_len < sizeof(metadata.path));
-	memcpy(metadata.path, chunk_path, chunk_path_len + 1);
+	fbr_strbcpy(metadata.path, chunk_path);
 
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = fbr_cstore_metadata_write(path, &metadata);
@@ -593,8 +592,7 @@ _cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	char path[FBR_PATH_MAX];
 	char index_path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-	size_t index_path_len = fbr_cstore_path_index(NULL, directory, 0, index_path,
-		sizeof(index_path));
+	fbr_cstore_path_index(NULL, directory, 0, index_path, sizeof(index_path));
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE %s %lu %s",
@@ -632,8 +630,7 @@ _cstore_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	metadata.size = writer->bytes;
 	metadata.type = FBR_CSTORE_FILE_INDEX;
 	metadata.gzipped = writer->is_gzip;
-	assert(index_path_len < sizeof(metadata.path));
-	memcpy(metadata.path, index_path, index_path_len + 1);
+	fbr_strbcpy(metadata.path, index_path);
 
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	ret = fbr_cstore_metadata_write(path, &metadata);
@@ -884,8 +881,7 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 	char path[FBR_PATH_MAX];
 	char root_path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-	size_t root_path_len = fbr_cstore_path_root(NULL, &dirpath, 0, root_path,
-		sizeof(root_path));
+	fbr_cstore_path_root(NULL, &dirpath, 0, root_path, sizeof(root_path));
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "WRITE %s %lu %lu %s",
@@ -937,8 +933,7 @@ _cstore_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t 
 	fbr_zero(&metadata);
 	metadata.etag = directory->version;
 	metadata.type = FBR_CSTORE_FILE_ROOT;
-	assert(root_path_len < sizeof(metadata.path));
-	memcpy(metadata.path, root_path, root_path_len + 1);
+	fbr_strbcpy(metadata.path, root_path);
 
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = fbr_cstore_metadata_write(path, &metadata);

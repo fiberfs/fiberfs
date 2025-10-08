@@ -386,6 +386,37 @@ fbr_var_cstore_stat_roots(struct fbr_test_context *ctx)
 	return tcstore->stat_buf;
 }
 
+void
+fbr_cmd_cstore_set_lru(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 2);
+
+	long index = fbr_test_parse_long(cmd->params[0].value);
+	long max_size = fbr_test_parse_long(cmd->params[1].value);
+	assert(max_size > 0);
+
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
+
+	fbr_cstore_max_size(cstore, max_size, 1);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_set_lru: %ld", max_size);
+}
+
+void
+fbr_cmd_cstore_dirty_rm(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	long index = fbr_test_parse_long(cmd->params[0].value);
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
+
+	fbr_sys_rmdir(cstore->root);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_dirty_rm: %s", cstore->root);
+}
+
 #define _CSTORE_THREADS		4
 #define _CSTORE_RAND_THREADS	2
 #define _CSTORE_ALL_THREADS	(_CSTORE_THREADS + _CSTORE_RAND_THREADS)
