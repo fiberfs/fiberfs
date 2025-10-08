@@ -212,6 +212,7 @@ fbr_hash_t fbr_cstore_hash_url(const char *host, size_t host_len, const char *ur
 void fbr_cstore_fuse_register(const char *root_path);
 struct fbr_cstore *fbr_cstore_find(void);
 unsigned int fbr_cstore_request_id(unsigned int default_id);
+size_t fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len);
 
 #define fbr_cstore_ok(cstore)			fbr_magic_check(cstore, FBR_CSTORE_MAGIC)
 #define fbr_cstore_head_ok(head)		fbr_magic_check(head, FBR_CSTORE_HEAD_MAGIC)

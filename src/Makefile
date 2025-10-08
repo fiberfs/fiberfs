@@ -8,6 +8,7 @@ CFLAGS_BUILD=
 DEPFLAGS=-MMD -MP
 LDFLAGS=-shared
 LIBFLAGS=-lrt -lpthread
+AR=ar cr
 BUILD=build
 
 TEST_SRC:=$(shell find * -type f -name '*.c' -path '*test/*')
@@ -152,19 +153,24 @@ libfiberfs.so:	libfiberfs.a libchttp.a libfjson.a libcstore.a
 		$(CC) $(LDFLAGS) -o $@ libfiberfs.a libchttp.a libfjson.a libcstore.a
 
 libfiberfs.a:	$(OBJS)
-		ar cr $@ $(OBJS)
+		$(RM) $@
+		$(AR) $@ $(OBJS)
 
 libfibertest.a:	$(TEST_OBJS) $(UTILS_OBJS)
-		ar cr $@ $(TEST_OBJS) $(UTILS_OBJS)
+		$(RM) $@
+		$(AR) $@ $(TEST_OBJS) $(UTILS_OBJS)
 
 libchttp.a:	$(CHTTP_OBJS) $(UTILS_OBJS)
-		ar cr $@ $(CHTTP_OBJS) $(UTILS_OBJS)
+		$(RM) $@
+		$(AR) $@ $(CHTTP_OBJS) $(UTILS_OBJS)
 
 libfjson.a:	$(FJSON_OBJS) $(UTILS_OBJS)
-		ar cr $@ $(FJSON_OBJS) $(UTILS_OBJS)
+		$(RM) $@
+		$(AR) $@ $(FJSON_OBJS) $(UTILS_OBJS)
 
 libcstore.a:	$(CSTORE_OBJS) $(UTILS_OBJS)
-		ar cr $@ $(CSTORE_OBJS) $(UTILS_OBJS)
+		$(RM) $@
+		$(AR) $@ $(CSTORE_OBJS) $(UTILS_OBJS)
 
 $(BUILD)/%.o:	%.c | $(BUILD_DIRS)
 		$(CC) $(CFLAGS) $(CFLAGS_CC) $(CFLAGS_BUILD) $(DEPFLAGS) -c $< -o $@

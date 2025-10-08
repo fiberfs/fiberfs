@@ -39,6 +39,43 @@ _http_send_code(struct chttp_context *http, int status, const char *reason)
 	chttp_tcp_send(&http->addr, buffer, bytes);
 }
 
+static void
+_http_print(struct fbr_rlog *rlog, struct chttp_context *http)
+{
+	assert_dev(rlog);
+	assert_dev(http);
+
+	fbr_rdlog(rlog, FBR_LOG_CS_WORKER,
+		"state: %d error: %d status: %d length: %ld chunk: %u gzip: %u tls: %u",
+		http->state, http->error, http->status, http->length, http->chunked,
+		http->gzip, http->addr.tls);
+
+	struct chttp_dpage *dpage = http->dpage;
+	while (dpage) {
+		chttp_dpage_ok(dpage);
+
+		size_t start = 0;
+		int first = 1;
+		for (size_t i = 0; i < dpage->length; i++) {
+			if (dpage->data[i] == '\n') {
+				if ((i - 1) <= start) {
+					break;
+				}
+				if (!first) {
+					fbr_rdlog(rlog, FBR_LOG_CS_WORKER, "  %.*s",
+						(int)(i - 1 - start), dpage->data + start);
+				} else {
+					first = 0;
+				}
+				start = i + 1;
+				continue;
+			}
+		}
+
+		dpage = dpage->next;
+	}
+}
+
 void
 fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 {
@@ -73,6 +110,7 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 	const char *url = chttp_header_get_url(http);
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "http %s url: %s", method, url);
+	_http_print(worker->rlog, http);
 
 	if (http->version != CHTTP_H_VERSION_1_1) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad http version");

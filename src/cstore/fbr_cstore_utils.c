@@ -68,3 +68,17 @@ fbr_cstore_request_id(unsigned int default_id)
 
 	return default_id;
 }
+
+size_t
+fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len)
+{
+	assert(buffer);
+	assert(buffer_len >= FBR_ID_STRING_MAX + 2);
+
+	buffer[0] = '\"';
+	size_t len = 1 + fbr_id_string(id, buffer + 1, buffer_len - 2);
+	buffer[len++] = '\"';
+	buffer[len] = '\0';
+
+	return len;
+}

@@ -155,22 +155,28 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *requ
 	fbr_wbuffer_ok(wbuffer);
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "S3 PUT");
+
+	// TODO
+	request->addr.timeout_connect_ms = 3000;
+	request->addr.timeout_transfer_ms = 5000;
 
 	chttp_set_method(request, "PUT");
 	_s3_write_url(cstore, path, request);
+
+	chttp_dpage_ok(request->dpage);
+	int url_len = 4;
+	while (request->dpage->data[url_len] > ' ') {
+		url_len++;
+	}
+	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "S3 %.*s",
+		url_len, request->dpage->data);
 
 	char buffer[32];
 	fbr_bprintf(buffer, "%zu", wbuffer->end);
 
 	chttp_header_add(request, "Content-Length", buffer);
 
-	static_ASSERT(sizeof(buffer) > FBR_ID_STRING_MAX + 2);
-	buffer[0] = '\"';
-	buffer[1] = '\0';
-	size_t id_len = fbr_id_string(wbuffer->id, buffer + 1, sizeof(buffer) - 2);
-	buffer[id_len + 1] = '\"';
-	buffer[id_len + 2] = '\0';
+	fbr_cstore_etag(wbuffer->id, buffer, sizeof(buffer));
 	chttp_header_add(request, "ETag", buffer);
 
 	chttp_connect(request, cstore->s3.host, strlen(cstore->s3.host), cstore->s3.port,
@@ -180,8 +186,6 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *requ
 			"ERROR chttp connection %s", cstore->s3.host);
 		return;
 	}
-
-	// TODO debug chttp dpages
 
 	chttp_send(request);
 	if (request->error) {
