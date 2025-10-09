@@ -204,7 +204,6 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type)
 	}
 
 	header = chttp_header_get(ctx, "transfer-encoding");
-
 	if (header && !strcasecmp(header, "chunked")) {
 		ctx->chunked = 1;
 		_body_chunk_start(ctx);
@@ -212,7 +211,6 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type)
 	}
 
 	header = chttp_header_get(ctx, "content-length");
-
 	if (header) {
 		char *len_end;
 		errno = 0;

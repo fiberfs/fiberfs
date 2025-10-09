@@ -7,6 +7,12 @@
 #ifndef _FBR_CSTORE_S3_H_INCLUDED_
 #define _FBR_CSTORE_S3_H_INCLUDED_
 
+#include <pthread.h>
+
+#include "fiberfs.h"
+#include "chttp.h"
+#include "core/fs/fbr_fs.h"
+
 struct fbr_cstore_s3 {
 	char				*host;
 	size_t				host_len;
@@ -35,6 +41,8 @@ struct fbr_cstore_cluster {
 	size_t				size;
 };
 
+struct fbr_cstore;
+
 void fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tls,
 	const char *prefix);
 void fbr_cstore_s3_free(struct fbr_cstore *cstore);
@@ -45,8 +53,11 @@ void fbr_cstore_cluster_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	const char *path, struct fbr_wbuffer *wbuffer);
+pthread_t fbr_cstore_s3_wbuffer_send_async(struct fbr_cstore *cstore,
+	struct chttp_context *request, char *path, struct fbr_wbuffer *wbuffer,
+	struct fbr_cstore_op *op);
 void fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
-	struct chttp_context *request, const char *path, struct fbr_wbuffer *wbuffer,
+	pthread_t s3_thread, struct chttp_context *request, struct fbr_wbuffer *wbuffer,
 	int error);
 void fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct fbr_file *file, struct fbr_chunk *chunk);

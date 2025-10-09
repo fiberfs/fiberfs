@@ -126,6 +126,7 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 				(fbr_id_t)op->param3);
 			return;
 		case FBR_CSOP_NONE:
+		case FBR_CSOP_WBUFFER_SEND:
 		case __FBR_CSOP_END:
 			break;
 
@@ -325,6 +326,8 @@ fbr_cstore_async_type(enum fbr_cstore_op_type type)
 			return "TEST";
 		case FBR_CSOP_WBUFFER_WRITE:
 			return "WBUFFER_WRITE";
+		case FBR_CSOP_WBUFFER_SEND:
+			return "WBUFFER_SEND";
 		case FBR_CSOP_CHUNK_READ:
 			return "CHUNK_READ";
 		case FBR_CSOP_CHUNK_DELETE:
