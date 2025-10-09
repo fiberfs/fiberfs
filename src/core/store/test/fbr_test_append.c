@@ -185,6 +185,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_stats(fs_1);
 	fbr_test_fs_inodes_debug(fs_1);
 	fbr_test_fs_dindex_debug(fs_1);
+	fbr_test_cstore_debug_0();
 
 	assert_zero(fs_1->stats.directories);
 	assert_zero(fs_1->stats.directories_dindex);
@@ -204,7 +205,6 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_stats(fs_2);
 	fbr_test_fs_inodes_debug(fs_2);
 	fbr_test_fs_dindex_debug(fs_2);
-	fbr_test_cstore_debug_0();
 
 	assert_zero(fs_2->stats.directories);
 	assert_zero(fs_2->stats.directories_dindex);
@@ -356,6 +356,8 @@ _append_thread(void *arg)
 		count = fbr_atomic_add(&_APPEND_COUNTER, 1);
 		appends++;
 	}
+
+	fbr_test_cstore_wait_0();
 
 	fbr_fs_release_all(fs, 1);
 	fbr_fs_free(fs);

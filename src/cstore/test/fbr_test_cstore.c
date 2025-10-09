@@ -201,8 +201,8 @@ fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 }
 
-static void
-_test_cstore_wait(struct fbr_cstore *cstore)
+void
+fbr_test_cstore_wait(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
 
@@ -214,6 +214,15 @@ _test_cstore_wait(struct fbr_cstore *cstore)
 	}
 
 	assert_zero(cstore->async.queue_len);
+}
+
+void
+fbr_test_cstore_wait_0(void)
+{
+	struct fbr_test_context *ctx = fbr_test_get_ctx();
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
+
+	fbr_test_cstore_wait(cstore);
 }
 
 static void
@@ -289,7 +298,7 @@ fbr_test_cstore_debug(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
 
-	_test_cstore_wait(cstore);
+	fbr_test_cstore_wait(cstore);
 
 	struct fbr_cstore_server *server = cstore->servers;
 	while (server) {
@@ -319,7 +328,6 @@ void
 fbr_test_cstore_debug_0(void)
 {
 	struct fbr_test_context *ctx = fbr_test_get_ctx();
-
 	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
 
 	fbr_test_cstore_debug(cstore);

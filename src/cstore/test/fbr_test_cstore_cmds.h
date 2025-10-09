@@ -18,6 +18,8 @@ void fbr_test_cstore_unregister(void);
 void fbr_test_cstore_init(struct fbr_test_context *ctx);
 void fbr_test_cstore_init_loader(struct fbr_test_context *ctx);
 void fbr_test_cstore_reload(struct fbr_test_context *ctx);
+void fbr_test_cstore_wait(struct fbr_cstore *cstore);
+void fbr_test_cstore_wait_0(void);
 void fbr_test_cstore_debug(struct fbr_cstore *cstore);
 void fbr_test_cstore_debug_0(void);
 fbr_stats_t fbr_test_cstore_stat_chunks(void);
