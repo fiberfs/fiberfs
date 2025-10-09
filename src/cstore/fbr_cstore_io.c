@@ -186,6 +186,52 @@ fbr_cstore_metadata_read(const char *path, struct fbr_cstore_metadata *metadata)
 	return ret;
 }
 
+void
+fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
+{
+	fbr_cstore_ok(cstore);
+	fbr_cstore_entry_ok(entry);
+
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, entry->hash, 0, path, sizeof(path));
+	(void)unlink(path);
+
+	fbr_cstore_path(cstore, entry->hash, 1, path, sizeof(path));
+	(void)unlink(path);
+}
+
+void
+fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_len,
+    fbr_id_t id)
+{
+	fbr_cstore_ok(cstore);
+	assert(url);
+	assert(url_len);
+	assert(id);
+
+	fbr_hash_t hash = fbr_cstore_hash_url(cstore->s3.host, cstore->s3.host_len, url, url_len);
+
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
+	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "DELETE %s %s %lu",
+		path, url, id);
+
+	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+	if (!entry) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR no entry");
+		return;
+	}
+
+	fbr_cstore_entry_ok(entry);
+	fbr_cstore_remove(cstore, entry);
+
+	fbr_fs_stat_sub(&cstore->stats.wr_chunks);
+
+	fbr_cstore_s3_delete(cstore, url, id);
+}
+
 static void
 _cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, int remove)
 {
@@ -314,7 +360,8 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "%s %zu %s",
 		chunk_path, wbuf_bytes, path);
 
-	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, wbuf_bytes, path, 1);
+	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, wbuf_bytes,
+		path, 1);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR loading state");
 		fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
@@ -373,52 +420,6 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_release(cstore, entry);
 
 	fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, chunk_path, wbuffer, 0);
-}
-
-void
-fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
-{
-	fbr_cstore_ok(cstore);
-	fbr_cstore_entry_ok(entry);
-
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path(cstore, entry->hash, 0, path, sizeof(path));
-	(void)unlink(path);
-
-	fbr_cstore_path(cstore, entry->hash, 1, path, sizeof(path));
-	(void)unlink(path);
-}
-
-void
-fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_len,
-    fbr_id_t id)
-{
-	fbr_cstore_ok(cstore);
-	assert(url);
-	assert(url_len);
-	assert(id);
-
-	fbr_hash_t hash = fbr_cstore_hash_url(cstore->s3.host, cstore->s3.host_len, url, url_len);
-
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-
-	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "DELETE %s %s %lu",
-		path, url, id);
-
-	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
-	if (!entry) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR no entry");
-		return;
-	}
-
-	fbr_cstore_entry_ok(entry);
-	fbr_cstore_remove(cstore, entry);
-
-	fbr_fs_stat_sub(&cstore->stats.wr_chunks);
-
-	fbr_cstore_s3_delete(cstore, url, id);
 }
 
 void
@@ -587,7 +588,8 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE %s %lu %s",
 		index_path, directory->version, path);
 
-	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, writer->bytes, path, 1);
+	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, writer->bytes,
+		path, 1);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR loading state");
 		return 1;

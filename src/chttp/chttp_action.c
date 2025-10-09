@@ -23,7 +23,7 @@ _finalize_request(struct chttp_context *ctx)
 		} else {
 			fbr_ABORT("host header is missing");
 		}
-		assert(ctx->has_host);
+		assert_dev(ctx->has_host);
 	}
 
 	if (ctx->gzip) {

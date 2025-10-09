@@ -24,12 +24,11 @@ static enum fbr_cstore_entry_type
 _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, size_t *offset)
 {
 	assert_dev(url);
-	assert_dev(etag);
 	assert_dev(offset);
 
 	*offset = 0;
 
-	if (!url_len || !etag_len) {
+	if (!url_len) {
 		return FBR_CSTORE_FILE_NONE;
 	}
 
@@ -40,7 +39,7 @@ _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, s
 				return FBR_CSTORE_FILE_ROOT;
 			} else if (!strncmp(&url[i], ".fiberfsindex.", 14)) {
 				i += 14;
-				if (i >= url_len) {
+				if (i >= url_len || !etag_len) {
 					return FBR_CSTORE_FILE_NONE;
 				}
 
@@ -55,6 +54,10 @@ _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, s
 				return FBR_CSTORE_FILE_NONE;
 			}
 		} else if (url[i] == '.') {
+			if (!etag_len) {
+				continue;
+			}
+
 			if (!strncmp(&url[i + 1], etag, etag_len)) {
 				i += 2 + etag_len;
 				if (i >= url_len) {
@@ -94,6 +97,11 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	struct fbr_cstore *cstore = worker->cstore;
 	fbr_cstore_ok(cstore);
 
+	if (request->chunked) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR chunked");
+		return 1;
+	}
+
 	size_t offset;
 	size_t length = request->length;
 	assert(length);
@@ -103,11 +111,17 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	size_t url_len = strlen(url);
 
 	const char *host = chttp_header_get(request, "Host");
-	assert(host);
+	if (!host) {
+		host = "";
+	}
 	size_t host_len = strlen(host);
 
 	const char *etag = chttp_header_get(request, "ETag");
-	assert(etag);
+	if (!etag) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR no etag");
+		return 1;
+	}
+
 	size_t etag_len = strlen(etag);
 	if (etag_len >= 2 && etag[etag_len - 1] == '\"' && etag[0] == '\"') {
 		etag++;
@@ -120,10 +134,59 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 		return 1;
 	}
 
+	int unique = 0;
+	const char *if_none_match = chttp_header_get(request, "If-None-Match");
+	if (if_none_match) {
+		if (!strcmp(if_none_match, "*")) {
+			unique = 1;
+		} else {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR if-none-match");
+			return 1;
+		}
+	}
+
+	fbr_id_t etag_match = 0;
+	const char *if_match = chttp_header_get(request, "If-Match");
+	if (if_match) {
+		size_t if_match_len = strlen(if_match);
+		if (if_match_len >= 2 && if_match[if_match_len - 1] == '\"' &&
+		    if_match[0] == '\"') {
+			if_match++;
+			if_match_len -= 2;
+		}
+
+		etag_match = fbr_id_parse(if_match, if_match_len);
+		if (!etag_match || unique) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR if-match");
+			return 1;
+		}
+	}
+
 	enum fbr_cstore_entry_type file_type = _parse_url(url, url_len, etag, etag_len, &offset);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url");
 		return 1;
+	}
+
+	switch (file_type) {
+		case FBR_CSTORE_FILE_CHUNK:
+		case FBR_CSTORE_FILE_INDEX:
+			if (!unique || etag_match) {
+				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
+					"URL_WRITE ERROR need unique");
+				return 1;
+			}
+			break;
+		case FBR_CSTORE_FILE_ROOT:
+			if (!unique && !etag_match) {
+				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
+					"URL_WRITE ERROR root missing conditions");
+				return 1;
+			}
+			break;
+		default:
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url type");
+			return 1;
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
@@ -131,20 +194,60 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s %s %d", host, url, path,
-		file_type);
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
+		"URL_WRITE %s %s %s %s unique: %d match: %lu",
+		fbr_cstore_type_name(file_type) ,host, url, path, unique, etag_match);
 
-	// TODO look at HTTP conditionals
+	// TODO if root, we need to goto s3 first
 
-	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, length, path, 1);
-	if (!entry) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR loading state");
-		return 1;
+	struct fbr_cstore_entry *entry = NULL;
+	if (unique) {
+		entry = fbr_cstore_io_get_loading(cstore, hash, length, path, 1);
+		if (!entry) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR loading state");
+			return 1;
+		}
+	} else {
+		assert_dev(etag_match);
+		assert_dev(file_type == FBR_CSTORE_FILE_ROOT);
+
+		entry = fbr_cstore_get(cstore, hash);
+		if (entry) {
+			fbr_cstore_reset_loading(entry);
+		} else {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
+				"URL_WRITE ERROR loading state 2");
+			return 1;
+		}
 	}
+
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
-	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	if (etag_match) {
+		struct fbr_cstore_metadata metadata;
+		fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+		int ret = fbr_cstore_metadata_read(path, &metadata);
+		if (ret) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR metadata");
+			fbr_cstore_set_error(entry);
+			fbr_cstore_remove(cstore, entry);
+			return 1;
+		}
+
+		if (metadata.etag != etag_match) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
+				"URL_WRITE ERROR bad version want: %lu got: %lu",
+				etag_match, metadata.etag);
+			fbr_cstore_set_ok(entry);
+			fbr_cstore_release(cstore, entry);
+			return 1;
+		}
+	}
+
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE conditions passed");
+
+	int fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR open()");
 		fbr_cstore_set_error(entry);
@@ -227,10 +330,9 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	metadata.size = length;
 	metadata.offset = offset;
 	metadata.type = file_type;
+	metadata.gzipped = request->gzip;
 	assert(url_len < sizeof(metadata.path));
 	memcpy(metadata.path, url, url_len + 1);
-
-	// TODO gzip
 
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = fbr_cstore_metadata_write(path, &metadata);
@@ -269,23 +371,28 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 	assert(host);
 	size_t host_len = strlen(host);
 
-	const char *etag = chttp_header_get(request, "ETag");
-	assert(etag);
-	size_t etag_len = strlen(etag);
-	if (etag_len >= 2 && etag[etag_len - 1] == '\"' && etag[0] == '\"') {
-		etag++;
-		etag_len -= 2;
-	}
+	fbr_id_t etag_match = 0;
+	size_t if_match_len = 0;
+	const char *if_match = chttp_header_get(request, "If-Match");
+	if (if_match) {
+		if_match_len = strlen(if_match);
+		if (if_match_len >= 2 && if_match[if_match_len - 1] == '\"' &&
+		    if_match[0] == '\"') {
+			if_match++;
+			if_match_len -= 2;
+		}
 
-	fbr_id_t etag_id = fbr_id_parse(etag, etag_len);
-	if (!etag_id) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR etag");
-		return 1;
+		etag_match = fbr_id_parse(if_match, if_match_len);
+		if (!etag_match) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR if-match");
+			return 1;
+		}
 	}
 
 	size_t offset;
 
-	enum fbr_cstore_entry_type file_type = _parse_url(url, url_len, etag, etag_len, &offset);
+	enum fbr_cstore_entry_type file_type = _parse_url(url, url_len, if_match, if_match_len,
+		&offset);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url");
 		return 1;
@@ -330,13 +437,13 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 	ret = fbr_cstore_metadata_read(path, &metadata);
 
 	assert_zero_dev(ret);
-	assert_dev(metadata.etag == etag_id);
+	assert_dev(metadata.etag == etag_match); // TODO doesnt work for root
 	assert_dev(metadata.offset == offset);
 	assert_dev(metadata.size == size);
 	assert_dev(metadata.type == file_type);
 
 	if (ret || metadata.size != size || metadata.offset != offset ||
-	    metadata.etag != etag_id) {
+	    metadata.etag != etag_match) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR metadata()");
 		fbr_cstore_remove(cstore, entry);
 		assert_zero(close(fd));

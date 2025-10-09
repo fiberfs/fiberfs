@@ -166,7 +166,6 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type)
 	}
 
 	const char *header = chttp_header_get(ctx, "connection");
-
 	if (header && !strcasecmp(header, "close")) {
 		ctx->close = 1;
 	} else if (header && !strcasecmp(header, "keep-alive")) {
@@ -174,7 +173,6 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type)
 	}
 
 	header = chttp_header_get(ctx, "content-encoding");
-
 	if (header && !strcasecmp(header, "gzip")) {
 		ctx->gzip = 1;
 	} else {

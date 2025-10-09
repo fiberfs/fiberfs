@@ -82,3 +82,20 @@ fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len)
 
 	return len;
 }
+
+const char *
+fbr_cstore_type_name(enum fbr_cstore_entry_type type)
+{
+	switch (type) {
+		case FBR_CSTORE_FILE_NONE:
+			return "NONE";
+		case FBR_CSTORE_FILE_CHUNK:
+			return "CHUNK";
+		case FBR_CSTORE_FILE_INDEX:
+			return "INDEX";
+		case FBR_CSTORE_FILE_ROOT:
+			return "ROOT";
+	}
+
+	return "ERROR";
+}

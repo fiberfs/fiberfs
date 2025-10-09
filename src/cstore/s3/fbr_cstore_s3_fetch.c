@@ -193,6 +193,7 @@ _s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	fbr_bprintf(buffer, "%zu", wbuffer->end);
 
 	chttp_header_add(request, "Content-Length", buffer);
+	chttp_header_add(request, "If-None-Match", "*");
 
 	fbr_cstore_etag(wbuffer->id, buffer, sizeof(buffer));
 	chttp_header_add(request, "ETag", buffer);
@@ -377,7 +378,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 		char buffer[32];
 		fbr_cstore_etag(chunk->id, buffer, sizeof(buffer));
-		chttp_header_add(&request, "ETag", buffer);
+		chttp_header_add(&request, "If-Match", buffer);
 
 		chttp_connect(&request, cstore->s3.host, strlen(cstore->s3.host), cstore->s3.port,
 			cstore->s3.tls);
