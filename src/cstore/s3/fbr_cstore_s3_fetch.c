@@ -160,7 +160,7 @@ _s3_write_file_url(struct fbr_cstore *cstore, struct fbr_file *file, struct fbr_
 
 static int
 _s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
-    const char *path, struct fbr_wbuffer *wbuffer, int retries)
+    const char *path, struct fbr_wbuffer *wbuffer, int retry)
 {
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(request);
@@ -178,7 +178,7 @@ _s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	request->addr.timeout_connect_ms = 3000;
 	request->addr.timeout_transfer_ms = 5000;
 
-	if (retries) {
+	if (retry) {
 		request->new_conn = 1;
 	}
 
@@ -234,7 +234,7 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *requ
     const char *path, struct fbr_wbuffer *wbuffer)
 {
 	int ret = _s3_wbuffer_send(cstore, request, path, wbuffer, 0);
-	if (ret < 0) {
+	if (ret < 0 && request->addr.reused) {
 		chttp_context_reset(request);
 		_s3_wbuffer_send(cstore, request, path, wbuffer, 1);
 	}
@@ -242,7 +242,8 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *requ
 
 void
 fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
-    struct chttp_context *request, struct fbr_wbuffer *wbuffer, int error)
+    struct chttp_context *request, const char *path, struct fbr_wbuffer *wbuffer,
+    int error, int retry)
 {
 	fbr_fs_ok(fs);
 	fbr_cstore_ok(cstore);
@@ -266,8 +267,19 @@ fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	chttp_receive(request);
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "S3 response: %d",
-		request->status);
+	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "S3 response: %d (%d %s)",
+		request->status, request->error, chttp_error_msg(request));
+
+	if (request->error && request->addr.reused && !retry) {
+		chttp_context_reset(request);
+		int ret = _s3_wbuffer_send(cstore, request, path, wbuffer, 1);
+		if (!ret) {
+			fbr_cstore_s3_wbuffer_finish(fs, cstore, request, path, wbuffer, error, 1);
+			return;
+		} else {
+			assert_dev(request->error);
+		}
+	}
 
 	if (request->error || request->status != 200) {
 		fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);

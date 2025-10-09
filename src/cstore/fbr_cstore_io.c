@@ -332,7 +332,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, wbuffer, 1);
+		fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, chunk_path, wbuffer, 1, 0);
 		return;
 	}
 
@@ -343,7 +343,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR bytes");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, wbuffer, 1);
+		fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, chunk_path, wbuffer, 1, 0);
 		return;
 	}
 
@@ -361,7 +361,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR metadata");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, wbuffer, 1);
+		fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, chunk_path, wbuffer, 1, 0);
 		return;
 	}
 
@@ -372,7 +372,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
 
-	fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, wbuffer, 0);
+	fbr_cstore_s3_wbuffer_finish(fs, cstore, &s3_request, chunk_path, wbuffer, 0, 0);
 }
 
 void
