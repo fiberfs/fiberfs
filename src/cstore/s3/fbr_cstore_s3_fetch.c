@@ -296,6 +296,7 @@ _s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	chttp_receive(request);
 	if (request->error) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "ERROR chttp receive");
+		// Retry
 		if (request->addr.reused && !retry) {
 			return -1;
 		}

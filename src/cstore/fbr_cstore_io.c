@@ -361,24 +361,22 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "WRITE %s %zu %s",
 		chunk_path, wbuf_bytes, path);
 
+	struct chttp_context s3_request;
+	chttp_context_init(&s3_request);
+	struct fbr_cstore_op op;
+	op.magic = FBR_CSTORE_OP_MAGIC;
+	pthread_t s3_thread = fbr_cstore_s3_wbuffer_send_async(cstore, &s3_request, chunk_path,
+		wbuffer, &op);
+
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, wbuf_bytes,
 		path, 1);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR loading state");
-		fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
+		fbr_cstore_s3_wbuffer_finish(fs, cstore, s3_thread, &s3_request, wbuffer, 1);
 		return;
 	}
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
-
-	struct chttp_context s3_request;
-	chttp_context_init(&s3_request);
-
-	struct fbr_cstore_op op;
-	op.magic = FBR_CSTORE_OP_MAGIC;
-
-	pthread_t s3_thread = fbr_cstore_s3_wbuffer_send_async(cstore, &s3_request, chunk_path,
-		wbuffer, &op);
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
