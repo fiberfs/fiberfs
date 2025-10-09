@@ -45,7 +45,7 @@ void fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context 
 	const char *path, struct fbr_wbuffer *wbuffer);
 void fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct chttp_context *request, const char *path, struct fbr_wbuffer *wbuffer,
-	int error, int retry);
+	int error);
 void fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct fbr_file *file, struct fbr_chunk *chunk);
 void fbr_cstore_s3_chunk_delete(struct fbr_cstore *cstore, const char *path, fbr_id_t id);

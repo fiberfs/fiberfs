@@ -213,14 +213,20 @@ _s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	if (request->error) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "ERROR chttp send");
 		// Retry
-		return -1;
+		if (request->addr.reused && !retry) {
+			return -1;
+		}
+		return 1;
 	}
 
 	chttp_body_send(request, wbuffer->buffer, wbuffer->end);
 	if (request->error) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "ERROR chttp body");
 		// Retry
-		return -1;
+		if (request->addr.reused && !retry) {
+			return -1;
+		}
+		return 1;
 	}
 
 	assert_zero_dev(request->length);
@@ -234,16 +240,16 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *requ
     const char *path, struct fbr_wbuffer *wbuffer)
 {
 	int ret = _s3_wbuffer_send(cstore, request, path, wbuffer, 0);
-	if (ret < 0 && request->addr.reused) {
+	if (ret < 0) {
 		chttp_context_reset(request);
-		_s3_wbuffer_send(cstore, request, path, wbuffer, 1);
+		ret = _s3_wbuffer_send(cstore, request, path, wbuffer, 1);
+		assert_dev(ret >= 0);
 	}
 }
 
-void
-fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
-    struct chttp_context *request, const char *path, struct fbr_wbuffer *wbuffer,
-    int error, int retry)
+static int
+_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore, struct chttp_context *request,
+    struct fbr_wbuffer *wbuffer, int error, int retry)
 {
 	fbr_fs_ok(fs);
 	fbr_cstore_ok(cstore);
@@ -257,11 +263,11 @@ fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
 			fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_DONE);
 		}
 		chttp_context_free(request);
-		return;
-	} else if (request->state != CHTTP_STATE_SENT) {
+		return 1;
+	} else if (request->state != CHTTP_STATE_SENT || request->error) {
 		fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
 		chttp_context_free(request);
-		return;
+		return 1;
 	}
 
 	chttp_receive(request);
@@ -270,24 +276,31 @@ fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "S3 response: %d (%d %s)",
 		request->status, request->error, chttp_error_msg(request));
 
-	if (request->error && request->addr.reused && !retry) {
-		chttp_context_reset(request);
-		int ret = _s3_wbuffer_send(cstore, request, path, wbuffer, 1);
-		if (!ret) {
-			fbr_cstore_s3_wbuffer_finish(fs, cstore, request, path, wbuffer, error, 1);
-			return;
-		} else {
-			assert_dev(request->error);
-		}
-	}
-
-	if (request->error || request->status != 200) {
+	if (request->error && !retry && request->addr.reused) {
+		return -1;
+	} else if (request->error || request->status != 200) {
 		fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
 	} else {
 		fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_DONE);
 	}
 
 	chttp_context_free(request);
+
+	return 0;
+}
+
+void
+fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
+    struct chttp_context *request, const char *path, struct fbr_wbuffer *wbuffer,
+    int error)
+{
+	int ret = _s3_wbuffer_finish(fs, cstore, request, wbuffer, error, 0);
+	if (ret < 0) {
+		chttp_context_reset(request);
+		_s3_wbuffer_send(cstore, request, path, wbuffer, 1);
+		ret = _s3_wbuffer_finish(fs, cstore, request, wbuffer, error, 1);
+		assert_dev(ret >= 0);
+	}
 }
 
 static inline void
