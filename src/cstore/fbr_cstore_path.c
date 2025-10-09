@@ -81,13 +81,17 @@ fbr_cstore_path_loader(struct fbr_cstore *cstore, unsigned char dir, int metadat
 }
 
 size_t
-fbr_cstore_path_chunk_path(struct fbr_cstore *cstore, const char *file_path, fbr_id_t id,
+fbr_cstore_path_chunk(struct fbr_cstore *cstore, const struct fbr_file *file, fbr_id_t id,
     size_t offset, int metadata, char *buffer, size_t buffer_len)
 {
-	assert(file_path);
+	fbr_file_ok(file);
 	assert(id);
 	assert(buffer);
 	assert(buffer_len);
+
+	char filebuf[FBR_PATH_MAX];
+	struct fbr_path_name filepath;
+	fbr_path_get_full(&file->path, &filepath, filebuf, sizeof(filebuf));
 
 	char chunk_id[FBR_ID_STRING_MAX];
 	fbr_id_string(id, chunk_id, sizeof(chunk_id));
@@ -99,26 +103,12 @@ fbr_cstore_path_chunk_path(struct fbr_cstore *cstore, const char *file_path, fbr
 	}
 
 	ret += fbr_snprintf(buffer + ret, buffer_len - ret, "%s.%s.%zu",
-		file_path,
+		filepath.name,
 		chunk_id,
 		offset);
 	assert(ret < buffer_len);
 
 	return ret;
-}
-
-size_t
-fbr_cstore_path_chunk_file(struct fbr_cstore *cstore, const struct fbr_file *file, fbr_id_t id,
-    size_t offset, int metadata, char *buffer, size_t buffer_len)
-{
-	fbr_file_ok(file);
-
-	char filebuf[FBR_PATH_MAX];
-	struct fbr_path_name filepath;
-	fbr_path_get_full(&file->path, &filepath, filebuf, sizeof(filebuf));
-
-	return fbr_cstore_path_chunk_path(cstore, filepath.name, id, offset, metadata, buffer,
-		buffer_len);
 }
 
 size_t
@@ -188,7 +178,7 @@ _hash_s3(XXH3_state_t *hash, struct fbr_cstore *cstore)
 	assert_dev(hash);
 	assert_dev(cstore);
 
-	// host + NULL + ( [/prefix/] | / )
+	// host + NULL + [/prefix] + /
 
 	if (!cstore->s3.enabled) {
 		XXH3_64bits_update(hash, "", 1);
@@ -201,12 +191,12 @@ _hash_s3(XXH3_state_t *hash, struct fbr_cstore *cstore)
 	XXH3_64bits_update(hash, cstore->s3.host, len + 1);
 
 	if (cstore->s3.prefix) {
-		len = strlen(cstore->s3.prefix);
-		assert_dev(cstore->s3.prefix[len - 1] == '/');
-		XXH3_64bits_update(hash, cstore->s3.prefix, len);
-	} else {
-		XXH3_64bits_update(hash, "/", 1);
+		assert_dev(cstore->s3.prefix_len);
+		assert_dev(cstore->s3.prefix[cstore->s3.prefix_len - 1] != '/');
+		XXH3_64bits_update(hash, cstore->s3.prefix, cstore->s3.prefix_len);
 	}
+
+	XXH3_64bits_update(hash, "/", 1);
 }
 
 /*
@@ -238,34 +228,7 @@ _hash_range(XXH3_state_t *hash, size_t offset, size_t length)
 */
 
 fbr_hash_t
-fbr_cstore_hash_chunk_path(struct fbr_cstore *cstore, const char *file_path, fbr_id_t id,
-    size_t offset)
-{
-	fbr_cstore_ok(cstore);
-	assert(file_path);
-	assert(id);
-
-	XXH3_state_t hash;
-	XXH3_INITSTATE(&hash);
-	XXH3_64bits_reset(&hash);
-
-	_hash_s3(&hash, cstore);
-
-	char buffer[FBR_PATH_MAX];
-	size_t len = fbr_cstore_path_chunk_path(NULL, file_path, id, offset, 0, buffer,
-		sizeof(buffer));
-	XXH3_64bits_update(&hash, buffer, len + 1);
-
-	XXH64_hash_t result = XXH3_64bits_digest(&hash);
-	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
-
-	// TODO external
-
-	return (fbr_hash_t)result;
-}
-
-fbr_hash_t
-fbr_cstore_hash_chunk_file(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
+fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
     size_t offset)
 {
 	fbr_cstore_ok(cstore);
@@ -279,7 +242,7 @@ fbr_cstore_hash_chunk_file(struct fbr_cstore *cstore, struct fbr_file *file, fbr
 	_hash_s3(&hash, cstore);
 
 	char buffer[FBR_PATH_MAX];
-	size_t len = fbr_cstore_path_chunk_file(NULL, file, id, offset, 0, buffer, sizeof(buffer));
+	size_t len = fbr_cstore_path_chunk(NULL, file, id, offset, 0, buffer, sizeof(buffer));
 	XXH3_64bits_update(&hash, buffer, len + 1);
 
 	XXH64_hash_t result = XXH3_64bits_digest(&hash);
@@ -337,14 +300,16 @@ fbr_cstore_hash_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath)
 fbr_hash_t
 fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t url_len)
 {
-	assert(host);
 	assert(url);
+	assert(url_len);
 
 	XXH3_state_t hash;
 	XXH3_INITSTATE(&hash);
 	XXH3_64bits_reset(&hash);
 
-	XXH3_64bits_update(&hash, host, host_len);
+	if (host_len) {
+		XXH3_64bits_update(&hash, host, host_len);
+	}
 	XXH3_64bits_update(&hash, "", 1);
 	XXH3_64bits_update(&hash, url, url_len);
 	XXH3_64bits_update(&hash, "", 1);
@@ -355,4 +320,40 @@ fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t u
 	// TODO external
 
 	return (fbr_hash_t)result;
+}
+
+size_t
+fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, char *buffer, size_t buffer_len)
+{
+	fbr_cstore_ok(cstore);
+	assert(path);
+	assert(buffer);
+	assert(buffer_len);
+
+	const char *prefix = cstore->s3.prefix;
+	if (!prefix || !cstore->s3.enabled) {
+		prefix = "";
+	}
+
+	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/%s", prefix, path);
+
+	return ret;
+}
+
+size_t
+fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file, struct fbr_chunk *chunk,
+    char *buffer, size_t buffer_len)
+{
+	fbr_cstore_ok(cstore);
+	fbr_file_ok(file);
+	fbr_chunk_ok(chunk);
+	assert(buffer);
+	assert(buffer_len);
+
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path_chunk(NULL, file, chunk->id, chunk->offset, 0, path, sizeof(path));
+
+	size_t ret = fbr_cstore_s3_url(cstore, path, buffer, buffer_len);
+
+	return ret;
 }

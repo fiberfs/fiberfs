@@ -9,7 +9,9 @@
 
 struct fbr_cstore_s3 {
 	char				*host;
+	size_t				host_len;
 	char				*prefix;
+	size_t				prefix_len;
 
 	int				port;
 
@@ -48,7 +50,7 @@ void fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	int error);
 void fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct fbr_file *file, struct fbr_chunk *chunk);
-void fbr_cstore_s3_chunk_delete(struct fbr_cstore *cstore, const char *path, fbr_id_t id);
+void fbr_cstore_s3_delete(struct fbr_cstore *cstore, const char *path, fbr_id_t id);
 
 #define fbr_cstore_backend_ok(backend)		\
 	fbr_magic_check(backend, FBR_CSTORE_BACKEND_MAGIC)

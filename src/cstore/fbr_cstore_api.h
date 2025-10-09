@@ -197,21 +197,23 @@ size_t fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata,
 	size_t output_len);
 size_t fbr_cstore_path_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata,
 	char *buffer, size_t buffer_len);
-size_t fbr_cstore_path_chunk_path(struct fbr_cstore *cstore, const char *file_path, fbr_id_t id,
-	size_t offset, int metadata, char *buffer, size_t buffer_len);
-size_t fbr_cstore_path_chunk_file(struct fbr_cstore *cstore, const struct fbr_file *file,
+size_t fbr_cstore_path_chunk(struct fbr_cstore *cstore, const struct fbr_file *file,
 	fbr_id_t id, size_t offset, int metadata, char *buffer, size_t buffer_len);
 size_t fbr_cstore_path_index(struct fbr_cstore *cstore, const struct fbr_directory *directory,
 	int metadata, char *buffer, size_t buffer_len);
 size_t fbr_cstore_path_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath, int metadata,
 	char *buffer, size_t buffer_len);
-fbr_hash_t fbr_cstore_hash_chunk_path(struct fbr_cstore *cstore, const char *file_path, fbr_id_t id,
-    size_t offset);
-fbr_hash_t fbr_cstore_hash_chunk_file(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
+
+fbr_hash_t fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
 	size_t offset);
 fbr_hash_t fbr_cstore_hash_index(struct fbr_cstore *cstore, struct fbr_directory *directory);
 fbr_hash_t fbr_cstore_hash_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath);
 fbr_hash_t fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t url_len);
+
+size_t fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, char *buffer,
+	size_t buffer_len);
+size_t fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file,
+	struct fbr_chunk *chunk, char *buffer, size_t buffer_len);
 
 void fbr_cstore_fuse_register(const char *root_path);
 struct fbr_cstore *fbr_cstore_find(void);

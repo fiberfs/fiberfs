@@ -98,9 +98,9 @@ void fbr_cstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fb
 void fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
 void fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
+void fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_len,
+	fbr_id_t id);
 void fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
-void fbr_cstore_io_chunk_delete(struct fbr_fs *fs, const char *file_path, fbr_id_t id,
-	size_t offset);
 int fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_writer *writer);
 int fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory);

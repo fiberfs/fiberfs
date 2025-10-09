@@ -22,11 +22,17 @@ fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
 
-	char buffer[FBR_PATH_MAX];
-	struct fbr_path_name filepath;
-	fbr_path_get_full(&file->path, &filepath, buffer, sizeof(buffer));
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		return;
+	}
 
-	fbr_cstore_io_chunk_delete(fs, filepath.name, chunk->id, chunk->offset);
+	char url[FBR_PATH_MAX];
+	size_t url_len = fbr_cstore_s3_chunk_url(cstore, file, chunk, url, sizeof(url));
+
+	fbr_cstore_io_delete_url(cstore, url, url_len, chunk->id);
+
+	fbr_fs_stat_sub(&fs->stats.store_chunks);
 }
 
 void

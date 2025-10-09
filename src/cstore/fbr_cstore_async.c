@@ -122,8 +122,8 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 			fbr_cstore_io_chunk_read(op->param0, op->param1, op->param2);
 			return;
 		case FBR_CSOP_CHUNK_DELETE:
-			fbr_cstore_io_chunk_delete(op->param0, op->param1, (fbr_id_t)op->param2,
-				(size_t)op->param3);
+			fbr_cstore_io_delete_url(op->param0, op->param1, (size_t)op->param2,
+				(fbr_id_t)op->param3);
 			return;
 		case FBR_CSOP_NONE:
 		case __FBR_CSOP_END:
@@ -299,19 +299,20 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 		return;
 	}
 
-	char buffer[FBR_PATH_MAX];
-	struct fbr_path_name filepath;
-	fbr_path_get_full(&file->path, &filepath, buffer, sizeof(buffer));
+	char url[FBR_PATH_MAX];
+	size_t url_len = fbr_cstore_s3_chunk_url(cstore, file, chunk, url, sizeof(url));
 
-	size_t mbuffer_len = filepath.length + 1;
-	char *mbuffer = malloc(mbuffer_len);
-	fbr_strcpy(mbuffer, mbuffer_len, filepath.name);
+	size_t buffer_len = url_len + 1;
+	char *buffer = malloc(buffer_len);
+	fbr_strcpy(buffer, buffer_len, url);
 
+	static_ASSERT(sizeof(void*) >= sizeof(url_len));
 	static_ASSERT(sizeof(void*) >= sizeof(chunk->id));
-	static_ASSERT(sizeof(void*) >= sizeof(chunk->offset));
 
-	fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_DELETE, fs, mbuffer, (void*)chunk->id,
-		(void*)chunk->offset, _async_chunk_delete_done);
+	fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_DELETE, cstore, buffer, (void*)url_len,
+		(void*)chunk->id, _async_chunk_delete_done);
+
+	fbr_fs_stat_sub(&fs->stats.store_chunks);
 }
 
 const char *
