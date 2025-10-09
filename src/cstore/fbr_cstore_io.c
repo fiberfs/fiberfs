@@ -595,6 +595,14 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE %s %lu %s",
 		index_path, directory->version, path);
 
+	/*
+	struct chttp_context s3_request;
+	chttp_context_init(&s3_request);
+	struct fbr_cstore_op op;
+	op.magic = FBR_CSTORE_OP_MAGIC;
+	pthread_t s3_thread;
+	*/
+
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, writer->bytes,
 		path, 1);
 	if (!entry) {

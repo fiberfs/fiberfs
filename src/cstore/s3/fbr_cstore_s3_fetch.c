@@ -224,15 +224,18 @@ fbr_cstore_s3_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_t id)
 }
 
 static int
-_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
-    const char *path, struct fbr_wbuffer *wbuffer, int retry)
+_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *request,
+    const char *path, size_t length, fbr_id_t etag, fbr_cstore_s3_put_f data_cb, void *put_arg,
+    int retry)
 {
 	fbr_cstore_ok(cstore);
-	assert(cstore->s3.enabled);
+	assert_dev(cstore->s3.enabled);
 	chttp_context_ok(request);
 	assert_dev(request->state == CHTTP_STATE_NONE);
-	assert(path);
-	fbr_wbuffer_ok(wbuffer);
+	assert_dev(path);
+	assert_dev(length);
+	assert_dev(etag);
+	assert_dev(data_cb);
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 
@@ -256,12 +259,12 @@ _s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 		url_len, request->dpage->data);
 
 	char buffer[32];
-	fbr_bprintf(buffer, "%zu", wbuffer->end);
+	fbr_bprintf(buffer, "%zu", length);
 
 	chttp_header_add(request, "Content-Length", buffer);
 	chttp_header_add(request, "If-None-Match", "*");
 
-	fbr_cstore_etag(wbuffer->id, buffer, sizeof(buffer));
+	fbr_cstore_etag(etag, buffer, sizeof(buffer));
 	chttp_header_add(request, "ETag", buffer);
 
 	chttp_connect(request, cstore->s3.host, strlen(cstore->s3.host), cstore->s3.port,
@@ -282,7 +285,7 @@ _s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 		return 1;
 	}
 
-	chttp_body_send(request, wbuffer->buffer, wbuffer->end);
+	data_cb(request, put_arg);
 	if (request->error) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "ERROR chttp body");
 		// Retry
@@ -317,14 +320,29 @@ _s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	return 0;
 }
 
+static void
+_s3_wbuffer_data_cb(struct chttp_context *request, void *arg)
+{
+	chttp_context_ok(request);
+	assert(arg);
+
+	struct fbr_wbuffer *wbuffer = arg;
+	fbr_wbuffer_ok(wbuffer);
+
+	chttp_body_send(request, wbuffer->buffer, wbuffer->end);
+	assert_zero(request->length);
+}
+
 void
 fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
     const char *path, struct fbr_wbuffer *wbuffer)
 {
-	int ret = _s3_wbuffer_send(cstore, request, path, wbuffer, 0);
+	int ret = _s3_send_put(cstore, request, path, wbuffer->end, wbuffer->id,
+		_s3_wbuffer_data_cb, wbuffer, 0);
 	if (ret < 0) {
 		chttp_context_reset(request);
-		ret = _s3_wbuffer_send(cstore, request, path, wbuffer, 1);
+		ret = _s3_send_put(cstore, request, path, wbuffer->end, wbuffer->id,
+			_s3_wbuffer_data_cb, wbuffer, 1);
 		assert_dev(ret >= 0);
 	}
 }
@@ -353,6 +371,13 @@ fbr_cstore_s3_wbuffer_send_async(struct fbr_cstore *cstore, struct chttp_context
 	if (!cstore->s3.enabled) {
 		return 0;
 	}
+
+	/*
+	if (fbr_is_test()) {
+		fbr_cstore_s3_wbuffer_send(cstore, request, path, wbuffer);
+		return 0;
+	}
+	*/
 
 	fbr_zero(op);
 	op->magic = FBR_CSTORE_OP_MAGIC;
@@ -613,4 +638,44 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
+}
+
+static void
+_s3_writer_data_cb(struct chttp_context *request, void *arg)
+{
+	chttp_context_ok(request);
+	assert(arg);
+
+	struct fbr_writer *writer = arg;
+	fbr_writer_ok(writer);
+
+	struct fbr_buffer *output = writer->output;
+	while (output) {
+		fbr_buffer_ok(output);
+
+		if (output->buffer_pos) {
+			chttp_body_send(request, output->buffer, output->buffer_pos);
+			if (request->error) {
+				return;
+			}
+		}
+
+		output = output->next;
+	}
+
+	assert_zero(request->length);
+}
+
+void
+fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *request,
+    const char *url, struct fbr_writer *writer, fbr_id_t id)
+{
+	int ret = _s3_send_put(cstore, request, url, writer->bytes, id,
+		_s3_writer_data_cb, writer, 0);
+	if (ret < 0) {
+		chttp_context_reset(request);
+		ret = _s3_send_put(cstore, request, url, writer->bytes, id,
+			_s3_writer_data_cb, writer, 0);
+		assert_dev(ret >= 0);
+	}
 }
