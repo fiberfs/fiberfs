@@ -54,6 +54,7 @@ FBR_TEST_CMD(cstore_error_test)
 FBR_TEST_CMD(cstore_loader_test)
 
 FBR_TEST_CMD(cstore_debug)
+FBR_TEST_VAR(cstore_stat_chunks)
 FBR_TEST_VAR(cstore_stat_indexes)
 FBR_TEST_VAR(cstore_stat_roots)
 

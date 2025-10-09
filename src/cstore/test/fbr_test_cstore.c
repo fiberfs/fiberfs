@@ -375,6 +375,19 @@ fbr_test_cstore_stat_roots(void)
 }
 
 char *
+fbr_var_cstore_stat_chunks(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
+	assert(tcstore);
+
+	fbr_bprintf(tcstore->stat_buf, "%lu", fbr_test_cstore_stat_chunks());
+
+	return tcstore->stat_buf;
+}
+
+char *
 fbr_var_cstore_stat_indexes(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);

@@ -53,6 +53,7 @@ equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
 equal $fs_test_stat_store_chunks 3
+equal $cstore_stat_chunks 3
 
 test_log_debug
 
