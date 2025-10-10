@@ -60,8 +60,8 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 
 int
 fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, void *param0,
-    void *param1, void *param2, void *param3, fbr_cstore_async_done_f done_cb, void *done_arg,
-    enum fbr_cstore_op_priority priority)
+    void *param1, void *param2, void *param3, void *param4, fbr_cstore_async_done_f done_cb,
+    void *done_arg, enum fbr_cstore_op_priority priority)
 {
 	fbr_cstore_ok(cstore);
 	assert(type > FBR_CSOP_NONE && type < __FBR_CSOP_END);
@@ -86,16 +86,19 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 	fbr_cstore_op_ok(op);
 	assert_dev(op->type == FBR_CSOP_NONE);
 
+	TAILQ_REMOVE(&async->free_list, op, entry);
+
+	fbr_zero(op);
+	op->magic = FBR_CSTORE_OP_MAGIC;
 	op->type = type;
+	op->priority = priority;
 	op->param0 = param0;
 	op->param1 = param1;
 	op->param2 = param2;
 	op->param3 = param3;
-	op->priority = priority;
+	op->param4 = param4;
 	op->done_cb = done_cb;
 	op->done_arg = done_arg;
-
-	TAILQ_REMOVE(&async->free_list, op, entry);
 
 	if (priority == FBR_CSTORE_OP_NORMAL) {
 		TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
@@ -151,7 +154,9 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 				(fbr_id_t)op->param3);
 			return;
 		case FBR_CSOP_INDEX_SEND:
-			fbr_ABORT("TODO");
+			fbr_cstore_s3_index_send(op->param0, op->param1, op->param2, op->param3,
+				(fbr_id_t)op->param4);
+			return;
 		case FBR_CSOP_NONE:
 		case __FBR_CSOP_END:
 			break;
@@ -209,10 +214,6 @@ _cstore_async_loop(void *arg)
 		pt_assert(pthread_mutex_lock(&async->queue_lock));
 
 		op->type = FBR_CSOP_NONE;
-		op->param0 = NULL;
-		op->param1 = NULL;
-		op->param2 = NULL;
-		op->param3 = NULL;
 
 		TAILQ_REMOVE(&async->active_list, op, entry);
 		TAILQ_INSERT_TAIL(&async->free_list, op, entry);
@@ -273,7 +274,7 @@ fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	wbuffer->state = FBR_WBUFFER_SYNC;
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_WRITE, fs, file, wbuffer, NULL,
-		NULL, NULL, FBR_CSTORE_OP_NORMAL);
+		NULL, NULL, NULL, FBR_CSTORE_OP_NORMAL);
 	if (ret) {
 		wbuffer->state = FBR_WBUFFER_ERROR;
 		return;
@@ -296,7 +297,7 @@ fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	chunk->state = FBR_CHUNK_LOADING;
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_READ, fs, file, chunk, NULL, NULL,
-		NULL, FBR_CSTORE_OP_NORMAL);
+		NULL, NULL, FBR_CSTORE_OP_NORMAL);
 	if (ret) {
 		chunk->state = FBR_CHUNK_EMPTY;
 		return;
@@ -337,7 +338,7 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 
 	// TODO make a lower priority?
 	fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_DELETE, cstore, buffer, (void*)url_len,
-		(void*)chunk->id, _async_chunk_delete_done, NULL, FBR_CSTORE_OP_NORMAL);
+		(void*)chunk->id, NULL, _async_chunk_delete_done, NULL, FBR_CSTORE_OP_NORMAL);
 
 	fbr_fs_stat_sub(&fs->stats.store_chunks);
 }
@@ -355,7 +356,30 @@ fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *r
 	}
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_SEND, cstore, request, path,
-		wbuffer, fbr_cstore_op_sync_done, sync, FBR_CSTORE_OP_HIGH);
+		wbuffer, NULL, fbr_cstore_op_sync_done, sync, FBR_CSTORE_OP_HIGH);
+	if (ret) {
+		sync->done = 1;
+		sync->error = 1;
+		return;
+	}
+}
+
+void
+fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *request,
+    char *path, struct fbr_writer *writer, fbr_id_t id, struct fbr_cstore_op_sync *sync)
+{
+	fbr_cstore_ok(cstore);
+	fbr_cstore_op_sync_ok(sync);
+
+	if (!cstore->s3.enabled) {
+		sync->done = 1;
+		return;
+	}
+
+	static_ASSERT(sizeof(void*) >= sizeof(id));
+
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_INDEX_SEND, cstore, request, path,
+		writer, (void*)id, fbr_cstore_op_sync_done, sync, FBR_CSTORE_OP_HIGH);
 	if (ret) {
 		sync->done = 1;
 		sync->error = 1;
@@ -387,6 +411,7 @@ fbr_cstore_op_sync_done(struct fbr_cstore_op *op)
 
 	pt_assert(pthread_mutex_lock(&sync->lock));
 
+	assert_zero(sync->done);
 	sync->done = 1;
 
 	pthread_cond_broadcast(&sync->cond);

@@ -56,12 +56,13 @@ struct fbr_cstore_op {
 #define FBR_CSTORE_OP_MAGIC			0x08BDFC3F
 
 	enum fbr_cstore_op_type			type;
+	enum fbr_cstore_op_priority		priority;
+
 	void					*param0;
 	void					*param1;
 	void					*param2;
 	void					*param3;
-
-	enum fbr_cstore_op_priority		priority;
+	void					*param4;
 
 	fbr_cstore_async_done_f			done_cb;
 	void					*done_arg;
@@ -99,8 +100,8 @@ void fbr_cstore_async_init(struct fbr_cstore *cstore);
 void fbr_cstore_async_free(struct fbr_cstore *cstore);
 
 int fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type,
-	void *param0, void *param1, void *param2, void *param3, fbr_cstore_async_done_f done_cb,
-	void *done_arg, enum fbr_cstore_op_priority priority);
+	void *param0, void *param1, void *param2, void *param3, void *param4,
+	fbr_cstore_async_done_f done_cb, void *done_arg, enum fbr_cstore_op_priority priority);
 void fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
 void fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file,
@@ -108,7 +109,9 @@ void fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file,
 void fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_chunk *chunk);
 void fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
-    char *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op_sync *sync);
+	char *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op_sync *sync);
+void fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *request,
+	char *path, struct fbr_writer *writer, fbr_id_t id, struct fbr_cstore_op_sync *sync);
 
 void fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync);
 void fbr_cstore_op_sync_done(struct fbr_cstore_op *op);

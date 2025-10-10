@@ -181,7 +181,7 @@ fbr_cstore_s3_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_t id)
 		chttp_set_url(&request, s3_url);
 		chttp_header_add(&request, "Host", cstore->s3.host);
 
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "S3 DELETE %s (%d)",
+		fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id, "S3 DELETE %s (%d)",
 			s3_url, retries);
 
 		char buffer[32];
@@ -191,21 +191,21 @@ fbr_cstore_s3_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_t id)
 		chttp_connect(&request, cstore->s3.host, strlen(cstore->s3.host), cstore->s3.port,
 			cstore->s3.tls);
 		if (request.error) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id,
+			fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id,
 				"ERROR chttp connection %s", cstore->s3.host);
 			return;
 		}
 
 		chttp_send(&request);
 		if (request.error) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id,
+			fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id,
 				"ERROR chttp send: %s", chttp_error_msg(&request));
 			continue;
 		}
 
 		chttp_receive(&request);
 		if (request.error) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id,
+			fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id,
 				"ERROR chttp recv: %s", chttp_error_msg(&request));
 			continue;
 		}
@@ -213,11 +213,11 @@ fbr_cstore_s3_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_t id)
 		break;
 	}
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "S3 DELETE %d %d",
+	fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id, "S3 DELETE %d %d",
 			request.error, request.status);
 
 	if (request.error || request.status != 200) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id,
+		fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id,
 			"ERROR chttp: %d %d", request.error, request.status);
 		return;
 	}
@@ -258,7 +258,7 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *request,
 	while (request->dpage->data[url_len] > ' ') {
 		url_len++;
 	}
-	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "S3 %.*s (retry: %d)",
+	fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id, "S3 %.*s (retry: %d)",
 		url_len, request->dpage->data, retry);
 
 	char buffer[32];
@@ -273,14 +273,14 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *request,
 	chttp_connect(request, cstore->s3.host, strlen(cstore->s3.host), cstore->s3.port,
 		cstore->s3.tls);
 	if (request->error) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id,
+		fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id,
 			"ERROR chttp connection %s", cstore->s3.host);
 		return 1;
 	}
 
 	chttp_send(request);
 	if (request->error) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "ERROR chttp send");
+		fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id, "ERROR chttp send");
 		// Retry
 		if (request->addr.reused && !retry) {
 			return -1;
@@ -290,7 +290,7 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *request,
 
 	data_cb(request, put_arg);
 	if (request->error) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "ERROR chttp body");
+		fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id, "ERROR chttp body");
 		// Retry
 		if (request->addr.reused && !retry) {
 			return -1;
@@ -301,7 +301,7 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *request,
 
 	chttp_receive(request);
 	if (request->error) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "ERROR chttp receive");
+		fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id, "ERROR chttp receive");
 		// Retry
 		if (request->addr.reused && !retry) {
 			return -1;
@@ -316,7 +316,7 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *request,
 	} while (body_len);
 
 	if (request->error) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "ERROR chttp rbody");
+		fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id, "ERROR chttp rbody");
 		return 1;
 	}
 
@@ -345,7 +345,7 @@ fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *
 	}
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "S3 response: %d (%d %d %s)",
+	fbr_log_print(cstore->log, FBR_LOG_CS_S3, request_id, "S3 response: %d (%d %d %s)",
 		request->status, request->state, request->error, chttp_error_msg(request));
 
 	if (request->error || request->status != 200) {

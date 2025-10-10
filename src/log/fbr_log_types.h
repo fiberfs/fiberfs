@@ -57,6 +57,7 @@ enum fbr_log_type {
 	FBR_LOG_CS_CHUNK,
 	FBR_LOG_CS_INDEX,
 	FBR_LOG_CS_ROOT,
+	FBR_LOG_CS_S3,
 	__FBR_LOG_TYPE_END
 };
 

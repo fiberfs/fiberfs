@@ -598,11 +598,10 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	chttp_context_init(&s3_request);
 	struct fbr_cstore_op_sync sync;
 	fbr_cstore_op_sync_init(&sync);
-	sync.done = 1; // TODO
+	fbr_cstore_async_index_send(cstore, &s3_request, index_path, writer, directory->version,
+		&sync);
+
 	int ret;
-
-	fbr_cstore_s3_index_send(cstore, &s3_request, index_path, writer, directory->version);
-
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, writer->bytes,
 		path, 1);
 	if (!entry) {
