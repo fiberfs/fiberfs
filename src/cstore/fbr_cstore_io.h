@@ -18,6 +18,13 @@
 #define FBR_CSTORE_ASYNC_THREAD_MAX		128
 #define FBR_CSTORE_ASYNC_THREAD_DEFAULT		4
 
+enum fbr_cstore_entry_type {
+	FBR_CSTORE_FILE_NONE = 0,
+	FBR_CSTORE_FILE_CHUNK,
+	FBR_CSTORE_FILE_INDEX,
+	FBR_CSTORE_FILE_ROOT
+};
+
 enum fbr_cstore_op_type {
 	FBR_CSOP_NONE = 0,
 	FBR_CSOP_TEST,
@@ -134,7 +141,7 @@ void fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
 void fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
 void fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_len,
-	fbr_id_t id);
+	fbr_id_t id, enum fbr_cstore_entry_type type);
 void fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
 int fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_writer *writer);
@@ -148,6 +155,7 @@ int fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *director
 
 int fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *request);
 int fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *request);
+int fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *request);
 
 #define fbr_cstore_op_ok(op)			fbr_magic_check(op, FBR_CSTORE_OP_MAGIC)
 #define fbr_cstore_op_sync_ok(sync)		fbr_magic_check(sync, FBR_CSTORE_OP_SYNC_MAGIC)

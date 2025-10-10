@@ -141,6 +141,17 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 		}
 
 		_http_send_code(http, 200, "OK");
+	} else if (!strcmp(method, "DELETE") && http->state == CHTTP_STATE_IDLE) {
+		int ret = fbr_cstore_url_delete(worker, http);
+		if (ret < 0) {
+			_http_send_code(http, 400, "Bad Request");
+			chttp_context_free(http);
+			return;
+		} else if (ret > 0) {
+			_http_send_code(http, 404, "Not found");
+		} else {
+			_http_send_code(http, 200, "OK");
+		}
 	} else if (http->state == CHTTP_STATE_IDLE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (400)");
 		_http_send_code(http, 400, "Bad Request");

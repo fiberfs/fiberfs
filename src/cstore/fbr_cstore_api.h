@@ -39,13 +39,6 @@ enum fbr_cstore_state {
 	FBR_CSTORE_OK
 };
 
-enum fbr_cstore_entry_type {
-	FBR_CSTORE_FILE_NONE = 0,
-	FBR_CSTORE_FILE_CHUNK,
-	FBR_CSTORE_FILE_INDEX,
-	FBR_CSTORE_FILE_ROOT
-};
-
 enum fbr_cstore_loader_state {
 	FBR_CSTORE_LOADER_NONE = 0,
 	FBR_CSTORE_LOADER_READING,
@@ -214,6 +207,8 @@ size_t fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, char *buff
 	size_t buffer_len);
 size_t fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file,
 	struct fbr_chunk *chunk, char *buffer, size_t buffer_len);
+size_t fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *directory,
+    char *buffer, size_t buffer_len);
 
 void fbr_cstore_fuse_register(const char *root_path);
 struct fbr_cstore *fbr_cstore_find(void);

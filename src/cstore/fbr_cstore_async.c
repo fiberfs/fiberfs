@@ -4,6 +4,7 @@
  *
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -151,7 +152,7 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 			return;
 		case FBR_CSOP_CHUNK_DELETE:
 			fbr_cstore_io_delete_url(op->param0, op->param1, (size_t)op->param2,
-				(fbr_id_t)op->param3);
+				(fbr_id_t)op->param3, (intptr_t)op->param4);
 			return;
 		case FBR_CSOP_INDEX_SEND:
 			fbr_cstore_s3_index_send(op->param0, op->param1, op->param2, op->param3,
@@ -335,10 +336,12 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 
 	static_ASSERT(sizeof(void*) >= sizeof(url_len));
 	static_ASSERT(sizeof(void*) >= sizeof(chunk->id));
+	static_ASSERT(sizeof(void*) >= sizeof(enum fbr_cstore_entry_type));
 
 	// TODO make a lower priority?
 	fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_DELETE, cstore, buffer, (void*)url_len,
-		(void*)chunk->id, NULL, _async_chunk_delete_done, NULL, FBR_CSTORE_OP_NORMAL);
+		(void*)chunk->id, (void*)FBR_CSTORE_FILE_CHUNK, _async_chunk_delete_done, NULL,
+		FBR_CSTORE_OP_NORMAL);
 
 	fbr_fs_stat_sub(&fs->stats.store_chunks);
 }

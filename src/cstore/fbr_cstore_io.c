@@ -203,7 +203,7 @@ fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *e
 
 void
 fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_len,
-    fbr_id_t id)
+    fbr_id_t id, enum fbr_cstore_entry_type type)
 {
 	fbr_cstore_ok(cstore);
 	assert(url);
@@ -216,19 +216,28 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "DELETE %s %s %lu",
+	fbr_log_print(cstore->log, FBR_LOG_CSTORE, request_id, "DELETE %s %s %lu",
 		path, url, id);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR no entry");
+		fbr_log_print(cstore->log, FBR_LOG_CSTORE, request_id, "ERROR no entry");
 		return;
+	} else {
+		fbr_cstore_entry_ok(entry);
+		fbr_cstore_remove(cstore, entry);
+
+		switch (type) {
+			case FBR_CSTORE_FILE_CHUNK:
+				fbr_fs_stat_sub(&cstore->stats.wr_chunks);
+				break;
+			case FBR_CSTORE_FILE_INDEX:
+				fbr_fs_stat_sub(&cstore->stats.wr_indexes);
+				break;
+			default:
+				fbr_ABORT("Bad type: %s", fbr_cstore_type_name(type));
+		}
 	}
-
-	fbr_cstore_entry_ok(entry);
-	fbr_cstore_remove(cstore, entry);
-
-	fbr_fs_stat_sub(&cstore->stats.wr_chunks);
 
 	fbr_cstore_s3_delete(cstore, url, id);
 }
@@ -853,25 +862,10 @@ fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 		return;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_index(cstore, directory);
+	char url[FBR_PATH_MAX];
+	size_t url_len = fbr_cstore_s3_index_url(cstore, directory, url, sizeof(url));
 
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-
-	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "DELETE %s %lu",
-		path, directory->version);
-
-	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
-	if (!entry) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR no entry");
-		return;
-	}
-
-	fbr_cstore_entry_ok(entry);
-	fbr_cstore_remove(cstore, entry);
-
-	fbr_fs_stat_sub(&cstore->stats.wr_indexes);
+	fbr_cstore_io_delete_url(cstore, url, url_len, directory->version, FBR_CSTORE_FILE_INDEX);
 }
 
 int

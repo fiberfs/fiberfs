@@ -357,3 +357,20 @@ fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file, struct
 
 	return ret;
 }
+
+size_t
+fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *directory,
+    char *buffer, size_t buffer_len)
+{
+	fbr_cstore_ok(cstore);
+	fbr_directory_ok(directory);
+	assert(buffer);
+	assert(buffer_len);
+
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path_index(NULL, directory, 0, path, sizeof(path));
+
+	size_t ret = fbr_cstore_s3_url(cstore, path, buffer, buffer_len);
+
+	return ret;
+}

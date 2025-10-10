@@ -357,7 +357,6 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 	fbr_cstore_worker_ok(worker);
 	chttp_context_ok(request);
 	assert(request->state == CHTTP_STATE_IDLE);
-	assert_zero(request->chunked);
 	chttp_addr_connected(&request->addr);
 
 	struct fbr_cstore *cstore = worker->cstore;
@@ -489,6 +488,74 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 
 	assert_zero(close(fd));
 	fbr_cstore_release(cstore, entry);
+
+	return 0;
+}
+
+int
+fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *request)
+{
+	fbr_cstore_worker_ok(worker);
+	chttp_context_ok(request);
+	assert(request->state == CHTTP_STATE_IDLE);
+	chttp_addr_connected(&request->addr);
+
+	struct fbr_cstore *cstore = worker->cstore;
+	fbr_cstore_ok(cstore);
+
+	const char *url = chttp_header_get_url(request);
+	assert(url);
+	size_t url_len = strlen(url);
+
+	const char *host = chttp_header_get(request, "Host");
+	assert(host);
+	size_t host_len = strlen(host);
+
+	fbr_id_t etag_match = 0;
+	size_t if_match_len = 0;
+	const char *if_match = chttp_header_get(request, "If-Match");
+	if (if_match) {
+		if_match_len = strlen(if_match);
+		if (if_match_len >= 2 && if_match[if_match_len - 1] == '\"' &&
+		    if_match[0] == '\"') {
+			if_match++;
+			if_match_len -= 2;
+		}
+
+		etag_match = fbr_id_parse(if_match, if_match_len);
+	}
+	if (!etag_match) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR if-match");
+		return -1;
+	}
+
+	size_t offset;
+
+	enum fbr_cstore_entry_type file_type = _parse_url(url, url_len, if_match, if_match_len,
+		&offset);
+	if (file_type == FBR_CSTORE_FILE_NONE) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR url");
+		return -1;
+	}
+
+	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
+
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE %s %s %s %d", host, url, path,
+		file_type);
+
+	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+	if (!entry) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR ok state");
+		return 1;
+	}
+
+	fbr_cstore_entry_ok(entry);
+	fbr_cstore_remove(cstore, entry);
+
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE success");
 
 	return 0;
 }
