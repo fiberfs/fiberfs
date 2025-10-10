@@ -118,6 +118,9 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 		case FBR_CSOP_WBUFFER_WRITE:
 			fbr_cstore_io_wbuffer_write(op->param0, op->param1, op->param2);
 			return;
+		case FBR_CSOP_WBUFFER_SEND:
+			fbr_cstore_s3_wbuffer_send(op->param0, op->param1, op->param2, op->param3);
+			return;
 		case FBR_CSOP_CHUNK_READ:
 			fbr_cstore_io_chunk_read(op->param0, op->param1, op->param2);
 			return;
@@ -126,7 +129,6 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 				(fbr_id_t)op->param3);
 			return;
 		case FBR_CSOP_NONE:
-		case FBR_CSOP_WBUFFER_SEND:
 		case __FBR_CSOP_END:
 			break;
 
@@ -313,6 +315,86 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 		(void*)chunk->id, _async_chunk_delete_done, NULL);
 
 	fbr_fs_stat_sub(&fs->stats.store_chunks);
+}
+
+void
+fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
+    char *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op_sync *sync)
+{
+	fbr_cstore_ok(cstore);
+	fbr_cstore_op_sync_ok(sync);
+
+	if (!cstore->s3.enabled) {
+		sync->done = 1;
+		return;
+	}
+
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_SEND, cstore, request, path,
+		wbuffer, fbr_cstore_op_sync_done, sync);
+	if (ret) {
+		sync->done = 1;
+		sync->error = 1;
+		return;
+	}
+}
+
+void
+fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync)
+{
+	assert(sync);
+
+	fbr_zero(sync);
+	sync->magic = FBR_CSTORE_OP_SYNC_MAGIC;
+
+	pt_assert(pthread_mutex_init(&sync->lock, NULL));
+	pt_assert(pthread_cond_init(&sync->cond, NULL));
+
+	fbr_cstore_op_sync_ok(sync);
+}
+
+void
+fbr_cstore_op_sync_done(struct fbr_cstore_op *op)
+{
+	fbr_cstore_op_ok(op);
+
+	struct fbr_cstore_op_sync *sync = op->done_arg;
+	fbr_cstore_op_sync_ok(sync);
+
+	pt_assert(pthread_mutex_lock(&sync->lock));
+
+	sync->done = 1;
+
+	pthread_cond_broadcast(&sync->cond);
+
+	pt_assert(pthread_mutex_unlock(&sync->lock));
+}
+
+void
+fbr_cstore_op_sync_wait(struct fbr_cstore_op_sync *sync)
+{
+	fbr_cstore_op_sync_ok(sync);
+
+	pt_assert(pthread_mutex_lock(&sync->lock));
+
+	if (!sync->done) {
+		pt_assert(pthread_cond_wait(&sync->cond, &sync->lock));
+	}
+
+	assert(sync->done);
+
+	pt_assert(pthread_mutex_unlock(&sync->lock));
+}
+
+void
+fbr_cstore_op_sync_free(struct fbr_cstore_op_sync *sync)
+{
+	fbr_cstore_op_sync_ok(sync);
+	assert(sync->done);
+
+	pt_assert(pthread_mutex_destroy(&sync->lock));
+	pt_assert(pthread_cond_destroy(&sync->cond));
+
+	fbr_zero(sync);
 }
 
 const char *

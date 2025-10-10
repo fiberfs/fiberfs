@@ -56,17 +56,14 @@ void fbr_cstore_cluster_free(struct fbr_cstore *cstore);
 void fbr_cstore_s3_delete(struct fbr_cstore *cstore, const char *path, fbr_id_t id);
 void fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	const char *path, struct fbr_wbuffer *wbuffer);
-pthread_t fbr_cstore_s3_wbuffer_send_async(struct fbr_cstore *cstore,
-	struct chttp_context *request, char *path, struct fbr_wbuffer *wbuffer,
-	struct fbr_cstore_op *op);
 void fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
-	pthread_t s3_thread, struct chttp_context *request, struct fbr_wbuffer *wbuffer,
+	struct fbr_cstore_op_sync *sync, struct chttp_context *request, struct fbr_wbuffer *wbuffer,
 	int error);
 void fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct fbr_file *file, struct fbr_chunk *chunk);
 void fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	const char *path, struct fbr_writer *writer, fbr_id_t id);
-int fbr_cstore_s3_index_finish(struct fbr_cstore *cstore, pthread_t s3_thread,
+int fbr_cstore_s3_index_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,
 	struct chttp_context *request, int error);
 
 #define fbr_cstore_backend_ok(backend)		\

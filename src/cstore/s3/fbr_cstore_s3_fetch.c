@@ -350,69 +350,26 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *requ
 	}
 }
 
-static void *
-_io_thread_wbuffer_send(void *arg)
-{
-	assert(arg);
-
-	struct fbr_cstore_op *op = arg;
-	fbr_cstore_op_ok(op);
-	assert(op->type == FBR_CSOP_WBUFFER_SEND);
-
-	fbr_cstore_s3_wbuffer_send(op->param0, op->param1, op->param2, op->param3);
-
-	return NULL;
-}
-
-// TODO this needs to be merged into the cstore async
-pthread_t
-fbr_cstore_s3_wbuffer_send_async(struct fbr_cstore *cstore, struct chttp_context *request,
-    char *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op *op)
-{
-	fbr_cstore_ok(cstore);
-	fbr_cstore_op_ok(op);
-
-	if (!cstore->s3.enabled) {
-		return 0;
-	}
-
-	/*
-	if (fbr_is_test()) {
-		fbr_cstore_s3_wbuffer_send(cstore, request, path, wbuffer);
-		return 0;
-	}
-	*/
-
-	fbr_zero(op);
-	op->magic = FBR_CSTORE_OP_MAGIC;
-	op->type = FBR_CSOP_WBUFFER_SEND;
-	op->param0 = cstore;
-	op->param1 = request;
-	op->param2 = path;
-	op->param3 = wbuffer;
-
-	pthread_t s3_thread = 0;
-	pt_assert(pthread_create(&s3_thread, NULL, _io_thread_wbuffer_send, op));
-	assert(s3_thread);
-
-	return s3_thread;
-}
-
 void
 fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
-    pthread_t s3_thread, struct chttp_context *request, struct fbr_wbuffer *wbuffer, int error)
+    struct fbr_cstore_op_sync *sync, struct chttp_context *request, struct fbr_wbuffer *wbuffer,
+    int error)
 {
 	fbr_fs_ok(fs);
 	fbr_cstore_ok(cstore);
+	fbr_cstore_op_sync_ok(sync);
 	chttp_context_ok(request);
 	fbr_wbuffer_ok(wbuffer);
 
-	if (s3_thread) {
-		pt_assert(pthread_join(s3_thread, NULL));
+	fbr_cstore_op_sync_wait(sync);
+	if (sync->error) {
+		assert_dev(request->state == CHTTP_STATE_NONE);
+		error = 1;
 	}
 
+	fbr_cstore_op_sync_free(sync);
+
 	if (request->state == CHTTP_STATE_NONE) {
-		assert_zero_dev(s3_thread);
 		if (error) {
 			fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
 		} else {
@@ -685,18 +642,22 @@ fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *reques
 }
 
 int
-fbr_cstore_s3_index_finish(struct fbr_cstore *cstore, pthread_t s3_thread,
+fbr_cstore_s3_index_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,
     struct chttp_context *request, int error)
 {
 	fbr_cstore_ok(cstore);
+	fbr_cstore_op_sync_ok(sync);
 	chttp_context_ok(request);
 
-	if (s3_thread) {
-		pt_assert(pthread_join(s3_thread, NULL));
+	fbr_cstore_op_sync_wait(sync);
+	if (sync->error) {
+		assert_dev(request->state == CHTTP_STATE_NONE);
+		error = 1;
 	}
 
+	fbr_cstore_op_sync_free(sync);
+
 	if (request->state == CHTTP_STATE_NONE) {
-		assert_zero_dev(s3_thread);
 		chttp_context_free(request);
 		return error;
 	}

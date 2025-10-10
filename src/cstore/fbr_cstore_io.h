@@ -15,6 +15,8 @@
 
 #define FBR_CSTORE_ASYNC_QUEUE_MAX		256
 #define FBR_CSTORE_ASYNC_THREAD_MAX		128
+// TODO this needs to be double the fuse threads or we can deadlock
+// there are 2 async calls per fuse IO operation
 #define FBR_CSTORE_ASYNC_THREAD_DEFAULT		4
 
 enum fbr_cstore_op_type {
@@ -31,6 +33,17 @@ struct fbr_cstore_op;
 
 typedef void (*fbr_cstore_async_f)(struct fbr_cstore *cstore, struct fbr_cstore_op *op);
 typedef void (*fbr_cstore_async_done_f)(struct fbr_cstore_op *op);
+
+struct fbr_cstore_op_sync {
+	unsigned				magic;
+#define FBR_CSTORE_OP_SYNC_MAGIC		0x64337F38
+
+	int					done;
+	int					error;
+
+	pthread_mutex_t				lock;
+	pthread_cond_t				cond;
+};
 
 struct fbr_cstore_op {
 	unsigned				magic;
@@ -86,6 +99,14 @@ void fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_chunk *chunk);
 void fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_chunk *chunk);
+void fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
+    char *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op_sync *sync);
+
+void fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync);
+void fbr_cstore_op_sync_done(struct fbr_cstore_op *op);
+void fbr_cstore_op_sync_wait(struct fbr_cstore_op_sync *sync);
+void fbr_cstore_op_sync_free(struct fbr_cstore_op_sync *sync);
+
 const char *fbr_cstore_async_type(enum fbr_cstore_op_type type);
 
 int fbr_cstore_metadata_write(char *path, struct fbr_cstore_metadata *metadata);
@@ -118,5 +139,6 @@ int fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context 
 int fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *request);
 
 #define fbr_cstore_op_ok(op)			fbr_magic_check(op, FBR_CSTORE_OP_MAGIC)
+#define fbr_cstore_op_sync_ok(sync)		fbr_magic_check(sync, FBR_CSTORE_OP_SYNC_MAGIC)
 
 #endif /* _FBR_CSTORE_IO_H_INCLUDED_ */
