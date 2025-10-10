@@ -255,8 +255,8 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *request,
 	while (request->dpage->data[url_len] > ' ') {
 		url_len++;
 	}
-	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "S3 %.*s",
-		url_len, request->dpage->data);
+	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "S3 %.*s (retry: %d)",
+		url_len, request->dpage->data, retry);
 
 	char buffer[32];
 	fbr_bprintf(buffer, "%zu", length);
@@ -504,8 +504,8 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 		while (request.dpage->data[url_len] > ' ') {
 			url_len++;
 		}
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "S3 %.*s (%d)",
-			url_len, request.dpage->data, retries);
+		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "S3 %.*s (retry: %d)",
+			url_len, request.dpage->data, retries - 1);
 
 		char buffer[32];
 		fbr_cstore_etag(chunk->id, buffer, sizeof(buffer));

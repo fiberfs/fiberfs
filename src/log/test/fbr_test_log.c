@@ -207,7 +207,6 @@ fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname
 	assert(printer);
 	printer->magic = FBR_TEST_LOG_PRINT_MAGIC;
 
-	assert(strlen(prefix) < sizeof(printer->prefix));
 	fbr_strbcpy(printer->prefix, prefix);
 	fbr_test_log_printer_ok(printer);
 
