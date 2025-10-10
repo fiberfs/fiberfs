@@ -607,7 +607,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		path, 1);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR loading state");
-		ret = fbr_cstore_s3_index_finish(cstore, &sync, &s3_request, 1);
+		ret = fbr_cstore_s3_send_finish(cstore, &sync, &s3_request, 1);
 		return ret;
 	}
 	fbr_cstore_entry_ok(entry);
@@ -618,7 +618,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		ret = fbr_cstore_s3_index_finish(cstore, &sync, &s3_request, 1);
+		ret = fbr_cstore_s3_send_finish(cstore, &sync, &s3_request, 1);
 		return ret;
 	}
 
@@ -629,7 +629,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR writing");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		ret = fbr_cstore_s3_index_finish(cstore, &sync, &s3_request, 1);
+		ret = fbr_cstore_s3_send_finish(cstore, &sync, &s3_request, 1);
 		return ret;
 	}
 
@@ -647,7 +647,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR metadata");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		ret = fbr_cstore_s3_index_finish(cstore, &sync, &s3_request, 1);
+		ret = fbr_cstore_s3_send_finish(cstore, &sync, &s3_request, 1);
 		return ret;
 	}
 
@@ -660,7 +660,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE success %zu bytes",
 		writer->bytes);
 
-	ret = fbr_cstore_s3_index_finish(cstore, &sync, &s3_request, 0);
+	ret = fbr_cstore_s3_send_finish(cstore, &sync, &s3_request, 0);
 	return ret;
 }
 

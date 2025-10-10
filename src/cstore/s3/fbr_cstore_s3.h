@@ -54,6 +54,8 @@ void fbr_cstore_cluster_add(struct fbr_cstore *cstore, const char *host, int por
 void fbr_cstore_cluster_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_s3_delete(struct fbr_cstore *cstore, const char *path, fbr_id_t id);
+int fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,
+	struct chttp_context *request, int error);
 void fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	const char *path, struct fbr_wbuffer *wbuffer);
 void fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
@@ -63,8 +65,6 @@ void fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct fbr_file *file, struct fbr_chunk *chunk);
 void fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	const char *path, struct fbr_writer *writer, fbr_id_t id);
-int fbr_cstore_s3_index_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,
-	struct chttp_context *request, int error);
 
 #define fbr_cstore_backend_ok(backend)		\
 	fbr_magic_check(backend, FBR_CSTORE_BACKEND_MAGIC)
