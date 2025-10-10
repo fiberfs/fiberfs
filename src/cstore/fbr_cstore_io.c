@@ -851,23 +851,6 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	return ret;
 }
 
-void
-fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
-{
-	fbr_fs_ok(fs);
-	fbr_directory_ok(directory);
-
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
-		return;
-	}
-
-	char url[FBR_PATH_MAX];
-	size_t url_len = fbr_cstore_s3_index_url(cstore, directory, url, sizeof(url));
-
-	fbr_cstore_io_delete_url(cstore, url, url_len, directory->version, FBR_CSTORE_FILE_INDEX);
-}
-
 int
 fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 {
@@ -880,7 +863,7 @@ fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 		return ret;
 	}
 
-	fbr_cstore_io_index_remove(fs, directory);
+	fbr_cstore_async_index_remove(fs, directory);
 
 	return 0;
 }

@@ -31,7 +31,7 @@ enum fbr_cstore_op_type {
 	FBR_CSOP_WBUFFER_WRITE,
 	FBR_CSOP_WBUFFER_SEND,
 	FBR_CSOP_CHUNK_READ,
-	FBR_CSOP_CHUNK_DELETE,
+	FBR_CSOP_URL_DELETE,
 	FBR_CSOP_INDEX_SEND,
 	__FBR_CSOP_END
 };
@@ -119,6 +119,7 @@ void fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_conte
 	char *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op_sync *sync);
 void fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	char *path, struct fbr_writer *writer, fbr_id_t id, struct fbr_cstore_op_sync *sync);
+void fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 
 void fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync);
 void fbr_cstore_op_sync_done(struct fbr_cstore_op *op);
@@ -146,7 +147,6 @@ void fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct f
 int fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_writer *writer);
 int fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
-void fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_id_t existing);
 fbr_id_t fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath);

@@ -150,7 +150,7 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 		case FBR_CSOP_CHUNK_READ:
 			fbr_cstore_io_chunk_read(op->param0, op->param1, op->param2);
 			return;
-		case FBR_CSOP_CHUNK_DELETE:
+		case FBR_CSOP_URL_DELETE:
 			fbr_cstore_io_delete_url(op->param0, op->param1, (size_t)op->param2,
 				(fbr_id_t)op->param3, (intptr_t)op->param4);
 			return;
@@ -306,13 +306,36 @@ fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 }
 
 static void
-_async_chunk_delete_done(struct fbr_cstore_op *op)
+_async_chunk_url_done(struct fbr_cstore_op *op)
 {
 	fbr_cstore_op_ok(op);
-	assert(op->type == FBR_CSOP_CHUNK_DELETE);
+	assert(op->type == FBR_CSOP_URL_DELETE);
 
 	free(op->param1);
 	op->param1 = NULL;
+}
+
+static void
+_async_url_delete(struct fbr_cstore *cstore, const char *url, size_t url_len, fbr_id_t id,
+    enum fbr_cstore_entry_type type)
+{
+	assert_dev(cstore);
+	assert_dev(url);
+	assert_dev(url_len);
+
+	size_t buffer_len = url_len + 1;
+	char *buffer = malloc(buffer_len);
+	fbr_strcpy(buffer, buffer_len, url);
+
+	static_ASSERT(sizeof(void*) >= sizeof(url_len));
+	static_ASSERT(sizeof(void*) >= sizeof(id));
+	static_ASSERT(sizeof(void*) >= sizeof(type));
+
+	// TODO make a lower priority?
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_URL_DELETE, cstore, buffer, (void*)url_len,
+		(void*)id, (void*)type, _async_chunk_url_done, NULL, FBR_CSTORE_OP_NORMAL);
+
+	(void)ret; // TODO
 }
 
 void
@@ -330,19 +353,9 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 	char url[FBR_PATH_MAX];
 	size_t url_len = fbr_cstore_s3_chunk_url(cstore, file, chunk, url, sizeof(url));
 
-	size_t buffer_len = url_len + 1;
-	char *buffer = malloc(buffer_len);
-	fbr_strcpy(buffer, buffer_len, url);
+	_async_url_delete(cstore, url, url_len, chunk->id, FBR_CSTORE_FILE_CHUNK);
 
-	static_ASSERT(sizeof(void*) >= sizeof(url_len));
-	static_ASSERT(sizeof(void*) >= sizeof(chunk->id));
-	static_ASSERT(sizeof(void*) >= sizeof(enum fbr_cstore_entry_type));
-
-	// TODO make a lower priority?
-	fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_DELETE, cstore, buffer, (void*)url_len,
-		(void*)chunk->id, (void*)FBR_CSTORE_FILE_CHUNK, _async_chunk_delete_done, NULL,
-		FBR_CSTORE_OP_NORMAL);
-
+	// TODO delete this
 	fbr_fs_stat_sub(&fs->stats.store_chunks);
 }
 
@@ -388,6 +401,23 @@ fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *req
 		sync->error = 1;
 		return;
 	}
+}
+
+void
+fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		return;
+	}
+
+	char url[FBR_PATH_MAX];
+	size_t url_len = fbr_cstore_s3_index_url(cstore, directory, url, sizeof(url));
+
+	_async_url_delete(cstore, url, url_len, directory->version, FBR_CSTORE_FILE_INDEX);
 }
 
 void
@@ -464,8 +494,8 @@ fbr_cstore_async_type(enum fbr_cstore_op_type type)
 			return "WBUFFER_SEND";
 		case FBR_CSOP_CHUNK_READ:
 			return "CHUNK_READ";
-		case FBR_CSOP_CHUNK_DELETE:
-			return "CHUNK_DELETE";
+		case FBR_CSOP_URL_DELETE:
+			return "URL_DELETE";
 		case FBR_CSOP_INDEX_SEND:
 			return "INDEX_SEND";
 		case __FBR_CSOP_END:
