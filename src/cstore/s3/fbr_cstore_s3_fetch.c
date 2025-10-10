@@ -661,7 +661,7 @@ fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *reques
 	if (ret < 0) {
 		chttp_context_reset(request);
 		ret = _s3_send_put(cstore, request, path, writer->bytes, id,
-			_s3_writer_data_cb, writer, 0);
+			_s3_writer_data_cb, writer, 1);
 		assert_dev(ret >= 0);
 	}
 }
