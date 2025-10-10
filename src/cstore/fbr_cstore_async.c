@@ -60,7 +60,8 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 
 int
 fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, void *param0,
-    void *param1, void *param2, void *param3, fbr_cstore_async_done_f done_cb, void *done_arg)
+    void *param1, void *param2, void *param3, fbr_cstore_async_done_f done_cb, void *done_arg,
+    enum fbr_cstore_op_priority priority)
 {
 	fbr_cstore_ok(cstore);
 	assert(type > FBR_CSOP_NONE && type < __FBR_CSOP_END);
@@ -90,11 +91,32 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 	op->param1 = param1;
 	op->param2 = param2;
 	op->param3 = param3;
+	op->priority = priority;
 	op->done_cb = done_cb;
 	op->done_arg = done_arg;
 
 	TAILQ_REMOVE(&async->free_list, op, entry);
-	TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
+
+	if (priority == FBR_CSTORE_OP_NORMAL) {
+		TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
+	} else if (priority == FBR_CSTORE_OP_HIGHEST) {
+		TAILQ_INSERT_HEAD(&async->todo_list, op, entry);
+	} else {
+		assert(priority == FBR_CSTORE_OP_HIGH);
+		struct fbr_cstore_op *existing;
+		int inserted = 0;
+		TAILQ_FOREACH(existing, &async->todo_list, entry) {
+			fbr_cstore_op_ok(existing);
+			if (priority > existing->priority) {
+				TAILQ_INSERT_BEFORE(existing, op, entry);
+				inserted = 1;
+				break;
+			}
+		}
+		if (!inserted) {
+			TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
+		}
+	}
 
 	async->queue_len++;
 	assert(async->queue_len <= FBR_CSTORE_ASYNC_QUEUE_MAX);
@@ -128,6 +150,8 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 			fbr_cstore_io_delete_url(op->param0, op->param1, (size_t)op->param2,
 				(fbr_id_t)op->param3);
 			return;
+		case FBR_CSOP_INDEX_SEND:
+			fbr_ABORT("TODO");
 		case FBR_CSOP_NONE:
 		case __FBR_CSOP_END:
 			break;
@@ -249,7 +273,7 @@ fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	wbuffer->state = FBR_WBUFFER_SYNC;
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_WRITE, fs, file, wbuffer, NULL,
-		NULL, NULL);
+		NULL, NULL, FBR_CSTORE_OP_NORMAL);
 	if (ret) {
 		wbuffer->state = FBR_WBUFFER_ERROR;
 		return;
@@ -272,7 +296,7 @@ fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	chunk->state = FBR_CHUNK_LOADING;
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_READ, fs, file, chunk, NULL, NULL,
-		NULL);
+		NULL, FBR_CSTORE_OP_NORMAL);
 	if (ret) {
 		chunk->state = FBR_CHUNK_EMPTY;
 		return;
@@ -311,8 +335,9 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 	static_ASSERT(sizeof(void*) >= sizeof(url_len));
 	static_ASSERT(sizeof(void*) >= sizeof(chunk->id));
 
+	// TODO make a lower priority?
 	fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_DELETE, cstore, buffer, (void*)url_len,
-		(void*)chunk->id, _async_chunk_delete_done, NULL);
+		(void*)chunk->id, _async_chunk_delete_done, NULL, FBR_CSTORE_OP_NORMAL);
 
 	fbr_fs_stat_sub(&fs->stats.store_chunks);
 }
@@ -330,7 +355,7 @@ fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *r
 	}
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_SEND, cstore, request, path,
-		wbuffer, fbr_cstore_op_sync_done, sync);
+		wbuffer, fbr_cstore_op_sync_done, sync, FBR_CSTORE_OP_HIGH);
 	if (ret) {
 		sync->done = 1;
 		sync->error = 1;
@@ -413,6 +438,8 @@ fbr_cstore_async_type(enum fbr_cstore_op_type type)
 			return "CHUNK_READ";
 		case FBR_CSOP_CHUNK_DELETE:
 			return "CHUNK_DELETE";
+		case FBR_CSOP_INDEX_SEND:
+			return "INDEX_SEND";
 		case __FBR_CSOP_END:
 			break;
 	}
