@@ -237,7 +237,6 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(store_bytes);
 	_FS_TEST_STAT_PRINT(store_index_bytes);
 	_FS_TEST_STAT_PRINT(store_root_bytes);
-	_FS_TEST_STAT_PRINT(store_chunks);
 	_FS_TEST_STAT_PRINT(appends);
 	_FS_TEST_STAT_PRINT(flushes);
 	_FS_TEST_STAT_PRINT(flush_errors);
@@ -293,7 +292,6 @@ _FS_TEST_STAT(write_bytes)
 _FS_TEST_STAT(store_bytes)
 _FS_TEST_STAT(store_index_bytes)
 _FS_TEST_STAT(store_root_bytes)
-_FS_TEST_STAT(store_chunks)
 _FS_TEST_STAT(appends)
 _FS_TEST_STAT(flushes)
 

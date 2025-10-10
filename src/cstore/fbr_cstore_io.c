@@ -222,7 +222,6 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
 		fbr_log_print(cstore->log, FBR_LOG_CSTORE, request_id, "ERROR no entry");
-		return;
 	} else {
 		fbr_cstore_entry_ok(entry);
 		fbr_cstore_remove(cstore, entry);
@@ -425,7 +424,6 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	}
 
 	fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
-	fbr_fs_stat_add(&fs->stats.store_chunks);
 	fbr_fs_stat_add(&cstore->stats.wr_chunks);
 
 	fbr_cstore_set_ok(entry);
@@ -849,6 +847,23 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_cstore_release(cstore, entry);
 
 	return ret;
+}
+
+void
+fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		return;
+	}
+
+	char url[FBR_PATH_MAX];
+	size_t url_len = fbr_cstore_s3_index_url(cstore, directory, url, sizeof(url));
+
+	fbr_cstore_io_delete_url(cstore, url, url_len, directory->version, FBR_CSTORE_FILE_INDEX);
 }
 
 int

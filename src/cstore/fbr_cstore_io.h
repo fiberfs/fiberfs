@@ -147,11 +147,12 @@ void fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct f
 int fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_writer *writer);
 int fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
+void fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directory);
+int fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_id_t existing);
 fbr_id_t fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath);
 int fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);
-int fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 
 int fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *request);
 int fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *request);

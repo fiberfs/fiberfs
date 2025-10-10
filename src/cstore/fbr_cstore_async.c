@@ -335,7 +335,7 @@ _async_url_delete(struct fbr_cstore *cstore, const char *url, size_t url_len, fb
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_URL_DELETE, cstore, buffer, (void*)url_len,
 		(void*)id, (void*)type, _async_chunk_url_done, NULL, FBR_CSTORE_OP_NORMAL);
 
-	(void)ret; // TODO
+	assert_zero_dev(ret); // TODO
 }
 
 void
@@ -354,9 +354,6 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 	size_t url_len = fbr_cstore_s3_chunk_url(cstore, file, chunk, url, sizeof(url));
 
 	_async_url_delete(cstore, url, url_len, chunk->id, FBR_CSTORE_FILE_CHUNK);
-
-	// TODO delete this
-	fbr_fs_stat_sub(&fs->stats.store_chunks);
 }
 
 void

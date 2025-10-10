@@ -290,7 +290,7 @@ _write_test(void)
 	fbr_test_index_request_finish();
 
 	fbr_test_cstore_debug_0();
-	assert(fs->stats.store_chunks > _FILE_SIZE / _WBUFFER_SIZE);
+	assert(fbr_test_cstore_stat_chunks() > _FILE_SIZE / _WBUFFER_SIZE);
 
 	fbr_test_logs("*** Starting write threads");
 
@@ -392,11 +392,13 @@ _write_test(void)
 	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
 	if (_SHARED_FIO) {
-		fbr_test_ASSERT(fs->stats.store_chunks >= _FILE_SIZE / _WBUFFER_SIZE,
-			"mismatch %lu %d", fs->stats.store_chunks, _FILE_SIZE / _WBUFFER_SIZE);
+		fbr_test_ASSERT(fbr_test_cstore_stat_chunks() >= _FILE_SIZE / _WBUFFER_SIZE,
+			"mismatch %lu %d", fbr_test_cstore_stat_chunks(),
+			_FILE_SIZE / _WBUFFER_SIZE);
 	} else {
-		fbr_test_ASSERT(fs->stats.store_chunks == _FILE_SIZE / _WBUFFER_SIZE,
-			"mismatch %lu %d", fs->stats.store_chunks, _FILE_SIZE / _WBUFFER_SIZE);
+		fbr_test_ASSERT(fbr_test_cstore_stat_chunks() == _FILE_SIZE / _WBUFFER_SIZE,
+			"mismatch %lu %d", fbr_test_cstore_stat_chunks(),
+			_FILE_SIZE / _WBUFFER_SIZE);
 	}
 
 	if (error_mode) {

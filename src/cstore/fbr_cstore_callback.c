@@ -31,8 +31,6 @@ fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 	size_t url_len = fbr_cstore_s3_chunk_url(cstore, file, chunk, url, sizeof(url));
 
 	fbr_cstore_io_delete_url(cstore, url, url_len, chunk->id, FBR_CSTORE_FILE_CHUNK);
-
-	fbr_fs_stat_sub(&fs->stats.store_chunks);
 }
 
 void
@@ -65,7 +63,8 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	ret = fbr_cstore_io_root_write(fs, directory, previous_version);
 	if (ret) {
-		fbr_cstore_async_index_remove(fs, directory);
+		// TODO force a new version on failure and we can use async...
+		fbr_cstore_io_index_remove(fs, directory);
 	} else if (previous) {
 		fbr_cstore_async_index_remove(fs, previous);
 	}

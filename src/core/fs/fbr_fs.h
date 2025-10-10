@@ -310,7 +310,6 @@ struct fbr_fs_stats {
 	fbr_stats_t				store_bytes;
 	fbr_stats_t				store_index_bytes;
 	fbr_stats_t				store_root_bytes;
-	fbr_stats_t				store_chunks;
 
 	fbr_stats_t				appends;
 	fbr_stats_t				flushes;
