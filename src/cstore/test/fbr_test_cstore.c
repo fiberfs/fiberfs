@@ -143,7 +143,7 @@ fbr_test_cstore_init(struct fbr_test_context *ctx)
 
 	char *root = fbr_test_mkdir_tmp(ctx, NULL);
 
-	_test_cstore_init(ctx, root, "^");
+	_test_cstore_init(ctx, root, "c0^");
 }
 
 void
@@ -157,7 +157,7 @@ fbr_test_cstore_init_loader(struct fbr_test_context *ctx)
 	fbr_bprintf(data_path, "%s/%s/", root, FBR_CSTORE_DATA_DIR);
 	fbr_sys_mkdirs(data_path);
 
-	_test_cstore_init(ctx, root, "^");
+	_test_cstore_init(ctx, root, "c0^");
 }
 
 void
@@ -175,7 +175,7 @@ fbr_test_cstore_reload(struct fbr_test_context *ctx)
 
 	fbr_test_sleep_ms(50);
 
-	_test_cstore_init(ctx, root, "&");
+	_test_cstore_init(ctx, root, "c00^");
 }
 
 void
