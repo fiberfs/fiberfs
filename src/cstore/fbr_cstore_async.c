@@ -53,20 +53,19 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 	while (async->threads_running != async->threads_max) {
 		fbr_sleep_ms(0.1);
 	}
+
+	fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, FBR_REQID_CSTORE, "threads running: %zu",
+		async->threads_running);
 }
 
 int
 fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, void *param0,
-    void *param1, void *param2, void *param3, fbr_cstore_async_done_f done)
+    void *param1, void *param2, void *param3, fbr_cstore_async_done_f done_cb, void *done_arg)
 {
 	fbr_cstore_ok(cstore);
 	assert(type > FBR_CSOP_NONE && type < __FBR_CSOP_END);
 
-	unsigned long request_id = FBR_REQID_CS_ASYNC;
-	struct fbr_request *request = fbr_request_get();
-	if (request) {
-		request_id = request->id;
-	}
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 
 	struct fbr_cstore_async *async = &cstore->async;
 	pt_assert(pthread_mutex_lock(&async->queue_lock));
@@ -91,7 +90,8 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 	op->param1 = param1;
 	op->param2 = param2;
 	op->param3 = param3;
-	op->done = done;
+	op->done_cb = done_cb;
+	op->done_arg = done_arg;
 
 	TAILQ_REMOVE(&async->free_list, op, entry);
 	TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
@@ -152,8 +152,6 @@ _cstore_async_loop(void *arg)
 
 	fbr_thread_name("fbr_async");
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, thread_id, "thread running");
-
 	while (!async->exit) {
 		if (thread_pos > async->threads_max) {
 			break;
@@ -178,8 +176,8 @@ _cstore_async_loop(void *arg)
 		assert(async->callback);
 		async->callback(cstore, op);
 
-		if (op->done) {
-			op->done(op);
+		if (op->done_cb) {
+			op->done_cb(op);
 		}
 
 		pt_assert(pthread_mutex_lock(&async->queue_lock));
@@ -249,7 +247,7 @@ fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	wbuffer->state = FBR_WBUFFER_SYNC;
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_WRITE, fs, file, wbuffer, NULL,
-		NULL);
+		NULL, NULL);
 	if (ret) {
 		wbuffer->state = FBR_WBUFFER_ERROR;
 		return;
@@ -271,7 +269,8 @@ fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 
 	chunk->state = FBR_CHUNK_LOADING;
 
-	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_READ, fs, file, chunk, NULL, NULL);
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_READ, fs, file, chunk, NULL, NULL,
+		NULL);
 	if (ret) {
 		chunk->state = FBR_CHUNK_EMPTY;
 		return;
@@ -311,7 +310,7 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 	static_ASSERT(sizeof(void*) >= sizeof(chunk->id));
 
 	fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_DELETE, cstore, buffer, (void*)url_len,
-		(void*)chunk->id, _async_chunk_delete_done);
+		(void*)chunk->id, _async_chunk_delete_done, NULL);
 
 	fbr_fs_stat_sub(&fs->stats.store_chunks);
 }

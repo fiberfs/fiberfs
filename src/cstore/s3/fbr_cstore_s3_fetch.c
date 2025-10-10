@@ -229,13 +229,16 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *request,
     int retry)
 {
 	fbr_cstore_ok(cstore);
-	assert_dev(cstore->s3.enabled);
 	chttp_context_ok(request);
 	assert_dev(request->state == CHTTP_STATE_NONE);
 	assert_dev(path);
 	assert_dev(length);
 	assert_dev(etag);
 	assert_dev(data_cb);
+
+	if (!cstore->s3.enabled) {
+		return 0;
+	}
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 
@@ -361,6 +364,7 @@ _io_thread_wbuffer_send(void *arg)
 	return NULL;
 }
 
+// TODO this needs to be merged into the cstore async
 pthread_t
 fbr_cstore_s3_wbuffer_send_async(struct fbr_cstore *cstore, struct chttp_context *request,
     char *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op *op)
@@ -428,7 +432,7 @@ fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
 		fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_DONE);
 	}
 
-	chttp_context_free(request);;
+	chttp_context_free(request);
 }
 
 static inline void
@@ -668,14 +672,46 @@ _s3_writer_data_cb(struct chttp_context *request, void *arg)
 
 void
 fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *request,
-    const char *url, struct fbr_writer *writer, fbr_id_t id)
+    const char *path, struct fbr_writer *writer, fbr_id_t id)
 {
-	int ret = _s3_send_put(cstore, request, url, writer->bytes, id,
+	int ret = _s3_send_put(cstore, request, path, writer->bytes, id,
 		_s3_writer_data_cb, writer, 0);
 	if (ret < 0) {
 		chttp_context_reset(request);
-		ret = _s3_send_put(cstore, request, url, writer->bytes, id,
+		ret = _s3_send_put(cstore, request, path, writer->bytes, id,
 			_s3_writer_data_cb, writer, 0);
 		assert_dev(ret >= 0);
 	}
+}
+
+int
+fbr_cstore_s3_index_finish(struct fbr_cstore *cstore, pthread_t s3_thread,
+    struct chttp_context *request, int error)
+{
+	fbr_cstore_ok(cstore);
+	chttp_context_ok(request);
+
+	if (s3_thread) {
+		pt_assert(pthread_join(s3_thread, NULL));
+	}
+
+	if (request->state == CHTTP_STATE_NONE) {
+		assert_zero_dev(s3_thread);
+		chttp_context_free(request);
+		return error;
+	}
+
+	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
+	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "S3 response: %d (%d %d %s)",
+		request->status, request->state, request->error, chttp_error_msg(request));
+
+	if (request->error || request->status != 200) {
+		error = 1;
+	} else {
+		error = 0;
+	}
+
+	chttp_context_free(request);
+
+	return error;
 }

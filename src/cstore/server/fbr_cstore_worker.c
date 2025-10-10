@@ -165,8 +165,6 @@ _cstore_worker_loop(void *arg)
 
 	fbr_thread_name("fbr_worker");
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_WORKER, worker->thread_id, "running");
-
 	pt_assert(pthread_mutex_lock(&tasks->lock));
 
 	while (!tasks->exit) {
@@ -235,6 +233,9 @@ fbr_cstore_worker_add(struct fbr_cstore *cstore, size_t count)
 		assert_dev(tasks->workers_running <= tasks->workers_count);
 		fbr_sleep_ms(0.1);
 	}
+
+	fbr_log_print(cstore->log, FBR_LOG_CS_WORKER, FBR_REQID_CSTORE, "workers added: %zu",
+		count);
 }
 
 void

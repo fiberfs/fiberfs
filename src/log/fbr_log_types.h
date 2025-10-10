@@ -13,7 +13,6 @@ enum fbr_request_ids {
 	FBR_REQID_DEBUG,
 	FBR_REQID_CORE,
 	FBR_REQID_CSTORE,
-	FBR_REQID_CS_ASYNC,
 	__FBR_REQID_MAX
 };
 

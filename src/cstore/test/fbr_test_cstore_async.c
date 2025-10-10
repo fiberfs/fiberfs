@@ -40,7 +40,7 @@ _cstore_state_thread(void *arg)
 
 	while (_ASYNC_TEST_QUEUED < _ASYNC_TEST_MAX) {
 		int ret = fbr_cstore_async_queue(_CSTORE, FBR_CSOP_TEST, NULL, NULL, NULL, NULL,
-			NULL);
+			NULL, NULL);
 		if (ret) {
 			fbr_atomic_add(&_ASYNC_TEST_ERROR, 1);
 			fbr_test_sleep_ms(1);
