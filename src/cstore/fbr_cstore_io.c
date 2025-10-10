@@ -220,9 +220,7 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_
 		path, url, id);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
-	if (!entry) {
-		fbr_log_print(cstore->log, FBR_LOG_CSTORE, request_id, "ERROR no entry");
-	} else {
+	if (entry) {
 		fbr_cstore_entry_ok(entry);
 		fbr_cstore_remove(cstore, entry);
 

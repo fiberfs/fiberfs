@@ -63,7 +63,6 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	ret = fbr_cstore_io_root_write(fs, directory, previous_version);
 	if (ret) {
-		// TODO force a new version on failure and we can use async...
 		fbr_cstore_io_index_remove(fs, directory);
 	} else if (previous) {
 		fbr_cstore_async_index_remove(fs, previous);
