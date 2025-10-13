@@ -250,8 +250,6 @@ _test_fs_chunk_gen(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *c
 	}
 
 	chunk->state = FBR_CHUNK_READY;
-
-	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, chunk->length);
 }
 
 static const struct fbr_store_callbacks _TEST_FS_STORE_CALLBACKS = {

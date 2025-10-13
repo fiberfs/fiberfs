@@ -278,6 +278,7 @@ fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 		NULL, NULL, NULL, FBR_CSTORE_OP_NORMAL);
 	if (ret) {
 		wbuffer->state = FBR_WBUFFER_ERROR;
+		//fbr_cstore_io_wbuffer_write(fs, file, wbuffer);
 		return;
 	}
 }

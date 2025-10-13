@@ -231,10 +231,8 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(requests_freed);
 	_FS_TEST_STAT_PRINT(requests_recycled);
 	_FS_TEST_STAT_PRINT(requests_pooled);
-	_FS_TEST_STAT_PRINT(fetch_bytes);
 	_FS_TEST_STAT_PRINT(read_bytes);
 	_FS_TEST_STAT_PRINT(write_bytes);
-	_FS_TEST_STAT_PRINT(store_bytes);
 	_FS_TEST_STAT_PRINT(store_index_bytes);
 	_FS_TEST_STAT_PRINT(store_root_bytes);
 	_FS_TEST_STAT_PRINT(appends);
@@ -286,10 +284,8 @@ _FS_TEST_STAT(file_refs)
 _FS_TEST_STAT(requests_alloc)
 _FS_TEST_STAT(requests_freed)
 _FS_TEST_STAT(requests_recycled)
-_FS_TEST_STAT(fetch_bytes)
 _FS_TEST_STAT(read_bytes)
 _FS_TEST_STAT(write_bytes)
-_FS_TEST_STAT(store_bytes)
 _FS_TEST_STAT(store_index_bytes)
 _FS_TEST_STAT(store_root_bytes)
 _FS_TEST_STAT(appends)

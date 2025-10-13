@@ -304,10 +304,8 @@ struct fbr_fs_stats {
 	fbr_stats_t				requests_recycled;
 	fbr_stats_t				requests_pooled;
 
-	fbr_stats_t				fetch_bytes;
 	fbr_stats_t				read_bytes;
 	fbr_stats_t				write_bytes;
-	fbr_stats_t				store_bytes;
 	fbr_stats_t				store_index_bytes;
 	fbr_stats_t				store_root_bytes;
 

@@ -317,6 +317,8 @@ fbr_test_cstore_debug(struct fbr_cstore *cstore)
 	fbr_test_logs("CSTORE_DEBUG chunks: %lu", cstore->stats.wr_chunks);
 	fbr_test_logs("CSTORE_DEBUG indexes: %lu", cstore->stats.wr_indexes);
 	fbr_test_logs("CSTORE_DEBUG roots: %lu", cstore->stats.wr_roots);
+	fbr_test_logs("CSTORE_DEBUG chunk wr bytes: %lu", cstore->stats.wr_chunk_bytes);
+	fbr_test_logs("CSTORE_DEBUG chunk rd bytes: %lu", cstore->stats.rd_chunk_bytes);
 
 	char path[FBR_PATH_MAX];
 	fbr_bprintf(path, "%s/%s", cstore->root, FBR_CSTORE_DATA_DIR);
@@ -374,44 +376,23 @@ fbr_test_cstore_stat_roots(void)
 	return _CSTORE->stats.wr_roots;
 }
 
-char *
-fbr_var_cstore_stat_chunks(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
-	assert(tcstore);
-
-	fbr_bprintf(tcstore->stat_buf, "%lu", fbr_test_cstore_stat_chunks());
-
-	return tcstore->stat_buf;
+#define _CSTORE_TEST_STAT(var, stat)						\
+char *										\
+fbr_var_cstore_stat_##var(struct fbr_test_context *ctx)				\
+{										\
+	fbr_test_context_ok(ctx);						\
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);		\
+	assert(tcstore);							\
+	fbr_cstore_ok(&tcstore->cstore);					\
+	fbr_bprintf(tcstore->stat_buf, "%lu", tcstore->cstore.stats.stat);	\
+	return tcstore->stat_buf;						\
 }
 
-char *
-fbr_var_cstore_stat_indexes(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
-	assert(tcstore);
-
-	fbr_bprintf(tcstore->stat_buf, "%lu", fbr_test_cstore_stat_indexes());
-
-	return tcstore->stat_buf;
-}
-
-char *
-fbr_var_cstore_stat_roots(struct fbr_test_context *ctx)
-{
-	fbr_test_context_ok(ctx);
-
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);
-	assert(tcstore);
-
-	fbr_bprintf(tcstore->stat_buf, "%lu", fbr_test_cstore_stat_roots());
-
-	return tcstore->stat_buf;
-}
+_CSTORE_TEST_STAT(chunks, wr_chunks)
+_CSTORE_TEST_STAT(indexes, wr_indexes)
+_CSTORE_TEST_STAT(roots, wr_roots)
+_CSTORE_TEST_STAT(chunk_write_bytes, wr_chunk_bytes)
+_CSTORE_TEST_STAT(chunk_read_bytes, rd_chunk_bytes)
 
 void
 fbr_cmd_cstore_set_lru(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)

@@ -421,7 +421,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		return;
 	}
 
-	fbr_fs_stat_add_count(&fs->stats.store_bytes, bytes);
+	fbr_fs_stat_add_count(&cstore->stats.wr_chunk_bytes, bytes);
 	fbr_fs_stat_add(&cstore->stats.wr_chunks);
 
 	fbr_cstore_set_ok(entry);
@@ -538,7 +538,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 		return;
 	}
 
-	fbr_fs_stat_add_count(&fs->stats.fetch_bytes, chunk->length);
+	fbr_fs_stat_add_count(&cstore->stats.rd_chunk_bytes, chunk->length);
 
 	fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
 	fbr_cstore_release(cstore, entry);

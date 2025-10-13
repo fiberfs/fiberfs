@@ -137,6 +137,8 @@ struct fbr_cstore {
 		fbr_stats_t			wr_chunks;
 		fbr_stats_t			wr_indexes;
 		fbr_stats_t			wr_roots;
+		fbr_stats_t			wr_chunk_bytes;
+		fbr_stats_t			rd_chunk_bytes;
 	} stats;
 	};
 

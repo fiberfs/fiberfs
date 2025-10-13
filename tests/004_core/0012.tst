@@ -31,7 +31,6 @@ equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
-equal $fs_test_stat_fetch_bytes 101
 equal $fs_test_stat_read_bytes 101
 
 fuse_test_unmount
