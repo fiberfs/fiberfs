@@ -14,8 +14,6 @@ set_var1 $sys_tmpdir "/test.txt"
 sys_write $var1 1 333 999999999 55555 1 666666
 
 equal $fs_test_stat_write_bytes 25
-greater_than $fs_test_stat_store_index_bytes 0
-greater_than $fs_test_stat_store_root_bytes 0
 
 sys_cat $var1 "1333999999999555551666666"
 
@@ -33,6 +31,8 @@ cstore_debug
 
 equal $cstore_stat_chunk_write_bytes 25
 equal $cstore_stat_chunk_read_bytes 25
+greater_than $cstore_stat_index_write_bytes 0
+greater_than $cstore_stat_root_write_bytes 0
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0

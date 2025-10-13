@@ -58,8 +58,6 @@ FBR_TEST_VAR(fs_test_stat_requests_freed)
 FBR_TEST_VAR(fs_test_stat_requests_recycled)
 FBR_TEST_VAR(fs_test_stat_read_bytes)
 FBR_TEST_VAR(fs_test_stat_write_bytes)
-FBR_TEST_VAR(fs_test_stat_store_index_bytes)
-FBR_TEST_VAR(fs_test_stat_store_root_bytes)
 FBR_TEST_VAR(fs_test_stat_appends)
 FBR_TEST_VAR(fs_test_stat_flushes)
 

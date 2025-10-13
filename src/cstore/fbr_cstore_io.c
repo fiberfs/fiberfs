@@ -658,7 +658,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
 
-	fbr_fs_stat_add_count(&fs->stats.store_index_bytes, writer->bytes);
+	fbr_fs_stat_add_count(&cstore->stats.wr_index_bytes, writer->bytes);
 	fbr_fs_stat_add(&cstore->stats.wr_indexes);
 
 	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE success %zu bytes",
@@ -996,7 +996,7 @@ fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr
 		return 1;
 	}
 
-	fbr_fs_stat_add_count(&fs->stats.store_root_bytes, json.bytes);
+	fbr_fs_stat_add_count(&cstore->stats.wr_root_bytes, json.bytes);
 	fbr_writer_free(fs, &json);
 
 	fbr_cstore_set_ok(entry);
