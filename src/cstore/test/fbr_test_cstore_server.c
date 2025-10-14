@@ -62,10 +62,13 @@ fbr_cmd_cstore_set_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_cstore_s3_init(cstore, host, port, tls, prefix);
 
+	struct fbr_cstore_backend *s3 = cstore->s3.backend;
+	fbr_cstore_backend_ok(s3);
+
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_set_s3: %s:%d/%s %d",
-		cstore->s3.host, cstore->s3.port,
+		s3->host, s3->port,
 		cstore->s3.prefix ? cstore->s3.prefix : "",
-		cstore->s3.tls);
+		s3->tls);
 }
 
 static struct fbr_cstore_server *

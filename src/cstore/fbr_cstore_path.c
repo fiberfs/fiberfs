@@ -180,15 +180,15 @@ _hash_s3(XXH3_state_t *hash, struct fbr_cstore *cstore)
 
 	// host + NULL + [/prefix] + /
 
-	if (!cstore->s3.enabled) {
+	if (!cstore->s3.backend) {
 		XXH3_64bits_update(hash, "", 1);
 		XXH3_64bits_update(hash, "/", 1);
 		return;
 	}
 
-	assert(cstore->s3.host);
-	size_t len = strlen(cstore->s3.host);
-	XXH3_64bits_update(hash, cstore->s3.host, len + 1);
+	struct fbr_cstore_backend *s3 = cstore->s3.backend;
+	fbr_cstore_backend_ok(s3);
+	XXH3_64bits_update(hash, s3->host, s3->host_len + 1);
 
 	if (cstore->s3.prefix) {
 		assert_dev(cstore->s3.prefix_len);
@@ -331,7 +331,7 @@ fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, char *buffer, siz
 	assert(buffer_len);
 
 	const char *prefix = cstore->s3.prefix;
-	if (!prefix || !cstore->s3.enabled) {
+	if (!prefix || !fbr_cstore_backend_enabled(cstore)) {
 		prefix = "";
 	}
 

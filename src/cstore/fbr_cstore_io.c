@@ -210,7 +210,13 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_
 	assert(url_len);
 	assert(id);
 
-	fbr_hash_t hash = fbr_cstore_hash_url(cstore->s3.host, cstore->s3.host_len, url, url_len);
+	struct fbr_cstore_backend *s3_backend = cstore->s3.backend;
+	fbr_hash_t hash;
+	if (s3_backend) {
+		hash = fbr_cstore_hash_url(s3_backend->host, s3_backend->host_len, url, url_len);
+	} else {
+		hash = fbr_cstore_hash_url(NULL, 0, url, url_len);
+	}
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));

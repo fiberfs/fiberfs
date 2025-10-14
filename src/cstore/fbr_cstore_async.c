@@ -345,7 +345,7 @@ fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *r
 	fbr_cstore_ok(cstore);
 	fbr_cstore_op_sync_ok(sync);
 
-	if (!cstore->s3.enabled) {
+	if (!fbr_cstore_backend_enabled(cstore)) {
 		sync->done = 1;
 		return;
 	}
@@ -366,7 +366,7 @@ fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *req
 	fbr_cstore_ok(cstore);
 	fbr_cstore_op_sync_ok(sync);
 
-	if (!cstore->s3.enabled) {
+	if (!fbr_cstore_backend_enabled(cstore)) {
 		sync->done = 1;
 		return;
 	}
