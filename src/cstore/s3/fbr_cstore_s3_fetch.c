@@ -428,11 +428,16 @@ _s3_chunk_read_error(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fbr_cs
 
 static inline void
 _s3_chunk_readwrite_error(struct fbr_fs *fs, struct fbr_cstore *cstore,
-    struct fbr_cstore_entry *entry, struct fbr_file *file, struct fbr_chunk *chunk)
+    struct fbr_cstore_entry *entry, struct fbr_file *file, struct fbr_chunk *chunk, int async)
 {
-	fbr_file_LOCK(fs, file);
-	fbr_chunk_release(chunk);
-	fbr_file_UNLOCK(file);
+	if (async) {
+		fbr_file_LOCK(fs, file);
+		fbr_chunk_release(chunk);
+		fbr_file_UNLOCK(file);
+	} else {
+		fbr_chunk_release(chunk);
+	}
+
 	fbr_inode_release(fs, &file);
 
 	fbr_cstore_set_error(entry);
@@ -453,6 +458,11 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	if (!cstore->s3.enabled) {
 		fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		return;
+	}
+
+	int async = 0;
+	if (chunk->state == FBR_CHUNK_LOADING) {
+		async = 1;
 	}
 
 	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
@@ -555,9 +565,14 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	// Take a chunk ref and write it to the cstore
 
 	fbr_file_ref_inode(fs, file);
-	fbr_file_LOCK(fs, file);
-	fbr_chunk_take(chunk);
-	fbr_file_UNLOCK(file);
+
+	if (async) {
+		fbr_file_LOCK(fs, file);
+		fbr_chunk_take(chunk);
+		fbr_file_UNLOCK(file);
+	} else {
+		fbr_chunk_take(chunk);
+	}
 
 	fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
 
@@ -570,20 +585,20 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	int ret = fbr_sys_mkdirs(path);
 	if (ret) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR rwrite mkdir");
-		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk);
+		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, async);
 		return;
 	}
 
 	if (fbr_sys_exists(path)) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR rwrite exists");
-		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk);
+		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, async);
 		return;
 	}
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR rwrite open()");
-		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk);
+		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, async);
 		return;
 	}
 
@@ -592,7 +607,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	if (bytes != chunk->length) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR rwrite bytes");
-		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk);
+		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, async);
 		return;
 	}
 
@@ -610,13 +625,18 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	ret = fbr_cstore_metadata_write(path, &metadata);
 	if (ret) {
 		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR write metadata");
-		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk);
+		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, async);
 		return;
 	}
 
-	fbr_file_LOCK(fs, file);
-	fbr_chunk_release(chunk);
-	fbr_file_UNLOCK(file);
+	if (async) {
+		fbr_file_LOCK(fs, file);
+		fbr_chunk_release(chunk);
+		fbr_file_UNLOCK(file);
+	} else {
+		fbr_chunk_release(chunk);
+	}
+
 	fbr_inode_release(fs, &file);
 
 	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "READ WRITE S3 done %zu bytes",

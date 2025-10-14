@@ -32,9 +32,7 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 	TAILQ_INIT(&async->active_list);
 	TAILQ_INIT(&async->free_list);
 
-	async->queue_max = fbr_array_len(async->ops);
-
-	for (size_t i = 0; i < async->queue_max; i++) {
+	for (size_t i = 0; i < fbr_array_len(async->ops); i++) {
 		struct fbr_cstore_op *op = &async->ops[i];
 
 		op->magic = FBR_CSTORE_OP_MAGIC;
@@ -62,7 +60,7 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 int
 fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, void *param0,
     void *param1, void *param2, void *param3, void *param4, fbr_cstore_async_done_f done_cb,
-    void *done_arg, enum fbr_cstore_op_priority priority)
+    void *done_arg)
 {
 	fbr_cstore_ok(cstore);
 	assert(type > FBR_CSOP_NONE && type < __FBR_CSOP_END);
@@ -75,7 +73,7 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 	// TODO how do we want to exit?
 	assert_zero(async->exit);
 
-	if (TAILQ_EMPTY(&async->free_list) || async->queue_len >= async->queue_max) {
+	if (TAILQ_EMPTY(&async->free_list) || async->queue_len >= async->threads_max) {
 		pt_assert(pthread_mutex_unlock(&async->queue_lock));
 		return 1;
 	}
@@ -92,7 +90,6 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 	fbr_zero(op);
 	op->magic = FBR_CSTORE_OP_MAGIC;
 	op->type = type;
-	op->priority = priority;
 	op->param0 = param0;
 	op->param1 = param1;
 	op->param2 = param2;
@@ -101,29 +98,10 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 	op->done_cb = done_cb;
 	op->done_arg = done_arg;
 
-	if (priority == FBR_CSTORE_OP_NORMAL) {
-		TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
-	} else if (priority == FBR_CSTORE_OP_HIGHEST) {
-		TAILQ_INSERT_HEAD(&async->todo_list, op, entry);
-	} else {
-		assert(priority == FBR_CSTORE_OP_HIGH);
-		struct fbr_cstore_op *existing;
-		int inserted = 0;
-		TAILQ_FOREACH(existing, &async->todo_list, entry) {
-			fbr_cstore_op_ok(existing);
-			if (priority > existing->priority) {
-				TAILQ_INSERT_BEFORE(existing, op, entry);
-				inserted = 1;
-				break;
-			}
-		}
-		if (!inserted) {
-			TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
-		}
-	}
+	TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
 
 	async->queue_len++;
-	assert(async->queue_len <= FBR_CSTORE_ASYNC_QUEUE_MAX);
+	assert(async->queue_len <= FBR_CSTORE_ASYNC_THREAD_MAX);
 
 	pt_assert(pthread_cond_signal(&async->todo_ready));
 
@@ -220,7 +198,7 @@ _cstore_async_loop(void *arg)
 		TAILQ_INSERT_TAIL(&async->free_list, op, entry);
 
 		async->queue_len--;
-		assert(async->queue_len <= FBR_CSTORE_ASYNC_QUEUE_MAX);
+		assert(async->queue_len <= FBR_CSTORE_ASYNC_THREAD_MAX);
 	}
 
 	async->threads_running--;
@@ -275,10 +253,10 @@ fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	wbuffer->state = FBR_WBUFFER_SYNC;
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_WRITE, fs, file, wbuffer, NULL,
-		NULL, NULL, NULL, FBR_CSTORE_OP_NORMAL);
+		NULL, NULL, NULL);
 	if (ret) {
-		wbuffer->state = FBR_WBUFFER_ERROR;
-		//fbr_cstore_io_wbuffer_write(fs, file, wbuffer);
+		wbuffer->state = FBR_WBUFFER_READY;
+		fbr_cstore_io_wbuffer_write(fs, file, wbuffer);
 		return;
 	}
 }
@@ -299,9 +277,10 @@ fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	chunk->state = FBR_CHUNK_LOADING;
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_READ, fs, file, chunk, NULL, NULL,
-		NULL, NULL, FBR_CSTORE_OP_NORMAL);
+		NULL, NULL);
 	if (ret) {
 		chunk->state = FBR_CHUNK_EMPTY;
+		fbr_cstore_io_chunk_read(fs, file, chunk);
 		return;
 	}
 }
@@ -332,11 +311,13 @@ _async_url_delete(struct fbr_cstore *cstore, const char *url, size_t url_len, fb
 	static_ASSERT(sizeof(void*) >= sizeof(id));
 	static_ASSERT(sizeof(void*) >= sizeof(type));
 
-	// TODO make a lower priority?
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_URL_DELETE, cstore, buffer, (void*)url_len,
-		(void*)id, (void*)type, _async_chunk_url_done, NULL, FBR_CSTORE_OP_NORMAL);
-
-	assert_zero_dev(ret); // TODO
+		(void*)id, (void*)type, _async_chunk_url_done, NULL);
+	if (ret) {
+		free(buffer);
+		fbr_cstore_io_delete_url(cstore, url, url_len, id, type);
+		return;
+	}
 }
 
 void
@@ -370,10 +351,10 @@ fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *r
 	}
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_SEND, cstore, request, path,
-		wbuffer, NULL, fbr_cstore_op_sync_done, sync, FBR_CSTORE_OP_HIGH);
+		wbuffer, NULL, fbr_cstore_op_sync_done, sync);
 	if (ret) {
+		fbr_cstore_s3_wbuffer_send(cstore, request, path, wbuffer);
 		sync->done = 1;
-		sync->error = 1;
 		return;
 	}
 }
@@ -393,10 +374,10 @@ fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *req
 	static_ASSERT(sizeof(void*) >= sizeof(id));
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_INDEX_SEND, cstore, request, path,
-		writer, (void*)id, fbr_cstore_op_sync_done, sync, FBR_CSTORE_OP_HIGH);
+		writer, (void*)id, fbr_cstore_op_sync_done, sync);
 	if (ret) {
+		fbr_cstore_s3_index_send(cstore, request, path, writer, id);
 		sync->done = 1;
-		sync->error = 1;
 		return;
 	}
 }

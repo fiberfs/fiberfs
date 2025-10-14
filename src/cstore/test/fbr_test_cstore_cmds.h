@@ -64,6 +64,7 @@ FBR_TEST_VAR(cstore_stat_chunk_read_bytes)
 
 FBR_TEST_CMD(cstore_set_lru)
 FBR_TEST_CMD(cstore_dirty_rm)
+FBR_TEST_CMD(cstore_set_async)
 FBR_TEST_CMD(cstore_enable_server)
 FBR_TEST_CMD(cstore_set_s3)
 

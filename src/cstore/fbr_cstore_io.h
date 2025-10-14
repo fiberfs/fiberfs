@@ -14,7 +14,6 @@
 #include "core/fuse/fbr_fuse.h"
 #include "data/queue.h"
 
-#define FBR_CSTORE_ASYNC_QUEUE_MAX		256 // This should match threads
 #define FBR_CSTORE_ASYNC_THREAD_MAX		128
 #define FBR_CSTORE_ASYNC_THREAD_DEFAULT		4
 
@@ -34,12 +33,6 @@ enum fbr_cstore_op_type {
 	FBR_CSOP_URL_DELETE,
 	FBR_CSOP_INDEX_SEND,
 	__FBR_CSOP_END
-};
-
-enum fbr_cstore_op_priority {
-	FBR_CSTORE_OP_NORMAL = 0,
-	FBR_CSTORE_OP_HIGH,
-	FBR_CSTORE_OP_HIGHEST
 };
 
 struct fbr_cstore_op;
@@ -63,7 +56,6 @@ struct fbr_cstore_op {
 #define FBR_CSTORE_OP_MAGIC			0x08BDFC3F
 
 	enum fbr_cstore_op_type			type;
-	enum fbr_cstore_op_priority		priority;
 
 	void					*param0;
 	void					*param1;
@@ -78,10 +70,9 @@ struct fbr_cstore_op {
 };
 
 struct fbr_cstore_async {
-	struct fbr_cstore_op			ops[FBR_CSTORE_ASYNC_QUEUE_MAX];
+	struct fbr_cstore_op			ops[FBR_CSTORE_ASYNC_THREAD_MAX];
 
 	size_t					queue_len;
-	size_t					queue_max;
 	pthread_mutex_t				queue_lock;
 	pthread_cond_t				todo_ready;
 	volatile int				exit;
@@ -108,7 +99,7 @@ void fbr_cstore_async_free(struct fbr_cstore *cstore);
 
 int fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type,
 	void *param0, void *param1, void *param2, void *param3, void *param4,
-	fbr_cstore_async_done_f done_cb, void *done_arg, enum fbr_cstore_op_priority priority);
+	fbr_cstore_async_done_f done_cb, void *done_arg);
 void fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
 void fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file,
