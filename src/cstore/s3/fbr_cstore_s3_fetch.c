@@ -434,11 +434,8 @@ _s3_chunk_readwrite_error(struct fbr_fs *fs, struct fbr_cstore *cstore,
 		fbr_file_LOCK(fs, file);
 		fbr_chunk_release(chunk);
 		fbr_file_UNLOCK(file);
-	} else {
-		fbr_chunk_release(chunk);
+		fbr_inode_release(fs, &file);
 	}
-
-	fbr_inode_release(fs, &file);
 
 	fbr_cstore_set_error(entry);
 	fbr_cstore_remove(cstore, entry);
@@ -562,16 +559,13 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	chttp_context_free(&request);
 
-	// Take a chunk ref and write it to the cstore
-
-	fbr_file_ref_inode(fs, file);
+	// Write back the chunk to the cstore
 
 	if (async) {
+		fbr_file_ref_inode(fs, file);
 		fbr_file_LOCK(fs, file);
 		fbr_chunk_take(chunk);
 		fbr_file_UNLOCK(file);
-	} else {
-		fbr_chunk_take(chunk);
 	}
 
 	fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
@@ -633,11 +627,8 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 		fbr_file_LOCK(fs, file);
 		fbr_chunk_release(chunk);
 		fbr_file_UNLOCK(file);
-	} else {
-		fbr_chunk_release(chunk);
+		fbr_inode_release(fs, &file);
 	}
-
-	fbr_inode_release(fs, &file);
 
 	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "READ WRITE S3 done %zu bytes",
 		bytes);
