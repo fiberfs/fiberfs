@@ -255,51 +255,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 		return 1;
 	}
 
-	size_t bytes = 0;
-	int fallback_rw = 0;
-	if (cstore->cant_splice) {
-		fallback_rw = 1;
-	}
-
-	while (!fallback_rw && bytes < length) {
-		ssize_t ret = splice(request->addr.sock, NULL, fd, NULL, length, SPLICE_F_MOVE);
-		if (ret < 0) {
-			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR splice %d %s",
-				errno, strerror(errno));
-
-			if (bytes == 0 && errno == EINVAL) {
-				cstore->cant_splice = 1;
-				fallback_rw = 1;
-			}
-
-			break;
-		} else if (ret == 0) {
-			break;
-		}
-
-		bytes += (size_t)ret;
-	}
-
-	while (fallback_rw && bytes < length) {
-		// TODO needs to be bigger
-		char buffer[4096];
-		size_t ret = chttp_body_read(request, buffer, sizeof(buffer));
-		if (request->error) {
-			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR body %s",
-				chttp_error_msg(request));
-			break;
-		} else if (ret == 0) {
-			break;
-		}
-
-		ret = fbr_sys_write(fd, buffer, ret);
-		if (ret == 0) {
-			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR write()");
-			break;
-		}
-
-		bytes += (size_t)ret;
-	}
+	size_t bytes = fbr_cstore_s3_splice(cstore, request, fd, length);
 
 	assert_zero(close(fd));
 
@@ -314,15 +270,13 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 		}
 
 		return 1;
-	}
-
-	if (!fallback_rw) {
-		request->length = 0;
-		request->state = CHTTP_STATE_IDLE;
+	} else {
+		assert_dev(request->state >= CHTTP_STATE_IDLE);
+		assert_zero_dev(request->length);
 	}
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE wrote %zu bytes (%s)", bytes,
-		fallback_rw ? "read/write" : "splice");
+		cstore->cant_splice ? "read/write" : "splice");
 
 	struct fbr_cstore_metadata metadata;
 	fbr_zero(&metadata);
@@ -331,8 +285,9 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	metadata.offset = offset;
 	metadata.type = file_type;
 	metadata.gzipped = request->gzip;
-	assert(url_len < sizeof(metadata.path));
-	memcpy(metadata.path, url, url_len + 1);
+	fbr_strbcpy(metadata.path, url);
+
+	// TODO url might have a prefix...
 
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = fbr_cstore_metadata_write(path, &metadata);
