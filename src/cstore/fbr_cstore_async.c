@@ -99,6 +99,7 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 
 	struct fbr_request *request = fbr_request_get();
 	if (request) {
+		assert_zero_dev(fbr_cstore_worker_get());
 		op->request_id = request->id;
 	} else {
 		struct fbr_cstore_worker *worker = fbr_cstore_worker_get();
