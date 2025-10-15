@@ -45,7 +45,7 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 	fbr_log_print(cstore->log, FBR_LOG_CS_SERVER, FBR_REQID_CSTORE,
 		"server listening on %s:%d (tls: %d)", address, server->port, server->tls);
 
-	fbr_cstore_worker_add(cstore, _CSTORE_CONFIG.server_workers);
+	fbr_cstore_task_worker_add(cstore, _CSTORE_CONFIG.server_workers);
 
 	static_ASSERT(FBR_CSTORE_WORKERS_ACCEPT_DEFAULT < FBR_CSTORE_WORKERS_DEFAULT);
 	assert(_CSTORE_CONFIG.server_workers_accept > 0);
