@@ -207,10 +207,12 @@ fbr_test_cstore_wait(struct fbr_cstore *cstore)
 	fbr_cstore_ok(cstore);
 
 	int max = 40;
+	int count = 0;
 
 	while (cstore->async.queue_len && max) {
-		fbr_test_sleep_ms(25);
+		fbr_test_sleep_ms(count);
 		max--;
+		count++;
 	}
 
 	assert_zero(cstore->async.queue_len);

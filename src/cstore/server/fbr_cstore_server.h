@@ -66,6 +66,7 @@ struct fbr_cstore_server {
 };
 
 struct fbr_cstore;
+struct fbr_log;
 
 struct fbr_cstore_worker {
 	unsigned int				magic;
@@ -97,7 +98,7 @@ void fbr_cstore_worker_key_init(void);
 void fbr_cstore_worker_key_free(void);
 struct fbr_cstore_worker *fbr_cstore_worker_alloc(struct fbr_cstore *cstore);
 struct fbr_cstore_worker *fbr_cstore_worker_get(void);
-void fbr_cstore_worker_init(struct fbr_cstore_worker *worker);
+void fbr_cstore_worker_init(struct fbr_cstore_worker *worker, struct fbr_log *log);
 void fbr_cstore_worker_finish(struct fbr_cstore_worker *worker);
 void fbr_cstore_worker_free(struct fbr_cstore_worker *worker);
 

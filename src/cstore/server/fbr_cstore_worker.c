@@ -78,7 +78,7 @@ fbr_cstore_worker_get(void)
 }
 
 void
-fbr_cstore_worker_init(struct fbr_cstore_worker *worker)
+fbr_cstore_worker_init(struct fbr_cstore_worker *worker, struct fbr_log *log)
 {
 	fbr_cstore_worker_ok(worker);
 	fbr_workspace_ok(worker->workspace);
@@ -90,7 +90,7 @@ fbr_cstore_worker_init(struct fbr_cstore_worker *worker)
 	worker->time_start = fbr_get_time();
 	worker->request_id = fbr_request_id_gen();
 
-	fbr_wlog_workspace_alloc(worker);
+	fbr_wlog_workspace_alloc(worker, log);
 }
 
 void

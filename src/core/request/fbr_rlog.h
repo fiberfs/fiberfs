@@ -24,7 +24,7 @@ struct fbr_rlog {
 	fbr_log_data_t				*log_end;
 	fbr_log_data_t				*log_pos;
 
-	struct fbr_log *			log;
+	struct fbr_log				*log;
 
 	fbr_log_data_t				data[];
 };
@@ -33,7 +33,7 @@ struct fbr_request;
 struct fbr_cstore_worker;
 
 void fbr_rlog_workspace_alloc(struct fbr_request *request);
-void fbr_wlog_workspace_alloc(struct fbr_cstore_worker *worker);
+void fbr_wlog_workspace_alloc(struct fbr_cstore_worker *worker, struct fbr_log *log);
 void fbr_rlog_flush(struct fbr_rlog *rlog);
 void __fbr_attr_printf(2) fbr_rlog(enum fbr_log_type type, const char *fmt, ...);
 void __fbr_attr_printf(3) fbr_rdlog(struct fbr_rlog *rlog, enum fbr_log_type type,

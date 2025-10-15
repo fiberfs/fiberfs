@@ -134,7 +134,7 @@ _cstore_task_loop(void *arg)
 
 		pt_assert(pthread_mutex_unlock(&tasks->lock));
 
-		fbr_cstore_worker_init(task_worker.worker);
+		fbr_cstore_worker_init(task_worker.worker, NULL);
 		task_worker.task = task;
 
 		switch(task->type) {

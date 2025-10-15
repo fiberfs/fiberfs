@@ -18,6 +18,7 @@
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+#include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
@@ -128,6 +129,12 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	// TODO fuse said this breaks distributed append if enabled
 	conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
 
+	// TODO we need a proper non fuse request
+	assert_zero(fbr_request_get());
+	struct fbr_request *request = fbr_test_request_mock();
+	fbr_request_ok(request);
+	assert(fbr_request_get() == request);
+
 	struct fbr_directory *root = fbr_directory_root_alloc(ctx->fs);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_LOADING);
@@ -144,8 +151,8 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
 	fbr_index_data_free(&index_data);
 
-	// TODO add this back when we can read a root remotely...
-	/*
+	fbr_test_cstore_wait_0();
+
 	struct fbr_path_name dirpath;
 	fbr_directory_name(root, &dirpath);
 	fbr_id_t root_id = fbr_cstore_root_read(ctx->fs, &dirpath);
@@ -153,9 +160,10 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_test_logs("INIT fbr_cstore_root_read(): %lu", root_id);
 	fbr_ASSERT(root_id == root->version, "root version mismatch, found %lu, expected %lu",
 		root_id, root->version);
-	*/
 
 	fbr_dindex_release(ctx->fs, &root);
+	fbr_request_free(request);
+	assert_zero(fbr_request_get());
 }
 
 static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {

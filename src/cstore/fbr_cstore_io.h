@@ -37,9 +37,11 @@ enum fbr_cstore_op_type {
 };
 
 struct fbr_cstore_op;
+struct fbr_cstore_worker;
 
 typedef void (*fbr_cstore_async_f)(struct fbr_cstore *cstore, struct fbr_cstore_op *op);
-typedef void (*fbr_cstore_async_done_f)(struct fbr_cstore_op *op);
+typedef void (*fbr_cstore_async_done_f)(struct fbr_cstore_op *op,
+	struct fbr_cstore_worker *worker);
 
 struct fbr_cstore_op_sync {
 	unsigned				magic;
@@ -47,6 +49,9 @@ struct fbr_cstore_op_sync {
 
 	int					done;
 	int					error;
+
+	enum fbr_cstore_op_type			type;
+	unsigned long				async_id;
 
 	pthread_mutex_t				lock;
 	pthread_cond_t				cond;
@@ -67,7 +72,8 @@ struct fbr_cstore_op {
 	fbr_cstore_async_done_f			done_cb;
 	void					*done_arg;
 
-	unsigned long				request_id;
+	struct fbr_log				*log;
+	unsigned long				caller_id;
 
 	TAILQ_ENTRY(fbr_cstore_op)		entry;
 };
@@ -118,7 +124,7 @@ void fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *r
 	char *root_path, fbr_id_t version);
 
 void fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync);
-void fbr_cstore_op_sync_done(struct fbr_cstore_op *op);
+void fbr_cstore_op_sync_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker);
 void fbr_cstore_op_sync_wait(struct fbr_cstore_op_sync *sync);
 void fbr_cstore_op_sync_free(struct fbr_cstore_op_sync *sync);
 

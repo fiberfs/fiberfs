@@ -53,7 +53,7 @@ fbr_rlog_workspace_alloc(struct fbr_request *request)
 }
 
 void
-fbr_wlog_workspace_alloc(struct fbr_cstore_worker *worker)
+fbr_wlog_workspace_alloc(struct fbr_cstore_worker *worker, struct fbr_log *log)
 {
 	fbr_cstore_worker_ok(worker);
 	fbr_cstore_ok(worker->cstore);
@@ -69,7 +69,11 @@ fbr_wlog_workspace_alloc(struct fbr_cstore_worker *worker)
 	_rlog_init(worker->rlog, rlog_size, worker->request_id);
 	fbr_rlog_ok(worker->rlog);
 
-	worker->rlog->log = worker->cstore->log;
+	if (log) {
+		worker->rlog->log = log;
+	} else {
+		worker->rlog->log = worker->cstore->log;
+	}
 	fbr_log_ok(worker->rlog->log);
 }
 

@@ -99,16 +99,22 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 
 	struct fbr_request *request = fbr_request_get();
 	if (request) {
+		fbr_rlog_ok(request->rlog);
+		fbr_log_ok(request->rlog->log);
 		assert_zero_dev(fbr_cstore_worker_get());
-		op->request_id = request->id;
+
+		op->log = request->rlog->log;
+		op->caller_id = request->id;
 	} else {
 		struct fbr_cstore_worker *worker = fbr_cstore_worker_get();
 		if (worker) {
-			op->request_id = worker->request_id;
+			fbr_rlog_ok(worker->rlog);
+			fbr_log_ok(worker->rlog->log);
+
+			op->log = worker->rlog->log;
+			op->caller_id = worker->request_id;
 		}
 	}
-
-	// TODO we should pass the log, otherwise fiberfs messages end up in cstore logs
 
 	TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
 
@@ -199,16 +205,16 @@ _cstore_async_loop(void *arg)
 
 		pt_assert(pthread_mutex_unlock(&async->queue_lock));
 
-		fbr_cstore_worker_init(worker);
+		fbr_cstore_worker_init(worker, op->log);
 
-		fbr_rlog(FBR_LOG_CS_ASYNC, "calling op: %s (request_id: %lu)",
-			fbr_cstore_async_type(op->type), op->request_id);
+		fbr_rlog(FBR_LOG_CS_ASYNC, "calling op: %s (caller id: %lu)",
+			fbr_cstore_async_type(op->type), op->caller_id);
 
 		assert(async->callback);
 		async->callback(cstore, op);
 
 		if (op->done_cb) {
-			op->done_cb(op);
+			op->done_cb(op, worker);
 		}
 
 		fbr_cstore_worker_finish(worker);
@@ -313,10 +319,11 @@ fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 }
 
 static void
-_async_chunk_url_done(struct fbr_cstore_op *op)
+_async_chunk_url_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker)
 {
 	fbr_cstore_op_ok(op);
 	assert(op->type == FBR_CSOP_URL_DELETE);
+	fbr_cstore_worker_ok(worker);
 
 	free(op->param1);
 	op->param1 = NULL;
@@ -426,10 +433,11 @@ fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory
 }
 
 static void
-_async_root_path_done(struct fbr_cstore_op *op)
+_async_root_path_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker)
 {
 	fbr_cstore_op_ok(op);
 	assert(op->type == FBR_CSOP_ROOT_WRITE);
+	fbr_cstore_worker_ok(worker);
 
 	free(op->param2);
 	op->param2 = NULL;
@@ -475,9 +483,10 @@ fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync)
 }
 
 void
-fbr_cstore_op_sync_done(struct fbr_cstore_op *op)
+fbr_cstore_op_sync_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker)
 {
 	fbr_cstore_op_ok(op);
+	fbr_cstore_worker_ok(worker);
 
 	struct fbr_cstore_op_sync *sync = op->done_arg;
 	fbr_cstore_op_sync_ok(sync);
@@ -486,6 +495,8 @@ fbr_cstore_op_sync_done(struct fbr_cstore_op *op)
 
 	assert_zero(sync->done);
 	sync->done = 1;
+	sync->type = op->type;
+	sync->async_id = worker->request_id;
 
 	pthread_cond_broadcast(&sync->cond);
 
@@ -501,6 +512,11 @@ fbr_cstore_op_sync_wait(struct fbr_cstore_op_sync *sync)
 
 	if (!sync->done) {
 		pt_assert(pthread_cond_wait(&sync->cond, &sync->lock));
+	}
+
+	if (sync->async_id) {
+		fbr_rlog(FBR_LOG_CS_ASYNC, "completed %s async id: %lu",
+			fbr_cstore_async_type(sync->type), sync->async_id);
 	}
 
 	assert(sync->done);
