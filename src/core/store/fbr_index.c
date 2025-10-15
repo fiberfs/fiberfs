@@ -429,7 +429,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 		fbr_wbuffers_ready(fs, index_data->file, index_data->wbuffers, do_append);
 	}
 
-	fbr_writer_free(fs, &json_gen);
+	fbr_writer_free(&json_gen);
 
 	return ret;
 }

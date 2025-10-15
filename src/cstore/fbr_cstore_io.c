@@ -915,12 +915,14 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		if (existing && enforce) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR bad version want: %lu got: no entry",
 				existing);
+			fbr_writer_free(root_json);
 			return EAGAIN;
 		}
 
 		entry = fbr_cstore_io_get_loading(cstore, hash, 100, path, 0);
 		if (!entry) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR loading state");
+			fbr_writer_free(root_json);
 			return EAGAIN;
 		}
 		fbr_cstore_entry_ok(entry);
@@ -937,6 +939,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR metadata");
 			fbr_cstore_set_error(entry);
 			fbr_cstore_remove(cstore, entry);
+			fbr_writer_free(root_json);
 			return 1;
 		}
 
@@ -945,6 +948,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 				existing, metadata.etag);
 			fbr_cstore_set_ok(entry);
 			fbr_cstore_release(cstore, entry);
+			fbr_writer_free(root_json);
 			return EAGAIN;
 		}
 	}
@@ -963,13 +967,14 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR write metadata");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
+		fbr_writer_free(root_json);
 		return 1;
 	}
 
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE root: %s (%lu) prev: %lu", path, version,
-		existing);
+	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE root: %s (%lu) prev: %lu (enforce: %d)", path, version,
+		existing, enforce);
 
 	if (!fbr_sys_exists(path)) {
 		fbr_fs_stat_add(&cstore->stats.wr_roots);
@@ -980,6 +985,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
+		fbr_writer_free(root_json);
 		return 1;
 	}
 
@@ -990,6 +996,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR write root");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
+		fbr_writer_free(root_json);
 		return 1;
 	}
 
@@ -997,6 +1004,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
+	fbr_writer_free(root_json);
 
 	return 0;
 }

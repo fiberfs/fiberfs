@@ -47,6 +47,7 @@ struct fbr_writer {
 	unsigned int				want_gzip:1;
 	unsigned int				is_gzip:1;
 	unsigned int				error:1;
+	unsigned int				do_free:1;
 };
 
 struct fbr_reader {
@@ -153,12 +154,13 @@ void fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer,
 	struct fbr_request *request, int want_gzip);
 void fbr_writer_init_buffer(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
 	size_t buffer_len);
+struct fbr_writer *fbr_writer_alloc_dynamic(struct fbr_fs *fs, size_t size);
 void fbr_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer);
 void fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer,
 	size_t buffer_len);
 void fbr_writer_add_ulong(struct fbr_fs *fs, struct fbr_writer *writer, unsigned long value);
 void fbr_writer_add_id(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t id);
-void fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer);
+void fbr_writer_free(struct fbr_writer *writer);
 void fbr_writer_debug(struct fbr_fs *fs, struct fbr_writer *writer);
 
 void fbr_reader_init(struct fbr_fs *fs, struct fbr_reader *reader,

@@ -83,7 +83,7 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		i++;
 		output = output->next;
 	}
-	fbr_writer_free(fs, &writer1);
+	fbr_writer_free(&writer1);
 
 	fbr_test_ASSERT(fs->stats.buffers == 7, "buffer mismatch");
 
@@ -120,7 +120,7 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		i++;
 		output = output->next;
 	}
-	fbr_writer_free(fs, &writer2);
+	fbr_writer_free(&writer2);
 
 	fbr_test_ASSERT(fs->stats.buffers == 0, "buffer mismatch");
 

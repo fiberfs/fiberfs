@@ -188,10 +188,27 @@ fbr_writer_init_buffer(struct fbr_fs *fs, struct fbr_writer *writer, char *buffe
 	_writer_extend(fs, writer, buffer, buffer_len, 0);
 }
 
-void
-fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer)
+struct fbr_writer *
+fbr_writer_alloc_dynamic(struct fbr_fs *fs, size_t size)
 {
 	fbr_fs_ok(fs);
+	assert(size);
+
+	struct fbr_writer *writer = malloc(sizeof(*writer) + size);
+	assert(writer);
+
+	char *buffer = (char*)(writer + 1);
+
+	fbr_writer_init_buffer(fs, writer, buffer, size);
+
+	writer->do_free = 1;
+
+	return writer;
+}
+
+void
+fbr_writer_free(struct fbr_writer *writer)
+{
 	fbr_writer_ok(writer);
 	assert_zero_dev(writer->workspace);
 
@@ -207,7 +224,13 @@ fbr_writer_free(struct fbr_fs *fs, struct fbr_writer *writer)
 		fbr_gzip_free(&writer->gzip);
 	}
 
+	int do_free = writer->do_free;
+
 	fbr_zero(writer);
+
+	if (do_free) {
+		free(writer);
+	}
 }
 
 static void

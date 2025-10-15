@@ -32,6 +32,7 @@ enum fbr_cstore_op_type {
 	FBR_CSOP_CHUNK_READ,
 	FBR_CSOP_URL_DELETE,
 	FBR_CSOP_INDEX_SEND,
+	FBR_CSOP_ROOT_WRITE,
 	__FBR_CSOP_END
 };
 
@@ -113,6 +114,8 @@ void fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_conte
 void fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *request,
 	char *path, struct fbr_writer *writer, fbr_id_t id, struct fbr_cstore_op_sync *sync);
 void fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory);
+void fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
+	char *root_path, fbr_id_t version);
 
 void fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync);
 void fbr_cstore_op_sync_done(struct fbr_cstore_op *op);

@@ -73,7 +73,7 @@ void fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *r
 int fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_path,
 	fbr_id_t id, size_t size, enum fbr_cstore_entry_type type);
 int fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-	const char *root_path, fbr_id_t version, fbr_id_t existing);
+	char *root_path, fbr_id_t version, fbr_id_t existing);
 
 #define fbr_cstore_backend_ok(backend)		\
 	fbr_magic_check(backend, FBR_CSTORE_BACKEND_MAGIC)

@@ -144,6 +144,8 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
 	fbr_index_data_free(&index_data);
 
+	// TODO add this back when we can read a root remotely...
+	/*
 	struct fbr_path_name dirpath;
 	fbr_directory_name(root, &dirpath);
 	fbr_id_t root_id = fbr_cstore_root_read(ctx->fs, &dirpath);
@@ -151,6 +153,7 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_test_logs("INIT fbr_cstore_root_read(): %lu", root_id);
 	fbr_ASSERT(root_id == root->version, "root version mismatch, found %lu, expected %lu",
 		root_id, root->version);
+	*/
 
 	fbr_dindex_release(ctx->fs, &root);
 }

@@ -108,6 +108,8 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 		}
 	}
 
+	// TODO we should pass the log, otherwise fiberfs messages end up in cstore logs
+
 	TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
 
 	async->queue_len++;
@@ -145,6 +147,10 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 		case FBR_CSOP_INDEX_SEND:
 			fbr_cstore_s3_index_send(op->param0, op->param1, op->param2, op->param3,
 				(fbr_id_t)op->param4);
+			return;
+		case FBR_CSOP_ROOT_WRITE:
+			fbr_cstore_io_root_write(op->param0, op->param1, op->param2,
+				(fbr_id_t)op->param3, 0, 0);
 			return;
 		case FBR_CSOP_NONE:
 		case __FBR_CSOP_END:
@@ -324,16 +330,15 @@ _async_url_delete(struct fbr_cstore *cstore, const char *url, size_t url_len, fb
 	assert_dev(url);
 	assert_dev(url_len);
 
-	size_t buffer_len = url_len + 1;
-	char *buffer = malloc(buffer_len);
-	fbr_strcpy(buffer, buffer_len, url);
+	char *buffer = strdup(url);
+	assert(buffer);
 
 	static_ASSERT(sizeof(void*) >= sizeof(url_len));
 	static_ASSERT(sizeof(void*) >= sizeof(id));
 	static_ASSERT(sizeof(void*) >= sizeof(type));
 
-	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_URL_DELETE, cstore, buffer, (void*)url_len,
-		(void*)id, (void*)type, _async_chunk_url_done, NULL);
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_URL_DELETE, cstore, buffer,
+		(void*)url_len, (void*)id, (void*)type, _async_chunk_url_done, NULL);
 	if (ret) {
 		free(buffer);
 		fbr_cstore_io_delete_url(cstore, url, url_len, id, type);
@@ -420,6 +425,41 @@ fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory
 	_async_url_delete(cstore, url, url_len, directory->version, FBR_CSTORE_FILE_INDEX);
 }
 
+static void
+_async_root_path_done(struct fbr_cstore_op *op)
+{
+	fbr_cstore_op_ok(op);
+	assert(op->type == FBR_CSOP_ROOT_WRITE);
+
+	free(op->param2);
+	op->param2 = NULL;
+}
+
+void
+fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
+    char *root_path, fbr_id_t version)
+{
+	fbr_cstore_ok(cstore);
+	fbr_writer_ok(root_json);
+	assert(root_json->bytes);
+	assert(root_path);
+	assert(version);
+	assert(fbr_cstore_backend_enabled(cstore));
+
+	char *buffer = strdup(root_path);
+	assert(buffer);
+
+	static_ASSERT(sizeof(void*) >= sizeof(version));
+
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_ROOT_WRITE, cstore, root_json, buffer,
+		(void*)version, NULL, _async_root_path_done, NULL);
+	if (ret) {
+		free(buffer);
+		fbr_writer_free(root_json);
+		return;
+	}
+}
+
 void
 fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync)
 {
@@ -498,6 +538,8 @@ fbr_cstore_async_type(enum fbr_cstore_op_type type)
 			return "URL_DELETE";
 		case FBR_CSOP_INDEX_SEND:
 			return "INDEX_SEND";
+		case FBR_CSOP_ROOT_WRITE:
+			return "ROOT_WRITE";
 		case __FBR_CSOP_END:
 			break;
 	}

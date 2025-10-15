@@ -71,21 +71,17 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_name(directory, &dirpath);
 	fbr_cstore_path_root(NULL, &dirpath, 0, root_path, sizeof(root_path));
 
-	char json_buf[128];
-	struct fbr_writer root_json;
-	fbr_writer_init_buffer(fs, &root_json, json_buf, sizeof(json_buf));
-	fbr_root_json_gen(fs, &root_json, directory->version);
-	assert_zero(root_json.error);
+	struct fbr_writer *root_json = fbr_writer_alloc_dynamic(fs, 128);
+	fbr_root_json_gen(fs, root_json, directory->version);
+	assert_zero(root_json->error);
 
 	if (fbr_cstore_backend_enabled(cstore)) {
-		fail = fbr_cstore_s3_root_write(cstore, &root_json, root_path, directory->version,
+		fail = fbr_cstore_s3_root_write(cstore, root_json, root_path, directory->version,
 			previous_version);
 	} else {
-		fail = fbr_cstore_io_root_write(cstore, &root_json, root_path, directory->version,
+		fail = fbr_cstore_io_root_write(cstore, root_json, root_path, directory->version,
 			previous_version, 1);
 	}
-
-	fbr_writer_free(fs, &root_json);
 
 	if (fail) {
 		fbr_cstore_io_index_remove(fs, directory);

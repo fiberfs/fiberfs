@@ -752,7 +752,7 @@ fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_p
 
 int
 fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-    const char *root_path, fbr_id_t version, fbr_id_t existing)
+    char *root_path, fbr_id_t version, fbr_id_t existing)
 {
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
@@ -768,8 +768,8 @@ fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		_s3_writer_data_cb, root_json, 0);
 	if (error < 0) {
 		chttp_context_reset(&request);
-		error =_s3_send_put(cstore, &request, root_path, root_json->bytes, version, existing,
-			_s3_writer_data_cb, root_json, 1);
+		error =_s3_send_put(cstore, &request, root_path, root_json->bytes, version,
+			existing, _s3_writer_data_cb, root_json, 1);
 		assert_dev(error >= 0);
 	}
 
@@ -778,8 +778,7 @@ fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		return error;
 	}
 
-	// TODO make this async (root_json needs allocation)
-	fbr_cstore_io_root_write(cstore, root_json, root_path, version, existing, 0);
+	fbr_cstore_async_root_write(cstore, root_json, root_path, version);
 
 	return 0;
 }

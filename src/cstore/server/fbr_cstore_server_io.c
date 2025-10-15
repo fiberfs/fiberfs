@@ -210,6 +210,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 		assert_dev(etag_match);
 		assert_dev(file_type == FBR_CSTORE_FILE_ROOT);
 
+		// TODO this needs work, sometimes we wont have an entry but its ok to write
+
 		entry = fbr_cstore_get(cstore, hash);
 		if (entry) {
 			fbr_cstore_reset_loading(entry);
