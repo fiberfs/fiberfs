@@ -206,9 +206,12 @@ fbr_request_alloc(fuse_req_t fuse_req, const char *name)
 struct fbr_request *
 fbr_request_get(void)
 {
+	if (!_REQUEST_KEY_COUNT) {
+		return NULL;
+	}
 	struct fbr_request *request = pthread_getspecific(_REQUEST_KEY);
 
-	if (!request || !_REQUEST_KEY_COUNT) {
+	if (!request) {
 		return NULL;
 	}
 

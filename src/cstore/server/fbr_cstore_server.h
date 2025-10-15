@@ -74,7 +74,6 @@ struct fbr_cstore_worker {
 	struct fbr_cstore			*cstore;
 	struct fbr_workspace			*workspace;
 	struct fbr_rlog				*rlog;
-	struct fbr_cstore_task_entry		*task;
 
 	unsigned long				thread_id;
 	unsigned long				thread_pos;
@@ -82,6 +81,7 @@ struct fbr_cstore_worker {
 	double					time_start;
 	unsigned long				request_id;
 
+	struct fbr_cstore_task_entry		*task;
 	struct chttp_addr			remote_addr;
 };
 
