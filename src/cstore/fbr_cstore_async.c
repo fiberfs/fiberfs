@@ -97,6 +97,16 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 	op->done_cb = done_cb;
 	op->done_arg = done_arg;
 
+	struct fbr_request *request = fbr_request_get();
+	if (request) {
+		op->request_id = request->id;
+	} else {
+		struct fbr_cstore_worker *worker = fbr_cstore_worker_get();
+		if (worker) {
+			op->request_id = worker->request_id;
+		}
+	}
+
 	TAILQ_INSERT_TAIL(&async->todo_list, op, entry);
 
 	async->queue_len++;
@@ -184,7 +194,8 @@ _cstore_async_loop(void *arg)
 
 		fbr_cstore_worker_init(worker);
 
-		fbr_rlog(FBR_LOG_CS_ASYNC, "calling op: %s", fbr_cstore_async_type(op->type));
+		fbr_rlog(FBR_LOG_CS_ASYNC, "calling op: %s (request_id: %lu)",
+			fbr_cstore_async_type(op->type), op->request_id);
 
 		assert(async->callback);
 		async->callback(cstore, op);

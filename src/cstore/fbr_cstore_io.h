@@ -66,6 +66,8 @@ struct fbr_cstore_op {
 	fbr_cstore_async_done_f			done_cb;
 	void					*done_arg;
 
+	unsigned long				request_id;
+
 	TAILQ_ENTRY(fbr_cstore_op)		entry;
 };
 
