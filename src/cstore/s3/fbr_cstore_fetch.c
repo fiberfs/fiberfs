@@ -239,8 +239,8 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 
 static int
 _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *request,
-    const char *path, size_t length, fbr_id_t etag, fbr_cstore_s3_put_f data_cb, void *put_arg,
-    int retry)
+    const char *path, size_t length, fbr_id_t etag, fbr_id_t existing, fbr_cstore_s3_put_f data_cb,
+    void *put_arg, int retry)
 {
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(request);
@@ -276,7 +276,13 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *request,
 	fbr_bprintf(buffer, "%zu", length);
 
 	chttp_header_add(request, "Content-Length", buffer);
-	chttp_header_add(request, "If-None-Match", "*");
+
+	if (existing) {
+		fbr_cstore_etag(existing, buffer, sizeof(buffer));
+		chttp_header_add(request, "If-Match", buffer);
+	} else {
+		chttp_header_add(request, "If-None-Match", "*");
+	}
 
 	fbr_cstore_etag(etag, buffer, sizeof(buffer));
 	chttp_header_add(request, "ETag", buffer);
@@ -338,16 +344,17 @@ fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *
     struct chttp_context *request, int error)
 {
 	fbr_cstore_ok(cstore);
-	fbr_cstore_op_sync_ok(sync);
 	chttp_context_ok(request);
 
-	fbr_cstore_op_sync_wait(sync);
-	if (sync->error) {
-		assert_dev(request->state == CHTTP_STATE_NONE);
-		error = 1;
-	}
+	if (sync) {
+		fbr_cstore_op_sync_wait(sync);
+		if (sync->error) {
+			assert_dev(request->state == CHTTP_STATE_NONE);
+			error = 1;
+		}
 
-	fbr_cstore_op_sync_free(sync);
+		fbr_cstore_op_sync_free(sync);
+	}
 
 	if (request->state == CHTTP_STATE_NONE) {
 		chttp_context_free(request);
@@ -385,13 +392,13 @@ void
 fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
     const char *path, struct fbr_wbuffer *wbuffer)
 {
-	int ret = _s3_send_put(cstore, request, path, wbuffer->end, wbuffer->id,
+	int error = _s3_send_put(cstore, request, path, wbuffer->end, wbuffer->id, 0,
 		_s3_wbuffer_data_cb, wbuffer, 0);
-	if (ret < 0) {
+	if (error < 0) {
 		chttp_context_reset(request);
-		ret = _s3_send_put(cstore, request, path, wbuffer->end, wbuffer->id,
+		error = _s3_send_put(cstore, request, path, wbuffer->end, wbuffer->id, 0,
 			_s3_wbuffer_data_cb, wbuffer, 1);
-		assert_dev(ret >= 0);
+		assert_dev(error >= 0);
 	}
 }
 
@@ -601,6 +608,9 @@ _s3_writer_data_cb(struct chttp_context *request, void *arg)
 
 	struct fbr_writer *writer = arg;
 	fbr_writer_ok(writer);
+	assert_dev(writer->bytes);
+	assert_dev(writer->output);
+	assert_zero(writer->error);
 
 	struct fbr_buffer *output = writer->output;
 	while (output) {
@@ -623,13 +633,13 @@ void
 fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *request,
     const char *path, struct fbr_writer *writer, fbr_id_t id)
 {
-	int ret = _s3_send_put(cstore, request, path, writer->bytes, id,
+	int error = _s3_send_put(cstore, request, path, writer->bytes, id, 0,
 		_s3_writer_data_cb, writer, 0);
-	if (ret < 0) {
+	if (error < 0) {
 		chttp_context_reset(request);
-		ret = _s3_send_put(cstore, request, path, writer->bytes, id,
+		error = _s3_send_put(cstore, request, path, writer->bytes, id, 0,
 			_s3_writer_data_cb, writer, 1);
-		assert_dev(ret >= 0);
+		assert_dev(error >= 0);
 	}
 }
 
@@ -736,6 +746,40 @@ fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_p
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
+
+	return 0;
+}
+
+int
+fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
+    const char *root_path, fbr_id_t version, fbr_id_t existing)
+{
+	fbr_cstore_ok(cstore);
+	fbr_writer_ok(root_json);
+	assert(root_json->bytes);
+	assert(root_path);
+	assert(version);
+	assert(fbr_cstore_backend_enabled(cstore));
+
+	struct chttp_context request;
+	chttp_context_init(&request);
+
+	int error = _s3_send_put(cstore, &request, root_path, root_json->bytes, version, existing,
+		_s3_writer_data_cb, root_json, 0);
+	if (error < 0) {
+		chttp_context_reset(&request);
+		error =_s3_send_put(cstore, &request, root_path, root_json->bytes, version, existing,
+			_s3_writer_data_cb, root_json, 1);
+		assert_dev(error >= 0);
+	}
+
+	error = fbr_cstore_s3_send_finish(cstore, NULL, &request, error);
+	if (error) {
+		return error;
+	}
+
+	// TODO make this async (root_json needs allocation)
+	fbr_cstore_io_root_write(cstore, root_json, root_path, version, existing, 0);
 
 	return 0;
 }

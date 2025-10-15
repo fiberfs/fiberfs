@@ -551,7 +551,7 @@ _cstore_writer(int fd, struct fbr_writer *writer)
 	assert_dev(writer);
 	assert_dev(writer->bytes);
 	assert_dev(writer->output);
-	assert_zero_dev(writer->error);
+	assert_zero(writer->error);
 
 	size_t bytes = 0;
 
@@ -895,7 +895,7 @@ fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 
 int
 fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-    const char *root_path, fbr_id_t version, fbr_id_t existing)
+    const char *root_path, fbr_id_t version, fbr_id_t existing, int enforce)
 {
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
@@ -912,7 +912,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
-		if (existing) {
+		if (existing && enforce) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR bad version want: %lu got: no entry",
 				existing);
 			return EAGAIN;
@@ -940,7 +940,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 			return 1;
 		}
 
-		if (metadata.etag != existing) {
+		if (metadata.etag != existing && enforce) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR bad version want: %lu got: %lu",
 				existing, metadata.etag);
 			fbr_cstore_set_ok(entry);
@@ -949,7 +949,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		}
 	}
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE passed %lu", existing);
+	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE passed %lu (enforce: %d)", existing, enforce);
 
 	struct fbr_cstore_metadata metadata;
 	fbr_zero(&metadata);

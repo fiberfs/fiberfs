@@ -126,6 +126,8 @@ fbr_cstore_max_size(struct fbr_cstore *cstore, size_t max_bytes, int lru)
 
 	cstore->max_bytes = max_bytes;
 	cstore->do_lru = lru;
+
+	// TODO enforce we have a backend if we have LRU on
 }
 
 static int

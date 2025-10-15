@@ -1,7 +1,7 @@
 fiber_test "cstore server PUT/GET with s3"
 
-cstore_enable_server 127.0.0.1 0
 cstore_init 0
+cstore_enable_server 127.0.0.1 0
 cstore_init 1
 cstore_set_s3 0 $cstore_1_server_host $cstore_1_server_port
 
