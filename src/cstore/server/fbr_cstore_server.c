@@ -85,7 +85,7 @@ fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker)
 	int remote_port;
 	chttp_sa_string(&task_worker->remote_addr.sa, remote, sizeof(remote), &remote_port);
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "connection made from %s:%d to %d",
+	fbr_rlog(FBR_LOG_CS_WORKER, "connection made from %s:%d to %d",
 		remote, remote_port, server->port);
 
 	fbr_cstore_proc_http(task_worker);

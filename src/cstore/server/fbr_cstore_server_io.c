@@ -194,8 +194,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
-		"URL_WRITE %s %s %s %s unique: %d match: %lu",
+	fbr_rlog(FBR_LOG_CS_WORKER, "URL_WRITE %s %s %s %s unique: %d match: %lu",
 		fbr_cstore_type_name(file_type) ,host, url, path, unique, etag_match);
 
 	// TODO if root, we need to goto s3 first
@@ -357,8 +356,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s %s %d", host, url, path,
-		file_type);
+	fbr_rlog(FBR_LOG_CS_WORKER, "URL_READ %s %s %s %d", host, url, path, file_type);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_ok(cstore, hash);
 	if (!entry) {

@@ -103,8 +103,8 @@ _rlog_space(struct fbr_rlog *rlog)
 static void
 _rlog_log(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, va_list ap)
 {
-	assert_dev(rlog);
-	assert_dev(rlog->log);
+	fbr_rlog_ok(rlog);
+	fbr_log_ok(rlog->log);
 	assert(rlog->log_pos <= rlog->log_end);
 	assert_dev(rlog->request_id);
 	assert_dev(type);
@@ -156,6 +156,26 @@ _rlog_log(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, va_lis
 	}
 }
 
+static struct fbr_rlog *
+_rlog_get(void)
+{
+	struct fbr_request *request = fbr_request_get();
+	if (request) {
+		fbr_request_ok(request);
+		fbr_rlog_ok(request->rlog);
+		return request->rlog;
+	}
+
+	struct fbr_cstore_worker *worker = fbr_cstore_worker_get();
+	if (worker) {
+		fbr_cstore_worker_ok(worker);
+		fbr_rlog_ok(worker->rlog);
+		return worker->rlog;
+	}
+
+	return NULL;
+}
+
 void __fbr_attr_printf(2)
 fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 {
@@ -169,12 +189,9 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 
-	struct fbr_request *request = fbr_request_get();
-	if (request) {
-		fbr_request_ok(request);
-		fbr_rlog_ok(request->rlog);
-
-		_rlog_log(request->rlog, type, fmt, ap);
+	 struct fbr_rlog *rlog = _rlog_get();
+	if (rlog) {
+		_rlog_log(rlog, type, fmt, ap);
 	} else {
 		struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 		fbr_log_ok(fuse_ctx->log);
