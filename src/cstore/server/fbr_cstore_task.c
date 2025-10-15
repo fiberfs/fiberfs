@@ -103,7 +103,7 @@ _cstore_task_loop(void *arg)
 	fbr_zero(&task_worker);
 
 	task_worker.worker = fbr_cstore_worker_alloc(cstore);
-	assert(task_worker.worker);
+	fbr_cstore_worker_ok(task_worker.worker);
 
 	chttp_addr_init(&task_worker.remote_addr);
 

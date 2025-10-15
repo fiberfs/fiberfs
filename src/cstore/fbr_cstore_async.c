@@ -32,6 +32,8 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 	TAILQ_INIT(&async->active_list);
 	TAILQ_INIT(&async->free_list);
 
+	fbr_cstore_worker_key_init();
+
 	for (size_t i = 0; i < fbr_array_len(async->ops); i++) {
 		struct fbr_cstore_op *op = &async->ops[i];
 
@@ -65,8 +67,6 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 	fbr_cstore_ok(cstore);
 	assert(type > FBR_CSOP_NONE && type < __FBR_CSOP_END);
 
-	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-
 	struct fbr_cstore_async *async = &cstore->async;
 	pt_assert(pthread_mutex_lock(&async->queue_lock));
 
@@ -78,8 +78,7 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 		return 1;
 	}
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, request_id, "queue request: %s",
-		fbr_cstore_async_type(type));
+	fbr_rlog(FBR_LOG_CS_ASYNC, "queue request: %s", fbr_cstore_async_type(type));
 
 	struct fbr_cstore_op *op = TAILQ_FIRST(&async->free_list);
 	fbr_cstore_op_ok(op);
@@ -154,16 +153,19 @@ _cstore_async_loop(void *arg)
 	fbr_cstore_ok(cstore);
 	struct fbr_cstore_async *async = &cstore->async;
 
+	struct fbr_cstore_worker *worker = fbr_cstore_worker_alloc(cstore);
+	fbr_cstore_worker_ok(worker);
+
 	pt_assert(pthread_mutex_lock(&async->queue_lock));
 
 	async->threads_running++;
-	size_t thread_id = fbr_request_id_thread_gen();
-	size_t thread_pos = async->threads_running;
+	worker->thread_id = fbr_request_id_thread_gen();
+	worker->thread_pos = async->threads_running;
 
 	fbr_thread_name("fbr_async");
 
 	while (!async->exit) {
-		if (thread_pos > async->threads_max) {
+		if (worker->thread_pos > async->threads_max) {
 			break;
 		}
 
@@ -180,8 +182,9 @@ _cstore_async_loop(void *arg)
 
 		pt_assert(pthread_mutex_unlock(&async->queue_lock));
 
-		fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, thread_id, "calling op: %s",
-			fbr_cstore_async_type(op->type));
+		fbr_cstore_worker_init(worker);
+
+		fbr_rlog(FBR_LOG_CS_ASYNC, "calling op: %s", fbr_cstore_async_type(op->type));
 
 		assert(async->callback);
 		async->callback(cstore, op);
@@ -189,6 +192,8 @@ _cstore_async_loop(void *arg)
 		if (op->done_cb) {
 			op->done_cb(op);
 		}
+
+		fbr_cstore_worker_finish(worker);
 
 		pt_assert(pthread_mutex_lock(&async->queue_lock));
 
@@ -204,6 +209,8 @@ _cstore_async_loop(void *arg)
 	async->threads_running--;
 
 	pt_assert(pthread_mutex_unlock(&async->queue_lock));
+
+	fbr_cstore_worker_free(worker);
 
 	return NULL;
 }
@@ -231,6 +238,8 @@ fbr_cstore_async_free(struct fbr_cstore *cstore)
 
 	pt_assert(pthread_mutex_destroy(&async->queue_lock));
 	pt_assert(pthread_cond_destroy(&async->todo_ready));
+
+	fbr_cstore_worker_key_free();
 
 	fbr_zero(async);
 }
