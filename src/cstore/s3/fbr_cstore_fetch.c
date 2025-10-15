@@ -540,14 +540,8 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	fbr_rlog(FBR_LOG_CS_S3, "READ S3 %zu bytes WRITE S3 chunk: %s", bytes, path);
 
 	int ret = fbr_sys_mkdirs(path);
-	if (ret) {
-		fbr_rlog(FBR_LOG_CS_S3, "ERROR rwrite mkdir");
-		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, async);
-		return;
-	}
-
-	if (fbr_sys_exists(path)) {
-		fbr_rlog(FBR_LOG_CS_S3, "ERROR rwrite exists");
+	if (ret || fbr_sys_exists(path)) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR rwrite mkdir/exists (%d)", ret);
 		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, async);
 		return;
 	}

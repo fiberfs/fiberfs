@@ -90,24 +90,22 @@ fbr_cstore_s3_free(struct fbr_cstore *cstore)
 }
 
 void
-fbr_cstore_cluster_init(struct fbr_cstore *cstore)
+fbr_cstore_cluster_init(struct fbr_cstore_cluster *cluster)
 {
-	fbr_cstore_ok(cstore);
+	assert(cluster);
 
-	assert_zero_dev(cstore->cluster.backends);
-	assert_zero_dev(cstore->cluster.size);
+	assert_zero_dev(cluster->backends);
+	assert_zero_dev(cluster->size);
 }
 
 void
-fbr_cstore_cluster_add(struct fbr_cstore *cstore, const char *host, int port, int tls)
+fbr_cstore_cluster_add(struct fbr_cstore_cluster *cluster, const char *host, int port, int tls)
 {
-	fbr_cstore_ok(cstore);
-	fbr_cstore_backend_ok(cstore->s3.backend);
+	assert(cluster);
 	assert(host);
 	assert(port > 0 && port <= USHRT_MAX);
 
 	struct fbr_cstore_backend *backend = fbr_cstore_backend_alloc(host, port, tls);
-	struct fbr_cstore_cluster *cluster = &cstore->cluster;
 	cluster->size++;
 	assert(cluster->size < 100000);
 	cluster->backends = realloc(cluster->backends, sizeof(backend) * cluster->size);
@@ -117,11 +115,10 @@ fbr_cstore_cluster_add(struct fbr_cstore *cstore, const char *host, int port, in
 }
 
 void
-fbr_cstore_cluster_free(struct fbr_cstore *cstore)
+fbr_cstore_cluster_free(struct fbr_cstore_cluster *cluster)
 {
-	fbr_cstore_ok(cstore);
+	assert(cluster);
 
-	struct fbr_cstore_cluster *cluster = &cstore->cluster;
 	for (size_t i = 0; i < cluster->size; i++) {
 		struct fbr_cstore_backend *backend = cluster->backends[i];
 		fbr_cstore_backend_free(backend);
@@ -140,6 +137,9 @@ fbr_cstore_backend_enabled(struct fbr_cstore *cstore)
 	if (cstore->cluster.size) {
 		assert_dev(cstore->s3.backend);
 		return 1;
+	} else if (cstore->cdn.size) {
+		assert_dev(cstore->s3.backend);
+		return 1;
 	} else if (cstore->s3.backend) {
 		return 1;
 	}
@@ -154,6 +154,7 @@ fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, int retries)
 
 	// TODO implement rendezvous hash
 	assert_zero(cstore->cluster.size);
+	assert_zero(cstore->cdn.size);
 	(void)hash;
 	(void)retries;
 

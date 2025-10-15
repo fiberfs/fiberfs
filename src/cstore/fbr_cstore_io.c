@@ -549,6 +549,9 @@ _cstore_writer(int fd, struct fbr_writer *writer)
 {
 	assert_dev(fd >= 0);
 	assert_dev(writer);
+	assert_dev(writer->bytes);
+	assert_dev(writer->output);
+	assert_zero_dev(writer->error);
 
 	size_t bytes = 0;
 
@@ -580,8 +583,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	fbr_writer_ok(writer);
-	assert_dev(writer->output);
-	assert_zero_dev(writer->error);
+	assert(writer->bytes);
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	if (!cstore) {
@@ -892,29 +894,21 @@ fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 int
-fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr_id_t existing)
+fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
+    const char *root_path, fbr_id_t version, fbr_id_t existing)
 {
-	fbr_fs_ok(fs);
-	fbr_directory_ok(directory);
-	assert_dev(directory->version);
+	fbr_cstore_ok(cstore);
+	fbr_writer_ok(root_json);
+	assert(root_json->bytes);
+	assert(root_path);
+	assert(version);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
-		return 1;
-	}
-
-	struct fbr_path_name dirpath;
-	fbr_directory_name(directory, &dirpath);
-
-	fbr_hash_t hash = fbr_cstore_hash_root(cstore, &dirpath);
+	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path, strlen(root_path));
 
 	char path[FBR_PATH_MAX];
-	char root_path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-	fbr_cstore_path_root(NULL, &dirpath, 0, root_path, sizeof(root_path));
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE %s %lu %lu %s", root_path, existing, directory->version,
-		path);
+	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE %s %lu %lu %s", root_path, existing, version, path);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
@@ -959,7 +953,7 @@ fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr
 
 	struct fbr_cstore_metadata metadata;
 	fbr_zero(&metadata);
-	metadata.etag = directory->version;
+	metadata.etag = version;
 	metadata.type = FBR_CSTORE_FILE_ROOT;
 	fbr_strbcpy(metadata.path, root_path);
 
@@ -974,12 +968,7 @@ fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr
 
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	char json_buf[128];
-	struct fbr_writer json;
-	fbr_writer_init_buffer(fs, &json, json_buf, sizeof(json_buf));
-	fbr_root_json_gen(fs, &json, directory->version);
-
-	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE root: %s (%lu) prev: %lu", path, directory->version,
+	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE root: %s (%lu) prev: %lu", path, version,
 		existing);
 
 	if (!fbr_sys_exists(path)) {
@@ -994,7 +983,7 @@ fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr
 		return 1;
 	}
 
-	ret = _cstore_writer(fd, &json);
+	ret = _cstore_writer(fd, root_json);
 	assert_zero(close(fd));
 
 	if (ret) {
@@ -1004,8 +993,7 @@ fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr
 		return 1;
 	}
 
-	fbr_fs_stat_add_count(&cstore->stats.wr_root_bytes, json.bytes);
-	fbr_writer_free(fs, &json);
+	fbr_fs_stat_add_count(&cstore->stats.wr_root_bytes, root_json->bytes);
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);

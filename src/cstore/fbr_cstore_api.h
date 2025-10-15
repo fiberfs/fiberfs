@@ -119,6 +119,7 @@ struct fbr_cstore {
 	struct fbr_cstore_tasks			tasks;
 	struct fbr_cstore_server		*servers;
 	struct fbr_cstore_s3			s3;
+	struct fbr_cstore_cluster		cdn;
 	struct fbr_cstore_cluster		cluster;
 
 	struct fbr_log				*log;
@@ -206,6 +207,7 @@ fbr_hash_t fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *fil
 fbr_hash_t fbr_cstore_hash_index(struct fbr_cstore *cstore, struct fbr_directory *directory);
 fbr_hash_t fbr_cstore_hash_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath);
 fbr_hash_t fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t url_len);
+fbr_hash_t fbr_cstore_hash_path(struct fbr_cstore *cstore, const char *path, size_t path_len);
 
 size_t fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, char *buffer,
 	size_t buffer_len);

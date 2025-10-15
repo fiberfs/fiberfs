@@ -49,9 +49,14 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_writer_ok(writer);
 	assert_dev(writer->output);
 
-	int ret = fbr_cstore_io_index_write(fs, directory, writer);
-	if (ret) {
-		return ret;
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		return 1;
+	}
+
+	int fail = fbr_cstore_io_index_write(fs, directory, writer);
+	if (fail) {
+		return fail;
 	}
 
 	fbr_id_t previous_version = 0;
@@ -61,14 +66,33 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		previous_version = previous->version;
 	}
 
-	ret = fbr_cstore_io_root_write(fs, directory, previous_version);
-	if (ret) {
+	char root_path[FBR_PATH_MAX];
+	struct fbr_path_name dirpath;
+	fbr_directory_name(directory, &dirpath);
+	fbr_cstore_path_root(NULL, &dirpath, 0, root_path, sizeof(root_path));
+
+	char json_buf[128];
+	struct fbr_writer root_json;
+	fbr_writer_init_buffer(fs, &root_json, json_buf, sizeof(json_buf));
+	fbr_root_json_gen(fs, &root_json, directory->version);
+
+	if (fbr_cstore_backend_enabled(cstore)) {
+		fail = fbr_cstore_io_root_write(cstore, &root_json, root_path, directory->version,
+			previous_version);
+	} else {
+		fail = fbr_cstore_io_root_write(cstore, &root_json, root_path, directory->version,
+			previous_version);
+	}
+
+	fbr_writer_free(fs, &root_json);
+
+	if (fail) {
 		fbr_cstore_io_index_remove(fs, directory);
 	} else if (previous) {
 		fbr_cstore_async_index_remove(fs, previous);
 	}
 
-	return ret;
+	return fail;
 }
 
 int

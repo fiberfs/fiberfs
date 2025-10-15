@@ -298,6 +298,26 @@ fbr_cstore_hash_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath)
 }
 
 fbr_hash_t
+fbr_cstore_hash_path(struct fbr_cstore *cstore, const char *path, size_t path_len)
+{
+	fbr_cstore_ok(cstore);
+	assert(path);
+
+	XXH3_state_t hash;
+	XXH3_INITSTATE(&hash);
+	XXH3_64bits_reset(&hash);
+
+	_hash_s3(&hash, cstore);
+
+	XXH3_64bits_update(&hash, path, path_len + 1);
+
+	XXH64_hash_t result = XXH3_64bits_digest(&hash);
+	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
+
+	return (fbr_hash_t)result;
+}
+
+fbr_hash_t
 fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t url_len)
 {
 	assert(url);
