@@ -58,17 +58,6 @@ fbr_cstore_find(void)
 	return NULL;
 }
 
-unsigned int
-fbr_cstore_request_id(unsigned int default_id)
-{
-	struct fbr_request *request = fbr_request_get();
-	if (request) {
-		return request->id;
-	}
-
-	return default_id;
-}
-
 size_t
 fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len)
 {

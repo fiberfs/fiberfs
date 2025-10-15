@@ -85,6 +85,7 @@ fbr_cstore_worker_init(struct fbr_cstore_worker *worker)
 	assert_dev(worker->workspace->free >= FBR_WORKSPACE_MIN_SIZE);
 	assert_zero_dev(worker->workspace->pos);
 	assert_zero(worker->request_id);
+	assert_dev(fbr_cstore_worker_get() == worker);
 
 	worker->time_start = fbr_get_time();
 	worker->request_id = fbr_request_id_gen();

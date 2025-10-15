@@ -221,9 +221,7 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CSTORE, request_id, "DELETE %s %s %lu",
-		path, url, id);
+	fbr_rlog(FBR_LOG_CSTORE, "DELETE %s %s %lu", path, url, id);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (entry) {
@@ -369,9 +367,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_path_chunk(NULL, file, wbuffer->id, wbuffer->offset, 0, chunk_path,
 		sizeof(chunk_path));
 
-	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "WRITE %s %zu %s",
-		chunk_path, wbuf_bytes, path);
+	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE %s %zu %s", chunk_path, wbuf_bytes, path);
 
 	struct chttp_context s3_request;
 	chttp_context_init(&s3_request);
@@ -382,7 +378,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, wbuf_bytes,
 		path, 1);
 	if (!entry) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR loading state");
+		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR loading state");
 		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &s3_request, wbuffer, 1);
 		return;
 	}
@@ -391,7 +387,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR open()");
+		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &s3_request, wbuffer, 1);
@@ -402,7 +398,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	assert_zero(close(fd));
 
 	if (bytes != wbuf_bytes) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR bytes");
+		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR bytes");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &s3_request, wbuffer, 1);
@@ -420,7 +416,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = fbr_cstore_metadata_write(path, &metadata);
 	if (ret) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR metadata");
+		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR metadata");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &s3_request, wbuffer, 1);
@@ -433,8 +429,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_WBUFFER, request_id, "WRITE success %zu bytes",
-		bytes);
+	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE success %zu bytes", bytes);
 
 	fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &s3_request, wbuffer, 0);
 }
@@ -478,13 +473,12 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "READ %s %zu:%zu %lu",
-		path, chunk->offset, chunk->length, chunk->id);
+	fbr_rlog(FBR_LOG_CS_CHUNK, "READ %s %zu:%zu %lu", path, chunk->offset, chunk->length,
+		chunk->id);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_ok(cstore, hash);
 	if (!entry) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR ok state");
+		fbr_rlog(FBR_LOG_CS_CHUNK, "ERROR ok state");
 		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
 		return;
 	}
@@ -493,7 +487,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR open()");
+		fbr_rlog(FBR_LOG_CS_CHUNK, "ERROR open()");
 		fbr_cstore_remove(cstore, entry);
 		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
 		return;
@@ -503,7 +497,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	int ret = fstat(fd, &st);
 
 	if (ret || (size_t)st.st_size != chunk->length) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR size");
+		fbr_rlog(FBR_LOG_CS_CHUNK, "ERROR size");
 		fbr_cstore_remove(cstore, entry);
 		assert_zero(close(fd));
 		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
@@ -519,7 +513,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	assert_zero(close(fd));
 
 	if ((size_t)bytes != chunk->length) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR read()");
+		fbr_rlog(FBR_LOG_CS_CHUNK, "ERROR read()");
 		fbr_cstore_remove(cstore, entry);
 		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
 		return;
@@ -538,7 +532,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 
 	if (ret || metadata.size != chunk->length || metadata.offset != chunk->offset ||
 	    metadata.etag != chunk->id || metadata.gzipped) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_CHUNK, request_id, "ERROR metadata");
+		fbr_rlog(FBR_LOG_CS_CHUNK, "ERROR metadata");
 		fbr_cstore_remove(cstore, entry);
 		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
 		return;
@@ -601,9 +595,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 	fbr_cstore_path_index(NULL, directory, 0, index_path, sizeof(index_path));
 
-	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE %s %lu %s",
-		index_path, directory->version, path);
+	fbr_rlog(FBR_LOG_CS_INDEX, "WRITE %s %lu %s", index_path, directory->version, path);
 
 	struct chttp_context s3_request;
 	chttp_context_init(&s3_request);
@@ -616,7 +608,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, writer->bytes,
 		path, 1);
 	if (!entry) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR loading state");
+		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR loading state");
 		ret = fbr_cstore_s3_send_finish(cstore, &sync, &s3_request, 1);
 		return ret;
 	}
@@ -625,7 +617,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR open()");
+		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		ret = fbr_cstore_s3_send_finish(cstore, &sync, &s3_request, 1);
@@ -636,7 +628,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	assert_zero(close(fd));
 
 	if (ret) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR writing");
+		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR writing");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		ret = fbr_cstore_s3_send_finish(cstore, &sync, &s3_request, 1);
@@ -654,7 +646,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	ret = fbr_cstore_metadata_write(path, &metadata);
 	if (ret) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR metadata");
+		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR metadata");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		ret = fbr_cstore_s3_send_finish(cstore, &sync, &s3_request, 1);
@@ -667,8 +659,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_fs_stat_add_count(&cstore->stats.wr_index_bytes, writer->bytes);
 	fbr_fs_stat_add(&cstore->stats.wr_indexes);
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "WRITE success %zu bytes",
-		writer->bytes);
+	fbr_rlog(FBR_LOG_CS_INDEX, "WRITE success %zu bytes", writer->bytes);
 
 	ret = fbr_cstore_s3_send_finish(cstore, &sync, &s3_request, 0);
 	return ret;
@@ -687,7 +678,6 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		return 1;
 	}
 
-	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
 	fbr_hash_t hash = fbr_cstore_hash_index(cstore, directory);
 
 	char path[FBR_PATH_MAX];
@@ -700,14 +690,14 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	int error = 0;
 
 	while (retry <= 1) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id,
-			"READ %s %lu (retry: %d)", path, directory->version, retry);
+		fbr_rlog(FBR_LOG_CS_INDEX, "READ %s %lu (retry: %d)", path, directory->version,
+			retry);
 
 		retry++;
 
 		entry = fbr_cstore_io_get_ok(cstore, hash);
 		if (!entry) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR ok state");
+			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR ok state");
 			return EAGAIN;
 		}
 
@@ -716,7 +706,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 		int ret = fbr_cstore_metadata_read(path, &metadata);
 		if (ret) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR metadata");
+			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR metadata");
 			fbr_cstore_remove(cstore, entry);
 			return 1;
 		}
@@ -724,8 +714,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		assert_dev(metadata.type == FBR_CSTORE_FILE_INDEX);
 
 		if (metadata.etag != directory->version) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id,
-				"ERROR bad version");
+			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR bad version");
 			fbr_cstore_remove(cstore, entry);
 			return 1;
 		}
@@ -733,7 +722,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 		fd = open(path, O_RDONLY);
 		if (fd < 0) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR open()");
+			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR open()");
 			fbr_cstore_remove(cstore, entry);
 			return 1;
 		}
@@ -844,12 +833,12 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	if (metadata.gzipped) {
 		if (gzip.status != FBR_GZIP_DONE) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR gunzip");
+			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR gunzip");
 			ret = 1;
 		}
 	}
 	if (json.error) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "ERROR json");
+		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR json");
 		ret = 1;
 	}
 
@@ -861,8 +850,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_gzip_free(&gzip);
 	}
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_INDEX, request_id, "READ bytes in: %zu out: %zu",
-		bytes_in, bytes_out);
+	fbr_rlog(FBR_LOG_CS_INDEX, "READ bytes in: %zu out: %zu", bytes_in, bytes_out);
 
 	fbr_cstore_release(cstore, entry);
 
@@ -925,22 +913,20 @@ fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 	fbr_cstore_path_root(NULL, &dirpath, 0, root_path, sizeof(root_path));
 
-	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "WRITE %s %lu %lu %s",
-		root_path, existing, directory->version, path);
+	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE %s %lu %lu %s", root_path, existing, directory->version,
+		path);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
 		if (existing) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id,
-				"ERROR bad version want: %lu got: no entry", existing);
+			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR bad version want: %lu got: no entry",
+				existing);
 			return EAGAIN;
 		}
 
 		entry = fbr_cstore_io_get_loading(cstore, hash, 100, path, 0);
 		if (!entry) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id,
-				"ERROR loading state");
+			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR loading state");
 			return EAGAIN;
 		}
 		fbr_cstore_entry_ok(entry);
@@ -954,22 +940,22 @@ fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr
 		fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 		int ret = fbr_cstore_metadata_read(path, &metadata);
 		if (ret) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR metadata");
+			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR metadata");
 			fbr_cstore_set_error(entry);
 			fbr_cstore_remove(cstore, entry);
 			return 1;
 		}
 
 		if (metadata.etag != existing) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id,
-				"ERROR bad version want: %lu got: %lu", existing, metadata.etag);
+			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR bad version want: %lu got: %lu",
+				existing, metadata.etag);
 			fbr_cstore_set_ok(entry);
 			fbr_cstore_release(cstore, entry);
 			return EAGAIN;
 		}
 	}
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "WRITE passed %lu", existing);
+	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE passed %lu", existing);
 
 	struct fbr_cstore_metadata metadata;
 	fbr_zero(&metadata);
@@ -980,7 +966,7 @@ fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = fbr_cstore_metadata_write(path, &metadata);
 	if (ret) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR write metadata");
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR write metadata");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		return 1;
@@ -993,8 +979,8 @@ fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr
 	fbr_writer_init_buffer(fs, &json, json_buf, sizeof(json_buf));
 	fbr_root_json_gen(fs, &json, directory->version);
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "WRITE root: %s (%lu) prev: %lu",
-		path, directory->version, existing);
+	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE root: %s (%lu) prev: %lu", path, directory->version,
+		existing);
 
 	if (!fbr_sys_exists(path)) {
 		fbr_fs_stat_add(&cstore->stats.wr_roots);
@@ -1002,7 +988,7 @@ fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr
 
 	int fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR open()");
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		return 1;
@@ -1012,7 +998,7 @@ fbr_cstore_io_root_write(struct fbr_fs *fs, struct fbr_directory *directory, fbr
 	assert_zero(close(fd));
 
 	if (ret) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR write root");
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR write root");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		return 1;
@@ -1043,12 +1029,11 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "READ %s", path);
+	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", path);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR ok state");
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR ok state");
 		return 0;
 	}
 
@@ -1058,7 +1043,7 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR open()");
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		return 0;
@@ -1069,7 +1054,7 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	assert_zero(close(fd));
 
 	if (bytes <= 0 || bytes == sizeof(json_buf)) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR read()");
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR read()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 		return 0;
@@ -1082,7 +1067,7 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	fbr_cstore_set_ok(entry);
 
 	if (ret) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR metadata");
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR metadata");
 		fbr_cstore_remove(cstore, entry);
 		return 0;
 	}
@@ -1091,12 +1076,12 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 
 	fbr_id_t version = fbr_root_json_parse(fs, json_buf, bytes);
 	if (version != metadata.etag) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR version etag");
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR version etag");
 		fbr_cstore_remove(cstore, entry);
 		return 0;
 	}
 
-	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "READ %s version=%ld",
+	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s version=%ld",
 		dirpath->length ? dirpath->name : "(root)", version);
 
 	fbr_cstore_release(cstore, entry);
@@ -1125,13 +1110,12 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	unsigned long request_id = fbr_cstore_request_id(FBR_REQID_CSTORE);
-	fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "DELETE %s %lu",
+	fbr_rlog(FBR_LOG_CS_ROOT, "DELETE %s %lu",
 		path, directory->version);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR no entry");
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR no entry");
 		return 1;
 	}
 
@@ -1146,7 +1130,7 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_cstore_set_ok(entry);
 
 	if (!ret && metadata.etag != directory->version) {
-		fbr_log_print(cstore->log, FBR_LOG_CS_ROOT, request_id, "ERROR version etag");
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR version etag");
 		fbr_cstore_release(cstore, entry);
 		return 1;
 	}

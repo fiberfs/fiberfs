@@ -216,7 +216,6 @@ size_t fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *
 
 void fbr_cstore_fuse_register(const char *root_path);
 struct fbr_cstore *fbr_cstore_find(void);
-unsigned int fbr_cstore_request_id(unsigned int default_id);
 size_t fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len);
 const char *fbr_cstore_type_name(enum fbr_cstore_entry_type type);
 

@@ -52,6 +52,9 @@ _cstore_state_thread(void *arg)
 {
 	assert_zero(arg);
 
+	struct fbr_cstore_worker *worker = fbr_cstore_worker_alloc(_CSTORE);
+	fbr_cstore_worker_init(worker);
+
 	while (_ASYNC_TEST_QUEUED < _ASYNC_TEST_MAX) {
 		int ret = fbr_cstore_async_queue(_CSTORE, FBR_CSOP_TEST, NULL, NULL, NULL, NULL,
 			NULL, NULL, NULL);
@@ -62,6 +65,9 @@ _cstore_state_thread(void *arg)
 			fbr_atomic_add(&_ASYNC_TEST_QUEUED, 1);
 		}
 	}
+
+	fbr_cstore_worker_finish(worker);
+	fbr_cstore_worker_free(worker);
 
 	return NULL;
 }

@@ -163,6 +163,7 @@ _rlog_get(void)
 	if (request) {
 		fbr_request_ok(request);
 		fbr_rlog_ok(request->rlog);
+		assert_zero_dev(fbr_cstore_worker_get());
 		return request->rlog;
 	}
 
