@@ -93,7 +93,10 @@ void fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker);
 void fbr_cstore_servers_shutdown(struct fbr_cstore *cstore);
 void fbr_cstore_servers_free(struct fbr_cstore *cstore);
 
+void fbr_cstore_worker_key_init(void);
+void fbr_cstore_worker_key_free(void);
 struct fbr_cstore_worker *fbr_cstore_worker_alloc(struct fbr_cstore *cstore);
+struct fbr_cstore_worker *fbr_cstore_worker_get(void);
 void fbr_cstore_worker_init(struct fbr_cstore_worker *worker);
 void fbr_cstore_worker_finish(struct fbr_cstore_worker *worker);
 void fbr_cstore_worker_free(struct fbr_cstore_worker *worker);

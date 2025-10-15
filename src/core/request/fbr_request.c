@@ -209,8 +209,8 @@ fbr_request_get(void)
 	if (!_REQUEST_KEY_COUNT) {
 		return NULL;
 	}
-	struct fbr_request *request = pthread_getspecific(_REQUEST_KEY);
 
+	struct fbr_request *request = pthread_getspecific(_REQUEST_KEY);
 	if (!request) {
 		return NULL;
 	}

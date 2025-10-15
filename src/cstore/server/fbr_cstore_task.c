@@ -21,6 +21,8 @@ fbr_cstore_tasks_alloc(struct fbr_cstore *cstore)
 	pt_assert(pthread_mutex_init(&tasks->lock, NULL));
 	pt_assert(pthread_cond_init(&tasks->cond, NULL));
 
+	fbr_cstore_worker_key_init();
+
 	tasks->init = 1;
 }
 
@@ -215,6 +217,8 @@ fbr_cstore_tasks_free(struct fbr_cstore *cstore)
 
 	pt_assert(pthread_mutex_destroy(&tasks->lock));
 	pt_assert(pthread_cond_destroy(&tasks->cond));
+
+	fbr_cstore_worker_key_free();
 
 	fbr_zero(tasks);
 }
