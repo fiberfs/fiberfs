@@ -59,15 +59,18 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 }
 
 void
-fbr_cstore_server_accept(struct fbr_cstore_worker *worker)
+fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker)
 {
-	fbr_cstore_worker_ok(worker);
-	fbr_cstore_task_ok(worker->task);
+	assert(task_worker);
 
-	struct fbr_cstore_server *server = worker->task->param;
+	struct fbr_cstore_worker *worker = task_worker->worker;
+	fbr_cstore_worker_ok(worker);
+	fbr_cstore_task_ok(task_worker->task);
+
+	struct fbr_cstore_server *server = task_worker->task->param;
 	fbr_cstore_server_ok(server);
 
-	int ret = chttp_tcp_accept(&worker->remote_addr, &server->addr);
+	int ret = chttp_tcp_accept(&task_worker->remote_addr, &server->addr);
 
 	fbr_cstore_task_add(worker->cstore, FBR_CSTORE_TASK_ACCEPT, server);
 
@@ -75,22 +78,22 @@ fbr_cstore_server_accept(struct fbr_cstore_worker *worker)
 		return;
 	}
 
-	chttp_addr_connected(&worker->remote_addr);
-	assert_zero_dev(worker->remote_addr.error);
+	chttp_addr_connected(&task_worker->remote_addr);
+	assert_zero_dev(task_worker->remote_addr.error);
 
 	char remote[128];
 	int remote_port;
-	chttp_sa_string(&worker->remote_addr.sa, remote, sizeof(remote), &remote_port);
+	chttp_sa_string(&task_worker->remote_addr.sa, remote, sizeof(remote), &remote_port);
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "connection made from %s:%d to %d",
 		remote, remote_port, server->port);
 
-	fbr_cstore_proc_http(worker);
+	fbr_cstore_proc_http(task_worker);
 
-	if (worker->remote_addr.state == CHTTP_ADDR_CONNECTED) {
+	if (task_worker->remote_addr.state == CHTTP_ADDR_CONNECTED) {
 		// TODO keep alive on a queue somewhere
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "keep alive detected");
-		chttp_tcp_close(&worker->remote_addr);
+		chttp_tcp_close(&task_worker->remote_addr);
 	}
 }
 

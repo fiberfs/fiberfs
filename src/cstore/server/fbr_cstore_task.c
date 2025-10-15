@@ -76,13 +76,15 @@ fbr_cstore_task_add(struct fbr_cstore *cstore, enum fbr_cstore_task_type type, v
 
 // Note: tasks->lock required
 static void
-_cstore_task_free(struct fbr_cstore_worker *worker)
+_cstore_task_free(struct fbr_cstore_task_worker *task_worker)
 {
-	assert_dev(worker);
-	fbr_cstore_task_ok(worker->task);
+	assert_dev(task_worker);
+	fbr_cstore_worker_ok(task_worker->worker);
+	fbr_cstore_task_ok(task_worker->task);
+	assert(task_worker->remote_addr.state == CHTTP_ADDR_NONE);
 
-	fbr_zero(worker->task);
-	worker->task = NULL;
+	fbr_zero(task_worker->task);
+	task_worker->task = NULL;
 }
 
 static void *
@@ -95,11 +97,16 @@ _cstore_task_loop(void *arg)
 	fbr_log_ok(cstore->log);
 	struct fbr_cstore_tasks *tasks = &cstore->tasks;
 
-	struct fbr_cstore_worker *worker = fbr_cstore_worker_alloc(cstore);
-	assert(worker);
+	struct fbr_cstore_task_worker task_worker;
+	fbr_zero(&task_worker);
 
-	worker->thread_id = fbr_request_id_thread_gen();
-	worker->thread_pos = fbr_atomic_add(&tasks->workers_running, 1);
+	task_worker.worker = fbr_cstore_worker_alloc(cstore);
+	assert(task_worker.worker);
+
+	chttp_addr_init(&task_worker.remote_addr);
+
+	task_worker.worker->thread_id = fbr_request_id_thread_gen();
+	task_worker.worker->thread_pos = fbr_atomic_add(&tasks->workers_running, 1);
 
 	fbr_thread_name("fbr_worker");
 
@@ -125,26 +132,31 @@ _cstore_task_loop(void *arg)
 
 		pt_assert(pthread_mutex_unlock(&tasks->lock));
 
-		fbr_cstore_worker_init(worker, task);
+		fbr_cstore_worker_init(task_worker.worker);
+		task_worker.task = task;
 
-		switch(worker->task->type) {
+		switch(task->type) {
 			case FBR_CSTORE_TASK_ACCEPT:
-				fbr_cstore_server_accept(worker);
+				fbr_cstore_server_accept(&task_worker);
 				break;
 			default:
-				fbr_ABORT("bad task type: %d", worker->task->type);
+				fbr_ABORT("bad task type: %d", task->type);
 		}
 
-		fbr_cstore_worker_finish(worker);
+		fbr_cstore_worker_finish(task_worker.worker);
 
 		pt_assert(pthread_mutex_lock(&tasks->lock));
 
-		_cstore_task_free(worker);
+		_cstore_task_free(&task_worker);
 	}
 
 	pt_assert(pthread_mutex_unlock(&tasks->lock));
 
-	fbr_cstore_worker_free(worker);
+	fbr_cstore_worker_free(task_worker.worker);
+
+	assert_zero_dev(task_worker.task);
+	assert_dev(task_worker.remote_addr.state == CHTTP_ADDR_NONE);
+	fbr_zero(&task_worker);
 
 	fbr_atomic_sub(&tasks->workers_running, 1);
 

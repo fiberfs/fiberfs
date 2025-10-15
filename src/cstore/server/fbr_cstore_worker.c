@@ -24,25 +24,20 @@ fbr_cstore_worker_alloc(struct fbr_cstore *cstore)
 	worker->workspace = fbr_workspace_init(worker + 1, workspace_size);
 	worker->cstore = cstore;
 
-	chttp_addr_init(&worker->remote_addr);
-
 	return worker;
 }
 
 void
-fbr_cstore_worker_init(struct fbr_cstore_worker *worker, struct fbr_cstore_task_entry *task)
+fbr_cstore_worker_init(struct fbr_cstore_worker *worker)
 {
 	fbr_cstore_worker_ok(worker);
 	fbr_workspace_ok(worker->workspace);
 	assert_dev(worker->workspace->free >= FBR_WORKSPACE_MIN_SIZE);
 	assert_zero_dev(worker->workspace->pos);
 	assert_zero(worker->request_id);
-	fbr_cstore_task_ok(task);
-	assert_zero(worker->task);
 
 	worker->time_start = fbr_get_time();
 	worker->request_id = fbr_request_id_gen();
-	worker->task = task;
 
 	fbr_wlog_workspace_alloc(worker);
 }

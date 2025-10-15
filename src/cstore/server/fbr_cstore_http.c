@@ -77,10 +77,13 @@ _http_print(struct fbr_rlog *rlog, struct chttp_context *http)
 }
 
 void
-fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
+fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 {
+	assert(task_worker);
+
+	struct fbr_cstore_worker *worker = task_worker->worker;
 	fbr_cstore_worker_ok(worker);
-	chttp_addr_connected(&worker->remote_addr);
+	chttp_addr_connected(&task_worker->remote_addr);
 
 	worker->time_start = fbr_get_time();
 
@@ -89,13 +92,13 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 	struct chttp_context *http = fbr_workspace_alloc(worker->workspace, chttp_size);
 	if (!http) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "ERROR no workspace");
-		chttp_tcp_close(&worker->remote_addr);
+		chttp_tcp_close(&task_worker->remote_addr);
 		return;
 	}
 	chttp_context_init_buf(http, chttp_size);
 	chttp_context_ok(http);
 
-	chttp_addr_move(&http->addr, &worker->remote_addr);
+	chttp_addr_move(&http->addr, &task_worker->remote_addr);
 	chttp_parse(http, CHTTP_REQUEST);
 
 	if (http->error) {
@@ -165,7 +168,7 @@ fbr_cstore_proc_http(struct fbr_cstore_worker *worker)
 
 	if (http->state == CHTTP_STATE_IDLE && http->addr.state == CHTTP_ADDR_CONNECTED &&
 	    !http->close) {
-		chttp_addr_move(&worker->remote_addr, &http->addr);
+		chttp_addr_move(&task_worker->remote_addr, &http->addr);
 	}
 
 	// TODO, we may have some pipeline...

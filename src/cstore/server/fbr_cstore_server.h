@@ -80,18 +80,21 @@ struct fbr_cstore_worker {
 
 	double					time_start;
 	unsigned long				request_id;
+};
 
+struct fbr_cstore_task_worker {
+	struct fbr_cstore_worker		*worker;
 	struct fbr_cstore_task_entry		*task;
 	struct chttp_addr			remote_addr;
 };
 
 void fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls);
-void fbr_cstore_server_accept(struct fbr_cstore_worker *worker);
+void fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker);
 void fbr_cstore_servers_shutdown(struct fbr_cstore *cstore);
 void fbr_cstore_servers_free(struct fbr_cstore *cstore);
 
 struct fbr_cstore_worker *fbr_cstore_worker_alloc(struct fbr_cstore *cstore);
-void fbr_cstore_worker_init(struct fbr_cstore_worker *worker, struct fbr_cstore_task_entry *task);
+void fbr_cstore_worker_init(struct fbr_cstore_worker *worker);
 void fbr_cstore_worker_finish(struct fbr_cstore_worker *worker);
 void fbr_cstore_worker_free(struct fbr_cstore_worker *worker);
 
@@ -100,7 +103,7 @@ void fbr_cstore_task_add(struct fbr_cstore *cstore, enum fbr_cstore_task_type ty
 void fbr_cstore_tasks_free(struct fbr_cstore *cstore);
 void fbr_cstore_task_worker_add(struct fbr_cstore *cstore, size_t count);
 
-void fbr_cstore_proc_http(struct fbr_cstore_worker *worker);
+void fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker);
 
 #define fbr_cstore_server_ok(server)		fbr_magic_check(server, FBR_CSTORE_SERVER_MAGIC)
 #define fbr_cstore_worker_ok(worker)		fbr_magic_check(worker, FBR_CSTORE_WORKER_MAGIC)
