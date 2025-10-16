@@ -52,7 +52,7 @@ _cstore_state_thread(void *arg)
 {
 	assert_zero(arg);
 
-	struct fbr_cstore_worker *worker = fbr_cstore_worker_alloc(_CSTORE);
+	struct fbr_cstore_worker *worker = fbr_cstore_worker_alloc(_CSTORE, "state_test");
 	fbr_cstore_worker_init(worker, NULL);
 
 	while (_ASYNC_TEST_QUEUED < _ASYNC_TEST_MAX) {

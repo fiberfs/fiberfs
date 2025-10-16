@@ -176,7 +176,7 @@ _cstore_async_loop(void *arg)
 	fbr_cstore_ok(cstore);
 	struct fbr_cstore_async *async = &cstore->async;
 
-	struct fbr_cstore_worker *worker = fbr_cstore_worker_alloc(cstore);
+	struct fbr_cstore_worker *worker = fbr_cstore_worker_alloc(cstore, "async_io");
 	fbr_cstore_worker_ok(worker);
 
 	pt_assert(pthread_mutex_lock(&async->queue_lock));

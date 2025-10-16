@@ -11,7 +11,8 @@
 
 struct fbr_request *fbr__test_request_mock(const char *function);
 
-#define fbr_test_request_mock()		fbr__test_request_mock(__func__)
+#define fbr_test_request_mock()		\
+	fbr__test_request_mock(__func__)
 
 #endif /* _FBR_TEST_REQUEST_CMDS_H_INCLUDED */
 
