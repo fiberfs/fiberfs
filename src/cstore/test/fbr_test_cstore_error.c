@@ -30,6 +30,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_fs_ok(fs);
 	fbr_test_cstore_init_loader(ctx);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
+	struct fbr_request *request = fbr_request_alloc(NULL, __func__);
 
 	assert(_CSTORE->loader.start_time);
 
@@ -251,6 +252,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert_zero(_CSTORE->stats.loaded);
 	assert_zero(_CSTORE->stats.lazy_loaded);
 
+	fbr_request_free(request);
 	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_error_test done");
