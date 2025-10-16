@@ -116,7 +116,6 @@ static struct fbr_request *
 _request_pool_get(fuse_req_t fuse_req, const char *name)
 {
 	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
-	assert_dev(fuse_req);
 	assert_dev(name);
 	assert_dev(_REQUEST_KEY_COUNT);
 
@@ -133,7 +132,6 @@ _request_pool_get(fuse_req_t fuse_req, const char *name)
 	struct fbr_request *request = TAILQ_FIRST(&_REQUEST_POOL->free_list);
 	fbr_request_ok(request);
 	assert_zero_dev(request->fuse_req);
-	assert_zero_dev(request->name);
 
 	_request_init(request, fuse_req, name);
 
@@ -180,7 +178,6 @@ _request_pool_active(struct fbr_request *request)
 struct fbr_request *
 fbr_request_alloc(fuse_req_t fuse_req, const char *name)
 {
-	assert(fuse_req);
 	assert(_REQUEST_KEY_COUNT);
 	assert_zero_dev(fbr_request_get());
 
@@ -301,8 +298,10 @@ fbr_request_free(struct fbr_request *request)
 
 	fbr_fs_stat_sub(&fs->stats.requests_active);
 
-	request->name = NULL;
+	request->not_fuse = 0;
 	request->id = 0;
+	request->name = NULL;
+	request->time_start = 0;
 
 	fbr_zero(&request->thread);
 

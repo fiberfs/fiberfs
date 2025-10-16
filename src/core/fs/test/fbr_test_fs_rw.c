@@ -129,11 +129,9 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	// TODO fuse said this breaks distributed append if enabled
 	conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
 
-	// TODO we need a proper non fuse request
-	assert_zero(fbr_request_get());
-	struct fbr_request *request = fbr_test_request_mock();
+	struct fbr_request *request = fbr_request_alloc(NULL, __func__);
 	fbr_request_ok(request);
-	assert(fbr_request_get() == request);
+	assert_zero(request->not_fuse);
 
 	struct fbr_directory *root = fbr_directory_root_alloc(ctx->fs);
 	fbr_directory_ok(root);
@@ -163,7 +161,6 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	fbr_dindex_release(ctx->fs, &root);
 	fbr_request_free(request);
-	assert_zero(fbr_request_get());
 }
 
 static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {

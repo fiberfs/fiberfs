@@ -25,6 +25,7 @@ _fuse_setup(fuse_req_t fuse_req, const char *name)
 	fbr_request_valid(request);
 	assert_dev(request->fuse_ctx->fuse_callbacks);
 	assert_dev(request->fuse_req);
+	assert_zero_dev(request->not_fuse);
 
 	return request;
 }

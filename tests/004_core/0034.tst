@@ -2,6 +2,7 @@ fiber_test "RW append"
 
 # Init
 
+set_timeout_sec 20
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 fs_test_dentry_ttl_ms 0

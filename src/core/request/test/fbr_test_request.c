@@ -20,10 +20,10 @@ fbr__test_request_mock(const char *function)
 {
 	assert_zero(fbr_request_get());
 
-	struct fbr_request *request = fbr_request_alloc((fuse_req_t)1, function);
+	struct fbr_request *request = fbr_request_alloc(NULL, function);
 	fbr_request_ok(request);
 
-	fbr_request_take_fuse(request);
+	assert_zero(fbr_request_take_fuse(request));
 	fbr_zero(&request->thread);
 	request->not_fuse = 1;
 
