@@ -75,7 +75,7 @@ int fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *fi
 int fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	char *root_path, fbr_id_t version, fbr_id_t existing);
 fbr_id_t fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
-	struct fbr_path_name *dirpath);
+	char *root_path);
 
 #define fbr_cstore_backend_ok(backend)		\
 	fbr_magic_check(backend, FBR_CSTORE_BACKEND_MAGIC)

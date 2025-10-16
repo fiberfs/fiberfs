@@ -806,11 +806,10 @@ fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 }
 
 fbr_id_t
-fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
-    struct fbr_path_name *dirpath)
+fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore, char *root_path)
 {
 	fbr_cstore_ok(cstore);
-	assert(dirpath);
+	assert(root_path);
 
 	int retries = 0;
 	struct chttp_context http;
@@ -823,7 +822,7 @@ fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
 		}
 		retries++;
 
-		fbr_cstore_s3_send_get(cstore, &http, dirpath->name, 0, retries);
+		fbr_cstore_s3_send_get(cstore, &http, root_path, 0, retries);
 		if (http.error) {
 			continue;
 		}
@@ -867,7 +866,7 @@ fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	fbr_writer_flush(fs, json_writer);
 	assert_zero(json_writer->error);
 
-	fbr_cstore_async_root_write(cstore, json_writer, (char*)dirpath->name, version);
+	fbr_cstore_async_root_write(cstore, json_writer, root_path, version);
 
 	return version;
 }

@@ -390,14 +390,13 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	ret = fbr_cstore_metadata_read(path, &metadata);
 
-	assert_zero_dev(ret);
-	assert_dev(metadata.etag == etag_match); // TODO doesnt work for root
-	assert_dev(metadata.offset == offset);
-	assert_dev(metadata.size == size);
-	assert_dev(metadata.type == file_type);
+	// root requests dont If-Match
+	if (file_type == FBR_CSTORE_FILE_ROOT && !etag_match) {
+		etag_match = metadata.etag;
+	}
 
 	if (ret || metadata.size != size || metadata.offset != offset ||
-	    metadata.etag != etag_match) {
+	    metadata.etag != etag_match || metadata.type != file_type) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR metadata()");
 		fbr_cstore_remove(cstore, entry);
 		assert_zero(close(fd));

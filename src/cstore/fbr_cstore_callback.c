@@ -108,6 +108,7 @@ fbr_id_t
 fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh)
 {
 	fbr_fs_ok(fs);
+	assert(dirpath);
 	(void)fresh;
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
@@ -115,17 +116,20 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh
 		return 0;
 	}
 
+	char path[FBR_PATH_MAX];
+	size_t path_len = fbr_cstore_path_root(NULL, dirpath, 0, path, sizeof(path));
+
 	fbr_id_t version = 0;
 	int has_backend = fbr_cstore_backend_enabled(cstore);
 
 	// TODO if fresh, read local and attempt a conditional?
 
 	if (!fresh || !has_backend) {
-		version = fbr_cstore_io_root_read(cstore, dirpath);
+		version = fbr_cstore_io_root_read(cstore, path, path_len);
 	}
 
 	if (!version && has_backend) {
-		version = fbr_cstore_s3_root_read(fs, cstore, dirpath);
+		version = fbr_cstore_s3_root_read(fs, cstore, path);
 	}
 
 	return version;

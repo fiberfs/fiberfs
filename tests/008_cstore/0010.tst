@@ -20,7 +20,7 @@ print "### READ 2 CHUNKS FROM CSTORE_1"
 
 sys_cat $var1 "test1test2test3test4test5"
 
-#fs_test_release_all 1
+#fs_test_release_all
 #sleep_ms 100
 
 #print "### READ 2 CHUNKS FROM CSTORE_0"

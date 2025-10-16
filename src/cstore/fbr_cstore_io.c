@@ -700,6 +700,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		entry = fbr_cstore_io_get_ok(cstore, hash);
 		if (!entry) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR ok state");
+			// TODO implement index fetch on these errors
 			return EAGAIN;
 		}
 
@@ -1011,19 +1012,20 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 }
 
 fbr_id_t
-fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_path_name *dirpath)
+fbr_cstore_io_root_read(struct fbr_cstore *cstore, const char *root_path, size_t path_len)
 {
 	fbr_cstore_ok(cstore);
-	assert(dirpath);
+	assert(root_path);
+	assert(path_len);
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", dirpath->name);
+	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", root_path);
 
 	int skip_ttl = 0;
 	if (!fbr_cstore_backend_enabled(cstore) || !cstore->root_ttl_sec) {
 		skip_ttl = 1;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_root(cstore, dirpath);
+	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path, path_len);
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR ok state");
@@ -1087,8 +1089,7 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_path_name *dirpath
 		return 0;
 	}
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s version=%ld",
-		dirpath->length ? dirpath->name : "(root)", version);
+	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s version=%ld", root_path, version);
 
 	fbr_cstore_release(cstore, entry);
 
