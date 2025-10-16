@@ -71,7 +71,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_directory_name(directory, &dirpath);
 	fbr_cstore_path_root(NULL, &dirpath, 0, root_path, sizeof(root_path));
 
-	struct fbr_writer *root_json = fbr_writer_alloc_dynamic(fs, 128);
+	struct fbr_writer *root_json = fbr_writer_alloc_dynamic(fs, FBR_ROOT_JSON_SIZE);
 	fbr_root_json_gen(fs, root_json, directory->version);
 	assert_zero(root_json->error);
 
@@ -107,6 +107,26 @@ fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 fbr_id_t
 fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh)
 {
+	fbr_fs_ok(fs);
 	(void)fresh;
-	return fbr_cstore_io_root_read(fs, dirpath);
+
+	struct fbr_cstore *cstore = fbr_cstore_find();
+	if (!cstore) {
+		return 0;
+	}
+
+	fbr_id_t version = 0;
+	int has_backend = fbr_cstore_backend_enabled(cstore);
+
+	// TODO if fresh, read local and attempt a conditional?
+
+	if (!fresh || !has_backend) {
+		version = fbr_cstore_io_root_read(cstore, dirpath);
+	}
+
+	if (!version && has_backend) {
+		version = fbr_cstore_s3_root_read(fs, cstore, dirpath);
+	}
+
+	return version;
 }

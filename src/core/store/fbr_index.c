@@ -451,6 +451,8 @@ fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version
 	fbr_writer_add(fs, writer, "\"}", 2);
 
 	fbr_writer_flush(fs, writer);
+
+	assert(writer->bytes < FBR_ROOT_JSON_SIZE);
 }
 
 static int
@@ -485,9 +487,8 @@ _root_parse(struct fjson_context *ctx, void *priv)
 }
 
 fbr_id_t
-fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len)
+fbr_root_json_parse(const char *json_buf, size_t json_buf_len)
 {
-	fbr_fs_ok(fs);
 	assert(json_buf);
 	assert(json_buf_len);
 

@@ -144,9 +144,11 @@ fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 
 	fbr_hash_t hash = _s3_request_path(cstore, "GET", file_path, http, retries);
 
-	char buffer[32];
-	fbr_cstore_etag(id, buffer, sizeof(buffer));
-	chttp_header_add(http, "If-Match", buffer);
+	if (id) {
+		char buffer[32];
+		fbr_cstore_etag(id, buffer, sizeof(buffer));
+		chttp_header_add(http, "If-Match", buffer);
+	}
 
 	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, retries);
 	fbr_cstore_backend_ok(backend);
@@ -801,4 +803,71 @@ fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	fbr_cstore_async_root_write(cstore, root_json, root_path, version);
 
 	return 0;
+}
+
+fbr_id_t
+fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
+    struct fbr_path_name *dirpath)
+{
+	fbr_cstore_ok(cstore);
+	assert(dirpath);
+
+	int retries = 0;
+	struct chttp_context http;
+
+	while (retries <= 1) {
+		chttp_context_init(&http);
+
+		if (retries) {
+			http.new_conn = 1;
+		}
+		retries++;
+
+		fbr_cstore_s3_send_get(cstore, &http, dirpath->name, 0, retries);
+		if (http.error) {
+			continue;
+		}
+
+		break;
+	}
+
+	if (http.error || http.status != 200) {
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR S3: %d %d", http.error, http.status);
+		chttp_context_free(&http);
+		return 0;
+	}
+
+	char root_json[FBR_ROOT_JSON_SIZE];
+	size_t bytes = 0;
+
+	while (bytes < sizeof(root_json)) {
+		bytes += chttp_body_read(&http, root_json + bytes, sizeof(root_json) - bytes);
+
+		if (http.error || http.state >= CHTTP_STATE_IDLE) {
+			break;
+		}
+	}
+
+	if (http.error || bytes == sizeof(root_json) || http.state < CHTTP_STATE_IDLE) {
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR S3 body");
+		chttp_context_free(&http);
+		return 0;
+	}
+
+	chttp_context_free(&http);
+
+	fbr_id_t version = fbr_root_json_parse(root_json, bytes);
+	if (!version) {
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR S3 json");
+		return 0;
+	}
+
+	struct fbr_writer *json_writer = fbr_writer_alloc_dynamic(fs, FBR_ROOT_JSON_SIZE);
+	fbr_writer_add(fs, json_writer, root_json, bytes);
+	fbr_writer_flush(fs, json_writer);
+	assert_zero(json_writer->error);
+
+	fbr_cstore_async_root_write(cstore, json_writer, (char*)dirpath->name, version);
+
+	return version;
 }

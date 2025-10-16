@@ -1011,15 +1011,10 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 }
 
 fbr_id_t
-fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
+fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_path_name *dirpath)
 {
-	fbr_fs_ok(fs);
+	fbr_cstore_ok(cstore);
 	assert(dirpath);
-
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
-		return 0;
-	}
 
 	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", dirpath->name);
 
@@ -1072,7 +1067,7 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 		return 0;
 	}
 
-	char json_buf[128];
+	char json_buf[FBR_ROOT_JSON_SIZE];
 	ssize_t bytes = fbr_sys_read(fd, json_buf, sizeof(json_buf));
 	assert_zero(close(fd));
 
@@ -1085,7 +1080,7 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 
 	fbr_cstore_set_ok(entry);
 
-	fbr_id_t version = fbr_root_json_parse(fs, json_buf, bytes);
+	fbr_id_t version = fbr_root_json_parse(json_buf, bytes);
 	if (version != metadata.etag) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR version etag");
 		fbr_cstore_remove(cstore, entry);
@@ -1121,8 +1116,7 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "DELETE %s %lu",
-		path, directory->version);
+	fbr_rlog(FBR_LOG_CS_ROOT, "DELETE %s %lu", path, directory->version);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {

@@ -14,6 +14,7 @@
 #define FBR_JSON_VERSION			1
 #define FBR_DEFAULT_BUFFERS			4
 #define FBR_DEFAULT_BUFLEN			4096
+#define FBR_ROOT_JSON_SIZE			128
 
 struct fbr_buffer {
 	unsigned int				magic;
@@ -137,7 +138,7 @@ void fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 void fbr_index_data_free(struct fbr_index_data *index_data);
 int fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data);
 void fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);
-fbr_id_t fbr_root_json_parse(struct fbr_fs *fs, const char *json_buf, size_t json_buf_len);
+fbr_id_t fbr_root_json_parse(const char *json_buf, size_t json_buf_len);
 void fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_index_parser_init(struct fbr_fs *fs, struct fbr_index_parser *parser,
 	struct fbr_directory *directory);
