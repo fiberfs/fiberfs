@@ -37,6 +37,10 @@ _s3_request_url(struct fbr_cstore *cstore, const char *method, const char *url, 
 
 	fbr_rlog(FBR_LOG_CS_S3, "S3 %s %s (retry: %d)", method, url, retries);
 
+	if (!strcmp(method, "GET")) {
+		chttp_header_add(http, "Accept-Encoding", "gzip");
+	}
+
 	char buffer[32];
 	fbr_strbcpy(buffer, "0");
 	struct fbr_request *request = fbr_request_get();
@@ -248,8 +252,8 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 
 static int
 _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
-    const char *path, size_t length, fbr_id_t etag, fbr_id_t existing, fbr_cstore_s3_put_f data_cb,
-    void *put_arg, int retry)
+    enum fbr_cstore_entry_type type, const char *path, size_t length, fbr_id_t etag,
+    fbr_id_t existing, fbr_cstore_s3_put_f data_cb, void *put_arg, int retry)
 {
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
@@ -287,6 +291,21 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 
 	fbr_cstore_etag(etag, buffer, sizeof(buffer));
 	chttp_header_add(http, "ETag", buffer);
+
+	switch (type) {
+		case FBR_CSTORE_FILE_INDEX:
+			chttp_header_add(http, "Content-Encoding", "gzip");
+			chttp_header_add(http, "Content-Type", "application/json");
+			break;
+		case FBR_CSTORE_FILE_ROOT:
+			chttp_header_add(http, "Content-Type", "application/json");
+			// TODO do we want to force a max-age?
+			//chttp_header_add(http, "Cache-Control", "max-age=86400");
+			break;
+		default:
+			chttp_header_add(http, "Content-Type", "application/octet-stream");
+			break;
+	}
 
 	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, retry);
 	chttp_connect(http, backend->host, backend->host_len, backend->port, backend->tls);
@@ -393,12 +412,12 @@ void
 fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,
     const char *path, struct fbr_wbuffer *wbuffer)
 {
-	int error = _s3_send_put(cstore, http, path, wbuffer->end, wbuffer->id, 0,
-		_s3_wbuffer_data_cb, wbuffer, 0);
+	int error = _s3_send_put(cstore, http, FBR_CSTORE_FILE_CHUNK, path, wbuffer->end,
+		wbuffer->id, 0, _s3_wbuffer_data_cb, wbuffer, 0);
 	if (error < 0) {
 		chttp_context_reset(http);
-		error = _s3_send_put(cstore, http, path, wbuffer->end, wbuffer->id, 0,
-			_s3_wbuffer_data_cb, wbuffer, 1);
+		error = _s3_send_put(cstore, http, FBR_CSTORE_FILE_CHUNK, path, wbuffer->end,
+			wbuffer->id, 0, _s3_wbuffer_data_cb, wbuffer, 1);
 		assert_dev(error >= 0);
 	}
 }
@@ -634,12 +653,12 @@ void
 fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
     const char *path, struct fbr_writer *writer, fbr_id_t id)
 {
-	int error = _s3_send_put(cstore, http, path, writer->bytes, id, 0,
+	int error = _s3_send_put(cstore, http, FBR_CSTORE_FILE_INDEX, path, writer->bytes, id, 0,
 		_s3_writer_data_cb, writer, 0);
 	if (error < 0) {
 		chttp_context_reset(http);
-		error = _s3_send_put(cstore, http, path, writer->bytes, id, 0,
-			_s3_writer_data_cb, writer, 1);
+		error = _s3_send_put(cstore, http, FBR_CSTORE_FILE_INDEX, path, writer->bytes, id,
+			0, _s3_writer_data_cb, writer, 1);
 		assert_dev(error >= 0);
 	}
 }
@@ -765,12 +784,12 @@ fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	struct chttp_context http;
 	chttp_context_init(&http);
 
-	int error = _s3_send_put(cstore, &http, root_path, root_json->bytes, version, existing,
-		_s3_writer_data_cb, root_json, 0);
+	int error = _s3_send_put(cstore, &http, FBR_CSTORE_FILE_ROOT, root_path, root_json->bytes,
+		version, existing, _s3_writer_data_cb, root_json, 0);
 	if (error < 0) {
 		chttp_context_reset(&http);
-		error =_s3_send_put(cstore, &http, root_path, root_json->bytes, version,
-			existing, _s3_writer_data_cb, root_json, 1);
+		error =_s3_send_put(cstore, &http, FBR_CSTORE_FILE_ROOT, root_path,
+			root_json->bytes, version, existing, _s3_writer_data_cb, root_json, 1);
 		assert_dev(error >= 0);
 	}
 

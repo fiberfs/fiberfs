@@ -125,6 +125,8 @@ struct fbr_cstore {
 	struct fbr_log				*log;
 	char					root[FBR_PATH_MAX];
 
+	unsigned long				root_ttl_sec;
+
 	size_t					max_bytes;
 	size_t					bytes;
 	size_t					entries;

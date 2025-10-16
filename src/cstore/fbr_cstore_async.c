@@ -464,6 +464,7 @@ fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_j
 	if (ret) {
 		free(buffer);
 		fbr_writer_free(root_json);
+		fbr_rlog(FBR_LOG_CS_ROOT, "Cannot schedule write, skipping");
 		return;
 	}
 }
