@@ -372,7 +372,7 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 }
 
 void
-fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
+fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,
     char *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op_sync *sync)
 {
 	fbr_cstore_ok(cstore);
@@ -383,17 +383,17 @@ fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *r
 		return;
 	}
 
-	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_SEND, cstore, request, path,
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_SEND, cstore, http, path,
 		wbuffer, NULL, fbr_cstore_op_sync_done, sync);
 	if (ret) {
-		fbr_cstore_s3_wbuffer_send(cstore, request, path, wbuffer);
+		fbr_cstore_s3_wbuffer_send(cstore, http, path, wbuffer);
 		sync->done = 1;
 		return;
 	}
 }
 
 void
-fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *request,
+fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
     char *path, struct fbr_writer *writer, fbr_id_t id, struct fbr_cstore_op_sync *sync)
 {
 	fbr_cstore_ok(cstore);
@@ -406,10 +406,10 @@ fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *req
 
 	static_ASSERT(sizeof(void*) >= sizeof(id));
 
-	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_INDEX_SEND, cstore, request, path,
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_INDEX_SEND, cstore, http, path,
 		writer, (void*)id, fbr_cstore_op_sync_done, sync);
 	if (ret) {
-		fbr_cstore_s3_index_send(cstore, request, path, writer, id);
+		fbr_cstore_s3_index_send(cstore, http, path, writer, id);
 		sync->done = 1;
 		return;
 	}

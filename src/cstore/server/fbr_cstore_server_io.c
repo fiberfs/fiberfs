@@ -86,37 +86,37 @@ _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, s
 }
 
 int
-fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *request)
+fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http)
 {
 	fbr_cstore_worker_ok(worker);
-	chttp_context_ok(request);
-	assert(request->state == CHTTP_STATE_BODY);
-	assert_zero(request->chunked);
-	chttp_addr_connected(&request->addr);
+	chttp_context_ok(http);
+	assert(http->state == CHTTP_STATE_BODY);
+	assert_zero(http->chunked);
+	chttp_addr_connected(&http->addr);
 
 	struct fbr_cstore *cstore = worker->cstore;
 	fbr_cstore_ok(cstore);
 
-	if (request->chunked) {
+	if (http->chunked) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR chunked");
 		return 1;
 	}
 
 	size_t offset;
-	size_t length = request->length;
+	size_t length = http->length;
 	assert(length);
 
-	const char *url = chttp_header_get_url(request);
+	const char *url = chttp_header_get_url(http);
 	assert(url);
 	size_t url_len = strlen(url);
 
-	const char *host = chttp_header_get(request, "Host");
+	const char *host = chttp_header_get(http, "Host");
 	if (!host) {
 		host = "";
 	}
 	size_t host_len = strlen(host);
 
-	const char *etag = chttp_header_get(request, "ETag");
+	const char *etag = chttp_header_get(http, "ETag");
 	if (!etag) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR no etag");
 		return 1;
@@ -135,7 +135,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	}
 
 	int unique = 0;
-	const char *if_none_match = chttp_header_get(request, "If-None-Match");
+	const char *if_none_match = chttp_header_get(http, "If-None-Match");
 	if (if_none_match) {
 		if (!strcmp(if_none_match, "*")) {
 			unique = 1;
@@ -146,7 +146,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	}
 
 	fbr_id_t etag_match = 0;
-	const char *if_match = chttp_header_get(request, "If-Match");
+	const char *if_match = chttp_header_get(http, "If-Match");
 	if (if_match) {
 		size_t if_match_len = strlen(if_match);
 		if (if_match_len >= 2 && if_match[if_match_len - 1] == '\"' &&
@@ -256,7 +256,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 		return 1;
 	}
 
-	size_t bytes = fbr_cstore_s3_splice(cstore, request, fd, length);
+	size_t bytes = fbr_cstore_s3_splice(cstore, http, fd, length);
 
 	assert_zero(close(fd));
 
@@ -266,14 +266,14 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
 
-		if (!request->error) {
-			chttp_error(request, CHTTP_ERR_NETWORK);
+		if (!http->error) {
+			chttp_error(http, CHTTP_ERR_NETWORK);
 		}
 
 		return 1;
 	} else {
-		assert_dev(request->state >= CHTTP_STATE_IDLE);
-		assert_zero_dev(request->length);
+		assert_dev(http->state >= CHTTP_STATE_IDLE);
+		assert_zero_dev(http->length);
 	}
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE wrote %zu bytes", bytes);
@@ -284,7 +284,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 	metadata.size = length;
 	metadata.offset = offset;
 	metadata.type = file_type;
-	metadata.gzipped = request->gzip;
+	metadata.gzipped = http->gzip;
 	fbr_strbcpy(metadata.path, url);
 
 	// TODO url might have a prefix...
@@ -307,27 +307,27 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *req
 }
 
 int
-fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *request)
+fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http)
 {
 	fbr_cstore_worker_ok(worker);
-	chttp_context_ok(request);
-	assert(request->state == CHTTP_STATE_IDLE);
-	chttp_addr_connected(&request->addr);
+	chttp_context_ok(http);
+	assert(http->state == CHTTP_STATE_IDLE);
+	chttp_addr_connected(&http->addr);
 
 	struct fbr_cstore *cstore = worker->cstore;
 	fbr_cstore_ok(cstore);
 
-	const char *url = chttp_header_get_url(request);
+	const char *url = chttp_header_get_url(http);
 	assert(url);
 	size_t url_len = strlen(url);
 
-	const char *host = chttp_header_get(request, "Host");
+	const char *host = chttp_header_get(http, "Host");
 	assert(host);
 	size_t host_len = strlen(host);
 
 	fbr_id_t etag_match = 0;
 	size_t if_match_len = 0;
-	const char *if_match = chttp_header_get(request, "If-Match");
+	const char *if_match = chttp_header_get(http, "If-Match");
 	if (if_match) {
 		if_match_len = strlen(if_match);
 		if (if_match_len >= 2 && if_match[if_match_len - 1] == '\"' &&
@@ -410,10 +410,10 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 		"Server: fiberfs cstore %s\r\n"
 		"Content-Length: %zu\r\n\r\n", FIBERFS_VERSION, size);
 
-	chttp_tcp_send(&request->addr, buffer, header_len);
-	chttp_tcp_error_check(request);
+	chttp_tcp_send(&http->addr, buffer, header_len);
+	chttp_tcp_error_check(http);
 
-	if (request->error) {
+	if (http->error) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR send() headers");
 		fbr_cstore_release(cstore, entry);
 		assert_zero(close(fd));
@@ -423,7 +423,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 	size_t bytes = 0;
 	off_t off = 0;
 	while (bytes < size) {
-		ssize_t ret = sendfile(request->addr.sock, fd, &off, size - bytes);
+		ssize_t ret = sendfile(http->addr.sock, fd, &off, size - bytes);
 		if (ret <= 0) {
 			break;
 		}
@@ -437,7 +437,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR sendfile()");
 		fbr_cstore_release(cstore, entry);
 		assert_zero(close(fd));
-		chttp_error(request, CHTTP_ERR_NETWORK);
+		chttp_error(http, CHTTP_ERR_NETWORK);
 		return -1;
 	}
 
@@ -448,27 +448,27 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *requ
 }
 
 int
-fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *request)
+fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *http)
 {
 	fbr_cstore_worker_ok(worker);
-	chttp_context_ok(request);
-	assert(request->state == CHTTP_STATE_IDLE);
-	chttp_addr_connected(&request->addr);
+	chttp_context_ok(http);
+	assert(http->state == CHTTP_STATE_IDLE);
+	chttp_addr_connected(&http->addr);
 
 	struct fbr_cstore *cstore = worker->cstore;
 	fbr_cstore_ok(cstore);
 
-	const char *url = chttp_header_get_url(request);
+	const char *url = chttp_header_get_url(http);
 	assert(url);
 	size_t url_len = strlen(url);
 
-	const char *host = chttp_header_get(request, "Host");
+	const char *host = chttp_header_get(http, "Host");
 	assert(host);
 	size_t host_len = strlen(host);
 
 	fbr_id_t etag_match = 0;
 	size_t if_match_len = 0;
-	const char *if_match = chttp_header_get(request, "If-Match");
+	const char *if_match = chttp_header_get(http, "If-Match");
 	if (if_match) {
 		if_match_len = strlen(if_match);
 		if (if_match_len >= 2 && if_match[if_match_len - 1] == '\"' &&

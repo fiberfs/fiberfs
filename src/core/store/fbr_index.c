@@ -380,6 +380,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	assert_dev(directory->version);
 	assert_dev(directory->generation);
 
+	fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_write()");
+
 	int do_append = 0;
 	if (fbr_fs_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
 		assert_dev(index_data->wbuffers);
@@ -533,6 +535,8 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	int ret;
 
 	do {
+		fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_read() attempt: %u", attempts);
+
 		if (fs->store->root_read_f) {
 			fbr_id_t version = fs->store->root_read_f(fs, &dirpath);
 

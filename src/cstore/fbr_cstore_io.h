@@ -115,9 +115,9 @@ void fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_chunk *chunk);
 void fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_chunk *chunk);
-void fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *request,
+void fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,
 	char *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op_sync *sync);
-void fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *request,
+void fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
 	char *path, struct fbr_writer *writer, fbr_id_t id, struct fbr_cstore_op_sync *sync);
 void fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
@@ -156,9 +156,9 @@ int fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_
 fbr_id_t fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath);
 int fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 
-int fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *request);
-int fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *request);
-int fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *request);
+int fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http);
+int fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http);
+int fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *http);
 
 #define fbr_cstore_op_ok(op)			fbr_magic_check(op, FBR_CSTORE_OP_MAGIC)
 #define fbr_cstore_op_sync_ok(sync)		fbr_magic_check(sync, FBR_CSTORE_OP_SYNC_MAGIC)
