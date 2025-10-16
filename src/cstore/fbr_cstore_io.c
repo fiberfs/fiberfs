@@ -902,6 +902,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	assert(root_json->bytes);
 	assert(root_path);
 	assert(version);
+	assert(enforce || fbr_cstore_backend_enabled(cstore));
 
 	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path, strlen(root_path));
 
@@ -1010,7 +1011,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 }
 
 fbr_id_t
-fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh)
+fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 {
 	fbr_fs_ok(fs);
 	assert(dirpath);
@@ -1020,13 +1021,14 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fr
 		return 0;
 	}
 
+	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", dirpath->name);
+
+	int skip_ttl = 0;
+	if (!fbr_cstore_backend_enabled(cstore) || !cstore->root_ttl_sec) {
+		skip_ttl = 1;
+	}
+
 	fbr_hash_t hash = fbr_cstore_hash_root(cstore, dirpath);
-
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-
-	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s (fresh: %d)", path, fresh);
-
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR ok state");
@@ -1037,6 +1039,31 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fr
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
+	struct fbr_cstore_metadata metadata;
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+	int ret = fbr_cstore_metadata_read(path, &metadata);
+
+	if (ret) {
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR metadata");
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, entry);
+		return 0;
+	}
+
+	assert_dev(metadata.type == FBR_CSTORE_FILE_ROOT);
+
+	if (!skip_ttl) {
+		double now = fbr_get_time();
+		if (metadata.timestamp + cstore->root_ttl_sec < now) {
+			fbr_rlog(FBR_LOG_CS_ROOT, "expired");
+			fbr_cstore_set_ok(entry);
+			fbr_cstore_release(cstore, entry);
+			return 0;
+		}
+	}
+
+	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR open()");
@@ -1056,19 +1083,7 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fr
 		return 0;
 	}
 
-	struct fbr_cstore_metadata metadata;
-	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
-	int ret = fbr_cstore_metadata_read(path, &metadata);
-
 	fbr_cstore_set_ok(entry);
-
-	if (ret) {
-		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR metadata");
-		fbr_cstore_remove(cstore, entry);
-		return 0;
-	}
-
-	assert_dev(metadata.type == FBR_CSTORE_FILE_ROOT);
 
 	fbr_id_t version = fbr_root_json_parse(fs, json_buf, bytes);
 	if (version != metadata.etag) {
