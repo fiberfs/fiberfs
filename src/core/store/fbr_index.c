@@ -538,7 +538,7 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_read() attempt: %u", attempts);
 
 		if (fs->store->root_read_f) {
-			fbr_id_t version = fs->store->root_read_f(fs, &dirpath);
+			fbr_id_t version = fs->store->root_read_f(fs, &dirpath, attempts);
 
 			if (version == 0) {
 				fbr_directory_set_state(fs, directory,

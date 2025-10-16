@@ -153,7 +153,7 @@ void fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directo
 int fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	const char *root_path, fbr_id_t version, fbr_id_t existing, int enforce);
-fbr_id_t fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath);
+fbr_id_t fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh);
 int fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 
 int fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http);

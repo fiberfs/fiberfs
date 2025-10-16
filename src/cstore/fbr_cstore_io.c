@@ -1010,7 +1010,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 }
 
 fbr_id_t
-fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
+fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh)
 {
 	fbr_fs_ok(fs);
 	assert(dirpath);
@@ -1025,7 +1025,7 @@ fbr_cstore_io_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", path);
+	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s (fresh: %d)", path, fresh);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {

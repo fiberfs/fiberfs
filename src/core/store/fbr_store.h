@@ -121,7 +121,7 @@ struct fbr_store_callbacks {
 		struct fbr_writer *writer, struct fbr_directory *previous);
 	int (*index_read_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 	int (*index_delete_f)(struct fbr_fs *fs, struct fbr_directory *directory);
-	fbr_id_t (*root_read_f)(struct fbr_fs *fs, struct fbr_path_name *dirpath);
+	fbr_id_t (*root_read_f)(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh);
 
 	struct {
 		int (*directory_flush_f)(struct fbr_fs *fs, struct fbr_file *file,

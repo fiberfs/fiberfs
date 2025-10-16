@@ -153,7 +153,7 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	struct fbr_path_name dirpath;
 	fbr_directory_name(root, &dirpath);
-	fbr_id_t root_id = fbr_cstore_root_read(ctx->fs, &dirpath);
+	fbr_id_t root_id = fbr_cstore_root_read(ctx->fs, &dirpath, 0);
 
 	fbr_test_logs("INIT fbr_cstore_root_read(): %lu", root_id);
 	fbr_ASSERT(root_id == root->version, "root version mismatch, found %lu, expected %lu",

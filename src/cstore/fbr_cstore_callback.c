@@ -105,7 +105,7 @@ fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 fbr_id_t
-fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath)
+fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh)
 {
-	return fbr_cstore_io_root_read(fs, dirpath);
+	return fbr_cstore_io_root_read(fs, dirpath, fresh);
 }
