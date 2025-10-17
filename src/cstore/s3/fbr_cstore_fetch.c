@@ -221,10 +221,18 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 	fbr_cstore_etag(etag, buffer, sizeof(buffer));
 	chttp_header_add(http, "ETag", buffer);
 
+	struct fbr_writer *writer;
+
 	switch (type) {
 		case FBR_CSTORE_FILE_INDEX:
-			chttp_header_add(http, "Content-Encoding", "gzip");
+			writer = put_arg;
+			fbr_writer_ok(writer);
+			if (writer->is_gzip) {
+				chttp_header_add(http, "Content-Encoding", "gzip");
+			}
+
 			chttp_header_add(http, "Content-Type", "application/json");
+
 			break;
 		case FBR_CSTORE_FILE_ROOT:
 			chttp_header_add(http, "Content-Type", "application/json");

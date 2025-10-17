@@ -712,6 +712,11 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		entry = fbr_cstore_io_get_ok(cstore, hash);
 		if (!entry) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR ok state");
+
+			if (!fbr_cstore_backend_enabled(cstore)) {
+				return EAGAIN;
+			}
+
 			continue;
 		}
 
@@ -722,11 +727,6 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		if (ret) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR metadata");
 			fbr_cstore_remove(cstore, entry);
-
-			if (!fbr_cstore_backend_enabled(cstore)) {
-				return EAGAIN;
-			}
-
 			continue;
 		}
 
