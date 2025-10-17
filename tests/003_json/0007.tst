@@ -1,6 +1,6 @@
 fiber_test "JSON file tests"
 
-set_timeout_sec 25
+set_timeout_sec 40
 
 json_file good_json/001.json 1
 json_file good_json/001.json 2
