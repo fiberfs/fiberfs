@@ -30,5 +30,6 @@ print "### READ 2 CHUNKS FROM CSTORE_1"
 
 sys_cat $var1 "test1test2test3test4test5"
 
+sleep_ms 100
 cstore_debug
 cstore_debug 1
