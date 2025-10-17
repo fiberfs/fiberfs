@@ -23,7 +23,7 @@ equal $cstore_stat_indexes 1
 equal $cstore_stat_roots 1
 
 cstore_dirty_rm 0
-#fs_test_release_all
+fs_test_release_all
 sleep_ms 100
 
 print "### READ 2 CHUNKS FROM CSTORE_1"

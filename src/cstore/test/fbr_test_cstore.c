@@ -279,8 +279,8 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 					filename, metadata.path, metadata.gzipped);
 				break;
 			case FBR_CSTORE_FILE_ROOT:
-				fbr_test_logs("CSTORE_DEBUG file: %s (ROOT %s)",
-					filename, metadata.path);
+				fbr_test_logs("CSTORE_DEBUG file: %s (ROOT %s version: %lu)",
+					filename, metadata.path, metadata.etag);
 				assert_zero(metadata.gzipped);
 				break;
 			default:
@@ -443,6 +443,7 @@ size_t _CSTORE_THREAD_COUNT;
 size_t _CSTORE_ENTRY_COUNTER;
 size_t _CSTORE_READ_COUNTER;
 size_t _CSTORE_BYTES_COUNTER;
+size_t _CSTORE_DELAY_COUNTER;
 
 static void
 _cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
@@ -491,7 +492,7 @@ _cstore_thread(void *arg)
 		if (!entry) {
 			size_t bytes = (random() % _CSTORE_HASH_MAX_BYTES) + 1;
 			int delay = 0;
-			if (!(random() % 10)) {
+			if (!(random() % 5)) {
 				delay = 1;
 			}
 			entry = fbr_cstore_insert(_CSTORE, hash, delay ? 0 : bytes, 1);
@@ -503,6 +504,7 @@ _cstore_thread(void *arg)
 				}
 				fbr_atomic_add(&_CSTORE_BYTES_COUNTER, bytes);
 				fbr_atomic_add(&_CSTORE_ENTRY_COUNTER, 1);
+				fbr_atomic_add(&_CSTORE_DELAY_COUNTER, delay);
 				fbr_cstore_set_ok(entry);
 				fbr_cstore_release(_CSTORE, entry);
 			} else {
@@ -583,6 +585,7 @@ _cstore_test(void)
 	fbr_test_logs("* _CSTORE->bytes=%zu", _CSTORE->bytes);
 	fbr_test_logs("* _CSTORE->lru_pruned=%lu", _CSTORE->stats.lru_pruned);
 	fbr_test_logs("* _CSTORE->slabs=%zu", slabs);
+	fbr_test_logs("* _CSTORE->delayed=%lu", _CSTORE_DELAY_COUNTER);
 
 	size_t entries = _CSTORE->entries + _CSTORE->stats.lru_pruned;
 

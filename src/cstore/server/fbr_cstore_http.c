@@ -39,34 +39,38 @@ _http_send_code(struct chttp_context *http, int status, const char *reason)
 	chttp_tcp_send(&http->addr, buffer, bytes);
 }
 
-static void
-_http_print(struct fbr_rlog *rlog, struct chttp_context *http)
+void
+fbr_cstore_http_log(struct chttp_context *http)
 {
-	assert_dev(rlog);
-	assert_dev(http);
+	chttp_context_ok(http);
 
-	fbr_rdlog(rlog, FBR_LOG_CS_WORKER,
-		"state: %d error: %d ver: %d status: %d length: %ld chunk: %u gzip: %u tls: %u",
+	fbr_rlog(FBR_LOG_CS_WORKER,
+		"state: %d error: %d ver: %d status: %d length: %ld chunk: %u gzip: %u tls: %u "
+		"req: %d",
 		http->state, http->error, http->version, http->status, http->length, http->chunked,
-		http->gzip, http->addr.tls);
+		http->gzip, http->addr.tls, http->request);
 
+	int first = 1;
 	struct chttp_dpage *dpage = http->dpage;
 	while (dpage) {
 		chttp_dpage_ok(dpage);
 
 		size_t start = 0;
-		int first = 1;
 		for (size_t i = 0; i < dpage->length; i++) {
 			if (dpage->data[i] == '\n') {
 				if ((i - 1) <= start) {
 					break;
 				}
-				if (!first) {
-					fbr_rdlog(rlog, FBR_LOG_CS_WORKER, "  %.*s",
-						(int)(i - 1 - start), dpage->data + start);
+				if (first && http->request) {
+					const char *method = (char*)dpage->data + start;
+					const char *url = method + strlen(method) + 1;
+					const char *version = url + strlen(url) + 1;
+					fbr_rlog(FBR_LOG_CS_DEBUG, "  %s %s %s",
+						method, url, version);
 				} else {
-					first = 0;
+					fbr_rlog(FBR_LOG_CS_DEBUG, "  %s", dpage->data + start);
 				}
+				first = 0;
 				start = i + 1;
 				continue;
 			}
@@ -112,8 +116,7 @@ fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 	const char *method = chttp_header_get_method(http);
 	const char *url = chttp_header_get_url(http);
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "http %s url: %s", method, url);
-	_http_print(worker->rlog, http);
+	fbr_cstore_http_log(http);
 
 	if (http->version != CHTTP_H_VERSION_1_1) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad http version");

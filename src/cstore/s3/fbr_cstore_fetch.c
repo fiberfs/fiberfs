@@ -176,6 +176,7 @@ fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 	}
 
 	fbr_rlog(FBR_LOG_CS_S3, "S3 response: %d", http->status);
+	fbr_cstore_http_log(http);
 }
 
 static int
@@ -272,6 +273,8 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 		}
 		return 1;
 	}
+
+	fbr_cstore_http_log(http);
 
 	size_t body_len;
 	do {
@@ -507,6 +510,8 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 			chttp_context_free(&http);
 			return;
 		}
+
+		fbr_cstore_http_log(&http);
 
 		break;
 	}
@@ -859,6 +864,7 @@ fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore, char *root
 
 	while (bytes < sizeof(root_json)) {
 		bytes += chttp_body_read(&http, root_json + bytes, sizeof(root_json) - bytes);
+		assert_dev(bytes <= sizeof(root_json));
 
 		if (http.error || http.state >= CHTTP_STATE_IDLE) {
 			break;

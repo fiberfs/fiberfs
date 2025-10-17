@@ -244,6 +244,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 			fbr_cstore_release(cstore, entry);
 			return 1;
 		}
+
+		fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 	}
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE conditions passed");
@@ -403,11 +405,20 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		return 1;
 	}
 
+	char etag[FBR_ID_STRING_MAX];
+	fbr_id_string(metadata.etag, etag, sizeof(etag));
+
+	const char *gzip_hdr = "Content-Encoding: gzip\r\n";
 	char buffer[1024];
 	size_t header_len = fbr_bprintf(buffer,
 		"HTTP/1.1 200 OK\r\n"
 		"Server: fiberfs cstore %s\r\n"
-		"Content-Length: %zu\r\n\r\n", FIBERFS_VERSION, size);
+		"%s"
+		"ETag: \"%s\"\r\n"
+		"Content-Length: %zu\r\n\r\n",
+			FIBERFS_VERSION,
+			metadata.gzipped ? gzip_hdr : "",
+			etag, size);
 
 	chttp_tcp_send(&http->addr, buffer, header_len);
 	chttp_tcp_error_check(http);
