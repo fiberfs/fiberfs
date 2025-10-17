@@ -14,20 +14,21 @@ set_var1 $sys_tmpdir "/test.txt"
 sys_write $var1 "test1test2test3"
 sys_append $var1 "test4test5"
 
+sleep_ms 100
+
+cstore_debug
+cstore_debug 1
+equal $cstore_stat_chunks 2
+equal $cstore_stat_indexes 1
+equal $cstore_stat_roots 1
+
 cstore_dirty_rm 0
+#fs_test_release_all
+sleep_ms 100
 
 print "### READ 2 CHUNKS FROM CSTORE_1"
 
 sys_cat $var1 "test1test2test3test4test5"
-
-#fs_test_release_all
-#sleep_ms 100
-
-#print "### READ 2 CHUNKS FROM CSTORE_0"
-
-#sys_cat $var1 "test1test2test3test4test5"
-
-sleep_ms 100
 
 cstore_debug
 cstore_debug 1

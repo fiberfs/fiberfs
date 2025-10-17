@@ -261,7 +261,6 @@ fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t byt
     const char *path, int remove_on_error)
 {
 	assert_dev(cstore);
-	assert_dev(bytes);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, bytes, 1);
 	if (!entry) {
@@ -682,26 +681,34 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	fbr_hash_t hash = fbr_cstore_hash_index(cstore, directory);
 
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-
 	struct fbr_cstore_metadata metadata;
 	struct fbr_cstore_entry *entry;
 	int fd;
 	int retry = 0;
-	int error = 0;
 
-	while (retry <= 1) {
+	while (1) {
+		char path[FBR_PATH_MAX];
+		fbr_cstore_path_index(NULL, directory, 0, path, sizeof(path));
+
 		fbr_rlog(FBR_LOG_CS_INDEX, "READ %s %lu (retry: %d)", path, directory->version,
 			retry);
+
+		if (retry == 1) {
+			int ret = fbr_cstore_s3_get(cstore, hash, path, directory->version, 0,
+				FBR_CSTORE_FILE_INDEX);
+			if (ret == 404) {
+				return EAGAIN;
+			}
+		} else if (retry > 1) {
+			return 1;
+		}
 
 		retry++;
 
 		entry = fbr_cstore_io_get_ok(cstore, hash);
 		if (!entry) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR ok state");
-			// TODO implement index fetch on these errors
-			return EAGAIN;
+			continue;
 		}
 
 		assert_dev(entry->state == FBR_CSTORE_OK);
@@ -711,7 +718,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		if (ret) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR metadata");
 			fbr_cstore_remove(cstore, entry);
-			return 1;
+			continue;
 		}
 
 		assert_dev(metadata.type == FBR_CSTORE_FILE_INDEX);
@@ -719,7 +726,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		if (metadata.etag != directory->version) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR bad version");
 			fbr_cstore_remove(cstore, entry);
-			return 1;
+			continue;
 		}
 
 		fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
@@ -727,14 +734,10 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		if (fd < 0) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR open()");
 			fbr_cstore_remove(cstore, entry);
-			return 1;
+			continue;
 		}
 
 		break;
-	}
-
-	if (error) {
-		return error;
 	}
 
 	struct fbr_request *request = fbr_request_get();
@@ -1088,8 +1091,6 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, const char *root_path, size_t
 		fbr_cstore_remove(cstore, entry);
 		return 0;
 	}
-
-	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s version=%ld", root_path, version);
 
 	fbr_cstore_release(cstore, entry);
 

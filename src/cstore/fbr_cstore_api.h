@@ -182,6 +182,7 @@ void fbr_cstore_max_size(struct fbr_cstore *cstore, size_t max_bytes, int lru);
 struct fbr_cstore_entry *fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash);
 struct fbr_cstore_entry *fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash,
 	size_t bytes, int loading);
+int fbr_cstore_set_size(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, size_t bytes);
 int fbr_cstore_set_loading(struct fbr_cstore_entry *entry);
 enum fbr_cstore_state fbr_cstore_wait_loading(struct fbr_cstore_entry *entry);
 void fbr_cstore_reset_loading(struct fbr_cstore_entry *entry);

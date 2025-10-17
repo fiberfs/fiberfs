@@ -58,9 +58,11 @@ size_t fbr_cstore_s3_splice(struct fbr_cstore *cstore, struct chttp_context *htt
 	size_t size);
 void fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 	const char *file_path, fbr_id_t id, int retries);
-void fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *path, fbr_id_t id);
 int fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,
 	struct chttp_context *http, int error);
+int fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_path,
+	fbr_id_t id, size_t size, enum fbr_cstore_entry_type type);
+void fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *path, fbr_id_t id);
 void fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,
 	const char *path, struct fbr_wbuffer *wbuffer);
 void fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,
@@ -70,8 +72,6 @@ void fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct fbr_file *file, struct fbr_chunk *chunk);
 void fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
 	const char *path, struct fbr_writer *writer, fbr_id_t id);
-int fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_path,
-	fbr_id_t id, size_t size, enum fbr_cstore_entry_type type);
 int fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	char *root_path, fbr_id_t version, fbr_id_t existing);
 fbr_id_t fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore,

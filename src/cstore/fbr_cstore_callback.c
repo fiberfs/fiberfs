@@ -132,5 +132,11 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh
 		version = fbr_cstore_s3_root_read(fs, cstore, path);
 	}
 
+	char id_str[FBR_ID_STRING_MAX] = "";
+	if (version) {
+		fbr_id_string(version, id_str, sizeof(id_str));
+	}
+	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s version=%ld (%s)", path, version, id_str);
+
 	return version;
 }

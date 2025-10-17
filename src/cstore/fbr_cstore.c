@@ -248,6 +248,7 @@ static int
 _cstore_full(struct fbr_cstore *cstore, size_t new_bytes)
 {
 	assert_dev(cstore);
+	assert_dev(new_bytes);
 
 	if (!cstore->max_bytes) {
 		return 0;
@@ -285,6 +286,7 @@ _cstore_lru_prune(struct fbr_cstore *cstore, struct fbr_cstore_head *head, size_
 	assert_dev(cstore);
 	assert_dev(cstore->do_lru);
 	assert_dev(head);
+	assert_dev(new_bytes);
 
 	if (!cstore->max_bytes) {
 		return;
@@ -317,13 +319,14 @@ _cstore_insert_entry(struct fbr_cstore *cstore, struct fbr_cstore_head *head, fb
 {
 	assert_dev(cstore);
 	assert_dev(head);
-	assert_dev(bytes);
 
-	if (cstore->do_lru) {
-		_cstore_lru_prune(cstore, head, bytes);
-	} else if (_cstore_full(cstore, bytes)) {
-		pt_assert(pthread_mutex_unlock(&head->lock));
-		return NULL;
+	if (bytes) {
+		if (cstore->do_lru) {
+			_cstore_lru_prune(cstore, head, bytes);
+		} else if (_cstore_full(cstore, bytes)) {
+			pt_assert(pthread_mutex_unlock(&head->lock));
+			return NULL;
+		}
 	}
 
 	struct fbr_cstore_entry *entry = _cstore_alloc_entry(cstore, head, hash);
@@ -351,7 +354,6 @@ struct fbr_cstore_entry *
 fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, int loading)
 {
 	fbr_cstore_ok(cstore);
-	assert(bytes);
 
 	struct fbr_cstore_head *head = _cstore_get_head(cstore, hash);
 	pt_assert(pthread_mutex_lock(&head->lock));
@@ -377,6 +379,35 @@ fbr_cstore_insert(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes, int 
 	pt_assert(pthread_mutex_unlock(&head->lock));
 
 	return entry;
+}
+
+int
+fbr_cstore_set_size(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, size_t bytes)
+{
+	fbr_cstore_ok(cstore);
+	fbr_cstore_entry_ok(entry);
+	assert(entry->state == FBR_CSTORE_LOADING);
+	assert_zero(entry->bytes);
+	assert(bytes);
+
+	struct fbr_cstore_head *head = _cstore_get_head(cstore, entry->hash);
+	pt_assert(pthread_mutex_lock(&head->lock));
+	fbr_cstore_head_ok(head);
+
+	entry->bytes = bytes;
+
+	if (cstore->do_lru) {
+		_cstore_lru_prune(cstore, head, bytes);
+	} else if (_cstore_full(cstore, bytes)) {
+		pt_assert(pthread_mutex_unlock(&head->lock));
+		return 1;
+	}
+
+	fbr_atomic_add(&cstore->bytes, bytes);
+
+	pt_assert(pthread_mutex_unlock(&head->lock));
+
+	return 0;
 }
 
 int
@@ -534,6 +565,7 @@ _cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, int p
 	fbr_cstore_ok(cstore);
 	fbr_cstore_entry_ok(entry);
 	assert(entry->alloc == FBR_CSTORE_ENTRY_USED);
+	assert(entry->bytes);
 
 	struct fbr_cstore_head *head = _cstore_get_head(cstore, entry->hash);
 	pt_assert(pthread_mutex_lock(&head->lock));
