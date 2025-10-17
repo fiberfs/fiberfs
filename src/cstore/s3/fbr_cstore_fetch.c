@@ -335,6 +335,10 @@ fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_p
 	assert(id);
 	assert(type > FBR_CSTORE_FILE_NONE && type <= FBR_CSTORE_FILE_ROOT);
 
+	if (!fbr_cstore_backend_enabled(cstore)) {
+		return 1;
+	}
+
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
