@@ -152,17 +152,19 @@ const char *
 fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url)
 {
 	fbr_cstore_ok(cstore);
+	assert(url[0] == '/');
 
 	if (!cstore->s3.prefix_len) {
-		return url;
+		return url + 1;
 	}
 	assert_dev(cstore->s3.prefix);
 
 	if (!strncmp(url, cstore->s3.prefix, cstore->s3.prefix_len)) {
-		return url + cstore->s3.prefix_len;
+		assert(url[cstore->s3.prefix_len] == '/');
+		return url + cstore->s3.prefix_len + 1;
 	}
 
-	return url;
+	return url + 1;
 }
 
 static void

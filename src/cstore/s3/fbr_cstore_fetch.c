@@ -182,7 +182,7 @@ fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 int
 fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
     enum fbr_cstore_entry_type type, const char *path, size_t length, fbr_id_t etag,
-    fbr_id_t existing, fbr_cstore_s3_put_f data_cb, void *put_arg, int retry)
+    fbr_id_t existing, int gzip, fbr_cstore_s3_put_f data_cb, void *put_arg, int retry)
 {
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
@@ -221,17 +221,14 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 	fbr_cstore_etag(etag, buffer, sizeof(buffer));
 	chttp_header_add(http, "ETag", buffer);
 
+	if (gzip) {
+		chttp_header_add(http, "Content-Encoding", "gzip");
+	}
+
 	struct fbr_cstore_backend *backend = NULL;
-	struct fbr_writer *writer;
 
 	switch (type) {
 		case FBR_CSTORE_FILE_INDEX:
-			writer = put_arg;
-			fbr_writer_ok(writer);
-			if (writer->is_gzip) {
-				chttp_header_add(http, "Content-Encoding", "gzip");
-			}
-
 			chttp_header_add(http, "Content-Type", "application/json");
 
 			break;
@@ -281,7 +278,7 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 		}
 		return 1;
 	}
-	assert_zero_dev(http->length);
+	assert_zero(http->length);
 
 	chttp_receive(http);
 	if (http->error) {
@@ -593,11 +590,11 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http
     const char *path, struct fbr_wbuffer *wbuffer)
 {
 	int error = fbr_s3_send_put(cstore, http, FBR_CSTORE_FILE_CHUNK, path, wbuffer->end,
-		wbuffer->id, 0, _s3_wbuffer_data_cb, wbuffer, 0);
+		wbuffer->id, 0, 0, _s3_wbuffer_data_cb, wbuffer, 0);
 	if (error < 0) {
 		chttp_context_reset(http);
 		error = fbr_s3_send_put(cstore, http, FBR_CSTORE_FILE_CHUNK, path, wbuffer->end,
-			wbuffer->id, 0, _s3_wbuffer_data_cb, wbuffer, 1);
+			wbuffer->id, 0, 0, _s3_wbuffer_data_cb, wbuffer, 1);
 		assert_dev(error >= 0);
 	}
 }
@@ -834,11 +831,11 @@ fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
     const char *path, struct fbr_writer *writer, fbr_id_t id)
 {
 	int error = fbr_s3_send_put(cstore, http, FBR_CSTORE_FILE_INDEX, path, writer->bytes,
-		id, 0, _s3_writer_data_cb, writer, 0);
+		id, 0, writer->is_gzip, _s3_writer_data_cb, writer, 0);
 	if (error < 0) {
 		chttp_context_reset(http);
 		error = fbr_s3_send_put(cstore, http, FBR_CSTORE_FILE_INDEX, path, writer->bytes,
-			id, 0, _s3_writer_data_cb, writer, 1);
+			id, 0, writer->is_gzip, _s3_writer_data_cb, writer, 1);
 		assert_dev(error >= 0);
 	}
 }
@@ -858,11 +855,13 @@ fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	chttp_context_init(&http);
 
 	int error = fbr_s3_send_put(cstore, &http, FBR_CSTORE_FILE_ROOT, root_path,
-		root_json->bytes, version, existing, _s3_writer_data_cb, root_json, 0);
+		root_json->bytes, version, existing, root_json->is_gzip, _s3_writer_data_cb,
+		root_json, 0);
 	if (error < 0) {
 		chttp_context_reset(&http);
 		error = fbr_s3_send_put(cstore, &http, FBR_CSTORE_FILE_ROOT, root_path,
-			root_json->bytes, version, existing, _s3_writer_data_cb, root_json, 1);
+			root_json->bytes, version, existing, root_json->is_gzip, _s3_writer_data_cb,
+			root_json, 1);
 		assert_dev(error >= 0);
 	}
 

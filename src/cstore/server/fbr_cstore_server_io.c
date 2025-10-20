@@ -109,7 +109,7 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, entry->hash, 0, path, sizeof(path));
 
-	int fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
 		chttp_error(http, CHTTP_ERR_NETWORK);
 		return;
@@ -134,6 +134,9 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 		chttp_error(http, CHTTP_ERR_NETWORK);
 		return;
 	}
+
+	http->length -= bytes;
+	assert_zero(http->length);
 
 	assert_zero(close(fd));
 }
@@ -366,11 +369,11 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		pair.entry = entry;
 
 		int error = fbr_s3_send_put(cstore, &http_backend, file_type, file_path, length,
-			etag_id, 0, _cstore_entry_sendfile, &pair, 0);
+			etag_id, 0, metadata.gzipped, _cstore_entry_sendfile, &pair, 0);
 		if (error < 0) {
 			chttp_context_reset(&http_backend);
 			error = fbr_s3_send_put(cstore, &http_backend, file_type, file_path, length,
-				etag_id, 0, _cstore_entry_sendfile, &pair, 1);
+				etag_id, 0, metadata.gzipped, _cstore_entry_sendfile, &pair, 1);
 			assert_dev(error >= 0);
 		}
 
