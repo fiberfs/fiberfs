@@ -668,7 +668,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
 	char path[FBR_PATH_MAX];
-	fbr_cstore_path_chunk(NULL, file, chunk->id, chunk->offset, 0, path, sizeof(path));
+	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, path, sizeof(path));
 
 	int retries = 0;
 	struct chttp_context http;
@@ -765,7 +765,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	metadata.offset = chunk->offset;
 	metadata.type = FBR_CSTORE_FILE_CHUNK;
 
-	fbr_cstore_path_chunk(NULL, file, chunk->id, chunk->offset, 0, path, sizeof(path));
+	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, path, sizeof(path));
 	fbr_strbcpy(metadata.path, path);
 
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));

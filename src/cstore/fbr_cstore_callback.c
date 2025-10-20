@@ -69,7 +69,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	char root_path[FBR_PATH_MAX];
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
-	fbr_cstore_path_root(NULL, &dirpath, 0, root_path, sizeof(root_path));
+	fbr_cstore_path_root(&dirpath, root_path, sizeof(root_path));
 
 	struct fbr_writer *root_json = fbr_writer_alloc_dynamic(fs, FBR_ROOT_JSON_SIZE);
 	fbr_root_json_gen(fs, root_json, directory->version);
@@ -117,7 +117,7 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh
 	}
 
 	char path[FBR_PATH_MAX];
-	size_t path_len = fbr_cstore_path_root(NULL, dirpath, 0, path, sizeof(path));
+	size_t path_len = fbr_cstore_path_root(dirpath, path, sizeof(path));
 
 	fbr_id_t version = 0;
 	int has_backend = fbr_cstore_backend_enabled(cstore);

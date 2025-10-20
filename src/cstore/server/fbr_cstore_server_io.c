@@ -280,6 +280,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE wrote %zu bytes", bytes);
 
+	const char *file_path = fbr_cstore_path_url(cstore, url);
+
 	struct fbr_cstore_metadata metadata;
 	fbr_zero(&metadata);
 	metadata.etag = etag_id;
@@ -287,9 +289,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	metadata.offset = offset;
 	metadata.type = file_type;
 	metadata.gzipped = http->gzip;
-	fbr_strbcpy(metadata.path, url);
-
-	// TODO url might have a prefix...
+	fbr_strbcpy(metadata.path, file_path);
 
 	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
 	int ret = fbr_cstore_metadata_write(path, &metadata);
@@ -370,9 +370,10 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 				return 1;
 			}
 
-			// TODO url might have a prefix...
+			const char *file_path = fbr_cstore_path_url(cstore, url);
 
-			int ret = fbr_cstore_s3_get(cstore, hash, url, etag_match, 0, file_type);
+			int ret = fbr_cstore_s3_get(cstore, hash, file_path, etag_match, 0,
+				file_type);
 			if (ret) {
 				return 1;
 			}

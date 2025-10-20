@@ -200,12 +200,12 @@ size_t fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata,
 	size_t output_len);
 size_t fbr_cstore_path_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata,
 	char *buffer, size_t buffer_len);
-size_t fbr_cstore_path_chunk(struct fbr_cstore *cstore, const struct fbr_file *file,
-	fbr_id_t id, size_t offset, int metadata, char *buffer, size_t buffer_len);
-size_t fbr_cstore_path_index(struct fbr_cstore *cstore, const struct fbr_directory *directory,
-	int metadata, char *buffer, size_t buffer_len);
-size_t fbr_cstore_path_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath, int metadata,
-	char *buffer, size_t buffer_len);
+size_t fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, char *buffer,
+	size_t buffer_len);
+size_t fbr_cstore_path_index(const struct fbr_directory *directory, char *buffer,
+	size_t buffer_len);
+size_t fbr_cstore_path_root(struct fbr_path_name *dirpath, char *buffer, size_t buffer_len);
+const char *fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url);
 
 fbr_hash_t fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
 	size_t offset);

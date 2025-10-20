@@ -363,8 +363,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	char path[FBR_PATH_MAX];
 	char chunk_path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-	fbr_cstore_path_chunk(NULL, file, wbuffer->id, wbuffer->offset, 0, chunk_path,
-		sizeof(chunk_path));
+	fbr_cstore_path_chunk(file, wbuffer->id, wbuffer->offset, chunk_path, sizeof(chunk_path));
 
 	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE %s %zu %s", chunk_path, wbuf_bytes, path);
 
@@ -594,7 +593,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	char path[FBR_PATH_MAX];
 	char index_path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-	fbr_cstore_path_index(NULL, directory, 0, index_path, sizeof(index_path));
+	fbr_cstore_path_index(directory, index_path, sizeof(index_path));
 
 	fbr_rlog(FBR_LOG_CS_INDEX, "WRITE %s %lu %s", index_path, directory->version, path);
 
@@ -688,7 +687,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	while (1) {
 		char path[FBR_PATH_MAX];
-		fbr_cstore_path_index(NULL, directory, 0, path, sizeof(path));
+		fbr_cstore_path_index(directory, path, sizeof(path));
 
 		fbr_rlog(FBR_LOG_CS_INDEX, "READ %s %lu (retry: %d)", path, directory->version,
 			retry);
