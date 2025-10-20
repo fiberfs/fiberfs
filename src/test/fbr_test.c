@@ -71,6 +71,10 @@ _init_test(struct fbr_test *test)
 	test->line_raw = malloc(test->line_raw_len);
 	assert(test->line_raw);
 
+	if (fbr_test_is_valgrind()) {
+		test->timeout_ms *= 2;
+	}
+
 	test->context = calloc(1, sizeof(*test->context));
 	assert(test->context);
 	test->context->magic = FBR_TEST_CONTEXT_MAGIC;
