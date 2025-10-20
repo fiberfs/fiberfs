@@ -250,8 +250,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s %s %s unique: %d match: %lu",
-		fbr_cstore_type_name(file_type) ,host, url, path, unique, etag_match);
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s unique: %d match: %lu",
+		fbr_cstore_type_name(file_type), path, unique, etag_match);
 
 	// TODO if root, we need to goto s3 first
 
@@ -447,8 +447,11 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	int retry = 0;
 
 	while (1) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s %d (retry: %d)",
-			host, url, file_type, retry);
+		char path[FBR_PATH_MAX];
+		fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s (retry: %d)",
+			fbr_cstore_type_name(file_type), path, retry);
 
 		if (retry == 1) {
 			if (!fbr_cstore_backend_enabled(cstore)) {
@@ -475,9 +478,6 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		}
 
 		assert_dev(entry->state == FBR_CSTORE_OK);
-
-		char path[FBR_PATH_MAX];
-		fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
 
 		fd = open(path, O_RDONLY);
 		if (fd < 0) {
@@ -616,7 +616,8 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE %s %s %d", host, url, file_type);
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE %s",
+		fbr_cstore_type_name(file_type));
 
 	int error = 0;
 
