@@ -58,6 +58,9 @@ size_t fbr_cstore_s3_splice(struct fbr_cstore *cstore, struct chttp_context *htt
 	size_t size);
 void fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 	const char *file_path, fbr_id_t id, int retries);
+int fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
+	enum fbr_cstore_entry_type type, const char *path, size_t length, fbr_id_t etag,
+	fbr_id_t existing, fbr_cstore_s3_put_f data_cb, void *put_arg, int retry);
 int fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,
 	struct chttp_context *http, int error);
 int fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_path,

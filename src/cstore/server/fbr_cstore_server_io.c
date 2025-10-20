@@ -20,6 +20,11 @@
 #include "cstore/fbr_cstore_api.h"
 #include "utils/fbr_sys.h"
 
+struct _cstore_entry_pair {
+	struct fbr_cstore		*cstore;
+	struct fbr_cstore_entry		*entry;
+};
+
 static enum fbr_cstore_entry_type
 _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, size_t *offset)
 {
@@ -83,6 +88,54 @@ _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, s
 	}
 
 	return FBR_CSTORE_FILE_NONE;
+}
+
+static void
+_cstore_entry_sendfile(struct chttp_context *http, void *arg)
+{
+	chttp_context_ok(http);
+	assert(arg);
+
+	struct _cstore_entry_pair *pair = arg;
+
+	struct fbr_cstore *cstore = pair->cstore;
+	fbr_cstore_ok(cstore);
+
+	struct fbr_cstore_entry *entry = pair->entry;
+	fbr_cstore_entry_ok(entry);
+	assert(entry->state == FBR_CSTORE_OK);
+	assert(entry->bytes == (size_t)http->length);
+
+	char path[FBR_PATH_MAX];
+	fbr_cstore_path(cstore, entry->hash, 0, path, sizeof(path));
+
+	int fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+	if (fd < 0) {
+		chttp_error(http, CHTTP_ERR_NETWORK);
+		return;
+	}
+
+	size_t bytes = 0;
+	off_t off = 0;
+	while (bytes < entry->bytes) {
+		ssize_t ret = sendfile(http->addr.sock, fd, &off, entry->bytes - bytes);
+		if (ret <= 0) {
+			break;
+		}
+
+		bytes += ret;
+	}
+
+	fbr_rlog(FBR_LOG_CS_S3, "URL_WRITE sent %zu bytes (sendfile)", bytes);
+
+	if (bytes != entry->bytes) {
+		fbr_rlog(FBR_LOG_CS_S3, "URL_WRITE ERROR sendfile()");
+		assert_zero(close(fd));
+		chttp_error(http, CHTTP_ERR_NETWORK);
+		return;
+	}
+
+	assert_zero(close(fd));
 }
 
 int
@@ -300,9 +353,38 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		return 1;
 	}
 
-	// TODO stats
-
 	fbr_cstore_set_ok(entry);
+
+	if (fbr_cstore_backend_enabled(cstore)) {
+		assert(file_type != FBR_CSTORE_FILE_ROOT);
+
+		struct chttp_context http_backend;
+		chttp_context_init(&http_backend);
+
+		struct _cstore_entry_pair pair;
+		pair.cstore = cstore;
+		pair.entry = entry;
+
+		int error = fbr_s3_send_put(cstore, &http_backend, file_type, file_path, length,
+			etag_id, 0, _cstore_entry_sendfile, &pair, 0);
+		if (error < 0) {
+			chttp_context_reset(&http_backend);
+			error = fbr_s3_send_put(cstore, &http_backend, file_type, file_path, length,
+				etag_id, 0, _cstore_entry_sendfile, &pair, 1);
+			assert_dev(error >= 0);
+		}
+
+		if (error || http_backend.status != 200) {
+			fbr_cstore_release(cstore, entry);
+			chttp_context_free(&http_backend);
+			return 1;
+		}
+
+		// TODO return the http_backend response
+
+		chttp_context_free(&http_backend);
+	}
+
 	fbr_cstore_release(cstore, entry);
 
 	return 0;
