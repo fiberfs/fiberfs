@@ -46,8 +46,6 @@ enum fbr_cstore_loader_state {
 	FBR_CSTORE_LOADER_DONE
 };
 
-
-
 struct fbr_cstore_loader {
 	enum fbr_cstore_loader_state		state;
 
@@ -190,6 +188,7 @@ void fbr_cstore_set_ok(struct fbr_cstore_entry *entry);
 void fbr_cstore_set_error(struct fbr_cstore_entry *entry);
 void fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
 void fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
+void fbr_cstore_clear(struct fbr_cstore *cstore);
 void fbr_cstore_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_loader_init(struct fbr_cstore *cstore);

@@ -63,10 +63,17 @@ FBR_TEST_VAR(cstore_stat_root_write_bytes)
 FBR_TEST_VAR(cstore_stat_chunk_read_bytes)
 
 FBR_TEST_CMD(cstore_set_lru)
-FBR_TEST_CMD(cstore_dirty_rm)
+FBR_TEST_CMD(cstore_clear)
 FBR_TEST_CMD(cstore_set_async)
 FBR_TEST_CMD(cstore_enable_server)
 FBR_TEST_CMD(cstore_set_s3)
+
+FBR_TEST_VAR(cstore_0_entries)
+FBR_TEST_VAR(cstore_1_entries)
+FBR_TEST_VAR(cstore_2_entries)
+FBR_TEST_VAR(cstore_3_entries)
+FBR_TEST_VAR(cstore_4_entries)
+FBR_TEST_VAR(cstore_5_entries)
 
 FBR_TEST_VAR(cstore_0_server_host)
 FBR_TEST_VAR(cstore_0_server_port)

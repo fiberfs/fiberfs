@@ -382,6 +382,25 @@ fbr_test_cstore_stat_roots(void)
 	return _CSTORE->stats.wr_roots;
 }
 
+#define _CSTORE_TEST_ENTRIES(index)						\
+char *										\
+fbr_var_cstore_##index##_entries(struct fbr_test_context *ctx)			\
+{										\
+	fbr_test_context_ok(ctx);						\
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);	\
+	assert(tcstore);							\
+	fbr_cstore_ok(&tcstore->cstore);					\
+	fbr_bprintf(tcstore->stat_buf, "%lu", tcstore->cstore.entries);		\
+	return tcstore->stat_buf;						\
+}
+
+_CSTORE_TEST_ENTRIES(0)
+_CSTORE_TEST_ENTRIES(1)
+_CSTORE_TEST_ENTRIES(2)
+_CSTORE_TEST_ENTRIES(3)
+_CSTORE_TEST_ENTRIES(4)
+_CSTORE_TEST_ENTRIES(5)
+
 #define _CSTORE_TEST_STAT(var, stat)						\
 char *										\
 fbr_var_cstore_stat_##var(struct fbr_test_context *ctx)				\
@@ -420,7 +439,7 @@ fbr_cmd_cstore_set_lru(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_cmd_cstore_dirty_rm(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_cstore_clear(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
@@ -428,9 +447,9 @@ fbr_cmd_cstore_dirty_rm(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	long index = fbr_test_parse_long(cmd->params[0].value);
 	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
 
-	fbr_sys_rmdir(cstore->root);
+	fbr_cstore_clear(cstore);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_dirty_rm: %s", cstore->root);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_clear: %ld", index);
 }
 
 #define _CSTORE_THREADS		4

@@ -221,6 +221,7 @@ _cstore_entry_free(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 	assert_dev(cstore);
 	assert_dev(head);
 	assert_dev(entry);
+	assert_dev(entry->alloc == FBR_CSTORE_ENTRY_USED);
 	assert_zero(entry->refcount);
 	assert_zero(entry->in_lru);
 	assert_zero(entry->state == FBR_CSTORE_LOADING);
@@ -231,7 +232,6 @@ _cstore_entry_free(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 	fbr_atomic_sub(&cstore->bytes, entry->bytes);
 	fbr_atomic_sub(&cstore->entries, 1);
 
-	// TODO async?
 	if (cstore->delete_f) {
 		cstore->delete_f(cstore, entry);
 	}
@@ -302,8 +302,6 @@ _cstore_lru_prune(struct fbr_cstore *cstore, struct fbr_cstore_head *head, size_
 
 		struct fbr_cstore_entry *entry = TAILQ_LAST(&head->lru_list, fbr_cstore_list);
 		fbr_cstore_entry_ok(entry);
-		assert(entry->alloc == FBR_CSTORE_ENTRY_USED);
-		assert(entry->in_lru);
 
 		_cstore_lru_delete(cstore, head, entry);
 
@@ -599,6 +597,46 @@ fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
 	_cstore_release(cstore, entry, 1);
 
 	fbr_fs_stat_add(&cstore->stats.removed);
+}
+
+void
+fbr_cstore_clear(struct fbr_cstore *cstore)
+{
+	fbr_cstore_ok(cstore);
+	assert(fbr_cstore_backend_enabled(cstore));
+
+	size_t entries = 0;
+	size_t heads = 0;
+
+	for (size_t i = 0; i < fbr_array_len(cstore->heads); i++) {
+		struct fbr_cstore_head *head = &cstore->heads[i];
+		fbr_cstore_head_ok(head);
+
+		pt_assert(pthread_mutex_lock(&head->lock));
+		fbr_cstore_head_ok(head);
+
+		struct fbr_cstore_entry *entry, *temp;
+		TAILQ_FOREACH_SAFE(entry, &head->lru_list, list_entry, temp) {
+			fbr_cstore_entry_ok(entry);
+
+			_cstore_lru_delete(cstore, head, entry);
+
+			entries++;
+
+			if (!entry->refcount) {
+				_cstore_entry_free(cstore, head, entry);
+			}
+		}
+
+		assert(TAILQ_EMPTY(&head->lru_list));
+
+		heads++;
+
+		pt_assert(pthread_mutex_unlock(&head->lock));
+	}
+
+	fbr_log_print(cstore->log, FBR_LOG_CSTORE, FBR_REQID_CSTORE,
+		"cleared %zu entries across %zu heads", entries, heads);
 }
 
 void
