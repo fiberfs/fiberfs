@@ -700,8 +700,10 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 			int ret = fbr_cstore_s3_get(cstore, hash, path, directory->version, 0,
 				FBR_CSTORE_FILE_INDEX);
-			if (ret == 404) {
+			if (ret == 400 || ret == 404) {
 				return EAGAIN;
+			} else if (ret) {
+				return 1;
 			}
 		} else if (retry > 1) {
 			return 1;
