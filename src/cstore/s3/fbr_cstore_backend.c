@@ -151,17 +151,19 @@ struct fbr_cstore_backend *
 fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, int retries)
 {
 	fbr_cstore_ok(cstore);
+	assert_dev(cstore->s3.backend);
+
+	assert_zero(cstore->cdn.size); // TODO
 
 	// TODO implement rendezvous hash
-	assert_zero(cstore->cluster.size);
-	assert_zero(cstore->cdn.size);
 	(void)hash;
 	(void)retries;
-
-	if (cstore->s3.backend) {
-		fbr_cstore_backend_ok(cstore->s3.backend);
-		return cstore->s3.backend;
+	if (cstore->cluster.size) {
+		assert(cstore->cluster.size == 1);  // TODO
+		fbr_cstore_backend_ok(cstore->cluster.backends[0]);
+		return cstore->cluster.backends[0];
 	}
 
-	return NULL;
+	fbr_cstore_backend_ok(cstore->s3.backend);
+	return cstore->s3.backend;
 }

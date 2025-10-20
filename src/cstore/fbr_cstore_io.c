@@ -1156,5 +1156,7 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	fbr_fs_stat_sub(&cstore->stats.wr_roots);
 
+	// TODO send this to S3...
+
 	return 0;
 }

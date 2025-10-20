@@ -44,7 +44,6 @@ fbr_setup_crash_signals(void)
 	assert_zero(sigaction(SIGINT, &sa, NULL));
 	assert_zero(sigaction(SIGBUS, &sa, NULL));
 	assert_zero(sigaction(SIGILL, &sa, NULL));
-	assert_zero(sigaction(SIGPIPE, &sa, NULL));
 }
 
 static void

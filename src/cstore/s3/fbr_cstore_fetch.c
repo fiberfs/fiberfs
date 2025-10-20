@@ -495,14 +495,14 @@ fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_p
 	return 0;
 }
 
-void
+int
 fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_t id)
 {
 	fbr_cstore_ok(cstore);
 	assert(s3_url);
 
 	if (!fbr_cstore_backend_enabled(cstore)) {
-		return;
+		return 1;
 	}
 
 	size_t s3_url_len = strlen(s3_url);
@@ -533,7 +533,7 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 		if (http.error) {
 			fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp connection %s", backend->host);
 			chttp_context_free(&http);
-			return;
+			return 1;
 		}
 
 		chttp_send(&http);
@@ -543,7 +543,7 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 				continue;
 			}
 			chttp_context_free(&http);
-			return;
+			return 1;
 		}
 
 		chttp_receive(&http);
@@ -553,7 +553,7 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 				continue;
 			}
 			chttp_context_free(&http);
-			return;
+			return 1;
 		}
 
 		fbr_cstore_http_log(&http);
@@ -566,10 +566,12 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 	if (http.error || http.status != 200) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp: %d %d", http.error, http.status);
 		chttp_context_free(&http);
-		return;
+		return 1;
 	}
 
 	chttp_context_free(&http);
+
+	return 0;
 }
 
 static void

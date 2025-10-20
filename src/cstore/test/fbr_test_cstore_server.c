@@ -71,6 +71,36 @@ fbr_cmd_cstore_set_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		s3->tls);
 }
 
+void
+fbr_cmd_cstore_add_cluster(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	assert(cmd->param_count <= 4);
+
+	long index = fbr_test_parse_long(cmd->params[0].value);
+	const char *host = cmd->params[1].value;
+	long port = fbr_test_parse_long(cmd->params[2].value);
+	long tls = 0;
+
+	if (cmd->param_count >= 4) {
+		tls = fbr_test_parse_long(cmd->params[3].value);
+	}
+
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
+
+	size_t cluster_size = cstore->cluster.size;
+
+	fbr_cstore_cluster_add(&cstore->cluster, host, port, tls);
+
+	assert(cstore->cluster.size == cluster_size + 1);
+	struct fbr_cstore_backend *backend = cstore->cluster.backends[cluster_size];
+	fbr_cstore_backend_ok(backend);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_add_cluster: %s:%d %d",
+		backend->host, backend->port, backend->tls);
+}
+
 static struct fbr_cstore_server *
 _get_server(struct fbr_cstore *cstore, int pos)
 {

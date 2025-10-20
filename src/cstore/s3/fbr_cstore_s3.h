@@ -65,7 +65,7 @@ int fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sy
 	struct chttp_context *http, int error);
 int fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_path,
 	fbr_id_t id, size_t size, enum fbr_cstore_entry_type type);
-void fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *path, fbr_id_t id);
+int fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_t id);
 void fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,
 	const char *path, struct fbr_wbuffer *wbuffer);
 void fbr_cstore_s3_wbuffer_finish(struct fbr_fs *fs, struct fbr_cstore *cstore,

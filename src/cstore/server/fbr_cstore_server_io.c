@@ -616,22 +616,38 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
 
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE %s %s %d", host, url, file_type);
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE %s %s %s %d", host, url, path,
-		file_type);
+	int error = 0;
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
-	if (!entry) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR ok state");
-		return 1;
+	if (entry) {
+		fbr_cstore_entry_ok(entry);
+
+		if (!fbr_cstore_backend_enabled(cstore)) {
+			char path[FBR_PATH_MAX];
+			fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+
+			struct fbr_cstore_metadata metadata;
+			int ret = fbr_cstore_metadata_read(path, &metadata);
+			if (ret || metadata.etag != etag_match) {
+				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR etag");
+				fbr_cstore_release(cstore, entry);
+				return 1;
+			}
+		}
+
+		fbr_cstore_remove(cstore, entry);
+
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE success");
+	} else {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR ok state");
+		error = 1;
 	}
 
-	fbr_cstore_entry_ok(entry);
-	fbr_cstore_remove(cstore, entry);
+	if (fbr_cstore_backend_enabled(cstore)) {
+		error = fbr_cstore_s3_send_delete(cstore, url, etag_match);
+	}
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE success");
-
-	return 0;
+	return error;
 }
