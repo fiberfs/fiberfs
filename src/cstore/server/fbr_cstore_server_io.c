@@ -355,54 +355,79 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
-
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
-
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s %s %d",
-		host, url, path, file_type);
-
-	struct fbr_cstore_entry *entry = fbr_cstore_io_get_ok(cstore, hash);
-	if (!entry) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR ok state");
-		return 1;
-	}
-
-	assert_dev(entry->state == FBR_CSTORE_OK);
-
-	int fd = open(path, O_RDONLY);
-	if (fd < 0) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR open()");
-		fbr_cstore_remove(cstore, entry);
-		return 1;
-	}
-
-	struct stat st;
-	int ret = fstat(fd, &st);
-	if (ret) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR stat()");
-		fbr_cstore_remove(cstore, entry);
-		assert_zero(close(fd));
-		return 1;
-	}
-
-	size_t size = (size_t)st.st_size;
-
 	struct fbr_cstore_metadata metadata;
-	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
-	ret = fbr_cstore_metadata_read(path, &metadata);
+	struct fbr_cstore_entry *entry;
+	int fd;
+	size_t size;
+	int retry = 0;
 
-	// root requests dont If-Match
-	if (file_type == FBR_CSTORE_FILE_ROOT && !etag_match) {
-		etag_match = metadata.etag;
-	}
+	while (1) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s %d (retry: %d)",
+			host, url, file_type, retry);
 
-	if (ret || metadata.size != size || metadata.offset != offset ||
-	    metadata.etag != etag_match || metadata.type != file_type) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR metadata()");
-		fbr_cstore_remove(cstore, entry);
-		assert_zero(close(fd));
-		return 1;
+		if (retry == 1) {
+			if (!fbr_cstore_backend_enabled(cstore)) {
+				return 1;
+			}
+
+			// TODO url might have a prefix...
+
+			int ret = fbr_cstore_s3_get(cstore, hash, url, etag_match, 0, file_type);
+			if (ret) {
+				return 1;
+			}
+		} else if (retry > 1) {
+			return 1;
+		}
+
+		retry++;
+
+		entry = fbr_cstore_io_get_ok(cstore, hash);
+		if (!entry) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR ok state");
+			return 1;
+		}
+
+		assert_dev(entry->state == FBR_CSTORE_OK);
+
+		char path[FBR_PATH_MAX];
+		fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+
+		fd = open(path, O_RDONLY);
+		if (fd < 0) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR open()");
+			fbr_cstore_remove(cstore, entry);
+			return 1;
+		}
+
+		struct stat st;
+		int ret = fstat(fd, &st);
+		if (ret) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR stat()");
+			fbr_cstore_remove(cstore, entry);
+			assert_zero(close(fd));
+			return 1;
+		}
+
+		size = (size_t)st.st_size;
+
+		fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+		ret = fbr_cstore_metadata_read(path, &metadata);
+
+		// root requests dont If-Match
+		if (file_type == FBR_CSTORE_FILE_ROOT && !etag_match) {
+			etag_match = metadata.etag;
+		}
+
+		if (ret || metadata.size != size || metadata.offset != offset ||
+		    metadata.etag != etag_match || metadata.type != file_type) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR metadata()");
+			fbr_cstore_remove(cstore, entry);
+			assert_zero(close(fd));
+			return 1;
+		}
+
+		break;
 	}
 
 	char etag[FBR_ID_STRING_MAX];

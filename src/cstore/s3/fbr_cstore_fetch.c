@@ -340,7 +340,6 @@ fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_p
 {
 	fbr_cstore_ok(cstore);
 	assert(file_path);
-	assert(id);
 	assert(type > FBR_CSTORE_FILE_NONE && type <= FBR_CSTORE_FILE_ROOT);
 
 	if (!fbr_cstore_backend_enabled(cstore)) {
@@ -395,6 +394,32 @@ fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_p
 		fbr_cstore_remove(cstore, entry);
 		chttp_context_free(&http);
 		return 1;
+	}
+
+	if (!id) {
+		const char *etag = chttp_header_get(&http, "ETag");
+		if (!etag) {
+			fbr_rlog(FBR_LOG_CS_S3, "S3_GET ERROR no id_etag");
+			fbr_cstore_set_error(entry);
+			fbr_cstore_remove(cstore, entry);
+			chttp_context_free(&http);
+			return 1;
+		}
+
+		size_t etag_len = strlen(etag);
+		if (etag_len >= 2 && etag[etag_len - 1] == '\"' && etag[0] == '\"') {
+			etag++;
+			etag_len -= 2;
+		}
+
+		id = fbr_id_parse(etag, etag_len);
+		if (!id) {
+			fbr_rlog(FBR_LOG_CS_S3, "S3_GET ERROR bad id_etag");
+			fbr_cstore_set_error(entry);
+			fbr_cstore_remove(cstore, entry);
+			chttp_context_free(&http);
+			return 1;
+		}
 	}
 
 	int fd = open(path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
