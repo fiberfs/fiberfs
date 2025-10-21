@@ -194,7 +194,7 @@ fbr_cmd_set_timeout_sec(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	unsigned long timeout_ms = timeout * 1000;
 
-	if (timeout < FBR_TEST_DEFAULT_TIMEOUT_SEC) {
+	if (!fbr_test_is_valgrind()) {
 		test->timeout_ms = timeout_ms;
 	} else if (timeout_ms > test->timeout_ms) {
 		test->timeout_ms = timeout_ms;
