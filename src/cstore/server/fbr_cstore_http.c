@@ -92,7 +92,7 @@ fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 	worker->time_start = fbr_get_time();
 
 	// TODO make this a param
-	size_t chttp_size = 4096;
+	size_t chttp_size = FBR_CSTORE_CHTTP_SIZE;
 	struct chttp_context *http = fbr_workspace_alloc(worker->workspace, chttp_size);
 	if (!http) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "ERROR no workspace");

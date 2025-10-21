@@ -108,7 +108,8 @@ struct fbr_cstore {
 #define FBR_CSTORE_MAGIC			0xC8747276
 
 	unsigned int				do_free:1;
-	unsigned int				cant_splice:1;
+	unsigned int				cant_splice_in:1;
+	unsigned int				cant_splice_out:1;
 
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 

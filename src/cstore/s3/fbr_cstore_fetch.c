@@ -6,6 +6,7 @@
 
 #define _GNU_SOURCE
 
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
@@ -83,7 +84,7 @@ _s3_connection(struct chttp_context *http)
 }
 
 size_t
-fbr_cstore_s3_splice(struct fbr_cstore *cstore, struct chttp_context *http, int fd, size_t size)
+fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, int fd, size_t size)
 {
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
@@ -92,7 +93,7 @@ fbr_cstore_s3_splice(struct fbr_cstore *cstore, struct chttp_context *http, int 
 
 	size_t bytes = 0;
 	int fallback_rw = 0;
-	if (cstore->cant_splice || http->chunked || !size) {
+	if (cstore->cant_splice_in || http->chunked || !size) {
 		fallback_rw = 1;
 	}
 
@@ -100,9 +101,9 @@ fbr_cstore_s3_splice(struct fbr_cstore *cstore, struct chttp_context *http, int 
 		assert(size == (size_t)http->length);
 		ssize_t ret = splice(http->addr.sock, NULL, fd, NULL, size - bytes, SPLICE_F_MOVE);
 		if (ret <= 0) {
-			if (bytes == 0 && errno == EINVAL) {
+			if (bytes == 0 && (errno == EINVAL || errno == ENOSYS)) {
 				fbr_rlog(FBR_LOG_CS_S3, "Cannot splice, falling back");
-				cstore->cant_splice = 1;
+				cstore->cant_splice_in = 1;
 				fallback_rw = 1;
 			} else {
 				chttp_error(http, CHTTP_ERR_RESP_BODY);
@@ -114,8 +115,7 @@ fbr_cstore_s3_splice(struct fbr_cstore *cstore, struct chttp_context *http, int 
 	}
 
 	while (fallback_rw && (!size || bytes < size)) {
-		// TODO needs to be bigger
-		char buffer[4096];
+		char buffer[FBR_CSTORE_IO_SIZE];
 		size_t ret = chttp_body_read(http, buffer, sizeof(buffer));
 		if (http->error) {
 			break;
@@ -304,7 +304,7 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 
 	size_t body_len;
 	do {
-		char buffer[4096];
+		char buffer[FBR_CSTORE_IO_SIZE];
 		body_len = chttp_body_read(http, buffer, sizeof(buffer));
 	} while (body_len);
 
@@ -449,7 +449,7 @@ fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_p
 		return 1;
 	}
 
-	size_t bytes = fbr_cstore_s3_splice(cstore, &http, fd, size);
+	size_t bytes = fbr_cstore_s3_splice_in(cstore, &http, fd, size);
 
 	assert_zero(close(fd));
 

@@ -13,6 +13,10 @@
 #include "chttp.h"
 #include "core/fs/fbr_fs.h"
 
+// TODO is this a good size?
+#define FBR_CSTORE_IO_SIZE		(1024 * 16)
+#define FBR_CSTORE_CHTTP_SIZE		4096
+
 struct fbr_cstore_backend {
 	unsigned			magic;
 #define FBR_CSTORE_BACKEND_MAGIC	0x8589C222
@@ -54,7 +58,7 @@ int fbr_cstore_backend_enabled(struct fbr_cstore *cstore);
 struct fbr_cstore_backend *fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash,
 	int retries);
 
-size_t fbr_cstore_s3_splice(struct fbr_cstore *cstore, struct chttp_context *http, int fd,
+size_t fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, int fd,
 	size_t size);
 void fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 	const char *file_path, fbr_id_t id, int retries);

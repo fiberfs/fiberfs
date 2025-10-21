@@ -314,7 +314,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		return 1;
 	}
 
-	size_t bytes = fbr_cstore_s3_splice(cstore, http, fd, length);
+	size_t bytes = fbr_cstore_s3_splice_in(cstore, http, fd, length);
 
 	assert_zero(close(fd));
 
