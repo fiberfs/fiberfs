@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/sendfile.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
@@ -84,29 +85,31 @@ _s3_connection(struct chttp_context *http)
 }
 
 size_t
-fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, int fd, size_t size)
+fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *addr, int fd_in,
+    size_t size)
 {
 	fbr_cstore_ok(cstore);
-	chttp_context_ok(http);
-	assert(http->state == CHTTP_STATE_BODY);
-	assert(fd >= 0);
+	chttp_addr_connected(addr)
+	assert(fd_in >= 0);
+	assert(size);
 
 	size_t bytes = 0;
+	off_t offset = 0;
+	int error = 0;
 	int fallback_rw = 0;
-	if (cstore->cant_splice_in || http->chunked || !size) {
+	if (cstore->cant_splice_out) {
 		fallback_rw = 1;
 	}
 
 	while (!fallback_rw && bytes < size) {
-		assert(size == (size_t)http->length);
-		ssize_t ret = splice(http->addr.sock, NULL, fd, NULL, size - bytes, SPLICE_F_MOVE);
+		ssize_t ret = sendfile(addr->sock, fd_in, &offset, size - bytes);
 		if (ret <= 0) {
 			if (bytes == 0 && (errno == EINVAL || errno == ENOSYS)) {
-				fbr_rlog(FBR_LOG_CS_S3, "Cannot splice, falling back");
-				cstore->cant_splice_in = 1;
+				fbr_rlog(FBR_LOG_CS_S3, "Cannot splice out, falling back");
+				cstore->cant_splice_out = 1;
 				fallback_rw = 1;
 			} else {
-				chttp_error(http, CHTTP_ERR_RESP_BODY);
+				error = errno;
 			}
 			break;
 		}
@@ -114,18 +117,106 @@ fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, i
 		bytes += (size_t)ret;
 	}
 
+	while (fallback_rw && bytes < size) {
+		char buffer[FBR_CSTORE_IO_SIZE];
+		ssize_t ret = read(fd_in, buffer, sizeof(buffer));
+		if (ret <= 0) {
+			error = errno;
+			break;
+		}
+
+		chttp_tcp_send(addr, buffer, ret);
+		if (addr->error) {
+			error = addr->error;
+			break;
+		}
+
+		bytes += (size_t)ret;
+	}
+
+	fbr_rlog(FBR_LOG_CS_S3, "SPLICE_OUT wrote %zu bytes (%s) error: %d", bytes,
+		fallback_rw ? "read/write" : "sendfile", error);
+
+	return bytes;
+}
+
+size_t
+fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, int fd_out,
+    size_t size)
+{
+	fbr_cstore_ok(cstore);
+	chttp_context_ok(http);
+	assert(http->state == CHTTP_STATE_BODY);
+	assert(fd_out >= 0);
+
+	size_t bytes = 0;
+	int error = 0;
+	int fallback_rw = 0;
+	if (cstore->cant_splice_in || http->chunked || !size) {
+		fallback_rw = 1;
+	}
+
+	// TODO
+	fallback_rw = 1;
+
+	int pipefd[2];
+	if (!fallback_rw) {
+		assert(size == (size_t)http->length);
+		int ret = pipe(pipefd);
+		if (ret < 0) {
+			fallback_rw = 1;
+		}
+	}
+
+	while (!fallback_rw && bytes < size) {
+		ssize_t pbytes1 = splice(http->addr.sock, NULL, pipefd[1], NULL, size - bytes,
+			SPLICE_F_MOVE);
+		if (pbytes1 <= 0) {
+			if (bytes == 0 && (errno == EINVAL || errno == ENOSYS)) {
+				fbr_rlog(FBR_LOG_CS_S3, "Cannot splice in, falling back");
+				cstore->cant_splice_in = 1;
+				fallback_rw = 1;
+			} else {
+				chttp_error(http, CHTTP_ERR_RESP_BODY);
+				error = errno;
+			}
+			break;
+		}
+
+		ssize_t pbytes0 = 0;
+		while (pbytes0 < pbytes1) {
+			size_t obytes = splice(pipefd[0], NULL, fd_out, NULL, pbytes1 - pbytes0,
+				SPLICE_F_MOVE);
+			if (obytes <= 0) {
+				chttp_error(http, CHTTP_ERR_RESP_BODY);
+				error = errno;
+				break;
+			}
+
+			pbytes0 += obytes;
+		}
+
+		if (pbytes0 != pbytes1) {
+			break;
+		}
+
+		bytes += (size_t)pbytes0;
+	}
+
 	while (fallback_rw && (!size || bytes < size)) {
 		char buffer[FBR_CSTORE_IO_SIZE];
 		size_t ret = chttp_body_read(http, buffer, sizeof(buffer));
 		if (http->error) {
+			error = http->error;
 			break;
 		} else if (ret == 0) {
 			break;
 		}
 
-		ret = fbr_sys_write(fd, buffer, ret);
+		ret = fbr_sys_write(fd_out, buffer, ret);
 		if (ret == 0) {
 			chttp_error(http, CHTTP_ERR_RESP_BODY);
+			error = http->error;
 			break;
 		}
 
@@ -137,8 +228,8 @@ fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, i
 		http->state = CHTTP_STATE_IDLE;
 	}
 
-	fbr_rlog(FBR_LOG_CS_S3, "wrote %zu bytes (%s) error: %d", bytes,
-		fallback_rw ? "read/write" : "splice", http->error);
+	fbr_rlog(FBR_LOG_CS_S3, "SPLICE_IN wrote %zu bytes (%s) error: %d", bytes,
+		fallback_rw ? "read/write" : "splice", error);
 
 	return bytes;
 }

@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/sendfile.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
@@ -115,30 +114,18 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 		return;
 	}
 
-	size_t bytes = 0;
-	off_t off = 0;
-	while (bytes < entry->bytes) {
-		ssize_t ret = sendfile(http->addr.sock, fd, &off, entry->bytes - bytes);
-		if (ret <= 0) {
-			break;
-		}
+	size_t bytes = fbr_cstore_s3_splice_out(cstore, &http->addr, fd, entry->bytes);
 
-		bytes += ret;
-	}
-
-	fbr_rlog(FBR_LOG_CS_S3, "URL_WRITE sent %zu bytes (sendfile)", bytes);
+	assert_zero(close(fd));
 
 	if (bytes != entry->bytes) {
-		fbr_rlog(FBR_LOG_CS_S3, "URL_WRITE ERROR sendfile()");
-		assert_zero(close(fd));
+		fbr_rlog(FBR_LOG_CS_S3, "URL_WRITE ERROR splice_out");
 		chttp_error(http, CHTTP_ERR_NETWORK);
 		return;
 	}
 
 	http->length -= bytes;
 	assert_zero(http->length);
-
-	assert_zero(close(fd));
 }
 
 int
@@ -319,7 +306,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	assert_zero(close(fd));
 
 	if (bytes != length) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR bytes (%zu)", bytes);
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR splice_in (%zu)",
+			bytes);
 
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
@@ -327,6 +315,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		if (!http->error) {
 			chttp_error(http, CHTTP_ERR_NETWORK);
 		}
+		assert_dev(http->addr.state != CHTTP_ADDR_CONNECTED);
 
 		return 1;
 	} else {
@@ -541,28 +530,17 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		return -1;
 	}
 
-	size_t bytes = 0;
-	off_t off = 0;
-	while (bytes < size) {
-		ssize_t ret = sendfile(http->addr.sock, fd, &off, size - bytes);
-		if (ret <= 0) {
-			break;
-		}
+	size_t bytes = fbr_cstore_s3_splice_out(cstore, &http->addr, fd, size);
 
-		bytes += ret;
-	}
-
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ read %zu bytes (sendfile)", bytes);
+	assert_zero(close(fd));
 
 	if (bytes != size) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR sendfile()");
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR splice_out");
 		fbr_cstore_release(cstore, entry);
-		assert_zero(close(fd));
 		chttp_error(http, CHTTP_ERR_NETWORK);
 		return -1;
 	}
 
-	assert_zero(close(fd));
 	fbr_cstore_release(cstore, entry);
 
 	return 0;
