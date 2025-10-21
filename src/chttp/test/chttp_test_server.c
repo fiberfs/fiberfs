@@ -468,7 +468,7 @@ _server_match_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(cmd->async);
 
 	const char *header, *header_value, *expected, *dup;
-	header = header_value = expected = NULL;
+	header = header_value = expected = dup = NULL;
 	int sub = 0;
 
 	if (!strcmp(cmd->name, "server_method_match")) {
@@ -478,7 +478,6 @@ _server_match_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		expected = cmd->params[0].value;
 
 		header_value = chttp_header_get_method(server->chttp);
-		dup = NULL;
 	} else if (!strcmp(cmd->name, "server_url_match")) {
 		assert(cmd->param_count == 1);
 
@@ -486,7 +485,14 @@ _server_match_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		expected = cmd->params[0].value;
 
 		header_value = chttp_header_get_url(server->chttp);
-		dup = NULL;
+	} else if (!strcmp(cmd->name, "server_url_submatch")) {
+		assert(cmd->param_count == 1);
+
+		header = "_URL";
+		expected = cmd->params[0].value;
+
+		header_value = chttp_header_get_url(server->chttp);
+		sub = 1;
 	} else if (!strcmp(cmd->name, "server_version_match")) {
 		assert(cmd->param_count == 1);
 
@@ -494,7 +500,6 @@ _server_match_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		expected = cmd->params[0].value;
 
 		header_value = chttp_header_get_version(server->chttp);
-		dup = NULL;
 	} else if (!strcmp(cmd->name, "server_header_match")) {
 		assert(cmd->param_count == 2);
 
@@ -581,6 +586,17 @@ chttp_test_cmd_server_url_match(struct fbr_test_context *ctx, struct fbr_test_cm
 }
 
 void
+chttp_test_cmd_server_url_submatch(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct chttp_test_server *server = _server_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	cmd->func = &_server_match_header;
+
+	_server_cmd_async(server, cmd);
+}
+
+void
 chttp_test_cmd_server_version_match(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server = _server_context_ok(ctx);
@@ -640,8 +656,9 @@ static void
 _server_body_match(struct chttp_test_server *server, const char *match)
 {
 	_server_ok(server);
-
 	chttp_context_ok(server->chttp);
+	chttp_addr_connected(&server->chttp->addr);
+
 	char body[1024], gzip_buf[1024];
 	struct fbr_gzip *gzip;
 

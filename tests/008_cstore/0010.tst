@@ -5,12 +5,14 @@ server_accept
 
 # PUT fiberfsindex
 server_read_request
+server_url_submatch ".fiberfsindex"
 server_header_exists "Content-Length"
 server_body_read
 server_send_response
 
 # PUT fiberfsroot
 server_read_request
+server_url_submatch ".fiberfsroot"
 server_header_exists "Content-Length"
 server_body_read
 server_send_response

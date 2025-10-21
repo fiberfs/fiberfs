@@ -5,6 +5,7 @@ server_accept
 server_read_request
 server_method_match PUT
 server_url_match /object
+server_url_submatch obj
 server_body_match body!
 server_send_response
 
