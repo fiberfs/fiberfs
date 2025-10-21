@@ -636,16 +636,10 @@ chttp_test_cmd_server_header_not_exists(struct fbr_test_context *ctx,
 	_server_cmd_async(server, cmd);
 }
 
-void
-chttp_test_cmd_server_body_match(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+static void
+_server_body_match(struct chttp_test_server *server, const char *match)
 {
-	struct chttp_test_server *server = _server_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	if (!cmd->async) {
-		_server_cmd_async(server, cmd);
-		return;
-	}
+	_server_ok(server);
 
 	chttp_context_ok(server->chttp);
 	char body[1024], gzip_buf[1024];
@@ -668,12 +662,44 @@ chttp_test_cmd_server_body_match(struct fbr_test_context *ctx, struct fbr_test_c
 
 	body[body_len] = '\0';
 
-	fbr_test_ERROR(strcmp(body, cmd->params[0].value), "bodies dont match");
+	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*BODY* '%s':%zu", body, body_len);
+
+	if (match) {
+		fbr_test_ERROR(strcmp(body, match), "body doesnt match");
+	}
 
 	assert(server->chttp->state == CHTTP_STATE_IDLE);
 
 	chttp_addr_move(&server->addr, &server->chttp->addr);
 	chttp_addr_connected(&server->addr);
+}
+
+void
+chttp_test_cmd_server_body_match(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct chttp_test_server *server = _server_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	_server_body_match(server, cmd->params[0].value);
+}
+
+void
+chttp_test_cmd_server_body_read(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct chttp_test_server *server = _server_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	_server_body_match(server, NULL);
 }
 
 static void

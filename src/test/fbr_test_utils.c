@@ -191,8 +191,7 @@ fbr_test_ERROR_param_count(struct fbr_test_cmd *cmd, size_t count)
 
 	for (size_t i = 0; i < cmd->param_count; i++) {
 		fbr_test_ERROR(cmd->params[i].len == 0, "empty parameter found");
-		// TODO remove
-		assert(cmd->params[i].len == strlen(cmd->params[i].value));
+		assert_dev(cmd->params[i].len == strlen(cmd->params[i].value));
 	}
 }
 

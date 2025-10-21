@@ -173,7 +173,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	assert_zero(_FUSE_CTX);
 	_FUSE_CTX = ctx;
 
-	fbr_rlog(FBR_LOG_FUSE, "initialized");
+	fbr_log_print(ctx->log, FBR_LOG_FUSE, FBR_REQID_CORE, "initialized");
 
 	pt_assert(pthread_create(&ctx->loop_thread, NULL, _fuse_mount_thread, ctx));
 

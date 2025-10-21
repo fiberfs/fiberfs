@@ -30,6 +30,9 @@ _s3_request_url(struct fbr_cstore *cstore, const char *method, const char *url, 
 	assert_dev(url);
 	assert_dev(http);
 
+	http->addr.timeout_connect_ms = 3000;
+	http->addr.timeout_transfer_ms = 5000;
+
 	chttp_set_method(http, method);
 	chttp_set_url(http, url);
 
@@ -195,10 +198,6 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 	if (!fbr_cstore_backend_enabled(cstore)) {
 		return 0;
 	}
-
-	// TODO
-	http->addr.timeout_connect_ms = 3000;
-	http->addr.timeout_transfer_ms = 5000;
 
 	if (retry) {
 		http->new_conn = 1;

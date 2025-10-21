@@ -191,7 +191,7 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 
-	 struct fbr_rlog *rlog = _rlog_get();
+	struct fbr_rlog *rlog = _rlog_get();
 	if (rlog) {
 		_rlog_log(rlog, type, fmt, ap);
 	} else {
