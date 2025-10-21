@@ -19,7 +19,7 @@
 
 #define	CHTTP_DEFAULT_METHOD		"GET"
 #define CHTTP_DEFAULT_H_VERSION		CHTTP_H_VERSION_1_1
-#define CHTTP_USER_AGENT		"chttp " CHTTP_VERSION
+#define CHTTP_USER_AGENT		"fiberfs chttp " CHTTP_VERSION
 
 
 enum chttp_version {
