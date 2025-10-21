@@ -30,9 +30,6 @@ _s3_request_url(struct fbr_cstore *cstore, const char *method, const char *url, 
 	assert_dev(url);
 	assert_dev(http);
 
-	http->addr.timeout_connect_ms = 3000;
-	http->addr.timeout_transfer_ms = 5000;
-
 	chttp_set_method(http, method);
 	chttp_set_url(http, url);
 
@@ -73,6 +70,16 @@ _s3_request_path(struct fbr_cstore *cstore, const char *method, const char *path
 	size_t url_len = fbr_cstore_s3_url(cstore, path, url, sizeof(url));
 
 	return _s3_request_url(cstore, method, url, url_len, http, retries);
+}
+
+static void
+_s3_connection(struct chttp_context *http)
+{
+	assert_dev(http);
+
+	// TODO make parameters
+	http->addr.timeout_connect_ms = 3000;
+	http->addr.timeout_transfer_ms = 5000;
 }
 
 size_t
@@ -163,6 +170,8 @@ fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 			http->error);
 		return;
 	}
+
+	_s3_connection(http);
 
 	chttp_send(http);
 	if (http->error) {
@@ -257,6 +266,8 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp connection %s", backend->host);
 		return 1;
 	}
+
+	_s3_connection(http);
 
 	chttp_send(http);
 	if (http->error) {
@@ -534,6 +545,8 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 			chttp_context_free(&http);
 			return 1;
 		}
+
+		_s3_connection(&http);
 
 		chttp_send(&http);
 		if (http.error) {

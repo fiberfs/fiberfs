@@ -20,6 +20,7 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
+#include "log/test/fbr_test_log_cmds.h"
 
 extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
@@ -114,8 +115,11 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	assert(conn);
 
 	fbr_fs_set_store(ctx->fs, &_TEST_FS_RW_STORE_CALLBACKS);
-
 	fbr_test_cstore_init(fbr_test_get_ctx());
+
+	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
+	fbr_test_log_printer_init(test_ctx, ctx->path, "#");
+	//ctx->log->always_flush = 1;
 
 	//conn->max_readahead
 	//conn->max_background
