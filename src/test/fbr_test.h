@@ -141,6 +141,7 @@ struct fbr_test {
 };
 
 #define FBR_TEST_DEFAULT_TIMEOUT_SEC		10
+#define FBR_TEST_VALGRIND_TIMEOUT_SEC		120
 #define FBR_TEST_JOIN_INTERVAL_MS		25
 
 int fbr_test_main(int argc, char **argv);

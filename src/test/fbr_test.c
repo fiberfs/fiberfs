@@ -72,7 +72,7 @@ _init_test(struct fbr_test *test)
 	assert(test->line_raw);
 
 	if (fbr_test_is_valgrind()) {
-		test->timeout_ms *= 2;
+		test->timeout_ms = FBR_TEST_VALGRIND_TIMEOUT_SEC * 1000;
 	}
 
 	test->context = calloc(1, sizeof(*test->context));

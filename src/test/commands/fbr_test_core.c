@@ -192,7 +192,13 @@ fbr_cmd_set_timeout_sec(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	long timeout = fbr_test_parse_long(cmd->params[0].value);
 	fbr_test_ERROR(timeout < 0, "invalid timeout");
 
-	test->timeout_ms = timeout * 1000;
+	unsigned long timeout_ms = timeout * 1000;
+
+	if (timeout < FBR_TEST_DEFAULT_TIMEOUT_SEC) {
+		test->timeout_ms = timeout_ms;
+	} else if (timeout_ms > test->timeout_ms) {
+		test->timeout_ms = timeout_ms;
+	}
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "timeout %ldms", test->timeout_ms);
 }
