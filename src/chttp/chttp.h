@@ -146,6 +146,7 @@ void chttp_error(struct chttp_context *ctx, enum chttp_error error);
 void chttp_finish(struct chttp_context *ctx);
 
 void chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type);
+size_t chttp_body_buffered(struct chttp_context *ctx);
 size_t chttp_body_read(struct chttp_context *ctx, void *buf, size_t buf_len);
 size_t chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_body_send(struct chttp_context *ctx, void *buf, size_t buf_len);

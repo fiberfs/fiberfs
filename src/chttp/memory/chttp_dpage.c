@@ -272,8 +272,8 @@ chttp_dpage_ptr_offset(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr)
 	chttp_context_ok(ctx);
 	assert(dptr);
 	chttp_dpage_ok(dptr->dpage);
-	assert(dptr->dpage == ctx->dpage_last);
-	assert(dptr->offset <= dptr->dpage->offset);
+	assert_dev(dptr->dpage == ctx->dpage_last);
+	assert_dev(dptr->offset <= dptr->dpage->offset);
 
 	return dptr->offset;
 }

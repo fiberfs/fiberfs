@@ -163,8 +163,17 @@ fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, i
 	}
 
 	// TODO for large bodies, drain the dpage, then splice
-	if (http->data_start.dpage) {
-		fallback_rw = 1;
+	if (!fallback_rw) {
+		size_t buffered = chttp_body_buffered(http);
+		assert(size >= buffered);
+		size_t unbuffered = size - buffered;
+
+		fbr_rlog(FBR_LOG_CS_S3, "SPLICE_IN buffering detected bytes: %zu remaining: %zu",
+			buffered, unbuffered);
+
+		if (buffered) {
+			fallback_rw = 1;
+		}
 	}
 
 	int pipe_ret = 1;

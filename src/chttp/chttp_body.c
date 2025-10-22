@@ -245,6 +245,33 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type)
 }
 
 size_t
+chttp_body_buffered(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+	assert(ctx->state == CHTTP_STATE_BODY);
+	assert_zero(ctx->chunked);
+	assert(ctx->length > 0);
+
+	if (ctx->data_start.dpage) {
+		chttp_dpage_ok(ctx->data_start.dpage);
+
+		size_t start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
+		size_t size = ctx->dpage_last->offset - start;
+
+		if (size > (size_t)ctx->length) {
+			size = ctx->length;
+		}
+
+		return size;
+	}
+
+	return 0;
+}
+
+// TODO if idle, anything remaining in the dpage is pipelined
+// we need to shift it and start a new request
+
+size_t
 chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
 	chttp_context_ok(ctx);
@@ -262,7 +289,6 @@ chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 	if (ctx->data_start.dpage) {
 		chttp_dpage_ok(ctx->data_start.dpage);
-		assert(ctx->length);
 
 		size_t start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
 
