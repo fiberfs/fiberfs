@@ -155,13 +155,15 @@ fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, i
 	assert(http->state == CHTTP_STATE_BODY);
 	assert(fd_out >= 0);
 
-	// TODO we disable splice_in for now, it can lock up...
-	cstore->cant_splice_in = 1;
-
 	size_t bytes = 0;
 	int error = 0;
 	int fallback_rw = 0;
-	if (cstore->cant_splice_in || http->chunked || !size || 1) {
+	if (cstore->cant_splice_in || http->chunked || !size) {
+		fallback_rw = 1;
+	}
+
+	// TODO for large bodies, drain the dpage, then splice
+	if (http->data_start.dpage) {
 		fallback_rw = 1;
 	}
 
@@ -562,7 +564,7 @@ fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_p
 
 	assert_zero(close(fd));
 
-	if (http.error || (size && bytes != size)) {
+	if (http.error || (size && bytes != size) || !bytes) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET bytes");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
