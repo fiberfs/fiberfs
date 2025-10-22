@@ -38,6 +38,6 @@ cstore_debug
 cstore_debug 1
 cstore_debug 2
 
-equal $cstore_0_entries 3
-equal $cstore_1_entries 2
+equal $cstore_0_entries 4
+equal $cstore_1_entries 3
 equal $cstore_2_entries 3

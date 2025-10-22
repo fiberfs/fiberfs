@@ -592,6 +592,11 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		return -1;
 	}
 
+	if (!cstore->delete_cache && fbr_cstore_backend_enabled(cstore)) {
+		int error = fbr_cstore_s3_send_delete(cstore, url, etag_match);
+		return error;
+	}
+
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE %s",

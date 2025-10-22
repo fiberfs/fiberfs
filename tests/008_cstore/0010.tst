@@ -66,4 +66,4 @@ sys_write $var1 "content_here"
 sleep_ms 100
 
 cstore_debug
-equal $cstore_0_entries 3
+equal $cstore_0_entries 4

@@ -655,7 +655,12 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 		fbr_cstore_etag(id, buffer, sizeof(buffer));
 		chttp_header_add(&http, "If-Match", buffer);
 
-		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, retries);
+		struct fbr_cstore_backend *backend;
+		if (cstore->delete_cache) {
+			backend = fbr_cstore_backend_get(cstore, hash, retries);
+		} else {
+			backend = cstore->s3.backend;
+		}
 		fbr_cstore_backend_ok(backend);
 
 		chttp_connect(&http, backend->host, backend->host_len, backend->port,
@@ -1025,6 +1030,8 @@ fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore, char *root
 			http.new_conn = 1;
 		}
 		retries++;
+
+		// TODO force fresh flag
 
 		fbr_cstore_s3_send_get(cstore, &http, root_path, 0, retries);
 		if (http.error) {

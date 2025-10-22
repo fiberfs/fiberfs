@@ -210,37 +210,41 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_
 	assert(url_len);
 	assert(id);
 
-	struct fbr_cstore_backend *s3_backend = cstore->s3.backend;
-	fbr_hash_t hash;
-	if (s3_backend) {
-		hash = fbr_cstore_hash_url(s3_backend->host, s3_backend->host_len, url, url_len);
-	} else {
-		hash = fbr_cstore_hash_url(NULL, 0, url, url_len);
-	}
+	int backend = fbr_cstore_backend_enabled(cstore);
 
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	if (cstore->delete_cache || !backend) {
+		fbr_hash_t hash;
+		if (backend) {
+			assert_dev(cstore->s3.backend);
+			hash = fbr_cstore_hash_url(cstore->s3.backend->host,
+				cstore->s3.backend->host_len, url, url_len);
+		} else {
+			hash = fbr_cstore_hash_url(NULL, 0, url, url_len);
+		}
 
-	fbr_rlog(FBR_LOG_CSTORE, "DELETE %s %s %lu", path, url, id);
+		fbr_rlog(FBR_LOG_CSTORE, "DELETE %s %lu", url, id);
 
-	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
-	if (entry) {
-		fbr_cstore_entry_ok(entry);
-		fbr_cstore_remove(cstore, entry);
+		struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+		if (entry) {
+			fbr_cstore_entry_ok(entry);
+			fbr_cstore_remove(cstore, entry);
 
-		switch (type) {
-			case FBR_CSTORE_FILE_CHUNK:
-				fbr_fs_stat_sub(&cstore->stats.wr_chunks);
-				break;
-			case FBR_CSTORE_FILE_INDEX:
-				fbr_fs_stat_sub(&cstore->stats.wr_indexes);
-				break;
-			default:
-				fbr_ABORT("Bad type: %s", fbr_cstore_type_name(type));
+			switch (type) {
+				case FBR_CSTORE_FILE_CHUNK:
+					fbr_fs_stat_sub(&cstore->stats.wr_chunks);
+					break;
+				case FBR_CSTORE_FILE_INDEX:
+					fbr_fs_stat_sub(&cstore->stats.wr_indexes);
+					break;
+				default:
+					fbr_ABORT("Bad type: %s", fbr_cstore_type_name(type));
+			}
 		}
 	}
 
-	fbr_cstore_s3_send_delete(cstore, url, id);
+	if (backend) {
+		fbr_cstore_s3_send_delete(cstore, url, id);
+	}
 }
 
 static void
