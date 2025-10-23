@@ -351,8 +351,6 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 		chttp_header_add(http, "Content-Encoding", "gzip");
 	}
 
-	struct fbr_cstore_backend *backend = NULL;
-
 	switch (type) {
 		case FBR_CSTORE_FILE_INDEX:
 			chttp_header_add(http, "Content-Type", "application/json");
@@ -361,12 +359,8 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 		case FBR_CSTORE_FILE_ROOT:
 			chttp_header_add(http, "Content-Type", "application/json");
 
-			// TODO do we want to force a max-age?
+			// TODO do we want to force a max-age in S3?
 			//chttp_header_add(http, "Cache-Control", "max-age=86400");
-
-			// TODO bypassing backends going to S3
-			backend = cstore->s3.backend;
-			assert_dev(backend);
 
 			break;
 		default:
@@ -374,10 +368,8 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 			break;
 	}
 
-	if (!backend) {
-		backend = fbr_cstore_backend_get(cstore, hash, retry);
-		assert_dev(backend);
-	}
+	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, retry);
+	assert_dev(backend);
 
 	chttp_connect(http, backend->host, backend->host_len, backend->port, backend->tls);
 	if (http->error) {

@@ -31,7 +31,6 @@ static void
 _writer_extend(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
     size_t buffer_len, int alloc_buffer)
 {
-	assert_dev(fs);
 	assert(writer);
 
 	struct fbr_buffer **head = NULL;
@@ -92,7 +91,10 @@ _writer_extend(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
 
 		do_free = 1;
 
-		fbr_fs_stat_add(&fs->stats.buffers);
+		if (fs) {
+			fbr_fs_ok(fs);
+			fbr_fs_stat_add(&fs->stats.buffers);
+		}
 	}
 
 	fbr_buffer_init(fs, fbuf, buffer, buffer_len);
@@ -122,7 +124,6 @@ void
 fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer, struct fbr_request *request,
     int want_gzip)
 {
-	fbr_fs_ok(fs);
 	assert(writer);
 
 	_writer_init(writer);
@@ -179,7 +180,6 @@ void
 fbr_writer_init_buffer(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
     size_t buffer_len)
 {
-	fbr_fs_ok(fs);
 	assert(writer);
 	assert(buffer);
 	assert(buffer_len);
@@ -191,7 +191,6 @@ fbr_writer_init_buffer(struct fbr_fs *fs, struct fbr_writer *writer, char *buffe
 struct fbr_writer *
 fbr_writer_alloc_dynamic(struct fbr_fs *fs, size_t size)
 {
-	fbr_fs_ok(fs);
 	assert(size);
 
 	struct fbr_writer *writer = malloc(sizeof(*writer) + size);
@@ -237,7 +236,6 @@ static void
 _output_compress(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer,
     size_t buffer_len, int final)
 {
-	assert_dev(fs);
 	assert_dev(writer);
 	assert_dev(writer->is_gzip);
 	assert_dev(writer->output);
@@ -296,7 +294,6 @@ static void
 _output_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, size_t buffer_len,
     int final)
 {
-	assert_dev(fs);
 	assert_dev(writer);
 	assert_dev(writer->output);
 	assert_dev(buffer);
@@ -377,7 +374,6 @@ _buffer_get(struct fbr_writer *writer)
 static void
 _writer_flush(struct fbr_fs *fs, struct fbr_writer *writer, int final)
 {
-	assert_dev(fs);
 	assert_dev(writer);
 	assert_dev(writer->output);
 
@@ -416,7 +412,6 @@ fbr_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer)
 static struct fbr_buffer *
 _flush_extend(struct fbr_fs *fs, struct fbr_writer *writer)
 {
-	assert_dev(fs);
 	assert_dev(writer);
 
 	_writer_flush(fs, writer, 0);
@@ -441,7 +436,6 @@ void
 fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer,
     size_t buffer_len)
 {
-	fbr_fs_ok(fs);
 	fbr_writer_ok(writer);
 	assert(buffer);
 	assert(buffer_len);
@@ -471,7 +465,6 @@ fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer,
 void
 fbr_writer_add_ulong(struct fbr_fs *fs, struct fbr_writer *writer, unsigned long value)
 {
-	fbr_fs_ok(fs);
 	fbr_writer_ok(writer);
 
 	struct fbr_buffer *output = _buffer_get(writer);
@@ -498,7 +491,6 @@ fbr_writer_add_ulong(struct fbr_fs *fs, struct fbr_writer *writer, unsigned long
 void
 fbr_writer_add_id(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t id)
 {
-	fbr_fs_ok(fs);
 	fbr_writer_ok(writer);
 
 	struct fbr_buffer *output = _buffer_get(writer);
@@ -522,13 +514,12 @@ fbr_writer_add_id(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t id)
 }
 
 void
-fbr_writer_debug(struct fbr_fs *fs, struct fbr_writer *writer)
+fbr_writer_debug(struct fbr_writer *writer)
 {
-	fbr_fs_ok(fs);
 	fbr_writer_ok(writer);
 
-	fbr_buffer_debug(fs, writer->buffer, "buffer");
-	fbr_buffer_debug(fs, writer->output, "output");
+	fbr_buffer_debug(writer->buffer, "buffer");
+	fbr_buffer_debug(writer->output, "output");
 
 	fbr_rlog(FBR_LOG_DEBUG, "WRITER workspace: %s want_gzip: %d",
 		writer->workspace ? "true" : "false", writer->want_gzip);

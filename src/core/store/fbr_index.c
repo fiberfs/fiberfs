@@ -58,7 +58,6 @@ _json_header_peek(const char *json_buf, size_t json_buf_len)
 static void
 _json_header_gen(struct fbr_fs *fs, struct fbr_writer *json)
 {
-	assert_dev(fs);
 	assert_dev(json);
 
 	// fiberfs: version header
@@ -412,7 +411,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 
 	fbr_writer_flush(fs, &json_gen);
 
-	fbr_writer_debug(fs, &json_gen);
+	fbr_writer_debug(&json_gen);
 
 	int ret = EINVAL;
 	if (fs->store->index_write_f && !json_gen.error) {
@@ -439,7 +438,6 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 void
 fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version)
 {
-	fbr_fs_ok(fs);
 	fbr_writer_ok(writer);
 	assert(version);
 

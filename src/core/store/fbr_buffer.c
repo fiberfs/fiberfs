@@ -12,7 +12,6 @@
 void
 fbr_buffer_init(struct fbr_fs *fs, struct fbr_buffer *fbuf, char *buffer, size_t buffer_len)
 {
-	fbr_fs_ok(fs);
 	assert(fbuf);
 	assert(buffer_len);
 
@@ -25,7 +24,10 @@ fbr_buffer_init(struct fbr_fs *fs, struct fbr_buffer *fbuf, char *buffer, size_t
 
 		fbuf->buffer_free = 1;
 
-		fbr_fs_stat_add(&fs->stats.buffers);
+		if (fs) {
+			fbr_fs_ok(fs);
+			fbr_fs_stat_add(&fs->stats.buffers);
+		}
 	}
 
 	fbuf->buffer = buffer;
@@ -71,10 +73,8 @@ fbr_buffers_free(struct fbr_buffer *fbuf)
 }
 
 void
-fbr_buffer_debug(struct fbr_fs *fs, struct fbr_buffer *fbuf, const char *name)
+fbr_buffer_debug(struct fbr_buffer *fbuf, const char *name)
 {
-	fbr_fs_ok(fs);
-
 	size_t i = 0;
 
 	while (fbuf) {

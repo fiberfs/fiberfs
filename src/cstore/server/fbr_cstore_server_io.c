@@ -232,6 +232,19 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 			return 1;
 	}
 
+	// root files put first then write
+	if (fbr_cstore_backend_enabled(cstore) && file_type == FBR_CSTORE_FILE_ROOT) {
+		struct fbr_writer *root_json = fbr_writer_alloc_dynamic(NULL, FBR_ROOT_JSON_SIZE);
+		fbr_root_json_gen(NULL, root_json, etag_id);
+		assert_zero(root_json->error);
+
+		const char *root_path = fbr_cstore_path_url(cstore, url);
+
+		int error = fbr_cstore_s3_root_write(cstore, root_json, (char*)root_path, etag_id,
+			etag_match);
+		return error;
+	}
+
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
 
 	char path[FBR_PATH_MAX];
@@ -239,8 +252,6 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s unique: %d match: %lu",
 		fbr_cstore_type_name(file_type), path, unique, etag_match);
-
-	// TODO if root, we need to goto s3 first
 
 	struct fbr_cstore_entry *entry = NULL;
 	if (unique) {
@@ -252,8 +263,6 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	} else {
 		assert_dev(etag_match);
 		assert_dev(file_type == FBR_CSTORE_FILE_ROOT);
-
-		// TODO this needs work, sometimes we wont have an entry but its ok to write
 
 		entry = fbr_cstore_get(cstore, hash);
 		if (entry) {

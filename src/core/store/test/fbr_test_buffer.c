@@ -69,7 +69,7 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		bytes += sizeof(_ONE_BUFFER);
 	}
 	fbr_writer_flush(fs, &writer1);
-	fbr_writer_debug(fs, &writer1);
+	fbr_writer_debug(&writer1);
 	fbr_test_ASSERT(writer1.raw_bytes == bytes, "writer1 bytes mismatch");
 	fbr_test_ASSERT(writer1.bytes == bytes, "writer1 bytes mismatch");
 	size_t i = 0;
@@ -99,14 +99,14 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_writer writer2;
 	fbr_writer_init(fs, &writer2, r1, 0);
-	fbr_writer_debug(fs, &writer2);
+	fbr_writer_debug(&writer2);
 	bytes = 0;
 	for (size_t i = 0; i < 1; i++) {
 		fbr_writer_add(fs, &writer2, _ONE_BUFFER, sizeof(_ONE_BUFFER));
 		bytes += sizeof(_ONE_BUFFER);
 	}
 	fbr_writer_flush(fs, &writer2);
-	fbr_writer_debug(fs, &writer2);
+	fbr_writer_debug(&writer2);
 	fbr_test_ASSERT(writer2.raw_bytes == bytes, "writer2 raw_bytes mismatch");
 	fbr_test_ASSERT(writer2.bytes == bytes, "writer2 bytes mismatch");
 	i = 0;
