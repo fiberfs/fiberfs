@@ -263,7 +263,7 @@ fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, i
 
 void
 fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
-    const char *file_path, fbr_id_t id, int retries)
+    const char *file_path, fbr_id_t id, int retries, int s3_direct)
 {
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
@@ -279,7 +279,12 @@ fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 		chttp_header_add(http, "If-Match", buffer);
 	}
 
-	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, retries, 0);
+	struct fbr_cstore_backend *backend;
+	if (s3_direct) {
+		backend = cstore->s3.backend;
+	} else {
+		backend = fbr_cstore_backend_get(cstore, hash, retries, 0);
+	}
 	fbr_cstore_backend_ok(backend);
 
 	chttp_connect(http, backend->host, backend->host_len, backend->port, backend->tls);
@@ -500,7 +505,7 @@ fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_p
 		}
 		retries++;
 
-		fbr_cstore_s3_send_get(cstore, &http, file_path, id, retries);
+		fbr_cstore_s3_send_get(cstore, &http, file_path, id, retries, 0);
 		if (http.error) {
 			continue;
 		}
@@ -820,7 +825,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 		}
 		retries++;
 
-		fbr_cstore_s3_send_get(cstore, &http, path, chunk->id, retries);
+		fbr_cstore_s3_send_get(cstore, &http, path, chunk->id, retries, 0);
 		if (http.error) {
 			continue;
 		}
@@ -1007,13 +1012,19 @@ fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 }
 
 fbr_id_t
-fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore, char *root_path)
+fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore, char *root_path,
+    int attempts)
 {
 	fbr_cstore_ok(cstore);
 	assert(root_path);
 
 	int retries = 0;
 	struct chttp_context http;
+
+	int s3_direct = 0;
+	if (attempts) {
+		s3_direct = 1;
+	}
 
 	while (retries <= 1) {
 		chttp_context_init(&http);
@@ -1023,9 +1034,7 @@ fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore, char *root
 		}
 		retries++;
 
-		// TODO force fresh flag
-
-		fbr_cstore_s3_send_get(cstore, &http, root_path, 0, retries);
+		fbr_cstore_s3_send_get(cstore, &http, root_path, 0, retries, s3_direct);
 		if (http.error) {
 			continue;
 		}

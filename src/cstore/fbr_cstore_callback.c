@@ -105,11 +105,10 @@ fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 fbr_id_t
-fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh)
+fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int attempts)
 {
 	fbr_fs_ok(fs);
 	assert(dirpath);
-	(void)fresh;
 
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	if (!cstore) {
@@ -124,12 +123,12 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int fresh
 
 	// TODO if fresh, read local and attempt a conditional?
 
-	if (!fresh || !has_backend) {
+	if (!attempts || !has_backend) {
 		version = fbr_cstore_io_root_read(cstore, path, path_len);
 	}
 
 	if (!version && has_backend) {
-		version = fbr_cstore_s3_root_read(fs, cstore, path);
+		version = fbr_cstore_s3_root_read(fs, cstore, path, attempts);
 	}
 
 	char id_str[FBR_ID_STRING_MAX] = "";
