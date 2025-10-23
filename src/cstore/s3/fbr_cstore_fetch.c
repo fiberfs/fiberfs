@@ -279,7 +279,7 @@ fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 		chttp_header_add(http, "If-Match", buffer);
 	}
 
-	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, retries);
+	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, retries, 0);
 	fbr_cstore_backend_ok(backend);
 
 	chttp_connect(http, backend->host, backend->host_len, backend->port, backend->tls);
@@ -368,7 +368,7 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 			break;
 	}
 
-	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, retry);
+	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, retry, 1);
 	assert_dev(backend);
 
 	chttp_connect(http, backend->host, backend->host_len, backend->port, backend->tls);
@@ -649,7 +649,7 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 
 		struct fbr_cstore_backend *backend;
 		if (cstore->delete_cache) {
-			backend = fbr_cstore_backend_get(cstore, hash, retries);
+			backend = fbr_cstore_backend_get(cstore, hash, retries, 1);
 		} else {
 			backend = cstore->s3.backend;
 		}

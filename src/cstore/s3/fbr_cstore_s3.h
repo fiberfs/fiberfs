@@ -56,7 +56,7 @@ void fbr_cstore_cluster_add(struct fbr_cstore_cluster *cluster, const char *host
 void fbr_cstore_cluster_free(struct fbr_cstore_cluster *cluster);
 int fbr_cstore_backend_enabled(struct fbr_cstore *cstore);
 struct fbr_cstore_backend *fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash,
-	int retries);
+	int retries, int skip_cdn);
 
 size_t fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *addr, int fd_in,
 	size_t size);
