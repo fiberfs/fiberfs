@@ -489,11 +489,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 			const char *file_path = fbr_cstore_path_url(cstore, url);
 
-			int ret = fbr_cstore_s3_get(cstore, hash, file_path, etag_match, 0,
-				file_type);
-			if (ret) {
-				return 1;
-			}
+			// Its possible someone else fetched this, ignore the error
+			(void)fbr_cstore_s3_get(cstore, hash, file_path, etag_match, 0, file_type);
 		} else if (retry > 1) {
 			return 1;
 		}
@@ -503,7 +500,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		entry = fbr_cstore_io_get_ok(cstore, hash);
 		if (!entry) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR ok state");
-			return 1;
+			continue;
 		}
 
 		assert_dev(entry->state == FBR_CSTORE_OK);
@@ -512,7 +509,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		if (fd < 0) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR open()");
 			fbr_cstore_remove(cstore, entry);
-			return 1;
+			continue;
 		}
 
 		struct stat st;
@@ -521,7 +518,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR stat()");
 			fbr_cstore_remove(cstore, entry);
 			assert_zero(close(fd));
-			return 1;
+			continue;
 		}
 
 		size = (size_t)st.st_size;
@@ -539,7 +536,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR metadata()");
 			fbr_cstore_remove(cstore, entry);
 			assert_zero(close(fd));
-			return 1;
+			continue;
 		}
 
 		break;
