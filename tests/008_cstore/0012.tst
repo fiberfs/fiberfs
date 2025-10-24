@@ -67,3 +67,24 @@ cstore_debug 2
 equal $cstore_0_entries 3
 equal $cstore_1_entries 3
 equal $cstore_2_entries 3
+
+cstore_clear 0
+equal $cstore_0_entries 0
+equal $cstore_1_entries 3
+fs_test_release_all
+
+sleep_ms 100
+
+print "### READ AGAIN"
+
+sys_cat $var1 "XYZ 22"
+
+sleep_ms 100
+
+cstore_debug
+cstore_debug 1
+cstore_debug 2
+
+equal $cstore_0_entries 3
+equal $cstore_1_entries 3
+equal $cstore_2_entries 3
