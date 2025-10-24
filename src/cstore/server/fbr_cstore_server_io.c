@@ -129,6 +129,45 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 }
 
 int
+_cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const char *url,
+    fbr_id_t etag_id, fbr_id_t etag_match)
+{
+	assert_dev(cstore);
+	assert_dev(http);
+	assert_dev(url);
+	assert_dev(etag_id);
+
+	char root_buffer[FBR_ROOT_JSON_SIZE];
+	size_t bytes = 0;
+
+	while (bytes < sizeof(root_buffer)) {
+		bytes += chttp_body_read(http, root_buffer + bytes, sizeof(root_buffer) - bytes);
+		assert_dev(bytes <= sizeof(root_buffer));
+
+		if (http->error || http->state >= CHTTP_STATE_IDLE) {
+			break;
+		}
+	}
+
+	if (http->error || bytes == sizeof(root_buffer) || http->state < CHTTP_STATE_IDLE) {
+		fbr_rlog(FBR_LOG_CS_WORKER, "ERROR S3 root_body");
+		chttp_context_free(http);
+		return 1;
+	}
+
+	struct fbr_writer *root_json = fbr_writer_alloc_dynamic(NULL, FBR_ROOT_JSON_SIZE);
+	fbr_writer_add(NULL, root_json, root_buffer, bytes);
+	fbr_writer_flush(NULL, root_json);
+	assert_zero_dev(root_json->error);
+
+	const char *root_path = fbr_cstore_path_url(cstore, url);
+
+	int error = fbr_cstore_s3_root_write(cstore, root_json, (char*)root_path, etag_id,
+		etag_match);
+	return error;
+}
+
+int
 fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http)
 {
 	fbr_cstore_worker_ok(worker);
@@ -234,15 +273,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	// root files put first then write
 	if (fbr_cstore_backend_enabled(cstore) && file_type == FBR_CSTORE_FILE_ROOT) {
-		struct fbr_writer *root_json = fbr_writer_alloc_dynamic(NULL, FBR_ROOT_JSON_SIZE);
-		fbr_root_json_gen(NULL, root_json, etag_id);
-		assert_zero(root_json->error);
-
-		const char *root_path = fbr_cstore_path_url(cstore, url);
-
-		int error = fbr_cstore_s3_root_write(cstore, root_json, (char*)root_path, etag_id,
-			etag_match);
-		return error;
+		return _cstore_root_proxy(cstore, http, url, etag_id, etag_match);
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
