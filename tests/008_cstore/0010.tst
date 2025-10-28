@@ -8,7 +8,7 @@ server_read_request
 server_method_match PUT
 server_url_submatch ".fiberfsindex"
 server_header_exists "Content-Length"
-server_body_read
+server_body_submatch '{"fiberfs":1,'
 server_send_response
 
 # PUT fiberfsroot
@@ -16,7 +16,7 @@ server_read_request
 server_method_match PUT
 server_url_submatch ".fiberfsroot"
 server_header_exists "Content-Length"
-server_body_read
+server_body_submatch '{"fiberfs":1,'
 server_send_response
 
 cstore_init 0
@@ -34,6 +34,7 @@ print "### WRITE"
 server_read_request
 server_method_match PUT
 server_url_submatch "test.txt"
+server_url_submatch ".fiberfschunk"
 server_header_exists "Content-Length"
 server_body_match "content_here"
 server_send_response
@@ -43,7 +44,7 @@ server_read_request
 server_method_match PUT
 server_url_submatch ".fiberfsindex"
 server_header_exists "Content-Length"
-server_body_read
+server_body_submatch '{"fiberfs":1,'
 server_send_response
 
 # PUT fiberfsroot
@@ -51,7 +52,7 @@ server_read_request
 server_method_match PUT
 server_url_submatch ".fiberfsroot"
 server_header_exists "Content-Length"
-server_body_read
+server_body_submatch '{"fiberfs":1,'
 server_send_response
 
 # DELETE fiberfsindex

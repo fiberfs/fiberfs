@@ -272,15 +272,18 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 			case FBR_CSTORE_FILE_CHUNK:
 				fbr_test_logs("CSTORE_DEBUG file: %s (CHUNK %s size: %lu [%lu])",
 					filename, metadata.path, metadata.size, metadata.offset);
+				assert(strstr(metadata.path, FBR_FIBERFS_CHUNK_NAME));
 				assert((unsigned long)stat->st_size == metadata.size);
 				break;
 			case FBR_CSTORE_FILE_INDEX:
 				fbr_test_logs("CSTORE_DEBUG file: %s (INDEX %s gzip: %d)",
 					filename, metadata.path, metadata.gzipped);
+				assert(strstr(metadata.path, FBR_FIBERFS_INDEX_NAME));
 				break;
 			case FBR_CSTORE_FILE_ROOT:
 				fbr_test_logs("CSTORE_DEBUG file: %s (ROOT %s version: %lu)",
 					filename, metadata.path, metadata.etag);
+				assert(strstr(metadata.path, FBR_FIBERFS_ROOT_NAME));
 				assert_zero(metadata.gzipped);
 				break;
 			default:

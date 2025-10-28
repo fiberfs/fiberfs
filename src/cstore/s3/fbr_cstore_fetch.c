@@ -26,6 +26,7 @@ _s3_request_url(struct fbr_cstore *cstore, const char *method, const char *url, 
 	assert_dev(method);
 	assert_dev(url);
 	assert_dev(http);
+	assert(strstr(url, FBR_FIBERFS_NAME));
 
 	if (retries >= 3) {
 		fbr_rlog(FBR_LOG_CS_S3, "sleep_backoff");

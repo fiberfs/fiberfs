@@ -72,13 +72,20 @@ _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, s
 					continue;
 				}
 
-				if (url[i] < '0' || url[i] > '9') {
+				size_t end = i;
+				while (url[end] >= '0' && url[end] <= '9') {
+					end++;
+				}
+
+				if (url[end] != '.' || end == i || end == url_len) {
+					continue;
+				} else if (strcmp(&url[end], FBR_FIBERFS_CHUNK_NAME)) {
 					continue;
 				}
 
-				*offset = fbr_parse_ulong(&url[i], url_len - i);
+				*offset = fbr_parse_ulong(&url[i], end - i);
 				if (!*offset) {
-					if (url[i] != '0' || i + 1 < url_len) {
+					if (url[i] != '0' || end - i != 1) {
 						continue;
 					}
 				}

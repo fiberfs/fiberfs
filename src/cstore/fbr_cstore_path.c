@@ -96,10 +96,11 @@ fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, c
 	char chunk_id[FBR_ID_STRING_MAX];
 	fbr_id_string(id, chunk_id, sizeof(chunk_id));
 
-	size_t ret = fbr_snprintf(buffer, buffer_len, "%s.%s.%zu",
+	size_t ret = fbr_snprintf(buffer, buffer_len, "%s.%s.%zu%s",
 		filepath.name,
 		chunk_id,
-		offset);
+		offset,
+		FBR_FIBERFS_CHUNK_NAME);
 
 	return ret;
 }

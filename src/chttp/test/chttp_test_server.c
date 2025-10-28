@@ -653,7 +653,7 @@ chttp_test_cmd_server_header_not_exists(struct fbr_test_context *ctx,
 }
 
 static void
-_server_body_match(struct chttp_test_server *server, const char *match)
+_server_body_match(struct chttp_test_server *server, const char *match, int submatch)
 {
 	_server_ok(server);
 	chttp_context_ok(server->chttp);
@@ -682,7 +682,11 @@ _server_body_match(struct chttp_test_server *server, const char *match)
 	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*BODY* '%s':%zu", body, body_len);
 
 	if (match) {
-		fbr_test_ERROR(strcmp(body, match), "body doesnt match");
+		if (submatch) {
+			fbr_test_ERROR(!strstr(body, match), "body doesnt submatch");
+		} else {
+			fbr_test_ERROR(strcmp(body, match), "body doesnt match");
+		}
 	}
 
 	assert(server->chttp->state == CHTTP_STATE_IDLE);
@@ -702,7 +706,21 @@ chttp_test_cmd_server_body_match(struct fbr_test_context *ctx, struct fbr_test_c
 		return;
 	}
 
-	_server_body_match(server, cmd->params[0].value);
+	_server_body_match(server, cmd->params[0].value, 0);
+}
+
+void
+chttp_test_cmd_server_body_submatch(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct chttp_test_server *server = _server_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	_server_body_match(server, cmd->params[0].value, 1);
 }
 
 void
@@ -716,7 +734,7 @@ chttp_test_cmd_server_body_read(struct fbr_test_context *ctx, struct fbr_test_cm
 		return;
 	}
 
-	_server_body_match(server, NULL);
+	_server_body_match(server, NULL, 0);
 }
 
 static void

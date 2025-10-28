@@ -5,7 +5,7 @@ cstore_init
 
 chttp_init
 chttp_method PUT
-chttp_url /file.txt.17592574420817011762.55
+chttp_url /file.txt.17592574420817011762.55.fiberfschunk
 chttp_add_header "if-none-match" '*'
 chttp_add_header "etag" '"17592574420817011762"'
 chttp_add_header "content-length" "10"
@@ -21,7 +21,7 @@ chttp_reset
 # TODO
 chttp_new_connection
 chttp_method GET
-chttp_url /file.txt.17592574420817011762.55
+chttp_url /file.txt.17592574420817011762.55.fiberfschunk
 chttp_add_header "if-match" "17592574420817011762"
 chttp_connect $cstore_0_server_host $cstore_0_server_port
 chttp_send
