@@ -38,10 +38,11 @@ _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, s
 
 	for (size_t i = 0; i < url_len; i++) {
 		if (i && url[i - 1] == '/' && url[i] == '.') {
-			if (!strcmp(&url[i], ".fiberfsroot")) {
+			if (!strcmp(&url[i], FBR_FIBERFS_ROOT_NAME)) {
 				assert_dev(i + 12 == url_len);
 				return FBR_CSTORE_FILE_ROOT;
-			} else if (!strncmp(&url[i], ".fiberfsindex.", 14)) {
+			} else if (!strncmp(&url[i], FBR_FIBERFS_INDEX_NAME ".",
+			    sizeof(FBR_FIBERFS_INDEX_NAME))) {
 				i += 14;
 				if (i >= url_len || !etag_len) {
 					return FBR_CSTORE_FILE_NONE;
@@ -54,7 +55,8 @@ _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, s
 				}
 
 				return FBR_CSTORE_FILE_NONE;
-			} else if (!strncmp(&url[i], ".fiberfs", 8)) {
+			} else if (!strncmp(&url[i], FBR_FIBERFS_NAME,
+			    sizeof(FBR_FIBERFS_NAME) - 1)) {
 				return FBR_CSTORE_FILE_NONE;
 			}
 		} else if (url[i] == '.') {

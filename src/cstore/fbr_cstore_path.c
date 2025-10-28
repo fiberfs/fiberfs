@@ -122,9 +122,10 @@ fbr_cstore_path_index(const struct fbr_directory *directory, char *buffer, size_
 		root_sep = "/";
 	}
 
-	size_t ret = fbr_snprintf(buffer, buffer_len, "%s%s.fiberfsindex.%s",
+	size_t ret = fbr_snprintf(buffer, buffer_len, "%s%s%s.%s",
 		dirpath.name,
 		root_sep,
+		FBR_FIBERFS_INDEX_NAME,
 		version);
 
 	return ret;
@@ -142,7 +143,10 @@ fbr_cstore_path_root(struct fbr_path_name *dirpath, char *buffer, size_t buffer_
 		root_sep = "/";
 	}
 
-	size_t ret = fbr_snprintf(buffer, buffer_len, "%s%s.fiberfsroot", dirpath->name, root_sep);
+	size_t ret = fbr_snprintf(buffer, buffer_len, "%s%s%s",
+		dirpath->name,
+		root_sep,
+		FBR_FIBERFS_ROOT_NAME);
 
 	return ret;
 }

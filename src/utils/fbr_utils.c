@@ -75,6 +75,21 @@ fbr_timespec_add_clock(struct timespec *ts)
 	assert_dev(ts->tv_nsec < ns);
 }
 
+void
+fbr_sleep_backoff(unsigned int attempts)
+{
+	if (!attempts) {
+		return;
+	}
+
+	unsigned int delay_ms = attempts * 200;
+	if (delay_ms > 3000) {
+		delay_ms = 3000;
+	}
+
+	fbr_sleep_ms(delay_ms);
+}
+
 unsigned long
 fbr_parse_ulong(const char *str, size_t length)
 {

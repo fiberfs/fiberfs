@@ -21,6 +21,7 @@ void fbr_sleep_ms(double ms);
 double fbr_get_time(void);
 double fbr_convert_timespec(struct timespec *ts);
 void fbr_timespec_add_clock(struct timespec *ts);
+void fbr_sleep_backoff(unsigned int attempts);
 unsigned long fbr_parse_ulong(const char *str, size_t length);
 int fbr_is_dev(void);
 int fbr_is_test(void);
