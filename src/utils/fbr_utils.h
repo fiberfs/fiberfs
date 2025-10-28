@@ -12,7 +12,7 @@
 #include <string.h>
 #include <time.h>
 
-#define FBR_PATH_MAX				PATH_MAX
+#define FBR_PATH_MAX				(PATH_MAX + 128)
 #define FBR_HASH_SLEN				((sizeof(fbr_hash_t) * 2) + 1)
 
 typedef uint64_t fbr_hash_t;
@@ -31,6 +31,7 @@ size_t __fbr_attr_printf(3) fbr_snprintf(char *buffer, size_t size, const char *
 size_t fbr_bin2hex(const void *input, size_t input_len, char *output, size_t output_len);
 size_t fbr_hex2bin(const char *input, size_t input_len, void* output, size_t output_len);
 void fbr_thread_name(const char *name);
+int fbr_check_name(const char *name);
 
 #define _FBR_STRINGIFY(_value)			#_value
 #define FBR_STRINGIFY(value)			_FBR_STRINGIFY(value)

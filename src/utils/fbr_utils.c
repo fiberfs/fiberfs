@@ -12,10 +12,12 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include "fiberfs.h"
 #include "fbr_xxhash.h"
+#include "cstore/fbr_cstore_path.h"
 
 int _IS_FIBERFS_TEST;
 
@@ -236,4 +238,21 @@ fbr_thread_name(const char *name)
 	assert(name);
 	int ret = pthread_setname_np(pthread_self(), name);
 	assert_zero_dev(ret);
+}
+
+int
+fbr_check_name(const char *name)
+{
+	assert(name);
+
+	size_t name_len = strlen(name);
+	if (!name_len || name_len >= PATH_MAX) {
+		return EINVAL;
+	}
+
+	if (strcasestr(name, FBR_FIBERFS_NAME)) {
+		return EINVAL;
+	}
+
+	return 0;
 }

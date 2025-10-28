@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define FBR_WORKSPACE_MIN_SIZE			4096
+#define FBR_WORKSPACE_MIN_SIZE			(4096 + 256)
 #define FBR_WORKSPACE_OVERFLOW_MAX		(1024 * 64)
 
 struct fbr_workspace_ptr {

@@ -19,6 +19,12 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 
 	fbr_rlog(FBR_LOG_OP, "LOOKUP req: %lu parent: %lu name: %s", request->id, parent, name);
 
+	int error = fbr_check_name(name);
+	if (error) {
+		fbr_fuse_reply_err(request, error);
+		return;
+	}
+
 	struct fbr_directory *stale;
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent, &stale);
 	if (!directory) {
