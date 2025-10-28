@@ -76,7 +76,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	assert_zero(root_json->error);
 
 	if (fbr_cstore_backend_enabled(cstore)) {
-		fail = fbr_cstore_s3_root_write(cstore, root_json, root_path, directory->version,
+		fail = fbr_cstore_s3_root_put(cstore, root_json, root_path, directory->version,
 			previous_version);
 	} else {
 		fail = fbr_cstore_io_root_write(cstore, root_json, root_path, directory->version,
@@ -128,7 +128,7 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int attem
 	}
 
 	if (!version && has_backend) {
-		version = fbr_cstore_s3_root_read(fs, cstore, path, attempts);
+		version = fbr_cstore_s3_root_get(fs, cstore, path, attempts);
 	}
 
 	char id_str[FBR_ID_STRING_MAX] = "";

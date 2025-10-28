@@ -124,6 +124,8 @@ fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 		return;
 	}
 
+	// TODO fix response codes, 500+ will trigger a retry
+
 	if (!strcmp(method, "GET") && http->state == CHTTP_STATE_IDLE) {
 		if (!strcmp(url, "/")) {
 			_http_send_code(http, 400, "Bad Request");

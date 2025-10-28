@@ -701,8 +701,8 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 				return 1;
 			}
 
-			int ret = fbr_cstore_s3_get(cstore, hash, path, directory->version, 0,
-				FBR_CSTORE_FILE_INDEX);
+			int ret = fbr_cstore_s3_get_write(cstore, hash, path, directory->version,
+				0, FBR_CSTORE_FILE_INDEX);
 			if (ret == 400 || ret == 404) {
 				return EAGAIN;
 			} else if (ret) {

@@ -56,20 +56,20 @@ void fbr_cstore_cluster_add(struct fbr_cstore_cluster *cluster, const char *host
 void fbr_cstore_cluster_free(struct fbr_cstore_cluster *cluster);
 int fbr_cstore_backend_enabled(struct fbr_cstore *cstore);
 struct fbr_cstore_backend *fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash,
-	int retries, int skip_cdn);
+	int retries, int cdn_ok);
 
 size_t fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *addr, int fd_in,
 	size_t size);
 size_t fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, int fd_out,
 	size_t size);
 void fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
-	const char *file_path, fbr_id_t id, int retries, int s3_direct);
-int fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
+	const char *file_path, fbr_id_t id, int s3_direct);
+void fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 	enum fbr_cstore_entry_type type, const char *path, size_t length, fbr_id_t etag,
-	fbr_id_t existing, int gzip, fbr_cstore_s3_put_f data_cb, void *put_arg, int retry);
+	fbr_id_t existing, int gzip, fbr_cstore_s3_put_f data_cb, void *put_arg);
 int fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,
 	struct chttp_context *http, int error);
-int fbr_cstore_s3_get(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_path,
+int fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_path,
 	fbr_id_t id, size_t size, enum fbr_cstore_entry_type type);
 int fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_t id);
 void fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,
@@ -81,9 +81,9 @@ void fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct fbr_file *file, struct fbr_chunk *chunk);
 void fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
 	const char *path, struct fbr_writer *writer, fbr_id_t id);
-int fbr_cstore_s3_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
+int fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	char *root_path, fbr_id_t version, fbr_id_t existing);
-fbr_id_t fbr_cstore_s3_root_read(struct fbr_fs *fs, struct fbr_cstore *cstore,
+fbr_id_t fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	char *root_path, int attempts);
 
 #define fbr_cstore_backend_ok(backend)		\

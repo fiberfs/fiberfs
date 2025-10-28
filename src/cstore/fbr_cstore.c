@@ -91,6 +91,7 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	fbr_log_ok(cstore->log);
 
 	cstore->delete_f = fbr_cstore_io_delete_entry;
+	cstore->retries = FBR_CSTORE_RETRIES_DEFAULT;
 	cstore->root_ttl_sec = FBR_CSTORE_ROOT_TTL_DEFAULT;
 
 	fbr_log_print(cstore->log, FBR_LOG_CSTORE, FBR_REQID_CSTORE, "init");

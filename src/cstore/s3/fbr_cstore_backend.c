@@ -148,13 +148,13 @@ fbr_cstore_backend_enabled(struct fbr_cstore *cstore)
 }
 
 struct fbr_cstore_backend *
-fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, int retries, int skip_cdn)
+fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, int retries, int cdn_ok)
 {
 	fbr_cstore_ok(cstore);
 	assert_dev(cstore->s3.backend);
 
 	assert_zero(cstore->cdn.size); // TODO
-	(void)skip_cdn;
+	(void)cdn_ok;
 
 	// TODO implement rendezvous hash
 	(void)hash;

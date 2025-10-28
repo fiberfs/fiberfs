@@ -25,6 +25,7 @@
 #define FBR_CSTORE_LOAD_THREAD_MAX		32
 #define FBR_CSTORE_LOAD_THREAD_DEFAULT		4
 #define FBR_CSTORE_LOAD_TIME_BUFFER		1.1
+#define FBR_CSTORE_RETRIES_DEFAULT		2
 #define FBR_CSTORE_ROOT_TTL_DEFAULT		60
 
 enum fbr_cstore_alloc_state {
@@ -111,6 +112,8 @@ struct fbr_cstore {
 	unsigned int				cant_splice_in:1;
 	unsigned int				cant_splice_out:1;
 	unsigned int				delete_cache:1;
+	unsigned int				cdn_put:1;
+	unsigned int				cdn_delete:1;
 
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 
@@ -126,6 +129,7 @@ struct fbr_cstore {
 	struct fbr_log				*log;
 	char					root[FBR_PATH_MAX];
 
+	unsigned int				retries;
 	unsigned long				root_ttl_sec;
 
 	size_t					max_bytes;
