@@ -530,6 +530,8 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_directory_name(directory, &dirpath);
 
 	unsigned int attempts = 0;
+	unsigned int version_matches = 0;
+	fbr_id_t last_version = 0;
 	double time_start = fbr_get_time();
 	int ret;
 
@@ -540,8 +542,7 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 			fbr_id_t version = fs->store->root_read_f(fs, &dirpath, attempts);
 
 			if (version == 0) {
-				fbr_directory_set_state(fs, directory,
-					FBR_DIRSTATE_ERROR);
+				fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
 				return;
 			}
 
@@ -566,6 +567,19 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		} else if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
 			fbr_rlog(FBR_LOG_ERROR, "flush_timeout_sec limit hit on read");
 			ret = EIO;
+		} else if (directory->version == last_version) {
+			version_matches++;
+			fbr_rlog(FBR_LOG_INDEX, "warning index hasn't changed (%u)",
+				version_matches);
+
+			if (version_matches > 3) {
+				ret = EIO;
+			} else {
+				fbr_sleep_backoff(attempts);
+			}
+		} else {
+			last_version = directory->version;
+			version_matches = 0;
 		}
 	} while (ret == EAGAIN);
 

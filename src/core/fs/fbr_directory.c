@@ -596,6 +596,9 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 				if (directory->state == FBR_DIRSTATE_ERROR) {
 					fbr_dindex_release(fs, &directory);
+					if (add_file) {
+						file->state = FBR_FILE_INIT;
+					}
 					return EIO;
 				}
 				break;
@@ -608,8 +611,9 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	// Start sync/write loop
 
 	unsigned int attempts = 0;
-	double time_start = fbr_get_time();
+	unsigned int generation_matches = 0;
 	unsigned long last_generation = 0;
+	double time_start = fbr_get_time();
 	struct fbr_index_data index_data;
 	int ret = EIO;
 
@@ -619,11 +623,22 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' found generation: %lu attempts: %u",
 			dirname.name, directory->generation, attempts);
 
-		if (directory->generation == last_generation) {
-			// TODO
-			fbr_rlog(FBR_LOG_FLUSH, "warning generation hasn't changed");
+		if (attempts && directory->generation == last_generation) {
+			generation_matches++;
+			fbr_rlog(FBR_LOG_FLUSH, "warning generation hasn't changed (%u)",
+				generation_matches);
+
+			if (generation_matches > 3) {
+				fbr_dindex_release(fs, &directory);
+				ret = EIO;
+				break;
+			} else {
+				fbr_sleep_backoff(attempts);
+			}
+		} else {
+			last_generation = directory->generation;
+			generation_matches = 0;
 		}
-		last_generation = directory->generation;
 
 		// Lock on LOADING state
 		struct fbr_directory *new_directory = _directory_get_loading(fs, &dirname, inode,

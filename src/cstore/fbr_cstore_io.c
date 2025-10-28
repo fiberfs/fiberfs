@@ -856,6 +856,8 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR gunzip");
 			ret = 1;
 		}
+
+		fbr_gzip_free(&gzip);
 	}
 	if (json.error) {
 		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR json");
@@ -865,10 +867,6 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fjson_context_free(&json);
 	fbr_index_parser_free(&parser);
 	fbr_reader_free(fs, &reader);
-
-	if (metadata.gzipped) {
-		fbr_gzip_free(&gzip);
-	}
 
 	fbr_rlog(FBR_LOG_CS_INDEX, "READ bytes in: %zu out: %zu", bytes_in, bytes_out);
 

@@ -87,6 +87,8 @@ fbr_sleep_backoff(unsigned int attempts)
 		delay_ms = 3000;
 	}
 
+	delay_ms += random() % 100;
+
 	fbr_sleep_ms(delay_ms);
 }
 
