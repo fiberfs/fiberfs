@@ -32,6 +32,11 @@ _s3_request_url(struct fbr_cstore *cstore, const char *method, const char *url, 
 	assert_dev(url);
 	assert_dev(http);
 
+	if (retries >= 3) {
+		// TODO make this configurable
+		fbr_sleep_ms(1000);
+	}
+
 	if (retries) {
 		http->new_conn = 1;
 	}
@@ -86,17 +91,6 @@ _s3_connection(struct chttp_context *http)
 	// TODO make parameters
 	http->addr.timeout_connect_ms = 3000;
 	http->addr.timeout_transfer_ms = 5000;
-}
-
-static void
-_s3_retry_sleep(int attempts)
-{
-	if (attempts <= 3) {
-		return;
-	}
-
-	// TODO make this configurable
-	fbr_sleep_ms(1000);
 }
 
 size_t
@@ -356,8 +350,6 @@ fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http, co
 			}
 		}
 
-		_s3_retry_sleep(attempts);
-
 		_s3_send_get(cstore, http, file_path, id, attempts - 1, s3_direct);
 		if (http->error || http->status >= 500) {
 			continue;
@@ -495,8 +487,6 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 		if (attempts > 2) {
 			s3_direct = 1;
 		}
-
-		_s3_retry_sleep(attempts);
 
 		_s3_send_put(cstore, http, type, path, length, etag, existing, gzip, data_cb,
 			put_arg, attempts - 1, s3_direct);
@@ -704,8 +694,6 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 		if (attempts > 2) {
 			s3_direct = 1;
 		}
-
-		_s3_retry_sleep(attempts);
 
 		fbr_hash_t hash = _s3_request_url(cstore, "DELETE", s3_url, s3_url_len, &http,
 			attempts - 1);
