@@ -14,10 +14,11 @@
 #include "core/request/fbr_workspace.h"
 #include "cstore/fbr_cstore_api.h"
 
-static void
-_http_send_code(struct chttp_context *http, int status, const char *reason)
+void
+fbr_cstore_http_respond(struct chttp_context *http, int status, const char *reason)
 {
 	assert_dev(http);
+	assert(http->version == CHTTP_H_VERSION_1_1);
 	assert_dev(status >= 100 && status <= 999);
 	assert_dev(reason);
 
@@ -37,6 +38,7 @@ _http_send_code(struct chttp_context *http, int status, const char *reason)
 		"Content-Length: 0\r\n\r\n", status, reason, FIBERFS_VERSION, close);
 
 	chttp_tcp_send(&http->addr, buffer, bytes);
+	chttp_tcp_error_check(http);
 }
 
 void
@@ -113,9 +115,6 @@ fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 		return;
 	}
 
-	const char *method = chttp_header_get_method(http);
-	const char *url = chttp_header_get_url(http);
-
 	fbr_cstore_http_log(http);
 
 	if (http->version != CHTTP_H_VERSION_1_1) {
@@ -124,47 +123,17 @@ fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 		return;
 	}
 
-	// TODO fix response codes, 500+ will trigger a retry
+	const char *method = chttp_header_get_method(http);
 
 	if (!strcmp(method, "GET") && http->state == CHTTP_STATE_IDLE) {
-		if (!strcmp(url, "/")) {
-			_http_send_code(http, 400, "Bad Request");
-			chttp_context_free(http);
-			return;
-		}
-
-		int ret = fbr_cstore_url_read(worker, http);
-		if (ret) {
-			if (ret == 1) {
-				_http_send_code(http, 400, "Bad Request");
-			}
-			chttp_context_free(http);
-			return;
-		}
+		fbr_cstore_url_read(worker, http);
 	} else if (!strcmp(method, "PUT") && http->state == CHTTP_STATE_BODY) {
-		int ret = fbr_cstore_url_write(worker, http);
-		if (ret) {
-			chttp_context_free(http);
-			return;
-		}
-
-		_http_send_code(http, 200, "OK");
+		fbr_cstore_url_write(worker, http);
 	} else if (!strcmp(method, "DELETE") && http->state == CHTTP_STATE_IDLE) {
-		int ret = fbr_cstore_url_delete(worker, http);
-		if (ret < 0) {
-			_http_send_code(http, 400, "Bad Request");
-			chttp_context_free(http);
-			return;
-		} else if (ret > 0) {
-			_http_send_code(http, 404, "Not found");
-		} else {
-			_http_send_code(http, 200, "OK");
-		}
+		fbr_cstore_url_delete(worker, http);
 	} else if (http->state == CHTTP_STATE_IDLE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (400)");
-		_http_send_code(http, 400, "Bad Request");
-		chttp_context_free(http);
-		return;
+		fbr_cstore_http_respond(http, 400, "Bad Request");
 	} else {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (closing)");
 		chttp_context_free(http);
@@ -172,11 +141,10 @@ fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 	}
 
 	if (http->state == CHTTP_STATE_IDLE && http->addr.state == CHTTP_ADDR_CONNECTED &&
-	    !http->close) {
+	    !http->close && !http->error) {
 		chttp_addr_move(&task_worker->remote_addr, &http->addr);
+		// TODO, we may have some pipeline...
 	}
-
-	// TODO, we may have some pipeline...
 
 	chttp_context_free(http);
 }

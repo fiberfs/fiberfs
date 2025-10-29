@@ -157,9 +157,9 @@ fbr_id_t fbr_cstore_io_root_read(struct fbr_cstore *cstore, const char *root_pat
 	size_t path_len);
 int fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 
-int fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http);
-int fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http);
-int fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *http);
+void fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http);
+void fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http);
+void fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *http);
 
 #define fbr_cstore_op_ok(op)			fbr_magic_check(op, FBR_CSTORE_OP_MAGIC)
 #define fbr_cstore_op_sync_ok(sync)		fbr_magic_check(sync, FBR_CSTORE_OP_SYNC_MAGIC)

@@ -111,6 +111,7 @@ void fbr_cstore_task_add(struct fbr_cstore *cstore, enum fbr_cstore_task_type ty
 void fbr_cstore_tasks_free(struct fbr_cstore *cstore);
 void fbr_cstore_task_worker_add(struct fbr_cstore *cstore, size_t count);
 
+void fbr_cstore_http_respond(struct chttp_context *http, int status, const char *reason);
 void fbr_cstore_http_log(struct chttp_context *http);
 void fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker);
 

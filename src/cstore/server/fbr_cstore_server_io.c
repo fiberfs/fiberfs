@@ -32,7 +32,7 @@ _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, s
 
 	*offset = 0;
 
-	if (!url_len) {
+	if (url_len <= sizeof(FBR_FIBERFS_NAME)) {
 		return FBR_CSTORE_FILE_NONE;
 	}
 
@@ -137,7 +137,7 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 	assert_zero(http->length);
 }
 
-int
+void
 _cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const char *url,
     fbr_id_t etag_id, fbr_id_t etag_match)
 {
@@ -161,7 +161,7 @@ _cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const 
 	if (http->error || bytes == sizeof(root_buffer) || http->state < CHTTP_STATE_IDLE) {
 		fbr_rlog(FBR_LOG_CS_WORKER, "ERROR S3 root_body");
 		chttp_context_free(http);
-		return 1;
+		return;
 	}
 
 	struct fbr_writer *root_json = fbr_writer_alloc_dynamic(NULL, FBR_ROOT_JSON_SIZE);
@@ -173,10 +173,16 @@ _cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const 
 
 	int error = fbr_cstore_s3_root_put(cstore, root_json, (char*)root_path, etag_id,
 		etag_match);
-	return error;
+
+	if (error) {
+		fbr_cstore_http_respond(http, 500, "Error");
+		return;
+	}
+
+	fbr_cstore_http_respond(http, 200, "OK");
 }
 
-int
+void
 fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http)
 {
 	fbr_cstore_worker_ok(worker);
@@ -190,7 +196,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	if (http->chunked) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR chunked");
-		return 1;
+		fbr_cstore_http_respond(http, 500, "Error");
+		return;
 	}
 
 	size_t offset;
@@ -210,7 +217,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	const char *etag = chttp_header_get(http, "ETag");
 	if (!etag) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR no etag");
-		return 1;
+		fbr_cstore_http_respond(http, 400, "Bad Request");
+		return;
 	}
 
 	size_t etag_len = strlen(etag);
@@ -222,7 +230,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	fbr_id_t etag_id = fbr_id_parse(etag, etag_len);
 	if (!etag_id) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR etag");
-		return 1;
+		fbr_cstore_http_respond(http, 400, "Bad Request");
+		return;
 	}
 
 	int unique = 0;
@@ -232,7 +241,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 			unique = 1;
 		} else {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR if-none-match");
-			return 1;
+			fbr_cstore_http_respond(http, 400, "Bad Request");
+			return;
 		}
 	}
 
@@ -249,14 +259,16 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		etag_match = fbr_id_parse(if_match, if_match_len);
 		if (!etag_match || unique) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR if-match");
-			return 1;
+			fbr_cstore_http_respond(http, 400, "Bad Request");
+			return;
 		}
 	}
 
 	enum fbr_cstore_entry_type file_type = _parse_url(url, url_len, etag, etag_len, &offset);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url");
-		return 1;
+		fbr_cstore_http_respond(http, 400, "Bad Request");
+		return;
 	}
 
 	switch (file_type) {
@@ -265,24 +277,28 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 			if (!unique || etag_match) {
 				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
 					"URL_WRITE ERROR need unique");
-				return 1;
+				fbr_cstore_http_respond(http, 400, "Bad Request");
+				return;
 			}
 			break;
 		case FBR_CSTORE_FILE_ROOT:
 			if (!unique && !etag_match) {
 				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
 					"URL_WRITE ERROR root missing conditions");
-				return 1;
+				fbr_cstore_http_respond(http, 400, "Bad Request");
+				return;
 			}
 			break;
 		default:
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url type");
-			return 1;
+			fbr_cstore_http_respond(http, 400, "Bad Request");
+			return;
 	}
 
 	// root files put first then write
 	if (fbr_cstore_backend_enabled(cstore) && file_type == FBR_CSTORE_FILE_ROOT) {
-		return _cstore_root_proxy(cstore, http, url, etag_id, etag_match);
+		_cstore_root_proxy(cstore, http, url, etag_id, etag_match);
+		return;
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
@@ -298,7 +314,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		entry = fbr_cstore_io_get_loading(cstore, hash, length, path, 1);
 		if (!entry) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR loading state");
-			return 1;
+			fbr_cstore_http_respond(http, 500, "Error");
+			return;
 		}
 	} else {
 		assert_dev(etag_match);
@@ -310,7 +327,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		} else {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
 				"URL_WRITE ERROR loading state 2");
-			return 1;
+			fbr_cstore_http_respond(http, 500, "Error");
+			return;
 		}
 	}
 
@@ -325,7 +343,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR metadata");
 			fbr_cstore_set_error(entry);
 			fbr_cstore_remove(cstore, entry);
-			return 1;
+			fbr_cstore_http_respond(http, 500, "Error");
+			return;
 		}
 
 		if (metadata.etag != etag_match) {
@@ -334,7 +353,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 				etag_match, metadata.etag);
 			fbr_cstore_set_ok(entry);
 			fbr_cstore_release(cstore, entry);
-			return 1;
+			fbr_cstore_http_respond(http, 500, "Error");
+			return;
 		}
 
 		fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
@@ -347,7 +367,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		return 1;
+		fbr_cstore_http_respond(http, 500, "Error");
+		return;
 	}
 
 	size_t bytes = fbr_cstore_s3_splice_in(cstore, http, fd, length);
@@ -366,7 +387,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		}
 		assert_dev(http->addr.state != CHTTP_ADDR_CONNECTED);
 
-		return 1;
+		return;
 	} else {
 		assert_dev(http->state >= CHTTP_STATE_IDLE);
 		assert_zero_dev(http->length);
@@ -391,7 +412,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR metadata");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, entry);
-		return 1;
+		fbr_cstore_http_respond(http, 500, "Error");
+		return;
 	}
 
 	fbr_cstore_set_ok(entry);
@@ -412,7 +434,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		if (http_backend.error || http_backend.status != 200) {
 			fbr_cstore_release(cstore, entry);
 			chttp_context_free(&http_backend);
-			return 1;
+			fbr_cstore_http_respond(http, 500, "Error");
+			return;
 		}
 
 		// TODO return the http_backend response
@@ -422,10 +445,10 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	fbr_cstore_release(cstore, entry);
 
-	return 0;
+	fbr_cstore_http_respond(http, 200, "OK");
 }
 
-int
+void
 fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http)
 {
 	fbr_cstore_worker_ok(worker);
@@ -458,7 +481,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		etag_match = fbr_id_parse(if_match, if_match_len);
 		if (!etag_match) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR if-match");
-			return 1;
+			fbr_cstore_http_respond(http, 400, "Bad Request");
+			return;
 		}
 	}
 
@@ -468,7 +492,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		&offset);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url");
-		return 1;
+		fbr_cstore_http_respond(http, 400, "Bad Request");
+		return;
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
@@ -487,7 +512,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		if (retry == 1) {
 			if (!fbr_cstore_backend_enabled(cstore)) {
-				return 1;
+				fbr_cstore_http_respond(http, 500, "Error");
+				return;
 			}
 
 			const char *file_path = fbr_cstore_path_url(cstore, url);
@@ -496,7 +522,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			(void)fbr_cstore_s3_get_write(cstore, hash, file_path, etag_match, 0,
 				file_type);
 		} else if (retry > 1) {
-			return 1;
+			fbr_cstore_http_respond(http, 500, "Error");
+			return;
 		}
 
 		retry++;
@@ -568,7 +595,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR send() headers");
 		fbr_cstore_release(cstore, entry);
 		assert_zero(close(fd));
-		return -1;
+		return;
 	}
 
 	size_t bytes = fbr_cstore_s3_splice_out(cstore, &http->addr, fd, size);
@@ -579,15 +606,13 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR splice_out");
 		fbr_cstore_release(cstore, entry);
 		chttp_error(http, CHTTP_ERR_NETWORK);
-		return -1;
+		return;
 	}
 
 	fbr_cstore_release(cstore, entry);
-
-	return 0;
 }
 
-int
+void
 fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *http)
 {
 	fbr_cstore_worker_ok(worker);
@@ -621,7 +646,8 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 	}
 	if (!etag_match) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR if-match");
-		return -1;
+		fbr_cstore_http_respond(http, 400, "Bad Request");
+		return;
 	}
 
 	size_t offset;
@@ -630,14 +656,20 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		&offset);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR url");
-		return -1;
+		fbr_cstore_http_respond(http, 400, "Bad Request");
+		return;
 	}
 
 	int backend = fbr_cstore_backend_enabled(cstore);
 
 	if (!cstore->delete_cache && backend) {
 		int error = fbr_cstore_s3_send_delete(cstore, url, etag_match);
-		return error;
+		if (error) {
+			fbr_cstore_http_respond(http, 500, "Error");
+		} else {
+			fbr_cstore_http_respond(http, 200, "OK");
+		}
+		return;
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
@@ -660,7 +692,8 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 			if (ret || metadata.etag != etag_match) {
 				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR etag");
 				fbr_cstore_release(cstore, entry);
-				return 1;
+				fbr_cstore_http_respond(http, 500, "Error");
+				return;
 			}
 		}
 
@@ -676,5 +709,9 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		error = fbr_cstore_s3_send_delete(cstore, url, etag_match);
 	}
 
-	return error;
+	if (error) {
+		fbr_cstore_http_respond(http, 500, "Error");
+	} else {
+		fbr_cstore_http_respond(http, 200, "OK");
+	}
 }
