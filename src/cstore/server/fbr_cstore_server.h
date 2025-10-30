@@ -115,6 +115,8 @@ void fbr_cstore_http_respond(struct chttp_context *http, int status, const char 
 void fbr_cstore_http_log(struct chttp_context *http);
 void fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker);
 
+void fbr_cstore_epool_add(struct fbr_cstore_server *server, struct chttp_addr *addr);
+
 #define fbr_cstore_server_ok(server)		fbr_magic_check(server, FBR_CSTORE_SERVER_MAGIC)
 #define fbr_cstore_worker_ok(worker)		fbr_magic_check(worker, FBR_CSTORE_WORKER_MAGIC)
 #define fbr_cstore_task_ok(task)		fbr_magic_check(task, FBR_CSTORE_TASK_ENTRY_MAGIC)

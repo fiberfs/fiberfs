@@ -591,6 +591,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	chttp_tcp_send(&http->addr, buffer, header_len);
 	chttp_tcp_error_check(http);
 
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "sent response 200 OK");
+
 	if (http->error) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR send() headers");
 		fbr_cstore_release(cstore, entry);

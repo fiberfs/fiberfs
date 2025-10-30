@@ -18,7 +18,7 @@ void
 fbr_cstore_http_respond(struct chttp_context *http, int status, const char *reason)
 {
 	assert_dev(http);
-	assert(http->version == CHTTP_H_VERSION_1_1);
+	assert_dev(http->version == CHTTP_H_VERSION_1_1);
 	assert_dev(status >= 100 && status <= 999);
 	assert_dev(reason);
 
@@ -39,6 +39,8 @@ fbr_cstore_http_respond(struct chttp_context *http, int status, const char *reas
 
 	chttp_tcp_send(&http->addr, buffer, bytes);
 	chttp_tcp_error_check(http);
+
+	fbr_rlog(FBR_LOG_CS_WORKER, "sent response %d %s (error: %d)", status, reason, http->error);
 }
 
 void
@@ -143,7 +145,7 @@ fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 	if (http->state == CHTTP_STATE_IDLE && http->addr.state == CHTTP_ADDR_CONNECTED &&
 	    !http->close && !http->error) {
 		chttp_addr_move(&task_worker->remote_addr, &http->addr);
-		// TODO, we may have some pipeline...
+		// TODO, we may have some pipeline in the chttp dpage
 	}
 
 	chttp_context_free(http);
