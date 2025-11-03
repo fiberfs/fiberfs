@@ -123,6 +123,7 @@ struct fbr_cstore {
 	struct fbr_cstore_loader		loader;
 	struct fbr_cstore_tasks			tasks;
 	struct fbr_cstore_server		*servers;
+	struct fbr_cstore_epool			epool;
 	struct fbr_cstore_s3			s3;
 	struct fbr_cstore_cluster		cdn;
 	struct fbr_cstore_cluster		cluster;
@@ -179,6 +180,8 @@ struct fbr_cstore_config {
 	size_t					server_workers_accept;
 
 	int					delete_cache;
+
+	unsigned long				keep_alive_sec;
 };
 
 extern struct fbr_cstore_config _CSTORE_CONFIG;

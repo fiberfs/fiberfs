@@ -28,7 +28,6 @@ struct fbr_cstore_task_entry {
 #define FBR_CSTORE_TASK_ENTRY_MAGIC		0x825DDF00
 
 	enum fbr_cstore_task_type		type;
-
 	void					*param;
 
 	TAILQ_ENTRY(fbr_cstore_task_entry)	entry;
@@ -93,6 +92,22 @@ struct fbr_cstore_task_worker {
 	struct chttp_addr			remote_addr;
 };
 
+struct fbr_cstore_epool_conn {
+	struct chttp_addr			addr;
+	double					idle;
+
+	TAILQ_ENTRY(fbr_cstore_epool_conn)	entry;
+};
+
+struct fbr_cstore_epool {
+	unsigned long				timeout_sec;
+	pthread_mutex_t				lock;
+
+	int					epfd;
+
+	unsigned int				init:1;
+};
+
 void fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls);
 void fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker);
 void fbr_cstore_servers_shutdown(struct fbr_cstore *cstore);
@@ -115,7 +130,9 @@ void fbr_cstore_http_respond(struct chttp_context *http, int status, const char 
 void fbr_cstore_http_log(struct chttp_context *http);
 void fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker);
 
+void fbr_cstore_epool_init(struct fbr_cstore *cstore);
 void fbr_cstore_epool_add(struct fbr_cstore_server *server, struct chttp_addr *addr);
+void fbr_cstore_epool_free(struct fbr_cstore *cstore);
 
 #define fbr_cstore_server_ok(server)		fbr_magic_check(server, FBR_CSTORE_SERVER_MAGIC)
 #define fbr_cstore_worker_ok(worker)		fbr_magic_check(worker, FBR_CSTORE_WORKER_MAGIC)

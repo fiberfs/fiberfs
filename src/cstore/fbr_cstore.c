@@ -101,6 +101,7 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 
 	if (_CSTORE_CONFIG.server) {
 		fbr_cstore_tasks_alloc(cstore);
+		fbr_cstore_epool_init(cstore);
 		fbr_cstore_server_alloc(cstore, _CSTORE_CONFIG.server_address,
 			_CSTORE_CONFIG.server_port, _CSTORE_CONFIG.server_tls);
 	}
@@ -646,6 +647,7 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 	fbr_cstore_ok(cstore);
 
 	fbr_cstore_tasks_free(cstore);
+	fbr_cstore_epool_free(cstore);
 	fbr_cstore_servers_free(cstore);
 
 	fbr_cstore_loader_free(cstore);
