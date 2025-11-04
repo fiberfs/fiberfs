@@ -18,6 +18,7 @@
 #define FBR_CSTORE_WORKERS_DEFAULT		4
 #define FBR_CSTORE_WORKERS_ACCEPT_DEFAULT	2
 #define FBR_CSTORE_KEEP_ALIVE_DEFAULT		30
+#define FBR_CSTORE_CONN_SLAB_SIZE		512
 
 enum fbr_cstore_task_type {
 	FBR_CSTORE_TASK_NONE = 0,
@@ -100,13 +101,24 @@ struct fbr_cstore_epool_conn {
 	TAILQ_ENTRY(fbr_cstore_epool_conn)	entry;
 };
 
+struct fbr_cstore_epool_conn_slab {
+	struct fbr_cstore_epool_conn		conns[FBR_CSTORE_CONN_SLAB_SIZE];
+	struct fbr_cstore_epool_conn_slab	*next;
+};
+
 struct fbr_cstore_epool {
+	struct fbr_cstore_epool_conn_slab	*slabs;
+
 	unsigned long				timeout_sec;
 	pthread_mutex_t				lock;
 
 	int					epfd;
 
 	unsigned int				init:1;
+	unsigned int				exit:1;
+
+	TAILQ_HEAD(, fbr_cstore_epool_conn)	conn_list;
+	TAILQ_HEAD(, fbr_cstore_epool_conn)	free_list;
 };
 
 void fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls);
