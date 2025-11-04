@@ -49,7 +49,6 @@ fbr_cstore_task_add(struct fbr_cstore *cstore, enum fbr_cstore_task_type type, v
 {
 	fbr_cstore_ok(cstore);
 	assert(type);
-	assert(param);
 
 	struct fbr_cstore_tasks *tasks = &cstore->tasks;
 	assert(tasks->init);
@@ -140,6 +139,9 @@ _cstore_task_loop(void *arg)
 		switch(task->type) {
 			case FBR_CSTORE_TASK_ACCEPT:
 				fbr_cstore_server_accept(&task_worker);
+				break;
+			case FBR_CSTORE_TASK_EPOOL:
+				fbr_cstore_epool_proc(&task_worker);
 				break;
 			default:
 				fbr_ABORT("bad task type: %d", task->type);

@@ -32,10 +32,12 @@ fbr_cstore_epool_init(struct fbr_cstore *cstore)
 
 	epool->timeout_sec = _CSTORE_CONFIG.keep_alive_sec;
 	epool->init = 1;
+
+	fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_EPOOL, NULL);
 }
 
 // Note: must have lock
-struct fbr_cstore_epool_conn *
+static struct fbr_cstore_epool_conn *
 _epool_get_conn_entry(struct fbr_cstore *cstore)
 {
 	assert_dev(cstore);
@@ -60,22 +62,25 @@ _epool_get_conn_entry(struct fbr_cstore *cstore)
 	TAILQ_REMOVE(&epool->free_list, conn_entry, entry);
 	TAILQ_INSERT_TAIL(&epool->free_list, conn_entry, entry);
 
+	conn_entry->server = NULL;
 	conn_entry->idle = 0;
 
 	return conn_entry;
 }
 
 // Note: must have lock
-void
+static void
 _epool_return_conn_entry(struct fbr_cstore *cstore, struct fbr_cstore_epool_conn *conn_entry)
 {
 	assert_dev(cstore);
 	assert_dev(conn_entry);
-	assert_dev(conn_entry->addr.state == CHTTP_ADDR_NONE);
+	fbr_cstore_server_ok(conn_entry->server);
+	chttp_addr_connected(&conn_entry->addr);
 	assert_dev(conn_entry->idle);
 
 	struct fbr_cstore_epool *epool = &cstore->epool;
 
+	chttp_tcp_close(&conn_entry->addr);
 	chttp_addr_reset(&conn_entry->addr);
 
 	TAILQ_REMOVE(&epool->conn_list, conn_entry, entry);
@@ -101,13 +106,38 @@ fbr_cstore_epool_add(struct fbr_cstore_server *server, struct chttp_addr *addr)
 	struct fbr_cstore_epool_conn *conn_entry = _epool_get_conn_entry(cstore);
 	assert_dev(conn_entry);
 
+	conn_entry->server = server;
 	conn_entry->idle = fbr_get_time();
+	chttp_addr_move(&conn_entry->addr, addr);
 
 	// TODO closing for now...
-	chttp_tcp_close(addr);
 	_epool_return_conn_entry(cstore, conn_entry);
 
 	pt_assert(pthread_mutex_unlock(&epool->lock));
+}
+
+void
+fbr_cstore_epool_proc(struct fbr_cstore_task_worker *task_worker)
+{
+	assert(task_worker);
+
+	struct fbr_cstore_worker *worker = task_worker->worker;
+	fbr_cstore_worker_ok(worker);
+	fbr_cstore_task_ok(task_worker->task);
+	assert_zero(task_worker->task->param);
+
+	struct fbr_cstore *cstore = worker->cstore;
+	fbr_cstore_ok(cstore);
+
+	struct fbr_cstore_epool *epool = &cstore->epool;
+	assert(epool->init);
+
+	fbr_rlog(FBR_LOG_CS_WORKER, "epool processing");
+
+	// fake work
+	fbr_sleep_ms(500);
+
+	fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_EPOOL, NULL);
 }
 
 void
@@ -127,9 +157,6 @@ fbr_cstore_epool_free(struct fbr_cstore *cstore)
 	while (!TAILQ_EMPTY(&epool->conn_list)) {
 		struct fbr_cstore_epool_conn *conn_entry = TAILQ_FIRST(&epool->conn_list);
 		assert(conn_entry);
-		TAILQ_REMOVE(&epool->conn_list, conn_entry, entry);
-
-		chttp_tcp_close(&conn_entry->addr);
 
 		_epool_return_conn_entry(cstore, conn_entry);
 	}
@@ -140,10 +167,13 @@ fbr_cstore_epool_free(struct fbr_cstore *cstore)
 
 		for (size_t i = 0; i < fbr_array_len(slab->conns); i++) {
 			fbr_object_empty(&slab->conns[i].addr);
+			TAILQ_REMOVE(&epool->free_list, &slab->conns[i], entry);
 		}
 
 		free(slab);
 	}
+
+	assert(TAILQ_EMPTY(&epool->free_list));
 
 	pt_assert(pthread_mutex_unlock(&epool->lock));
 	pt_assert(pthread_mutex_destroy(&epool->lock));
