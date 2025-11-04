@@ -19,7 +19,8 @@ struct fbr_cstore_config _CSTORE_CONFIG = {
 	0,
 	FBR_CSTORE_WORKERS_DEFAULT,
 	FBR_CSTORE_WORKERS_ACCEPT_DEFAULT,
-	0, 0
+	0,
+	FBR_CSTORE_KEEP_ALIVE_DEFAULT
 };
 
 static const struct fbr_store_callbacks _CSTORE_DEFAULT_CALLBACKS = {

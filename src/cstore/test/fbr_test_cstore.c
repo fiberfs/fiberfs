@@ -328,6 +328,7 @@ fbr_test_cstore_debug(struct fbr_cstore *cstore)
 	fbr_test_logs("CSTORE_DEBUG chunk rd bytes: %lu", cstore->stats.rd_chunk_bytes);
 	fbr_test_logs("CSTORE_DEBUG workers: %lu", cstore->stats.workers);
 	fbr_test_logs("CSTORE_DEBUG workers_active: %lu", cstore->stats.workers_active);
+	fbr_test_logs("CSTORE_DEBUG retries: %lu", cstore->stats.retries);
 
 	char path[FBR_PATH_MAX];
 	fbr_bprintf(path, "%s/%s", cstore->root, FBR_CSTORE_DATA_DIR);

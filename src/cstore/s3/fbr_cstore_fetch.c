@@ -34,6 +34,7 @@ _s3_request_url(struct fbr_cstore *cstore, const char *method, const char *url, 
 	}
 
 	if (retries) {
+		fbr_atomic_add(&cstore->stats.retries, 1);
 		http->new_conn = 1;
 	}
 

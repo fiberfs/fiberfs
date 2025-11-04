@@ -15,15 +15,19 @@
 #include "cstore/fbr_cstore_api.h"
 
 void
-fbr_cstore_http_respond(struct chttp_context *http, int status, const char *reason)
+fbr_cstore_http_respond(struct fbr_cstore *cstore, struct chttp_context *http, int status,
+    const char *reason)
 {
-	assert_dev(http);
-	assert_dev(http->version == CHTTP_H_VERSION_1_1);
-	assert_dev(status >= 100 && status <= 999);
-	assert_dev(reason);
+	fbr_cstore_ok(cstore);
+	chttp_context_ok(http);
+	assert(http->version == CHTTP_H_VERSION_1_1);
+	assert(status >= 100 && status <= 999);
+	assert(reason);
 
 	const char *close = "";
 	if (status >= 400) {
+		http->close = 1;
+	} else if (!cstore->epool.timeout_sec) {
 		http->close = 1;
 	}
 	if (http->close) {
@@ -135,7 +139,7 @@ fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 		fbr_cstore_url_delete(worker, http);
 	} else if (http->state == CHTTP_STATE_IDLE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (400)");
-		fbr_cstore_http_respond(http, 400, "Bad Request");
+		fbr_cstore_http_respond(worker->cstore, http, 400, "Bad Request");
 	} else {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "Bad request (closing)");
 		chttp_context_free(http);

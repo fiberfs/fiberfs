@@ -153,6 +153,7 @@ struct fbr_cstore {
 		fbr_stats_t			rd_chunk_bytes;
 		fbr_stats_t			workers;
 		fbr_stats_t			workers_active;
+		fbr_stats_t			retries;
 	} stats;
 	};
 
