@@ -96,8 +96,11 @@ struct fbr_cstore_task_worker {
 };
 
 struct fbr_cstore_epool_conn {
-	struct fbr_cstore_server		*server;
+	unsigned int				magic;
+#define FBR_CSTORE_EPOOL_CONN_MAGIC		0x7BEA67F0
+
 	struct chttp_addr			addr;
+	struct fbr_cstore_server		*server;
 
 	double					idle;
 
@@ -119,6 +122,9 @@ struct fbr_cstore_epool {
 
 	unsigned int				init:1;
 	unsigned int				exit:1;
+	unsigned int				in_wait:1;
+
+	size_t					waiting;
 
 	TAILQ_HEAD(, fbr_cstore_epool_conn)	conn_list;
 	TAILQ_HEAD(, fbr_cstore_epool_conn)	free_list;
@@ -126,6 +132,7 @@ struct fbr_cstore_epool {
 
 void fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls);
 void fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker);
+void fbr_cstore_server_proc(struct fbr_cstore_task_worker *task_worker, int new);
 void fbr_cstore_servers_shutdown(struct fbr_cstore *cstore);
 void fbr_cstore_servers_free(struct fbr_cstore *cstore);
 
@@ -155,5 +162,6 @@ void fbr_cstore_epool_free(struct fbr_cstore *cstore);
 #define fbr_cstore_server_ok(server)		fbr_magic_check(server, FBR_CSTORE_SERVER_MAGIC)
 #define fbr_cstore_worker_ok(worker)		fbr_magic_check(worker, FBR_CSTORE_WORKER_MAGIC)
 #define fbr_cstore_task_ok(task)		fbr_magic_check(task, FBR_CSTORE_TASK_ENTRY_MAGIC)
+#define fbr_cstore_epool_conn_ok(conn)		fbr_magic_check(conn, FBR_CSTORE_EPOOL_CONN_MAGIC)
 
 #endif /* _FBR_CSTORE_SERVER_H_INCLUDED_ */

@@ -78,15 +78,28 @@ fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker)
 		return;
 	}
 
+	fbr_cstore_server_proc(task_worker, 1);
+}
+
+void
+fbr_cstore_server_proc(struct fbr_cstore_task_worker *task_worker, int new)
+{
+	assert(task_worker);
 	chttp_addr_connected(&task_worker->remote_addr);
-	assert_zero_dev(task_worker->remote_addr.error);
+
+	struct fbr_cstore_worker *worker = task_worker->worker;
+	fbr_cstore_worker_ok(worker);
+
+	struct fbr_cstore_server *server = task_worker->task->param;
+	fbr_cstore_server_ok(server);
 
 	char remote[128];
 	int remote_port;
 	chttp_sa_string(&task_worker->remote_addr.sa, remote, sizeof(remote), &remote_port);
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "connection made from %s:%d to %d",
-		remote, remote_port, server->port);
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "%s request made from %s:%d to %d (%d)",
+		new ? "new" : "re-used", remote, remote_port, server->port,
+		task_worker->remote_addr.sock);
 
 	fbr_cstore_proc_http(task_worker);
 
