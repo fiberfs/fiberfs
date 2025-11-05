@@ -195,7 +195,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 
-	fbr_rlog(FBR_LOG_FUSE, "session mounted");
+	fbr_log_print(ctx->log, FBR_LOG_FUSE, FBR_REQID_CORE, "session mounted");
 
 	return 0;
 }

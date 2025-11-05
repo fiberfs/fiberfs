@@ -75,10 +75,11 @@ _epool_get_conn_entry(struct fbr_cstore *cstore)
 // Note: must have lock
 static void
 _epool_return_conn_entry(struct fbr_cstore *cstore, struct fbr_cstore_epool_conn *conn_entry,
-    int close)
+    struct chttp_addr *move_addr)
 {
 	assert_dev(cstore);
 	fbr_cstore_epool_conn_ok(conn_entry);
+	chttp_addr_connected(&conn_entry->addr);
 	assert_dev(conn_entry->server);
 	assert_dev(conn_entry->idle);
 
@@ -87,10 +88,14 @@ _epool_return_conn_entry(struct fbr_cstore *cstore, struct fbr_cstore_epool_conn
 	int ret = epoll_ctl(epool->epfd, EPOLL_CTL_DEL, conn_entry->addr.sock, NULL);
 	fbr_ASSERT(ret == 0, "epoll_ctl failed %d %d", ret, errno);
 
-	if (close) {
+	if (move_addr) {
+		chttp_addr_move(move_addr, &conn_entry->addr);
+		chttp_addr_connected(move_addr);
+	} else {
 		chttp_tcp_close(&conn_entry->addr);
 	}
 
+	assert_dev(conn_entry->addr.state == CHTTP_ADDR_NONE);
 	chttp_addr_reset(&conn_entry->addr);
 
 	TAILQ_REMOVE(&epool->conn_list, conn_entry, entry);
@@ -111,6 +116,11 @@ fbr_cstore_epool_add(struct fbr_cstore_server *server, struct chttp_addr *addr)
 	struct fbr_cstore_epool *epool = &cstore->epool;
 	assert(epool->init);
 
+	if (epool->debug_close) {
+		chttp_tcp_close(addr);
+		return;
+	}
+
 	pt_assert(pthread_mutex_lock(&epool->lock));
 
 	fbr_rlog(FBR_LOG_CS_WORKER, "epool connection adding");
@@ -130,9 +140,6 @@ fbr_cstore_epool_add(struct fbr_cstore_server *server, struct chttp_addr *addr)
 
 	int ret = epoll_ctl(epool->epfd, EPOLL_CTL_ADD, conn_entry->addr.sock, &event);
 	assert_zero(ret);
-
-	// TODO debugging
-	//_epool_return_conn_entry(cstore, conn_entry, 1);
 
 	pt_assert(pthread_mutex_unlock(&epool->lock));
 }
@@ -174,7 +181,7 @@ fbr_cstore_epool_proc(struct fbr_cstore_task_worker *task_worker)
 			assert_dev(conn_entry->idle);
 
 			if (conn_entry->idle + epool->timeout_sec < now) {
-				_epool_return_conn_entry(cstore, conn_entry, 1);
+				_epool_return_conn_entry(cstore, conn_entry, NULL);
 			} else {
 				break;
 			}
@@ -182,6 +189,7 @@ fbr_cstore_epool_proc(struct fbr_cstore_task_worker *task_worker)
 
 		pt_assert(pthread_mutex_unlock(&epool->lock));
 
+		// TODO schedule the timeout better
 		event_count = epoll_wait(epool->epfd, &event, 1, 250);
 		assert(event_count >= 0 || errno == EINTR);
 		assert(event_count <= 1);
@@ -193,8 +201,6 @@ fbr_cstore_epool_proc(struct fbr_cstore_task_worker *task_worker)
 			continue;
 		}
 
-		assert_dev(event_count == 1);
-
 		conn_entry = event.data.ptr;
 		fbr_cstore_epool_conn_ok(conn_entry);
 		fbr_cstore_server_ok(conn_entry->server);
@@ -202,16 +208,14 @@ fbr_cstore_epool_proc(struct fbr_cstore_task_worker *task_worker)
 		fbr_rlog(FBR_LOG_CS_WORKER, "epool wait: %d", event.events);
 
 		if (event.events & EPOLLIN && !(event.events & EPOLLRDHUP)) {
-			chttp_addr_clone(&task_worker->remote_addr, &conn_entry->addr);
 			task_worker->task->param = conn_entry->server;
-
-			_epool_return_conn_entry(cstore, conn_entry, 0);
+			_epool_return_conn_entry(cstore, conn_entry, &task_worker->remote_addr);
 
 			pt_assert(pthread_mutex_unlock(&epool->lock));
 
 			break;
 		} else {
-			_epool_return_conn_entry(cstore, conn_entry, 1);
+			_epool_return_conn_entry(cstore, conn_entry, NULL);
 		}
 
 		pt_assert(pthread_mutex_unlock(&epool->lock));
@@ -249,7 +253,7 @@ fbr_cstore_epool_free(struct fbr_cstore *cstore)
 		struct fbr_cstore_epool_conn *conn_entry = TAILQ_FIRST(&epool->conn_list);
 		fbr_cstore_epool_conn_ok(conn_entry);
 
-		_epool_return_conn_entry(cstore, conn_entry, 1);
+		_epool_return_conn_entry(cstore, conn_entry, NULL);
 	}
 
 	while (epool->slabs) {

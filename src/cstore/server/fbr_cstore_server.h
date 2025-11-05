@@ -123,6 +123,7 @@ struct fbr_cstore_epool {
 	unsigned int				init:1;
 	unsigned int				exit:1;
 	unsigned int				in_wait:1;
+	unsigned int				debug_close:1;
 
 	size_t					waiting;
 
