@@ -161,6 +161,7 @@ fbr_cstore_epool_proc(struct fbr_cstore_task_worker *task_worker)
 
 	struct fbr_cstore_epool *epool = &cstore->epool;
 	assert(epool->init);
+	assert_zero(epool->exit);
 
 	fbr_rlog(FBR_LOG_CS_WORKER, "epool entering processing");
 
@@ -234,6 +235,14 @@ fbr_cstore_epool_proc(struct fbr_cstore_task_worker *task_worker)
 	fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_EPOOL, NULL);
 
 	fbr_cstore_server_proc(task_worker, 0);
+}
+
+void
+fbr_cstore_epool_shutdown(struct fbr_cstore *cstore)
+{
+	fbr_cstore_ok(cstore);
+
+	cstore->epool.exit = 1;
 }
 
 void

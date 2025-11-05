@@ -158,6 +158,7 @@ void fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker);
 void fbr_cstore_epool_init(struct fbr_cstore *cstore);
 void fbr_cstore_epool_add(struct fbr_cstore_server *server, struct chttp_addr *addr);
 void fbr_cstore_epool_proc(struct fbr_cstore_task_worker *task_worker);
+void fbr_cstore_epool_shutdown(struct fbr_cstore *cstore);
 void fbr_cstore_epool_free(struct fbr_cstore *cstore);
 
 #define fbr_cstore_server_ok(server)		fbr_magic_check(server, FBR_CSTORE_SERVER_MAGIC)
