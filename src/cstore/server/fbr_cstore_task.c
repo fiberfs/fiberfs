@@ -204,6 +204,7 @@ fbr_cstore_tasks_free(struct fbr_cstore *cstore)
 	}
 
 	tasks->exit = 1;
+	cstore->epool.exit = 1;
 
 	fbr_cstore_servers_shutdown(cstore);
 

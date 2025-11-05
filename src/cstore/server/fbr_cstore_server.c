@@ -115,8 +115,6 @@ fbr_cstore_servers_shutdown(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
 
-	cstore->epool.exit = 1;
-
 	struct fbr_cstore_server *server = cstore->servers;
 	while (server) {
 		fbr_cstore_server_ok(server);
