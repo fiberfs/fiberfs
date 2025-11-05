@@ -1,4 +1,4 @@
-fiber_test "cstore server PUT/GET with s3"
+fiber_test "cstore server PUT/GET with test server"
 
 server_init
 server_accept

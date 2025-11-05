@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/epoll.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
@@ -207,9 +208,15 @@ fbr_cstore_epool_proc(struct fbr_cstore_task_worker *task_worker)
 		fbr_cstore_epool_conn_ok(conn_entry);
 		fbr_cstore_server_ok(conn_entry->server);
 
-		fbr_rlog(FBR_LOG_CS_WORKER, "epool wait: %d", event.events);
+		int bytes;
+		int ret = ioctl(conn_entry->addr.sock, FIONREAD, &bytes);
+		if (ret < 0) {
+			bytes = 0;
+		}
 
-		if (event.events & EPOLLIN && !(event.events & EPOLLRDHUP)) {
+		fbr_rlog(FBR_LOG_CS_WORKER, "epool wait: %d bytes: %d", event.events, bytes);
+
+		if (event.events & EPOLLIN && bytes > 0) {
 			task_worker->task->param = conn_entry->server;
 			_epool_return_conn_entry(cstore, conn_entry, &task_worker->remote_addr);
 
@@ -243,6 +250,8 @@ fbr_cstore_epool_shutdown(struct fbr_cstore *cstore)
 	fbr_cstore_ok(cstore);
 
 	cstore->epool.exit = 1;
+
+	// TODO trigger a signal to break out of epoll
 }
 
 void

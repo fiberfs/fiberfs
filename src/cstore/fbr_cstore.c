@@ -12,6 +12,8 @@
 #include "fbr_cstore_api.h"
 #include "server/fbr_cstore_server.h"
 #include "log/fbr_log.h"
+#include "network/chttp_tcp_pool.h"
+#include "tls/chttp_tls.h"
 #include "utils/fbr_sys.h"
 
 static int _cstore_entry_cmp(const struct fbr_cstore_entry *e1, const struct fbr_cstore_entry *e2);
@@ -711,4 +713,7 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 	if (do_free) {
 		free(cstore);
 	}
+
+	chttp_tcp_pool_close();
+	chttp_tls_free();
 }
