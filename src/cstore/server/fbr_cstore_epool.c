@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/epoll.h>
+#include <unistd.h>
 
 #include "fiberfs.h"
 #include "chttp.h"
