@@ -11,6 +11,7 @@
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
 #include "tls/chttp_tls.h"
+#include "utils/fbr_chash.h"
 
 #define _SERVER_IP_DEFAULT			"127.0.0.1"
 #define _SERVER_JOIN_TIMEOUT_MS			2500
@@ -1084,8 +1085,8 @@ chttp_test_cmd_server_send_random_body(struct fbr_test_context *ctx, struct fbr_
 	}
 
 	fbr_test_random_seed();
-	struct chttp_test_md5 md5;
-	chttp_test_md5_init(&md5);
+	struct fbr_md5_ctx md5;
+	fbr_md5_init(&md5);
 
 	if (bodylen < 0) {
 		bodylen = fbr_test_gen_random(0, _SERVER_MAX_RANDOM_BODYLEN);
@@ -1146,7 +1147,7 @@ chttp_test_cmd_server_send_random_body(struct fbr_test_context *ctx, struct fbr_
 				_server_send_buf(server, buf, len);
 			}
 
-			chttp_test_md5_update(&md5, buf, len);
+			fbr_md5_update(&md5, buf, len);
 
 			partial += len;
 			subchunks++;
@@ -1176,7 +1177,7 @@ chttp_test_cmd_server_send_random_body(struct fbr_test_context *ctx, struct fbr_
 	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* sent random body bytes %zu "
 		"(%zu %zu)", sent, chunks, subchunks);
 
-	chttp_test_md5_final(&md5);
+	fbr_md5_final(&md5);
 	chttp_test_md5_store_server(ctx, &md5);
 
 	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* body md5 %s",

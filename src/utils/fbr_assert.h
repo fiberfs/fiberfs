@@ -23,7 +23,6 @@ int fbr_libunwind_enabled(void);
 void fbr_libunwind_backtrace(char **stack_syms, int len);
 
 #undef assert
-#undef assert_zero
 
 #define assert(expr)								\
 	fbr_ASSERT(expr, NULL)

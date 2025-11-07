@@ -14,3 +14,4 @@
 FBR_TEST_CMD(test_id_assert)
 FBR_TEST_CMD(test_hash)
 FBR_TEST_CMD(test_sha256)
+FBR_TEST_CMD(test_md5)

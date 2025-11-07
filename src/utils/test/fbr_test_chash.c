@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "utils/fbr_sha256.h"
+#include "utils/fbr_chash.h"
 
 #include "test/fbr_test.h"
 
@@ -63,4 +63,40 @@ fbr_cmd_test_sha256(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(!strcmp(hex, "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0"));
 
 	fbr_test_logs("test_sha256 passed");
+}
+
+void
+fbr_cmd_test_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_md5_ctx md5;
+	char hex[(FBR_MD5_DIGEST_SIZE * 2) + 1];
+
+	fbr_md5_init(&md5);
+	fbr_md5_update(&md5, NULL, 0);
+	fbr_md5_final(&md5);
+	fbr_bin2hex(md5.digest, sizeof(md5.digest), hex, sizeof(hex));
+	fbr_test_logs("md5()=%s", hex);
+	assert(!strcmp(hex, "d41d8cd98f00b204e9800998ecf8427e"));
+
+	fbr_md5_init(&md5);
+	fbr_md5_update(&md5, "abc", 3);
+	fbr_md5_final(&md5);
+	fbr_bin2hex(md5.digest, sizeof(md5.digest), hex, sizeof(hex));
+	fbr_test_logs("md5(abc)=%s", hex);
+	assert(!strcmp(hex, "900150983cd24fb0d6963f7d28e17f72"));
+
+	const char *s = "The quick brown fox jumps over the lazy dog.";
+	fbr_md5_init(&md5);
+	for (size_t i = 0; i < strlen(s); i++) {
+		fbr_md5_update(&md5, &s[i], 1);
+	}
+	fbr_md5_final(&md5);
+	fbr_bin2hex(md5.digest, sizeof(md5.digest), hex, sizeof(hex));
+	fbr_test_logs("md5(%s)=%s", s, hex);
+	assert(!strcmp(hex, "e4d909c290d0fb1ca068ffaddf22cbd0"));
+
+	fbr_test_logs("test_md5 passed");
 }

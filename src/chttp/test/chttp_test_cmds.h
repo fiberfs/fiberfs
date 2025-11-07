@@ -29,26 +29,13 @@ struct chttp_test_context {
 	char				md5_client[CHTTP_TEST_MD5_BUFLEN];
 };
 
-struct chttp_test_md5 {
-	unsigned int			magic;
-#define CHTTP_TEST_MD5_MAGIC		0x4E4330A7
-
-	int				ready;
-
-	uint32_t			i[2];
-	uint32_t			buf[4];
-	unsigned char			in[64];
-	unsigned char			digest[16];
-};
-
 void chttp_test_init(struct fbr_test_context *test);
 
-void chttp_test_md5_init(struct chttp_test_md5 *md5);
-void chttp_test_md5_update(struct chttp_test_md5 *md5, uint8_t *input, size_t len);
-void chttp_test_md5_final(struct chttp_test_md5 *md5);
-void chttp_test_md5_store(struct chttp_test_md5 *md5, char *md5_buf);
-void chttp_test_md5_store_server(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
-void chttp_test_md5_store_client(struct fbr_test_context *ctx, struct chttp_test_md5 *md5);
+struct fbr_md5_ctx;
+
+void chttp_test_md5_store(struct fbr_md5_ctx *md5, char *buffer, size_t buffer_len);
+void chttp_test_md5_store_server(struct fbr_test_context *ctx, struct fbr_md5_ctx *md5);
+void chttp_test_md5_store_client(struct fbr_test_context *ctx, struct fbr_md5_ctx *md5);
 
 #define chttp_test_context_ok(context)		\
 	fbr_magic_check(context, CHTTP_TEST_CONTEXT_MAGIC)

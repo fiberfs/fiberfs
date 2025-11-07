@@ -35,10 +35,12 @@
  *
  */
 
+// TODO https://github.com/h5p9sl/hmac_sha256/blob/master/hmac_sha256.c
+
 #include <string.h>
 
 #include "fiberfs.h"
-#include "fbr_sha256.h"
+#include "fbr_chash.h"
 
 #define _SHFR(x, n)		(x >> n)
 #define _ROTR(x, n)		((x >> n) | (x << ((sizeof(x) << 3) - n)))
@@ -156,8 +158,8 @@ fbr_sha256_init(struct fbr_sha256_ctx *ctx)
 		ctx->h[i] = _SHA256_H0[i];
 	}
 
-	ctx->len = 0;
-	ctx->tot_len = 0;
+	ctx->block_len = 0;
+	ctx->total_len = 0;
 }
 
 void
@@ -166,13 +168,13 @@ fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_
 	assert(ctx);
 	assert(buffer || !buffer_len);
 
-	size_t tmp_len = FBR_SHA256_BLOCK_SIZE - ctx->len;
+	size_t tmp_len = FBR_SHA256_BLOCK_SIZE - ctx->block_len;
 	size_t rem_len = buffer_len < tmp_len ? buffer_len : tmp_len;
 
-	memcpy(&ctx->block[ctx->len], buffer, rem_len);
+	memcpy(&ctx->block[ctx->block_len], buffer, rem_len);
 
-	if (ctx->len + buffer_len < FBR_SHA256_BLOCK_SIZE) {
-		ctx->len += buffer_len;
+	if (ctx->block_len + buffer_len < FBR_SHA256_BLOCK_SIZE) {
+		ctx->block_len += buffer_len;
 		return;
 	}
 
@@ -188,8 +190,8 @@ fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_
 
 	memcpy(ctx->block, &shifted_message[block_nb << 6], rem_len);
 
-	ctx->len = rem_len;
-	ctx->tot_len += (block_nb + 1) << 6;
+	ctx->block_len = rem_len;
+	ctx->total_len += (block_nb + 1) << 6;
 }
 
 void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest)
@@ -197,13 +199,13 @@ void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest)
 	assert(ctx);
 	assert(digest);
 
-	size_t block_nb = (1 + ((FBR_SHA256_BLOCK_SIZE - 9) < (ctx->len % FBR_SHA256_BLOCK_SIZE)));
+	size_t block_nb = (1 + ((FBR_SHA256_BLOCK_SIZE - 9) < (ctx->block_len % FBR_SHA256_BLOCK_SIZE)));
 
-	size_t len_b = (ctx->tot_len + ctx->len) << 3;
+	size_t len_b = (ctx->total_len + ctx->block_len) << 3;
 	size_t pm_len = block_nb << 6;
 
-	memset(ctx->block + ctx->len, 0, pm_len - ctx->len);
-	ctx->block[ctx->len] = 0x80;
+	memset(ctx->block + ctx->block_len, 0, pm_len - ctx->block_len);
+	ctx->block[ctx->block_len] = 0x80;
 	_UNPACK32(len_b, ctx->block + pm_len - 4);
 
 	_sha256_transf(ctx, ctx->block, block_nb);

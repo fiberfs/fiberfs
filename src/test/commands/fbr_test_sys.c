@@ -15,11 +15,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// assert() conflict, this must come first for now
-#include "test/chttp_test_cmds.h"
-
 #include "fiberfs.h"
 #include "test/fbr_test.h"
+#include "test/chttp_test_cmds.h"
+#include "utils/fbr_chash.h"
 #include "utils/fbr_sys.h"
 
 struct _sys_path {
@@ -352,8 +351,8 @@ fbr_cmd_sys_cat_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	char *md5_result = cmd->params[1].value;
 	char md5_str[CHTTP_TEST_MD5_BUFLEN];
 
-	struct chttp_test_md5 md5;
-	chttp_test_md5_init(&md5);
+	struct fbr_md5_ctx md5;
+	fbr_md5_init(&md5);
 
 	int fd = open(filename, O_RDONLY);
 	fbr_test_ASSERT(fd >= 0, "open() failed %s %d", filename, fd);
@@ -366,7 +365,7 @@ fbr_cmd_sys_cat_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		bytes = read(fd, buf, sizeof(buf));
 		fbr_test_ASSERT(bytes >= 0, "read error");
 
-		chttp_test_md5_update(&md5, buf, bytes);
+		fbr_md5_update(&md5, buf, bytes);
 
 		size += bytes;
 	} while (bytes > 0);
@@ -374,8 +373,8 @@ fbr_cmd_sys_cat_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int ret = close(fd);
 	fbr_test_ERROR(ret, "sys_cat close() failed");
 
-	chttp_test_md5_final(&md5);
-	chttp_test_md5_store(&md5, md5_str);
+	fbr_md5_final(&md5);
+	chttp_test_md5_store(&md5, md5_str, sizeof(md5_str));
 
 	fbr_test_ERROR(strcmp(md5_str, md5_result), "md5 failed, got %s, expected %s",
 		md5_str, md5_result);

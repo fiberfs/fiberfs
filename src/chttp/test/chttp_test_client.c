@@ -11,6 +11,7 @@
 #include "compress/chttp_gzip.h"
 #include "network/chttp_tcp_pool.h"
 #include "tls/chttp_tls.h"
+#include "utils/fbr_chash.h"
 
 static const char *_TEST_REASON = "_REASON";
 
@@ -585,8 +586,8 @@ chttp_test_cmd_chttp_body_md5(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	struct fbr_gzip *gzip;
 	char gzip_buf[4096];
 
-	struct chttp_test_md5 md5;
-	chttp_test_md5_init(&md5);
+	struct fbr_md5_ctx md5;
+	fbr_md5_init(&md5);
 
 	size_t body_len = 0;
 	size_t calls = 0;
@@ -599,7 +600,7 @@ chttp_test_cmd_chttp_body_md5(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	do {
 		len = chttp_body_read(chttp, buf, sizeof(buf));
 
-		chttp_test_md5_update(&md5, buf, len);
+		fbr_md5_update(&md5, buf, len);
 
 		body_len += len;
 		calls++;
@@ -611,7 +612,7 @@ chttp_test_cmd_chttp_body_md5(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
 		body_len, calls);
 
-	chttp_test_md5_final(&md5);
+	fbr_md5_final(&md5);
 	chttp_test_md5_store_client(ctx, &md5);
 
 	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "body md5 %s", ctx->chttp_test->md5_client);
