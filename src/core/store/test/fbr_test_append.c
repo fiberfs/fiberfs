@@ -444,7 +444,7 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	buffer[file->size] = '\0';
 
 	int checks[_APPEND_COUNTER_MAX + 1];
-	fbr_zero(checks);
+	memset(checks, 0, sizeof(checks));
 	char *check_pos = buffer;
 	while (*check_pos) {
 		char *end = NULL;

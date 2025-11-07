@@ -47,7 +47,7 @@ fbr_cmd_test_hash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fill_random(buffer, sizeof(buffer));
 	_test_hash(buffer, sizeof(buffer) - 250);
 
-	fbr_zero(buffer);
+	memset(buffer, 0, sizeof(buffer));
 	_test_hex(buffer, sizeof(buffer));
 
 	fbr_test_logs("test_hash passed");
