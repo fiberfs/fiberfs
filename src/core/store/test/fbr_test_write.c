@@ -159,7 +159,7 @@ _write_thread(void *arg)
 
 	char buffer[100];
 	assert_zero(_FILE_SIZE % sizeof(buffer));
-	memset(buffer, 0, sizeof(buffer));
+	fbr_zero(buffer);
 
 	size_t pos = 0;
 	int flushed = 0;
@@ -269,7 +269,7 @@ _write_test(void)
 
 	char buffer[100];
 	assert_zero(_FILE_SIZE % sizeof(buffer));
-	memset(buffer, 0, sizeof(buffer));
+	fbr_zero(buffer);
 
 	size_t offset = 0;
 	while (offset < _FILE_SIZE) {

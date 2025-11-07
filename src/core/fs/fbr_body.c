@@ -449,7 +449,7 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 	struct fbr_chunk *chunk = file->body.chunks;
 	size_t count = 0;
 	size_t state[__FBR_CHUNK_STATE_SIZE];
-	memset(state, 0, sizeof(state));
+	fbr_zero(state);
 
 	while (chunk) {
 		fbr_chunk_ok(chunk);

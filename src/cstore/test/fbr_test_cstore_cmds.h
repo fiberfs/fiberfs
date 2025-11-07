@@ -30,7 +30,7 @@ fbr_stats_t fbr_test_cstore_stat_roots(void);
 
 struct fbr_test_cstore {
 	unsigned int			magic;
-#define FBR_TEST_CSTORE_MAGIC		0x57A22B5D
+#define FBR_TEST_CSTORE_MAGIC		0x6F87EAE5
 
 	struct fbr_cstore		cstore;
 

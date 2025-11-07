@@ -35,8 +35,6 @@
  *
  */
 
-// TODO https://github.com/h5p9sl/hmac_sha256/blob/master/hmac_sha256.c
-
 #include <string.h>
 
 #include "fiberfs.h"
@@ -138,7 +136,7 @@ _sha256_transf(struct fbr_sha256_ctx *ctx, const uint8_t *message, size_t block_
 }
 
 void
-fbr_sha256(const void *buffer, size_t buffer_len, uint8_t *digest)
+fbr_sha256(const void *buffer, size_t buffer_len, uint8_t *digest, size_t digest_len)
 {
 	assert(digest);
 
@@ -146,7 +144,7 @@ fbr_sha256(const void *buffer, size_t buffer_len, uint8_t *digest)
 
 	fbr_sha256_init(&ctx);
 	fbr_sha256_update(&ctx, buffer, buffer_len);
-	fbr_sha256_final(&ctx, digest);
+	fbr_sha256_final(&ctx, digest, digest_len);
 }
 
 void
@@ -154,18 +152,18 @@ fbr_sha256_init(struct fbr_sha256_ctx *ctx)
 {
 	assert(ctx);
 
+	fbr_zero(ctx);
+	ctx->magic = FBR_SHA256_MAGIC;
+
 	for (size_t i = 0; i < 8; i++) {
 		ctx->h[i] = _SHA256_H0[i];
 	}
-
-	ctx->block_len = 0;
-	ctx->total_len = 0;
 }
 
 void
 fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_len)
 {
-	assert(ctx);
+	fbr_sha256_ok(ctx);
 	assert(buffer || !buffer_len);
 
 	size_t tmp_len = FBR_SHA256_BLOCK_SIZE - ctx->block_len;
@@ -194,12 +192,14 @@ fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_
 	ctx->total_len += (block_nb + 1) << 6;
 }
 
-void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest)
+void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len)
 {
-	assert(ctx);
+	fbr_sha256_ok(ctx);
 	assert(digest);
+	assert(digest_len >= FBR_SHA256_DIGEST_SIZE);
 
-	size_t block_nb = (1 + ((FBR_SHA256_BLOCK_SIZE - 9) < (ctx->block_len % FBR_SHA256_BLOCK_SIZE)));
+	size_t block_nb = (1 + ((FBR_SHA256_BLOCK_SIZE - 9) <
+		(ctx->block_len % FBR_SHA256_BLOCK_SIZE)));
 
 	size_t len_b = (ctx->total_len + ctx->block_len) << 3;
 	size_t pm_len = block_nb << 6;
@@ -213,4 +213,70 @@ void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest)
 	for (size_t i = 0 ; i < 8; i++) {
 		_UNPACK32(ctx->h[i], &digest[i << 2]);
 	}
+
+	fbr_zero(ctx);
+}
+
+static void
+_hmac_key_init(const void *key, size_t key_len, uint8_t *key_block, size_t key_block_len, int inner)
+{
+	assert_dev(key);
+	assert_dev(key_len);
+	assert_dev(key_block);
+	assert_dev(key_block_len == FBR_SHA256_BLOCK_SIZE);
+
+	memset(key_block, 0, key_block_len);
+
+	if (key_len > key_block_len) {
+		fbr_sha256(key, key_len, key_block, key_block_len);
+	} else {
+		memcpy(key_block, key, key_len);
+	}
+
+	char pad = 0x5c;
+	if (inner) {
+		pad = 0x36;
+	}
+
+	for (size_t i = 0; i < key_block_len; i++) {
+		key_block[i] ^= pad;
+	}
+}
+
+void
+fbr_hmac_sha256_init(struct fbr_sha256_ctx *ctx, const void *key, size_t key_len)
+{
+	assert(ctx);
+	assert(key);
+	assert(key_len);
+
+	fbr_sha256_init(ctx);
+	fbr_sha256_ok(ctx);
+
+	uint8_t key_block[FBR_SHA256_BLOCK_SIZE];
+	_hmac_key_init(key, key_len, key_block, sizeof(key_block), 1);
+
+	fbr_sha256_update(ctx, key_block, sizeof(key_block));
+}
+
+void
+fbr_hmac_sha256_final(struct fbr_sha256_ctx *ctx, const void *key, size_t key_len, uint8_t *digest,
+    size_t digest_len)
+{
+	fbr_sha256_ok(ctx);
+	assert(digest);
+	assert(digest_len >= FBR_SHA256_DIGEST_SIZE);
+
+	fbr_sha256_final(ctx, digest, digest_len);
+
+	uint8_t key_block[FBR_SHA256_BLOCK_SIZE];
+	_hmac_key_init(key, key_len, key_block, sizeof(key_block), 0);
+
+	fbr_sha256_init(ctx);
+	fbr_sha256_ok(ctx);
+
+	fbr_sha256_update(ctx, key_block, sizeof(key_block));
+	fbr_sha256_update(ctx, digest, FBR_SHA256_DIGEST_SIZE);
+
+	fbr_sha256_final(ctx, digest, digest_len);
 }

@@ -18,7 +18,7 @@ struct fbr_sha256_ctx {
 	unsigned int			magic;
 #define FBR_SHA256_MAGIC		0x772F494A
 
-	unsigned char			block[2 * FBR_SHA256_BLOCK_SIZE];
+	uint8_t				block[2 * FBR_SHA256_BLOCK_SIZE];
 	uint32_t			h[8];
 
 	size_t				block_len;
@@ -37,10 +37,14 @@ struct fbr_md5_ctx {
 	unsigned char			digest[FBR_MD5_DIGEST_SIZE];
 };
 
-void fbr_sha256(const void *buffer, size_t buffer_len, uint8_t *digest);
+void fbr_sha256(const void *buffer, size_t buffer_len, uint8_t *digest, size_t digest_len);
 void fbr_sha256_init(struct fbr_sha256_ctx *ctx);
 void fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_len);
-void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest);
+void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len);
+
+void fbr_hmac_sha256_init(struct fbr_sha256_ctx *ctx, const void *key, size_t key_len);
+void fbr_hmac_sha256_final(struct fbr_sha256_ctx *ctx, const void *key, size_t key_len,
+	uint8_t *digest, size_t digest_len);
 
 void fbr_md5_init(struct fbr_md5_ctx *md5);
 void fbr_md5_update(struct fbr_md5_ctx *md5, const void *input, size_t len);
