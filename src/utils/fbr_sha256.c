@@ -218,7 +218,8 @@ void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest
 }
 
 static void
-_hmac_key_init(const void *key, size_t key_len, uint8_t *key_block, size_t key_block_len, int inner)
+_hmac_key_init(const void *key, size_t key_len, uint8_t *key_block, size_t key_block_len,
+    int inner)
 {
 	assert_dev(key);
 	assert_dev(key_len);
@@ -226,20 +227,14 @@ _hmac_key_init(const void *key, size_t key_len, uint8_t *key_block, size_t key_b
 	assert_dev(key_block_len == FBR_SHA256_BLOCK_SIZE);
 
 	memset(key_block, 0, key_block_len);
-
 	if (key_len > key_block_len) {
 		fbr_sha256(key, key_len, key_block, key_block_len);
 	} else {
 		memcpy(key_block, key, key_len);
 	}
 
-	char pad = 0x5c;
-	if (inner) {
-		pad = 0x36;
-	}
-
 	for (size_t i = 0; i < key_block_len; i++) {
-		key_block[i] ^= pad;
+		key_block[i] ^= inner ? 0x36 : 0x5c;
 	}
 }
 
