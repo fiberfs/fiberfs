@@ -10,15 +10,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define FBR_SHA256_DIGEST_SIZE		(256 / 8)
-#define FBR_SHA256_BLOCK_SIZE 		(512 / 8)
+#define FBR_SHA256_DIGEST_SIZE		32
+#define FBR_SHA256_BLOCK_SIZE 		64
 #define FBR_MD5_DIGEST_SIZE		16
 
 struct fbr_sha256_ctx {
 	unsigned int			magic;
 #define FBR_SHA256_MAGIC		0x772F494A
 
-	uint8_t				block[2 * FBR_SHA256_BLOCK_SIZE];
+	uint8_t				block[FBR_SHA256_BLOCK_SIZE * 2];
 	uint32_t			h[8];
 
 	size_t				block_len;

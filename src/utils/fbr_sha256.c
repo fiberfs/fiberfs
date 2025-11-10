@@ -1,37 +1,8 @@
 /*
- * FIPS 180-2 SHA-224/256/384/512 implementation
- * Last update: 02/02/2007
- * Issue date:  04/30/2005
- *
- * Copyright (C) 2013, Con Kolivas <kernel@kolivas.org>
- * Copyright (C) 2005, 2007 Olivier Gay <olivier.gay@a3.epfl.ch>
+ * Copyright (c) 2024-2025 FiberFS
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the project nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE PROJECT AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE PROJECT OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * https://github.com/ckolivas/cgminer/blob/master/sha2.c
+ * https://en.wikipedia.org/wiki/SHA-2
  *
  */
 
@@ -40,36 +11,36 @@
 #include "fiberfs.h"
 #include "fbr_chash.h"
 
-#define _SHFR(x, n)		(x >> n)
-#define _ROTR(x, n)		((x >> n) | (x << ((sizeof(x) << 3) - n)))
-#define _CH(x, y, z)		((x & y) ^ (~x & z))
-#define _MAJ(x, y, z)		((x & y) ^ (x & z) ^ (y & z))
+#define _SHA_SHIFT(x, n)	(x >> n)
+#define _SHA_ROT(x, n)		((x >> n) | (x << (32 - n)))
+#define _SHA_CH(x, y, z)	((x & y) ^ (~x & z))
+#define _SHA_MAJ(x, y, z)	((x & y) ^ (x & z) ^ (y & z))
 
-#define _SHA256_F1(x)		(_ROTR(x,  2) ^ _ROTR(x, 13) ^ _ROTR(x, 22))
-#define _SHA256_F2(x)		(_ROTR(x,  6) ^ _ROTR(x, 11) ^ _ROTR(x, 25))
-#define _SHA256_F3(x)		(_ROTR(x,  7) ^ _ROTR(x, 18) ^ _SHFR(x,  3))
-#define _SHA256_F4(x)		(_ROTR(x, 17) ^ _ROTR(x, 19) ^ _SHFR(x, 10))
+#define _SHA256_F1(x)		(_SHA_ROT(x, 2) ^ _SHA_ROT(x, 13) ^ _SHA_ROT(x, 22))
+#define _SHA256_F2(x)		(_SHA_ROT(x, 6) ^ _SHA_ROT(x, 11) ^ _SHA_ROT(x, 25))
+#define _SHA256_F3(x)		(_SHA_ROT(x, 7) ^ _SHA_ROT(x, 18) ^ _SHA_SHIFT(x, 3))
+#define _SHA256_F4(x)		(_SHA_ROT(x, 17) ^ _SHA_ROT(x, 19) ^ _SHA_SHIFT(x, 10))
 
-#define _UNPACK32(x, str)				\
-{							\
-	*((str) + 3) = (uint8_t) ((x));			\
-	*((str) + 2) = (uint8_t) ((x) >>  8);		\
-	*((str) + 1) = (uint8_t) ((x) >> 16);		\
-	*((str) + 0) = (uint8_t) ((x) >> 24);		\
+#define _UNPACK32(src, dest)					\
+{								\
+	*((dest) + 3) = (uint8_t)(src);				\
+	*((dest) + 2) = (uint8_t)((src) >> 8);			\
+	*((dest) + 1) = (uint8_t)((src) >> 16);			\
+	*(dest) = (uint8_t)((src) >> 24);			\
 }
 
-#define _PACK32(str, x)					\
-{							\
-	*(x) = ((uint32_t) *((str) + 3))		\
-		| ((uint32_t) *((str) + 2) <<  8)	\
-		| ((uint32_t) *((str) + 1) << 16)	\
-		| ((uint32_t) *((str) + 0) << 24);	\
+#define _PACK32(src, dest)					\
+{								\
+	*(dest) = ((uint32_t) *((src) + 3))			\
+		| ((uint32_t) *((src) + 2) << 8)		\
+		| ((uint32_t) *((src) + 1) << 16)		\
+		| ((uint32_t) *(src) << 24);			\
 }
 
-#define _SHA256_SCR(i)					\
-{							\
-	w[i] = _SHA256_F4(w[i -  2]) + w[i -  7]	\
-		+ _SHA256_F3(w[i - 15]) + w[i - 16];	\
+#define _SHA256_EXT(i, w)					\
+{								\
+	(w)[i] = _SHA256_F4((w)[i - 2]) + (w)[i - 7]		\
+		+ _SHA256_F3((w)[i - 15]) + (w)[i - 16];	\
 }
 
 static uint32_t _SHA256_H0[8] = {
@@ -97,41 +68,42 @@ static uint32_t _SHA256_K[64] = {
 };
 
 static void
-_sha256_transf(struct fbr_sha256_ctx *ctx, const uint8_t *message, size_t block_nb)
+_sha256_calc(struct fbr_sha256_ctx *ctx, const uint8_t *block, size_t block_count)
 {
 	assert_dev(ctx);
-	assert_dev(message);
+	assert_dev(block);
 
-	for (size_t i = 0; i < block_nb; i++) {
-		const uint8_t *sub_block = message + (i << 6);
+	for (size_t i = 0; i < block_count; i++) {
 		uint32_t w[64];
-		uint32_t wv[8];
+		uint32_t v[8];
 
 		for (size_t j = 0; j < 16; j++) {
-			_PACK32(&sub_block[j << 2], &w[j]);
+			_PACK32(&block[j * 4], &w[j]);
 		}
 		for (size_t j = 16; j < 64; j++) {
-			_SHA256_SCR(j);
+			_SHA256_EXT(j, w);
 		}
 		for (size_t j = 0; j < 8; j++) {
-			wv[j] = ctx->h[j];
+			v[j] = ctx->h[j];
 		}
 		for (size_t j = 0; j < 64; j++) {
-			uint32_t t1 = wv[7] + _SHA256_F2(wv[4]) + _CH(wv[4], wv[5], wv[6])
+			uint32_t t1 = v[7] + _SHA256_F2(v[4]) + _SHA_CH(v[4], v[5], v[6])
 				+ _SHA256_K[j] + w[j];
-			uint32_t t2 = _SHA256_F1(wv[0]) + _MAJ(wv[0], wv[1], wv[2]);
-			wv[7] = wv[6];
-			wv[6] = wv[5];
-			wv[5] = wv[4];
-			wv[4] = wv[3] + t1;
-			wv[3] = wv[2];
-			wv[2] = wv[1];
-			wv[1] = wv[0];
-			wv[0] = t1 + t2;
+			uint32_t t2 = _SHA256_F1(v[0]) + _SHA_MAJ(v[0], v[1], v[2]);
+			v[7] = v[6];
+			v[6] = v[5];
+			v[5] = v[4];
+			v[4] = v[3] + t1;
+			v[3] = v[2];
+			v[2] = v[1];
+			v[1] = v[0];
+			v[0] = t1 + t2;
 		}
 		for (size_t j = 0; j < 8; j++) {
-			ctx->h[j] += wv[j];
+			ctx->h[j] += v[j];
 		}
+
+		block += FBR_SHA256_BLOCK_SIZE;
 	}
 }
 
@@ -164,54 +136,68 @@ void
 fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_len)
 {
 	fbr_sha256_ok(ctx);
+	assert_dev(ctx->block_len < FBR_SHA256_BLOCK_SIZE);
 	assert(buffer || !buffer_len);
 
-	size_t tmp_len = FBR_SHA256_BLOCK_SIZE - ctx->block_len;
-	size_t rem_len = buffer_len < tmp_len ? buffer_len : tmp_len;
+	ctx->total_len += buffer_len;
 
-	memcpy(&ctx->block[ctx->block_len], buffer, rem_len);
+	size_t block_free = FBR_SHA256_BLOCK_SIZE - ctx->block_len;
+	size_t block_copy = buffer_len < block_free ? buffer_len : block_free;
 
-	if (ctx->block_len + buffer_len < FBR_SHA256_BLOCK_SIZE) {
-		ctx->block_len += buffer_len;
+	memcpy(&ctx->block[ctx->block_len], buffer, block_copy);
+
+	ctx->block_len += block_copy;
+	buffer_len -= block_copy;
+
+	if (ctx->block_len < FBR_SHA256_BLOCK_SIZE) {
+		assert_zero_dev(buffer_len);
 		return;
 	}
 
-	size_t new_len = buffer_len - rem_len;
-	size_t block_nb = new_len / FBR_SHA256_BLOCK_SIZE;
+	const uint8_t *block_buffer = (const uint8_t*)buffer + block_copy;
+	size_t block_count = buffer_len / FBR_SHA256_BLOCK_SIZE;
 
-	const uint8_t *shifted_message = (const uint8_t*)buffer + rem_len;
+	_sha256_calc(ctx, ctx->block, 1);
 
-	_sha256_transf(ctx, ctx->block, 1);
-	_sha256_transf(ctx, shifted_message, block_nb);
+	if (block_count) {
+		_sha256_calc(ctx, block_buffer, block_count);
+	}
 
-	rem_len = new_len % FBR_SHA256_BLOCK_SIZE;
+	size_t block_done = block_count * FBR_SHA256_BLOCK_SIZE;
+	assert(block_done <= buffer_len);
+	block_buffer += block_done;
+	buffer_len -= block_done;
 
-	memcpy(ctx->block, &shifted_message[block_nb << 6], rem_len);
+	if (buffer_len) {
+		memcpy(ctx->block, block_buffer, buffer_len);
+	}
 
-	ctx->block_len = rem_len;
-	ctx->total_len += (block_nb + 1) << 6;
+	ctx->block_len = buffer_len;
 }
 
 void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len)
 {
 	fbr_sha256_ok(ctx);
+	assert_dev(ctx->block_len < FBR_SHA256_BLOCK_SIZE);
 	assert(digest);
 	assert(digest_len >= FBR_SHA256_DIGEST_SIZE);
 
-	size_t block_nb = (1 + ((FBR_SHA256_BLOCK_SIZE - 9) <
-		(ctx->block_len % FBR_SHA256_BLOCK_SIZE)));
+	size_t block_count = 1;
+	if (ctx->block_len > FBR_SHA256_BLOCK_SIZE - 9) {
+		block_count++;
+	}
 
-	size_t len_b = (ctx->total_len + ctx->block_len) << 3;
-	size_t pm_len = block_nb << 6;
+	size_t total_bits = ctx->total_len * 8;
+	size_t block_size = block_count * FBR_SHA256_BLOCK_SIZE;
 
-	memset(ctx->block + ctx->block_len, 0, pm_len - ctx->block_len);
+	memset(ctx->block + ctx->block_len, 0, block_size - ctx->block_len);
 	ctx->block[ctx->block_len] = 0x80;
-	_UNPACK32(len_b, ctx->block + pm_len - 4);
+	_UNPACK32(total_bits, ctx->block + block_size - 4);
 
-	_sha256_transf(ctx, ctx->block, block_nb);
+	_sha256_calc(ctx, ctx->block, block_count);
 
 	for (size_t i = 0 ; i < 8; i++) {
-		_UNPACK32(ctx->h[i], &digest[i << 2]);
+		_UNPACK32(ctx->h[i], &digest[i * 4]);
 	}
 
 	fbr_zero(ctx);

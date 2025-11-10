@@ -6,7 +6,12 @@
 
 #include <stdlib.h>
 
+#ifdef CHTTP_OPENSSL
+#include "openssl/sha.h"
+#endif
+
 #include "fiberfs.h"
+#include "tls/chttp_tls.h"
 #include "utils/fbr_chash.h"
 
 #include "test/fbr_test.h"
@@ -145,4 +150,42 @@ fbr_cmd_test_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(!strcmp(hex, "e4d909c290d0fb1ca068ffaddf22cbd0"));
 
 	fbr_test_logs("test_md5 passed");
+}
+
+void
+fbr_cmd_test_sha256_open(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	if (!chttp_tls_enabled()) {
+		fbr_test_logs("test_sha256_open skipped");
+		return;
+	}
+
+#ifdef CHTTP_OPENSSL
+	char all_a[5000];
+	memset(all_a, 'a', sizeof(all_a));
+
+	SHA256_CTX sha256;
+	uint8_t digest[FBR_SHA256_DIGEST_SIZE];
+	uint8_t digest_open[SHA256_DIGEST_LENGTH];
+	static_ASSERT(FBR_SHA256_DIGEST_SIZE == SHA256_DIGEST_LENGTH);
+	size_t i;
+
+	for (i = 0; i <= sizeof(all_a); i++) {
+		fbr_sha256(all_a, i, digest, sizeof(digest));
+		SHA256_Init(&sha256);
+		SHA256_Update(&sha256, all_a, i);
+		SHA256_Final(digest_open, &sha256);
+		fbr_ASSERT(!memcmp(digest, digest_open, sizeof(digest)), "sha256 failed: %zu", i);
+	}
+
+	fbr_test_logs("openssl sha256 checksums passed: %zu", i);
+	assert(i == sizeof(all_a) + 1);
+
+	fbr_test_logs("test_sha256_open passed");
+#else
+	fbr_ABORT("TLS not configured");
+#endif
 }
