@@ -49,7 +49,7 @@
 		| ((uint32_t) *(src) << 24);			\
 }
 
-#define _SHA256_EXT(i, w)					\
+#define _SHA256_EXT(w, i)					\
 {								\
 	(w)[i] = _SHA256_F4((w)[i - 2]) + (w)[i - 7]		\
 		+ _SHA256_F3((w)[i - 15]) + (w)[i - 16];	\
@@ -93,7 +93,7 @@ _sha256_calc(struct fbr_sha256_ctx *ctx, const uint8_t *block, size_t block_coun
 			_SHA_PACK32(&block[j * 4], &w[j]);
 		}
 		for (size_t j = 16; j < 64; j++) {
-			_SHA256_EXT(j, w);
+			_SHA256_EXT(w, j);
 		}
 		for (size_t j = 0; j < 8; j++) {
 			v[j] = ctx->h[j];
@@ -119,22 +119,10 @@ _sha256_calc(struct fbr_sha256_ctx *ctx, const uint8_t *block, size_t block_coun
 	}
 }
 
-void
-fbr_sha256(const void *buffer, size_t buffer_len, uint8_t *digest, size_t digest_len)
+static void
+_sha256_init(struct fbr_sha256_ctx *ctx)
 {
-	assert(digest);
-
-	struct fbr_sha256_ctx ctx;
-
-	fbr_sha256_init(&ctx);
-	fbr_sha256_update(&ctx, buffer, buffer_len);
-	fbr_sha256_final(&ctx, digest, digest_len);
-}
-
-void
-fbr_sha256_init(struct fbr_sha256_ctx *ctx)
-{
-	assert(ctx);
+	assert_dev(ctx);
 
 	fbr_zero(ctx);
 	ctx->magic = FBR_SHA256_MAGIC;
@@ -144,11 +132,11 @@ fbr_sha256_init(struct fbr_sha256_ctx *ctx)
 	}
 }
 
-void
-fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_len)
+static void
+_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_len)
 {
-	fbr_sha256_ok(ctx);
-	assert(buffer || !buffer_len);
+	assert_dev(ctx);
+	assert_dev(buffer || !buffer_len);
 
 	const uint8_t *block_buffer = (const uint8_t*)buffer;
 	ctx->total_bytes += buffer_len;
@@ -193,11 +181,12 @@ fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_
 	ctx->block_len = buffer_len;
 }
 
-void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len)
+static void
+_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len)
 {
-	fbr_sha256_ok(ctx);
-	assert(digest);
-	assert(digest_len >= FBR_SHA256_DIGEST_SIZE);
+	assert_dev(ctx);
+	assert_dev(digest);
+	assert_dev(digest_len >= FBR_SHA256_DIGEST_SIZE);
 
 	size_t block_count = 1;
 	if (ctx->block_len > FBR_SHA256_BLOCK_SIZE - 9) {
@@ -242,6 +231,84 @@ _hmac_key_init(const void *key, size_t key_len, uint8_t *key_block, size_t key_b
 	}
 }
 
+static void
+_hmac_sha256_init(struct fbr_sha256_ctx *ctx, const void *key, size_t key_len)
+{
+	assert_dev(ctx);
+	assert_dev(key);
+	assert_dev(key_len);
+
+	_sha256_init(ctx);
+	fbr_sha256_ok(ctx);
+
+	uint8_t key_block[FBR_SHA256_BLOCK_SIZE];
+	_hmac_key_init(key, key_len, key_block, sizeof(key_block), 1);
+
+	_sha256_update(ctx, key_block, sizeof(key_block));
+}
+
+static void
+_hmac_sha256_final(struct fbr_sha256_ctx *ctx, const void *key, size_t key_len, uint8_t *digest,
+    size_t digest_len)
+{
+	assert_dev(ctx);
+	assert_dev(digest);
+	assert_dev(digest_len >= FBR_SHA256_DIGEST_SIZE);
+
+	_sha256_final(ctx, digest, digest_len);
+
+	uint8_t key_block[FBR_SHA256_BLOCK_SIZE];
+	_hmac_key_init(key, key_len, key_block, sizeof(key_block), 0);
+
+	_sha256_init(ctx);
+	fbr_sha256_ok(ctx);
+
+	_sha256_update(ctx, key_block, sizeof(key_block));
+	_sha256_update(ctx, digest, FBR_SHA256_DIGEST_SIZE);
+
+	_sha256_final(ctx, digest, digest_len);
+}
+
+void
+fbr_sha256(const void *buffer, size_t buffer_len, uint8_t *digest, size_t digest_len)
+{
+	assert(buffer || !buffer_len);
+	assert(digest);
+	assert(digest_len);
+
+	struct fbr_sha256_ctx ctx;
+	fbr_sha256_init(&ctx);
+	fbr_sha256_update(&ctx, buffer, buffer_len);
+	fbr_sha256_final(&ctx, digest, digest_len);
+}
+
+void
+fbr_sha256_init(struct fbr_sha256_ctx *ctx)
+{
+	assert(ctx);
+
+	_sha256_init(ctx);
+}
+
+void
+fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_len)
+{
+	fbr_sha256_ok(ctx);
+	assert(buffer || !buffer_len);
+
+	_sha256_update(ctx, buffer, buffer_len);
+}
+
+void
+fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len)
+{
+	fbr_sha256_ok(ctx);
+	assert(digest);
+	assert(digest_len >= FBR_SHA256_DIGEST_SIZE);
+
+	_sha256_final(ctx, digest, digest_len);
+}
+
 void
 fbr_hmac_sha256_init(struct fbr_sha256_ctx *ctx, const void *key, size_t key_len)
 {
@@ -249,13 +316,7 @@ fbr_hmac_sha256_init(struct fbr_sha256_ctx *ctx, const void *key, size_t key_len
 	assert(key);
 	assert(key_len);
 
-	fbr_sha256_init(ctx);
-	fbr_sha256_ok(ctx);
-
-	uint8_t key_block[FBR_SHA256_BLOCK_SIZE];
-	_hmac_key_init(key, key_len, key_block, sizeof(key_block), 1);
-
-	fbr_sha256_update(ctx, key_block, sizeof(key_block));
+	_hmac_sha256_init(ctx, key, key_len);
 }
 
 void
@@ -266,16 +327,5 @@ fbr_hmac_sha256_final(struct fbr_sha256_ctx *ctx, const void *key, size_t key_le
 	assert(digest);
 	assert(digest_len >= FBR_SHA256_DIGEST_SIZE);
 
-	fbr_sha256_final(ctx, digest, digest_len);
-
-	uint8_t key_block[FBR_SHA256_BLOCK_SIZE];
-	_hmac_key_init(key, key_len, key_block, sizeof(key_block), 0);
-
-	fbr_sha256_init(ctx);
-	fbr_sha256_ok(ctx);
-
-	fbr_sha256_update(ctx, key_block, sizeof(key_block));
-	fbr_sha256_update(ctx, digest, FBR_SHA256_DIGEST_SIZE);
-
-	fbr_sha256_final(ctx, digest, digest_len);
+	_hmac_sha256_final(ctx, key, key_len, digest, digest_len);
 }
