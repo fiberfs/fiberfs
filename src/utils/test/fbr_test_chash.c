@@ -31,6 +31,7 @@ fbr_cmd_test_sha256(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(sha.openssl);
 	fbr_sha256_update(&sha, NULL, 0);
 	fbr_sha256_final(&sha, digest, sizeof(digest));
+	assert_zero(sha.magic);
 	fbr_bin2hex(digest, sizeof(digest), hex, sizeof(hex));
 	fbr_test_logs("sha256()=%s (openssl: 0)", hex);
 	assert(!strcmp(hex, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"));
@@ -44,6 +45,7 @@ fbr_cmd_test_sha256(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 #endif
 	fbr_sha256_update(&sha, NULL, 0);
 	fbr_sha256_final(&sha, digest, sizeof(digest));
+	assert_zero(sha.magic);
 	fbr_bin2hex(digest, sizeof(digest), hex, sizeof(hex));
 	fbr_test_logs("sha256()=%s (openssl: %d)", hex, openssl);
 	assert(!strcmp(hex, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"));
@@ -143,17 +145,32 @@ fbr_cmd_test_hmac_sha256(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	const char *key1 = "secret_key";
 	size_t key1_len = strlen(key1);
-	fbr_hmac_sha256_init(&hmac, key1, key1_len);
+	fbr_hmac_sha256_init(&hmac, key1, key1_len, 1);
+	assert_zero(hmac.openssl);
+	assert_zero(hmac.openssl_hmac);
 	fbr_sha256_update(&hmac, "Hello", 5);
 	fbr_hmac_sha256_final(&hmac, key1, key1_len, digest, sizeof(digest));
+	assert_zero(hmac.magic);
 	fbr_bin2hex(digest, sizeof(digest), hex, sizeof(hex));
-	fbr_test_logs("hmac(%s, Hello)=%s", key1, hex);
+	fbr_test_logs("hmac(%s, Hello)=%s (openssl: 0)", key1, hex);
+	assert(!strcmp(hex, "0f0d2e10ec2bdf21bbdf490fd103820089879277261e9aa53ce3f8ecfd46b687"));
+
+	fbr_hmac_sha256_init(&hmac, key1, key1_len, 0);
+	int openssl_hmac = hmac.openssl + hmac.openssl_hmac;
+#ifdef CHTTP_OPENSSL
+	assert(openssl_hmac == 2);
+#endif
+	fbr_sha256_update(&hmac, "Hello", 5);
+	fbr_hmac_sha256_final(&hmac, key1, key1_len, digest, sizeof(digest));
+	assert_zero(hmac.magic);
+	fbr_bin2hex(digest, sizeof(digest), hex, sizeof(hex));
+	fbr_test_logs("hmac(%s, Hello)=%s (openssl: %d)", key1, hex, openssl_hmac);
 	assert(!strcmp(hex, "0f0d2e10ec2bdf21bbdf490fd103820089879277261e9aa53ce3f8ecfd46b687"));
 
 	const char *key2 = "key";
 	size_t key2_len = strlen(key2);
 	const char *msg2 = "The quick brown fox jumps over the lazy dog";
-	fbr_hmac_sha256_init(&hmac, key2, key2_len);
+	fbr_hmac_sha256_init(&hmac, key2, key2_len, 1);
 	for (size_t i = 0; i < strlen(msg2); i++) {
 		fbr_sha256_update(&hmac, &msg2[i], 1);
 	}
@@ -167,7 +184,7 @@ fbr_cmd_test_hmac_sha256(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		"12345678901234567890123456789012345678901234567890";
 	size_t key3_len = strlen(key3);
 	const char *msg3 = "key is 100 bytes";
-	fbr_hmac_sha256_init(&hmac, key3, key3_len);
+	fbr_hmac_sha256_init(&hmac, key3, key3_len, 1);
 	fbr_sha256_update(&hmac, msg3, strlen(msg3));
 	fbr_hmac_sha256_final(&hmac, key3, key3_len, digest, sizeof(digest));
 	fbr_bin2hex(digest, sizeof(digest), hex, sizeof(hex));

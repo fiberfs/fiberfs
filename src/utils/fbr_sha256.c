@@ -310,7 +310,13 @@ fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_
 
 	if (ctx->openssl) {
 #ifdef CHTTP_OPENSSL
-		assert(SHA256_Update(&ctx->openssl_ctx, buffer, buffer_len));
+		if (ctx->openssl_hmac) {
+			assert_dev(ctx->openssl_hmac_ctx);
+			assert(HMAC_Update(ctx->openssl_hmac_ctx, buffer, buffer_len));
+		} else {
+			assert(SHA256_Update(&ctx->openssl_ctx, buffer, buffer_len));
+		}
+
 		return;
 #else
 		fbr_ABORT("openssl missing");
@@ -330,8 +336,10 @@ fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len)
 	if (ctx->openssl) {
 #ifdef CHTTP_OPENSSL
 		assert(digest_len >= SHA256_DIGEST_LENGTH);
+
 		assert(SHA256_Final(digest, &ctx->openssl_ctx));
 		fbr_zero(ctx);
+
 		return;
 #else
 		fbr_ABORT("openssl missing");
@@ -339,16 +347,32 @@ fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len)
 	}
 
 	_sha256_final(ctx, digest, digest_len);
-
 	fbr_zero(ctx);
 }
 
 void
-fbr_hmac_sha256_init(struct fbr_sha256_ctx *ctx, const void *key, size_t key_len)
+fbr_hmac_sha256_init(struct fbr_sha256_ctx *ctx, const void *key, size_t key_len, int use_native)
 {
 	assert(ctx);
 	assert(key);
 	assert(key_len);
+
+	if (!use_native) {
+#ifdef CHTTP_OPENSSL
+		fbr_zero(ctx);
+		ctx->magic = FBR_SHA256_MAGIC;
+		ctx->openssl = 1;
+		ctx->openssl_hmac = 1;
+
+		const EVP_MD *md = EVP_sha256();
+		ctx->openssl_hmac_ctx = HMAC_CTX_new();
+		assert(ctx->openssl_hmac_ctx);
+
+		assert(HMAC_Init_ex(ctx->openssl_hmac_ctx, key, key_len, md, NULL));
+
+		return;
+#endif
+	}
 
 	_hmac_sha256_init(ctx, key, key_len);
 }
@@ -361,5 +385,25 @@ fbr_hmac_sha256_final(struct fbr_sha256_ctx *ctx, const void *key, size_t key_le
 	assert(digest);
 	assert(digest_len >= FBR_SHA256_DIGEST_SIZE);
 
+	if (ctx->openssl) {
+#ifdef CHTTP_OPENSSL
+		assert(ctx->openssl_hmac);
+		assert(digest_len >= SHA256_DIGEST_LENGTH);
+		assert_dev(ctx->openssl_hmac_ctx);
+
+		unsigned int len;
+		assert(HMAC_Final(ctx->openssl_hmac_ctx, digest, &len));
+		assert(len <= digest_len);
+
+		HMAC_CTX_free(ctx->openssl_hmac_ctx);
+		fbr_zero(ctx);
+
+		return;
+#else
+		fbr_ABORT("openssl missing");
+#endif
+	}
+
 	_hmac_sha256_final(ctx, key, key_len, digest, digest_len);
+	fbr_zero(ctx);
 }
