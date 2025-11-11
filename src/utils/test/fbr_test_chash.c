@@ -67,6 +67,35 @@ fbr_cmd_test_sha256(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("sha256(a x 1000000)=%s", hex);
 	assert(!strcmp(hex, "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0"));
 
+	// 5GB openssl test
+	/*
+	char buf2[1024 * 1024];
+	memset(buf2, 0, sizeof(buf2));
+	size_t bytes = 0;
+	double now = fbr_get_time();
+	SHA256_CTX sha_openssl;
+	uint8_t digest_openssl[FBR_SHA256_DIGEST_SIZE];
+	fbr_sha256_init(&sha);
+	SHA256_Init(&sha_openssl);
+	for (size_t i = 0; i < 5120; i++) {
+		fbr_sha256_update(&sha, buf2, sizeof(buf2));
+		SHA256_Update(&sha_openssl, buf2, sizeof(buf2));
+		bytes += sizeof(buf2);
+	}
+	fbr_sha256_update(&sha, buf2, 20);
+	SHA256_Update(&sha_openssl, buf2, 20);
+	fbr_sha256_final(&sha, digest, sizeof(digest));
+	SHA256_Final(digest_openssl, &sha_openssl);
+	double diff = fbr_get_time() - now;
+	fbr_bin2hex(digest, sizeof(digest), hex, sizeof(hex));
+	fbr_test_logs("sha256(###BIGBIGBIG)=%s", hex);
+	fbr_bin2hex(digest_openssl, sizeof(digest), hex, sizeof(hex));
+	fbr_test_logs("sha256(###__openssl)=%s", hex);
+	fbr_test_logs("bytes=%zu MB", bytes / 1024 / 1024);
+	fbr_test_logs("time=%lf", diff);
+	assert_zero(memcmp(digest, digest_openssl, sizeof(digest)));
+	*/
+
 	fbr_test_logs("test_sha256 passed");
 }
 
@@ -153,7 +182,7 @@ fbr_cmd_test_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
-fbr_cmd_test_sha256_open(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_test_sha256_openssl(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -164,20 +193,41 @@ fbr_cmd_test_sha256_open(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 #ifdef CHTTP_OPENSSL
+	fbr_test_random_seed();
+
 	char all_a[5000];
 	memset(all_a, 'a', sizeof(all_a));
 
-	SHA256_CTX sha256;
+	struct fbr_sha256_ctx sha;
+	SHA256_CTX sha_openssl;
 	uint8_t digest[FBR_SHA256_DIGEST_SIZE];
 	uint8_t digest_open[SHA256_DIGEST_LENGTH];
 	static_ASSERT(FBR_SHA256_DIGEST_SIZE == SHA256_DIGEST_LENGTH);
 	size_t i;
 
 	for (i = 0; i <= sizeof(all_a); i++) {
-		fbr_sha256(all_a, i, digest, sizeof(digest));
-		SHA256_Init(&sha256);
-		SHA256_Update(&sha256, all_a, i);
-		SHA256_Final(digest_open, &sha256);
+		fbr_sha256_init(&sha);
+		if (i <= 512) {
+			fbr_sha256_update(&sha, all_a, i);
+		} else {
+			size_t j = 0;
+			while (j < i) {
+				size_t remain = i - j;
+				size_t bytes = (random() % remain) + (random() % 2);
+				assert(bytes <= remain);
+
+				fbr_sha256_update(&sha, all_a, bytes);
+
+				j += bytes;
+			}
+			assert(j == i);
+		}
+		fbr_sha256_final(&sha, digest, sizeof(digest));
+
+		SHA256_Init(&sha_openssl);
+		SHA256_Update(&sha_openssl, all_a, i);
+		SHA256_Final(digest_open, &sha_openssl);
+
 		fbr_ASSERT(!memcmp(digest, digest_open, sizeof(digest)), "sha256 failed: %zu", i);
 	}
 

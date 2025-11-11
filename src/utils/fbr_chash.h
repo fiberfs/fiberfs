@@ -22,7 +22,7 @@ struct fbr_sha256_ctx {
 	uint32_t			h[8];
 
 	size_t				block_len;
-	size_t				total_len;
+	size_t				total_bytes;
 };
 
 struct fbr_md5_ctx {

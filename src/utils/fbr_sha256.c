@@ -21,7 +21,19 @@
 #define _SHA256_F3(x)		(_SHA_ROT(x, 7) ^ _SHA_ROT(x, 18) ^ _SHA_SHIFT(x, 3))
 #define _SHA256_F4(x)		(_SHA_ROT(x, 17) ^ _SHA_ROT(x, 19) ^ _SHA_SHIFT(x, 10))
 
-#define _UNPACK32(src, dest)					\
+#define _SHA_UNPACK64(src, dest)				\
+{								\
+	*((dest) + 7) = (uint8_t)(src);				\
+	*((dest) + 6) = (uint8_t)((src) >> 8);			\
+	*((dest) + 5) = (uint8_t)((src) >> 16);			\
+	*((dest) + 4) = (uint8_t)((src) >> 24);			\
+	*((dest) + 3) = (uint8_t)((src) >> 32);			\
+	*((dest) + 2) = (uint8_t)((src) >> 40);			\
+	*((dest) + 1) = (uint8_t)((src) >> 48);			\
+	*(dest) = (uint8_t)((src) >> 56);			\
+}
+
+#define _SHA_UNPACK32(src, dest)				\
 {								\
 	*((dest) + 3) = (uint8_t)(src);				\
 	*((dest) + 2) = (uint8_t)((src) >> 8);			\
@@ -29,7 +41,7 @@
 	*(dest) = (uint8_t)((src) >> 24);			\
 }
 
-#define _PACK32(src, dest)					\
+#define _SHA_PACK32(src, dest)					\
 {								\
 	*(dest) = ((uint32_t) *((src) + 3))			\
 		| ((uint32_t) *((src) + 2) << 8)		\
@@ -78,7 +90,7 @@ _sha256_calc(struct fbr_sha256_ctx *ctx, const uint8_t *block, size_t block_coun
 		uint32_t v[8];
 
 		for (size_t j = 0; j < 16; j++) {
-			_PACK32(&block[j * 4], &w[j]);
+			_SHA_PACK32(&block[j * 4], &w[j]);
 		}
 		for (size_t j = 16; j < 64; j++) {
 			_SHA256_EXT(j, w);
@@ -136,37 +148,43 @@ void
 fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_len)
 {
 	fbr_sha256_ok(ctx);
-	assert_dev(ctx->block_len < FBR_SHA256_BLOCK_SIZE);
 	assert(buffer || !buffer_len);
 
-	ctx->total_len += buffer_len;
+	const uint8_t *block_buffer = (const uint8_t*)buffer;
+	ctx->total_bytes += buffer_len;
 
-	size_t block_free = FBR_SHA256_BLOCK_SIZE - ctx->block_len;
-	size_t block_copy = buffer_len < block_free ? buffer_len : block_free;
+	if (ctx->block_len || buffer_len < FBR_SHA256_BLOCK_SIZE) {
+		assert_dev(ctx->block_len < FBR_SHA256_BLOCK_SIZE);
 
-	memcpy(&ctx->block[ctx->block_len], buffer, block_copy);
+		size_t block_free = FBR_SHA256_BLOCK_SIZE - ctx->block_len;
+		size_t block_copy = buffer_len < block_free ? buffer_len : block_free;
 
-	ctx->block_len += block_copy;
-	buffer_len -= block_copy;
+		if (block_copy) {
+			memcpy(&ctx->block[ctx->block_len], buffer, block_copy);
 
-	if (ctx->block_len < FBR_SHA256_BLOCK_SIZE) {
-		assert_zero_dev(buffer_len);
-		return;
+			ctx->block_len += block_copy;
+			buffer_len -= block_copy;
+			block_buffer += block_copy;
+		}
+
+		if (ctx->block_len < FBR_SHA256_BLOCK_SIZE) {
+			assert_zero_dev(buffer_len);
+			return;
+		}
+
+		_sha256_calc(ctx, ctx->block, 1);
 	}
 
-	const uint8_t *block_buffer = (const uint8_t*)buffer + block_copy;
 	size_t block_count = buffer_len / FBR_SHA256_BLOCK_SIZE;
-
-	_sha256_calc(ctx, ctx->block, 1);
 
 	if (block_count) {
 		_sha256_calc(ctx, block_buffer, block_count);
-	}
 
-	size_t block_done = block_count * FBR_SHA256_BLOCK_SIZE;
-	assert(block_done <= buffer_len);
-	block_buffer += block_done;
-	buffer_len -= block_done;
+		size_t block_done = block_count * FBR_SHA256_BLOCK_SIZE;
+		assert(block_done <= buffer_len);
+		block_buffer += block_done;
+		buffer_len -= block_done;
+	}
 
 	if (buffer_len) {
 		memcpy(ctx->block, block_buffer, buffer_len);
@@ -178,26 +196,26 @@ fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_
 void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len)
 {
 	fbr_sha256_ok(ctx);
-	assert_dev(ctx->block_len < FBR_SHA256_BLOCK_SIZE);
 	assert(digest);
 	assert(digest_len >= FBR_SHA256_DIGEST_SIZE);
 
 	size_t block_count = 1;
 	if (ctx->block_len > FBR_SHA256_BLOCK_SIZE - 9) {
+		assert_dev(ctx->block_len < FBR_SHA256_BLOCK_SIZE);
 		block_count++;
 	}
 
-	size_t total_bits = ctx->total_len * 8;
 	size_t block_size = block_count * FBR_SHA256_BLOCK_SIZE;
-
 	memset(ctx->block + ctx->block_len, 0, block_size - ctx->block_len);
 	ctx->block[ctx->block_len] = 0x80;
-	_UNPACK32(total_bits, ctx->block + block_size - 4);
+
+	size_t total_bits = ctx->total_bytes * 8;
+	_SHA_UNPACK64(total_bits, ctx->block + block_size - 8);
 
 	_sha256_calc(ctx, ctx->block, block_count);
 
 	for (size_t i = 0 ; i < 8; i++) {
-		_UNPACK32(ctx->h[i], &digest[i * 4]);
+		_SHA_UNPACK32(ctx->h[i], &digest[i * 4]);
 	}
 
 	fbr_zero(ctx);
