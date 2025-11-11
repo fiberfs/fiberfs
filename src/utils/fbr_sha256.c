@@ -136,6 +136,7 @@ static void
 _sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_len)
 {
 	assert_dev(ctx);
+	assert_zero_dev(ctx->openssl);
 	assert_dev(buffer || !buffer_len);
 
 	const uint8_t *block_buffer = (const uint8_t*)buffer;
@@ -185,6 +186,7 @@ static void
 _sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len)
 {
 	assert_dev(ctx);
+	assert_zero_dev(ctx->openssl);
 	assert_dev(digest);
 	assert_dev(digest_len >= FBR_SHA256_DIGEST_SIZE);
 
@@ -206,8 +208,6 @@ _sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len)
 	for (size_t i = 0 ; i < 8; i++) {
 		_SHA_UNPACK32(ctx->h[i], &digest[i * 4]);
 	}
-
-	fbr_zero(ctx);
 }
 
 static void
@@ -277,15 +277,27 @@ fbr_sha256(const void *buffer, size_t buffer_len, uint8_t *digest, size_t digest
 	assert(digest_len);
 
 	struct fbr_sha256_ctx ctx;
-	fbr_sha256_init(&ctx);
+	fbr_sha256_init(&ctx, 0);
 	fbr_sha256_update(&ctx, buffer, buffer_len);
 	fbr_sha256_final(&ctx, digest, digest_len);
 }
 
 void
-fbr_sha256_init(struct fbr_sha256_ctx *ctx)
+fbr_sha256_init(struct fbr_sha256_ctx *ctx, int use_native)
 {
 	assert(ctx);
+
+	if (!use_native) {
+#ifdef CHTTP_OPENSSL
+		fbr_zero(ctx);
+		ctx->magic = FBR_SHA256_MAGIC;
+		ctx->openssl = 1;
+
+		assert(SHA256_Init(&ctx->openssl_ctx));
+
+		return;
+#endif
+	}
 
 	_sha256_init(ctx);
 }
@@ -295,6 +307,15 @@ fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_
 {
 	fbr_sha256_ok(ctx);
 	assert(buffer || !buffer_len);
+
+	if (ctx->openssl) {
+#ifdef CHTTP_OPENSSL
+		assert(SHA256_Update(&ctx->openssl_ctx, buffer, buffer_len));
+		return;
+#else
+		fbr_ABORT("openssl missing");
+#endif
+	}
 
 	_sha256_update(ctx, buffer, buffer_len);
 }
@@ -306,7 +327,20 @@ fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len)
 	assert(digest);
 	assert(digest_len >= FBR_SHA256_DIGEST_SIZE);
 
+	if (ctx->openssl) {
+#ifdef CHTTP_OPENSSL
+		assert(digest_len >= SHA256_DIGEST_LENGTH);
+		assert(SHA256_Final(digest, &ctx->openssl_ctx));
+		fbr_zero(ctx);
+		return;
+#else
+		fbr_ABORT("openssl missing");
+#endif
+	}
+
 	_sha256_final(ctx, digest, digest_len);
+
+	fbr_zero(ctx);
 }
 
 void

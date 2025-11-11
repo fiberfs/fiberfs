@@ -10,6 +10,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef CHTTP_OPENSSL
+#include "openssl/sha.h"
+#endif
+
 #define FBR_SHA256_DIGEST_SIZE		32
 #define FBR_SHA256_BLOCK_SIZE 		64
 #define FBR_MD5_DIGEST_SIZE		16
@@ -17,6 +21,12 @@
 struct fbr_sha256_ctx {
 	unsigned int			magic;
 #define FBR_SHA256_MAGIC		0x772F494A
+
+	unsigned int			openssl:1;
+
+#ifdef CHTTP_OPENSSL
+	SHA256_CTX			openssl_ctx;
+#endif
 
 	uint8_t				block[FBR_SHA256_BLOCK_SIZE * 2];
 	uint32_t			h[8];
@@ -38,7 +48,7 @@ struct fbr_md5_ctx {
 };
 
 void fbr_sha256(const void *buffer, size_t buffer_len, uint8_t *digest, size_t digest_len);
-void fbr_sha256_init(struct fbr_sha256_ctx *ctx);
+void fbr_sha256_init(struct fbr_sha256_ctx *ctx, int use_native);
 void fbr_sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_len);
 void fbr_sha256_final(struct fbr_sha256_ctx *ctx, uint8_t *digest, size_t digest_len);
 
