@@ -105,6 +105,7 @@ int
 chttp_tcp_connect(struct chttp_addr *addr)
 {
 	chttp_addr_resolved(addr);
+	assert_zero_dev(addr->error);
 
 	addr->sock = socket(addr->sa.sa_family, SOCK_STREAM, 0);
 

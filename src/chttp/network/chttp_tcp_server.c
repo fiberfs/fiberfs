@@ -39,8 +39,7 @@ _tcp_get_port(struct chttp_addr *addr)
 int
 chttp_tcp_listen(struct chttp_addr *addr, const char *ip, int port, int queue_len)
 {
-	chttp_addr_ok(addr);
-	assert(addr->sock == -1);
+	chttp_addr_closed(addr);
 
 	int ret = chttp_dns_resolve(addr, ip, strlen(ip), port, 0);
 
@@ -98,9 +97,8 @@ chttp_tcp_listen(struct chttp_addr *addr, const char *ip, int port, int queue_le
 int
 chttp_tcp_accept(struct chttp_addr *addr, struct chttp_addr *server_addr)
 {
-	chttp_addr_ok(addr);
-	assert(addr->state == CHTTP_ADDR_NONE);
-	assert(addr->sock == -1);
+	chttp_addr_closed(addr);
+	assert_zero_dev(addr->error);
 	chttp_addr_connected(server_addr);
 	assert(server_addr->listen);
 
@@ -127,6 +125,8 @@ chttp_tcp_accept(struct chttp_addr *addr, struct chttp_addr *server_addr)
 	}
 
 	_tcp_get_port(addr);
+
+	chttp_addr_connected(addr);
 
 	return 0;
 }

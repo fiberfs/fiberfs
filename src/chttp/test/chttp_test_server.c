@@ -214,15 +214,13 @@ _server_finish(struct fbr_test_context *ctx)
 		chttp_tcp_close(&server->saddr);
 	}
 
-	assert(server->saddr.state == CHTTP_ADDR_NONE);
-	assert(server->saddr.sock == -1);
+	chttp_addr_closed(&server->saddr);
 
 	if (server->addr.state == CHTTP_ADDR_CONNECTED) {
 		chttp_tcp_close(&server->addr);
 	}
 
-	assert(server->addr.state == CHTTP_ADDR_NONE);
-	assert(server->addr.sock == -1);
+	chttp_addr_closed(&server->addr);
 
 	fbr_zero(server);
 	free(server);
@@ -246,7 +244,7 @@ static void
 _server_init_socket(struct chttp_test_server *server)
 {
 	_server_ok(server);
-	assert(server->saddr.sock == -1);
+	chttp_addr_closed(&server->saddr);
 
 	int val = chttp_tcp_listen(&server->saddr, server->ip_str, 0, 0);
 	fbr_test_ERROR(val || server->saddr.error, "*SERVER* server listen");
@@ -331,9 +329,7 @@ chttp_test_cmd_server_accept(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	}
 
 	chttp_addr_connected(&server->saddr);
-	chttp_addr_ok(&server->addr);
-	assert(server->addr.state == CHTTP_ADDR_NONE);
-	assert(server->addr.sock == -1);
+	chttp_addr_closed(&server->addr);
 
 	if (fbr_test_is_valgrind()) {
 		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE,
@@ -375,9 +371,7 @@ chttp_test_cmd_server_close(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 	chttp_addr_connected(&server->addr);
 
 	chttp_tcp_close(&server->addr);
-
-	assert(server->addr.state == CHTTP_ADDR_NONE);
-	assert(server->addr.sock == -1);
+	chttp_addr_closed(&server->addr);
 }
 
 char *
@@ -848,8 +842,7 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 
 	if (!H1_1) {
 		chttp_tcp_close(&server->addr);
-		assert(server->addr.state == CHTTP_ADDR_NONE);
-		assert(server->addr.sock == -1);
+		chttp_addr_closed(&server->addr);
 	}
 }
 

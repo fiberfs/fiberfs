@@ -88,5 +88,11 @@ void chttp_tcp_error_check(struct chttp_context *ctx);
 	assert((addr)->state == CHTTP_ADDR_RESOLVED);		\
 	assert((addr)->sock == -1);				\
 }
+#define chttp_addr_closed(addr)					\
+{								\
+	chttp_addr_ok(addr);					\
+	assert((addr)->state == CHTTP_ADDR_NONE);		\
+	assert((addr)->sock == -1);				\
+}
 
 #endif /* _CHTTP_NETWORK_H_INCLUDED_ */
