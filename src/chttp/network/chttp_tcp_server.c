@@ -40,6 +40,7 @@ int
 chttp_tcp_listen(struct chttp_addr *addr, const char *ip, int port, int queue_len)
 {
 	chttp_addr_closed(addr);
+	assert_zero_dev(addr->error);
 
 	int ret = chttp_dns_resolve(addr, ip, strlen(ip), port, 0);
 
@@ -122,6 +123,8 @@ chttp_tcp_accept(struct chttp_addr *addr, struct chttp_addr *server_addr)
 			assert(addr->state != CHTTP_ADDR_CONNECTED);
 			return 1;
 		}
+	} else {
+		assert_zero_dev(addr->tls);
 	}
 
 	_tcp_get_port(addr);

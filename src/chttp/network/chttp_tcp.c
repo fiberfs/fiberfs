@@ -59,6 +59,8 @@ chttp_tcp_poll(struct chttp_addr *addr, short events, int timeout_msec)
 static int
 _tcp_poll_connected(struct chttp_addr *addr)
 {
+	assert_dev(addr);
+
 	chttp_tcp_poll(addr, POLLWRNORM, addr->timeout_connect_ms);
 
 	if (addr->poll_result <= 0) {
@@ -86,12 +88,11 @@ _tcp_poll_connected(struct chttp_addr *addr)
 void
 _tcp_set_timeouts(struct chttp_addr *addr)
 {
-	struct timeval timeout;
-
 	chttp_addr_connected(addr);
 
 	addr->time_start = fbr_get_time();
 
+	struct timeval timeout;
 	timeout.tv_sec = addr->timeout_transfer_ms / 1000;
 	timeout.tv_usec = (addr->timeout_transfer_ms % 1000) * 1000;
 
@@ -144,7 +145,6 @@ chttp_tcp_connect(struct chttp_addr *addr)
 	if (addr->nonblocking) {
 		chttp_tcp_set_blocking(addr);
 	}
-
 	assert_zero(addr->nonblocking);
 
 	_tcp_set_timeouts(addr);
@@ -298,13 +298,15 @@ chttp_tcp_close(struct chttp_addr *addr)
 
 	assert_zero(close(addr->sock));
 
+	addr->sock = -1;
+
 	if (addr->resolved) {
 		addr->state = CHTTP_ADDR_RESOLVED;
+		chttp_addr_resolved(addr);
 	} else  {
 		addr->state = CHTTP_ADDR_NONE;
+		chttp_addr_closed(addr);
 	}
-
-	addr->sock = -1;
 
 	if (addr->tls) {
 		chttp_tls_close(addr);
