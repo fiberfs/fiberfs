@@ -104,8 +104,6 @@ chttp_tcp_accept(struct chttp_addr *addr, struct chttp_addr *server_addr)
 	chttp_addr_connected(server_addr);
 	assert(server_addr->listen);
 
-	chttp_addr_init(addr);
-
 	addr->len = sizeof(addr->sa6);
 	addr->sock = accept(server_addr->sock, &addr->sa, &addr->len);
 

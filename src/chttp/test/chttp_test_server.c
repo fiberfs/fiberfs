@@ -335,6 +335,13 @@ chttp_test_cmd_server_accept(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	assert(server->addr.state == CHTTP_ADDR_NONE);
 	assert(server->addr.sock == -1);
 
+	if (fbr_test_is_valgrind()) {
+		fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE,
+			"valgrind detected, bumping server timeouts");
+		server->addr.timeout_connect_ms = 60000;
+		server->addr.timeout_transfer_ms = 120000;
+	}
+
 	int ret = chttp_tcp_accept(&server->addr, &server->saddr);
 
 	fbr_test_ERROR(ret || server->addr.error, "*SERVER* accept error %d",
