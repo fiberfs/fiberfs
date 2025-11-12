@@ -72,11 +72,10 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 	}
 
 	chttp_addr_resolved(&ctx->addr);
+	assert_zero_dev(ctx->addr.tls);
 
 	if (tls) {
 		ctx->addr.tls = 1;
-	} else {
-		assert_zero_dev(ctx->addr.tls);
 	}
 }
 

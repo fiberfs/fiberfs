@@ -100,6 +100,7 @@ chttp_tcp_accept(struct chttp_addr *addr, struct chttp_addr *server_addr)
 {
 	chttp_addr_closed(addr);
 	assert_zero_dev(addr->error);
+	assert_zero_dev(addr->tls);
 	chttp_addr_connected(server_addr);
 	assert(server_addr->listen);
 
@@ -123,8 +124,6 @@ chttp_tcp_accept(struct chttp_addr *addr, struct chttp_addr *server_addr)
 			assert(addr->state != CHTTP_ADDR_CONNECTED);
 			return 1;
 		}
-	} else {
-		assert_zero_dev(addr->tls);
 	}
 
 	_tcp_get_port(addr);
