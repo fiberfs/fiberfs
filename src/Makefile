@@ -10,6 +10,8 @@ LDFLAGS=-shared
 LIBFLAGS=-lrt -lpthread
 AR=ar cr
 BUILD=build
+SAVED_CC=$(BUILD)/_cc_flags
+CC_WITH_FLAGS=$(CC) $(CFLAGS) $(CFLAGS_CC) $(CFLAGS_BUILD) $(DEPFLAGS)
 
 TEST_SRC:=$(shell find * -type f -name '*.c' -path '*test/*')
 TEST_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(TEST_SRC)))
@@ -135,6 +137,16 @@ GCOV_REPORT=report
 AFL_CC=afl-clang-fast
 AFL_CFLAGS_CC=$(CFLAGS_CLANG)
 
+# Check if CC/FLAGS changed (CC_REUSE=true to reuse)
+_CC_WITH_FLAGS=$(file < $(SAVED_CC))
+ifeq ($(_CC_WITH_FLAGS),)
+else ifeq ($(findstring clean,$(MAKECMDGOALS)),clean)
+else ifeq ($(CC_REUSE),true)
+CC_WITH_FLAGS=$(_CC_WITH_FLAGS)
+else ifneq ($(_CC_WITH_FLAGS),$(CC_WITH_FLAGS))
+$(error Compiler flags changed, please run 'make clean' or use 'CC_REUSE=true')
+endif
+
 .PHONY:		all lib clean gcov gcovclean afl
 
 all:		chttp_client fjson_client fiberfs_test lib
@@ -172,8 +184,11 @@ libcstore.a:	$(CSTORE_OBJS) $(UTILS_OBJS)
 		$(RM) $@
 		$(AR) $@ $(CSTORE_OBJS) $(UTILS_OBJS)
 
-$(BUILD)/%.o:	%.c | $(BUILD_DIRS)
-		$(CC) $(CFLAGS) $(CFLAGS_CC) $(CFLAGS_BUILD) $(DEPFLAGS) -c $< -o $@
+$(BUILD)/%.o:	%.c | $(BUILD_DIRS) $(SAVED_CC)
+		$(CC_WITH_FLAGS) -c $< -o $@
+
+$(SAVED_CC):
+		$(file > $(SAVED_CC),$(CC_WITH_FLAGS))
 
 $(BUILD_DIRS):
 		@mkdir -p $@

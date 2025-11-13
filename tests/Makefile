@@ -34,7 +34,7 @@ test:			check
 FORCE:
 
 $(FIBERFS_TEST):	FORCE
-			$(MAKE) -C .. fiberfs_test
+			$(MAKE) -C .. fiberfs_test CC_REUSE=true
 
 valgrind:
 			$(eval PRE_EXEC=$(VALGRIND))
