@@ -80,14 +80,26 @@ _s3_request_path(struct fbr_cstore *cstore, const char *method, const char *path
 	return _s3_request_url(cstore, method, url, url_len, http, retries);
 }
 
-static void
-_s3_connection(struct chttp_context *http)
+static int
+_s3_connection(struct chttp_context *http, struct fbr_cstore_backend *backend)
 {
 	assert_dev(http);
+	assert_dev(backend);
+
+	chttp_connect(http, backend->host, backend->host_len, backend->port, backend->tls);
+	if (http->error) {
+		fbr_rlog(FBR_LOG_CS_S3, "S3 ERROR %s (%s %d)", backend->host, chttp_error_msg(http),
+			http->error);
+		return 1;
+	}
+
+	// TODO sign request here...
 
 	// TODO make parameters
 	http->addr.timeout_connect_ms = 3000;
 	http->addr.timeout_transfer_ms = 5000;
+
+	return 0;
 }
 
 static void
@@ -116,14 +128,10 @@ _s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http, const char *
 	fbr_cstore_backend_ok(backend);
 	assert_zero_dev(http->error);
 
-	chttp_connect(http, backend->host, backend->host_len, backend->port, backend->tls);
-	if (http->error) {
-		fbr_rlog(FBR_LOG_CS_S3, "S3 ERROR %s (%d)", chttp_error_msg(http),
-			http->error);
+	int ret = _s3_connection(http, backend);
+	if (ret) {
 		return;
 	}
-
-	_s3_connection(http);
 
 	chttp_send(http);
 	if (http->error) {
@@ -239,13 +247,10 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 	}
 	fbr_cstore_backend_ok(backend);
 
-	chttp_connect(http, backend->host, backend->host_len, backend->port, backend->tls);
-	if (http->error) {
-		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp connection %s", backend->host);
+	int ret = _s3_connection(http, backend);
+	if (ret) {
 		return;
 	}
-
-	_s3_connection(http);
 
 	chttp_send(http);
 	if (http->error) {
@@ -531,14 +536,10 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 		}
 		fbr_cstore_backend_ok(backend);
 
-		chttp_connect(&http, backend->host, backend->host_len, backend->port,
-			backend->tls);
-		if (http.error) {
-			fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp connection %s", backend->host);
+		int ret = _s3_connection(&http, backend);
+		if (ret) {
 			continue;
 		}
-
-		_s3_connection(&http);
 
 		chttp_send(&http);
 		if (http.error) {

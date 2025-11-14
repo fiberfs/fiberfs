@@ -573,6 +573,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		break;
 	}
 
+	// TODO do we care about accept-encoding gzip?
+
 	char etag[FBR_ID_STRING_MAX];
 	fbr_id_string(metadata.etag, etag, sizeof(etag));
 
