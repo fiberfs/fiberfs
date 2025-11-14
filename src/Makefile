@@ -6,12 +6,12 @@ CFLAGS_GCC=
 CFLAGS_CLANG=-Wno-gnu-zero-variadic-macro-arguments
 CFLAGS_BUILD=
 DEPFLAGS=-MMD -MP
+CC_ALL=$(CC) $(CFLAGS) $(CFLAGS_CC) $(CFLAGS_BUILD) $(DEPFLAGS)
 LDFLAGS=-shared
 LIBFLAGS=-lrt -lpthread
 AR=ar cr
 BUILD=build
-SAVED_CC=$(BUILD)/_cc_flags
-CC_WITH_FLAGS=$(CC) $(CFLAGS) $(CFLAGS_CC) $(CFLAGS_BUILD) $(DEPFLAGS)
+CC_FILE=$(BUILD)/_cc_flags
 
 TEST_SRC:=$(shell find * -type f -name '*.c' -path '*test/*')
 TEST_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(TEST_SRC)))
@@ -138,12 +138,12 @@ AFL_CC=afl-clang-fast
 AFL_CFLAGS_CC=$(CFLAGS_CLANG)
 
 # Check if CC/FLAGS changed (CC_REUSE=true to reuse)
-_CC_WITH_FLAGS=$(file < $(SAVED_CC))
-ifeq ($(_CC_WITH_FLAGS),)
+_CC_ALL=$(file < $(CC_FILE))
+ifeq ($(_CC_ALL),)
 else ifeq ($(findstring clean,$(MAKECMDGOALS)),clean)
 else ifeq ($(CC_REUSE),true)
-CC_WITH_FLAGS=$(_CC_WITH_FLAGS)
-else ifneq ($(_CC_WITH_FLAGS),$(CC_WITH_FLAGS))
+CC_ALL=$(_CC_ALL)
+else ifneq ($(_CC_ALL),$(CC_ALL))
 $(error Compiler flags changed, please run 'make clean' or use 'CC_REUSE=true')
 endif
 
@@ -184,11 +184,11 @@ libcstore.a:	$(CSTORE_OBJS) $(UTILS_OBJS)
 		$(RM) $@
 		$(AR) $@ $(CSTORE_OBJS) $(UTILS_OBJS)
 
-$(BUILD)/%.o:	%.c | $(BUILD_DIRS) $(SAVED_CC)
-		$(CC_WITH_FLAGS) -c $< -o $@
+$(BUILD)/%.o:	%.c | $(BUILD_DIRS) $(CC_FILE)
+		$(CC_ALL) -c $< -o $@
 
-$(SAVED_CC):
-		$(file > $(SAVED_CC),$(CC_WITH_FLAGS))
+$(CC_FILE):
+		$(file > $(CC_FILE),$(CC_ALL))
 
 $(BUILD_DIRS):
 		@mkdir -p $@
