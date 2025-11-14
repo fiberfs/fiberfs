@@ -11,7 +11,6 @@ LDFLAGS=-shared
 LIBFLAGS=-lrt -lpthread
 AR=ar cr
 BUILD=build
-CC_FILE=$(BUILD)/_cc_flags
 
 TEST_SRC:=$(shell find * -type f -name '*.c' -path '*test/*')
 TEST_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(TEST_SRC)))
@@ -39,7 +38,7 @@ SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(
 	$(CSTORE_SRC), $(ALL_SOURCE))
 OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(SOURCE)))
 DEPS:=$(patsubst %,$(BUILD)/%.d,$(basename $(ALL_SOURCE)))
-BUILD_DIRS=$(sort $(dir $(DEPS)))
+BUILD_DIRS:=$(sort $(dir $(DEPS)))
 
 RM=rm -f
 RMDIR=rm -rf
@@ -137,6 +136,7 @@ AFL_CC=afl-clang-fast
 AFL_CFLAGS_CC=$(CFLAGS_CLANG)
 
 # Check if CC/FLAGS changed (CC_REUSE=true to reuse)
+CC_FILE=$(BUILD)/_cc_flags
 _CC_ALL=$(file < $(CC_FILE))
 ifeq ($(_CC_ALL),)
 else ifeq ($(findstring clean,$(MAKECMDGOALS)),clean)
