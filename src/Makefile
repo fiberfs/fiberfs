@@ -118,8 +118,7 @@ CFLAGS_CC=
 ifeq ($(findstring clang,$(CC)),clang)
 	CC_CLANG=true
 	CFLAGS_CC=$(CFLAGS_CLANG)
-endif
-ifeq ($(findstring gcc,$(CC)),gcc)
+else ifeq ($(findstring gcc,$(CC)),gcc)
 	CC_GCC=true
 	CFLAGS_CC=$(CFLAGS_GCC)
 endif
