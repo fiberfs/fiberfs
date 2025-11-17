@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2024 chttp
  *
+ * TODO look at aws-lc
+ *
  */
 
 #include "chttp.h"

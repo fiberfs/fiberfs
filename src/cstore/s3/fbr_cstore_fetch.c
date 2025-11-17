@@ -81,8 +81,10 @@ _s3_request_path(struct fbr_cstore *cstore, const char *method, const char *path
 }
 
 static int
-_s3_connection(struct chttp_context *http, struct fbr_cstore_backend *backend)
+_s3_connection(struct fbr_cstore *cstore, struct chttp_context *http,
+    struct fbr_cstore_backend *backend)
 {
+	assert_dev(cstore);
 	assert_dev(http);
 	assert_dev(backend);
 
@@ -93,7 +95,11 @@ _s3_connection(struct chttp_context *http, struct fbr_cstore_backend *backend)
 		return 1;
 	}
 
-	// TODO sign request here...
+	int ret = fbr_cstore_s3_sign(cstore, http);
+	if (ret) {
+		http->error = CHTTP_ERR_INIT;
+		return ret;
+	}
 
 	// TODO make parameters
 	http->addr.timeout_connect_ms = 3000;
@@ -128,7 +134,7 @@ _s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http, const char *
 	fbr_cstore_backend_ok(backend);
 	assert_zero_dev(http->error);
 
-	int ret = _s3_connection(http, backend);
+	int ret = _s3_connection(cstore, http, backend);
 	if (ret) {
 		return;
 	}
@@ -247,7 +253,7 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 	}
 	fbr_cstore_backend_ok(backend);
 
-	int ret = _s3_connection(http, backend);
+	int ret = _s3_connection(cstore, http, backend);
 	if (ret) {
 		return;
 	}
@@ -536,7 +542,7 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 		}
 		fbr_cstore_backend_ok(backend);
 
-		int ret = _s3_connection(&http, backend);
+		int ret = _s3_connection(cstore, &http, backend);
 		if (ret) {
 			continue;
 		}
