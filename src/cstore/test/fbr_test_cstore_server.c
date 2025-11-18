@@ -43,24 +43,31 @@ fbr_cmd_cstore_set_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
-	assert(cmd->param_count <= 5);
+	assert(cmd->param_count >= 6 && cmd->param_count <= 8);
 
 	long index = fbr_test_parse_long(cmd->params[0].value);
 	const char *host = cmd->params[1].value;
+	fbr_test_ERROR_string(host);
 	long port = fbr_test_parse_long(cmd->params[2].value);
+	const char *region = cmd->params[3].value;
+	fbr_test_ERROR_string(region);
+	const char *access_key = cmd->params[4].value;
+	fbr_test_ERROR_string(access_key);
+	const char *secret_key = cmd->params[5].value;
+	fbr_test_ERROR_string(secret_key);
 	long tls = 0;
 	const char *prefix = NULL;
 
-	if (cmd->param_count >= 4) {
-		tls = fbr_test_parse_long(cmd->params[3].value);
+	if (cmd->param_count >= 7) {
+		tls = fbr_test_parse_long(cmd->params[6].value);
 	}
-	if (cmd->param_count >= 5) {
-		prefix = cmd->params[4].value;
+	if (cmd->param_count >= 8) {
+		prefix = cmd->params[7].value;
 	}
 
 	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
 
-	fbr_cstore_s3_init(cstore, host, port, tls, prefix);
+	fbr_cstore_s3_init(cstore, host, port, tls, prefix, region, access_key, secret_key);
 
 	struct fbr_cstore_backend *s3 = cstore->s3.backend;
 	fbr_cstore_backend_ok(s3);
@@ -76,10 +83,11 @@ fbr_cmd_cstore_add_cluster(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
-	assert(cmd->param_count <= 4);
+	assert(cmd->param_count >= 3 && cmd->param_count <= 4);
 
 	long index = fbr_test_parse_long(cmd->params[0].value);
 	const char *host = cmd->params[1].value;
+	fbr_test_ERROR_string(host);
 	long port = fbr_test_parse_long(cmd->params[2].value);
 	long tls = 0;
 

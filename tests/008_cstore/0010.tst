@@ -8,6 +8,7 @@ server_read_request
 server_method_match PUT
 server_url_submatch ".fiberfsindex"
 server_header_exists "Content-Length"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
 server_body_submatch '{"fiberfs":1,'
 server_send_response
 
@@ -16,11 +17,12 @@ server_read_request
 server_method_match PUT
 server_url_submatch ".fiberfsroot"
 server_header_exists "Content-Length"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
 server_body_submatch '{"fiberfs":1,'
 server_send_response
 
 cstore_init 0
-cstore_set_s3 0 $server_host $server_port
+cstore_set_s3 0 $server_host $server_port region access_key secret_key
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
@@ -36,6 +38,7 @@ server_method_match PUT
 server_url_submatch "test.txt"
 server_url_submatch ".fiberfschunk"
 server_header_exists "Content-Length"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
 server_body_match "content_here"
 server_send_response
 
@@ -44,6 +47,7 @@ server_read_request
 server_method_match PUT
 server_url_submatch ".fiberfsindex"
 server_header_exists "Content-Length"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
 server_body_submatch '{"fiberfs":1,'
 server_send_response
 
@@ -52,6 +56,7 @@ server_read_request
 server_method_match PUT
 server_url_submatch ".fiberfsroot"
 server_header_exists "Content-Length"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
 server_body_submatch '{"fiberfs":1,'
 server_send_response
 
@@ -59,6 +64,7 @@ server_send_response
 server_read_request
 server_method_match DELETE
 server_url_submatch ".fiberfsindex"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
 server_send_response
 
 set_var1 $sys_tmpdir "/test.txt"
