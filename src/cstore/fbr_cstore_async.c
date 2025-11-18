@@ -365,7 +365,7 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 		return;
 	}
 
-	char url[FBR_PATH_MAX];
+	char url[FBR_URL_MAX];
 	size_t url_len = fbr_cstore_s3_chunk_url(cstore, file, chunk, url, sizeof(url));
 
 	_async_url_delete(cstore, url, url_len, chunk->id, FBR_CSTORE_FILE_CHUNK);
@@ -426,7 +426,7 @@ fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory
 		return;
 	}
 
-	char url[FBR_PATH_MAX];
+	char url[FBR_URL_MAX];
 	size_t url_len = fbr_cstore_s3_index_url(cstore, directory, url, sizeof(url));
 
 	_async_url_delete(cstore, url, url_len, directory->version, FBR_CSTORE_FILE_INDEX);

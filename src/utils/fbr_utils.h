@@ -13,6 +13,7 @@
 #include <time.h>
 
 #define FBR_PATH_MAX				(PATH_MAX + 128)
+#define FBR_URL_MAX				(PATH_MAX * 3)
 #define FBR_HEX_LEN(len)			(((len) * 2) + 1)
 #define FBR_HASH_SLEN				FBR_HEX_LEN(sizeof(fbr_hash_t))
 

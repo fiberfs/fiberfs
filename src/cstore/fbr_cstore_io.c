@@ -605,8 +605,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	chttp_context_init(&http);
 	struct fbr_cstore_op_sync sync;
 	fbr_cstore_op_sync_init(&sync);
-	fbr_cstore_async_index_send(cstore, &http, index_path, writer, directory->version,
-		&sync);
+	fbr_cstore_async_index_send(cstore, &http, index_path, writer, directory->version, &sync);
 
 	int ret;
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, writer->bytes,
@@ -886,7 +885,7 @@ fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 		return;
 	}
 
-	char url[FBR_PATH_MAX];
+	char url[FBR_URL_MAX];
 	size_t url_len = fbr_cstore_s3_index_url(cstore, directory, url, sizeof(url));
 
 	fbr_cstore_io_delete_url(cstore, url, url_len, directory->version, FBR_CSTORE_FILE_INDEX);

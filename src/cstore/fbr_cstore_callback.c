@@ -27,7 +27,7 @@ fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 		return;
 	}
 
-	char url[FBR_PATH_MAX];
+	char url[FBR_URL_MAX];
 	size_t url_len = fbr_cstore_s3_chunk_url(cstore, file, chunk, url, sizeof(url));
 
 	fbr_cstore_io_delete_url(cstore, url, url_len, chunk->id, FBR_CSTORE_FILE_CHUNK);

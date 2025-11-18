@@ -74,7 +74,7 @@ _s3_request_path(struct fbr_cstore *cstore, const char *method, const char *path
 {
 	assert_dev(path);
 
-	char url[FBR_PATH_MAX];
+	char url[FBR_URL_MAX];
 	size_t url_len = fbr_cstore_s3_url(cstore, path, url, sizeof(url));
 
 	return _s3_request_url(cstore, method, url, url_len, http, retries);
