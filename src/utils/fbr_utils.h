@@ -13,7 +13,8 @@
 #include <time.h>
 
 #define FBR_PATH_MAX				(PATH_MAX + 128)
-#define FBR_HASH_SLEN				((sizeof(fbr_hash_t) * 2) + 1)
+#define FBR_HEX_LEN(len)			(((len) * 2) + 1)
+#define FBR_HASH_SLEN				FBR_HEX_LEN(sizeof(fbr_hash_t))
 
 typedef uint64_t fbr_hash_t;
 
@@ -26,7 +27,7 @@ unsigned long fbr_parse_ulong(const char *str, size_t length);
 int fbr_is_dev(void);
 int fbr_is_test(void);
 fbr_hash_t fbr_hash(const void *buffer, size_t buffer_len);
-void fbr_strcpy(char *dest, size_t dest_len, const char *source);
+size_t fbr_strcpy(char *dest, size_t dest_len, const char *source);
 size_t __fbr_attr_printf(3) fbr_snprintf(char *buffer, size_t size, const char *format, ...);
 size_t fbr_bin2hex(const void *input, size_t input_len, char *output, size_t output_len);
 size_t fbr_hex2bin(const char *input, size_t input_len, void* output, size_t output_len);

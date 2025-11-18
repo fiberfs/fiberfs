@@ -8,6 +8,7 @@
 #define _FBR_CSTORE_S3_H_INCLUDED_
 
 #include <pthread.h>
+#include <time.h>
 
 #include "fiberfs.h"
 #include "chttp.h"
@@ -86,7 +87,11 @@ int fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_js
 fbr_id_t fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	char *root_path, int attempts);
 
-int fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http);
+typedef size_t (*fbr_cstore_s3_hash_f)(void *priv, void *hash, size_t hash_len);
+
+size_t fbr_cstore_s3_hash_none(void *priv, void *hash, size_t hash_len);
+int fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t sign_time,
+	fbr_cstore_s3_hash_f hash_cb, void *hash_priv);
 
 #define fbr_cstore_backend_ok(backend)		\
 	fbr_magic_check(backend, FBR_CSTORE_BACKEND_MAGIC)

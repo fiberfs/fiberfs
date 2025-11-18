@@ -20,7 +20,7 @@ fbr_cmd_test_sha256(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_sha256_ctx sha;
 	uint8_t digest[FBR_SHA256_DIGEST_SIZE];
-	char hex[(sizeof(digest) * 2) + 1];
+	char hex[FBR_HEX_LEN(sizeof(digest))];
 
 	fbr_sha256("", 0, digest, sizeof(digest));
 	fbr_bin2hex(digest, sizeof(digest), hex, sizeof(hex));
@@ -141,7 +141,7 @@ fbr_cmd_test_hmac_sha256(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_sha256_ctx hmac;
 	uint8_t digest[FBR_SHA256_DIGEST_SIZE];
-	char hex[(sizeof(digest) * 2) + 1];
+	char hex[FBR_HEX_LEN(sizeof(digest))];
 
 	const char *key1 = "secret_key";
 	size_t key1_len = strlen(key1);
@@ -201,7 +201,7 @@ fbr_cmd_test_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	struct fbr_md5_ctx md5;
-	char hex[(FBR_MD5_DIGEST_SIZE * 2) + 1];
+	char hex[FBR_HEX_LEN(FBR_MD5_DIGEST_SIZE)];
 
 	fbr_md5_init(&md5);
 	fbr_md5_update(&md5, NULL, 0);

@@ -141,14 +141,16 @@ fbr_hash(const void *buffer, size_t buffer_len)
 	return (fbr_hash_t)hash;
 }
 
-void
+size_t
 fbr_strcpy(char *dest, size_t dest_len, const char *source)
 {
 	assert(dest);
 	assert(dest_len);
 	assert(source);
 
-	fbr_snprintf(dest, dest_len, "%s", source);
+	size_t ret = fbr_snprintf(dest, dest_len, "%s", source);
+
+	return ret;
 }
 
 size_t __fbr_attr_printf(3)
@@ -175,7 +177,7 @@ fbr_bin2hex(const void *input, size_t input_len, char *output, size_t output_len
 	assert(input);
 	assert(input_len);
 	assert(output);
-	assert(output_len >= (input_len * 2) + 1);
+	assert(output_len >= FBR_HEX_LEN(input_len));
 
 	output[0] = '\0';
 	size_t i = 0;

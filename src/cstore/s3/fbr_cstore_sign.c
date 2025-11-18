@@ -13,8 +13,22 @@
 #include "cstore/fbr_cstore_api.h"
 #include "utils/fbr_chash.h"
 
+size_t
+fbr_cstore_s3_hash_none(void *priv, void *hash, size_t hash_len)
+{
+	assert_zero(priv);
+	assert(hash);
+	assert(hash_len >= FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE));
+
+	size_t ret = fbr_strcpy(hash, hash_len,
+		"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+
+	return ret;
+}
+
 int
-fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http)
+fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t sign_time,
+    fbr_cstore_s3_hash_f hash_cb, void *hash_priv)
 {
 	fbr_cstore_ok(cstore);
 	assert(cstore->s3.backend);
@@ -46,15 +60,23 @@ fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http)
 	const char *method = (char*)dpage->data;
 	const char *url = (char*)dpage->data + method_len + 1;
 
-	time_t time_now = (time_t)fbr_get_time();
-	struct tm tm_now;
-	gmtime_r(&time_now, &tm_now);
+	if (!sign_time) {
+		sign_time = (time_t)fbr_get_time();
+	}
+	struct tm tm_sign;
+	gmtime_r(&sign_time, &tm_sign);
 	char amz_date[32];
-	size_t amz_date_len = strftime(amz_date, sizeof(amz_date), "%Y%m%dT%H%M%SZ", &tm_now);
+	size_t amz_date_len = strftime(amz_date, sizeof(amz_date), "%Y%m%dT%H%M%SZ", &tm_sign);
 	assert(amz_date_len);
 
-	const char *amz_content = "UNSIGNED-PAYLOAD";
-	size_t amz_content_len = 16;
+	char amz_content[FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE)];
+	size_t amz_content_len = 0;
+	if (hash_cb && !cstore->skip_content_hash) {
+		amz_content_len = hash_cb(hash_priv, amz_content, sizeof(amz_content));
+	}
+	if (!amz_content_len) {
+		amz_content_len = fbr_strbcpy(amz_content, "UNSIGNED-PAYLOAD");
+	}
 
 	fbr_rlog(FBR_LOG_CS_S3, "TODO_SIGN '%.*s':%zu '%.*s':%zu '%s':%zu",
 		(int)method_len, method, method_len, (int)url_len, url, url_len,

@@ -115,6 +115,7 @@ struct fbr_cstore {
 	unsigned int				delete_cache:1;
 	unsigned int				cdn_put:1;
 	unsigned int				cdn_delete:1;
+	unsigned int				skip_content_hash:1;
 
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 
