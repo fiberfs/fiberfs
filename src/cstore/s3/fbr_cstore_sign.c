@@ -26,7 +26,7 @@ fbr_cstore_s3_hash_none(void *priv, void *hash, size_t hash_len)
 	return ret;
 }
 
-int
+void
 fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t sign_time,
     fbr_cstore_s3_hash_f hash_cb, void *hash_priv)
 {
@@ -79,9 +79,6 @@ fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t
 	if (!amz_content_len) {
 		amz_content_len = fbr_strbcpy(amz_content, "UNSIGNED-PAYLOAD");
 	}
-
-	chttp_header_add(http, "x-amz-date", amz_timestamp);
-	chttp_header_add(http, "x-amz-content-sha256", amz_content);
 
 	// Canonical Request
 	struct fbr_sha256_ctx crequest;
@@ -155,7 +152,9 @@ fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t
 		"Signature=%s",
 			cstore->s3.access_key, amz_scope, signature);
 
+	chttp_header_add(http, "x-amz-date", amz_timestamp);
+	chttp_header_add(http, "x-amz-content-sha256", amz_content);
 	chttp_header_add(http, "Authorization", amz_auth);
 
-	return 0;
+	return;
 }

@@ -1,0 +1,24 @@
+chttp_test "S3 signing"
+
+server_init
+server_accept
+server_read_request
+server_header_match "x-amz-date" "20130524T000000Z"
+server_header_match "x-amz-content-sha256" "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+server_header_match "Authorization" "AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=df548e2ce037944d03f3e68682813b093763996d597cf890ca3d9037fd231eb4"
+server_send_response
+
+cstore_init 0
+cstore_set_s3 0 \
+	examplebucket.s3.amazonaws.com 1 \
+	us-east-1 \
+	AKIAIOSFODNN7EXAMPLE \
+	wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+chttp_init
+chttp_url /test.txt
+chttp_add_header Host examplebucket.s3.amazonaws.com
+chttp_s3_sign
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200

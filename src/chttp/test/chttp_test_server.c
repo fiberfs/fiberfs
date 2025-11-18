@@ -173,7 +173,10 @@ _server_finish(struct fbr_test_context *ctx)
 	unsigned long timeout = _SERVER_JOIN_TIMEOUT_MS;
 
 	int ret = fbr_test_join_thread(server->thread, &server->stopped, &timeout);
-	fbr_test_ERROR(ret, "server thread is blocked");
+	if (ret) {
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "ERROR: server thread is blocked");
+		exit(1);
+	}
 
 	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread joined");
 
@@ -1254,6 +1257,9 @@ _server_thread(void *arg)
 	struct chttp_test_server *server = arg;
 	_server_ok(server);
 
+	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
+	fbr_test_ok(test_ctx->test);
+
 	_server_LOCK(server);
 
 	// Ack the server init
@@ -1262,7 +1268,7 @@ _server_thread(void *arg)
 
 	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* thread started");
 
-	while (!server->stop) {
+	while (!server->stop && !test_ctx->test->error) {
 		if (TAILQ_EMPTY(&server->cmd_list)) {
 			_server_WAIT(server);
 			continue;

@@ -9,6 +9,8 @@
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
 #include "compress/chttp_gzip.h"
+#include "cstore/fbr_cstore_api.h"
+#include "cstore/test/fbr_test_cstore_cmds.h"
 #include "network/chttp_tcp_pool.h"
 #include "tls/chttp_tls.h"
 #include "utils/fbr_chash.h"
@@ -622,6 +624,17 @@ chttp_test_cmd_chttp_body_md5(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	chttp_test_md5_store_client(ctx, &md5);
 
 	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "body md5 %s", ctx->chttp_test->md5_client);
+}
+
+void
+chttp_test_cmd_chttp_s3_sign(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct chttp_context *chttp = _test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
+
+	fbr_cstore_s3_sign(cstore, chttp, 1369353600, fbr_cstore_s3_hash_none, NULL);
 }
 
 void

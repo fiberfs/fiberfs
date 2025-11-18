@@ -95,11 +95,7 @@ _s3_connection(struct fbr_cstore *cstore, struct chttp_context *http,
 		return 1;
 	}
 
-	int ret = fbr_cstore_s3_sign(cstore, http, 0, hash_cb, hash_priv);
-	if (ret) {
-		http->error = CHTTP_ERR_INIT;
-		return ret;
-	}
+	fbr_cstore_s3_sign(cstore, http, 0, hash_cb, hash_priv);
 
 	// TODO make parameters
 	http->addr.timeout_connect_ms = 3000;
