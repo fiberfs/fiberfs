@@ -171,6 +171,24 @@ fbr_snprintf(char *buffer, size_t size, const char *format, ...)
 	return (size_t)ret;
 }
 
+static inline void
+_util_char2hex(unsigned char c, char *output, int upper)
+{
+	assert_dev(output);
+
+	static const char *hex_UPPER = "0123456789ABCDEF";
+	static const char *hex_lower = "0123456789abcdef";
+
+	if (upper) {
+		output[0] = hex_UPPER[(c >> 4) & 0x0F];
+		output[1] = hex_UPPER[c & 0x0F];
+		return;
+	}
+
+	output[0] = hex_lower[(c >> 4) & 0x0F];
+	output[1] = hex_lower[c & 0x0F];
+}
+
 size_t
 fbr_bin2hex(const void *input, size_t input_len, char *output, size_t output_len)
 {
@@ -179,20 +197,19 @@ fbr_bin2hex(const void *input, size_t input_len, char *output, size_t output_len
 	assert(output);
 	assert(output_len >= FBR_HEX_LEN(input_len));
 
-	output[0] = '\0';
-	size_t i = 0;
-
+	size_t i;
 	for (i = 0; i < input_len; i++) {
 		assert_dev((i * 2) + 3 <= output_len);
-		int ret = snprintf(&output[i * 2], 3, "%.2x",
-			(unsigned char)((const char*)input)[i]);
-		assert(ret == 2);
+		unsigned char c = (unsigned char)((const char*)input)[i];
+		_util_char2hex(c, &output[i * 2], 0);
 	}
+
+	output[i * 2] = '\0';
 
 	return (i * 2);
 }
 
-static unsigned char
+static inline unsigned char
 _util_char2int(char c)
 {
 	if (c >= '0' && c <= '9') {
@@ -206,10 +223,10 @@ _util_char2int(char c)
 	return 0;
 }
 
-static unsigned char
+static inline unsigned char
 _util_hex2int(const char *hex)
 {
-	assert(hex);
+	assert_dev(hex);
 
 	unsigned char value = _util_char2int(hex[0]) << 4;
 	value += _util_char2int(hex[1]);
@@ -232,6 +249,44 @@ fbr_hex2bin(const char *input, size_t input_len, void* output, size_t output_len
 	}
 
 	return (i / 2);
+}
+
+size_t
+fbr_urlencode(const char *input, size_t input_len, char *output, size_t output_len)
+{
+	assert(input);
+	assert(input_len);
+	assert(output);
+	assert(output_len > input_len * 3);
+
+	size_t len = 0;
+
+	for (size_t i = 0; i < input_len; i++, len++) {
+		unsigned char c = (unsigned char)input[i];
+		if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
+			output[len] = c;
+			continue;
+		}
+
+		switch (c) {
+			case '.':
+			case '-':
+			case '_':
+			case '~':
+				output[len] = c;
+				continue;
+			default:
+				output[len] = '%';
+				_util_char2hex(c, &output[len + 1], 1);
+				len += 2;
+				continue;
+		}
+	}
+
+	assert(len < output_len);
+	output[len] = '\0';
+
+	return len;
 }
 
 void

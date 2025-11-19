@@ -355,9 +355,11 @@ fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, char *buffer, siz
 		prefix = "";
 	}
 
-	// TODO urlencode here
+	// TODO make this an inut
+	size_t path_len = strlen(path);
 
-	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/%s", prefix, path);
+	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/", prefix);
+	ret += fbr_urlencode(path, path_len, buffer + ret, buffer_len - ret);
 
 	return ret;
 }

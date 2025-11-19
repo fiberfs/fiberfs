@@ -208,6 +208,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	assert(url);
 	size_t url_len = strlen(url);
 
+	// TODO urldecode
+
 	const char *host = chttp_header_get(http, "Host");
 	if (!host) {
 		host = "";
@@ -462,6 +464,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	const char *url = chttp_header_get_url(http);
 	assert(url);
 	size_t url_len = strlen(url);
+
+	// TODO urldecode
 
 	const char *host = chttp_header_get(http, "Host");
 	assert(host);

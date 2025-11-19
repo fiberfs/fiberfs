@@ -32,6 +32,7 @@ size_t fbr_strcpy(char *dest, size_t dest_len, const char *source);
 size_t __fbr_attr_printf(3) fbr_snprintf(char *buffer, size_t size, const char *format, ...);
 size_t fbr_bin2hex(const void *input, size_t input_len, char *output, size_t output_len);
 size_t fbr_hex2bin(const char *input, size_t input_len, void* output, size_t output_len);
+size_t fbr_urlencode(const char *input, size_t input_len, char *output, size_t output_len);
 void fbr_thread_name(const char *name);
 int fbr_check_name(const char *name);
 
