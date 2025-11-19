@@ -273,6 +273,7 @@ fbr_urlencode(const char *input, size_t input_len, char *output, size_t output_l
 			case '-':
 			case '_':
 			case '~':
+			case '/':
 				output[len] = c;
 				continue;
 			default:
