@@ -290,6 +290,38 @@ fbr_urlencode(const char *input, size_t input_len, char *output, size_t output_l
 	return len;
 }
 
+size_t
+fbr_urldecode(const char *input, size_t input_len, char *output, size_t output_len)
+{
+	assert(input);
+	assert(input_len);
+	assert(output);
+	assert(output_len > input_len);
+
+	size_t len = 0;
+
+	for (size_t i = 0; i < input_len; i++, len++) {
+		char c = input[i];
+
+		if (c == '%') {
+			if (input_len - i - 1 < 2) {
+				break;
+			}
+
+			c = _util_hex2int(&input[i + 1]);
+
+			i += 2;
+		}
+
+		output[len] = c;
+	}
+
+	assert(len < output_len);
+	output[len] = '\0';
+
+	return len;
+}
+
 void
 fbr_thread_name(const char *name)
 {

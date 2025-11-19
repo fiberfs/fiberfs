@@ -204,11 +204,17 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	size_t length = http->length;
 	assert(length);
 
-	const char *url = chttp_header_get_url(http);
-	assert(url);
-	size_t url_len = strlen(url);
+	const char *url_raw = chttp_header_get_url(http);
+	assert(url_raw);
+	size_t url_raw_len = strlen(url_raw);
+	if (url_raw_len >= FBR_URL_MAX) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url_len");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
+	}
 
-	// TODO urldecode
+	char url[FBR_URL_MAX];
+	size_t url_len = fbr_urldecode(url_raw, url_raw_len, url, sizeof(url));
 
 	const char *host = chttp_header_get(http, "Host");
 	if (!host) {
@@ -461,11 +467,17 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	struct fbr_cstore *cstore = worker->cstore;
 	fbr_cstore_ok(cstore);
 
-	const char *url = chttp_header_get_url(http);
-	assert(url);
-	size_t url_len = strlen(url);
+	const char *url_raw = chttp_header_get_url(http);
+	assert(url_raw);
+	size_t url_raw_len = strlen(url_raw);
+	if (url_raw_len >= FBR_URL_MAX) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url_len");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
+	}
 
-	// TODO urldecode
+	char url[FBR_URL_MAX];
+	size_t url_len = fbr_urldecode(url_raw, url_raw_len, url, sizeof(url));
 
 	const char *host = chttp_header_get(http, "Host");
 	assert(host);
