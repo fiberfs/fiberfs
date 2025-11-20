@@ -193,12 +193,12 @@ fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *e
 	fbr_cstore_ok(cstore);
 	fbr_cstore_entry_ok(entry);
 
-	char path[FBR_PATH_MAX];
-	fbr_cstore_cpath(cstore, entry->hash, 0, path, sizeof(path));
-	(void)unlink(path);
+	char cpath[FBR_PATH_MAX];
+	fbr_cstore_cpath(cstore, entry->hash, 0, cpath, sizeof(cpath));
+	(void)unlink(cpath);
 
-	fbr_cstore_cpath(cstore, entry->hash, 1, path, sizeof(path));
-	(void)unlink(path);
+	fbr_cstore_cpath(cstore, entry->hash, 1, cpath, sizeof(cpath));
+	(void)unlink(cpath);
 }
 
 void
@@ -921,7 +921,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
 	assert(root_json->bytes);
-	assert(root_path);
+	fbr_is_path(root_path);
 	assert(version);
 	assert(enforce || fbr_cstore_backend_enabled(cstore));
 
@@ -1035,7 +1035,7 @@ fbr_id_t
 fbr_cstore_io_root_read(struct fbr_cstore *cstore, const char *root_path, size_t path_len)
 {
 	fbr_cstore_ok(cstore);
-	assert(root_path);
+	fbr_is_path(root_path);
 	assert(path_len);
 
 	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", root_path);

@@ -108,6 +108,8 @@ fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, c
 		offset,
 		FBR_FIBERFS_CHUNK_NAME);
 
+	fbr_is_path(buffer);
+
 	return ret;
 }
 
@@ -135,6 +137,8 @@ fbr_cstore_path_index(const struct fbr_directory *directory, char *buffer, size_
 		FBR_FIBERFS_INDEX_NAME,
 		version);
 
+	fbr_is_path(buffer);
+
 	return ret;
 }
 
@@ -155,6 +159,8 @@ fbr_cstore_path_root(struct fbr_path_name *dirpath, char *buffer, size_t buffer_
 		root_sep,
 		FBR_FIBERFS_ROOT_NAME);
 
+	fbr_is_path(buffer);
+
 	return ret;
 }
 
@@ -172,6 +178,8 @@ fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url, char *output, si
 
 	if (!cstore->s3.prefix_len) {
 		size_t path_len = fbr_urldecode(url + 1, url_len - 1, output, output_len);
+		fbr_is_path(output);
+
 		return path_len;
 	}
 	assert_dev(cstore->s3.prefix);
@@ -184,6 +192,8 @@ fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url, char *output, si
 	}
 
 	size_t path_len = fbr_urldecode(url + 1, url_len - 1, output, output_len);
+	fbr_is_path(output);
+
 	return path_len;
 }
 
@@ -316,7 +326,7 @@ fbr_hash_t
 fbr_cstore_hash_path(struct fbr_cstore *cstore, const char *path, size_t path_len)
 {
 	fbr_cstore_ok(cstore);
-	assert(path);
+	fbr_is_path(path);
 
 	XXH3_state_t hash;
 	XXH3_INITSTATE(&hash);
@@ -335,7 +345,7 @@ fbr_cstore_hash_path(struct fbr_cstore *cstore, const char *path, size_t path_le
 fbr_hash_t
 fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t url_len)
 {
-	assert(url);
+	fbr_is_url(url);
 	assert(url_len);
 
 	XXH3_state_t hash;
@@ -361,7 +371,7 @@ size_t
 fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, char *buffer, size_t buffer_len)
 {
 	fbr_cstore_ok(cstore);
-	assert(path);
+	fbr_is_path(path);
 	assert(buffer);
 	assert(buffer_len);
 
@@ -375,6 +385,7 @@ fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, char *buffer, siz
 
 	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/", prefix);
 	ret += fbr_urlencode(path, path_len, buffer + ret, buffer_len - ret);
+	fbr_is_url(buffer);
 
 	return ret;
 }
@@ -393,6 +404,7 @@ fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file, struct
 	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, path, sizeof(path));
 
 	size_t ret = fbr_cstore_s3_url(cstore, path, buffer, buffer_len);
+	fbr_is_url(buffer);
 
 	return ret;
 }
@@ -410,6 +422,7 @@ fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *directo
 	fbr_cstore_path_index(directory, path, sizeof(path));
 
 	size_t ret = fbr_cstore_s3_url(cstore, path, buffer, buffer_len);
+	fbr_is_url(buffer);
 
 	return ret;
 }

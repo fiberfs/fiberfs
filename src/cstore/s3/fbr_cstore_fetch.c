@@ -24,7 +24,7 @@ _s3_request_url(struct fbr_cstore *cstore, const char *method, const char *url, 
 	assert_dev(cstore);
 	assert_dev(cstore->s3.backend);
 	assert_dev(method);
-	assert_dev(url);
+	fbr_is_url(url);
 	assert_dev(http);
 	assert(strstr(url, FBR_FIBERFS_NAME));
 
@@ -72,7 +72,7 @@ static fbr_hash_t
 _s3_request_path(struct fbr_cstore *cstore, const char *method, const char *path,
     struct chttp_context *http, int retries)
 {
-	assert_dev(path);
+	fbr_is_path(path);
 
 	char url[FBR_URL_MAX];
 	size_t url_len = fbr_cstore_s3_url(cstore, path, url, sizeof(url));
@@ -111,7 +111,7 @@ _s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http, const char *
 	assert_dev(cstore);
 	assert_dev(http);
 	assert_dev(http->state == CHTTP_STATE_NONE);
-	assert_dev(file_path);
+	fbr_is_path(file_path);
 
 	fbr_hash_t hash = _s3_request_path(cstore, "GET", file_path, http, retries);
 
@@ -161,7 +161,7 @@ fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http, co
 	assert(cstore->retries >= 2);
 	chttp_context_ok(http);
 	assert_dev(http->state == CHTTP_STATE_NONE);
-	assert(file_path);
+	fbr_is_path(file_path);
 	assert(fbr_cstore_backend_enabled(cstore));
 
 	unsigned int attempts = 0;
@@ -198,7 +198,7 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
 	assert_dev(http->state == CHTTP_STATE_NONE);
-	assert_dev(path);
+	fbr_is_path(path);
 	assert_dev(length);
 	assert_dev(etag);
 	assert_dev(data_cb);
@@ -298,7 +298,7 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
 	assert(http->state == CHTTP_STATE_NONE);
-	assert(path);
+	fbr_is_path(path);
 	assert(length);
 	assert(etag);
 	assert(data_cb);
@@ -367,7 +367,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash, const char *
     fbr_id_t id, size_t size, enum fbr_cstore_entry_type type)
 {
 	fbr_cstore_ok(cstore);
-	assert(file_path);
+	fbr_is_path(file_path);
 	assert(type > FBR_CSTORE_FILE_NONE && type <= FBR_CSTORE_FILE_ROOT);
 	assert(fbr_cstore_backend_enabled(cstore));
 
@@ -502,7 +502,7 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 {
 	fbr_cstore_ok(cstore);
 	assert(cstore->retries >= 2);
-	assert(s3_url);
+	fbr_is_url(s3_url);
 	assert(fbr_cstore_backend_enabled(cstore));
 
 
@@ -823,7 +823,7 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
 	assert(root_json->bytes);
-	assert(root_path);
+	fbr_is_path(root_path);
 	assert(version);
 	assert(fbr_cstore_backend_enabled(cstore));
 
@@ -846,7 +846,7 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore, char *root_
     int attempts)
 {
 	fbr_cstore_ok(cstore);
-	assert(root_path);
+	fbr_is_path(root_path);
 
 	struct chttp_context http;
 	chttp_context_init(&http);

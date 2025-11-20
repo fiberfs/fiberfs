@@ -450,7 +450,7 @@ fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_j
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
 	assert(root_json->bytes);
-	assert(root_path);
+	fbr_is_path(root_path);
 	assert(version);
 	assert(fbr_cstore_backend_enabled(cstore));
 

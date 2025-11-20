@@ -52,10 +52,10 @@ size_t fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *
     char *buffer, size_t buffer_len);
 
 #define fbr_is_url(url)				\
-	assert(url && url[0] == '/')
+	assert((url) && (url)[0] == '/')
 #define fbr_is_path(path)			\
-	assert(path && path[0] != '/')
+	assert((path) && (path)[0] != '/')
 #define fbr_is_cpath(cpath)			\
-	assert(cpath && cpath[0] == '/')
+	assert((cpath) && (cpath)[0] == '/')
 
 #endif /* _FBR_CSTORE_PATH_H_INCLUDED_ */

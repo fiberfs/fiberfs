@@ -214,6 +214,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	char url[FBR_URL_MAX];
 	size_t url_len = fbr_urldecode(url_encoded, url_encoded_len, url, sizeof(url));
+	assert(url[0] == '/');
 
 	const char *host = chttp_header_get(http, "Host");
 	if (!host) {
@@ -478,6 +479,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 	char url[FBR_URL_MAX];
 	size_t url_len = fbr_urldecode(url_encoded, url_encoded_len, url, sizeof(url));
+	assert(url[0] == '/');
 
 	const char *host = chttp_header_get(http, "Host");
 	assert(host);
@@ -656,6 +658,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	char url[FBR_URL_MAX];
 	size_t url_len = fbr_urldecode(url_encoded, url_encoded_len, url, sizeof(url));
+	assert(url[0] == '/');
 
 	const char *host = chttp_header_get(http, "Host");
 	assert(host);
