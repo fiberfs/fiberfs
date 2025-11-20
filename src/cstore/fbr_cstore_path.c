@@ -153,23 +153,32 @@ fbr_cstore_path_root(struct fbr_path_name *dirpath, char *buffer, size_t buffer_
 }
 
 
-const char *
-fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url)
+size_t
+fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url, char *output, size_t output_len)
 {
 	fbr_cstore_ok(cstore);
 	assert(url[0] == '/');
+	assert(output);
+
+	size_t url_len = strlen(url);
+	assert_dev(url_len > 1);
+	assert(output_len > url_len);
 
 	if (!cstore->s3.prefix_len) {
-		return url + 1;
+		size_t path_len = fbr_urldecode(url + 1, url_len - 1, output, output_len);
+		return path_len;
 	}
 	assert_dev(cstore->s3.prefix);
 
 	if (!strncmp(url, cstore->s3.prefix, cstore->s3.prefix_len)) {
-		assert(url[cstore->s3.prefix_len] == '/');
-		return url + cstore->s3.prefix_len + 1;
+		assert(url_len > cstore->s3.prefix_len + 1);
+		url += cstore->s3.prefix_len;
+		url_len -= cstore->s3.prefix_len;
+		assert(url[0] == '/');
 	}
 
-	return url + 1;
+	size_t path_len = fbr_urldecode(url + 1, url_len - 1, output, output_len);
+	return path_len;
 }
 
 static void

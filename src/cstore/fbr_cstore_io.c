@@ -213,16 +213,20 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_
 	int backend = fbr_cstore_backend_enabled(cstore);
 
 	if (cstore->delete_cache || !backend) {
+		char url_decoded[FBR_URL_MAX];
+		size_t url_decoded_len = fbr_urldecode(url, url_len, url_decoded,
+			sizeof(url_decoded));
+
 		fbr_hash_t hash;
 		if (backend) {
 			assert_dev(cstore->s3.backend);
 			hash = fbr_cstore_hash_url(cstore->s3.backend->host,
-				cstore->s3.backend->host_len, url, url_len);
+				cstore->s3.backend->host_len, url_decoded, url_decoded_len);
 		} else {
-			hash = fbr_cstore_hash_url(NULL, 0, url, url_len);
+			hash = fbr_cstore_hash_url(NULL, 0, url_decoded, url_decoded_len);
 		}
 
-		fbr_rlog(FBR_LOG_CSTORE, "DELETE %s %lu", url, id);
+		fbr_rlog(FBR_LOG_CSTORE, "DELETE %s %lu", url_decoded, id);
 
 		struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 		if (entry) {
