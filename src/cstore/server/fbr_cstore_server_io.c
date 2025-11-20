@@ -114,10 +114,10 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 	assert(entry->state == FBR_CSTORE_OK);
 	assert(entry->bytes == (size_t)http->length);
 
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path(cstore, entry->hash, 0, path, sizeof(path));
+	char cpath[FBR_PATH_MAX];
+	fbr_cstore_cpath(cstore, entry->hash, 0, cpath, sizeof(cpath));
 
-	int fd = open(path, O_RDONLY);
+	int fd = open(cpath, O_RDONLY);
 	if (fd < 0) {
 		chttp_error(http, CHTTP_ERR_NETWORK);
 		return;
@@ -310,15 +310,15 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
 
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	char cpath[FBR_PATH_MAX];
+	fbr_cstore_cpath(cstore, hash, 0, cpath, sizeof(cpath));
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s unique: %d match: %lu",
-		fbr_cstore_type_name(file_type), path, unique, etag_match);
+		fbr_cstore_type_name(file_type), cpath, unique, etag_match);
 
 	struct fbr_cstore_entry *entry = NULL;
 	if (unique) {
-		entry = fbr_cstore_io_get_loading(cstore, hash, length, path, 1);
+		entry = fbr_cstore_io_get_loading(cstore, hash, length, cpath, 1);
 		if (!entry) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR loading state");
 			fbr_cstore_http_respond(cstore, http, 500, "Error");
@@ -344,8 +344,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	if (etag_match) {
 		struct fbr_cstore_metadata metadata;
-		fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
-		int ret = fbr_cstore_metadata_read(path, &metadata);
+		fbr_cstore_cpath(cstore, hash, 1, cpath, sizeof(cpath));
+		int ret = fbr_cstore_metadata_read(cpath, &metadata);
 		if (ret) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR metadata");
 			fbr_cstore_set_error(entry);
@@ -364,12 +364,12 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 			return;
 		}
 
-		fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+		fbr_cstore_cpath(cstore, hash, 0, cpath, sizeof(cpath));
 	}
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE conditions passed");
 
-	int fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+	int fd = open(cpath, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR open()");
 		fbr_cstore_set_error(entry);
@@ -414,8 +414,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	metadata.gzipped = http->gzip;
 	fbr_strbcpy(metadata.path, file_path);
 
-	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
-	int ret = fbr_cstore_metadata_write(path, &metadata);
+	fbr_cstore_cpath(cstore, hash, 1, cpath, sizeof(cpath));
+	int ret = fbr_cstore_metadata_write(cpath, &metadata);
 	if (ret) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR metadata");
 		fbr_cstore_set_error(entry);
@@ -520,11 +520,11 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	int retry = 0;
 
 	while (1) {
-		char path[FBR_PATH_MAX];
-		fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+		char cpath[FBR_PATH_MAX];
+		fbr_cstore_cpath(cstore, hash, 0, cpath, sizeof(cpath));
 
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s (retry: %d)",
-			fbr_cstore_type_name(file_type), path, retry);
+			fbr_cstore_type_name(file_type), cpath, retry);
 
 		if (retry == 1) {
 			if (!fbr_cstore_backend_enabled(cstore)) {
@@ -553,7 +553,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		assert_dev(entry->state == FBR_CSTORE_OK);
 
-		fd = open(path, O_RDONLY);
+		fd = open(cpath, O_RDONLY);
 		if (fd < 0) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR open()");
 			fbr_cstore_remove(cstore, entry);
@@ -571,8 +571,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		size = (size_t)st.st_size;
 
-		fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
-		ret = fbr_cstore_metadata_read(path, &metadata);
+		fbr_cstore_cpath(cstore, hash, 1, cpath, sizeof(cpath));
+		ret = fbr_cstore_metadata_read(cpath, &metadata);
 
 		// root requests dont If-Match
 		if (file_type == FBR_CSTORE_FILE_ROOT && !etag_match) {
@@ -714,11 +714,11 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		fbr_cstore_entry_ok(entry);
 
 		if (!backend) {
-			char path[FBR_PATH_MAX];
-			fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+			char cpath[FBR_PATH_MAX];
+			fbr_cstore_cpath(cstore, hash, 1, cpath, sizeof(cpath));
 
 			struct fbr_cstore_metadata metadata;
-			int ret = fbr_cstore_metadata_read(path, &metadata);
+			int ret = fbr_cstore_metadata_read(cpath, &metadata);
 			if (ret || metadata.etag != etag_match) {
 				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR etag");
 				fbr_cstore_release(cstore, entry);

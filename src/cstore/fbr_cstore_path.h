@@ -23,11 +23,11 @@ struct fbr_file;
 struct fbr_chunk;
 struct fbr_path_name;
 
-size_t fbr_cstore_path_data(struct fbr_cstore *cstore, int metadata, char *buffer,
+size_t fbr_cstore_cpath_data(struct fbr_cstore *cstore, int metadata, char *buffer,
 	size_t buffer_len);
-size_t fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *output,
+size_t fbr_cstore_cpath(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *output,
 	size_t output_len);
-size_t fbr_cstore_path_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata,
+size_t fbr_cstore_cpath_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata,
 	char *buffer, size_t buffer_len);
 size_t fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, char *buffer,
 	size_t buffer_len);
@@ -50,5 +50,12 @@ size_t fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file,
 	struct fbr_chunk *chunk, char *buffer, size_t buffer_len);
 size_t fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *directory,
     char *buffer, size_t buffer_len);
+
+#define fbr_is_url(url)				\
+	assert(url && url[0] == '/')
+#define fbr_is_path(path)			\
+	assert(path && path[0] != '/')
+#define fbr_is_cpath(cpath)			\
+	assert(cpath && cpath[0] == '/')
 
 #endif /* _FBR_CSTORE_PATH_H_INCLUDED_ */

@@ -87,13 +87,13 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	struct fbr_cstore *cstore = fbr_cstore_find();
 	fbr_cstore_ok(cstore);
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file_1, chunk->id, chunk->offset);
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_cpath(cstore, hash, 0, path, sizeof(path));
 	fbr_test_logs("*** file_1 chunk: '%s'", path);
 	assert(fbr_sys_exists(path));
 	ret = unlink(path);
 	assert_zero(ret);
 
-	fbr_cstore_path(cstore, hash, 1, path, sizeof(path));
+	fbr_cstore_cpath(cstore, hash, 1, path, sizeof(path));
 	fbr_test_logs("*** file_1 meta: '%s'", path);
 	assert(fbr_sys_exists(path));
 
@@ -121,7 +121,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert_zero(wbuffer->next);
 
 	hash = fbr_cstore_hash_chunk(cstore, file_1, wbuffer->id, wbuffer->offset);
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_cpath(cstore, hash, 0, path, sizeof(path));
 	fbr_test_logs("*** file_1 new chunk: '%s'", path);
 	ret = fbr_sys_mkdirs(path);
 	assert_zero(ret);
@@ -183,7 +183,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	dir2->generation = 2;
 
 	hash = fbr_cstore_hash_index(cstore, dir2);
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_cpath(cstore, hash, 0, path, sizeof(path));
 	fbr_test_logs("*** dir2 new index: '%s'", path);
 	ret = fbr_sys_mkdirs(path);
 	assert_zero(ret);
@@ -217,7 +217,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_dindex_release(fs, &dir2);
 
 	hash = fbr_cstore_hash_root(cstore, &dir2name);
-	fbr_cstore_path(cstore, hash, 0, path, sizeof(path));
+	fbr_cstore_cpath(cstore, hash, 0, path, sizeof(path));
 	fbr_test_logs("*** dir2 root: '%s'", path);
 	assert(fbr_sys_exists(path));
 	ret = unlink(path);

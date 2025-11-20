@@ -28,9 +28,9 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 	struct fbr_cstore_loader *loader = &cstore->loader;
 	fbr_zero(loader);
 
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path_data(cstore, 0, path, sizeof(path));
-	if (!fbr_sys_isdir(path)) {
+	char cpath[FBR_PATH_MAX];
+	fbr_cstore_cpath_data(cstore, 0, cpath, sizeof(cpath));
+	if (!fbr_sys_isdir(cpath)) {
 		loader->state = FBR_CSTORE_LOADER_DONE;
 		return;
 	}
@@ -57,24 +57,24 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 }
 
 static void
-_cstore_remove(const char *path, const char *file)
+_cstore_remove(const char *cpath, const char *file)
 {
-	assert_dev(path);
+	assert_dev(cpath);
 	assert_dev(file);
 
 	char filepath[FBR_PATH_MAX];
-	fbr_bprintf(filepath, "%s/%s", path, file);
+	fbr_bprintf(filepath, "%s/%s", cpath, file);
 
 	(void)unlink(filepath);
 }
 
 static size_t
-_cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, int h2)
+_cstore_scan_dir(struct fbr_cstore *cstore, const char *cpath, unsigned char h1, int h2)
 {
 	assert_dev(cstore);
-	assert_dev(path);
+	assert_dev(cpath);
 
-	DIR *dir = opendir(path);
+	DIR *dir = opendir(cpath);
 	if (!dir) {
 		return 0;
 	}
@@ -95,7 +95,7 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 
 		if (subdir == 1) {
 			if (dentry->d_type != DT_DIR || strlen(dentry->d_name) != 2) {
-				_cstore_remove(path, dentry->d_name);
+				_cstore_remove(cpath, dentry->d_name);
 				continue;
 			}
 
@@ -103,7 +103,7 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 			size_t hash_len = fbr_hex2bin(dentry->d_name, 2, &hash, sizeof(hash));
 			assert(hash_len == 1);
 
-			fbr_bprintf(subpath, "%s/%s", path, dentry->d_name);
+			fbr_bprintf(subpath, "%s/%s", cpath, dentry->d_name);
 
 			insertions += _cstore_scan_dir(cstore, subpath, h1, hash);
 
@@ -111,14 +111,14 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *path, unsigned char h1, 
 		}
 
 		if (dentry->d_type != DT_REG || strlen(dentry->d_name) != 12) {
-			_cstore_remove(path, dentry->d_name);
+			_cstore_remove(cpath, dentry->d_name);
 			continue;
 		}
 
 		struct stat st;
-		int ret = lstat(path, &st);
+		int ret = lstat(cpath, &st);
 		if (ret || st.st_size <= 0) {
-			_cstore_remove(path, dentry->d_name);
+			_cstore_remove(cpath, dentry->d_name);
 			continue;
 		}
 
@@ -181,10 +181,10 @@ _cstore_load_thread(void *arg)
 		assert_dev(dir_start < 256);
 		unsigned char dir = dir_start;
 
-		char path[FBR_PATH_MAX];
-		fbr_cstore_path_loader(cstore, dir, 0, path, sizeof(path));
+		char cpath[FBR_PATH_MAX];
+		fbr_cstore_cpath_loader(cstore, dir, 0, cpath, sizeof(cpath));
 
-		insertions += _cstore_scan_dir(cstore, path, dir, -1);
+		insertions += _cstore_scan_dir(cstore, cpath, dir, -1);
 
 		dir_start++;
 	}

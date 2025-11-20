@@ -22,7 +22,7 @@ _cstore_sub_path(int metadata)
 }
 
 size_t
-fbr_cstore_path_data(struct fbr_cstore *cstore, int metadata, char *buffer, size_t buffer_len)
+fbr_cstore_cpath_data(struct fbr_cstore *cstore, int metadata, char *buffer, size_t buffer_len)
 {
 	fbr_cstore_ok(cstore);
 	assert_dev(buffer);
@@ -31,11 +31,13 @@ fbr_cstore_path_data(struct fbr_cstore *cstore, int metadata, char *buffer, size
 	const char *sub_path = _cstore_sub_path(metadata);
 	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/%s/", cstore->root, sub_path);
 
+	fbr_is_cpath(buffer);
+
 	return ret;
 }
 
 size_t
-fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *buffer,
+fbr_cstore_cpath(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *buffer,
     size_t buffer_len)
 {
 	fbr_cstore_ok(cstore);
@@ -55,11 +57,13 @@ fbr_cstore_path(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *
 		hash_str + 2,
 		hash_str + 4);
 
+	fbr_is_cpath(buffer);
+
 	return ret;
 }
 
 size_t
-fbr_cstore_path_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata, char *buffer,
+fbr_cstore_cpath_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata, char *buffer,
     size_t buffer_len)
 {
 	fbr_cstore_ok(cstore);
@@ -76,6 +80,8 @@ fbr_cstore_path_loader(struct fbr_cstore *cstore, unsigned char dir, int metadat
 		cstore->root,
 		sub_path,
 		hash_str);
+
+	fbr_is_cpath(buffer);
 
 	return ret;
 }
