@@ -18,15 +18,15 @@
 #include "utils/fbr_sys.h"
 
 static fbr_hash_t
-_s3_request_url(struct fbr_cstore *cstore, const char *method, const char *url, size_t url_len,
+_s3_request_url(struct fbr_cstore *cstore, const char *method, const struct fbr_cstore_url *url,
     struct chttp_context *http, int retries)
 {
 	assert_dev(cstore);
 	assert_dev(cstore->s3.backend);
 	assert_dev(method);
-	fbr_is_url(url);
+	fbr_cstore_url_ok(url);
 	assert_dev(http);
-	assert(strstr(url, FBR_FIBERFS_NAME));
+	assert(strstr(url->value, FBR_FIBERFS_NAME));
 
 	if (retries >= 3) {
 		fbr_rlog(FBR_LOG_CS_S3, "sleep_backoff");
@@ -39,12 +39,12 @@ _s3_request_url(struct fbr_cstore *cstore, const char *method, const char *url, 
 	}
 
 	chttp_set_method(http, method);
-	chttp_set_url(http, url);
+	chttp_set_url(http, url->value);
 
 	struct fbr_cstore_backend *s3_backend = cstore->s3.backend;
 	chttp_header_add(http, "Host", s3_backend->host);
 
-	fbr_rlog(FBR_LOG_CS_S3, "S3 %s %s (retry: %d)", method, url, retries);
+	fbr_rlog(FBR_LOG_CS_S3, "S3 %s %s (retry: %d)", method, url->value, retries);
 
 	if (!strcmp(method, "GET")) {
 		chttp_header_add(http, "Accept-Encoding", "gzip");
@@ -63,8 +63,8 @@ _s3_request_url(struct fbr_cstore *cstore, const char *method, const char *url, 
 	}
 	chttp_header_add(http, "FiberFS-ID", buffer);
 
-	fbr_hash_t hash = fbr_cstore_hash_url(s3_backend->host, s3_backend->host_len, url,
-		url_len);
+	fbr_hash_t hash = fbr_cstore_hash_url(s3_backend->host, s3_backend->host_len, url->value,
+		url->length);
 	return hash;
 }
 
@@ -74,10 +74,10 @@ _s3_request_path(struct fbr_cstore *cstore, const char *method, const char *path
 {
 	fbr_is_path(path);
 
-	char url[FBR_URL_MAX];
-	size_t url_len = fbr_cstore_s3_url(cstore, path, url, sizeof(url));
+	struct fbr_cstore_url url;
+	fbr_cstore_s3_url(cstore, path, &url);
 
-	return _s3_request_url(cstore, method, url, url_len, http, retries);
+	return _s3_request_url(cstore, method, &url, http, retries);
 }
 
 static int
@@ -499,15 +499,12 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash, const char *
 }
 
 int
-fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_t id)
+fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url, fbr_id_t id)
 {
 	fbr_cstore_ok(cstore);
 	assert(cstore->retries >= 2);
-	fbr_is_url(s3_url);
+	fbr_cstore_url_ok(url);
 	assert(fbr_cstore_backend_enabled(cstore));
-
-
-	size_t s3_url_len = strlen(s3_url);
 
 	struct chttp_context http;
 	chttp_context_init(&http);
@@ -524,8 +521,7 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const char *s3_url, fbr_id_
 			s3_direct = 1;
 		}
 
-		fbr_hash_t hash = _s3_request_url(cstore, "DELETE", s3_url, s3_url_len, &http,
-			attempts - 1);
+		fbr_hash_t hash = _s3_request_url(cstore, "DELETE", url, &http, attempts - 1);
 
 		char buffer[32];
 		fbr_cstore_etag(id, buffer, sizeof(buffer));

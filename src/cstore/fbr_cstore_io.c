@@ -204,31 +204,32 @@ fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *e
 }
 
 void
-fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const char *url, size_t url_len,
-    fbr_id_t id, enum fbr_cstore_entry_type type)
+fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url *url, fbr_id_t id,
+    enum fbr_cstore_entry_type type)
 {
 	fbr_cstore_ok(cstore);
-	assert(url);
-	assert(url_len);
+	fbr_cstore_url_ok(url);
 	assert(id);
 
 	int backend = fbr_cstore_backend_enabled(cstore);
 
 	if (cstore->delete_cache || !backend) {
-		char url_decoded[FBR_URL_MAX];
-		size_t url_decoded_len = fbr_urldecode(url, url_len, url_decoded,
-			sizeof(url_decoded));
+		struct fbr_cstore_url url_decoded;
+		url_decoded.magic = FBR_CSTORE_URL_MAGIC;
+		url_decoded.length = fbr_urldecode(url->value, url->length, url_decoded.value,
+			sizeof(url_decoded.value));
 
 		fbr_hash_t hash;
 		if (backend) {
 			assert_dev(cstore->s3.backend);
 			hash = fbr_cstore_hash_url(cstore->s3.backend->host,
-				cstore->s3.backend->host_len, url_decoded, url_decoded_len);
+				cstore->s3.backend->host_len, url_decoded.value,
+				url_decoded.length);
 		} else {
-			hash = fbr_cstore_hash_url(NULL, 0, url_decoded, url_decoded_len);
+			hash = fbr_cstore_hash_url(NULL, 0, url_decoded.value, url_decoded.length);
 		}
 
-		fbr_rlog(FBR_LOG_CSTORE, "DELETE %s %lu", url_decoded, id);
+		fbr_rlog(FBR_LOG_CSTORE, "DELETE %s %lu", url_decoded.value, id);
 
 		struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 		if (entry) {
@@ -895,10 +896,10 @@ fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 		return;
 	}
 
-	char url[FBR_URL_MAX];
-	size_t url_len = fbr_cstore_s3_index_url(cstore, directory, url, sizeof(url));
+	struct fbr_cstore_url url;
+	fbr_cstore_s3_index_url(cstore, directory, &url);
 
-	fbr_cstore_io_delete_url(cstore, url, url_len, directory->version, FBR_CSTORE_FILE_INDEX);
+	fbr_cstore_io_delete_url(cstore, &url, directory->version, FBR_CSTORE_FILE_INDEX);
 }
 
 int

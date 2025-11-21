@@ -340,7 +340,8 @@ fbr_cstore_hash_path(struct fbr_cstore *cstore, const char *path, size_t path_le
 fbr_hash_t
 fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t url_len)
 {
-	fbr_is_url(url);
+	assert(url);
+	assert(url[0] == '/');
 	assert(url_len);
 
 	XXH3_state_t hash;
@@ -362,13 +363,12 @@ fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t u
 	return (fbr_hash_t)result;
 }
 
-size_t
-fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, char *buffer, size_t buffer_len)
+void
+fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, struct fbr_cstore_url *url)
 {
 	fbr_cstore_ok(cstore);
 	fbr_is_path(path);
-	assert(buffer);
-	assert(buffer_len);
+	assert(url)
 
 	const char *prefix = cstore->s3.prefix;
 	if (!prefix || !fbr_cstore_backend_enabled(cstore)) {
@@ -378,46 +378,39 @@ fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, char *buffer, siz
 	// TODO make this an inut
 	size_t path_len = strlen(path);
 
-	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/", prefix);
-	ret += fbr_urlencode(path, path_len, buffer + ret, buffer_len - ret);
-	fbr_is_url(buffer);
+	url->magic = FBR_CSTORE_URL_MAGIC;
+	url->length = fbr_bprintf(url->value, "%s/", prefix);
+	url->length += fbr_urlencode(path, path_len, url->value + url->length,
+		sizeof(url->value) - url->length);
 
-	return ret;
+	fbr_cstore_url_ok(url);
 }
 
-size_t
+void
 fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file, struct fbr_chunk *chunk,
-    char *buffer, size_t buffer_len)
+    struct fbr_cstore_url *url)
 {
 	fbr_cstore_ok(cstore);
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
-	assert(buffer);
-	assert(buffer_len);
+	assert(url);
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, path, sizeof(path));
 
-	size_t ret = fbr_cstore_s3_url(cstore, path, buffer, buffer_len);
-	fbr_is_url(buffer);
-
-	return ret;
+	fbr_cstore_s3_url(cstore, path, url);
 }
 
-size_t
+void
 fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *directory,
-    char *buffer, size_t buffer_len)
+    struct fbr_cstore_url *url)
 {
 	fbr_cstore_ok(cstore);
 	fbr_directory_ok(directory);
-	assert(buffer);
-	assert(buffer_len);
+	assert(url);
 
 	char path[FBR_PATH_MAX];
 	fbr_cstore_path_index(directory, path, sizeof(path));
 
-	size_t ret = fbr_cstore_s3_url(cstore, path, buffer, buffer_len);
-	fbr_is_url(buffer);
-
-	return ret;
+	fbr_cstore_s3_url(cstore, path, url);
 }

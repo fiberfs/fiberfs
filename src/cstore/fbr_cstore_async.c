@@ -147,8 +147,8 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 			fbr_cstore_io_chunk_read(op->param0, op->param1, op->param2);
 			return;
 		case FBR_CSOP_URL_DELETE:
-			fbr_cstore_io_delete_url(op->param0, op->param1, (size_t)op->param2,
-				(fbr_id_t)op->param3, (intptr_t)op->param4);
+			fbr_cstore_io_delete_url(op->param0, op->param1, (fbr_id_t)op->param2,
+				(intptr_t)op->param3);
 			return;
 		case FBR_CSOP_INDEX_SEND:
 			fbr_cstore_s3_index_send(op->param0, op->param1, op->param2, op->param3,
@@ -325,30 +325,35 @@ _async_chunk_url_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker
 	assert(op->type == FBR_CSOP_URL_DELETE);
 	fbr_cstore_worker_ok(worker);
 
-	free(op->param1);
+	struct fbr_cstore_url *url = op->param1;
+	fbr_cstore_url_ok(url);
+
+	free(url);
 	op->param1 = NULL;
 }
 
 static void
-_async_url_delete(struct fbr_cstore *cstore, const char *url, size_t url_len, fbr_id_t id,
+_async_url_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url, fbr_id_t id,
     enum fbr_cstore_entry_type type)
 {
 	assert_dev(cstore);
-	assert_dev(url);
-	assert_dev(url_len);
+	fbr_cstore_url_ok(url);
 
-	char *buffer = strdup(url);
-	assert(buffer);
+	struct fbr_cstore_url *url_async = malloc(sizeof(*url_async));
+	assert(url_async);
+	url_async->magic = url->magic;
+	url_async->length = fbr_strbcpy(url_async->value, url->value);
+	assert_dev(url_async->length == url->length);
 
-	static_ASSERT(sizeof(void*) >= sizeof(url_len));
 	static_ASSERT(sizeof(void*) >= sizeof(id));
 	static_ASSERT(sizeof(void*) >= sizeof(type));
 
-	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_URL_DELETE, cstore, buffer,
-		(void*)url_len, (void*)id, (void*)type, _async_chunk_url_done, NULL);
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_URL_DELETE, cstore, url_async,
+		(void*)id, (void*)type, NULL, _async_chunk_url_done, NULL);
 	if (ret) {
-		free(buffer);
-		fbr_cstore_io_delete_url(cstore, url, url_len, id, type);
+		fbr_zero_magic(url_async);
+		free(url_async);
+		fbr_cstore_io_delete_url(cstore, url, id, type);
 		return;
 	}
 }
@@ -365,10 +370,10 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 		return;
 	}
 
-	char url[FBR_URL_MAX];
-	size_t url_len = fbr_cstore_s3_chunk_url(cstore, file, chunk, url, sizeof(url));
+	struct fbr_cstore_url url;
+	fbr_cstore_s3_chunk_url(cstore, file, chunk, &url);
 
-	_async_url_delete(cstore, url, url_len, chunk->id, FBR_CSTORE_FILE_CHUNK);
+	_async_url_delete(cstore, &url, chunk->id, FBR_CSTORE_FILE_CHUNK);
 }
 
 void
@@ -426,10 +431,10 @@ fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory
 		return;
 	}
 
-	char url[FBR_URL_MAX];
-	size_t url_len = fbr_cstore_s3_index_url(cstore, directory, url, sizeof(url));
+	struct fbr_cstore_url url;
+	fbr_cstore_s3_index_url(cstore, directory, &url);
 
-	_async_url_delete(cstore, url, url_len, directory->version, FBR_CSTORE_FILE_INDEX);
+	_async_url_delete(cstore, &url, directory->version, FBR_CSTORE_FILE_INDEX);
 }
 
 static void
