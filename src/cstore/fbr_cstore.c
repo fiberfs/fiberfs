@@ -88,7 +88,6 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	size_t path_len = strlen(root_path);
 	assert(path_len < sizeof(cstore->root));
 	memcpy(cstore->root, root_path, path_len + 1);
-	fbr_is_cpath(cstore->root);
 
 	cstore->log = fbr_log_alloc(cstore->root, fbr_log_default_size());
 	fbr_log_ok(cstore->log);
@@ -156,11 +155,11 @@ _cstore_exists(struct fbr_cstore *cstore, fbr_hash_t hash)
 {
 	fbr_cstore_ok(cstore);
 
-	char path[FBR_PATH_MAX];
-	fbr_cstore_cpath(cstore, hash, 0, path, sizeof(path));
+	struct fbr_cstore_hashpath hashpath;
+	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
 	struct stat st;
-	int ret = lstat(path, &st);
+	int ret = lstat(hashpath.path, &st);
 	if (ret) {
 		return 0;
 	}

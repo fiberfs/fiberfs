@@ -29,6 +29,10 @@ typedef void __fbr_attr_printf(1) (fbr_log_f)(const char *fmt, ...);
 	assert_dev(obj);					\
 	assert_dev((obj)->magic == (value));			\
 }
+#define fbr_zero_magic(obj)					\
+{								\
+	(obj)->magic = 0;					\
+}
 #define fbr_object_empty(obj)					\
 	fbr_magic_check(obj, 0)
 #define fbr_object_is_empty(obj)				\

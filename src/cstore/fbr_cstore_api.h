@@ -130,7 +130,7 @@ struct fbr_cstore {
 	struct fbr_cstore_cluster		cluster;
 
 	struct fbr_log				*log;
-	char					root[FBR_PATH_MAX];
+	char					root[FBR_CSTORE_ROOT_LEN];
 
 	unsigned int				retries;
 	unsigned long				root_ttl_sec;

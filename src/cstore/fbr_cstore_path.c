@@ -21,28 +21,27 @@ _cstore_sub_path(int metadata)
 	return FBR_CSTORE_DATA_DIR;
 }
 
-size_t
-fbr_cstore_cpath_data(struct fbr_cstore *cstore, int metadata, char *buffer, size_t buffer_len)
+void
+fbr_cstore_hashpath_data(struct fbr_cstore *cstore, int metadata,
+    struct fbr_cstore_hashpath *hashpath)
 {
 	fbr_cstore_ok(cstore);
-	assert_dev(buffer);
-	assert_dev(buffer_len);
+	assert(hashpath);
 
 	const char *sub_path = _cstore_sub_path(metadata);
-	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/%s/", cstore->root, sub_path);
 
-	fbr_is_cpath(buffer);
+	hashpath->magic = FBR_CSTORE_HASHPATH_MAGIC;
+	hashpath->length = fbr_bprintf(hashpath->path, "%s/%s/", cstore->root, sub_path);
 
-	return ret;
+	fbr_cstore_hashpath_ok(hashpath);
 }
 
-size_t
-fbr_cstore_cpath(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char *buffer,
-    size_t buffer_len)
+void
+fbr_cstore_hashpath(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata,
+    struct fbr_cstore_hashpath *hashpath)
 {
 	fbr_cstore_ok(cstore);
-	assert(buffer);
-	assert(buffer_len);
+	assert(hashpath);
 
 	char hash_str[FBR_HASH_SLEN];
 	fbr_bin2hex(&hash, sizeof(hash), hash_str, sizeof(hash_str));
@@ -50,25 +49,23 @@ fbr_cstore_cpath(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata, char 
 
 	const char *sub_path = _cstore_sub_path(metadata);
 
-	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/%s/%.2s/%.2s/%s",
+	hashpath->magic = FBR_CSTORE_HASHPATH_MAGIC;
+	hashpath->length = fbr_bprintf(hashpath->path, "%s/%s/%.2s/%.2s/%s",
 		cstore->root,
 		sub_path,
 		hash_str,
 		hash_str + 2,
 		hash_str + 4);
 
-	fbr_is_cpath(buffer);
-
-	return ret;
+	fbr_cstore_hashpath_ok(hashpath);
 }
 
-size_t
-fbr_cstore_cpath_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata, char *buffer,
-    size_t buffer_len)
+void
+fbr_cstore_hashpath_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata,
+    struct fbr_cstore_hashpath *hashpath)
 {
 	fbr_cstore_ok(cstore);
-	assert(buffer);
-	assert(buffer_len);
+	assert(hashpath);
 
 	char hash_str[3];
 	size_t hash_len = fbr_bin2hex(&dir, sizeof(dir), hash_str, sizeof(hash_str));
@@ -76,14 +73,13 @@ fbr_cstore_cpath_loader(struct fbr_cstore *cstore, unsigned char dir, int metada
 
 	const char *sub_path = _cstore_sub_path(metadata);
 
-	size_t ret = fbr_snprintf(buffer, buffer_len, "%s/%s/%s",
+	hashpath->magic = FBR_CSTORE_HASHPATH_MAGIC;
+	hashpath->length = fbr_bprintf(hashpath->path, "%s/%s/%s",
 		cstore->root,
 		sub_path,
 		hash_str);
 
-	fbr_is_cpath(buffer);
-
-	return ret;
+	fbr_cstore_hashpath_ok(hashpath);
 }
 
 size_t
