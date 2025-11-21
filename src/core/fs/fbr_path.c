@@ -218,55 +218,49 @@ fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file
 }
 
 const char *
-fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result, char *buf,
-    size_t buf_len)
+fbr_path_get_full(const struct fbr_path *path, struct fbr_fullpath_name *result)
 {
 	assert(path);
 
-	struct fbr_path_name _result;
-	if (!result) {
-		result = &_result;
-	}
-
-	fbr_zero(result);
+	result->path.length = 0;
+	result->path.name = result->data;
+	result->data[0] = '\0';
 
 	switch (path->layout.value) {
 		case FBR_PATH_NULL:
 			return NULL;
 		case FBR_PATH_EMBED_DIR:
 		case FBR_PATH_EMBED_FILE:
-			result->length = path->embed.len;
-			result->name = path->embed.data;
-			return result->name;
+			result->path.length = path->embed.len;
+			assert(sizeof(result->data) > result->path.length);
+			memcpy(result->data, path->embed.data, result->path.length + 1);
+			return result->data;
 		case FBR_PATH_FILE_PTR:
 		case FBR_PATH_DIR_PTR:
-			result->length = path->ptr.value_len;
-			result->name = path->ptr.value;
-			return result->name;
+			result->path.length = path->ptr.value_len;
+			assert(sizeof(result->data) > result->path.length);
+			memcpy(result->data, path->ptr.value, result->path.length + 1);
+			return result->data;
 	}
 
 	fbr_ASSERT(path->layout.value == FBR_PATH_SPLIT_PTR, "bad path layout: %d",
 		path->layout.value);
-	assert(buf);
-	assert(buf_len);
 
 	struct fbr_path_name dirname;
 	fbr_path_shared_name(path->split_ptr.dirname, &dirname);
 
 	size_t len = 0;
-	buf[0] = '\0';
 
 	if (dirname.length) {
 		assert_dev(dirname.name);
-
-		strncat(buf, dirname.name, buf_len - len - 1);
+		strncat(result->data, dirname.name, sizeof(result->data) - len - 1);
 		len += dirname.length;
-		assert(len < buf_len - 1);
+		assert(len < sizeof(result->data) - 1);
 
 		if (path->split_ptr.file_len) {
-			strncat(buf, "/", buf_len - len - 1);
+			strncat(result->data, "/", sizeof(result->data) - len - 1);
 			len++;
-			assert(len < buf_len - 1);
+			assert(len < sizeof(result->data) - 1);
 		}
 
 	}
@@ -275,17 +269,15 @@ fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result, cha
 	{
 		const char *filename = _path_split_file(path);
 
-		strncat(buf, filename, buf_len - len - 1);
+		strncat(result->data, filename, sizeof(result->data) - len - 1);
 		len += path->split_ptr.file_len;
-		assert(len < buf_len - 1);
+		assert(len < sizeof(result->data) - 1);
 	}
 
-	assert_dev(buf[len] == '\0');
+	assert_dev(result->data[len] == '\0');
+	result->path.length = len;
 
-	result->length = len;
-	result->name = buf;
-
-	return result->name;
+	return result->data;
 }
 
 int

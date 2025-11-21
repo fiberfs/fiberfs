@@ -102,7 +102,8 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char 
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s layout: %d", name, path->layout.value);
 
-	struct fbr_path_name dirname, fullpath, fullparent;
+	struct fbr_path_name dirname, fullparent;
+	struct fbr_fullpath_name fullpath;
 
 	fbr_path_get_dir(path, &dirname);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s dirname: '%.*s':%zu", name,
@@ -111,11 +112,10 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char 
 	const char *filename = fbr_path_get_file(path, NULL);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s filename: '%s'", name, filename);
 
-	char buf[FBR_PATH_MAX];
-	const char *sfullpath = fbr_path_get_full(path, &fullpath, buf, sizeof(buf));
+	const char *sfullpath = fbr_path_get_full(path, &fullpath);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullpath: '%s'", name, sfullpath);
 
-	fbr_path_name_parent(&fullpath, &fullparent);
+	fbr_path_name_parent(&fullpath.path, &fullparent);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullparent: '%.*s':%zu", name,
 		(int)fullparent.length, fullparent.name, fullparent.length);
 
@@ -187,9 +187,8 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		fbr_inode_t inode_next = file->inode;
 
-		struct fbr_path_name dirname;
-		char buf[FBR_PATH_MAX];
-		fbr_path_get_full(&file->path, &dirname, buf, sizeof(buf));
+		struct fbr_fullpath_name dirname;
+		fbr_path_get_full(&file->path, &dirname);
 
 		// random file
 
@@ -227,7 +226,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 		// directory
 
-		directory = fbr_directory_alloc(fs, &dirname, inode_next);
+		directory = fbr_directory_alloc(fs, &dirname.path, inode_next);
 
 		inode = inode_next;
 
@@ -257,18 +256,17 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		file = fbr_inode_take(fs, inode);
 		fbr_file_ok(file);
 
-		struct fbr_path_name filename;
-		char buf[FBR_PATH_MAX];
-		fbr_path_get_full(&file->path, &filename, buf, sizeof(buf));
+		struct fbr_fullpath_name filename;
+		fbr_path_get_full(&file->path, &filename);
 
-		fbr_test_ERROR(fbr_path_name_cmp(&filename, &full), "Path mismatch");
+		fbr_test_ERROR(fbr_path_name_cmp(&filename.path, &full), "Path mismatch");
 
 		fbr_inode_t next = file->parent_inode;
 
-		struct fbr_path_name dirname;
-		fbr_path_get_full(&file->path, &dirname, buf, sizeof(buf));
+		struct fbr_fullpath_name dirname;
+		fbr_path_get_full(&file->path, &dirname);
 
-		directory = fbr_dindex_take(fs, &dirname, 0);
+		directory = fbr_dindex_take(fs, &dirname.path, 0);
 		fbr_directory_ok(directory);
 
 		fbr_dindex_release(fs, &directory);

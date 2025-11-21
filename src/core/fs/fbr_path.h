@@ -74,6 +74,11 @@ struct fbr_path_name {
 	const char				*name;
 };
 
+struct fbr_fullpath_name {
+	struct fbr_path_name			path;
+	char					data[FBR_PATH_MAX];
+};
+
 struct fbr_path_shared {
 	unsigned int				magic;
 #define FBR_PATH_SHARED_MAGIC			0x9D5FD1C5
@@ -89,8 +94,7 @@ void fbr_path_init_dir(struct fbr_path *path, const char *dirname, size_t dirnam
 void fbr_path_init_file(struct fbr_path *path, const char *filename, size_t filename_len);
 void fbr_path_get_dir(const struct fbr_path *path, struct fbr_path_name *result_dir);
 const char *fbr_path_get_file(const struct fbr_path *path, struct fbr_path_name *result_file);
-const char *fbr_path_get_full(const struct fbr_path *path, struct fbr_path_name *result,
-	char *buf, size_t buf_len);
+const char *fbr_path_get_full(const struct fbr_path *path, struct fbr_fullpath_name *result);
 int fbr_path_cmp_dir(const struct fbr_path *dir1, const struct fbr_path *dir2);
 int fbr_path_cmp_file(const struct fbr_path *file1, const struct fbr_path *file2);
 

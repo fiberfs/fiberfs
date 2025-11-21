@@ -94,9 +94,10 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 	struct fbr_file *file = fbr_file_alloc_new(fs, directory, &filename);
 
-	char buf[FBR_PATH_MAX];
-	fbr_path_get_full(&file->path, &filename, buf, sizeof(buf));
-	fbr_rlog(FBR_LOG_OP_CREATE, "new file: inode: %lu path: '%s'", file->inode, filename.name);
+	struct fbr_fullpath_name fullpath;
+	fbr_path_get_full(&file->path, &fullpath);
+	fbr_rlog(FBR_LOG_OP_CREATE, "new file: inode: %lu path: '%s'", file->inode,
+		fullpath.path.name);
 
 	assert(file->parent_inode == directory->inode);
 	assert(file->state == FBR_FILE_INIT);

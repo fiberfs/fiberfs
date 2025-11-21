@@ -35,21 +35,20 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 	fbr_ASSERT(parent, "parent %lu missing", file->parent_inode);
 	fbr_file_ok(parent);
 
-	struct fbr_path_name dirname;
-	char buf[FBR_PATH_MAX];
-	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
+	struct fbr_fullpath_name dirpath;
+	fbr_path_get_full(&parent->path, &dirpath);
 
 	const char *filename = fbr_path_get_file(&file->path, NULL);
 
-	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 1);
-	fbr_ASSERT(directory, "directory '%s' missing", dirname.name);
+	struct fbr_directory *directory = fbr_dindex_take(fs, &dirpath.path, 1);
+	fbr_ASSERT(directory, "directory '%s' missing", dirpath.path.name);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
 
-	fbr_test_logs("RW_FLUSH directory: '%s' (%lu) file: '%s' (%lu)", dirname.name,
+	fbr_test_logs("RW_FLUSH directory: '%s' (%lu) file: '%s' (%lu)", dirpath.path.name,
 		directory->generation, filename, file->generation);
 
-	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, directory->inode);
+	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirpath.path, directory->inode);
 	fbr_directory_ok(new_directory);
 	fbr_ASSERT(new_directory->state == FBR_DIRSTATE_LOADING, "new_directory isnt LOADING");
 

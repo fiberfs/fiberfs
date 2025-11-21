@@ -95,15 +95,14 @@ fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, c
 	assert(buffer);
 	assert(buffer_len);
 
-	char filebuf[FBR_PATH_MAX];
-	struct fbr_path_name filepath;
-	fbr_path_get_full(&file->path, &filepath, filebuf, sizeof(filebuf));
+	struct fbr_fullpath_name filepath;
+	fbr_path_get_full(&file->path, &filepath);
 
 	char chunk_id[FBR_ID_STRING_MAX];
 	fbr_id_string(id, chunk_id, sizeof(chunk_id));
 
 	size_t ret = fbr_snprintf(buffer, buffer_len, "%s.%s.%zu%s",
-		filepath.name,
+		filepath.path.name,
 		chunk_id,
 		offset,
 		FBR_FIBERFS_CHUNK_NAME);

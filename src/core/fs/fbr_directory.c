@@ -114,11 +114,9 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_
 				fbr_file_ok(directory->file);
 
 				if (fbr_is_dev()) {
-					struct fbr_path_name filename;
-					char buf[FBR_PATH_MAX];
-					fbr_path_get_full(&directory->file->path, &filename,
-						buf, sizeof(buf));
-					assert_zero(fbr_path_name_cmp(dirpath, &filename));
+					struct fbr_fullpath_name filename;
+					fbr_path_get_full(&directory->file->path, &filename);
+					assert_zero(fbr_path_name_cmp(dirpath, &filename.path));
 				}
 			} else {
 				// Inode is too old, caller gets an error state
@@ -532,15 +530,14 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		return ENOENT;
 	}
 
-	struct fbr_path_name dirname;
-	char buf[FBR_PATH_MAX];
-	fbr_path_get_full(&parent->path, &dirname, buf, sizeof(buf));
+	struct fbr_fullpath_name dirpath;
+	fbr_path_get_full(&parent->path, &dirpath);
 	fbr_inode_release(fs, &parent);
 
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
 
-	fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' file: '%s'", dirname.name, filename.name);
+	fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' file: '%s'", dirpath.path.name, filename.name);
 
 	int add_file = 0;
 	int add_file_init = 0;
@@ -554,7 +551,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	int wait_for_new = 1;
 
 	do {
-		directory = fbr_dindex_take(fs, &dirname, wait_for_new);
+		directory = fbr_dindex_take(fs, &dirpath.path, wait_for_new);
 		if (directory) {
 			fbr_directory_ok(directory);
 			assert_dev(directory->state >= FBR_DIRSTATE_OK);
@@ -572,7 +569,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 	// dindex empty, read from index store
 	if (!directory) {
-		directory = fbr_directory_alloc(fs, &dirname, inode);
+		directory = fbr_directory_alloc(fs, &dirpath.path, inode);
 		fbr_directory_ok(directory);
 
 		switch (directory->state) {
@@ -621,7 +618,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		assert_dev(directory->state == FBR_DIRSTATE_OK);
 
 		fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' found generation: %lu attempts: %u",
-			dirname.name, directory->generation, attempts);
+			dirpath.path.name, directory->generation, attempts);
 
 		if (attempts && directory->generation == last_generation) {
 			generation_matches++;
@@ -641,8 +638,8 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		}
 
 		// Lock on LOADING state
-		struct fbr_directory *new_directory = _directory_get_loading(fs, &dirname, inode,
-			&directory, &attempts, time_start);
+		struct fbr_directory *new_directory = _directory_get_loading(fs, &dirpath.path,
+			inode, &directory, &attempts, time_start);
 		if (!new_directory) {
 			fbr_dindex_release(fs, &directory);
 			ret = EIO;
@@ -733,7 +730,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		}
 
 		// Retry, lock on LOADING state
-		directory = _directory_get_loading(fs, &dirname, inode, NULL, &attempts,
+		directory = _directory_get_loading(fs, &dirpath.path, inode, NULL, &attempts,
 			time_start);
 		if (!directory) {
 			ret = EIO;
@@ -788,16 +785,15 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode, struct fbr_direct
 		return NULL;
 	}
 
-	struct fbr_path_name dirname;
-	char buf[FBR_PATH_MAX];
-	fbr_path_get_full(&file->path, &dirname, buf, sizeof(buf));
+	struct fbr_fullpath_name dirpath;
+	fbr_path_get_full(&file->path, &dirpath);
 
 	fbr_inode_release(fs, &file);
 
-	fbr_rlog(FBR_LOG_FS, "directory found: '%s':%zu (inode: %lu)", dirname.name, dirname.length,
-		inode);
+	fbr_rlog(FBR_LOG_FS, "directory found: '%s':%zu (inode: %lu)", dirpath.path.name,
+		dirpath.path.length, inode);
 
-	struct fbr_directory *directory = fbr_dindex_take(fs, &dirname, 0);
+	struct fbr_directory *directory = fbr_dindex_take(fs, &dirpath.path, 0);
 
 	if (directory && directory->inode > inode) {
 		fbr_rlog(FBR_LOG_FS, "directory inode: %lu found newer inode: %lu (return error)",
@@ -819,7 +815,7 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode, struct fbr_direct
 	}
 
 	if (!directory) {
-		directory = fbr_directory_load(fs, &dirname, inode);
+		directory = fbr_directory_load(fs, &dirpath.path, inode);
 		if (!directory) {
 			return NULL;
 		}

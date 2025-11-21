@@ -69,8 +69,9 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 
 	fbr_inode_add(fs, file);
 
-	char buf[FBR_PATH_MAX];
-	fbr_path_get_full(&file->path, &dirname, buf, sizeof(buf));
+	struct fbr_fullpath_name fullpath;
+	fbr_path_get_full(&file->path, &fullpath);
+	dirname = fullpath.path;
 	fbr_rlog(FBR_LOG_OP_MKDIR, "new directory: inode: %lu path: '%s'", file->inode,
 		dirname.name);
 

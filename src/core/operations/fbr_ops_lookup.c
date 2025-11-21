@@ -46,8 +46,8 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 		return;
 	}
 
-	char buf[FBR_PATH_MAX];
-	const char *fullname = fbr_path_get_full(&file->path, NULL, buf, sizeof(buf));
+	struct fbr_fullpath_name path;
+	const char *fullname = fbr_path_get_full(&file->path, &path);
 	fbr_rlog(FBR_LOG_OP_LOOKUP, "found file: '%s' (inode: %lu)", fullname, file->inode);
 
 	if (fbr_is_dev()) {
