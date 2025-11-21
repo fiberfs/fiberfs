@@ -44,7 +44,7 @@ typedef void (*fbr_cstore_async_done_f)(struct fbr_cstore_op *op,
 	struct fbr_cstore_worker *worker);
 
 struct fbr_cstore_op_sync {
-	unsigned				magic;
+	unsigned int				magic;
 #define FBR_CSTORE_OP_SYNC_MAGIC		0x64337F38
 
 	int					done;
@@ -58,7 +58,7 @@ struct fbr_cstore_op_sync {
 };
 
 struct fbr_cstore_op {
-	unsigned				magic;
+	unsigned int				magic;
 #define FBR_CSTORE_OP_MAGIC			0x08BDFC3F
 
 	enum fbr_cstore_op_type			type;

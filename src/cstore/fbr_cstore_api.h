@@ -61,7 +61,7 @@ struct fbr_cstore_loader {
 };
 
 struct fbr_cstore_entry {
-	unsigned				magic;
+	unsigned int				magic;
 #define FBR_CSTORE_ENTRY_MAGIC			0xA59C372B
 
 	enum fbr_cstore_alloc_state		alloc;
@@ -89,7 +89,7 @@ RB_HEAD(fbr_cstore_tree, fbr_cstore_entry);
 TAILQ_HEAD(fbr_cstore_list, fbr_cstore_entry);
 
 struct fbr_cstore_head {
-	unsigned				magic;
+	unsigned int				magic;
 #define FBR_CSTORE_HEAD_MAGIC			0xA249385F
 
 	struct fbr_cstore_tree			tree;
@@ -106,7 +106,7 @@ typedef void (*fbr_cstore_delete_f)(struct fbr_cstore *cstore,
 	struct fbr_cstore_entry *entry);
 
 struct fbr_cstore {
-	unsigned				magic;
+	unsigned int				magic;
 #define FBR_CSTORE_MAGIC			0xC8747276
 
 	unsigned int				do_free:1;

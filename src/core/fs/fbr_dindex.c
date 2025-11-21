@@ -15,7 +15,7 @@
 #define _DINDEX_HEAD_COUNT			1024
 
 struct fbr_dindex_dirhead {
-	unsigned				magic;
+	unsigned int				magic;
 #define FBR_DINDEX_DIRHEAD_MAGIC		0x85BE0E4D
 
 	struct fbr_dindex_tree			tree;
@@ -25,7 +25,7 @@ struct fbr_dindex_dirhead {
 TAILQ_HEAD(_dindex_lru_list, fbr_directory);
 
 struct fbr_dindex {
-	unsigned				magic;
+	unsigned int				magic;
 #define FBR_DINDEX_MAGIC			0xF5FCA6A6
 
 	struct fbr_dindex_dirhead		dirheads[_DINDEX_HEAD_COUNT];

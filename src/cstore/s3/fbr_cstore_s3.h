@@ -19,7 +19,7 @@
 #define FBR_CSTORE_CHTTP_SIZE		4096
 
 struct fbr_cstore_backend {
-	unsigned			magic;
+	unsigned int			magic;
 #define FBR_CSTORE_BACKEND_MAGIC	0x8589C222
 
 	int				port;

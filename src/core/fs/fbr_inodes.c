@@ -15,7 +15,7 @@
 #define _INODES_HEAD_COUNT			1024
 
 struct fbr_inodes_head {
-	unsigned				magic;
+	unsigned int				magic;
 #define FBR_INODES_HEAD_MAGIC			0xCE5442D7
 
 	struct fbr_inodes_tree			tree;
@@ -23,7 +23,7 @@ struct fbr_inodes_head {
 };
 
 struct fbr_inodes {
-	unsigned				magic;
+	unsigned int				magic;
 #define FBR_INODES_MAGIC			0x452D632A
 
 	struct fbr_inodes_head			heads[_INODES_HEAD_COUNT];
