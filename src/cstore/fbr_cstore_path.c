@@ -414,3 +414,25 @@ fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *directo
 
 	fbr_cstore_s3_url(cstore, path, url);
 }
+
+void
+fbr_cstore_s3_url_init(struct fbr_cstore_url *dest, const char *url, size_t url_len)
+{
+	assert(dest);
+	assert(url);
+	assert(url[0] == '/');
+	assert(url_len);
+
+	dest->magic = FBR_CSTORE_URL_MAGIC;
+	dest->length = fbr_strbcpy(dest->value, url);
+	assert_dev(dest->length == url_len);
+}
+
+void
+fbr_cstore_s3_url_clone(struct fbr_cstore_url *dest, const struct fbr_cstore_url *src)
+{
+	assert(dest);
+	fbr_cstore_url_ok(src);
+
+	fbr_cstore_s3_url_init(dest, src->value, src->length);
+}

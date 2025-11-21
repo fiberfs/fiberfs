@@ -258,6 +258,7 @@ fbr_urlencode(const char *input, size_t input_len, char *output, size_t output_l
 	assert(input_len);
 	assert(output);
 	assert(output_len > input_len * 3);
+	assert(input != output);
 
 	size_t len = 0;
 

@@ -78,6 +78,8 @@ void fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file,
 	struct fbr_chunk *chunk, struct fbr_cstore_url *url);
 void fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *directory,
     struct fbr_cstore_url *url);
+void fbr_cstore_s3_url_init(struct fbr_cstore_url *dest, const char *url, size_t url_len);
+void fbr_cstore_s3_url_clone(struct fbr_cstore_url *dest, const struct fbr_cstore_url *src);
 
 #define fbr_cstore_hashpath_ok(hpath)		fbr_magic_check(hpath, FBR_CSTORE_HASHPATH_MAGIC)
 #define fbr_cstore_url_ok(url)			fbr_magic_check(url, FBR_CSTORE_URL_MAGIC)

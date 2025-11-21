@@ -94,5 +94,20 @@ fbr_cmd_test_urlencode(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(path_len == decode_len);
 	assert_zero(strcmp(decode, path));
 
+	char buffer[50];
+	fbr_strbcpy(buffer, "%54%45%53%54%74%65%73%74");
+	size_t buffer_len = strlen(buffer);
+	fbr_test_logs("BEFORE '%s':%zu", buffer, buffer_len);
+	buffer_len = fbr_urldecode(buffer, buffer_len, buffer, sizeof(buffer));
+	fbr_test_logs("AFTER  '%s':%zu", buffer, buffer_len);
+	assert_zero(strcmp(buffer, "TESTtest"));
+
+	fbr_strbcpy(buffer, "t%54e%45s%53t%54T%74E%65S%73T%74!");
+	buffer_len = strlen(buffer);
+	fbr_test_logs("BEFORE '%s':%zu", buffer, buffer_len);
+	buffer_len = fbr_urldecode(buffer, buffer_len, buffer, sizeof(buffer));
+	fbr_test_logs("AFTER  '%s':%zu", buffer, buffer_len);
+	assert_zero(strcmp(buffer, "tTeEsStTTtEeSsTt!"));
+
 	fbr_test_logs("test_urlencode passed");
 }

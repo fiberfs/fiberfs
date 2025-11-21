@@ -341,9 +341,7 @@ _async_url_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url, f
 
 	struct fbr_cstore_url *url_async = malloc(sizeof(*url_async));
 	assert(url_async);
-	url_async->magic = url->magic;
-	url_async->length = fbr_strbcpy(url_async->value, url->value);
-	assert_dev(url_async->length == url->length);
+	fbr_cstore_s3_url_clone(url_async, url);
 
 	static_ASSERT(sizeof(void*) >= sizeof(id));
 	static_ASSERT(sizeof(void*) >= sizeof(type));

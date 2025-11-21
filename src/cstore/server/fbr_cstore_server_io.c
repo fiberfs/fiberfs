@@ -697,9 +697,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	if (!cstore->delete_cache && backend) {
 		struct fbr_cstore_url url_enc;
-		url_enc.magic = FBR_CSTORE_URL_MAGIC;
-		url_enc.length = fbr_strbcpy(url_enc.value, url_encoded);
-		assert_dev(url_enc.length == url_encoded_len);
+		fbr_cstore_s3_url_init(&url_enc, url_encoded, url_encoded_len);
 
 		int error = fbr_cstore_s3_send_delete(cstore, &url_enc, etag_match);
 		if (error) {
@@ -745,9 +743,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	if (backend) {
 		struct fbr_cstore_url url_enc;
-		url_enc.magic = FBR_CSTORE_URL_MAGIC;
-		url_enc.length = fbr_strbcpy(url_enc.value, url_encoded);
-		assert_dev(url_enc.length == url_encoded_len);
+		fbr_cstore_s3_url_init(&url_enc, url_encoded, url_encoded_len);
 
 		error = fbr_cstore_s3_send_delete(cstore, &url_enc, etag_match);
 	}
