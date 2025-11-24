@@ -238,13 +238,13 @@ _cstore_debug_meta(const char *filename, struct fbr_cstore_metadata *metadata)
 
 	struct fbr_cstore_hashpath hashpath;
 	hashpath.magic = FBR_CSTORE_HASHPATH_MAGIC;
-	hashpath.length = fbr_bprintf(hashpath.path, "%s", filename);
+	hashpath.length = fbr_bprintf(hashpath.value, "%s", filename);
 
 	size_t len = hashpath.length;
 	while (len > 0) {
 		size_t s = sizeof(FBR_CSTORE_DATA_DIR) - 1;
-		if (!strncmp(hashpath.path + len, FBR_CSTORE_DATA_DIR, s)) {
-			memcpy(hashpath.path + len, FBR_CSTORE_META_DIR, s);
+		if (!strncmp(hashpath.value + len, FBR_CSTORE_DATA_DIR, s)) {
+			memcpy(hashpath.value + len, FBR_CSTORE_META_DIR, s);
 			break;
 		}
 		len--;

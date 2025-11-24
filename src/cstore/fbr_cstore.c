@@ -159,7 +159,7 @@ _cstore_exists(struct fbr_cstore *cstore, fbr_hash_t hash)
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
 	struct stat st;
-	int ret = lstat(hashpath.path, &st);
+	int ret = lstat(hashpath.value, &st);
 	if (ret) {
 		return 0;
 	}

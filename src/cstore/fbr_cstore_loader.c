@@ -30,7 +30,7 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath_data(cstore, 0, &hashpath);
-	if (!fbr_sys_isdir(hashpath.path)) {
+	if (!fbr_sys_isdir(hashpath.value)) {
 		loader->state = FBR_CSTORE_LOADER_DONE;
 		return;
 	}
@@ -184,7 +184,7 @@ _cstore_load_thread(void *arg)
 		struct fbr_cstore_hashpath hashpath;
 		fbr_cstore_hashpath_loader(cstore, dir, 0, &hashpath);
 
-		insertions += _cstore_scan_dir(cstore, hashpath.path, dir, -1);
+		insertions += _cstore_scan_dir(cstore, hashpath.value, dir, -1);
 
 		dir_start++;
 	}

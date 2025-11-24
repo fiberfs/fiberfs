@@ -31,7 +31,7 @@ fbr_cstore_hashpath_data(struct fbr_cstore *cstore, int metadata,
 	const char *sub_path = _cstore_sub_path(metadata);
 
 	hashpath->magic = FBR_CSTORE_HASHPATH_MAGIC;
-	hashpath->length = fbr_bprintf(hashpath->path, "%s/%s/", cstore->root, sub_path);
+	hashpath->length = fbr_bprintf(hashpath->value, "%s/%s/", cstore->root, sub_path);
 
 	fbr_cstore_hashpath_ok(hashpath);
 }
@@ -50,7 +50,7 @@ fbr_cstore_hashpath(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata,
 	const char *sub_path = _cstore_sub_path(metadata);
 
 	hashpath->magic = FBR_CSTORE_HASHPATH_MAGIC;
-	hashpath->length = fbr_bprintf(hashpath->path, "%s/%s/%.2s/%.2s/%s",
+	hashpath->length = fbr_bprintf(hashpath->value, "%s/%s/%.2s/%.2s/%s",
 		cstore->root,
 		sub_path,
 		hash_str,
@@ -74,7 +74,7 @@ fbr_cstore_hashpath_loader(struct fbr_cstore *cstore, unsigned char dir, int met
 	const char *sub_path = _cstore_sub_path(metadata);
 
 	hashpath->magic = FBR_CSTORE_HASHPATH_MAGIC;
-	hashpath->length = fbr_bprintf(hashpath->path, "%s/%s/%s",
+	hashpath->length = fbr_bprintf(hashpath->value, "%s/%s/%s",
 		cstore->root,
 		sub_path,
 		hash_str);

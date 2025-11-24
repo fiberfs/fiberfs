@@ -433,7 +433,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 		}
 	}
 
-	int fd = open(hashpath.path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	int fd = open(hashpath.value, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET open()");
 		fbr_cstore_set_error(entry);
@@ -721,16 +721,16 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
-	fbr_rlog(FBR_LOG_CS_S3, "READ S3 %zu bytes WRITE S3 chunk: %s", bytes, hashpath.path);
+	fbr_rlog(FBR_LOG_CS_S3, "READ S3 %zu bytes WRITE S3 chunk: %s", bytes, hashpath.value);
 
-	int ret = fbr_sys_mkdirs(hashpath.path);
-	if (ret || fbr_sys_exists(hashpath.path)) {
+	int ret = fbr_sys_mkdirs(hashpath.value);
+	if (ret || fbr_sys_exists(hashpath.value)) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR rwrite mkdir/exists (%d)", ret);
 		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, async);
 		return;
 	}
 
-	int fd = open(hashpath.path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	int fd = open(hashpath.value, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR rwrite open()");
 		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, async);

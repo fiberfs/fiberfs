@@ -25,14 +25,14 @@ fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
 	fbr_cstore_hashpath_ok(hashpath);
 	assert(metadata);
 
-	int ret = fbr_sys_mkdirs(hashpath->path);
+	int ret = fbr_sys_mkdirs(hashpath->value);
 	if (ret) {
 		return 1;
 	}
 
 	metadata->timestamp = fbr_get_time();
 
-	int fd = open(hashpath->path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+	int fd = open(hashpath->value, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		return 1;
 	}
@@ -157,7 +157,7 @@ fbr_cstore_metadata_read(struct fbr_cstore_hashpath *hashpath,
 
 	fbr_zero(metadata);
 
-	int fd = open(hashpath->path, O_RDONLY);
+	int fd = open(hashpath->value, O_RDONLY);
 	if (fd < 0) {
 		metadata->error = 1;
 		return 1;
@@ -197,10 +197,10 @@ fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *e
 
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, entry->hash, 0, &hashpath);
-	(void)unlink(hashpath.path);
+	(void)unlink(hashpath.value);
 
 	fbr_cstore_hashpath(cstore, entry->hash, 1, &hashpath);
-	(void)unlink(hashpath.path);
+	(void)unlink(hashpath.value);
 }
 
 void
@@ -298,14 +298,14 @@ fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t byt
 	fbr_cstore_hashpath_ok(hashpath);
 
 	// TODO skip re-making the root
-	int ret = fbr_sys_mkdirs(hashpath->path);
+	int ret = fbr_sys_mkdirs(hashpath->value);
 	if (ret) {
 		fbr_cstore_set_error(entry);
 		_cstore_release(cstore, entry, remove_on_error);
 		return NULL;
 	}
 
-	if (fbr_sys_exists(hashpath->path)) {
+	if (fbr_sys_exists(hashpath->value)) {
 		fbr_cstore_set_error(entry);
 		_cstore_release(cstore, entry, remove_on_error);
 		return NULL;
@@ -377,7 +377,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_path_chunk(file, wbuffer->id, wbuffer->offset, &chunk_path);
 
 	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE %s %zu %s", chunk_path.value, wbuf_bytes,
-		hashpath.path);
+		hashpath.value);
 
 	struct chttp_context http;
 	chttp_context_init(&http);
@@ -395,7 +395,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
-	int fd = open(hashpath.path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	int fd = open(hashpath.value, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR open()");
 		fbr_cstore_set_error(entry);
@@ -483,7 +483,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
-	fbr_rlog(FBR_LOG_CS_CHUNK, "READ %s %zu:%zu %lu", hashpath.path, chunk->offset,
+	fbr_rlog(FBR_LOG_CS_CHUNK, "READ %s %zu:%zu %lu", hashpath.value, chunk->offset,
 		chunk->length, chunk->id);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_ok(cstore, hash);
@@ -495,7 +495,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 
 	assert_dev(entry->state == FBR_CSTORE_OK);
 
-	int fd = open(hashpath.path, O_RDONLY);
+	int fd = open(hashpath.value, O_RDONLY);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_CS_CHUNK, "ERROR open()");
 		fbr_cstore_remove(cstore, entry);
@@ -608,7 +608,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_cstore_path_index(directory, &index_path);
 
 	fbr_rlog(FBR_LOG_CS_INDEX, "WRITE %s %lu %s", index_path.value, directory->version,
-		hashpath.path);
+		hashpath.value);
 
 	struct chttp_context http;
 	chttp_context_init(&http);
@@ -627,7 +627,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
-	int fd = open(hashpath.path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	int fd = open(hashpath.value, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR open()");
 		fbr_cstore_set_error(entry);
@@ -753,7 +753,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		}
 
 		fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
-		fd = open(hashpath.path, O_RDONLY);
+		fd = open(hashpath.value, O_RDONLY);
 		if (fd < 0) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR open()");
 			fbr_cstore_remove(cstore, entry);
@@ -935,7 +935,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
 	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE %s %lu %lu %s", root_path->value, existing, version,
-		hashpath.path);
+		hashpath.value);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
@@ -1000,14 +1000,14 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE root: %s (%lu) prev: %lu (enforce: %d)", hashpath.path,
+	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE root: %s (%lu) prev: %lu (enforce: %d)", hashpath.value,
 		version, existing, enforce);
 
-	if (!fbr_sys_exists(hashpath.path)) {
+	if (!fbr_sys_exists(hashpath.value)) {
 		fbr_fs_stat_add(&cstore->stats.wr_roots);
 	}
 
-	int fd = open(hashpath.path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+	int fd = open(hashpath.value, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR open()");
 		fbr_cstore_set_error(entry);
@@ -1085,7 +1085,7 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 	}
 
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
-	int fd = open(hashpath.path, O_RDONLY);
+	int fd = open(hashpath.value, O_RDONLY);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR open()");
 		fbr_cstore_set_error(entry);
@@ -1139,7 +1139,7 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "DELETE %s %lu", hashpath.path, directory->version);
+	fbr_rlog(FBR_LOG_CS_ROOT, "DELETE %s %lu", hashpath.value, directory->version);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {

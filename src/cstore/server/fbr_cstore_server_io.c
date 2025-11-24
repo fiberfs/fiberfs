@@ -117,7 +117,7 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, entry->hash, 0, &hashpath);
 
-	int fd = open(hashpath.path, O_RDONLY);
+	int fd = open(hashpath.value, O_RDONLY);
 	if (fd < 0) {
 		chttp_error(http, CHTTP_ERR_NETWORK);
 		return;
@@ -315,7 +315,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s unique: %d match: %lu",
-		fbr_cstore_type_name(file_type), hashpath.path, unique, etag_match);
+		fbr_cstore_type_name(file_type), hashpath.value, unique, etag_match);
 
 	struct fbr_cstore_entry *entry = NULL;
 	if (unique) {
@@ -370,7 +370,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE conditions passed");
 
-	int fd = open(hashpath.path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+	int fd = open(hashpath.value, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR open()");
 		fbr_cstore_set_error(entry);
@@ -526,7 +526,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s (retry: %d)",
-			fbr_cstore_type_name(file_type), hashpath.path, retry);
+			fbr_cstore_type_name(file_type), hashpath.value, retry);
 
 		if (retry == 1) {
 			if (!fbr_cstore_backend_enabled(cstore)) {
@@ -555,7 +555,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		assert_dev(entry->state == FBR_CSTORE_OK);
 
-		fd = open(hashpath.path, O_RDONLY);
+		fd = open(hashpath.value, O_RDONLY);
 		if (fd < 0) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR open()");
 			fbr_cstore_remove(cstore, entry);

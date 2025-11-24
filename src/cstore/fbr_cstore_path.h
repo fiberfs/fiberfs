@@ -32,7 +32,7 @@ struct fbr_cstore_hashpath {
 #define FBR_CSTORE_HASHPATH_MAGIC		0x2D53AC3F
 
 	size_t					length;
-	char					path[FBR_CSTORE_HASHPATH_LEN];
+	char					value[FBR_CSTORE_HASHPATH_LEN];
 };
 
 struct fbr_cstore_url {
