@@ -66,20 +66,20 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		previous_version = previous->version;
 	}
 
-	char root_path[FBR_PATH_MAX];
+	struct fbr_cstore_path root_path;
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
-	fbr_cstore_path_root(&dirpath, root_path, sizeof(root_path));
+	fbr_cstore_path_root(&dirpath, &root_path);
 
 	struct fbr_writer *root_json = fbr_writer_alloc_dynamic(fs, FBR_ROOT_JSON_SIZE);
 	fbr_root_json_gen(fs, root_json, directory->version);
 	assert_zero(root_json->error);
 
 	if (fbr_cstore_backend_enabled(cstore)) {
-		fail = fbr_cstore_s3_root_put(cstore, root_json, root_path, directory->version,
+		fail = fbr_cstore_s3_root_put(cstore, root_json, &root_path, directory->version,
 			previous_version);
 	} else {
-		fail = fbr_cstore_io_root_write(cstore, root_json, root_path, directory->version,
+		fail = fbr_cstore_io_root_write(cstore, root_json, &root_path, directory->version,
 			previous_version, 1);
 	}
 
@@ -115,8 +115,8 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int attem
 		return 0;
 	}
 
-	char path[FBR_PATH_MAX];
-	size_t path_len = fbr_cstore_path_root(dirpath, path, sizeof(path));
+	struct fbr_cstore_path path;
+	fbr_cstore_path_root(dirpath, &path);
 
 	fbr_id_t version = 0;
 	int has_backend = fbr_cstore_backend_enabled(cstore);
@@ -124,18 +124,18 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int attem
 	// TODO if fresh, read local and attempt a conditional?
 
 	if (!attempts || !has_backend) {
-		version = fbr_cstore_io_root_read(cstore, path, path_len);
+		version = fbr_cstore_io_root_read(cstore, &path);
 	}
 
 	if (!version && has_backend) {
-		version = fbr_cstore_s3_root_get(fs, cstore, path, attempts);
+		version = fbr_cstore_s3_root_get(fs, cstore, &path, attempts);
 	}
 
 	char id_str[FBR_ID_STRING_MAX] = "";
 	if (version) {
 		fbr_id_string(version, id_str, sizeof(id_str));
 	}
-	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s version=%ld (%s)", path, version, id_str);
+	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s version=%ld (%s)", path.value, version, id_str);
 
 	return version;
 }

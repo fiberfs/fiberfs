@@ -328,6 +328,7 @@ _async_chunk_url_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker
 	struct fbr_cstore_url *url = op->param1;
 	fbr_cstore_url_ok(url);
 
+	fbr_zero_magic(url);
 	free(url);
 	op->param1 = NULL;
 }
@@ -376,9 +377,10 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 
 void
 fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,
-    char *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op_sync *sync)
+    struct fbr_cstore_path *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op_sync *sync)
 {
 	fbr_cstore_ok(cstore);
+	fbr_cstore_path_ok(path);
 	fbr_cstore_op_sync_ok(sync);
 
 	if (!fbr_cstore_backend_enabled(cstore)) {
@@ -397,9 +399,11 @@ fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *h
 
 void
 fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
-    char *path, struct fbr_writer *writer, fbr_id_t id, struct fbr_cstore_op_sync *sync)
+    struct fbr_cstore_path *path, struct fbr_writer *writer, fbr_id_t id,
+    struct fbr_cstore_op_sync *sync)
 {
 	fbr_cstore_ok(cstore);
+	fbr_cstore_path_ok(path);
 	fbr_cstore_op_sync_ok(sync);
 
 	if (!fbr_cstore_backend_enabled(cstore)) {
@@ -442,30 +446,36 @@ _async_root_path_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker
 	assert(op->type == FBR_CSOP_ROOT_WRITE);
 	fbr_cstore_worker_ok(worker);
 
-	free(op->param2);
+	struct fbr_cstore_path *path = op->param2;
+	fbr_cstore_path_ok(path);
+
+	fbr_zero_magic(path);
+	free(path);
 	op->param2 = NULL;
 }
 
 void
 fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-    char *root_path, fbr_id_t version)
+    struct fbr_cstore_path *root_path, fbr_id_t version)
 {
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
 	assert(root_json->bytes);
-	fbr_is_path(root_path);
+	fbr_cstore_path_ok(root_path);
 	assert(version);
 	assert(fbr_cstore_backend_enabled(cstore));
 
-	char *buffer = strdup(root_path);
-	assert(buffer);
+	struct fbr_cstore_path *path_async = malloc(sizeof(*path_async));
+	assert(path_async);
+	fbr_cstore_s3_path_clone(path_async, root_path);
 
 	static_ASSERT(sizeof(void*) >= sizeof(version));
 
-	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_ROOT_WRITE, cstore, root_json, buffer,
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_ROOT_WRITE, cstore, root_json, path_async,
 		(void*)version, NULL, _async_root_path_done, NULL);
 	if (ret) {
-		free(buffer);
+		fbr_zero_magic(path_async);
+		free(path_async);
 		fbr_writer_free(root_json);
 		fbr_rlog(FBR_LOG_CS_ROOT, "Cannot schedule write, skipping");
 		return;

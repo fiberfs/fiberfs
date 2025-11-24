@@ -169,10 +169,10 @@ _cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const 
 	fbr_writer_flush(NULL, root_json);
 	assert_zero_dev(root_json->error);
 
-	char root_path[FBR_URL_MAX];
-	fbr_cstore_path_url(cstore, url, root_path, sizeof(root_path));
+	struct fbr_cstore_path root_path;
+	fbr_cstore_path_url(cstore, url, &root_path);
 
-	int error = fbr_cstore_s3_root_put(cstore, root_json, root_path, etag_id, etag_match);
+	int error = fbr_cstore_s3_root_put(cstore, root_json, &root_path, etag_id, etag_match);
 	if (error) {
 		fbr_cstore_http_respond(cstore, http, 500, "Error");
 		return;
@@ -403,8 +403,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE wrote %zu bytes", bytes);
 
-	char *file_path = url;
-	fbr_cstore_path_url(cstore, url_encoded, file_path, sizeof(url));
+	struct fbr_cstore_path file_path;
+	fbr_cstore_path_url(cstore, url_encoded, &file_path);
 
 	struct fbr_cstore_metadata metadata;
 	fbr_zero(&metadata);
@@ -413,7 +413,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	metadata.offset = offset;
 	metadata.type = file_type;
 	metadata.gzipped = http->gzip;
-	fbr_strbcpy(metadata.path, file_path);
+	fbr_strbcpy(metadata.path, file_path.value);
 
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
 	int ret = fbr_cstore_metadata_write(&hashpath, &metadata);
@@ -437,7 +437,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		pair.cstore = cstore;
 		pair.entry = entry;
 
-		fbr_s3_send_put(cstore, &http_backend, file_type, file_path, length, etag_id, 0,
+		fbr_s3_send_put(cstore, &http_backend, file_type, &file_path, length, etag_id, 0,
 			metadata.gzipped, _cstore_entry_sendfile, &pair);
 
 		if (http_backend.error || http_backend.status != 200) {
@@ -534,11 +534,11 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 				return;
 			}
 
-			char *file_path = url;
-			fbr_cstore_path_url(cstore, url_encoded, file_path, sizeof(url));
+			struct fbr_cstore_path file_path;
+			fbr_cstore_path_url(cstore, url_encoded, &file_path);
 
 			// Its possible someone else fetched this, ignore the error...
-			(void)fbr_cstore_s3_get_write(cstore, hash, file_path, etag_match, 0,
+			(void)fbr_cstore_s3_get_write(cstore, hash, &file_path, etag_match, 0,
 				file_type);
 		} else if (retry > 1) {
 			fbr_cstore_http_respond(cstore, http, 500, "Error");

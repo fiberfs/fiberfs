@@ -69,10 +69,10 @@ _s3_request_url(struct fbr_cstore *cstore, const char *method, const struct fbr_
 }
 
 static fbr_hash_t
-_s3_request_path(struct fbr_cstore *cstore, const char *method, const char *path,
+_s3_request_path(struct fbr_cstore *cstore, const char *method, struct fbr_cstore_path *path,
     struct chttp_context *http, int retries)
 {
-	fbr_is_path(path);
+	fbr_cstore_path_ok(path);
 
 	struct fbr_cstore_url url;
 	fbr_cstore_s3_url(cstore, path, &url);
@@ -105,13 +105,13 @@ _s3_connection(struct fbr_cstore *cstore, struct chttp_context *http,
 }
 
 static void
-_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http, const char *file_path,
-    fbr_id_t id, int retries, int s3_direct)
+_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
+    struct fbr_cstore_path *file_path, fbr_id_t id, int retries, int s3_direct)
 {
 	assert_dev(cstore);
 	assert_dev(http);
 	assert_dev(http->state == CHTTP_STATE_NONE);
-	fbr_is_path(file_path);
+	fbr_cstore_path_ok(file_path);
 
 	fbr_hash_t hash = _s3_request_path(cstore, "GET", file_path, http, retries);
 
@@ -154,14 +154,14 @@ _s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http, const char *
 }
 
 void
-fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http, const char *file_path,
-    fbr_id_t id, int s3_direct)
+fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
+    struct fbr_cstore_path *file_path, fbr_id_t id, int s3_direct)
 {
 	fbr_cstore_ok(cstore);
 	assert(cstore->retries >= 2);
 	chttp_context_ok(http);
 	assert_dev(http->state == CHTTP_STATE_NONE);
-	fbr_is_path(file_path);
+	fbr_cstore_path_ok(file_path);
 	assert(fbr_cstore_backend_enabled(cstore));
 
 	unsigned int attempts = 0;
@@ -191,14 +191,14 @@ fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http, co
 
 static void
 _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
-    enum fbr_cstore_entry_type type, const char *path, size_t length, fbr_id_t etag,
+    enum fbr_cstore_entry_type type, struct fbr_cstore_path *path, size_t length, fbr_id_t etag,
     fbr_id_t existing, int gzip, fbr_cstore_s3_put_f data_cb, void *put_arg, int retries,
     int s3_direct)
 {
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
 	assert_dev(http->state == CHTTP_STATE_NONE);
-	fbr_is_path(path);
+	fbr_cstore_path_ok(path);
 	assert_dev(length);
 	assert_dev(etag);
 	assert_dev(data_cb);
@@ -292,13 +292,13 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 
 void
 fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
-    enum fbr_cstore_entry_type type, const char *path, size_t length, fbr_id_t etag,
+    enum fbr_cstore_entry_type type, struct fbr_cstore_path *path, size_t length, fbr_id_t etag,
     fbr_id_t existing, int gzip, fbr_cstore_s3_put_f data_cb, void *put_arg)
 {
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
 	assert(http->state == CHTTP_STATE_NONE);
-	fbr_is_path(path);
+	fbr_cstore_path_ok(path);
 	assert(length);
 	assert(etag);
 	assert(data_cb);
@@ -363,18 +363,18 @@ fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *
 }
 
 int
-fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash, const char *file_path,
-    fbr_id_t id, size_t size, enum fbr_cstore_entry_type type)
+fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
+    struct fbr_cstore_path *file_path, fbr_id_t id, size_t size, enum fbr_cstore_entry_type type)
 {
 	fbr_cstore_ok(cstore);
-	fbr_is_path(file_path);
+	fbr_cstore_path_ok(file_path);
 	assert(type > FBR_CSTORE_FILE_NONE && type <= FBR_CSTORE_FILE_ROOT);
 	assert(fbr_cstore_backend_enabled(cstore));
 
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
-	fbr_rlog(FBR_LOG_CS_S3, "S3_GET %s", file_path);
+	fbr_rlog(FBR_LOG_CS_S3, "S3_GET %s", file_path->value);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, size,
 		&hashpath, 1);
@@ -477,7 +477,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash, const char *
 	metadata.size = size;
 	metadata.type = type;
 	metadata.gzipped = http.gzip;
-	fbr_strbcpy(metadata.path, file_path);
+	fbr_strbcpy(metadata.path, file_path->value);
 
 	chttp_context_free(&http);
 
@@ -587,7 +587,7 @@ _s3_wbuffer_data_cb(struct chttp_context *http, void *arg)
 
 void
 fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,
-    const char *path, struct fbr_wbuffer *wbuffer)
+    struct fbr_cstore_path *path, struct fbr_wbuffer *wbuffer)
 {
 	fbr_s3_send_put(cstore, http, FBR_CSTORE_FILE_CHUNK, path, wbuffer->end,
 		wbuffer->id, 0, 0, _s3_wbuffer_data_cb, wbuffer);
@@ -669,12 +669,12 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
-	char path[FBR_PATH_MAX];
-	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, path, sizeof(path));
+	struct fbr_cstore_path path;
+	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, &path);
 
 	struct chttp_context http;
 	chttp_context_init(&http);
-	fbr_cstore_s3_send_get(cstore, &http, path, chunk->id, 0);
+	fbr_cstore_s3_send_get(cstore, &http, &path, chunk->id, 0);
 
 	if (http.error || http.status != 200) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp: %d %d", http.error, http.status);
@@ -753,8 +753,8 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	metadata.offset = chunk->offset;
 	metadata.type = FBR_CSTORE_FILE_CHUNK;
 
-	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, path, sizeof(path));
-	fbr_strbcpy(metadata.path, path);
+	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, &path);
+	fbr_strbcpy(metadata.path, path.value);
 
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
 	ret = fbr_cstore_metadata_write(&hashpath, &metadata);
@@ -808,7 +808,7 @@ _s3_writer_data_cb(struct chttp_context *http, void *arg)
 
 void
 fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
-    const char *path, struct fbr_writer *writer, fbr_id_t id)
+    struct fbr_cstore_path *path, struct fbr_writer *writer, fbr_id_t id)
 {
 	fbr_s3_send_put(cstore, http, FBR_CSTORE_FILE_INDEX, path, writer->bytes,
 		id, 0, writer->is_gzip, _s3_writer_data_cb, writer);
@@ -816,12 +816,12 @@ fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
 
 int
 fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-    char *root_path, fbr_id_t version, fbr_id_t existing)
+    struct fbr_cstore_path *root_path, fbr_id_t version, fbr_id_t existing)
 {
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
 	assert(root_json->bytes);
-	fbr_is_path(root_path);
+	fbr_cstore_path_ok(root_path);
 	assert(version);
 	assert(fbr_cstore_backend_enabled(cstore));
 
@@ -840,11 +840,11 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 }
 
 fbr_id_t
-fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore, char *root_path,
-    int attempts)
+fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
+    struct fbr_cstore_path *root_path, int attempts)
 {
 	fbr_cstore_ok(cstore);
-	fbr_is_path(root_path);
+	fbr_cstore_path_ok(root_path);
 
 	struct chttp_context http;
 	chttp_context_init(&http);

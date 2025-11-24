@@ -16,7 +16,7 @@ fbr_cmd_test_urlencode(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	char output[FBR_URL_MAX];
-	char decode[FBR_URL_MAX];
+	char decode[FBR_PATH_MAX];
 
 	char *input = "test.";
 	size_t output_len = fbr_urlencode(input, 5, output, sizeof(output));

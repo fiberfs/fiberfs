@@ -100,6 +100,7 @@ struct fbr_cstore_async {
 struct fbr_cstore;
 struct fbr_cstore_entry;
 struct fbr_cstore_metadata;
+struct fbr_cstore_path;
 struct fbr_cstore_hashpath;
 struct fbr_cstore_url;
 struct fbr_writer;
@@ -118,12 +119,14 @@ void fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file,
 void fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_chunk *chunk);
 void fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,
-	char *path, struct fbr_wbuffer *wbuffer, struct fbr_cstore_op_sync *sync);
+	struct fbr_cstore_path *path, struct fbr_wbuffer *wbuffer,
+	struct fbr_cstore_op_sync *sync);
 void fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
-	char *path, struct fbr_writer *writer, fbr_id_t id, struct fbr_cstore_op_sync *sync);
+	struct fbr_cstore_path *path, struct fbr_writer *writer, fbr_id_t id,
+	struct fbr_cstore_op_sync *sync);
 void fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-	char *root_path, fbr_id_t version);
+	struct fbr_cstore_path *root_path, fbr_id_t version);
 
 void fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync);
 void fbr_cstore_op_sync_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker);
@@ -156,9 +159,8 @@ int fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 void fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-	const char *root_path, fbr_id_t version, fbr_id_t existing, int enforce);
-fbr_id_t fbr_cstore_io_root_read(struct fbr_cstore *cstore, const char *root_path,
-	size_t path_len);
+	struct fbr_cstore_path *root_path, fbr_id_t version, fbr_id_t existing, int enforce);
+fbr_id_t fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_path);
 int fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 
 void fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http);

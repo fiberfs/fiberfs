@@ -19,7 +19,6 @@
 #define FBR_CSTORE_ROOT_LEN			512
 #define FBR_CSTORE_HASHPATH_LEN			(FBR_CSTORE_ROOT_LEN + 128)
 
-/*
 struct fbr_cstore_path {
 	unsigned int				magic;
 #define FBR_CSTORE_PATH_MAGIC			0x7C45C8C8
@@ -27,7 +26,6 @@ struct fbr_cstore_path {
 	size_t					length;
 	char					value[FBR_PATH_MAX];
 };
-*/
 
 struct fbr_cstore_hashpath {
 	unsigned int				magic;
@@ -58,13 +56,11 @@ void fbr_cstore_hashpath(struct fbr_cstore *cstore, fbr_hash_t hash, int metadat
 void fbr_cstore_hashpath_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata,
 	struct fbr_cstore_hashpath *hashpath);
 
-size_t fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, char *buffer,
-	size_t buffer_len);
-size_t fbr_cstore_path_index(const struct fbr_directory *directory, char *buffer,
-	size_t buffer_len);
-size_t fbr_cstore_path_root(struct fbr_path_name *dirpath, char *buffer, size_t buffer_len);
-size_t fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url, char *output,
-	size_t output_len);
+void fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset,
+	struct fbr_cstore_path *path);
+void fbr_cstore_path_index(const struct fbr_directory *directory, struct fbr_cstore_path *path);
+void fbr_cstore_path_root(struct fbr_path_name *dirpath, struct fbr_cstore_path *path);
+void fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url, struct fbr_cstore_path *path);
 
 fbr_hash_t fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
 	size_t offset);
@@ -73,21 +69,21 @@ fbr_hash_t fbr_cstore_hash_root(struct fbr_cstore *cstore, struct fbr_path_name 
 fbr_hash_t fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t url_len);
 fbr_hash_t fbr_cstore_hash_path(struct fbr_cstore *cstore, const char *path, size_t path_len);
 
-void fbr_cstore_s3_url(struct fbr_cstore *cstore, const char *path, struct fbr_cstore_url *url);
+void fbr_cstore_s3_url(struct fbr_cstore *cstore, struct fbr_cstore_path *path,
+	struct fbr_cstore_url *url);
 void fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file,
 	struct fbr_chunk *chunk, struct fbr_cstore_url *url);
 void fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *directory,
     struct fbr_cstore_url *url);
+
+void fbr_cstore_s3_path_init(struct fbr_cstore_path *dest, const char *path, size_t path_len);
+void fbr_cstore_s3_path_clone(struct fbr_cstore_path *dest, struct fbr_cstore_path *src);
 void fbr_cstore_s3_url_init(struct fbr_cstore_url *dest, const char *url, size_t url_len);
 void fbr_cstore_s3_url_clone(struct fbr_cstore_url *dest, const struct fbr_cstore_url *src);
 
-#define fbr_cstore_hashpath_ok(hpath)		fbr_magic_check(hpath, FBR_CSTORE_HASHPATH_MAGIC)
+#define fbr_cstore_path_ok(path)		fbr_magic_check(path, FBR_CSTORE_PATH_MAGIC)
+#define fbr_cstore_hashpath_ok(path)		fbr_magic_check(path, FBR_CSTORE_HASHPATH_MAGIC)
 #define fbr_cstore_url_ok(url)			fbr_magic_check(url, FBR_CSTORE_URL_MAGIC)
-
-#define fbr_cstore_is_path(path)		\
-	assert((path) && (path)[0] != '/')
-
-#define fbr_is_path(path)			\
-	assert((path) && (path)[0] != '/')
+#define fbr_cstore_is_path(path)		assert((path) && (path)[0] != '/')
 
 #endif /* _FBR_CSTORE_PATH_H_INCLUDED_ */

@@ -372,17 +372,18 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	assert_dev(wbuf_bytes);
 
 	struct fbr_cstore_hashpath hashpath;
-	char chunk_path[FBR_PATH_MAX];
+	struct fbr_cstore_path chunk_path;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
-	fbr_cstore_path_chunk(file, wbuffer->id, wbuffer->offset, chunk_path, sizeof(chunk_path));
+	fbr_cstore_path_chunk(file, wbuffer->id, wbuffer->offset, &chunk_path);
 
-	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE %s %zu %s", chunk_path, wbuf_bytes, hashpath.path);
+	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE %s %zu %s", chunk_path.value, wbuf_bytes,
+		hashpath.path);
 
 	struct chttp_context http;
 	chttp_context_init(&http);
 	struct fbr_cstore_op_sync sync;
 	fbr_cstore_op_sync_init(&sync);
-	fbr_cstore_async_wbuffer_send(cstore, &http, chunk_path, wbuffer, &sync);
+	fbr_cstore_async_wbuffer_send(cstore, &http, &chunk_path, wbuffer, &sync);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, wbuf_bytes,
 		&hashpath, 1);
@@ -420,7 +421,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	metadata.size = bytes;
 	metadata.offset = wbuffer->offset;
 	metadata.type = FBR_CSTORE_FILE_CHUNK;
-	fbr_strbcpy(metadata.path, chunk_path);
+	fbr_strbcpy(metadata.path, chunk_path.value);
 
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
 	int ret = fbr_cstore_metadata_write(&hashpath, &metadata);
@@ -602,18 +603,18 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_hash_t hash = fbr_cstore_hash_index(cstore, directory);
 
 	struct fbr_cstore_hashpath hashpath;
-	char index_path[FBR_PATH_MAX];
+	struct fbr_cstore_path index_path;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
-	fbr_cstore_path_index(directory, index_path, sizeof(index_path));
+	fbr_cstore_path_index(directory, &index_path);
 
-	fbr_rlog(FBR_LOG_CS_INDEX, "WRITE %s %lu %s", index_path, directory->version,
+	fbr_rlog(FBR_LOG_CS_INDEX, "WRITE %s %lu %s", index_path.value, directory->version,
 		hashpath.path);
 
 	struct chttp_context http;
 	chttp_context_init(&http);
 	struct fbr_cstore_op_sync sync;
 	fbr_cstore_op_sync_init(&sync);
-	fbr_cstore_async_index_send(cstore, &http, index_path, writer, directory->version, &sync);
+	fbr_cstore_async_index_send(cstore, &http, &index_path, writer, directory->version, &sync);
 
 	int ret;
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, writer->bytes,
@@ -652,7 +653,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	metadata.size = writer->bytes;
 	metadata.type = FBR_CSTORE_FILE_INDEX;
 	metadata.gzipped = writer->is_gzip;
-	fbr_strbcpy(metadata.path, index_path);
+	fbr_strbcpy(metadata.path, index_path.value);
 
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
 	ret = fbr_cstore_metadata_write(&hashpath, &metadata);
@@ -697,18 +698,18 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	int retry = 0;
 
 	while (1) {
-		char path[FBR_PATH_MAX];
-		fbr_cstore_path_index(directory, path, sizeof(path));
+		struct fbr_cstore_path path;
+		fbr_cstore_path_index(directory, &path);
 
-		fbr_rlog(FBR_LOG_CS_INDEX, "READ %s %lu (retry: %d)", path, directory->version,
-			retry);
+		fbr_rlog(FBR_LOG_CS_INDEX, "READ %s %lu (retry: %d)", path.value,
+			directory->version, retry);
 
 		if (retry == 1) {
 			if (!fbr_cstore_backend_enabled(cstore)) {
 				return 1;
 			}
 
-			int ret = fbr_cstore_s3_get_write(cstore, hash, path, directory->version,
+			int ret = fbr_cstore_s3_get_write(cstore, hash, &path, directory->version,
 				0, FBR_CSTORE_FILE_INDEX);
 			if (ret == 400 || ret == 404) {
 				return EAGAIN;
@@ -919,21 +920,21 @@ fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 
 int
 fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-    const char *root_path, fbr_id_t version, fbr_id_t existing, int enforce)
+    struct fbr_cstore_path *root_path, fbr_id_t version, fbr_id_t existing, int enforce)
 {
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
 	assert(root_json->bytes);
-	fbr_is_path(root_path);
+	fbr_cstore_path_ok(root_path);
 	assert(version);
 	assert(enforce || fbr_cstore_backend_enabled(cstore));
 
-	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path, strlen(root_path));
+	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path->value, root_path->length);
 
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE %s %lu %lu %s", root_path, existing, version,
+	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE %s %lu %lu %s", root_path->value, existing, version,
 		hashpath.path);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
@@ -985,7 +986,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	fbr_zero(&metadata);
 	metadata.etag = version;
 	metadata.type = FBR_CSTORE_FILE_ROOT;
-	fbr_strbcpy(metadata.path, root_path);
+	fbr_strbcpy(metadata.path, root_path->value);
 
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
 	int ret = fbr_cstore_metadata_write(&hashpath, &metadata);
@@ -1036,20 +1037,19 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 }
 
 fbr_id_t
-fbr_cstore_io_root_read(struct fbr_cstore *cstore, const char *root_path, size_t path_len)
+fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_path)
 {
 	fbr_cstore_ok(cstore);
-	fbr_is_path(root_path);
-	assert(path_len);
+	fbr_cstore_path_ok(root_path);
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", root_path);
+	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", root_path->value);
 
 	int skip_ttl = 0;
 	if (!fbr_cstore_backend_enabled(cstore) || !cstore->root_ttl_sec) {
 		skip_ttl = 1;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path, path_len);
+	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path->value, root_path->length);
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR ok state");

@@ -297,11 +297,15 @@ fbr_urldecode(const char *input, size_t input_len, char *output, size_t output_l
 	assert(input);
 	assert(input_len);
 	assert(output);
-	assert(output_len > input_len);
+	assert(output_len);
 
 	size_t len = 0;
 
 	for (size_t i = 0; i < input_len; i++, len++) {
+		if (len >= output_len) {
+			return 0;
+		}
+
 		char c = input[i];
 
 		if (c == '%') {
