@@ -257,12 +257,16 @@ fbr_urlencode(const char *input, size_t input_len, char *output, size_t output_l
 	assert(input);
 	assert(input_len);
 	assert(output);
-	assert(output_len > input_len * 3);
+	assert(output_len);
 	assert(input != output);
 
 	size_t len = 0;
 
 	for (size_t i = 0; i < input_len; i++, len++) {
+		if (len + 2 >= output_len) {
+			return 0;
+		}
+
 		unsigned char c = (unsigned char)input[i];
 		if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
 			output[len] = c;
@@ -285,7 +289,10 @@ fbr_urlencode(const char *input, size_t input_len, char *output, size_t output_l
 		}
 	}
 
-	assert(len < output_len);
+	if (len >= output_len) {
+		return 0;
+	}
+
 	output[len] = '\0';
 
 	return len;
@@ -321,7 +328,10 @@ fbr_urldecode(const char *input, size_t input_len, char *output, size_t output_l
 		output[len] = c;
 	}
 
-	assert(len < output_len);
+	if (len >= output_len) {
+		return 0;
+	}
+
 	output[len] = '\0';
 
 	return len;
