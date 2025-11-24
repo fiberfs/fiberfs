@@ -207,13 +207,18 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	assert(url_encoded);
 	size_t url_encoded_len = strlen(url_encoded);
 	if (url_encoded_len >= FBR_URL_MAX) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url_len");
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url_encoded_len");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
 	}
 
-	char url[FBR_URL_MAX];
+	char url[FBR_PATH_MAX];
 	size_t url_len = fbr_urldecode(url_encoded, url_encoded_len, url, sizeof(url));
+	if (!url_len) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url_len");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
+	}
 	assert(url[0] == '/');
 
 	const char *host = chttp_header_get(http, "Host");
@@ -472,13 +477,18 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	assert(url_encoded);
 	size_t url_encoded_len = strlen(url_encoded);
 	if (url_encoded_len >= FBR_URL_MAX) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url_len");
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url_encoded_len");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
 	}
 
-	char url[FBR_URL_MAX];
+	char url[FBR_PATH_MAX];
 	size_t url_len = fbr_urldecode(url_encoded, url_encoded_len, url, sizeof(url));
+	if (!url_len) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url_len");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
+	}
 	assert(url[0] == '/');
 
 	const char *host = chttp_header_get(http, "Host");
@@ -651,13 +661,18 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 	assert(url_encoded);
 	size_t url_encoded_len = strlen(url_encoded);
 	if (url_encoded_len >= FBR_URL_MAX) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url_len");
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR url_encoded_len");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
 	}
 
-	char url[FBR_URL_MAX];
+	char url[FBR_PATH_MAX];
 	size_t url_len = fbr_urldecode(url_encoded, url_encoded_len, url, sizeof(url));
+	if (!url_len) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR url_len");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
+	}
 	assert(url[0] == '/');
 
 	const char *host = chttp_header_get(http, "Host");
