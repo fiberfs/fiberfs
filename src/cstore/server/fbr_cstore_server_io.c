@@ -221,6 +221,13 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	}
 	assert(url[0] == '/');
 
+	int ret = fbr_cstore_s3_validate(cstore, http);
+	if (ret) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR auth");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
+	}
+
 	const char *host = chttp_header_get(http, "Host");
 	if (!host) {
 		host = "";
@@ -421,7 +428,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	fbr_strbcpy(metadata.path, file_path.value);
 
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
-	int ret = fbr_cstore_metadata_write(&hashpath, &metadata);
+	ret = fbr_cstore_metadata_write(&hashpath, &metadata);
 	if (ret) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR metadata");
 		fbr_cstore_set_error(entry);
@@ -490,6 +497,13 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		return;
 	}
 	assert(url[0] == '/');
+
+	int ret = fbr_cstore_s3_validate(cstore, http);
+	if (ret) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR auth");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
+	}
 
 	const char *host = chttp_header_get(http, "Host");
 	assert(host);
@@ -674,6 +688,13 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		return;
 	}
 	assert(url[0] == '/');
+
+	int ret = fbr_cstore_s3_validate(cstore, http);
+	if (ret) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR auth");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
+	}
 
 	const char *host = chttp_header_get(http, "Host");
 	assert(host);

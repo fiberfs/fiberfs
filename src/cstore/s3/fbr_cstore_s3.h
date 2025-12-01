@@ -99,6 +99,7 @@ typedef size_t (*fbr_cstore_s3_hash_f)(void *priv, void *hash, size_t hash_len);
 size_t fbr_cstore_s3_hash_none(void *priv, void *hash, size_t hash_len);
 void fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t sign_time,
 	fbr_cstore_s3_hash_f hash_cb, void *hash_priv);
+int fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http);
 
 #define fbr_cstore_backend_ok(backend)		\
 	fbr_magic_check(backend, FBR_CSTORE_BACKEND_MAGIC)

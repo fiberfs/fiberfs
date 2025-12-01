@@ -158,3 +158,14 @@ fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t
 
 	return;
 }
+
+int
+fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
+{
+	fbr_cstore_ok(cstore);
+	chttp_context_ok(http);
+
+	fbr_rlog(FBR_LOG_CS_S3, "Authorization passed");
+
+	return 0;
+}
