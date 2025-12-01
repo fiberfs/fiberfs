@@ -97,8 +97,11 @@ fbr_id_t fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 typedef size_t (*fbr_cstore_s3_hash_f)(void *priv, void *hash, size_t hash_len);
 
 size_t fbr_cstore_s3_hash_none(void *priv, void *hash, size_t hash_len);
-void fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t sign_time,
+void fbr_cstore_s3_autosign(struct fbr_cstore *cstore, struct chttp_context *http,
 	fbr_cstore_s3_hash_f hash_cb, void *hash_priv);
+void fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_content_hash,
+	fbr_cstore_s3_hash_f hash_cb, void *hash_priv, const char *host, const char *region,
+	const char *access_key, const char *secret_key);
 int fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http);
 
 #define fbr_cstore_backend_ok(backend)		\

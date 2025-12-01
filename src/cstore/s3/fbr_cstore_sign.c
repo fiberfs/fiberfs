@@ -27,12 +27,27 @@ fbr_cstore_s3_hash_none(void *priv, void *hash, size_t hash_len)
 }
 
 void
-fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t sign_time,
+fbr_cstore_s3_autosign(struct fbr_cstore *cstore, struct chttp_context *http,
     fbr_cstore_s3_hash_f hash_cb, void *hash_priv)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_backend_ok(cstore->s3.backend);
+
+	fbr_cstore_s3_sign(http, 0, cstore->skip_content_hash, hash_cb, hash_priv,
+		cstore->s3.backend->host, cstore->s3.region, cstore->s3.access_key,
+		cstore->s3.secret_key);
+}
+
+void
+fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_content_hash,
+    fbr_cstore_s3_hash_f hash_cb, void *hash_priv, const char *host, const char *region,
+    const char *access_key, const char *secret_key)
+{
 	chttp_context_ok(http);
+	assert(host);
+	assert(region);
+	assert(access_key);
+	assert(secret_key);
 
 	// TODO what if the url is on the next dpage?
 	struct chttp_dpage *dpage = http->dpage;
@@ -73,7 +88,7 @@ fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t
 
 	char amz_content[FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE)];
 	size_t amz_content_len = 0;
-	if (hash_cb && !cstore->skip_content_hash) {
+	if (hash_cb && !skip_content_hash) {
 		amz_content_len = hash_cb(hash_priv, amz_content, sizeof(amz_content));
 	}
 	if (!amz_content_len) {
@@ -88,7 +103,7 @@ fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t
 	fbr_sha256_update(&crequest, url, url_len);
 	fbr_sha256_update(&crequest, "\n\n", 2);
 	fbr_sha256_update(&crequest, "host:", 5);
-	fbr_sha256_update(&crequest, cstore->s3.backend->host, cstore->s3.backend->host_len);
+	fbr_sha256_update(&crequest, host, strlen(host));
 	fbr_sha256_update(&crequest, "\n", 1);
 	fbr_sha256_update(&crequest, "x-amz-content-sha256:", 21);
 	fbr_sha256_update(&crequest, amz_content, amz_content_len);
@@ -105,7 +120,7 @@ fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t
 
 	// Scope and signing string
 	char amz_scope[128];
-	fbr_bprintf(amz_scope, "%s/%s/s3/aws4_request", amz_date, cstore->s3.region);
+	fbr_bprintf(amz_scope, "%s/%s/s3/aws4_request", amz_date, region);
 	char amz_signing[256];
 	size_t amz_signing_len = fbr_bprintf(amz_signing, "AWS4-HMAC-SHA256\n%s\n%s\n%s",
 		amz_timestamp, amz_scope, crequest_hex);
@@ -113,7 +128,7 @@ fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t
 
 	// Signing keys and signature
 	char key[128];
-	size_t key_len = fbr_bprintf(key, "AWS4%s", cstore->s3.secret_key);
+	size_t key_len = fbr_bprintf(key, "AWS4%s", secret_key);
 	assert_dev(key_len);
 	uint8_t key_hashA[FBR_SHA256_DIGEST_SIZE];
 	uint8_t key_hashB[FBR_SHA256_DIGEST_SIZE];
@@ -126,7 +141,7 @@ fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t
 	explicit_bzero(key, sizeof(key));
 
 	fbr_hmac_sha256_init(&hmac, key_hashA, sizeof(key_hashA), 0);
-	fbr_sha256_update(&hmac, cstore->s3.region, cstore->s3.region_len);
+	fbr_sha256_update(&hmac, region, strlen(region));
 	fbr_hmac_sha256_final(&hmac, key_hashA, sizeof(key_hashA), key_hashB, sizeof(key_hashB));
 
 	fbr_hmac_sha256_init(&hmac, key_hashB, sizeof(key_hashB), 0);
@@ -150,7 +165,7 @@ fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t
 		"AWS4-HMAC-SHA256 Credential=%s/%s, "
 		"SignedHeaders=host;x-amz-content-sha256;x-amz-date, "
 		"Signature=%s",
-			cstore->s3.access_key, amz_scope, signature);
+			access_key, amz_scope, signature);
 
 	chttp_header_add(http, "x-amz-date", amz_timestamp);
 	chttp_header_add(http, "x-amz-content-sha256", amz_content);
@@ -165,13 +180,11 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
 
-	/*
 	const char *authorization = chttp_header_get(http, "Authorization");
 	if (!authorization) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR Authorization missing");
 		return 1;
 	}
-	*/
 
 	fbr_rlog(FBR_LOG_CS_S3, "Authorization passed");
 

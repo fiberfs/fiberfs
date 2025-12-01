@@ -86,7 +86,7 @@ _s3_connection(struct fbr_cstore *cstore, struct chttp_context *http,
 		return 1;
 	}
 
-	fbr_cstore_s3_sign(cstore, http, 0, hash_cb, hash_priv);
+	fbr_cstore_s3_autosign(cstore, http, hash_cb, hash_priv);
 
 	// TODO make parameters
 	http->addr.timeout_connect_ms = 3000;

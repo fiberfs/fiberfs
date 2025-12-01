@@ -630,11 +630,21 @@ void
 chttp_test_cmd_chttp_s3_sign(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_context *chttp = _test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
+	fbr_test_cmd_ok(cmd);
+	assert(cmd->param_count >= 4 && cmd->param_count <= 5);
 
-	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
+	const char *host = cmd->params[0].value;
+	const char *region = cmd->params[1].value;
+	const char *access_key = cmd->params[2].value;
+	const char *secret_key = cmd->params[3].value;
 
-	fbr_cstore_s3_sign(cstore, chttp, 1369353600, fbr_cstore_s3_hash_none, NULL);
+	time_t sign_time = 0;
+	if (cmd->param_count >= 5) {
+		sign_time = fbr_test_parse_long(cmd->params[4].value);
+	}
+
+	fbr_cstore_s3_sign(chttp, sign_time, 0, fbr_cstore_s3_hash_none, NULL, host, region,
+		access_key, secret_key);
 }
 
 void

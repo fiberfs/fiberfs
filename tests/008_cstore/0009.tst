@@ -9,6 +9,8 @@ chttp_url /file.txt.17592574420817011762.55.fiberfschunk
 chttp_add_header "if-none-match" '*'
 chttp_add_header "etag" '"17592574420817011762"'
 chttp_add_header "content-length" "10"
+chttp_add_header "host" "hostname"
+chttp_s3_sign hostname region access_key secret_key
 chttp_connect $cstore_0_server_host $cstore_0_server_port
 chttp_send_only
 chttp_send_body "chunk_here"
@@ -21,6 +23,8 @@ chttp_reset
 chttp_method GET
 chttp_url /file.txt.17592574420817011762.55.fiberfschunk
 chttp_add_header "if-match" "17592574420817011762"
+chttp_add_header "host" "hostname"
+chttp_s3_sign hostname region access_key secret_key
 chttp_connect $cstore_0_server_host $cstore_0_server_port
 chttp_send
 chttp_status_match 200
