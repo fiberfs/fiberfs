@@ -34,12 +34,16 @@ fbr_cstore_http_respond(struct fbr_cstore *cstore, struct chttp_context *http, i
 		close = "Connection: close\r\n";
 	}
 
+	char fiber_id[32];
+	fbr_cstore_request_id(fiber_id, sizeof(fiber_id));
+
 	char buffer[1024];
 	size_t bytes = fbr_bprintf(buffer,
 		"HTTP/1.1 %d %s\r\n"
 		"Server: fiberfs cstore %s\r\n"
 		"%s"
-		"Content-Length: 0\r\n\r\n", status, reason, FIBERFS_VERSION, close);
+		"FiberFS-ID: %s\r\n"
+		"Content-Length: 0\r\n\r\n", status, reason, FIBERFS_VERSION, close, fiber_id);
 
 	chttp_tcp_send(&http->addr, buffer, bytes);
 	chttp_tcp_error_check(http);

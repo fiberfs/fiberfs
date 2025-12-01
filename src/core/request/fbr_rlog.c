@@ -195,6 +195,7 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 	if (rlog) {
 		_rlog_log(rlog, type, fmt, ap);
 	} else {
+		assert(fbr_fuse_has_context());
 		struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 		fbr_log_ok(fuse_ctx->log);
 

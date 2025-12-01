@@ -50,18 +50,9 @@ _s3_request_url(struct fbr_cstore *cstore, const char *method, const struct fbr_
 		chttp_header_add(http, "Accept-Encoding", "gzip");
 	}
 
-	char buffer[32];
-	fbr_strbcpy(buffer, "0");
-	struct fbr_request *request = fbr_request_get();
-	if (request) {
-		fbr_bprintf(buffer, "%lu", request->id);
-	} else {
-		struct fbr_cstore_worker *worker = fbr_cstore_worker_get();
-		if (worker) {
-			fbr_bprintf(buffer, "%lu", worker->request_id);
-		}
-	}
-	chttp_header_add(http, "FiberFS-ID", buffer);
+	char fiber_id[32];
+	fbr_cstore_request_id(fiber_id, sizeof(fiber_id));
+	chttp_header_add(http, "FiberFS-ID", fiber_id);
 
 	fbr_hash_t hash = fbr_cstore_hash_url(s3_backend->host, s3_backend->host_len, url->value,
 		url->length);

@@ -212,6 +212,7 @@ void fbr_cstore_fuse_register(const char *root_path);
 struct fbr_cstore *fbr_cstore_find(void);
 size_t fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len);
 const char *fbr_cstore_type_name(enum fbr_cstore_entry_type type);
+void fbr_cstore_request_id(char *buffer, size_t buffer_len);
 
 #define fbr_cstore_ok(cstore)			fbr_magic_check(cstore, FBR_CSTORE_MAGIC)
 #define fbr_cstore_head_ok(head)		fbr_magic_check(head, FBR_CSTORE_HEAD_MAGIC)

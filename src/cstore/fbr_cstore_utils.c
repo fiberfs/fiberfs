@@ -90,3 +90,22 @@ fbr_cstore_type_name(enum fbr_cstore_entry_type type)
 
 	return "ERROR";
 }
+
+void
+fbr_cstore_request_id(char *buffer, size_t buffer_len)
+{
+	assert(buffer);
+	assert(buffer_len >= 22);
+
+	fbr_strcpy(buffer, buffer_len, "0");
+
+	struct fbr_request *request = fbr_request_get();
+	if (request) {
+		fbr_snprintf(buffer, buffer_len, "%lu", request->id);
+	} else {
+		struct fbr_cstore_worker *worker = fbr_cstore_worker_get();
+		if (worker) {
+			fbr_snprintf(buffer, buffer_len, "%lu", worker->request_id);
+		}
+	}
+}

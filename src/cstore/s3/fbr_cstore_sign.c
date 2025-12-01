@@ -31,7 +31,7 @@ fbr_cstore_s3_sign(struct fbr_cstore *cstore, struct chttp_context *http, time_t
     fbr_cstore_s3_hash_f hash_cb, void *hash_priv)
 {
 	fbr_cstore_ok(cstore);
-	assert(cstore->s3.backend);
+	fbr_cstore_backend_ok(cstore->s3.backend);
 	chttp_context_ok(http);
 
 	// TODO what if the url is on the next dpage?
@@ -164,6 +164,14 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 {
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
+
+	/*
+	const char *authorization = chttp_header_get(http, "Authorization");
+	if (!authorization) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR Authorization missing");
+		return 1;
+	}
+	*/
 
 	fbr_rlog(FBR_LOG_CS_S3, "Authorization passed");
 

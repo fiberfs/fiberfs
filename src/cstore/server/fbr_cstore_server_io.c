@@ -621,6 +621,9 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	char etag[FBR_ID_STRING_MAX];
 	fbr_id_string(metadata.etag, etag, sizeof(etag));
 
+	char fiber_id[32];
+	fbr_cstore_request_id(fiber_id, sizeof(fiber_id));
+
 	char buffer[1024];
 	size_t header_len = fbr_bprintf(buffer,
 		"HTTP/1.1 200 OK\r\n"
@@ -628,11 +631,12 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		"%s"
 		"%s"
 		"ETag: \"%s\"\r\n"
+		"FiberFS-ID: %s\r\n"
 		"Content-Length: %zu\r\n\r\n",
 			FIBERFS_VERSION,
 			metadata.gzipped ? "Content-Encoding: gzip\r\n" : "",
 			cstore->epool.timeout_sec ? "" : "Connection: close\r\n",
-			etag, size);
+			etag, fiber_id, size);
 
 	chttp_tcp_send(&http->addr, buffer, header_len);
 	chttp_tcp_error_check(http);
