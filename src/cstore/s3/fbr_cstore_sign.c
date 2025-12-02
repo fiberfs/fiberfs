@@ -174,6 +174,48 @@ fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_conten
 	return;
 }
 
+static size_t
+_s3_next_token(const char *string, const char **next, char seperator, char trim, char end)
+{
+	assert(next);
+
+	if (!string) {
+		*next = NULL;
+		return 0;
+	}
+
+	char find[2];
+	find[0] = seperator;
+	find[1] = '\0';
+
+	size_t len;
+	*next = strstr(string, find);
+	if (!*next) {
+		if (end) {
+			find[0] = end;
+			char *endp = strstr(string, find);
+			if (endp) {
+				len = endp - string;
+			} else {
+				len = strlen(string);
+			}
+		} else {
+			len = strlen(string);
+		}
+	} else  {
+		len = *next - string;
+		while (**next == seperator) {
+			(*next)++;
+		}
+	}
+
+	while (trim && len > 0 && string[len - 1] == trim) {
+		len--;
+	}
+
+	return len;
+}
+
 int
 fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 {
@@ -182,8 +224,91 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 
 	const char *authorization = chttp_header_get(http, "Authorization");
 	if (!authorization) {
-		fbr_rlog(FBR_LOG_CS_S3, "ERROR Authorization missing");
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing Authorization missing");
 		return 1;
+	}
+
+	const char *next;
+	const char *algorithm = authorization;
+	size_t algorithm_len = _s3_next_token(algorithm, &next, ' ', ',', 0);
+
+	const char *credential = next;
+	size_t credential_len = _s3_next_token(credential, &next, ' ', ',', 0);
+
+	const char *headers = next;
+	size_t headers_len = _s3_next_token(headers, &next, ' ', ',', 0);
+
+	const char *signature = next;
+	size_t signature_len = _s3_next_token(signature, &next, ' ', ',', 0);
+
+	if (strncmp(algorithm, "AWS4-HMAC-SHA256", algorithm_len)) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad alg");
+		return 1;
+	} else if (!credential || credential_len <= 11 || strncmp(credential, "Credential=", 11)) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad cred");
+		return 1;
+	} else if (!headers || headers_len <= 14 || strncmp(headers, "SignedHeaders=", 14)) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad headers");
+		return 1;
+	} else if (!signature || signature_len <= 10 || strncmp(signature, "Signature=", 10)) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad sig");
+		return 1;
+	} else if (next) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing next exists");
+		return 1;
+	}
+
+	credential += 11;
+	credential_len -= 11;
+	headers += 14;
+	headers_len -= 14;
+	signature += 10;
+	signature_len -= 10;
+
+	fbr_rlog(FBR_LOG_CS_S3, "alg: '%.*s'", (int)algorithm_len, algorithm);
+	fbr_rlog(FBR_LOG_CS_S3, "cred: '%.*s'", (int)credential_len, credential);
+	fbr_rlog(FBR_LOG_CS_S3, "headers: '%.*s'", (int)headers_len, headers);
+	fbr_rlog(FBR_LOG_CS_S3, "sig: '%.*s'", (int)signature_len, signature);
+
+	const char *access_key = credential;
+	size_t access_key_len = _s3_next_token(credential, &next, '/', 0, ',');
+
+	const char *date = next;
+	size_t date_len = _s3_next_token(date, &next, '/', 0, ',');
+
+	const char *region = next;
+	size_t region_len = _s3_next_token(region, &next, '/', 0, ',');
+
+	const char *service = next;
+	size_t service_len = _s3_next_token(service, &next, '/', 0, ',');
+
+	const char *request = next;
+	size_t request_len = _s3_next_token(request, &next, '/', 0, ',');
+
+	if (!access_key || !access_key_len || !date || !date_len || !region || !region_len ||
+	    !service || !service_len || !request || !request_len || next) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad cred content");
+		return 1;
+	} else if (strncmp(service, "s3", service_len)) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad cred service");
+		return 1;
+	} else if (strncmp(request, "aws4_request", request_len)) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad cred request");
+		return 1;
+	}
+
+	fbr_rlog(FBR_LOG_CS_S3, "key: '%.*s'", (int)access_key_len, access_key);
+	fbr_rlog(FBR_LOG_CS_S3, "date: '%.*s'", (int)date_len, date);
+	fbr_rlog(FBR_LOG_CS_S3, "region: '%.*s'", (int)region_len, region);
+	fbr_rlog(FBR_LOG_CS_S3, "service: '%.*s'", (int)service_len, service);
+	fbr_rlog(FBR_LOG_CS_S3, "request: '%.*s'", (int)request_len, request);
+
+	const char *header = headers;
+	size_t header_len;
+
+	while ((header_len = _s3_next_token(header, &next, ';', 0, ','))) {
+		fbr_rlog(FBR_LOG_CS_S3, "header: '%.*s'", (int)header_len, header);
+		header = next;
 	}
 
 	fbr_rlog(FBR_LOG_CS_S3, "Authorization passed");
