@@ -70,8 +70,13 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 
 	s3->access_key = strdup(access_key);
 	assert(s3->access_key);
+	s3->access_key_len = strlen(s3->access_key);
+	assert(s3->access_key_len);
+
 	s3->secret_key = strdup(secret_key);
 	assert(s3->secret_key);
+	s3->secret_key_len = strlen(s3->secret_key);
+	assert(s3->secret_key_len);
 
 	if (prefix) {
 		s3->prefix_len = strlen(prefix);

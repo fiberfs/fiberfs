@@ -27,21 +27,22 @@ fbr_cstore_s3_hash_none(void *priv, void *hash, size_t hash_len)
 }
 
 static void
-_s3_signature(const char *secret_key, size_t secret_key_len, const char *date, size_t date_len,
+_s3_signature(const char *secret_key, const char *date, size_t date_len,
     const char *timestamp, const char *canonical_hex, const char *region, size_t region_len,
-    const char *scope, char *signature_buffer, size_t buffer_len)
+    const char *scope, size_t scope_len, char *signature_buffer, size_t buffer_len)
 {
-	assert_dev(secret_key && secret_key_len);
+	assert_dev(secret_key);
 	assert_dev(date && date_len);
 	assert_dev(timestamp);
 	assert_dev(canonical_hex);
 	assert_dev(region && region_len);
+	assert_dev(scope && scope_len);
 	assert_dev(signature_buffer && buffer_len);
 
 	// Signing string
 	char signing[256];
-	size_t signing_len = fbr_bprintf(signing, "AWS4-HMAC-SHA256\n%s\n%s\n%s",
-		timestamp, scope, canonical_hex);
+	size_t signing_len = fbr_bprintf(signing, "AWS4-HMAC-SHA256\n%s\n%.*s\n%s",
+		timestamp, (int)scope_len, scope, canonical_hex);
 	assert_dev(signing_len);
 
 	// Signing keys and signature
@@ -59,7 +60,7 @@ _s3_signature(const char *secret_key, size_t secret_key_len, const char *date, s
 	explicit_bzero(key, sizeof(key));
 
 	fbr_hmac_sha256_init(&hmac, key_hashA, sizeof(key_hashA), 0);
-	fbr_sha256_update(&hmac, region, strlen(region));
+	fbr_sha256_update(&hmac, region, region_len);
 	fbr_hmac_sha256_final(&hmac, key_hashA, sizeof(key_hashA), key_hashB, sizeof(key_hashB));
 
 	fbr_hmac_sha256_init(&hmac, key_hashB, sizeof(key_hashB), 0);
@@ -85,19 +86,21 @@ fbr_cstore_s3_autosign(struct fbr_cstore *cstore, struct chttp_context *http,
 	fbr_cstore_backend_ok(cstore->s3.backend);
 
 	fbr_cstore_s3_sign(http, 0, cstore->skip_content_hash, hash_cb, hash_priv,
-		cstore->s3.backend->host, cstore->s3.region, cstore->s3.access_key,
+		cstore->s3.backend->host, cstore->s3.backend->host_len, cstore->s3.region,
+		cstore->s3.region_len, cstore->s3.access_key, cstore->s3.access_key_len,
 		cstore->s3.secret_key);
 }
 
 void
 fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_content_hash,
-    fbr_cstore_s3_hash_f hash_cb, void *hash_priv, const char *host, const char *region,
-    const char *access_key, const char *secret_key)
+    fbr_cstore_s3_hash_f hash_cb, void *hash_priv, const char *host, size_t host_len,
+    const char *region, size_t region_len, const char *access_key, size_t access_key_len,
+    const char *secret_key)
 {
 	chttp_context_ok(http);
 	assert(host);
-	assert(region);
-	assert(access_key);
+	assert(region && region_len);
+	assert(access_key && access_key_len);
 	assert(secret_key);
 
 	// TODO what if the url is on the next dpage?
@@ -154,7 +157,7 @@ fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_conten
 	fbr_sha256_update(&crequest, url, url_len);
 	fbr_sha256_update(&crequest, "\n\n", 2);
 	fbr_sha256_update(&crequest, "host:", 5);
-	fbr_sha256_update(&crequest, host, strlen(host));
+	fbr_sha256_update(&crequest, host, host_len);
 	fbr_sha256_update(&crequest, "\n", 1);
 	fbr_sha256_update(&crequest, "x-amz-content-sha256:", 21);
 	fbr_sha256_update(&crequest, context_hex, content_hex_len);
@@ -171,14 +174,12 @@ fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_conten
 
 	// Scope
 	char scope[128];
-	fbr_bprintf(scope, "%s/%s/s3/aws4_request", date, region);
+	size_t scope_len = fbr_bprintf(scope, "%s/%s/s3/aws4_request", date, region);
 
-	// Signing keys and signature
+	// Signature
 	char signature[FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE)];
-	size_t secret_key_len = strlen(secret_key);
-	size_t region_len = strlen(region);
-	_s3_signature(secret_key, secret_key_len, date, date_len, timestamp, crequest_hex,
-		region, region_len, scope, signature, sizeof(signature));
+	_s3_signature(secret_key, date, date_len, timestamp, crequest_hex,
+		region, region_len, scope, scope_len, signature, sizeof(signature));
 
 	// Authorization
 	char authorization[512];
@@ -246,6 +247,10 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 	const char *authorization = chttp_header_get(http, "Authorization");
 	if (!authorization) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing Authorization missing");
+		return 1;
+	} else if (!cstore->s3.region_len || !cstore->s3.access_key_len ||
+	    !cstore->s3.secret_key_len) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR cstore.s3 missing");
 		return 1;
 	}
 
@@ -317,16 +322,24 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad cred request");
 		return 1;
 	} else if (region_len != cstore->s3.region_len ||
-		    strncmp(region, cstore->s3.region, region_len)) {
+	    strncmp(region, cstore->s3.region, region_len)) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad cred region");
 		return 1;
+	} else if (access_key_len != cstore->s3.access_key_len ||
+	    strncmp(access_key, cstore->s3.access_key, access_key_len)) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad cred access key");
+		return 1;
 	}
+
+	const char *scope = date;
+	size_t scope_len = date_len + 1 + region_len + 1 + service_len + 1 + request_len;
 
 	fbr_rlog(FBR_LOG_CS_S3, "key: '%.*s'", (int)access_key_len, access_key);
 	fbr_rlog(FBR_LOG_CS_S3, "date: '%.*s'", (int)date_len, date);
 	fbr_rlog(FBR_LOG_CS_S3, "region: '%.*s'", (int)region_len, region);
 	fbr_rlog(FBR_LOG_CS_S3, "service: '%.*s'", (int)service_len, service);
 	fbr_rlog(FBR_LOG_CS_S3, "request: '%.*s'", (int)request_len, request);
+	fbr_rlog(FBR_LOG_CS_S3, "scope: '%.*s'", (int)scope_len, scope);
 
 	const char *method = chttp_header_get_method(http);
 	assert(method);
@@ -335,7 +348,10 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 
 	char context_hex[FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE)];
 	size_t content_hex_len = 0;
+	char timestamp[32];
+	size_t timestamp_len = 0;
 
+	// Canonical Requests
 	uint8_t crequest_hash[FBR_SHA256_DIGEST_SIZE];
 	struct fbr_sha256_ctx crequest;
 	fbr_sha256_init(&crequest, 0);
@@ -349,6 +365,7 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 
 	while ((header_len = _s3_next_token(header, &next, ';', 0, ','))) {
 		if (header_len >= 256) {
+			fbr_rlog(FBR_LOG_CS_S3, "ERROR signing big header");
 			fbr_sha256_final(&crequest, crequest_hash, sizeof(crequest_hash));
 			return 1;
 		}
@@ -362,6 +379,7 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 
 		const char *header_value = chttp_header_get(http, header_buf);
 		if (!header_value) {
+			fbr_rlog(FBR_LOG_CS_S3, "ERROR signing missing header");
 			fbr_sha256_final(&crequest, crequest_hash, sizeof(crequest_hash));
 			return 1;
 		}
@@ -375,12 +393,20 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 			header_value, header_buf);
 
 		if (header_len == 20 && !strcmp(header_buf, "x-amz-content-sha256")) {
-			if (header_value_len >= sizeof(context_hex)) {
+			if (header_value_len >= sizeof(context_hex) || content_hex_len) {
+				fbr_rlog(FBR_LOG_CS_S3, "ERROR signing header content");
+				fbr_sha256_final(&crequest, crequest_hash, sizeof(crequest_hash));
+				return 1;
+			}
+			content_hex_len = fbr_strbcpy(context_hex, header_value);
+		} else if (header_len == 10 && !strcmp(header_buf, "x-amz-date")) {
+			if (header_value_len >= sizeof(timestamp) || timestamp_len) {
+				fbr_rlog(FBR_LOG_CS_S3, "ERROR signing header date");
 				fbr_sha256_final(&crequest, crequest_hash, sizeof(crequest_hash));
 				return 1;
 			}
 
-			content_hex_len = fbr_strbcpy(context_hex, header_value);
+			timestamp_len = fbr_strbcpy(timestamp, header_value);
 		}
 
 		header = next;
@@ -396,6 +422,20 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 	fbr_bin2hex(crequest_hash, sizeof(crequest_hash), crequest_hex, sizeof(crequest_hex));
 
 	fbr_rlog(FBR_LOG_CS_S3, "chex: %s", crequest_hex);
+	fbr_rlog(FBR_LOG_CS_S3, "timestamp: '%s'", timestamp);
+
+	// Signature
+	char sig_gen[FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE)];
+	struct fbr_cstore_s3 *s3 = &cstore->s3;
+	_s3_signature(s3->secret_key, date, date_len, timestamp, crequest_hex, region, region_len,
+		scope, scope_len, sig_gen, sizeof(sig_gen));
+
+	fbr_rlog(FBR_LOG_CS_S3, "sig_gen: %s", sig_gen);
+
+	if (signature_len != sizeof(sig_gen) - 1 ||  strncmp(sig_gen, signature, signature_len)) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR sig_gen mismatch (%s)", sig_gen);
+		return 1;
+	}
 
 	fbr_rlog(FBR_LOG_CS_S3, "Authorization passed");
 

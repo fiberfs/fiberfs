@@ -634,8 +634,11 @@ chttp_test_cmd_chttp_s3_sign(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	assert(cmd->param_count >= 4 && cmd->param_count <= 5);
 
 	const char *host = cmd->params[0].value;
+	size_t host_len = cmd->params[0].len;
 	const char *region = cmd->params[1].value;
+	size_t region_len = cmd->params[1].len;
 	const char *access_key = cmd->params[2].value;
+	size_t access_key_len = cmd->params[2].len;
 	const char *secret_key = cmd->params[3].value;
 
 	time_t sign_time = 0;
@@ -643,8 +646,8 @@ chttp_test_cmd_chttp_s3_sign(struct fbr_test_context *ctx, struct fbr_test_cmd *
 		sign_time = fbr_test_parse_long(cmd->params[4].value);
 	}
 
-	fbr_cstore_s3_sign(chttp, sign_time, 0, fbr_cstore_s3_hash_none, NULL, host, region,
-		access_key, secret_key);
+	fbr_cstore_s3_sign(chttp, sign_time, 0, fbr_cstore_s3_hash_none, NULL, host, host_len,
+		region, region_len, access_key, access_key_len, secret_key);
 }
 
 void
