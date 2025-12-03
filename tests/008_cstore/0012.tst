@@ -8,6 +8,7 @@ cstore_init 2
 
 cstore_set_s3 0 $cstore_2_server_host $cstore_2_server_port region access_key secret_key
 cstore_set_s3 1 $cstore_2_server_host $cstore_2_server_port region access_key secret_key
+cstore_set_s3 2 "" 0 region access_key secret_key
 
 cstore_add_cluster 0 $cstore_1_server_host $cstore_1_server_port
 

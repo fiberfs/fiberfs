@@ -134,6 +134,7 @@ fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 	}
 
 	const char *method = chttp_header_get_method(http);
+	assert(method);
 
 	if (!strcmp(method, "GET") && http->state == CHTTP_STATE_IDLE) {
 		fbr_cstore_url_read(worker, http);

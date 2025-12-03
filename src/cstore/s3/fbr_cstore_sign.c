@@ -289,11 +289,15 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 	    !service || !service_len || !request || !request_len || next) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad cred content");
 		return 1;
-	} else if (strncmp(service, "s3", service_len)) {
+	} else if (service_len != 2 || strncmp(service, "s3", service_len)) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad cred service");
 		return 1;
-	} else if (strncmp(request, "aws4_request", request_len)) {
+	} else if (request_len != 12 || strncmp(request, "aws4_request", request_len)) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad cred request");
+		return 1;
+	} else if (region_len != cstore->s3.region_len ||
+		    strncmp(region, cstore->s3.region, region_len)) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR signing bad cred region");
 		return 1;
 	}
 
@@ -303,13 +307,74 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 	fbr_rlog(FBR_LOG_CS_S3, "service: '%.*s'", (int)service_len, service);
 	fbr_rlog(FBR_LOG_CS_S3, "request: '%.*s'", (int)request_len, request);
 
+	const char *method = chttp_header_get_method(http);
+	assert(method);
+	const char *url = chttp_header_get_url(http);
+	assert(url);
+
+	char context_hex[FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE)];
+	size_t content_hex_len = 0;
+
+	uint8_t crequest_hash[FBR_SHA256_DIGEST_SIZE];
+	struct fbr_sha256_ctx crequest;
+	fbr_sha256_init(&crequest, 0);
+	fbr_sha256_update(&crequest, method, strlen(method));
+	fbr_sha256_update(&crequest, "\n", 1);
+	fbr_sha256_update(&crequest, url, strlen(url));
+	fbr_sha256_update(&crequest, "\n\n", 2);
+
 	const char *header = headers;
 	size_t header_len;
 
 	while ((header_len = _s3_next_token(header, &next, ';', 0, ','))) {
-		fbr_rlog(FBR_LOG_CS_S3, "header: '%.*s'", (int)header_len, header);
+		if (header_len >= 256) {
+			fbr_sha256_final(&crequest, crequest_hash, sizeof(crequest_hash));
+			return 1;
+		}
+
+		fbr_sha256_update(&crequest, header, header_len);
+		fbr_sha256_update(&crequest, ":", 1);
+
+		char header_buf[256];
+		memcpy(header_buf, header, header_len);
+		header_buf[header_len] = '\0';
+
+		const char *header_value = chttp_header_get(http, header_buf);
+		if (!header_value) {
+			fbr_sha256_final(&crequest, crequest_hash, sizeof(crequest_hash));
+			return 1;
+		}
+
+		size_t header_value_len = strlen(header_value);
+
+		fbr_sha256_update(&crequest, header_value, header_value_len);
+		fbr_sha256_update(&crequest, "\n", 1);
+
+		fbr_rlog(FBR_LOG_CS_S3, "header: '%.*s':'%s' (%s)", (int)header_len, header,
+			header_value, header_buf);
+
+		if (header_len == 20 && !strcmp(header_buf, "x-amz-content-sha256")) {
+			if (header_value_len >= sizeof(context_hex)) {
+				fbr_sha256_final(&crequest, crequest_hash, sizeof(crequest_hash));
+				return 1;
+			}
+
+			content_hex_len = fbr_strbcpy(context_hex, header_value);
+		}
+
 		header = next;
 	}
+
+	fbr_sha256_update(&crequest, "\n", 1);
+	fbr_sha256_update(&crequest, headers, headers_len);
+	fbr_sha256_update(&crequest, "\n", 1);
+	fbr_sha256_update(&crequest, context_hex, content_hex_len);
+
+	char crequest_hex[FBR_HEX_LEN(sizeof(crequest_hash))];
+	fbr_sha256_final(&crequest, crequest_hash, sizeof(crequest_hash));
+	fbr_bin2hex(crequest_hash, sizeof(crequest_hash), crequest_hex, sizeof(crequest_hex));
+
+	fbr_rlog(FBR_LOG_CS_S3, "chex: %s", crequest_hex);
 
 	fbr_rlog(FBR_LOG_CS_S3, "Authorization passed");
 

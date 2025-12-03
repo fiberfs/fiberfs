@@ -4,6 +4,7 @@ cstore_init 0
 cstore_enable_server 127.0.0.1 0
 cstore_init 1
 cstore_set_s3 0 $cstore_1_server_host $cstore_1_server_port region access_key secret_key
+cstore_set_s3 1 "" 0 region access_key secret_key
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir

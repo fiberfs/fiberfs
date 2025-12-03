@@ -1,7 +1,8 @@
 fiber_test "cstore server PUT/GET"
 
 cstore_enable_server 127.0.0.1 0
-cstore_init
+cstore_init 0
+cstore_set_s3 0 "" 0 region access_key secret_key
 
 chttp_init
 chttp_method PUT

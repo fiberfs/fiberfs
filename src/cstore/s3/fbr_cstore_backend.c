@@ -49,8 +49,6 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
     const char *prefix, const char *region, const char *access_key, const char *secret_key)
 {
 	fbr_cstore_ok(cstore);
-	assert(host && *host);
-	assert(port > 0 && port <= USHRT_MAX);
 	assert(region);
 	assert(access_key);
 	assert(secret_key);
@@ -58,8 +56,12 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 	struct fbr_cstore_s3 *s3 = &cstore->s3;
 	fbr_zero(s3);
 
-	s3->backend = fbr_cstore_backend_alloc(host, port, tls);
-	assert_dev(s3->backend);
+	if (host) {
+		assert(host && *host);
+		assert(port > 0 && port <= USHRT_MAX);
+		s3->backend = fbr_cstore_backend_alloc(host, port, tls);
+		assert_dev(s3->backend);
+	}
 
 	s3->region = strdup(region);
 	assert(s3->region);
@@ -95,15 +97,15 @@ fbr_cstore_s3_free(struct fbr_cstore *cstore)
 
 	if (s3->backend) {
 		fbr_cstore_backend_free(s3->backend);
-
-		if (s3->prefix) {
-			free(s3->prefix);
-		}
-
-		free(s3->region);
-		free(s3->access_key);
-		free(s3->secret_key);
 	}
+
+	if (s3->prefix) {
+		free(s3->prefix);
+	}
+
+	free(s3->region);
+	free(s3->access_key);
+	free(s3->secret_key);
 
 	fbr_zero(s3);
 }

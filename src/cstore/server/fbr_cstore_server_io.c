@@ -24,6 +24,7 @@ struct _cstore_entry_pair {
 	struct fbr_cstore_entry		*entry;
 };
 
+// TODO this needs tests
 static enum fbr_cstore_entry_type
 _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, size_t *offset)
 {
@@ -37,7 +38,9 @@ _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, s
 	}
 
 	for (size_t i = 0; i < url_len; i++) {
-		if (i && url[i - 1] == '/' && url[i] == '.') {
+		if (url[i] == '?') {
+			return FBR_CSTORE_FILE_NONE;
+		} else if (i && url[i - 1] == '/' && url[i] == '.') {
 			if (!strcmp(&url[i], FBR_FIBERFS_ROOT_NAME)) {
 				assert_dev(i + 12 == url_len);
 				return FBR_CSTORE_FILE_ROOT;
