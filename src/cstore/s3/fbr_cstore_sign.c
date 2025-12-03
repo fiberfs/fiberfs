@@ -26,6 +26,57 @@ fbr_cstore_s3_hash_none(void *priv, void *hash, size_t hash_len)
 	return ret;
 }
 
+static void
+_s3_signature(const char *secret_key, size_t secret_key_len, const char *date, size_t date_len,
+    const char *timestamp, const char *canonical_hex, const char *region, size_t region_len,
+    const char *scope, char *signature_buffer, size_t buffer_len)
+{
+	assert_dev(secret_key && secret_key_len);
+	assert_dev(date && date_len);
+	assert_dev(timestamp);
+	assert_dev(canonical_hex);
+	assert_dev(region && region_len);
+	assert_dev(signature_buffer && buffer_len);
+
+	// Signing string
+	char signing[256];
+	size_t signing_len = fbr_bprintf(signing, "AWS4-HMAC-SHA256\n%s\n%s\n%s",
+		timestamp, scope, canonical_hex);
+	assert_dev(signing_len);
+
+	// Signing keys and signature
+	char key[128];
+	size_t key_len = fbr_bprintf(key, "AWS4%s", secret_key);
+	assert_dev(key_len);
+	uint8_t key_hashA[FBR_SHA256_DIGEST_SIZE];
+	uint8_t key_hashB[FBR_SHA256_DIGEST_SIZE];
+
+	struct fbr_sha256_ctx hmac;
+	fbr_hmac_sha256_init(&hmac, key, key_len, 0);
+	fbr_sha256_update(&hmac, date, date_len);
+	fbr_hmac_sha256_final(&hmac, key, key_len, key_hashA, sizeof(key_hashA));
+
+	explicit_bzero(key, sizeof(key));
+
+	fbr_hmac_sha256_init(&hmac, key_hashA, sizeof(key_hashA), 0);
+	fbr_sha256_update(&hmac, region, strlen(region));
+	fbr_hmac_sha256_final(&hmac, key_hashA, sizeof(key_hashA), key_hashB, sizeof(key_hashB));
+
+	fbr_hmac_sha256_init(&hmac, key_hashB, sizeof(key_hashB), 0);
+	fbr_sha256_update(&hmac, "s3", 2);
+	fbr_hmac_sha256_final(&hmac, key_hashB, sizeof(key_hashB), key_hashA, sizeof(key_hashA));
+
+	fbr_hmac_sha256_init(&hmac, key_hashA, sizeof(key_hashA), 0);
+	fbr_sha256_update(&hmac, "aws4_request", 12);
+	fbr_hmac_sha256_final(&hmac, key_hashA, sizeof(key_hashA), key_hashB, sizeof(key_hashB));
+
+	fbr_hmac_sha256_init(&hmac, key_hashB, sizeof(key_hashB), 0);
+	fbr_sha256_update(&hmac, signing, signing_len);
+	fbr_hmac_sha256_final(&hmac, key_hashB, sizeof(key_hashB), key_hashA, sizeof(key_hashA));
+
+	fbr_bin2hex(key_hashA, sizeof(key_hashA), signature_buffer, buffer_len);
+}
+
 void
 fbr_cstore_s3_autosign(struct fbr_cstore *cstore, struct chttp_context *http,
     fbr_cstore_s3_hash_f hash_cb, void *hash_priv)
@@ -78,21 +129,21 @@ fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_conten
 	}
 	struct tm tm_sign;
 	gmtime_r(&sign_time, &tm_sign);
-	char amz_timestamp[32];
-	size_t amz_timestamp_len = strftime(amz_timestamp, sizeof(amz_timestamp),
+	char timestamp[32];
+	size_t timestamp_len = strftime(timestamp, sizeof(timestamp),
 		"%Y%m%dT%H%M%SZ", &tm_sign);
-	assert(amz_timestamp_len);
-	char amz_date[32];
-	size_t amz_date_len = strftime(amz_date, sizeof(amz_date), "%Y%m%d", &tm_sign);
-	assert(amz_date_len);
+	assert(timestamp_len);
+	char date[32];
+	size_t date_len = strftime(date, sizeof(date), "%Y%m%d", &tm_sign);
+	assert(date_len);
 
-	char amz_content[FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE)];
-	size_t amz_content_len = 0;
+	char context_hex[FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE)];
+	size_t content_hex_len = 0;
 	if (hash_cb && !skip_content_hash) {
-		amz_content_len = hash_cb(hash_priv, amz_content, sizeof(amz_content));
+		content_hex_len = hash_cb(hash_priv, context_hex, sizeof(context_hex));
 	}
-	if (!amz_content_len) {
-		amz_content_len = fbr_strbcpy(amz_content, "UNSIGNED-PAYLOAD");
+	if (!content_hex_len) {
+		content_hex_len = fbr_strbcpy(context_hex, "UNSIGNED-PAYLOAD");
 	}
 
 	// Canonical Request
@@ -106,70 +157,40 @@ fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_conten
 	fbr_sha256_update(&crequest, host, strlen(host));
 	fbr_sha256_update(&crequest, "\n", 1);
 	fbr_sha256_update(&crequest, "x-amz-content-sha256:", 21);
-	fbr_sha256_update(&crequest, amz_content, amz_content_len);
+	fbr_sha256_update(&crequest, context_hex, content_hex_len);
 	fbr_sha256_update(&crequest, "\n", 1);
 	fbr_sha256_update(&crequest, "x-amz-date:", 11);
-	fbr_sha256_update(&crequest, amz_timestamp, amz_timestamp_len);
+	fbr_sha256_update(&crequest, timestamp, timestamp_len);
 	fbr_sha256_update(&crequest, "\n\nhost;x-amz-content-sha256;x-amz-date\n", 39);
-	fbr_sha256_update(&crequest, amz_content, amz_content_len);
+	fbr_sha256_update(&crequest, context_hex, content_hex_len);
 
 	uint8_t crequest_hash[FBR_SHA256_DIGEST_SIZE];
 	char crequest_hex[FBR_HEX_LEN(sizeof(crequest_hash))];
 	fbr_sha256_final(&crequest, crequest_hash, sizeof(crequest_hash));
 	fbr_bin2hex(crequest_hash, sizeof(crequest_hash), crequest_hex, sizeof(crequest_hex));
 
-	// Scope and signing string
-	char amz_scope[128];
-	fbr_bprintf(amz_scope, "%s/%s/s3/aws4_request", amz_date, region);
-	char amz_signing[256];
-	size_t amz_signing_len = fbr_bprintf(amz_signing, "AWS4-HMAC-SHA256\n%s\n%s\n%s",
-		amz_timestamp, amz_scope, crequest_hex);
-	assert_dev(amz_signing_len);
+	// Scope
+	char scope[128];
+	fbr_bprintf(scope, "%s/%s/s3/aws4_request", date, region);
 
 	// Signing keys and signature
-	char key[128];
-	size_t key_len = fbr_bprintf(key, "AWS4%s", secret_key);
-	assert_dev(key_len);
-	uint8_t key_hashA[FBR_SHA256_DIGEST_SIZE];
-	uint8_t key_hashB[FBR_SHA256_DIGEST_SIZE];
-
-	struct fbr_sha256_ctx hmac;
-	fbr_hmac_sha256_init(&hmac, key, key_len, 0);
-	fbr_sha256_update(&hmac, amz_date, amz_date_len);
-	fbr_hmac_sha256_final(&hmac, key, key_len, key_hashA, sizeof(key_hashA));
-
-	explicit_bzero(key, sizeof(key));
-
-	fbr_hmac_sha256_init(&hmac, key_hashA, sizeof(key_hashA), 0);
-	fbr_sha256_update(&hmac, region, strlen(region));
-	fbr_hmac_sha256_final(&hmac, key_hashA, sizeof(key_hashA), key_hashB, sizeof(key_hashB));
-
-	fbr_hmac_sha256_init(&hmac, key_hashB, sizeof(key_hashB), 0);
-	fbr_sha256_update(&hmac, "s3", 2);
-	fbr_hmac_sha256_final(&hmac, key_hashB, sizeof(key_hashB), key_hashA, sizeof(key_hashA));
-
-	fbr_hmac_sha256_init(&hmac, key_hashA, sizeof(key_hashA), 0);
-	fbr_sha256_update(&hmac, "aws4_request", 12);
-	fbr_hmac_sha256_final(&hmac, key_hashA, sizeof(key_hashA), key_hashB, sizeof(key_hashB));
-
-	fbr_hmac_sha256_init(&hmac, key_hashB, sizeof(key_hashB), 0);
-	fbr_sha256_update(&hmac, amz_signing, amz_signing_len);
-	fbr_hmac_sha256_final(&hmac, key_hashB, sizeof(key_hashB), key_hashA, sizeof(key_hashA));
-
-	char signature[FBR_HEX_LEN(sizeof(key_hashA))];
-	fbr_bin2hex(key_hashA, sizeof(key_hashA), signature, sizeof(signature));
+	char signature[FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE)];
+	size_t secret_key_len = strlen(secret_key);
+	size_t region_len = strlen(region);
+	_s3_signature(secret_key, secret_key_len, date, date_len, timestamp, crequest_hex,
+		region, region_len, scope, signature, sizeof(signature));
 
 	// Authorization
-	char amz_auth[512];
-	fbr_bprintf(amz_auth,
+	char authorization[512];
+	fbr_bprintf(authorization,
 		"AWS4-HMAC-SHA256 Credential=%s/%s, "
 		"SignedHeaders=host;x-amz-content-sha256;x-amz-date, "
 		"Signature=%s",
-			access_key, amz_scope, signature);
+			access_key, scope, signature);
 
-	chttp_header_add(http, "x-amz-date", amz_timestamp);
-	chttp_header_add(http, "x-amz-content-sha256", amz_content);
-	chttp_header_add(http, "Authorization", amz_auth);
+	chttp_header_add(http, "x-amz-date", timestamp);
+	chttp_header_add(http, "x-amz-content-sha256", context_hex);
+	chttp_header_add(http, "Authorization", authorization);
 
 	return;
 }
