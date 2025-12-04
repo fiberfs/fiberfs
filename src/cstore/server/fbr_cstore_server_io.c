@@ -24,16 +24,16 @@ struct _cstore_entry_pair {
 	struct fbr_cstore_entry		*entry;
 };
 
-// TODO this needs tests
-static enum fbr_cstore_entry_type
-_parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, size_t *offset)
+enum fbr_cstore_entry_type
+fbr_cstore_url_parse(const char *url, size_t url_len, const char *etag, size_t etag_len,
+    size_t *offset)
 {
-	assert_dev(url);
+	assert(url && url_len);
 	assert_dev(offset);
 
 	*offset = 0;
 
-	if (url_len <= sizeof(FBR_FIBERFS_NAME)) {
+	if (url_len <= sizeof(FBR_FIBERFS_NAME) || url[0] != '/') {
 		return FBR_CSTORE_FILE_NONE;
 	}
 
@@ -49,12 +49,13 @@ _parse_url(const char *url, size_t url_len, const char *etag, size_t etag_len, s
 				i += 14;
 				if (i >= url_len || !etag_len) {
 					return FBR_CSTORE_FILE_NONE;
+				} else if (i + etag_len != url_len) {
+					return FBR_CSTORE_FILE_NONE;
 				}
 
 				if (!strncmp(&url[i], etag, etag_len)) {
-					if (i + etag_len == url_len) {
-						return FBR_CSTORE_FILE_INDEX;
-					}
+					assert_dev(i + etag_len == url_len);
+					return FBR_CSTORE_FILE_INDEX;
 				}
 
 				return FBR_CSTORE_FILE_NONE;
@@ -287,7 +288,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		}
 	}
 
-	enum fbr_cstore_entry_type file_type = _parse_url(url, url_len, etag, etag_len, &offset);
+	enum fbr_cstore_entry_type file_type = fbr_cstore_url_parse(url, url_len, etag, etag_len,
+		&offset);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
@@ -533,8 +535,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 	size_t offset;
 
-	enum fbr_cstore_entry_type file_type = _parse_url(url, url_len, if_match, if_match_len,
-		&offset);
+	enum fbr_cstore_entry_type file_type = fbr_cstore_url_parse(url, url_len, if_match,
+		if_match_len, &offset);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
@@ -728,8 +730,8 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	size_t offset;
 
-	enum fbr_cstore_entry_type file_type = _parse_url(url, url_len, if_match, if_match_len,
-		&offset);
+	enum fbr_cstore_entry_type file_type = fbr_cstore_url_parse(url, url_len, if_match,
+		if_match_len, &offset);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR url");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");

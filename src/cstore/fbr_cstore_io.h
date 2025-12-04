@@ -163,6 +163,8 @@ int fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_
 fbr_id_t fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_path);
 int fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 
+enum fbr_cstore_entry_type fbr_cstore_url_parse(const char *url, size_t url_len, const char *etag,
+	size_t etag_len, size_t *offset);
 void fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http);
 void fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http);
 void fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *http);
