@@ -94,3 +94,5 @@ FBR_TEST_VAR(cstore_4_server_tls)
 FBR_TEST_VAR(cstore_5_server_host)
 FBR_TEST_VAR(cstore_5_server_port)
 FBR_TEST_VAR(cstore_5_server_tls)
+
+FBR_TEST_CMD(cstore_url_test)

@@ -1,34 +1,27 @@
-fiber_test "cstore server PUT/GET"
+fiber_test "cstore server"
 
 cstore_enable_server 127.0.0.1 0
-cstore_init 0
-cstore_set_s3 0 "" 0 region access_key secret_key
+cstore_init
+cstore_init 1
+cstore_set_s3 1 "" 0 region access_key secret_key
+cstore_init 2
 
 chttp_init
-chttp_method PUT
-chttp_url /file.txt.17592574420817011762.55.fiberfschunk
-chttp_add_header "if-none-match" '*'
-chttp_add_header "etag" '"17592574420817011762"'
-chttp_add_header "content-length" "10"
-chttp_add_header "host" "hostname"
-chttp_s3_sign hostname region access_key secret_key
-chttp_connect $cstore_0_server_host $cstore_0_server_port
-chttp_send_only
-chttp_send_body "chunk_here"
-chttp_receive
-chttp_status_match 200
-
-cstore_debug
-
-chttp_reset
-chttp_method GET
-chttp_url /file.txt.17592574420817011762.55.fiberfschunk
-chttp_add_header "if-match" "17592574420817011762"
-chttp_add_header "host" "hostname"
-chttp_s3_sign hostname region access_key secret_key
+chttp_url /
 chttp_connect $cstore_0_server_host $cstore_0_server_port
 chttp_send
-chttp_status_match 200
-chttp_body_match "chunk_here"
+chttp_status_match 400
 
-cstore_debug
+chttp_reset
+chttp_url /
+chttp_add_header "host" "hostname"
+chttp_s3_sign hostname region access_key secret_key
+chttp_connect $cstore_1_server_host $cstore_1_server_port
+chttp_send
+chttp_status_match 400
+
+chttp_reset
+chttp_url /
+chttp_connect $cstore_2_server_host $cstore_2_server_port
+chttp_send
+chttp_status_match 400

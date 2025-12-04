@@ -1,40 +1,76 @@
-fiber_test "cstore server PUT/GET with s3"
+fiber_test "cstore server PUT/GET with test server"
+
+server_init
+server_accept
+
+# PUT fiberfsindex
+server_read_request
+server_method_match PUT
+server_url_submatch ".fiberfsindex"
+server_header_exists "Content-Length"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
+server_body_submatch '{"fiberfs":1,'
+server_send_response
+
+# PUT fiberfsroot
+server_read_request
+server_method_match PUT
+server_url_submatch ".fiberfsroot"
+server_header_exists "Content-Length"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
+server_body_submatch '{"fiberfs":1,'
+server_send_response
 
 cstore_init 0
-cstore_enable_server 127.0.0.1 0
-cstore_init 1
-cstore_set_s3 0 $cstore_1_server_host $cstore_1_server_port region access_key secret_key
-cstore_set_s3 1 "" 0 region access_key secret_key
+cstore_set_s3 0 $server_host $server_port region access_key secret_key
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
+test_log_always_flush
 
-print "### WRITE 2 CHUNKS"
+sleep_ms 100
+
+print "### WRITE"
+
+# PUT test.txt
+server_read_request
+server_method_match PUT
+server_url_submatch "test.txt"
+server_url_submatch ".fiberfschunk"
+server_header_exists "Content-Length"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
+server_body_match "content_here"
+server_send_response
+
+# PUT fiberfsindex
+server_read_request
+server_method_match PUT
+server_url_submatch ".fiberfsindex"
+server_header_exists "Content-Length"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
+server_body_submatch '{"fiberfs":1,'
+server_send_response
+
+# PUT fiberfsroot
+server_read_request
+server_method_match PUT
+server_url_submatch ".fiberfsroot"
+server_header_exists "Content-Length"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
+server_body_submatch '{"fiberfs":1,'
+server_send_response
+
+# DELETE fiberfsindex
+server_read_request
+server_method_match DELETE
+server_url_submatch ".fiberfsindex"
+server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
+server_send_response
 
 set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "test1test2test3"
-sys_append $var1 "test4test5"
+sys_write $var1 "content_here"
 
 sleep_ms 100
 
 cstore_debug
-cstore_debug 1
-equal $cstore_stat_chunks 2
-equal $cstore_stat_indexes 3
-equal $cstore_stat_roots 1
-equal $cstore_0_entries 6
-equal $cstore_1_entries 4
-
-cstore_clear 0
-equal $cstore_0_entries 0
-fs_test_release_all
-sleep_ms 100
-
-print "### READ 2 CHUNKS FROM CSTORE_1"
-
-sys_cat $var1 "test1test2test3test4test5"
-
-sleep_ms 100
-cstore_debug
-cstore_debug 1
 equal $cstore_0_entries 4
