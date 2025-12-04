@@ -136,5 +136,11 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(type == FBR_CSTORE_FILE_CHUNK);
 	assert(offset == 102400);
 
+	type = _url_parse("/test/%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94.txt"
+		".17648630080413561840.102400.fiberfschunk",
+		"17648630080413561840", &offset);
+	assert(type == FBR_CSTORE_FILE_CHUNK);
+	assert(offset == 102400);
+
 	fbr_test_logs("cstore_url_test done");
 }
