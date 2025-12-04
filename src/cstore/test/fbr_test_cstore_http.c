@@ -128,5 +128,10 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(type == FBR_CSTORE_FILE_CHUNK);
 	assert(offset == 444);
 
+	type = _url_parse("/test/안녕하세요.txt.17648630080413561840.102400.fiberfschunk",
+		"17648630080413561840", &offset);
+	assert(type == FBR_CSTORE_FILE_CHUNK);
+	assert(offset == 102400);
+
 	fbr_test_logs("cstore_url_test done");
 }
