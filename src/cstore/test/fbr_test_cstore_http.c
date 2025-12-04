@@ -92,6 +92,9 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	type = _url_parse("/abc.62.1.fiberfschunk", "6", &offset);
 	assert(type == FBR_CSTORE_FILE_NONE);
 
+	type = _url_parse("/abc.98", "987654321", &offset);
+	assert(type == FBR_CSTORE_FILE_NONE);
+
 	type = _url_parse("/abc.6.1.fiberfschunk", "63", &offset);
 	assert(type == FBR_CSTORE_FILE_NONE);
 

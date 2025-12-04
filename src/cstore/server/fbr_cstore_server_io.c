@@ -66,13 +66,15 @@ fbr_cstore_url_parse(const char *url, size_t url_len, const char *etag, size_t e
 		} else if (url[i] == '.') {
 			if (!etag_len) {
 				continue;
+			} else if (i + etag_len + 2 >= url_len) {
+				return FBR_CSTORE_FILE_NONE;
 			}
 
 			if (!strncmp(&url[i + 1], etag, etag_len)) {
 				i += 2 + etag_len;
-				if (i >= url_len) {
-					return FBR_CSTORE_FILE_NONE;
-				} else if (url[i - 1] != '.') {
+				assert_dev(i < url_len);
+
+				if (url[i - 1] != '.') {
 					continue;
 				}
 
