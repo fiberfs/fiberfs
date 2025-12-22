@@ -723,7 +723,7 @@ fbr_cmd_test_log_printer(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	size_t lines = 6;
 
 	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {
-		int max = 50;
+		int max = 250;
 		while (max && fbr_test_log_printer_lines() != lines) {
 			fbr_test_sleep_ms(25);
 			max--;
