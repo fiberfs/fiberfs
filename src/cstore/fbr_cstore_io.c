@@ -248,7 +248,7 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 	}
 
 	if (backend) {
-		fbr_cstore_s3_send_delete(cstore, url, id);
+		fbr_cstore_s3_send_delete(cstore, url, id, FBR_CSTORE_ROUTE_CLUSTER);
 	}
 }
 
@@ -710,7 +710,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 			}
 
 			int ret = fbr_cstore_s3_get_write(cstore, hash, &path, directory->version,
-				0, FBR_CSTORE_FILE_INDEX);
+				0, FBR_CSTORE_FILE_INDEX, FBR_CSTORE_ROUTE_CLUSTER);
 			if (ret == 400 || ret == 404) {
 				return EAGAIN;
 			} else if (ret) {

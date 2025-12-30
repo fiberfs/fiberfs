@@ -174,21 +174,23 @@ fbr_cstore_backend_enabled(struct fbr_cstore *cstore)
 }
 
 struct fbr_cstore_backend *
-fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, int retries, int cdn_ok)
+fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, enum fbr_cstore_route route,
+    int retries, int cdn_ok)
 {
 	fbr_cstore_ok(cstore);
 	assert_dev(cstore->s3.backend);
+	assert(route && route <= FBR_CSTORE_ROUTE_S3);
 
-	assert_zero(cstore->cdn.size); // TODO
-	(void)cdn_ok;
-
-	// TODO implement rendezvous hash
-	(void)hash;
-	(void)retries;
-	if (cstore->cluster.size) {
+	if (route == FBR_CSTORE_ROUTE_CLUSTER && cstore->cluster.size) {
+		// TODO implement rendezvous hash here
+		(void)hash;
+		(void)retries;
 		assert(cstore->cluster.size == 1);  // TODO
 		fbr_cstore_backend_ok(cstore->cluster.backends[0]);
 		return cstore->cluster.backends[0];
+	} else if (route == FBR_CSTORE_ROUTE_CDN && cdn_ok && cstore->cdn.size) {
+		// TODO hash on cdn (see above)
+		fbr_ABORT("TODO");
 	}
 
 	fbr_cstore_backend_ok(cstore->s3.backend);

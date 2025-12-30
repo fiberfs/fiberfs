@@ -178,7 +178,8 @@ _cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const 
 	struct fbr_cstore_path root_path;
 	fbr_cstore_path_url(cstore, url, &root_path);
 
-	int error = fbr_cstore_s3_root_put(cstore, root_json, &root_path, etag_id, etag_match);
+	int error = fbr_cstore_s3_root_put(cstore, root_json, &root_path, etag_id, etag_match,
+		FBR_CSTORE_ROUTE_CDN);
 	if (error) {
 		fbr_cstore_http_respond(cstore, http, 500, "Error");
 		return;
@@ -457,7 +458,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		pair.entry = entry;
 
 		fbr_s3_send_put(cstore, &http_backend, file_type, &file_path, length, etag_id, 0,
-			metadata.gzipped, _cstore_entry_sendfile, &pair);
+			metadata.gzipped, _cstore_entry_sendfile, &pair, FBR_CSTORE_ROUTE_CDN);
 
 		if (http_backend.error || http_backend.status != 200) {
 			fbr_cstore_release(cstore, entry);
@@ -570,7 +571,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 			// Its possible someone else fetched this, ignore the error...
 			(void)fbr_cstore_s3_get_write(cstore, hash, &file_path, etag_match, 0,
-				file_type);
+				file_type, FBR_CSTORE_ROUTE_CDN);
 		} else if (retry > 1) {
 			fbr_cstore_http_respond(cstore, http, 500, "Error");
 			return;
@@ -746,7 +747,8 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		struct fbr_cstore_url url_enc;
 		fbr_cstore_s3_url_init(&url_enc, url_encoded, url_encoded_len);
 
-		int error = fbr_cstore_s3_send_delete(cstore, &url_enc, etag_match);
+		int error = fbr_cstore_s3_send_delete(cstore, &url_enc, etag_match,
+			FBR_CSTORE_ROUTE_CDN);
 		if (error) {
 			fbr_cstore_http_respond(cstore, http, 500, "Error");
 		} else {
@@ -792,7 +794,8 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		struct fbr_cstore_url url_enc;
 		fbr_cstore_s3_url_init(&url_enc, url_encoded, url_encoded_len);
 
-		error = fbr_cstore_s3_send_delete(cstore, &url_enc, etag_match);
+		error = fbr_cstore_s3_send_delete(cstore, &url_enc, etag_match,
+			FBR_CSTORE_ROUTE_CDN);
 	}
 
 	if (error) {

@@ -77,7 +77,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	if (fbr_cstore_backend_enabled(cstore)) {
 		fail = fbr_cstore_s3_root_put(cstore, root_json, &root_path, directory->version,
-			previous_version);
+			previous_version, FBR_CSTORE_ROUTE_CLUSTER);
 	} else {
 		fail = fbr_cstore_io_root_write(cstore, root_json, &root_path, directory->version,
 			previous_version, 1);
