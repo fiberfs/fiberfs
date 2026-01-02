@@ -10,6 +10,13 @@
 #include "fiberfs.h"
 #include "cstore/fbr_cstore_api.h"
 
+#define _BACKEND_HASH_STACK_SIZE	16
+
+struct _backend_hash {
+	struct fbr_cstore_backend	*backend;
+	fbr_hash_t			hash;
+};
+
 struct fbr_cstore_backend *
 fbr_cstore_backend_alloc(const char *host, int port, int tls)
 {
@@ -27,6 +34,7 @@ fbr_cstore_backend_alloc(const char *host, int port, int tls)
 	backend->host = (char*)(backend + 1);
 	backend->host_len = host_len;
 	backend->tls = tls ? 1 : 0;
+	backend->hash = fbr_hash(host, host_len);
 
 	fbr_strcpy(backend->host, host_len + 1, host);
 
@@ -173,6 +181,96 @@ fbr_cstore_backend_enabled(struct fbr_cstore *cstore)
 	return 0;
 }
 
+static int
+_backend_hash_cmp(const void *arg1, const void *arg2)
+{
+	assert(arg1);
+	assert(arg2);
+
+	const struct _backend_hash *hash1 = arg1;
+	fbr_cstore_backend_ok(hash1->backend);
+	const struct _backend_hash *hash2 = arg2;
+	fbr_cstore_backend_ok(hash2->backend);
+
+	if (!hash1->backend->offline && hash2->backend->offline) {
+		return 1;
+	} else if (hash1->backend->offline && !hash2->backend->offline) {
+		return -1;
+	}
+
+	if (hash1->hash > hash2->hash) {
+		return 1;
+	} else if (hash1->hash < hash2->hash) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static struct fbr_cstore_backend *
+_backend_rv_hash(struct fbr_cstore_cluster *cluster, fbr_hash_t hash, unsigned int retries)
+{
+	assert_dev(cluster)
+	assert_dev(cluster->size);
+
+	if (cluster->size == 1) {
+		return cluster->backends[0];
+	}
+
+	struct _backend_hash *hashes = NULL;
+	struct _backend_hash _hash_stack[_BACKEND_HASH_STACK_SIZE];
+	int do_free = 0;
+
+	if (cluster->size <= _BACKEND_HASH_STACK_SIZE) {
+		hashes = _hash_stack;
+	} else {
+		struct fbr_cstore_worker *worker = fbr_cstore_worker_get();
+		if (worker) {
+			hashes = fbr_workspace_alloc(worker->workspace,
+				sizeof(*hashes) * cluster->size);
+		}
+
+		if (!hashes) {
+			hashes = malloc(sizeof(*hashes) * cluster->size);
+			assert(hashes);
+
+			do_free = 1;
+		}
+	}
+
+	for (size_t i = 0; i < cluster->size; i++) {
+		hashes[i].backend = cluster->backends[i];
+
+		char hash_buf[sizeof(fbr_hash_t) * 2];
+		static_ASSERT(sizeof(hash) == sizeof(cluster->backends[i]->hash));
+		memcpy(hash_buf, &hash, sizeof(hash));
+		memcpy(hash_buf + sizeof(hash), &cluster->backends[i]->hash, sizeof(hash));
+		hashes[i].hash = fbr_hash(hash_buf, sizeof(hash_buf));
+	}
+
+	qsort(hashes, cluster->size, sizeof(*hashes), _backend_hash_cmp);
+
+	struct fbr_cstore_backend *backend = hashes[0].backend;
+
+	if (retries) {
+		if (retries >= cluster->size) {
+			retries = cluster->size - 1;
+		}
+
+		assert_dev(retries <= cluster->size);
+
+		backend = hashes[retries].backend;
+	}
+
+	if (do_free) {
+		free(hashes);
+	}
+
+	fbr_cstore_backend_ok(backend);
+
+	return backend;
+}
+
 struct fbr_cstore_backend *
 fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, enum fbr_cstore_route route,
     int retries, int cdn_ok)
@@ -180,19 +278,15 @@ fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, enum fbr_csto
 	fbr_cstore_ok(cstore);
 	assert_dev(cstore->s3.backend);
 	assert(route && route <= FBR_CSTORE_ROUTE_S3);
+	assert(retries >= 0);
 
 	if (route == FBR_CSTORE_ROUTE_CLUSTER && cstore->cluster.size) {
-		// TODO implement rendezvous hash here
-		(void)hash;
-		(void)retries;
-		assert(cstore->cluster.size == 1);  // TODO
-		fbr_cstore_backend_ok(cstore->cluster.backends[0]);
-		return cstore->cluster.backends[0];
-	} else if (route == FBR_CSTORE_ROUTE_CDN && cdn_ok && cstore->cdn.size) {
-		// TODO hash on cdn (see above)
-		fbr_ABORT("TODO");
+		return _backend_rv_hash(&cstore->cluster, hash, retries);
+	} else if (route <= FBR_CSTORE_ROUTE_CDN && cdn_ok && cstore->cdn.size) {
+		return _backend_rv_hash(&cstore->cdn, hash, retries);
 	}
 
 	fbr_cstore_backend_ok(cstore->s3.backend);
+
 	return cstore->s3.backend;
 }

@@ -148,6 +148,7 @@ fbr_strcpy(char *dest, size_t dest_len, const char *source)
 	assert(dest_len);
 	assert(source);
 
+	// TODO do something a bit more efficient than printf(%s)...
 	size_t ret = fbr_snprintf(dest, dest_len, "%s", source);
 
 	return ret;

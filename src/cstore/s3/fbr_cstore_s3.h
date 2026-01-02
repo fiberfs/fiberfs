@@ -35,6 +35,9 @@ struct fbr_cstore_backend {
 	size_t				host_len;
 
 	unsigned int			tls:1;
+	unsigned int			offline:1;
+
+	fbr_hash_t			hash;
 };
 
 struct fbr_cstore_s3 {
