@@ -121,6 +121,8 @@ fbr_cstore_alloc(const char *root_path)
 
 	fbr_cstore_init(cstore, root_path);
 
+	cstore->do_free = 1;
+
 	return cstore;
 }
 

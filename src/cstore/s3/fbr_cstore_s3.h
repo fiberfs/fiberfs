@@ -63,8 +63,6 @@ typedef void (*fbr_cstore_s3_put_f)(struct chttp_context *http, void *arg);
 
 struct fbr_cstore;
 
-struct fbr_cstore_backend *fbr_cstore_backend_alloc(const char *host, int port, int tls);
-void fbr_cstore_backend_free(struct fbr_cstore_backend *backend);
 void fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tls,
 	const char *prefix, const char *region, const char *access_key, const char *secret_key);
 void fbr_cstore_s3_free(struct fbr_cstore *cstore);

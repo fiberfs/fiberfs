@@ -17,8 +17,8 @@ struct _backend_hash {
 	fbr_hash_t			hash;
 };
 
-struct fbr_cstore_backend *
-fbr_cstore_backend_alloc(const char *host, int port, int tls)
+static struct fbr_cstore_backend *
+_backend_alloc(const char *host, int port, int tls)
 {
 	assert(host);
 
@@ -43,8 +43,8 @@ fbr_cstore_backend_alloc(const char *host, int port, int tls)
 	return backend;
 }
 
-void
-fbr_cstore_backend_free(struct fbr_cstore_backend *backend)
+static void
+_backend_free(struct fbr_cstore_backend *backend)
 {
 	fbr_cstore_backend_ok(backend);
 
@@ -67,7 +67,7 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 	if (host) {
 		assert(host && *host);
 		assert(port > 0 && port <= USHRT_MAX);
-		s3->backend = fbr_cstore_backend_alloc(host, port, tls);
+		s3->backend = _backend_alloc(host, port, tls);
 		assert_dev(s3->backend);
 	}
 
@@ -109,7 +109,7 @@ fbr_cstore_s3_free(struct fbr_cstore *cstore)
 	struct fbr_cstore_s3 *s3 = &cstore->s3;
 
 	if (s3->backend) {
-		fbr_cstore_backend_free(s3->backend);
+		_backend_free(s3->backend);
 	}
 
 	if (s3->prefix) {
@@ -139,7 +139,7 @@ fbr_cstore_cluster_add(struct fbr_cstore_cluster *cluster, const char *host, int
 	assert(host);
 	assert(port > 0 && port <= USHRT_MAX);
 
-	struct fbr_cstore_backend *backend = fbr_cstore_backend_alloc(host, port, tls);
+	struct fbr_cstore_backend *backend = _backend_alloc(host, port, tls);
 	cluster->size++;
 	assert(cluster->size < 100000);
 	cluster->backends = realloc(cluster->backends, sizeof(backend) * cluster->size);
@@ -155,7 +155,7 @@ fbr_cstore_cluster_free(struct fbr_cstore_cluster *cluster)
 
 	for (size_t i = 0; i < cluster->size; i++) {
 		struct fbr_cstore_backend *backend = cluster->backends[i];
-		fbr_cstore_backend_free(backend);
+		_backend_free(backend);
 		cluster->backends[i] = NULL;
 	}
 
