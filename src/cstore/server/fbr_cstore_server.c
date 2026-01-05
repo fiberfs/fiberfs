@@ -40,6 +40,8 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 	server->port = server->addr.listen_port;
 	if (server->tls) {
 		server->addr.tls = 1;
+		cstore->cant_splice_in = 1;
+		cstore->cant_splice_out = 1;
 	}
 
 	fbr_log_print(cstore->log, FBR_LOG_CS_SERVER, FBR_REQID_CSTORE,

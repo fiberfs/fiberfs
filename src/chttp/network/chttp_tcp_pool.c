@@ -340,5 +340,7 @@ chttp_tcp_pool_close(void)
 	fbr_ASSERT(size == _TCP_POOL_SIZE, "_TCP_POOL size fail, got %zu, expected %zu",
 		size, _TCP_POOL_SIZE);
 
+	_TCP_POOL.initialized = 0;
+
 	_tcp_pool_UNLOCK();
 }

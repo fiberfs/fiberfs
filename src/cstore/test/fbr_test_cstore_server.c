@@ -19,7 +19,7 @@ fbr_cmd_cstore_enable_server(struct fbr_test_context *ctx, struct fbr_test_cmd *
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
-	assert(cmd->param_count <= 2);
+	assert(cmd->param_count <= 3);
 
 	_CSTORE_CONFIG.server = 1;
 
@@ -33,6 +33,14 @@ fbr_cmd_cstore_enable_server(struct fbr_test_context *ctx, struct fbr_test_cmd *
 		_CSTORE_CONFIG.server_port = fbr_test_parse_long(cmd->params[1].value);
 		assert(_CSTORE_CONFIG.server_port >= 0 && _CSTORE_CONFIG.server_port < USHRT_MAX);
 		fbr_test_logs("cstore_enable_server port: %d", _CSTORE_CONFIG.server_port);
+	}
+	if (cmd->param_count >= 3) {
+		fbr_test_ERROR_string(cmd->params[1].value);
+		long tls = fbr_test_parse_long(cmd->params[2].value);
+		if (tls == 1) {
+			_CSTORE_CONFIG.server_tls = 1;
+		}
+		fbr_test_logs("cstore_enable_server tls: %d", _CSTORE_CONFIG.server_tls);
 	}
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_enable_server: %d", _CSTORE_CONFIG.server);
