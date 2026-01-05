@@ -29,7 +29,7 @@ fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *addr, int
 	off_t offset = 0;
 	int error = 0;
 	int fallback_rw = 0;
-	if (cstore->cant_splice_out) {
+	if (cstore->cant_splice_out || addr->tls) {
 		fallback_rw = 1;
 	}
 
@@ -90,7 +90,7 @@ fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, i
 	size_t bytes = 0;
 	int error = 0;
 	int fallback_rw = 0;
-	if (cstore->cant_splice_in || http->chunked || !size) {
+	if (cstore->cant_splice_in || http->chunked || !size || http->addr.tls) {
 		fallback_rw = 1;
 	}
 
