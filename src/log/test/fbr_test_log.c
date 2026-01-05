@@ -26,6 +26,7 @@ struct fbr_test_log_printer {
 	pthread_t				thread;
 	int					thread_running;
 	int					thread_exit;
+	int					thread_exited;
 	int					silent;
 	size_t					lines;
 	char					prefix[8];
@@ -85,6 +86,7 @@ _test_log_printer_thread(void *arg)
 {
 	struct fbr_test_log_printer *printer = arg;
 	fbr_test_log_printer_ok(printer);
+	assert_zero(printer->thread_exited);
 
 	struct fbr_log_reader *reader = &printer->reader;
 	fbr_log_reader_ok(reader);
@@ -106,7 +108,6 @@ _test_log_printer_thread(void *arg)
 
 		if (!log_line) {
 			if (reader->cursor.status == FBR_LOG_CURSOR_EXIT) {
-				//printf("%s CURSOR EXIT\n", printer->prefix);
 				break;
 			}
 			fbr_ASSERT(reader->cursor.status != FBR_LOG_CURSOR_OVERFLOW,
@@ -115,7 +116,6 @@ _test_log_printer_thread(void *arg)
 				"cursor.status=%d", reader->cursor.status);
 
 			if (printer->thread_exit) {
-				//printf("%s PRINTER EXIT\n", printer->prefix);
 				break;
 			}
 
@@ -148,6 +148,8 @@ _test_log_printer_thread(void *arg)
 		printf("%s%.3f %s:%s %s\n", printer->prefix, time, reqid_str, type_str,
 			log_line->buffer);
 	}
+
+	printer->thread_exited = 1;
 
 	return NULL;
 }
@@ -723,11 +725,23 @@ fbr_cmd_test_log_printer(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	size_t lines = 6;
 
 	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {
-		int max = 250;
+		int max = 600;
 		while (max && fbr_test_log_printer_lines() != lines) {
 			fbr_test_sleep_ms(25);
 			max--;
 		}
+
+		struct fbr_test_log_printer *printer = ctx->printer;
+		while (printer) {
+			fbr_test_log_printer_ok(printer);
+
+			fbr_test_logs("printer: %s running: %d exited: %d",
+				printer->prefix, printer->thread_running,
+				printer->thread_exited);
+
+			printer = printer->next;
+		}
+
 		assert(fbr_test_log_printer_lines() == lines);
 	} else {
 		assert_zero(fbr_test_log_printer_lines());
