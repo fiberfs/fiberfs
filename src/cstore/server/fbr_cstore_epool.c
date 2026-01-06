@@ -120,6 +120,7 @@ fbr_cstore_epool_add(struct fbr_cstore_server *server, struct chttp_addr *addr)
 
 	if (epool->debug_close) {
 		chttp_tcp_close(addr);
+		fbr_rlog(FBR_LOG_CS_WORKER, "DEBUG epool silent closing");
 		return;
 	}
 
