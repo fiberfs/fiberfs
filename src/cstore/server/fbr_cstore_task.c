@@ -104,7 +104,7 @@ _cstore_task_loop(void *arg)
 	task_worker.worker = fbr_cstore_worker_alloc(cstore, "server_task");
 	fbr_cstore_worker_ok(task_worker.worker);
 
-	chttp_addr_init(&task_worker.remote_addr);
+	chttp_addr_reset(&task_worker.remote_addr);
 
 	task_worker.worker->thread_id = fbr_request_id_thread_gen();
 	task_worker.worker->thread_pos = fbr_atomic_add(&tasks->workers_running, 1);

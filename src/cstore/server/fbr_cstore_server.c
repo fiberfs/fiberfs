@@ -70,6 +70,8 @@ fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker)
 	struct fbr_cstore_server *server = task_worker->task->param;
 	fbr_cstore_server_ok(server);
 
+	chttp_addr_init(&task_worker->remote_addr);
+
 	int ret = chttp_tcp_accept(&task_worker->remote_addr, &server->addr);
 
 	fbr_cstore_task_add(worker->cstore, FBR_CSTORE_TASK_ACCEPT, server);
