@@ -69,6 +69,7 @@ FBR_TEST_CMD(cstore_set_async)
 FBR_TEST_CMD(cstore_enable_server)
 FBR_TEST_CMD(cstore_set_s3)
 FBR_TEST_CMD(cstore_add_cluster)
+FBR_TEST_CMD(cstore_epool_close)
 
 FBR_TEST_VAR(cstore_0_entries)
 FBR_TEST_VAR(cstore_1_entries)

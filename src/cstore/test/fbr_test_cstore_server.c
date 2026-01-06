@@ -231,3 +231,20 @@ _CSTORE_SERVER_TLS(2)
 _CSTORE_SERVER_TLS(3)
 _CSTORE_SERVER_TLS(4)
 _CSTORE_SERVER_TLS(5)
+
+void
+fbr_cmd_cstore_epool_close(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	long index = fbr_test_parse_long(cmd->params[0].value);
+
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
+	struct fbr_cstore_epool *epool = &cstore->epool;
+
+	epool->debug_close = 1;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_epool_close: %d", epool->debug_close);
+}
