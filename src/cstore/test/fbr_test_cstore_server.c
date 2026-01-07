@@ -44,6 +44,15 @@ fbr_cmd_cstore_enable_server(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	}
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_enable_server: %d", _CSTORE_CONFIG.server);
+
+	if (_CSTORE_CONFIG.server_tls && fbr_test_is_valgrind()) {
+		_CSTORE_CONFIG.timeout_connect_ms = 60000;
+		_CSTORE_CONFIG.timeout_transfer_ms = 10000;
+		fbr_test_logs("cstore_enable_server timeout_connect_ms: %lu",
+			_CSTORE_CONFIG.timeout_connect_ms);
+		fbr_test_logs("cstore_enable_server timeout_transfer_ms: %lu",
+			_CSTORE_CONFIG.timeout_transfer_ms);
+	}
 }
 
 void

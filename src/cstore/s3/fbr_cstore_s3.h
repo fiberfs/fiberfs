@@ -15,8 +15,10 @@
 #include "core/fs/fbr_fs.h"
 
 // TODO is this a good size?
-#define FBR_CSTORE_IO_SIZE		(1024 * 16)
-#define FBR_CSTORE_CHTTP_SIZE		4096
+#define FBR_CSTORE_IO_SIZE			(1024 * 16)
+#define FBR_CSTORE_CHTTP_SIZE			4096
+#define FBR_CSTORE_TIMEOUT_CONNECT_MS		3000
+#define FBR_CSTORE_TIMEOUT_TRANSFER_MS		5000
 
 enum fbr_cstore_route {
 	FBR_CSTORE_ROUTE_NONE = 0,
