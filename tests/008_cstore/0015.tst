@@ -10,6 +10,7 @@ print "### WRITE INDEX AND FILE"
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
+test_log_always_flush
 
 set_var1 $sys_tmpdir "/test.txt"
 sys_write $var1 "testing 123"
