@@ -21,12 +21,13 @@ server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
 server_body_submatch '{"fiberfs":1,'
 server_send_response
 
+test_log_always_flush
+
 cstore_init 0
 cstore_set_s3 0 $server_host $server_port region access_key secret_key
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
-test_log_always_flush
 
 sleep_ms 100
 

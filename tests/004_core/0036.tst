@@ -2,10 +2,10 @@ fiber_test "mkdir op test"
 
 set_timeout_sec 20
 
+test_log_always_flush
+test_log_allow_debug
 sys_mkdir_tmp
 mkdir_op_test_mount $sys_tmpdir
-test_log_allow_debug
-test_log_always_flush
 
 equal $fs_test_stat_directories 1
 

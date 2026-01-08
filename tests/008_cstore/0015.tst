@@ -1,5 +1,7 @@
 fiber_test "cstore server with TLS"
 
+test_log_always_flush
+
 cstore_init 0
 cstore_enable_server 127.0.0.1 0 1
 cstore_init 1
@@ -10,7 +12,6 @@ print "### WRITE INDEX AND FILE"
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
-test_log_always_flush
 
 set_var1 $sys_tmpdir "/test.txt"
 sys_write $var1 "testing 123"

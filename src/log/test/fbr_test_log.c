@@ -18,6 +18,8 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
 
+extern int _FBR_LOG_ALWAYS_FLUSH;
+
 struct fbr_test_log_printer {
 	unsigned int				magic;
 #define FBR_TEST_LOG_PRINT_MAGIC		0x57A22B5D
@@ -72,13 +74,9 @@ fbr_cmd_test_log_always_flush(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
-	fbr_log_ok(fuse_ctx->log);
+	_FBR_LOG_ALWAYS_FLUSH = 1;
 
-	fuse_ctx->log->always_flush = 1;
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_always_flush: %d",
-		fuse_ctx->log->always_flush);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_always_flush: %d", _FBR_LOG_ALWAYS_FLUSH);
 }
 
 static void *

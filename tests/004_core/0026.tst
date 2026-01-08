@@ -2,11 +2,11 @@ fiber_test "RW test small buffer"
 
 # Init
 
+test_log_always_flush
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 fs_test_dentry_ttl_ms 0
 fs_test_rw_buffer_size 3
-test_log_always_flush
 
 # Operations
 
