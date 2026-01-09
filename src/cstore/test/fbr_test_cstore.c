@@ -209,6 +209,10 @@ fbr_test_cstore_wait(struct fbr_cstore *cstore)
 	int max = 40;
 	int count = 0;
 
+	if (fbr_test_is_valgrind()) {
+		max = 100;
+	}
+
 	while (cstore->async.queue_len && max) {
 		fbr_test_sleep_ms(count);
 		max--;
