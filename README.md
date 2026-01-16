@@ -2,7 +2,7 @@
 
 FiberFS is a fully featured POSIX filesystem that uses S3 compatible storage as a backend.
 
-For more informations, please visit [FiberFS.io](https://fiberfs.io/).
+For more information, please visit [fiberfs.io](https://fiberfs.io/).
 
 ## Building
 
@@ -10,7 +10,7 @@ For more informations, please visit [FiberFS.io](https://fiberfs.io/).
 make
 ```
 
-Note: all Makefile commands support parallism, ex: `make -j4`.
+Note: all Makefile commands support parallelism, ex: `make -j4`.
 
 ## Testing and Safety
 
@@ -18,7 +18,7 @@ Note: all Makefile commands support parallism, ex: `make -j4`.
 make test
 ```
 
-Note: all Makefile commands support parallism, ex: `make test -j8`.
+Note: all Makefile commands support parallelism, ex: `make test -j8`.
 
 * FiberFS supports both runtime and development assertions via `assert()` and `assert_dev()`.
 * FiberFS supports reference counting and memory lifetime safety via `fbr_magic_check()`.
