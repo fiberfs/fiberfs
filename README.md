@@ -25,5 +25,5 @@ Note: all Makefile commands support parallism, ex: `make test -j8`.
 * All memory accesses use bounds checking, assertions, and memory safety checks.
 * FiberFS has a scriptable testing harness allowing for full userspace access to filesystem operations.
 * All filesystem features have concurrent access tests.
-* Gcov is used to provide testing code coverage reports: `make gcov` (`make gcov -j8`).
-* The entire test suite can be run thru valgrind for a complete safety and leak report: `make valgrind` (`make valgrind -j4`).
+* Gcov is used to provide testing code coverage reports: `make gcov [-j8]`
+* The entire test suite can be run thru valgrind for a complete safety and leak report: `make valgrind [-j4]`
