@@ -22,8 +22,8 @@ Note: all Makefile commands support parallelism, ex: `make test -j8`.
 
 * FiberFS supports both runtime and development assertions via `assert()` and `assert_dev()`.
 * FiberFS supports reference counting and memory lifetime safety via `fbr_magic_check()`.
-* All memory accesses use bounds checking, assertions, and memory safety checks.
+* All memory accesses use bounds checking, assertions, and memory safety checks (best effort).
 * FiberFS has a scriptable testing harness allowing for full userspace access to filesystem operations.
-* All filesystem features have concurrent access tests.
+* All filesystem features have concurrent access tests (best effort).
 * Gcov is used to provide testing code coverage reports: `make gcov [-j8]`
 * The entire test suite can be run thru valgrind for a complete safety and leak report: `make valgrind [-j4]`
