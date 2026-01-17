@@ -1,6 +1,6 @@
 # FiberFS
 
-FiberFS is a (soon to be) full featured POSIX filesystem that uses S3 compatible storage as a backend.
+FiberFS is a POSIX filesystem that uses S3 compatible storage as a backend.
 
 For more information, please visit [fiberfs.io](https://fiberfs.io/).
 
