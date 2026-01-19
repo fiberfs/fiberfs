@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2021-2026 FiberFS LLC
- *
- * Derived from the RSA Data Security, Inc. MD5 Message Digest Algorithm
+ * All rights reserved.
  *
  */
 

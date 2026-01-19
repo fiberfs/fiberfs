@@ -2,6 +2,8 @@
  * Copyright (c) 2024-2026 FiberFS LLC
  * All rights reserved.
  *
+ * Derived from the RSA Data Security, Inc. MD5 Message Digest Algorithm
+ *
  */
 
 #include <stdint.h>
