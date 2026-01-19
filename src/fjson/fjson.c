@@ -13,13 +13,7 @@
 
 static struct fjson_token _FJSON_TOKEN_BAD = {
 	FJSON_TOKEN_MAGIC,
-	FJSON_TOKEN_UNDEF,
-	0,
-	NULL,
-	0,
-	0,
-	0,
-	0
+	FJSON_TOKEN_UNDEF, 0, NULL, 0, 0, 0, 0
 };
 
 static void _check_errors(struct fjson_context *ctx, struct fjson_token *token,
