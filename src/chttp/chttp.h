@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 chttp
+ * Copyright (c) 2021-2026 FiberFS LLC
  * All rights reserved.
  *
  */
