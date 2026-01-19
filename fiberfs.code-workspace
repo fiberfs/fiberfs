@@ -8,7 +8,6 @@
 		"editor.tabSize": 8,
 		"editor.insertSpaces": false,
 		"editor.detectIndentation": false,
-		"editor.stickyScroll.enabled": false,
 		"editor.rulers": [100],
 		"files.insertFinalNewline": true,
 		"C_Cpp.default.cStandard": "gnu17",
