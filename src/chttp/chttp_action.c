@@ -143,11 +143,12 @@ chttp_send(struct chttp_context *ctx)
 
 	for (dpage = ctx->data_start.dpage; dpage; dpage = dpage->next) {
 		chttp_dpage_ok(dpage);
-		assert(offset < dpage->offset);
 
 		if (!dpage->offset) {
 			continue;
 		}
+
+		assert(offset < dpage->offset);
 
 		chttp_tcp_send(&ctx->addr, dpage->data + offset, dpage->offset - offset);
 		chttp_tcp_error_check(ctx);

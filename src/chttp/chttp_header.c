@@ -449,6 +449,17 @@ _header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 		start = end;
 	}
 
+	unsigned int bytes = 0;
+	for (struct chttp_dpage *dpage = ctx->dpage; dpage; dpage = dpage->next) {
+		chttp_dpage_ok(dpage);
+		bytes += dpage->offset;
+	}
+
+	if (bytes >= CHTTP_MAX_HEADER_BYTES) {
+		chttp_error(ctx, CHTTP_ERR_BUFFER);
+		return;
+	}
+
 	chttp_dpage_shift_full(ctx);
 }
 

@@ -1061,6 +1061,53 @@ chttp_test_cmd_server_send_raw_sock(struct fbr_test_context *ctx, struct fbr_tes
 }
 
 void
+chttp_test_cmd_server_send_random(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct chttp_test_server *server = _server_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	fbr_test_random_seed();
+
+	long length = fbr_test_parse_long(cmd->params[0].value);
+	if (length <= 0) {
+		length = fbr_test_gen_random(0, 1024);
+	}
+	assert(length > 0);
+
+	char buffer[512];
+	size_t bytes = 0;
+
+	while (bytes < (size_t)length) {
+		size_t fill = length - bytes;
+		if (fill > sizeof(buffer)) {
+			fill = sizeof(buffer);
+		}
+
+		for (size_t i = 0; i < fill; i++) {
+			int rand_byte = fbr_test_gen_random(0, 61);
+			if (rand_byte < 10) {
+				buffer[i] = '0' + rand_byte;
+			} else if (rand_byte < 36) {
+				buffer[i] = 'a' + rand_byte - 10;
+			} else {
+				buffer[i] = 'A' + rand_byte - 36;
+			}
+		}
+
+		_server_send_buf(server, buffer, fill);
+		bytes += fill;
+	}
+	assert(bytes == (size_t)length);
+
+	fbr_test_log(ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* sent random bytes %zu", bytes);
+}
+
+void
 chttp_test_cmd_server_send_random_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server = _server_context_ok(ctx);

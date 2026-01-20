@@ -1,0 +1,51 @@
+chttp_test "Large headers"
+
+# Large
+server_init
+server_accept
+server_read_request
+server_send_response_partial
+server_send_header "test_1: first"
+server_send_raw "test_2: "
+server_send_random 300
+server_send_raw "\r\n"
+server_send_raw "test_3: "
+server_send_random 8000
+server_send_raw "\r\n"
+server_send_raw "test_4: "
+server_send_random 200
+server_send_raw "\r\n"
+server_send_header "Content-Length: 0"
+server_send_header "test_last: last"
+server_send_header_done
+server_close
+
+# Error
+server_accept
+server_read_request
+server_send_response_partial
+server_send_header "test_1: first"
+server_send_header "Content-Length: 0"
+server_send_raw "test_2: "
+server_send_random 10300
+server_send_raw "\r\n\r\n"
+
+# Large ~9kb response
+chttp_init
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_header_exists test_1
+chttp_header_exists test_2
+chttp_header_exists test_3
+chttp_header_exists test_4
+chttp_header_match test_last last
+
+# Over 10k, too big
+chttp_reset
+chttp_new_connection
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_take_error

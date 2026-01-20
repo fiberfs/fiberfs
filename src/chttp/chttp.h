@@ -20,6 +20,7 @@
 #define	CHTTP_DEFAULT_METHOD		"GET"
 #define CHTTP_DEFAULT_H_VERSION		CHTTP_H_VERSION_1_1
 #define CHTTP_USER_AGENT		"fiberfs chttp " CHTTP_VERSION
+#define CHTTP_MAX_HEADER_BYTES		(10 * 1024)
 
 
 enum chttp_version {
