@@ -115,9 +115,11 @@ _body_chunk_start(struct chttp_context *ctx)
 				_body_chunk_end(ctx);
 
 				if (ctx->state == CHTTP_STATE_BODY) {
-					assert_zero(ctx->data_start.dpage);
-					// TODO this assert needs to just be a pipeline flag
 					ctx->state = CHTTP_STATE_IDLE;
+
+					if (ctx->data_start.dpage) {
+						ctx->pipeline = 1;
+					}
 				}
 			}
 
@@ -155,6 +157,7 @@ _body_chunk_parse(struct chttp_context *ctx)
 	}
 }
 
+// Note: caller needs to set ctx->pipeline
 void
 chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type)
 {

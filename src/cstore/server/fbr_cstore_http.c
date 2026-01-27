@@ -58,9 +58,9 @@ fbr_cstore_http_log(struct chttp_context *http)
 
 	fbr_rlog(FBR_LOG_CS_WORKER,
 		"state: %d error: %d ver: %d status: %d length: %ld chunk: %u gzip: %u tls: %u "
-		"req: %d",
+		"req: %d pipeline %u",
 		http->state, http->error, http->version, http->status, http->length, http->chunked,
-		http->gzip, http->addr.tls, http->request);
+		http->gzip, http->addr.tls, http->request, http->pipeline);
 
 	int first = 1;
 	struct chttp_dpage *dpage = http->dpage;
@@ -152,9 +152,8 @@ fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 	}
 
 	if (http->state == CHTTP_STATE_IDLE && http->addr.state == CHTTP_ADDR_CONNECTED &&
-	    !http->close && !http->error) {
+	    !http->close && !http->error && !http->pipeline) {
 		chttp_addr_move(&task_worker->remote_addr, &http->addr);
-		// TODO, we may have some pipeline in the chttp dpage
 	}
 
 	chttp_context_free(http);

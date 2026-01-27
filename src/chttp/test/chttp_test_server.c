@@ -49,6 +49,7 @@ struct chttp_test_server {
 	char					ip_str[128];
 	char					port_str[16];
 	int					tls;
+	int					pipeline_close;
 
 	struct chttp_context			*chttp;
 
@@ -359,6 +360,8 @@ chttp_test_cmd_server_accept(struct fbr_test_context *ctx, struct fbr_test_cmd *
 
 	fbr_test_log(server->ctx, FBR_LOG_VERY_VERBOSE, "*SERVER* remote client %s:%d",
 		remote, remote_port);
+
+	assert_zero(server->pipeline_close);
 }
 
 void
@@ -412,6 +415,20 @@ chttp_test_var_server_tls(struct fbr_test_context *ctx)
 }
 
 void
+chttp_test_cmd_server_pipeline_close(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct chttp_test_server *server = _server_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	server->pipeline_close = 1;
+}
+
+void
 chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server = _server_context_ok(ctx);
@@ -456,9 +473,13 @@ chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test
 		chttp_context_debug(server->chttp);
 	}
 
-	fbr_test_ERROR(server->chttp->pipeline, "pipelined data detected");
-
 	if (server->chttp->state == CHTTP_STATE_IDLE) {
+		if (server->pipeline_close) {
+			assert(server->chttp->pipeline);
+		} else {
+			assert_zero(server->chttp->pipeline);
+		}
+
 		chttp_addr_move(&server->addr, &server->chttp->addr);
 		chttp_addr_connected(&server->addr);
 	} else {
@@ -546,7 +567,7 @@ _server_match_header(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 			header);
 
 		return;
-	}else {
+	} else {
 		assert_zero("INVALID SERVER MATCH");
 	}
 
@@ -699,6 +720,12 @@ _server_body_match(struct chttp_test_server *server, const char *match, int subm
 
 	assert(server->chttp->state == CHTTP_STATE_IDLE);
 
+	if (server->pipeline_close) {
+		assert(server->chttp->pipeline);
+	} else {
+		assert_zero(server->chttp->pipeline);
+	}
+
 	chttp_addr_move(&server->addr, &server->chttp->addr);
 	chttp_addr_connected(&server->addr);
 }
@@ -833,6 +860,7 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 	}
 
 	if (partial) {
+		assert_zero(server->pipeline_close);
 		return;
 	}
 
@@ -846,7 +874,11 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 		_server_send_buf(server, body, body_len);
 	}
 
-	if (!H1_1) {
+	if (server->pipeline_close) {
+		server->pipeline_close = 0;
+		chttp_tcp_close(&server->addr);
+		chttp_addr_closed(&server->addr);
+	} else if (!H1_1) {
 		chttp_tcp_close(&server->addr);
 		chttp_addr_closed(&server->addr);
 	}
