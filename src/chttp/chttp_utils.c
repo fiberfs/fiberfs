@@ -20,14 +20,14 @@ chttp_context_debug(struct chttp_context *ctx)
 		"\tdata_start=%p:%zu:%zu data_end=%p:%zu:%zu\n"
 		"\thostname=%p:%zu:%zu\n"
 		"\tstatus=%d length=%ld do_free=%u has_host=%u close=%u chunked=%u\n"
-		"\tgzip=%u tls=%d reused=%d time=%lf\n",
+		"\tgzip=%u tls=%d reused=%d pipeline=%u time=%lf\n",
 		ctx->state, ctx->error, chttp_error_msg(ctx), ctx->version, (void*)ctx->dpage_last,
 		(void*)ctx->data_start.dpage, ctx->data_start.offset, ctx->data_start.length,
 		(void*)ctx->data_end.dpage, ctx->data_end.offset, ctx->data_end.length,
 		(void*)ctx->hostname.dpage, ctx->hostname.offset, ctx->hostname.length,
 		ctx->status, ctx->length, ctx->do_free, ctx->has_host, ctx->close, ctx->chunked,
-		ctx->gzip,
-		ctx->addr.tls, ctx->addr.reused, fbr_get_time() - ctx->addr.time_start);
+		ctx->gzip, ctx->addr.tls, ctx->addr.reused, ctx->pipeline,
+		fbr_get_time() - ctx->addr.time_start);
 
 	chttp_dpage_debug(ctx->dpage);
 }

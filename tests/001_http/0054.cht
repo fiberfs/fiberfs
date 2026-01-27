@@ -1,0 +1,31 @@
+chttp_test "Request pipelining"
+
+server_init
+server_accept
+server_read_request
+server_url_match /1
+server_header_match raw true
+server_send_response 200 OK body
+
+chttp_init
+chttp_raw_append "GET /1 HTTP/1.1\r\n"
+chttp_raw_append "raw: true\r\n\r\n"
+#chttp_raw_append "GET /Z HTTP/1.1\r\n"
+#chttp_raw_append "raw2: t2\r\n\r\n"
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_body_match body
+
+server_read_request
+server_url_match /2
+server_header_match body true
+server_send_response 200 OK body2
+
+chttp_reset
+chttp_raw_append "GET /2 HTTP/1.1\r\n"
+chttp_raw_append "body: true\r\n\r\n"
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_body_match body2

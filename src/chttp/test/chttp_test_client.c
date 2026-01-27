@@ -279,6 +279,31 @@ chttp_test_cmd_chttp_enable_gzip(struct fbr_test_context *ctx, struct fbr_test_c
 }
 
 void
+chttp_test_cmd_chttp_raw_append(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct chttp_context *chttp = _test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	fbr_test_unescape(&cmd->params[0]);
+
+	if (chttp->state == CHTTP_STATE_NONE) {
+		assert_zero(chttp->hostname.dpage);
+		assert_zero(chttp->data_start.dpage);
+		chttp->state = CHTTP_STATE_INIT_HEADER;
+		chttp->raw_send = 1;
+
+		chttp_dpage_append_mark(chttp, cmd->params[0].value, cmd->params[0].len,
+			&chttp->data_start);
+	} else {
+		assert(chttp->state == CHTTP_STATE_INIT_HEADER);
+		assert(chttp->raw_send);
+		assert(chttp->data_start.dpage);
+
+		chttp_dpage_append(chttp, cmd->params[0].value, cmd->params[0].len);
+	}
+}
+
+void
 chttp_test_cmd_chttp_send_only(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_context *chttp = _test_context_ok(ctx);

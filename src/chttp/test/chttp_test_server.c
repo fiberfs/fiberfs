@@ -456,6 +456,8 @@ chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test
 		chttp_context_debug(server->chttp);
 	}
 
+	fbr_test_ERROR(server->chttp->pipeline, "pipelined data detected");
+
 	if (server->chttp->state == CHTTP_STATE_IDLE) {
 		chttp_addr_move(&server->addr, &server->chttp->addr);
 		chttp_addr_connected(&server->addr);

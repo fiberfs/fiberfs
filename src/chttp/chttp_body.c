@@ -116,6 +116,7 @@ _body_chunk_start(struct chttp_context *ctx)
 
 				if (ctx->state == CHTTP_STATE_BODY) {
 					assert_zero(ctx->data_start.dpage);
+					// TODO this assert needs to just be a pipeline flag
 					ctx->state = CHTTP_STATE_IDLE;
 				}
 			}
@@ -268,9 +269,6 @@ chttp_body_buffered(struct chttp_context *ctx)
 
 	return 0;
 }
-
-// TODO if idle, anything remaining in the dpage is pipelined
-// we need to shift it and start a new request
 
 size_t
 chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)

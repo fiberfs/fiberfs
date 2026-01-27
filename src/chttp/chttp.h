@@ -99,6 +99,7 @@ struct chttp_context {
 	unsigned int			is_head:1;
 	unsigned int			has_host:1;
 	unsigned int			close:1;
+	unsigned int			raw_send:1;
 	unsigned int			chunked:1;
 	unsigned int			seen_first:1;
 	unsigned int			new_conn:1;
@@ -106,6 +107,7 @@ struct chttp_context {
 	unsigned int			want_100:1;
 	unsigned int			sent_100:1;
 	unsigned int			request:1;
+	unsigned int			pipeline:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };

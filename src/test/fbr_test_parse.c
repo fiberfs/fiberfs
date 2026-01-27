@@ -37,8 +37,7 @@ fbr_test_unescape(struct fbr_test_param *param)
 {
 	assert(param);
 	assert(param->value);
-	// TODO remove
-	assert(param->len == strlen(param->value));
+	assert_dev(param->len == strlen(param->value));
 
 	if (param->v_const) {
 		return;

@@ -16,6 +16,10 @@ _finalize_request(struct chttp_context *ctx)
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_INIT_HEADER);
 
+	if (ctx->raw_send) {
+		return;
+	}
+
 	if (!ctx->has_host && ctx->version > CHTTP_H_VERSION_1_0) {
 		if(ctx->hostname.dpage) {
 			assert(ctx->hostname.length);
@@ -56,7 +60,7 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 		assert_zero(ctx->data_start.dpage);
 		chttp_dpage_append_mark(ctx, host, strlen(host) + 1, &ctx->hostname);
 	} else if (ctx->state == CHTTP_STATE_INIT_HEADER) {
-		if (!ctx->has_host && ctx->version > CHTTP_H_VERSION_1_0) {
+		if (!ctx->has_host && !ctx->raw_send && ctx->version > CHTTP_H_VERSION_1_0) {
 			chttp_header_add(ctx, "Host", host);
 			assert_dev(ctx->has_host);
 		}
@@ -236,6 +240,10 @@ chttp_parse(struct chttp_context *ctx, enum chttp_request_type type)
 	}
 
 	chttp_body_init(ctx, type);
+
+	if (ctx->state == CHTTP_STATE_IDLE && ctx->data_start.dpage) {
+		ctx->pipeline = 1;
+	}
 }
 
 void
