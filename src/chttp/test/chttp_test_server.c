@@ -425,6 +425,7 @@ chttp_test_cmd_server_pipeline_close(struct fbr_test_context *ctx, struct fbr_te
 		return;
 	}
 
+	assert_zero(server->pipeline_close);
 	server->pipeline_close = 1;
 }
 
@@ -476,6 +477,7 @@ chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test
 	if (server->chttp->state == CHTTP_STATE_IDLE) {
 		if (server->pipeline_close) {
 			assert(server->chttp->pipeline);
+			server->pipeline_close++;
 		} else {
 			assert_zero(server->chttp->pipeline);
 		}
@@ -722,6 +724,7 @@ _server_body_match(struct chttp_test_server *server, const char *match, int subm
 
 	if (server->pipeline_close) {
 		assert(server->chttp->pipeline);
+		server->pipeline_close++;
 	} else {
 		assert_zero(server->chttp->pipeline);
 	}
@@ -875,6 +878,7 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 	}
 
 	if (server->pipeline_close) {
+		assert(server->pipeline_close == 2);
 		server->pipeline_close = 0;
 		chttp_tcp_close(&server->addr);
 		chttp_addr_closed(&server->addr);
