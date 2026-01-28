@@ -335,6 +335,13 @@ chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 			buf_len -= ret_dpage;
 
 			if (ctx->data_start.dpage) {
+				if (!ctx->chunked && ctx->length == 0) {
+					ctx->state = CHTTP_STATE_IDLE;
+					ctx->pipeline = 1;
+
+					return ret_dpage;
+				}
+
 				return ret_dpage + chttp_body_read_raw(ctx, buf, buf_len);
 			}
 		} else {

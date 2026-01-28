@@ -1,0 +1,53 @@
+chttp_test "Request pipelining (client)"
+
+# Client header pipeline
+
+server_init
+server_accept
+server_read_request
+server_url_match /1
+server_send_response_partial 200
+server_send_raw "Content-Length: 0\r\n\r\nOK"
+
+chttp_init
+chttp_url /1
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_take_pipeline
+
+# Client chunk pipeline
+
+server_close
+server_accept
+server_read_request
+server_url_match /2
+server_send_response_partial 200
+server_start_chunked
+server_send_chunked chunk
+server_send_raw "0\r\n\r\nHTTP"
+
+chttp_reset
+chttp_url /2
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_body_match chunk
+chttp_take_pipeline 1
+
+# Client length (no pipeline)
+
+server_close
+server_accept
+server_read_request
+server_url_match /3
+server_send_response_partial 200
+server_send_raw "Content-Length: 4\r\n\r\ndataHTTP"
+
+chttp_reset
+chttp_url /3
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_body_match data
+chttp_take_pipeline 1

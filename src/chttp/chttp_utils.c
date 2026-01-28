@@ -16,12 +16,13 @@ chttp_context_debug(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
-	printf("chttp_ctx state=%d error=%d (%s) version=%d data_last=%p\n"
+	printf("chttp_ctx state=%d (%s) error=%d (%s) version=%d data_last=%p\n"
 		"\tdata_start=%p:%zu:%zu data_end=%p:%zu:%zu\n"
 		"\thostname=%p:%zu:%zu\n"
 		"\tstatus=%d length=%ld do_free=%u has_host=%u close=%u chunked=%u\n"
 		"\tgzip=%u tls=%d reused=%d pipeline=%u time=%lf\n",
-		ctx->state, ctx->error, chttp_error_msg(ctx), ctx->version, (void*)ctx->dpage_last,
+		ctx->state, chttp_state_string(ctx->state), ctx->error, chttp_error_msg(ctx),
+		ctx->version, (void*)ctx->dpage_last,
 		(void*)ctx->data_start.dpage, ctx->data_start.offset, ctx->data_start.length,
 		(void*)ctx->data_end.dpage, ctx->data_end.offset, ctx->data_end.length,
 		(void*)ctx->hostname.dpage, ctx->hostname.offset, ctx->hostname.length,
@@ -123,6 +124,35 @@ chttp_error_msg(struct chttp_context *ctx)
 			return "gzip error";
 		case CHTTP_ERR_BUFFER:
 			return "buffer error";
+	}
+
+	return "unknown";
+}
+
+const char *
+chttp_state_string(enum chttp_state state)
+{
+	switch (state) {
+		case CHTTP_STATE_NONE:
+			return "none";
+		case CHTTP_STATE_INIT_METHOD:
+			return "init method";
+		case CHTTP_STATE_INIT_HEADER:
+			return "init header";
+		case CHTTP_STATE_SENT:
+			return "sent";
+		case CHTTP_STATE_HEADERS:
+			return "resp headers";
+		case CHTTP_STATE_BODY:
+			return "body";
+		case CHTTP_STATE_IDLE:
+			return "idle";
+		case CHTTP_STATE_CLOSED:
+			return "closed";
+		case CHTTP_STATE_DONE:
+			return "done";
+		case CHTTP_STATE_DONE_ERROR:
+			return "error";
 	}
 
 	return "unknown";

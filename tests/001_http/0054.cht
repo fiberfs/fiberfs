@@ -1,4 +1,6 @@
-chttp_test "Request pipelining"
+chttp_test "Request pipelining (server)"
+
+# Server header pipeline
 
 server_init
 server_accept
@@ -16,6 +18,8 @@ chttp_connect $server_host $server_port
 chttp_send
 chttp_status_match 200
 chttp_body_match body
+
+# Server chunk pipeline
 
 server_accept
 server_pipeline_close

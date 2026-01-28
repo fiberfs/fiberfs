@@ -692,6 +692,25 @@ chttp_test_cmd_chttp_take_error(struct fbr_test_context *ctx, struct fbr_test_cm
 }
 
 void
+chttp_test_cmd_chttp_take_pipeline(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct chttp_context *chttp = _test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	assert(cmd->param_count <= 1);
+
+	int pipeline_match = 1;
+
+	if (cmd->param_count && !strcmp(cmd->params[0].value, "0")) {
+		pipeline_match = 0;
+	}
+
+	fbr_test_ERROR(chttp->pipeline != pipeline_match, "chttp pipeline mismatch %u != %d",
+		chttp->pipeline, pipeline_match);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "chttp_take_pipeline %u", chttp->pipeline);
+}
+
+void
 chttp_test_cmd_chttp_reset(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_context *chttp = _test_context_ok(ctx);

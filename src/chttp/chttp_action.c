@@ -267,7 +267,7 @@ chttp_finish(struct chttp_context *ctx)
 		chttp_addr_ok(&ctx->addr);
 
 		if (ctx->close || ctx->error || ctx->state < CHTTP_STATE_IDLE ||
-		    ctx->addr.error || !ctx->addr.resolved || ctx->request) {
+		    ctx->addr.error || !ctx->addr.resolved || ctx->request || ctx->pipeline) {
 			chttp_tcp_close(&ctx->addr);
 		} else {
 			chttp_tcp_pool_store(&ctx->addr);
