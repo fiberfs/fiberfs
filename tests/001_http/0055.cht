@@ -75,7 +75,7 @@ chttp_take_pipeline 0
 
 server_read_request
 server_url_match /5
-server_send_response
+server_send_raw "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
 
 chttp_reset
 chttp_url /5
