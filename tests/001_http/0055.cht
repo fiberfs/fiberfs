@@ -35,7 +35,7 @@ chttp_status_match 200
 chttp_body_match chunk
 chttp_take_pipeline 1
 
-# Client length (no pipeline)
+# Client length pipeline
 
 server_close
 server_accept
@@ -51,3 +51,34 @@ chttp_send
 chttp_status_match 200
 chttp_body_match data
 chttp_take_pipeline 1
+
+# Client length (no pipeline)
+
+server_close
+server_accept
+server_read_request
+server_url_match /4
+server_send_response_partial 200
+server_send_raw "Content-Length: 4\r\n\r\n"
+server_sleep_ms 200
+server_send_raw "DATAHTTP"
+
+chttp_reset
+chttp_url /4
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_body_match DATA
+chttp_take_pipeline 0
+
+# Flush pipeline and get an error
+
+server_read_request
+server_url_match /5
+server_send_response
+
+chttp_reset
+chttp_url /5
+chttp_connect $server_host $server_port
+chttp_send
+chttp_take_error
