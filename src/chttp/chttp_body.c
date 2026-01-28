@@ -327,6 +327,8 @@ chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 				} else if (ctx->state >= CHTTP_STATE_IDLE) {
 					return ret_dpage;
 				}
+
+				assert_dev(ctx->length);
 			}
 
 			assert(ctx->state == CHTTP_STATE_BODY);
