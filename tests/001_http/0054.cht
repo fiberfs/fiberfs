@@ -41,3 +41,24 @@ chttp_connect $server_host $server_port
 chttp_send
 chttp_status_match 200
 chttp_body_match body2
+
+# Server length pipeline
+
+server_accept
+server_pipeline_close
+server_read_request
+server_url_match /3
+server_header_match body3 true
+server_body_match lenbody
+server_send_response 200 OK 3body3
+
+chttp_reset
+chttp_raw_append "GET /3 HTTP/1.1\r\n"
+chttp_raw_append "body3: true\r\n"
+chttp_raw_append "Content-Length: 7\r\n\r\n"
+chttp_raw_append "lenbodyHTTP"
+chttp_new_connection
+chttp_connect $server_host $server_port
+chttp_send
+chttp_status_match 200
+chttp_body_match 3body3
