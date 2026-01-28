@@ -148,7 +148,7 @@ endif
 
 .PHONY:		all lib clean gcov gcovclean afl
 
-all:		chttp_client fjson_client fiberfs_test lib
+all:		fiberfs_test lib
 lib:		libfiberfs.so libfiberfs.a libchttp.a libfjson.a libcstore.a libfibertest.a
 
 chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
