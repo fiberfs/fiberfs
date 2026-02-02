@@ -59,6 +59,9 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		return fail;
 	}
 
+	// TODO we can delay wbuffer upload completion to here
+	// see: fbr_wbuffer_flush_store()
+
 	fbr_id_t previous_version = 0;
 	if (previous) {
 		fbr_directory_ok(previous);

@@ -556,6 +556,9 @@ fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 		wbuffer = wbuffer->next;
 	}
 
+	// TODO we can check for ready later in the write pipeline
+	// see: fbr_cstore_index_root_write()
+
 	while (!_wbuffer_ready(wbuffers)) {
 		if (_wbuffer_ready_error(wbuffers)) {
 			fbr_rlog(FBR_LOG_ERROR, "wbuffer error state found, setting EIO");
