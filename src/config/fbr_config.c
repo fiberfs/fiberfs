@@ -21,6 +21,7 @@ fbr_config_alloc(void)
 	assert(config);
 
 	config->magic = FBR_CONFIG_MAGIC;
+	config->init = 1;
 
 	RB_INIT(&config->key_tree);
 
@@ -43,6 +44,7 @@ fbr_config_add(struct fbr_config *config, const char *key_name, size_t key_name_
     const char *value, size_t value_len)
 {
 	fbr_config_ok(config);
+	assert(config->init);
 	assert(key_name && key_name_len);
 
 	key_name_len++;
@@ -72,6 +74,7 @@ const char *
 fbr_config_get(struct fbr_config *config, const char *key_name)
 {
 	fbr_config_ok(config);
+	assert_zero(config->init);
 
 	struct fbr_config_key find;
 	find.magic = FBR_CONFIG_KEY_MAGIC;

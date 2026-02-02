@@ -1,0 +1,14 @@
+/*
+ * Copyright (c) 2024-2026 FiberFS LLC
+ * All rights reserved.
+ *
+ */
+
+#ifndef _FBR_TEST_CONFIG_CMDS_H_INCLUDED
+#define _FBR_TEST_CONFIG_CMDS_H_INCLUDED
+
+#include "test/fbr_test_cmd_declare.h"
+
+#endif /* _FBR_TEST_CONFIG_CMDS_H_INCLUDED */
+
+FBR_TEST_CMD(test_config_simple)

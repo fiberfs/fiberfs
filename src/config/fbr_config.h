@@ -29,12 +29,15 @@ struct fbr_config {
 	unsigned int			magic;
 #define FBR_CONFIG_MAGIC		0xC9BBC9DC
 
+	unsigned int			init:1;
+
 	struct fbr_config_tree		key_tree;
 };
 
 struct fbr_config *fbr_config_alloc(void);
 void fbr_config_add(struct fbr_config *config, const char *key, size_t key_len,
 	const char *value, size_t value_len);
+const char *fbr_config_get(struct fbr_config *config, const char *key);
 void fbr_config_free(struct fbr_config *config);
 
 #define fbr_config_ok(config)		fbr_magic_check(config, FBR_CONFIG_MAGIC)
