@@ -345,8 +345,6 @@ struct fbr_fs {
 	struct fbr_fs_stats			stats;
 };
 
-RB_HEAD(fbr_dindex_tree, fbr_directory);
-
 extern const struct fbr_path_name *FBR_DIRNAME_ROOT;
 struct fbr_store_callbacks;
 struct fbr_dindex_dirhead;

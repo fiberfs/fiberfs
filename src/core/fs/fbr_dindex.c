@@ -14,6 +14,8 @@
 
 #define _DINDEX_HEAD_COUNT			1024
 
+RB_HEAD(fbr_dindex_tree, fbr_directory);
+
 struct fbr_dindex_dirhead {
 	unsigned int				magic;
 #define FBR_DINDEX_DIRHEAD_MAGIC		0x85BE0E4D
