@@ -491,6 +491,7 @@ _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_ino
 				} else {
 					fbr_dindex_release(fs, &directory);
 				}
+				break;
 			case FBR_DIRSTATE_LOADING:
 				continue;
 			default:
