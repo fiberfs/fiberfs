@@ -17,6 +17,7 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	struct fbr_config *config;
 	const char *value;
+	long lvalue;
 
 	config = fbr_config_alloc();
 	fbr_config_ok(config);
@@ -25,6 +26,7 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_config_add(config, "some_path", 9, "a/b/c", 5);
 	fbr_config_add(config, "empty", 5, "", 0);
 	fbr_config_add(config, "NULL", 4, NULL, 0);
+	fbr_config_add(config, "long1", 5, "123", 3);
 
 	for (size_t i = 0; i < 1000; i++) {
 		char key_buffer[32];
@@ -60,6 +62,9 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	value = fbr_config_get(config, "_zzz2", "def");
 	assert(value);
 	assert_zero(strcmp(value, "def"));
+
+	lvalue = fbr_config_get_long(config, "long1", 0);
+	assert(lvalue == 123);
 
 	for (size_t i = 0; i < 1000; i++) {
 		char key_buffer[32];

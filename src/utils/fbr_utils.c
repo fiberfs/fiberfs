@@ -101,9 +101,26 @@ fbr_parse_ulong(const char *str, size_t length)
 	assert(length);
 
 	char *end;
-	unsigned long ret = strtol(str, &end, 10);
+	unsigned long ret = strtoul(str, &end, 10);
 
 	if ((ret == ULONG_MAX && errno == ERANGE ) || end != str + length) {
+		return 0;
+	}
+
+	return ret;
+}
+
+long
+fbr_parse_long(const char *str, size_t length)
+{
+	assert(str);
+	assert(length);
+
+	char *end;
+	long ret = strtol(str, &end, 10);
+
+	if (((ret == LONG_MIN || ret == LONG_MAX) && errno == ERANGE ) ||
+	    end != str + length) {
 		return 0;
 	}
 
