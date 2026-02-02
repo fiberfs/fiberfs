@@ -1,12 +1,14 @@
 # FiberFS Makefile (src)
 
 CC=gcc
-CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -I. -Ichttp -Ifjson -fno-omit-frame-pointer
+CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC
+CFLAGS_INCLUDE=-I. -Ichttp -Ifjson
+CFLAGS_EXTRA=-fno-omit-frame-pointer
 CFLAGS_GCC=
 CFLAGS_CLANG=-Wno-gnu-zero-variadic-macro-arguments
 CFLAGS_BUILD=
 DEPFLAGS=-MMD -MP
-CC_ALL=$(CC) $(CFLAGS) $(CFLAGS_CC) $(CFLAGS_BUILD) $(DEPFLAGS)
+CC_ALL=$(CC) $(CFLAGS) $(CFLAGS_INCLUDE) $(CFLAGS_EXTRA) $(CFLAGS_CC) $(CFLAGS_BUILD) $(DEPFLAGS)
 LDFLAGS=-shared
 LIBFLAGS=-lrt -lpthread
 AR=ar cr
@@ -199,10 +201,10 @@ clean:		gcovclean
 		$(RM) *.so *.a
 		$(RM) chttp_client fjson_client fiberfs_test
 
-gcov:		CFLAGS+=$(GCOVFLAGS)
+gcov:		CFLAGS_EXTRA+=$(GCOVFLAGS)
 gcov:		LIBFLAGS+=$(GCOVLIBFLAGS)
 gcov:		clean
-		$(MAKE) all CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
+		$(MAKE) all CFLAGS_EXTRA="$(CFLAGS_EXTRA)" LIBFLAGS="$(LIBFLAGS)"
 		$(MAKE) -C ../tests all error FLAGS=-vv
 		$(GCOV) -r *.c */*.c */*/*.c */*/*/*.c
 		$(LCOV) --output-file $(GCOV_FILE)
