@@ -39,23 +39,27 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	config->init = 0;
 
-	value = fbr_config_get(config, "test");
+	value = fbr_config_get(config, "test", NULL);
 	assert(value);
 	assert_zero(strcmp(value, "true"));
 
-	value = fbr_config_get(config, "some_path");
+	value = fbr_config_get(config, "some_path", NULL);
 	assert(value);
 	assert_zero(strcmp(value, "a/b/c"));
 
-	value = fbr_config_get(config, "empty");
+	value = fbr_config_get(config, "empty", NULL);
 	assert(value);
 	assert_zero(strcmp(value, ""));
 
-	value = fbr_config_get(config, "NULL");
+	value = fbr_config_get(config, "NULL", "value");
 	assert_zero(value);
 
-	value = fbr_config_get(config, "_zzz");
+	value = fbr_config_get(config, "_zzz", NULL);
 	assert_zero(value);
+
+	value = fbr_config_get(config, "_zzz2", "def");
+	assert(value);
+	assert_zero(strcmp(value, "def"));
 
 	for (size_t i = 0; i < 1000; i++) {
 		char key_buffer[32];
@@ -65,7 +69,7 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 		memset(value_buffer, 'a' + (i % 26), sizeof(value_buffer) - 1);
 		value_buffer[sizeof(value_buffer) - 1] = '\0';
 
-		value = fbr_config_get(config, key_buffer);
+		value = fbr_config_get(config, key_buffer, NULL);
 		assert(value);
 		assert_zero(strcmp(value, value_buffer));
 	}
