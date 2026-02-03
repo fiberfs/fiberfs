@@ -702,6 +702,7 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 	struct fbr_file *file = parser->file;
 	const char *val = token->svalue;
 	size_t val_len = token->svalue_len;
+	int error;
 
 	switch (token->type) {
 		case FJSON_TOKEN_STRING:
@@ -713,11 +714,11 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 			if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'i')) {
 				parser->chunk.id = fbr_id_parse(val, val_len);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'e')) {
-				parser->chunk.external = fbr_parse_ulong(val, val_len);
+				parser->chunk.external = fbr_parse_ulong(val, val_len, &error);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'o')) {
-				parser->chunk.offset = fbr_parse_ulong(val, val_len);
+				parser->chunk.offset = fbr_parse_ulong(val, val_len, &error);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'l')) {
-				parser->chunk.length = fbr_parse_ulong(val, val_len);
+				parser->chunk.length = fbr_parse_ulong(val, val_len, &error);
 			}
 			break;
 		case FJSON_TOKEN_OBJECT:
@@ -815,11 +816,12 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 	struct fbr_fs *fs = parser->fs;
 	struct fbr_directory *directory = parser->directory;
 	struct fbr_file *file = parser->file;
+	int error;
 
-	unsigned long generation = fbr_parse_ulong(token->svalue, token->svalue_len);
+	unsigned long generation = fbr_parse_ulong(token->svalue, token->svalue_len, &error);
 
 	int changed = 0;
-	if (!generation) {
+	if (!generation || error) {
 		changed = 1;
 	} else if (file->generation < generation) {
 		changed = 1;
@@ -941,7 +943,8 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 				_index_parse_generation(parser, token);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 's')) {
 				if (_file_editable(file)) {
-					file->size = fbr_parse_ulong(val, val_len);
+					int error;
+					file->size = fbr_parse_ulong(val, val_len, &error);
 				}
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'm')) {
 				if (_file_editable(file)) {
@@ -1008,11 +1011,12 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 			if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'g')) {
 				const char *val = token->svalue;
 				size_t val_len = token->svalue_len;
+				int error;
 
-				directory->generation = fbr_parse_ulong(val, val_len);
+				directory->generation = fbr_parse_ulong(val, val_len, &error);
 
 				if (previous && previous->generation == directory->generation &&
-				    previous->version == directory->version) {
+				    previous->version == directory->version && !error) {
 					fbr_rlog(FBR_LOG_ERROR, "PARSER directory matches prev");
 					return 1;
 				}

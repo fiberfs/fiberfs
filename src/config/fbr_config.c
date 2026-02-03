@@ -62,8 +62,13 @@ _config_parse_long(struct fbr_config_key *key, size_t value_len)
 		s++;
 	}
 
-	key->long_value = fbr_parse_long(key->value, value_len);
-	key->is_long = 1;
+	int error;
+
+	key->long_value = fbr_parse_long(key->value, value_len, &error);
+
+	if (!error) {
+		key->is_long = 1;
+	}
 }
 
 void
@@ -77,7 +82,7 @@ fbr_config_add(struct fbr_config *config, const char *name, size_t name_len,
 	name_len++;
 	value_len++;
 
-	struct fbr_config_key *key = malloc(sizeof(*key) + name_len + value_len);
+	struct fbr_config_key *key = calloc(1, sizeof(*key) + name_len + value_len);
 	assert(key);
 
 	key->magic = FBR_CONFIG_KEY_MAGIC;
@@ -110,7 +115,6 @@ fbr_config_get(struct fbr_config *config, const char *name, const char *fallback
 	find.name = name;
 
 	struct fbr_config_key *key = RB_FIND(fbr_config_tree, &config->key_tree, &find);
-
 	if (!key) {
 		return fallback;
 	}
@@ -131,7 +135,6 @@ fbr_config_get_long(struct fbr_config *config, const char *name, long fallback)
 	find.name = name;
 
 	struct fbr_config_key *key = RB_FIND(fbr_config_tree, &config->key_tree, &find);
-
 	if (!key) {
 		return fallback;
 	}

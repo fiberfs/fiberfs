@@ -89,11 +89,10 @@ fbr_cstore_url_parse(const char *url, size_t url_len, const char *etag, size_t e
 					continue;
 				}
 
-				*offset = fbr_parse_ulong(&url[i], end - i);
-				if (!*offset) {
-					if (url[i] != '0' || end - i != 1) {
-						continue;
-					}
+				int error;
+				*offset = fbr_parse_ulong(&url[i], end - i, &error);
+				if (error) {
+					continue;
 				}
 
 				return FBR_CSTORE_FILE_CHUNK;

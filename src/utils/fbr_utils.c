@@ -95,15 +95,18 @@ fbr_sleep_backoff(unsigned int attempts)
 }
 
 unsigned long
-fbr_parse_ulong(const char *str, size_t length)
+fbr_parse_ulong(const char *str, size_t length, int *error)
 {
 	assert(str);
 	assert(length);
+
+	*error = 0;
 
 	char *end;
 	unsigned long ret = strtoul(str, &end, 10);
 
 	if ((ret == ULONG_MAX && errno == ERANGE ) || end != str + length) {
+		*error = 1;
 		return 0;
 	}
 
@@ -111,16 +114,19 @@ fbr_parse_ulong(const char *str, size_t length)
 }
 
 long
-fbr_parse_long(const char *str, size_t length)
+fbr_parse_long(const char *str, size_t length, int *error)
 {
 	assert(str);
 	assert(length);
+
+	*error = 0;
 
 	char *end;
 	long ret = strtol(str, &end, 10);
 
 	if (((ret == LONG_MIN || ret == LONG_MAX) && errno == ERANGE ) ||
 	    end != str + length) {
+		*error = 1;
 		return 0;
 	}
 
