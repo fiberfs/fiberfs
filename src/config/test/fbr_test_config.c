@@ -21,7 +21,7 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	config = fbr_config_alloc();
 	fbr_config_ok(config);
-	assert(config->init);
+
 	fbr_config_add(config, "test", 4, "true", 4);
 	fbr_config_add(config, "some_path", 9, "a/b/c", 5);
 	fbr_config_add(config, "empty", 5, "", 0);
@@ -32,6 +32,15 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_config_add(config, "long4", 5, "-", 1);
 	fbr_config_add(config, "long5", 5, "000", 3);
 	fbr_config_add(config, "long6", 5, "", 1);
+
+	assert(config->stat_keys == 10);
+	assert(config->stat_deleted == 0);
+
+	fbr_config_add(config, "key_42", 6, "zzz", 3);
+	fbr_config_add(config, "key_555", 7, "zzz", 3);
+
+	assert(config->stat_keys == 12);
+	assert(config->stat_deleted == 0);
 
 	for (size_t i = 0; i < 1000; i++) {
 		char key_buffer[32];
@@ -44,7 +53,8 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 		fbr_config_add(config, key_buffer, key_len, value_buffer, sizeof(value_buffer) - 1);
 	}
 
-	config->init = 0;
+	assert(config->stat_keys == 1010);
+	assert(config->stat_deleted == 2);
 
 	value = fbr_config_get(config, "test", NULL);
 	assert(value);

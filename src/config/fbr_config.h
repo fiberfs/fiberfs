@@ -7,6 +7,7 @@
 #ifndef _FBR_CONFIG_H_INCLUDED_
 #define _FBR_CONFIG_H_INCLUDED_
 
+#include <pthread.h>
 #include <stddef.h>
 
 #include "data/tree.h"
@@ -16,12 +17,14 @@ struct fbr_config_key {
 #define FBR_CONFIG_KEY_MAGIC		0xAA9D1921
 
 	unsigned int			is_long:1;
+	unsigned int			deleted:1;
 
 	const char			*name;
 	const char			*value;
 	long				long_value;
 
 	RB_ENTRY(fbr_config_key)	entry;
+	struct fbr_config_key		*next;
 
 	char				_data[];
 };
@@ -32,9 +35,13 @@ struct fbr_config {
 	unsigned int			magic;
 #define FBR_CONFIG_MAGIC		0xC9BBC9DC
 
-	unsigned int			init:1;
+	pthread_rwlock_t		rwlock;
 
 	struct fbr_config_tree		key_tree;
+	struct fbr_config_key		*deleted;
+
+	fbr_stats_t			stat_keys;
+	fbr_stats_t			stat_deleted;
 };
 
 struct fbr_config *fbr_config_alloc(void);

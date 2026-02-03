@@ -17,12 +17,12 @@ RB_GENERATE_STATIC(fbr_config_tree, fbr_config_key, entry, _config_key_cmp)
 struct fbr_config *
 fbr_config_alloc(void)
 {
-	struct fbr_config *config = malloc(sizeof(*config));
+	struct fbr_config *config = calloc(1, sizeof(*config));
 	assert(config);
 
 	config->magic = FBR_CONFIG_MAGIC;
-	config->init = 1;
 
+	pt_assert(pthread_rwlock_init(&config->rwlock, NULL));
 	RB_INIT(&config->key_tree);
 
 	fbr_config_ok(config);
@@ -76,7 +76,6 @@ fbr_config_add(struct fbr_config *config, const char *name, size_t name_len,
     const char *value, size_t value_len)
 {
 	fbr_config_ok(config);
-	assert(config->init);
 	assert(name && name_len);
 
 	name_len++;
@@ -101,20 +100,47 @@ fbr_config_add(struct fbr_config *config, const char *name, size_t name_len,
 
 	_config_parse_long(key, value_len - 1);
 
-	assert_zero(RB_INSERT(fbr_config_tree, &config->key_tree, key));
+	pt_assert(pthread_rwlock_wrlock(&config->rwlock));
+	fbr_config_ok(config);
+
+	struct fbr_config_key *existing = RB_INSERT(fbr_config_tree, &config->key_tree, key);
+
+	if (existing) {
+		fbr_config_key_ok(existing);
+		assert_zero(existing->deleted);
+		assert_zero(existing->next);
+
+		(void)RB_REMOVE(fbr_config_tree, &config->key_tree, existing);
+		assert_zero(RB_INSERT(fbr_config_tree, &config->key_tree, key));
+
+		existing->next = config->deleted;
+		config->deleted = existing;
+
+		existing->deleted = 1;
+		config->stat_deleted++;
+	} else {
+		config->stat_keys++;
+	}
+
+	pt_assert(pthread_rwlock_unlock(&config->rwlock));
 }
 
 const char *
 fbr_config_get(struct fbr_config *config, const char *name, const char *fallback)
 {
 	fbr_config_ok(config);
-	assert_zero(config->init);
 
 	struct fbr_config_key find;
 	find.magic = FBR_CONFIG_KEY_MAGIC;
 	find.name = name;
 
+	pt_assert(pthread_rwlock_rdlock(&config->rwlock));
+	fbr_config_ok(config);
+
 	struct fbr_config_key *key = RB_FIND(fbr_config_tree, &config->key_tree, &find);
+
+	pt_assert(pthread_rwlock_unlock(&config->rwlock));
+
 	if (!key) {
 		return fallback;
 	}
@@ -128,13 +154,18 @@ long
 fbr_config_get_long(struct fbr_config *config, const char *name, long fallback)
 {
 	fbr_config_ok(config);
-	assert_zero(config->init);
 
 	struct fbr_config_key find;
 	find.magic = FBR_CONFIG_KEY_MAGIC;
 	find.name = name;
 
+	pt_assert(pthread_rwlock_rdlock(&config->rwlock));
+	fbr_config_ok(config);
+
 	struct fbr_config_key *key = RB_FIND(fbr_config_tree, &config->key_tree, &find);
+
+	pt_assert(pthread_rwlock_unlock(&config->rwlock));
+
 	if (!key) {
 		return fallback;
 	}
@@ -154,7 +185,6 @@ _config_key_free(struct fbr_config_key *key)
 	assert_dev(key);
 
 	fbr_zero(key);
-
 	free(key);
 }
 
@@ -163,18 +193,43 @@ fbr_config_free(struct fbr_config *config)
 {
 	fbr_config_ok(config);
 
+	pt_assert(pthread_rwlock_wrlock(&config->rwlock));
+	fbr_config_ok(config);
+
 	struct fbr_config_key *key, *next;
 	RB_FOREACH_SAFE(key, fbr_config_tree, &config->key_tree, next) {
 		fbr_config_key_ok(key);
+		assert_zero(key->deleted);
 
 		(void)RB_REMOVE(fbr_config_tree, &config->key_tree, key);
 
 		_config_key_free(key);
+
+		config->stat_keys--;
 	}
 
 	assert(RB_EMPTY(&config->key_tree));
+	assert_zero(config->stat_keys);
 
+	while (config->deleted) {
+		key = config->deleted;
+		config->deleted = key->next;
+
+		fbr_config_key_ok(key);
+		assert(key->deleted);
+
+		_config_key_free(key);
+
+		config->stat_deleted--;
+	}
+
+	assert_zero(config->stat_deleted);
+
+	config->magic = 0;
+
+	pt_assert(pthread_rwlock_unlock(&config->rwlock));
+
+	pt_assert(pthread_rwlock_destroy(&config->rwlock));
 	fbr_zero(config);
-
 	free(config);
 }
