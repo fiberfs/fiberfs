@@ -113,3 +113,17 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_logs("test_config_simple passed");
 }
+
+void
+fbr_cmd_test_config_thread(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_config *config = fbr_config_alloc();
+	fbr_config_ok(config);
+
+	fbr_config_free(config);
+
+	fbr_test_logs("test_config_thread passed");
+}

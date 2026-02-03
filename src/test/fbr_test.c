@@ -129,8 +129,8 @@ _test_run_test_file(void *arg)
 		test->cmd_count++;
 
 		struct fbr_test_cmdentry *cmd_entry = fbr_test_cmds_get(test, test->cmd.name);
-		fbr_test_ERROR(!cmd_entry || !cmd_entry->is_cmd,
-			"command %s not found (line %zu)", test->cmd.name,
+		int cmd_missing = !cmd_entry || !cmd_entry->is_cmd;
+		fbr_test_ERROR(cmd_missing, "command `%s` not found (line %zu)", test->cmd.name,
 			fbr_test_line_pos(test));
 		assert(cmd_entry->cmd_func);
 

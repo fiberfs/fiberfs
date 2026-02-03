@@ -12,3 +12,4 @@
 #endif /* _FBR_TEST_CONFIG_CMDS_H_INCLUDED */
 
 FBR_TEST_CMD(test_config_simple)
+FBR_TEST_CMD(test_config_thread)
