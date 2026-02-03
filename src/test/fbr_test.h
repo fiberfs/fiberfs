@@ -191,7 +191,7 @@ int fbr_test_join_thread(pthread_t thread, volatile int *stopped,
 size_t fbr_test_line_pos(struct fbr_test *test);
 void fbr_test_random_seed(void);
 long fbr_test_gen_random(long low, long high);
-void fbr_test_fill_random(uint8_t *buf, size_t len);
+void fbr_test_fill_random(uint8_t *buf, size_t len, int ascii);
 int fbr_test_is_valgrind(void);
 
 #define fbr_test_ok(test)		fbr_magic_check(test, FBR_TEST_MAGIC)

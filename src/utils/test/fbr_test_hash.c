@@ -40,11 +40,11 @@ fbr_cmd_test_hash(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_test_hash("", 0);
 
 	uint8_t buffer[1024];
-	fbr_test_fill_random(buffer, sizeof(buffer));
+	fbr_test_fill_random(buffer, sizeof(buffer), 0);
 	_test_hash(buffer, sizeof(buffer));
-	fbr_test_fill_random(buffer, sizeof(buffer));
+	fbr_test_fill_random(buffer, sizeof(buffer), 0);
 	_test_hash(buffer, sizeof(buffer));
-	fbr_test_fill_random(buffer, sizeof(buffer));
+	fbr_test_fill_random(buffer, sizeof(buffer), 1);
 	_test_hash(buffer, sizeof(buffer) - 250);
 
 	memset(buffer, 0, sizeof(buffer));

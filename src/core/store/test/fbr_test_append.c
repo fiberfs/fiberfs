@@ -373,6 +373,7 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
+	fbr_test_random_seed();
 	fbr_test_cstore_init(ctx);
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();

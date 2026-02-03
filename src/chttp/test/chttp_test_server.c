@@ -1126,16 +1126,7 @@ chttp_test_cmd_server_send_random(struct fbr_test_context *ctx, struct fbr_test_
 			fill = sizeof(buffer);
 		}
 
-		for (size_t i = 0; i < fill; i++) {
-			int rand_byte = fbr_test_gen_random(0, 61);
-			if (rand_byte < 10) {
-				buffer[i] = '0' + rand_byte;
-			} else if (rand_byte < 36) {
-				buffer[i] = 'a' + rand_byte - 10;
-			} else {
-				buffer[i] = 'A' + rand_byte - 36;
-			}
-		}
+		fbr_test_fill_random((uint8_t*)buffer, fill, 1);
 
 		_server_send_buf(server, buffer, fill);
 		bytes += fill;
@@ -1226,7 +1217,7 @@ chttp_test_cmd_server_send_random_body(struct fbr_test_context *ctx, struct fbr_
 				len = sizeof(buf);
 			}
 
-			fbr_test_fill_random(buf, len);
+			fbr_test_fill_random(buf, len, 0);
 
 			if (do_gzip) {
 				assert(chunklen);

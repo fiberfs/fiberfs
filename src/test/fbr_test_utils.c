@@ -280,11 +280,22 @@ fbr_test_gen_random(long low, long high)
 }
 
 void
-fbr_test_fill_random(uint8_t *buf, size_t len)
+fbr_test_fill_random(uint8_t *buf, size_t len, int ascii)
 {
 	for (size_t i = 0; i < len; i++) {
-		// TODO write a wider char if possible
-		buf[i] = fbr_test_gen_random(0, UINT8_MAX);
+		// TODO write a wider char if possible?
+		if (ascii) {
+			int rand_byte = fbr_test_gen_random(0, 61);
+			if (rand_byte < 10) {
+				buf[i] = '0' + rand_byte;
+			} else if (rand_byte < 36) {
+				buf[i] = 'a' + rand_byte - 10;
+			} else {
+				buf[i] = 'A' + rand_byte - 36;
+			}
+		} else {
+			buf[i] = fbr_test_gen_random(0, UINT8_MAX);
+		}
 	}
 }
 
