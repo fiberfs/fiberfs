@@ -12,17 +12,9 @@
 
 #include "test/fbr_test.h"
 
-void
-fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+static void
+_test_config_simple(struct fbr_config *config)
 {
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
-
-	struct fbr_config *config;
-	const char *value;
-	long lvalue;
-
-	config = fbr_config_alloc();
 	fbr_config_ok(config);
 
 	fbr_config_add(config, "test", 4, "true", 4);
@@ -59,7 +51,7 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert(config->stat_keys == 1010);
 	assert(config->stat_deleted == 2);
 
-	value = fbr_config_get(config, "test", NULL);
+	const char *value = fbr_config_get(config, "test", NULL);
 	assert(value);
 	assert_zero(strcmp(value, "true"));
 
@@ -81,7 +73,7 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert(value);
 	assert_zero(strcmp(value, "def"));
 
-	lvalue = fbr_config_get_long(config, "long1", 0);
+	long lvalue = fbr_config_get_long(config, "long1", 0);
 	assert(lvalue == 123);
 
 	lvalue = fbr_config_get_long(config, "long2", 0);
@@ -112,9 +104,39 @@ fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 		assert_zero(strcmp(value, value_buffer));
 	}
 
+	fbr_test_logs("_config_simple done");
+}
+
+void
+fbr_cmd_test_config_simple(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_config *config = fbr_config_alloc();
+	fbr_config_ok(config);
+
+	_test_config_simple(config);
+
 	fbr_config_free(config);
 
 	fbr_test_logs("test_config_simple passed");
+}
+
+void
+fbr_cmd_test_config_static(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_config_ok(_CONFIG);
+
+	_test_config_simple(_CONFIG);
+
+	fbr_config_free(_CONFIG);
+	assert_zero(_CONFIG);
+
+	fbr_test_logs("test_config_static passed");
 }
 
 #define _MAX_ITERATIONS		2000

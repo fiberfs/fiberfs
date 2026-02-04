@@ -35,6 +35,8 @@ struct fbr_config {
 	unsigned int			magic;
 #define FBR_CONFIG_MAGIC		0xC9BBC9DC
 
+	unsigned int			do_free:1;
+
 	pthread_rwlock_t		rwlock;
 
 	struct fbr_config_tree		key_tree;
@@ -43,6 +45,8 @@ struct fbr_config {
 	fbr_stats_t			stat_keys;
 	fbr_stats_t			stat_deleted;
 };
+
+extern struct fbr_config *_CONFIG;
 
 struct fbr_config *fbr_config_alloc(void);
 void fbr_config_add(struct fbr_config *config, const char *name, size_t name_len,

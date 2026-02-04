@@ -4,11 +4,21 @@
  *
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "fiberfs.h"
 #include "fbr_config.h"
+
+struct fbr_config __CONFIG = {
+	FBR_CONFIG_MAGIC,
+	0,
+	PTHREAD_RWLOCK_INITIALIZER,
+	RB_INITIALIZER(__CONFIG.key_tree),
+	NULL,
+	0, 0
+}, *_CONFIG = &__CONFIG;
 
 static int _config_key_cmp(const struct fbr_config_key *key1, const struct fbr_config_key *key2);
 
@@ -21,6 +31,7 @@ fbr_config_alloc(void)
 	assert(config);
 
 	config->magic = FBR_CONFIG_MAGIC;
+	config->do_free = 1;
 
 	pt_assert(pthread_rwlock_init(&config->rwlock, NULL));
 	RB_INIT(&config->key_tree);
@@ -196,6 +207,8 @@ fbr_config_free(struct fbr_config *config)
 	pt_assert(pthread_rwlock_wrlock(&config->rwlock));
 	fbr_config_ok(config);
 
+	int do_free = config->do_free;
+
 	struct fbr_config_key *key, *next;
 	RB_FOREACH_SAFE(key, fbr_config_tree, &config->key_tree, next) {
 		fbr_config_key_ok(key);
@@ -231,5 +244,12 @@ fbr_config_free(struct fbr_config *config)
 
 	pt_assert(pthread_rwlock_destroy(&config->rwlock));
 	fbr_zero(config);
-	free(config);
+
+	if (do_free) {
+		free(config);
+	}
+
+	if (config == _CONFIG) {
+		_CONFIG = NULL;
+	}
 }
