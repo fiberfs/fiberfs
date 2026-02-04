@@ -93,6 +93,22 @@ _test_var_register(struct fbr_test *test, const char *name, fbr_test_var_f *func
 }
 
 static void
+_test_varf_register(struct fbr_test *test, const char *name, fbr_test_varf_f *func)
+{
+	fbr_test_ok(test);
+
+	struct fbr_test_cmdentry *entry = _test_cmd_alloc(test);
+	assert(entry);
+
+	entry->name = name;
+	entry->varf_func = func;
+	entry->is_varf = 1;
+
+	struct fbr_test_cmdentry *ret = RB_INSERT(fbr_test_tree, &test->cmd_tree, entry);
+	assert_zero(ret);
+}
+
+static void
 _test_cmds_free(struct fbr_test_context *ctx)
 {
 	struct fbr_test *test = fbr_test_convert(ctx);
@@ -124,10 +140,13 @@ fbr_test_cmds_init(struct fbr_test *test)
 
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR
+#undef FBR_TEST_VARF
 #define FBR_TEST_CMD(cmd)					\
 	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
 #define FBR_TEST_VAR(var)					\
 	_test_var_register(test, "$" #var, &fbr_var_##var);
+#define FBR_TEST_VARF(varf)					\
+	_test_varf_register(test, "$" #varf, &fbr_varf_##varf);
 
 #undef CHTTP_TEST_CMD
 #undef CHTTP_TEST_VAR

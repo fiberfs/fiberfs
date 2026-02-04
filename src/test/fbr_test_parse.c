@@ -5,6 +5,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "test/fbr_test.h"
 
@@ -223,10 +224,52 @@ _match_quote(char *buf, size_t pos)
 }
 
 char *
+_test_read_varf(struct fbr_test *test, const char *variable)
+{
+	assert_dev(test);
+	assert_dev(variable);
+
+	char *varf = strdup(variable);
+	char *param = varf;
+	while (*param && *param != ':') {
+		param++;
+	}
+	assert(*param == ':');
+
+	*param = '\0';
+	param++;
+
+	struct fbr_test_cmdentry *cmd_entry = fbr_test_cmds_get(test, varf);
+	if (!cmd_entry || !cmd_entry->is_varf || !cmd_entry->varf_func) {
+		free(varf);
+		return NULL;
+	}
+
+	size_t param_len = strlen(param);
+	fbr_test_ASSERT(param_len > 0, "parameter is empty");
+
+	struct fbr_test_param varf_param;
+	fbr_zero(&varf_param);
+	varf_param.value = param;
+	varf_param.len = param_len;
+	varf_param.variable = variable;
+
+	char *value = cmd_entry->varf_func(test->context, &varf_param);
+
+	free(varf);
+
+	return value;
+}
+
+char *
 fbr_test_read_var(struct fbr_test *test, const char *variable)
 {
 	fbr_test_ok(test);
 	assert(variable);
+
+	if (strstr(variable, ":")) {
+		return _test_read_varf(test, variable);
+	}
 
 	struct fbr_test_cmdentry *cmd_entry = fbr_test_cmds_get(test, variable);
 	if (!cmd_entry || !cmd_entry->is_var || !cmd_entry->var_func) {
@@ -325,12 +368,12 @@ fbr_test_parse_cmd(struct fbr_test *test)
 
 			fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "Var: %s", var);
 
-			buf = fbr_test_read_var(test, var);
-			fbr_test_ASSERT(buf, "variable %s not found (line %zu)",
+			char *var_value = fbr_test_read_var(test, var);
+			fbr_test_ASSERT(var_value, "variable %s not found (line %zu)",
 				var, fbr_test_line_pos(test));
 
-			cmd->params[i].value = buf;
-			cmd->params[i].len = strlen(buf);
+			cmd->params[i].value = var_value;
+			cmd->params[i].len = strlen(var_value);
 		}
 
 		fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "Arg: %s",

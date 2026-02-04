@@ -61,3 +61,4 @@ FBR_TEST_CMD(test_triple_crash)
 FBR_TEST_CMD(_exit)
 
 FBR_TEST_VAR(test_counter)
+FBR_TEST_VARF(test_varf)

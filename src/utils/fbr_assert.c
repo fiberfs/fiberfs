@@ -82,7 +82,7 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
 	fprintf(stderr, "%s:%d %s(): ", file, line, function);
 
 	if (assertion) {
-		fprintf(stderr, "Assertion '%s' failed\n", assertion);
+		fprintf(stderr, "Assertion '%s' triggered\n", assertion);
 	} else {
 		fprintf(stderr, "Aborted\n");
 	}

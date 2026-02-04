@@ -140,7 +140,7 @@ fbr_test_do_abort(const char *assertion, const char *function, const char *file,
     const char *fmt, ...)
 {
 	if (assertion) {
-		printf("%s:%d %s(): Assertion '%s' failed\nERROR: ", file, line, function,
+		printf("%s:%d %s(): Assertion '%s' triggered\nERROR: ", file, line, function,
 			assertion);
 	} else {
 		printf("%s:%d %s(): Aborted\nERROR: ", file, line, function);

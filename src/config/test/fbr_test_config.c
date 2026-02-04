@@ -29,6 +29,22 @@ fbr_cmd_config_add(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_conf_get(cmd->params[0].value, NULL));
 }
 
+char *
+fbr_varf_config(struct fbr_test_context *ctx, struct fbr_test_param *param)
+{
+	fbr_test_context_ok(ctx);
+	assert(param);
+	fbr_test_ASSERT(param->len, "Parameter missing");
+
+	const char *value = fbr_conf_get(param->value, NULL);
+
+	if (!value) {
+		fbr_test_ABORT("config '%s' not found", param->value);
+	}
+
+	return (char*)value;
+}
+
 static void
 _test_config_simple(struct fbr_config *config)
 {

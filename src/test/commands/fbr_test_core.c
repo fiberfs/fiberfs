@@ -53,8 +53,8 @@ fbr_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	char *v1 = cmd->params[0].value;
 	char *v2 = cmd->params[1].value;
-	char *v1_var = cmd->params[0].variable;
-	char *v2_var = cmd->params[1].variable;
+	const char *v1_var = cmd->params[0].variable;
+	const char *v2_var = cmd->params[1].variable;
 
 	while (1) {
 		ret = strcmp(v1, v2);
@@ -228,4 +228,22 @@ fbr_var_test_counter(struct fbr_test_context *ctx)
 	fbr_bprintf(TEST_COUNTER_STR, "%u", TEST_COUNTER_VALUE);
 
 	return TEST_COUNTER_STR;
+}
+
+char *
+fbr_varf_test_varf(struct fbr_test_context *ctx, struct fbr_test_param *param)
+{
+	fbr_test_context_ok(ctx);
+	assert(param);
+	fbr_test_ASSERT(param->len, "Parameter missing");
+
+	if (!strcmp(param->value, "1")) {
+		return "1";
+	} else if (!strcmp(param->value, "12")) {
+		return "12";
+	} else if (!strcmp(param->value, "123")) {
+		return "123";
+	}
+
+	fbr_test_ABORT("Bad parameter: '%s'", param->value);
 }

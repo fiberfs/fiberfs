@@ -11,5 +11,6 @@
 
 #define FBR_TEST_CMD(cmd)	fbr_test_cmd_f fbr_cmd_##cmd;
 #define FBR_TEST_VAR(var)	fbr_test_var_f fbr_var_##var;
+#define FBR_TEST_VARF(var)	fbr_test_varf_f fbr_varf_##var;
 
 #endif /* _FBR_TEST_CMD_DECLARE_H_INCLUDED */

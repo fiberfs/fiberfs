@@ -51,7 +51,7 @@ struct fbr_test_param {
 	char					*value;
 	size_t					len;
 
-	char					*variable;
+	const char				*variable;
 
 	unsigned int				v_const:1;
 };
@@ -60,6 +60,7 @@ struct fbr_test_cmd;
 
 typedef void (fbr_test_cmd_f)(struct fbr_test_context *, struct fbr_test_cmd *);
 typedef char* (fbr_test_var_f)(struct fbr_test_context *);
+typedef char* (fbr_test_varf_f)(struct fbr_test_context *, struct fbr_test_param *);
 
 struct fbr_test_cmd {
 	unsigned int				magic;
@@ -84,9 +85,11 @@ struct fbr_test_cmdentry {
 	const char				*name;
 	fbr_test_cmd_f				*cmd_func;
 	fbr_test_var_f				*var_func;
+	fbr_test_varf_f				*varf_func;
 
 	unsigned int				is_cmd:1;
 	unsigned int				is_var:1;
+	unsigned int				is_varf:1;
 };
 
 RB_HEAD(fbr_test_tree, fbr_test_cmdentry);
