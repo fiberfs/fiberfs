@@ -11,7 +11,7 @@
 #include "utils/fbr_id.h"
 #include "utils/fbr_utils.h"
 
-#define FIBERFS_VERSION				"0.1.0"
+#define FIBERFS_VERSION				"0.8.0"
 
 typedef unsigned int fbr_refcount_t;
 typedef unsigned long fbr_inode_t;

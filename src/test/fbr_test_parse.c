@@ -230,6 +230,7 @@ _test_read_varf(struct fbr_test *test, const char *variable)
 	assert_dev(variable);
 
 	char *varf = strdup(variable);
+
 	char *param = varf;
 	while (*param && *param != ':') {
 		param++;

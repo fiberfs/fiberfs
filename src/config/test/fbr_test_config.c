@@ -33,8 +33,7 @@ char *
 fbr_varf_config(struct fbr_test_context *ctx, struct fbr_test_param *param)
 {
 	fbr_test_context_ok(ctx);
-	assert(param);
-	fbr_test_ASSERT(param->len, "Parameter missing");
+	assert(param && param->len);
 
 	const char *value = fbr_conf_get(param->value, NULL);
 

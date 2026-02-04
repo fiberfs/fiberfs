@@ -234,8 +234,7 @@ char *
 fbr_varf_test_varf(struct fbr_test_context *ctx, struct fbr_test_param *param)
 {
 	fbr_test_context_ok(ctx);
-	assert(param);
-	fbr_test_ASSERT(param->len, "Parameter missing");
+	assert(param && param->len);
 
 	if (!strcmp(param->value, "1")) {
 		return "1";
