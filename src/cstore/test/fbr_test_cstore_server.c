@@ -4,6 +4,8 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include "fiberfs.h"
 #include "chttp.h"
 #include "cstore/fbr_cstore_api.h"

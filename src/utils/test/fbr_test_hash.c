@@ -4,6 +4,8 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include "fiberfs.h"
 #include "test/fbr_test.h"
 

@@ -4,14 +4,18 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "network/chttp_network.h"
+#include "network/chttp_tcp_pool.h"
+
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
-#include "network/chttp_tcp_pool.h"
 
 extern double _TCP_POOL_AGE_SEC;
 extern size_t _TCP_POOL_SIZE;

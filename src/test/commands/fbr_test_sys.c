@@ -4,6 +4,8 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>

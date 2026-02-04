@@ -4,6 +4,8 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

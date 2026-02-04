@@ -4,16 +4,20 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include <pthread.h>
 #include <unistd.h>
 
 #include "test/fbr_test.h"
 
+static int *__CRASH_NULL;
+
 static void
 _test_error_CRASH(void)
 {
-	int *i = (int*)1;
-	i--;
+	assert_zero(__CRASH_NULL);
+	int *i = __CRASH_NULL;
 	*i = 1;
 }
 

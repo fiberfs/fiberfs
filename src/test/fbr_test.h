@@ -7,6 +7,10 @@
 #ifndef _FBR_TEST_H_INCLUDED_
 #define _FBR_TEST_H_INCLUDED_
 
+#ifndef FBR_TEST_FILE
+#error "fbr_test.h can only be included on test source files"
+#endif
+
 #include "fiberfs.h"
 #include "data/queue.h"
 #include "data/tree.h"

@@ -4,17 +4,20 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include <stdlib.h>
 #include <sys/socket.h>
 
-#include "test/fbr_test.h"
-#include "test/chttp_test_cmds.h"
 #include "compress/chttp_gzip.h"
 #include "cstore/fbr_cstore_api.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 #include "network/chttp_tcp_pool.h"
 #include "tls/chttp_tls.h"
 #include "utils/fbr_chash.h"
+
+#include "test/fbr_test.h"
+#include "test/chttp_test_cmds.h"
 
 static const char *_TEST_REASON = "_REASON";
 

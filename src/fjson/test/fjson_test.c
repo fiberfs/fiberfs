@@ -3,6 +3,8 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include "fjson.h"
 #include "test/fbr_test.h"
 

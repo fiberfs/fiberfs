@@ -6,6 +6,8 @@
 
 // TODO we need an infinite loop error (or thread crash) and a timeout mechanism
 
+#define FBR_TEST_FILE
+
 #include <string.h>
 
 #include "fiberfs.h"

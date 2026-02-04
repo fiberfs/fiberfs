@@ -4,6 +4,8 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include "fiberfs.h"
 #include "core/request/fbr_workspace.h"
 

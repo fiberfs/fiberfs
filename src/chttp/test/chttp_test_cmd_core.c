@@ -4,6 +4,8 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -12,9 +14,10 @@
 
 #include "compress/fbr_gzip.h"
 #include "dns/chttp_dns.h"
+#include "tls/chttp_tls.h"
+
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
-#include "tls/chttp_tls.h"
 
 static void
 _finish_test(struct fbr_test_context *ctx)

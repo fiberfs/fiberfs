@@ -4,10 +4,13 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include <stdlib.h>
 
 #include "dns/chttp_dns.h"
 #include "dns/chttp_dns_cache.h"
+
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
 

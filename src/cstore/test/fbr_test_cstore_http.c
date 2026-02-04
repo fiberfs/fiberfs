@@ -4,6 +4,8 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include "cstore/fbr_cstore_api.h"
 
 #include "test/fbr_test.h"

@@ -4,15 +4,18 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include "compress/chttp_gzip.h"
-#include "test/fbr_test.h"
-#include "test/chttp_test_cmds.h"
 #include "tls/chttp_tls.h"
 #include "utils/fbr_chash.h"
+
+#include "test/fbr_test.h"
+#include "test/chttp_test_cmds.h"
 
 #define _SERVER_IP_DEFAULT			"127.0.0.1"
 #define _SERVER_JOIN_TIMEOUT_MS			2500

@@ -4,6 +4,8 @@
  *
  */
 
+#define FBR_TEST_FILE
+
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
