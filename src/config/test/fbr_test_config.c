@@ -12,6 +12,23 @@
 
 #include "test/fbr_test.h"
 
+void
+fbr_cmd_config_add(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ASSERT(cmd->param_count == 2, "Need 2 parameters");
+	fbr_test_ASSERT(cmd->params[0].len, "Need a valid name");
+
+	fbr_conf_add(cmd->params[0].value, cmd->params[0].len, cmd->params[1].value,
+		cmd->params[1].len);
+
+	assert(fbr_conf_get(cmd->params[0].value, NULL));
+
+	fbr_test_logs("config_add '%s'='%s'", cmd->params[0].value,
+		fbr_conf_get(cmd->params[0].value, NULL));
+}
+
 static void
 _test_config_simple(struct fbr_config *config)
 {

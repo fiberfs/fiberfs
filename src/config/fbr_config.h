@@ -55,6 +55,13 @@ const char *fbr_config_get(struct fbr_config *config, const char *name, const ch
 long fbr_config_get_long(struct fbr_config *config, const char *name, long fallback);
 void fbr_config_free(struct fbr_config *config);
 
+#define fbr_conf_add(name, name_len, value, value_len)	\
+	fbr_config_add(_CONFIG, name, name_len, value, value_len)
+#define fbr_conf_get(name, fallback)			\
+	fbr_config_get(_CONFIG, name, fallback)
+#define fbr_conf_get_long(name, fallback)		\
+	fbr_config_get_long(_CONFIG, name, fallback)
+
 #define fbr_config_ok(config)		fbr_magic_check(config, FBR_CONFIG_MAGIC)
 #define fbr_config_key_ok(key)		fbr_magic_check(key, FBR_CONFIG_KEY_MAGIC)
 
