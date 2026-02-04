@@ -12,6 +12,16 @@
 
 #include "test/fbr_test.h"
 
+static void
+_sys_finish(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+	fbr_config_ok(_CONFIG);
+
+	fbr_config_free(_CONFIG);
+	assert_zero(_CONFIG);
+}
+
 void
 fbr_cmd_config_add(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -27,6 +37,8 @@ fbr_cmd_config_add(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("config_add '%s'='%s'", cmd->params[0].value,
 		fbr_conf_get(cmd->params[0].value, NULL));
+
+	fbr_test_register_finish(ctx, "config", _sys_finish);
 }
 
 char *
