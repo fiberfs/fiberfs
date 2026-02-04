@@ -4,12 +4,7 @@
  *
  */
 
-#ifndef _FBR_TEST_CMDS_H_INCLUDED
-#define _FBR_TEST_CMDS_H_INCLUDED
-
 #include "test/fbr_test_cmd_declare.h"
-
-#endif /* _FBR_TEST_CMDS_H_INCLUDED */
 
 FBR_TEST_CMD(fiber_test)
 FBR_TEST_CMD(skip)
