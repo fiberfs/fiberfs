@@ -23,11 +23,13 @@
 int _ERR_STATE;
 char _ERR_FILENAME[128];
 
+static int *__CRASH_NULL;
+
 static void
 _test_error_CRASH(void)
 {
-	int *i = (int*)1;
-	i--;
+	assert_zero(__CRASH_NULL);
+	int *i = __CRASH_NULL;
 	*i = 1;
 }
 
