@@ -136,10 +136,11 @@ fbr_config_add(struct fbr_config *config, const char *name, size_t name_len,
 	pt_assert(pthread_rwlock_unlock(&config->rwlock));
 }
 
-const char *
-fbr_config_get(struct fbr_config *config, const char *name, const char *fallback)
+static struct fbr_config_key *
+_config_get(struct fbr_config *config, const char *name)
 {
-	fbr_config_ok(config);
+	assert_dev(config);
+	assert_dev(name);
 
 	struct fbr_config_key find;
 	find.magic = FBR_CONFIG_KEY_MAGIC;
@@ -153,10 +154,25 @@ fbr_config_get(struct fbr_config *config, const char *name, const char *fallback
 	pt_assert(pthread_rwlock_unlock(&config->rwlock));
 
 	if (!key) {
-		return fallback;
+		return NULL;
 	}
 
 	fbr_config_key_ok(key);
+
+	return key;
+}
+
+const char *
+fbr_config_get(struct fbr_config *config, const char *name, const char *fallback)
+{
+	fbr_config_ok(config);
+	assert(name);
+
+	struct fbr_config_key *key = _config_get(config, name);
+
+	if (!key) {
+		return fallback;
+	}
 
 	return key->value;
 }
@@ -165,25 +181,11 @@ long
 fbr_config_get_long(struct fbr_config *config, const char *name, long fallback)
 {
 	fbr_config_ok(config);
+	assert(name);
 
-	struct fbr_config_key find;
-	find.magic = FBR_CONFIG_KEY_MAGIC;
-	find.name = name;
+	struct fbr_config_key *key = _config_get(config, name);
 
-	pt_assert(pthread_rwlock_rdlock(&config->rwlock));
-	fbr_config_ok(config);
-
-	struct fbr_config_key *key = RB_FIND(fbr_config_tree, &config->key_tree, &find);
-
-	pt_assert(pthread_rwlock_unlock(&config->rwlock));
-
-	if (!key) {
-		return fallback;
-	}
-
-	fbr_config_key_ok(key);
-
-	if (!key->is_long) {
+	if (!key || !key->is_long) {
 		return fallback;
 	}
 
