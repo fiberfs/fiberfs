@@ -32,6 +32,7 @@ fjson_context_init(struct fjson_context *ctx)
 	fjson_context_ok(ctx);
 }
 
+// Optional alloc (see above)
 struct fjson_context *
 fjson_context_alloc(void)
 {
