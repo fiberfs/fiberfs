@@ -7,6 +7,7 @@
 #ifndef _FBR_TEST_H_INCLUDED_
 #define _FBR_TEST_H_INCLUDED_
 
+// Note: linking test symbols in will change runtime behavior
 #ifndef FBR_TEST_FILE
 #error "fbr_test.h can only be included on test source files"
 #endif
