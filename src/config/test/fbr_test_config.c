@@ -111,7 +111,8 @@ _test_config_simple(struct fbr_config *config)
 	assert_zero(strcmp(value, ""));
 
 	value = fbr_config_get(config, "NULL", "value");
-	assert_zero(value);
+	assert(value);
+	assert_zero(strcmp(value, "value"));
 
 	value = fbr_config_get(config, "_zzz", NULL);
 	assert_zero(value);

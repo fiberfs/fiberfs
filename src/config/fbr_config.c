@@ -92,9 +92,10 @@ fbr_config_add(struct fbr_config *config, const char *name, size_t name_len,
 	name_len++;
 	value_len++;
 
-	struct fbr_config_key *key = calloc(1, sizeof(*key) + name_len + value_len);
+	struct fbr_config_key *key = malloc(sizeof(*key) + name_len + value_len);
 	assert(key);
 
+	fbr_zero(key);
 	key->magic = FBR_CONFIG_KEY_MAGIC;
 	key->name = key->_data;
 
@@ -170,7 +171,7 @@ fbr_config_get(struct fbr_config *config, const char *name, const char *fallback
 
 	struct fbr_config_key *key = _config_get(config, name);
 
-	if (!key) {
+	if (!key || !key->value) {
 		return fallback;
 	}
 
