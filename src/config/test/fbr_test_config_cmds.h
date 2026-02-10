@@ -11,4 +11,5 @@ FBR_TEST_VARF(config)
 
 FBR_TEST_CMD(test_config_simple)
 FBR_TEST_CMD(test_config_static)
+FBR_TEST_CMD(test_config_file)
 FBR_TEST_CMD(test_config_thread)

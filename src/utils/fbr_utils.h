@@ -58,4 +58,20 @@ int fbr_check_name(const char *name);
 #define fbr_array_len(array)						\
 	(sizeof(array) / sizeof(*(array)))
 
+#define FBR_TRIM_STR_LEFT(s, len)					\
+	while ((len) > 0 && (s)[0] <= ' ') {				\
+		(s)++;							\
+		(len)--;						\
+	}
+#define FBR_TRIM_STR_RIGHT(s, len)					\
+	while ((len) > 0 && (s)[(len) - 1] <= ' ') {			\
+		(len)--;						\
+		(s)[(len)] = '\0';					\
+	}
+#define	FBR_TRIM_STR(s, len)						\
+{								\
+	FBR_TRIM_STR_LEFT(s, len);				\
+	FBR_TRIM_STR_RIGHT(s, len);				\
+}
+
 #endif /* _FBR_UTILS_H_INCLUDED_ */

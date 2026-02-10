@@ -7,6 +7,7 @@
 #define FBR_TEST_FILE
 
 #include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "fiberfs.h"
@@ -183,6 +184,63 @@ fbr_cmd_test_config_static(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert_zero(_CONFIG);
 
 	fbr_test_logs("test_config_static passed");
+}
+
+void
+fbr_cmd_test_config_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_config *config = fbr_config_alloc();
+	fbr_config_ok(config);
+
+	char *tmpdir = fbr_test_mkdir_tmp(ctx, NULL);
+	fbr_test_logs("root='%s'", tmpdir);
+
+	char confpath[FBR_PATH_MAX];
+	fbr_bprintf(confpath, "%s/conf", tmpdir);
+
+	FILE *f = fopen(confpath, "w");
+	assert(f);
+
+	size_t ret = fwrite("abc=123\n", 1, 8, f);
+	assert(ret == 8);
+
+	ret = fwrite(" name = value \n", 1, 15, f);
+	assert(ret == 15);
+
+	ret = fwrite("# COMMENT\n\n", 1, 11, f);
+	assert(ret == 11);
+
+	const char *v3 = "some value is here!  .. .";
+	ret = fwrite(" another name = ", 1, 16, f);
+	ret += fwrite(v3, 1, 25, f);
+	ret += fwrite("  \n", 1, 3, f);
+	assert(ret == 44);
+
+	assert_zero(fclose(f));
+
+	ret = fbr_config_parse(config, confpath);
+	fbr_test_logs("parsed entries: %zu errors: %lu", ret, config->stats.errors);
+	assert(ret == 3);
+	assert_zero(config->stats.errors);
+
+	const char *value = fbr_config_get(config, "abc", "");
+	fbr_test_logs("value: '%s'", value);
+	assert_zero(strcmp(value, "123"));
+
+	value = fbr_config_get(config, "name", "");
+	fbr_test_logs("value: '%s'", value);
+	assert_zero(strcmp(value, "value"));
+
+	value = fbr_config_get(config, "another name", "");
+	fbr_test_logs("value: '%s'", value);
+	assert_zero(strcmp(value, v3));
+
+	fbr_config_free(config);
+
+	fbr_test_logs("test_config_file passed");
 }
 
 #define _MAX_ITERATIONS		2000

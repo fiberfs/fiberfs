@@ -17,24 +17,6 @@ enum fbr_test_quote {
 	FRB_QUOTE_SINGLE
 };
 
-#define _TRIM_STR_LEFT(s, len)				\
-	while ((len) > 0 && (s)[0] <= ' ') {		\
-		(s)++;					\
-		(len)--;				\
-	}
-
-#define _TRIM_STR_RIGHT(s, len)				\
-	while ((len) > 0 && (s)[(len) - 1] <= ' ') {	\
-		(len)--;				\
-		(s)[(len)] = '\0';			\
-	}
-
-#define	_TRIM_STR(s, len)				\
-	do {						\
-		_TRIM_STR_LEFT(s, len);			\
-		_TRIM_STR_RIGHT(s, len);		\
-	} while (0)
-
 void
 fbr_test_unescape(struct fbr_test_param *param)
 {
@@ -162,7 +144,7 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 	test->line_buf = test->line_raw;
 	test->line_buf_len = strlen(test->line_buf);
 
-	_TRIM_STR(test->line_buf, test->line_buf_len);
+	FBR_TRIM_STR(test->line_buf, test->line_buf_len);
 
 	if (test->line_buf_len == 0 || *test->line_buf == '#') {
 		return fbr_test_readline(test, 0);
@@ -175,7 +157,7 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 		test->line_buf[test->line_buf_len - 1] = '\0';
 		test->line_buf_len--;
 
-		_TRIM_STR_RIGHT(test->line_buf, test->line_buf_len);
+		FBR_TRIM_STR_RIGHT(test->line_buf, test->line_buf_len);
 
 		if (test->line_buf_len) {
 			size_t i = test->line_buf - test->line_raw + test->line_buf_len;

@@ -60,7 +60,7 @@ const char *fbr_config_get(struct fbr_config *config, const char *name, const ch
 long fbr_config_get_long(struct fbr_config *config, const char *name, long fallback);
 void fbr_config_free(struct fbr_config *config);
 
-void fbr_config_parse(struct fbr_config *config, const char *filepath);
+size_t fbr_config_parse(struct fbr_config *config, const char *filepath);
 
 #define fbr_conf_add(name, name_len, value, value_len)	\
 	fbr_config_add(_CONFIG, name, name_len, value, value_len)
