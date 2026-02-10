@@ -74,14 +74,14 @@ _test_config_simple(struct fbr_config *config)
 	fbr_config_add(config, "long5", 5, "000", 3);
 	fbr_config_add(config, "long6", 5, "", 1);
 
-	assert(config->stat_keys == 10);
-	assert(config->stat_deleted == 0);
+	assert(config->stats.keys == 10);
+	assert(config->stats.deleted == 0);
 
 	fbr_config_add(config, "key_42", 6, "zzz", 3);
 	fbr_config_add(config, "key_555", 7, "zzz", 3);
 
-	assert(config->stat_keys == 12);
-	assert(config->stat_deleted == 0);
+	assert(config->stats.keys == 12);
+	assert(config->stats.deleted == 0);
 
 	for (size_t i = 0; i < 1000; i++) {
 		char key_buffer[32];
@@ -94,8 +94,8 @@ _test_config_simple(struct fbr_config *config)
 		fbr_config_add(config, key_buffer, key_len, value_buffer, sizeof(value_buffer) - 1);
 	}
 
-	assert(config->stat_keys == 1010);
-	assert(config->stat_deleted == 2);
+	assert(config->stats.keys == 1010);
+	assert(config->stats.deleted == 2);
 
 	const char *value = fbr_config_get(config, "test", NULL);
 	assert(value);
@@ -322,10 +322,10 @@ fbr_cmd_test_config_thread(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_logs("*** readers done");
 
 	fbr_test_logs("*** reader stats reads: %zu numbers: %zu", _READS, _NUMBERS);
-	fbr_test_logs("*** config stats keys: %zu deleted: %zu", config->stat_keys,
-		config->stat_deleted);
-	assert(config->stat_keys <= 100);
-	assert(config->stat_keys + config->stat_deleted == _WRITES);
+	fbr_test_logs("*** config stats keys: %zu deleted: %zu", config->stats.keys,
+		config->stats.deleted);
+	assert(config->stats.keys <= 100);
+	assert(config->stats.keys + config->stats.deleted == _WRITES);
 
 	fbr_config_free(config);
 

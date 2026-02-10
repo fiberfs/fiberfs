@@ -17,7 +17,7 @@ struct fbr_config __CONFIG = {
 	PTHREAD_RWLOCK_INITIALIZER,
 	RB_INITIALIZER(__CONFIG.key_tree),
 	NULL,
-	0, 0
+	{0}
 }, *_CONFIG = &__CONFIG;
 
 static int _config_key_cmp(const struct fbr_config_key *key1, const struct fbr_config_key *key2);
@@ -128,9 +128,9 @@ fbr_config_add(struct fbr_config *config, const char *name, size_t name_len,
 		config->deleted = existing;
 
 		existing->deleted = 1;
-		config->stat_deleted++;
+		config->stats.deleted++;
 	} else {
-		config->stat_keys++;
+		config->stats.keys++;
 	}
 
 	pt_assert(pthread_rwlock_unlock(&config->rwlock));
@@ -220,11 +220,11 @@ fbr_config_free(struct fbr_config *config)
 
 		_config_key_free(key);
 
-		config->stat_keys--;
+		config->stats.keys--;
 	}
 
 	assert(RB_EMPTY(&config->key_tree));
-	assert_zero(config->stat_keys);
+	assert_zero(config->stats.keys);
 
 	while (config->deleted) {
 		key = config->deleted;
@@ -235,10 +235,10 @@ fbr_config_free(struct fbr_config *config)
 
 		_config_key_free(key);
 
-		config->stat_deleted--;
+		config->stats.deleted--;
 	}
 
-	assert_zero(config->stat_deleted);
+	assert_zero(config->stats.deleted);
 
 	config->magic = 0;
 

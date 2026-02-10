@@ -206,7 +206,7 @@ gcov:		LIBFLAGS+=$(GCOVLIBFLAGS)
 gcov:		clean
 		$(MAKE) all CFLAGS_EXTRA="$(CFLAGS_EXTRA)" LIBFLAGS="$(LIBFLAGS)"
 		$(MAKE) -C ../tests all error FLAGS=-vv
-		$(GCOV) -r *.c */*.c */*/*.c */*/*/*.c
+		$(GCOV) -r $(ALL_SOURCE)
 		$(LCOV) --output-file $(GCOV_FILE)
 		$(LCOVHTML) $(GCOV_FILE) --output-directory $(GCOV_REPORT)
 

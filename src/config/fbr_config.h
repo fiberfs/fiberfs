@@ -12,6 +12,8 @@
 
 #include "data/tree.h"
 
+#define FBR_CONFIG_MAX_FILE_LINE	4096
+
 struct fbr_config_key {
 	unsigned int			magic;
 #define FBR_CONFIG_KEY_MAGIC		0xAA9D1921
@@ -42,8 +44,11 @@ struct fbr_config {
 	struct fbr_config_tree		key_tree;
 	struct fbr_config_key		*deleted;
 
-	fbr_stats_t			stat_keys;
-	fbr_stats_t			stat_deleted;
+	struct  {
+		fbr_stats_t			keys;
+		fbr_stats_t			deleted;
+		fbr_stats_t			errors;
+	} stats;
 };
 
 extern struct fbr_config *_CONFIG;
@@ -54,6 +59,8 @@ void fbr_config_add(struct fbr_config *config, const char *name, size_t name_len
 const char *fbr_config_get(struct fbr_config *config, const char *name, const char *fallback);
 long fbr_config_get_long(struct fbr_config *config, const char *name, long fallback);
 void fbr_config_free(struct fbr_config *config);
+
+void fbr_config_parse(struct fbr_config *config, const char *filepath);
 
 #define fbr_conf_add(name, name_len, value, value_len)	\
 	fbr_config_add(_CONFIG, name, name_len, value, value_len)
