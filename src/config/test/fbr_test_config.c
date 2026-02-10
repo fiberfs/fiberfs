@@ -186,6 +186,17 @@ fbr_cmd_test_config_static(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_logs("test_config_static passed");
 }
 
+static void
+_config_write(FILE *f, const char *buffer)
+{
+	assert_dev(f);
+	assert_dev(buffer);
+
+	size_t buffer_len = strlen(buffer);
+	size_t ret = fwrite(buffer, 1, buffer_len, f);
+	assert(ret == buffer_len);
+}
+
 void
 fbr_cmd_test_config_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -196,34 +207,26 @@ fbr_cmd_test_config_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_config_ok(config);
 
 	char *tmpdir = fbr_test_mkdir_tmp(ctx, NULL);
-	fbr_test_logs("root='%s'", tmpdir);
-
 	char confpath[FBR_PATH_MAX];
 	fbr_bprintf(confpath, "%s/conf", tmpdir);
 
 	FILE *f = fopen(confpath, "w");
 	assert(f);
 
-	size_t ret = fwrite("abc=123\n", 1, 8, f);
-	assert(ret == 8);
-
-	ret = fwrite(" name = value \n", 1, 15, f);
-	assert(ret == 15);
-
-	ret = fwrite("# COMMENT\n\n", 1, 11, f);
-	assert(ret == 11);
+	_config_write(f, "abc=123\n");
+	_config_write(f, " name = value \n");
+	_config_write(f, "# COMMENT\n  #\n\n");
 
 	const char *v3 = "some value is here!  .. .";
-	ret = fwrite(" another name = ", 1, 16, f);
-	ret += fwrite(v3, 1, 25, f);
-	ret += fwrite("  \n", 1, 3, f);
-	assert(ret == 44);
+	_config_write(f, " another name = ");
+	_config_write(f, v3);
+	_config_write(f, "  \n");
 
 	assert_zero(fclose(f));
 
-	ret = fbr_config_parse(config, confpath);
-	fbr_test_logs("parsed entries: %zu errors: %lu", ret, config->stats.errors);
-	assert(ret == 3);
+	size_t entries = fbr_config_parse(config, confpath);
+	fbr_test_logs("parsed entries: %zu errors: %lu", entries, config->stats.errors);
+	assert(entries == 3);
 	assert_zero(config->stats.errors);
 
 	const char *value = fbr_config_get(config, "abc", "");
@@ -241,6 +244,79 @@ fbr_cmd_test_config_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_config_free(config);
 
 	fbr_test_logs("test_config_file passed");
+}
+
+void
+fbr_cmd_test_config_file_errors(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_config *config = fbr_config_alloc();
+	fbr_config_ok(config);
+
+	char *tmpdir = fbr_test_mkdir_tmp(ctx, NULL);
+	char confpath[FBR_PATH_MAX];
+	fbr_bprintf(confpath, "%s/confbad", tmpdir);
+
+	FILE *f = fopen(confpath, "w");
+	assert(f);
+
+	_config_write(f, "abc.123\n");
+	_config_write(f, "     \n");
+	_config_write(f, "=\n");
+	_config_write(f, "  = \n");
+
+	char name_buf[5000];
+	memset(name_buf, 'a', sizeof(name_buf));
+	name_buf[sizeof(name_buf) - 1] = '\0';
+	_config_write(f, name_buf);
+	_config_write(f, " = 1\nt1=ok1\n");
+
+	_config_write(f, name_buf);
+	_config_write(f, name_buf);
+	_config_write(f, name_buf);
+	_config_write(f, name_buf);
+	_config_write(f, " = 1\nt2=ok2\n");
+
+	name_buf[FBR_CONFIG_MAX_FILE_LINE] = '\0';
+	_config_write(f, name_buf);
+	_config_write(f, "=0\n\n");
+
+	name_buf[FBR_CONFIG_MAX_FILE_LINE - 1] = '\0';
+	_config_write(f, name_buf);
+	_config_write(f, "=1\n#\n");
+
+	name_buf[FBR_CONFIG_MAX_FILE_LINE - 2] = '\0';
+	_config_write(f, name_buf);
+	_config_write(f, "=2\nend=true");
+
+	assert_zero(fclose(f));
+
+	size_t entries = fbr_config_parse(config, confpath);
+	fbr_test_logs("parsed entries: %zu errors: %lu", entries, config->stats.errors);
+	assert(entries == 4);
+	assert(config->stats.errors == 7);
+
+	const char *value = fbr_config_get(config, "t1", "");
+	fbr_test_logs("value: '%s'", value);
+	assert_zero(strcmp(value, "ok1"));
+
+	value = fbr_config_get(config, "t2", "");
+	fbr_test_logs("value: '%s'", value);
+	assert_zero(strcmp(value, "ok2"));
+
+	value = fbr_config_get(config, name_buf, "");
+	fbr_test_logs("value: '%s'", value);
+	assert_zero(strcmp(value, "2"));
+
+	value = fbr_config_get(config, "end", "");
+	fbr_test_logs("value: '%s'", value);
+	assert_zero(strcmp(value, "true"));
+
+	fbr_config_free(config);
+
+	fbr_test_logs("test_config_file_errors passed");
 }
 
 #define _MAX_ITERATIONS		2000

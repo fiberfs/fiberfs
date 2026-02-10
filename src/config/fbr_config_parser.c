@@ -23,13 +23,20 @@ fbr_config_parse(struct fbr_config *config, const char *filepath)
 		return 0;
 	}
 
-	char line_buffer[FBR_CONFIG_MAX_FILE_LINE + 1];
+	char line_buffer[FBR_CONFIG_MAX_FILE_LINE + 2];
 	size_t line_end = sizeof(line_buffer) - 2;
 	line_buffer[line_end] = '\n';
 	int line_error = 0;
 	size_t entries = 0;
 
-	while ((fgets(line_buffer, sizeof(line_buffer), f))) {
+	while (1) {
+		line_buffer[line_end] = '\n';
+
+		char *line = fgets(line_buffer, sizeof(line_buffer), f);
+		if (!line) {
+			break;
+		}
+
 		if (line_buffer[line_end] && line_buffer[line_end] != '\n') {
 			// Overflow, drain the line and continue
 			line_error = 1;
@@ -43,7 +50,7 @@ fbr_config_parse(struct fbr_config *config, const char *filepath)
 		char *name = line_buffer;
 		size_t name_len = 0;
 
-		while (name[name_len] && name[name_len] != '=') {
+		while (name[name_len] && name[name_len] != '=' && name[name_len] != '\n') {
 			name_len++;
 			assert(name_len < sizeof(line_buffer));
 		}
@@ -51,23 +58,24 @@ fbr_config_parse(struct fbr_config *config, const char *filepath)
 		FBR_TRIM_STR_LEFT(name, name_len);
 
 		if (name_len == 0) {
+			if (name[0] == '=') {
+				fbr_atomic_add(&config->stats.errors, 1);
+			}
 			continue;
 		} else if (name[0] == '#') {
 			continue;
 		} else if (name[name_len] != '=') {
 			fbr_atomic_add(&config->stats.errors, 1);
 			continue;
-		} else {
-			name[name_len] = '\0';
 		}
+
+		name[name_len] = '\0';
 
 		char *value = name + name_len + 1;
 		size_t value_len = strlen(value);
 
 		FBR_TRIM_STR(name, name_len);
 		FBR_TRIM_STR(value, value_len);
-
-		assert(name_len);
 
 		fbr_config_add(config, name, name_len, value, value_len);
 
