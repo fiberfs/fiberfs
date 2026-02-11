@@ -131,7 +131,7 @@ struct fbr_test {
 
 	const char				*prog_name;
 	char					*test_file;
-	FILE					*ft_file;
+	FILE					*file;
 
 	char					*line_raw;
 	char					*line_buf;

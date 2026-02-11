@@ -100,7 +100,7 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 	assert(test->line_raw);
 	assert(test->line_raw_len > 1);
 	assert(append_len < test->line_raw_len);
-	assert(test->ft_file);
+	assert(test->file);
 
 	test->line_buf_len = 0;
 	test->line_buf = NULL;
@@ -115,7 +115,7 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 		test->line_raw[test->line_raw_len - 2] = '\n';
 
 		char *ret = fgets(test->line_raw + append_len, test->line_raw_len - append_len,
-			test->ft_file);
+			test->file);
 
 		if (!ret && !append_len) {
 			return 0;
@@ -135,7 +135,7 @@ fbr_test_readline(struct fbr_test *test, size_t append_len)
 		test->line_raw[test->line_raw_len - 2] = '\n';
 
 		if (!fgets(test->line_raw + oldlen - 1, (test->line_raw_len - oldlen) + 1,
-		    test->ft_file)) {
+		    test->file)) {
 			break;
 		}
 	}

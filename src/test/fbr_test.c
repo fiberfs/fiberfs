@@ -45,9 +45,9 @@ _finish_test(struct fbr_test_context *ctx)
 	fbr_finish_ERROR(ctx->chttp_test != NULL, "chttp_test detected");
 	fbr_finish_ERROR(ctx->cstore != NULL, "cstore detected");
 
-	if (test->ft_file) {
-		fclose(test->ft_file);
-		test->ft_file = NULL;
+	if (test->file) {
+		fclose(test->file);
+		test->file = NULL;
 	}
 
 	fbr_zero(test->context);
@@ -111,10 +111,10 @@ _test_run_test_file(void *arg)
 	assert_zero(test->stopped);
 	assert(fbr_test_is_thread());
 
-	test->ft_file = fopen(test->test_file, "r");
-	fbr_test_ERROR(!test->ft_file, "invalid file %s", test->test_file);
+	test->file = fopen(test->test_file, "r");
+	fbr_test_ERROR(!test->file, "invalid file %s", test->test_file);
 
-	int fd = fileno(test->ft_file);
+	int fd = fileno(test->file);
 	assert(fd >= 0);
 	fcntl(fd, F_SETFD, fcntl(fd, F_GETFD) | FD_CLOEXEC);
 
