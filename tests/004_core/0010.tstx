@@ -2,7 +2,7 @@ fiber_test "Holding an old inode and clearing page cache"
 
 # Init
 
-skip_if_valgrind
+skip_if $is_valgrind
 skip_shell_failure "sudo -n true 2> /dev/null"
 
 sys_mkdir_tmp

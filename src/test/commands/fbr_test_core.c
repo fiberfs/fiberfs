@@ -177,6 +177,38 @@ fbr_cmd_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
+fbr_cmd_skip_if(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ASSERT(cmd->param_count == 1, "Pass in a parameter")
+
+	int is_true = fbr_test_is_true(&cmd->params[0]);
+
+	if (is_true) {
+		fbr_test_skip(ctx);
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "Skipping");
+	} else {
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "Not skipping");
+	}
+}
+
+void
+fbr_cmd_skip_if_not(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ASSERT(cmd->param_count == 1, "Pass in a parameter")
+
+	int is_false = fbr_test_is_false(&cmd->params[0]);
+
+	if (is_false) {
+		fbr_test_skip(ctx);
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "Skipping");
+	} else {
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "Not skipping");
+	}
+}
+
+void
 fbr_cmd_print(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
@@ -206,17 +238,15 @@ fbr_cmd_set_timeout_sec(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "timeout %ldms", test->timeout_ms);
 }
 
-void
-fbr_cmd_skip_if_valgrind(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+char *
+fbr_var_is_valgrind(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
 
 	if (fbr_test_is_valgrind()) {
-		fbr_test_skip(ctx);
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "valgrind detected, skipping");
+		return "1";
 	} else {
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "valgrind not detected");
+		return "0";
 	}
 }
 

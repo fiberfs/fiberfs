@@ -7,7 +7,7 @@
 #include "test/fbr_test_cmd_declare.h"
 
 FBR_TEST_CMD(fiber_test)
-FBR_TEST_CMD(skip)
+
 FBR_TEST_CMD(sleep_ms)
 FBR_TEST_CMD(equal)
 FBR_TEST_CMD(not_equal)
@@ -15,9 +15,12 @@ FBR_TEST_CMD(greater_than)
 FBR_TEST_CMD(greater_equal)
 FBR_TEST_CMD(less_than)
 FBR_TEST_CMD(less_equal)
+FBR_TEST_CMD(skip)
+FBR_TEST_CMD(skip_if)
+FBR_TEST_CMD(skip_if_not)
 FBR_TEST_CMD(print)
 FBR_TEST_CMD(set_timeout_sec)
-FBR_TEST_CMD(skip_if_valgrind)
+FBR_TEST_VAR(is_valgrind)
 
 FBR_TEST_CMD(random_range)
 FBR_TEST_VAR(random)

@@ -312,3 +312,27 @@ fbr_test_is_valgrind(void)
 
 	return 0;
 }
+
+int
+fbr_test_is_false(struct fbr_test_param *param)
+{
+	assert(param);
+
+	if (param->len == 0) {
+		return 1;
+	} else if (!strcmp(param->value, "0")) {
+		return 1;
+	} else if (!strcmp(param->value, "false")) {
+		return 1;
+	} else if (!strcmp(param->value, "null")) {
+		return 1;
+	}
+
+	return 0;
+}
+
+int
+fbr_test_is_true(struct fbr_test_param *param)
+{
+	return !(fbr_test_is_false(param));
+}

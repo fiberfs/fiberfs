@@ -2,7 +2,7 @@ fiber_test "Holding onto an old inode"
 
 # Init
 
-skip_if_valgrind
+skip_if $is_valgrind
 
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir
