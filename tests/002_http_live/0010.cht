@@ -1,6 +1,6 @@
 chttp_test "Test ec2.rezsoft.org H1 gzip"
 
-gzip_or_skip
+skip_if_not $gzip_enabled
 connect_or_skip ec2.rezsoft.org 80
 
 chttp_init

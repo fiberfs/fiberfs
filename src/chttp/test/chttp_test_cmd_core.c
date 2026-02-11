@@ -107,19 +107,3 @@ chttp_test_var_tls_enabled(struct fbr_test_context *ctx)
 		return "0";
 	}
 }
-
-void
-chttp_test_cmd_gzip_or_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	assert(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
-
-	if (fbr_gzip_enabled()) {
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "gzip is supported");
-		return;
-	} else {
-		fbr_test_skip(ctx);
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "gzip not configured");
-		return;
-	}
-}

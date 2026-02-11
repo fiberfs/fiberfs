@@ -210,7 +210,7 @@ _backend_hash_cmp(const void *arg1, const void *arg2)
 static struct fbr_cstore_backend *
 _backend_rv_hash(struct fbr_cstore_cluster *cluster, fbr_hash_t hash, unsigned int retries)
 {
-	assert_dev(cluster)
+	assert_dev(cluster);
 	assert_dev(cluster->size);
 
 	if (cluster->size == 1) {

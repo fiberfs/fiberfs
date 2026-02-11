@@ -22,6 +22,7 @@
 #include "log/test/fbr_test_log_cmds.h"
 #include "utils/test/fbr_test_util_cmds.h"
 #include "config/test/fbr_test_config_cmds.h"
+#include "compress/test/fbr_test_compress_cmds.h"
 
 #define FBR_TEST_COMMAND_MAX		500
 
@@ -176,6 +177,7 @@ fbr_test_cmds_init(struct fbr_test *test)
 #include "core/operations/test/fbr_test_ops_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 #include "config/test/fbr_test_config_cmds.h"
+#include "compress/test/fbr_test_compress_cmds.h"
 
 	fbr_test_register_finish(test->context, "cmd", _test_cmds_free);
 }

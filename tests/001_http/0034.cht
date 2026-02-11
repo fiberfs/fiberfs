@@ -1,6 +1,6 @@
 chttp_test "Chunked gzip"
 
-gzip_or_skip
+skip_if_not $gzip_enabled
 
 server_init
 server_accept

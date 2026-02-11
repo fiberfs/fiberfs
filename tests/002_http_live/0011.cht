@@ -1,7 +1,7 @@
 chttp_test "Test naghibi.com H1 TLS and gzip"
 
 skip_if_not $tls_enabled
-gzip_or_skip
+skip_if_not $gzip_enabled
 connect_or_skip reza.naghibi.com 443
 
 random_range 4 1000
