@@ -24,8 +24,7 @@ fbr_config_parse(struct fbr_config *config, const char *filepath)
 	}
 
 	char line_buffer[FBR_CONFIG_MAX_FILE_LINE + 2];
-	size_t line_end = sizeof(line_buffer) - 2;
-	line_buffer[line_end] = '\n';
+	const size_t line_end = sizeof(line_buffer) - 2;
 	int line_error = 0;
 	size_t entries = 0;
 
@@ -52,7 +51,7 @@ fbr_config_parse(struct fbr_config *config, const char *filepath)
 
 		while (name[name_len] && name[name_len] != '=' && name[name_len] != '\n') {
 			name_len++;
-			assert(name_len < sizeof(line_buffer));
+			assert(name_len <= line_end);
 		}
 
 		FBR_TRIM_STR_LEFT(name, name_len);

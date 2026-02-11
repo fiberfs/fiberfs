@@ -222,12 +222,14 @@ fbr_cmd_test_config_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_config_write(f, " another name = ");
 	_config_write(f, v3);
 	_config_write(f, "  \n");
+	_config_write(f, "empty1=\n");
+	_config_write(f, "empty2 = \n");
 
 	assert_zero(fclose(f));
 
 	size_t entries = fbr_config_parse(config, confpath);
 	fbr_test_logs("parsed entries: %zu errors: %lu", entries, config->stats.errors);
-	assert(entries == 3);
+	assert(entries == 5);
 	assert_zero(config->stats.errors);
 
 	const char *value = fbr_config_get(config, "abc", "");
@@ -241,6 +243,14 @@ fbr_cmd_test_config_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	value = fbr_config_get(config, "another name", "");
 	fbr_test_logs("value: '%s'", value);
 	assert_zero(strcmp(value, v3));
+
+	value = fbr_config_get(config, "empty1", "error");
+	fbr_test_logs("value: '%s'", value);
+	assert_zero(strcmp(value, ""));
+
+	value = fbr_config_get(config, "empty2", "error");
+	fbr_test_logs("value: '%s'", value);
+	assert_zero(strcmp(value, ""));
 
 	fbr_config_free(config);
 
@@ -284,11 +294,20 @@ fbr_cmd_test_config_file_errors(struct fbr_test_context *ctx, struct fbr_test_cm
 	_config_write(f, name_buf);
 	_config_write(f, "=0\n\n");
 
+	_config_write(f, name_buf);
+	_config_write(f, "\n");
+
 	name_buf[FBR_CONFIG_MAX_FILE_LINE - 1] = '\0';
 	_config_write(f, name_buf);
 	_config_write(f, "=1\n#\n");
 
+	_config_write(f, name_buf);
+	_config_write(f, "\n");
+
 	name_buf[FBR_CONFIG_MAX_FILE_LINE - 2] = '\0';
+	_config_write(f, name_buf);
+	_config_write(f, "\n");
+
 	_config_write(f, name_buf);
 	_config_write(f, "=2\nend=true");
 
@@ -297,7 +316,7 @@ fbr_cmd_test_config_file_errors(struct fbr_test_context *ctx, struct fbr_test_cm
 	size_t entries = fbr_config_parse(config, confpath);
 	fbr_test_logs("parsed entries: %zu errors: %lu", entries, config->stats.errors);
 	assert(entries == 4);
-	assert(config->stats.errors == 7);
+	assert(config->stats.errors == 10);
 
 	const char *value = fbr_config_get(config, "t1", "");
 	fbr_test_logs("value: '%s'", value);
