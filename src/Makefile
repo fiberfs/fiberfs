@@ -131,7 +131,7 @@ GCOVLIBFLAGS=-lgcov
 LCOV=lcov --capture --no-external --directory ./
 LCOVHTML=genhtml
 GCOV_FILE=$(BUILD)/coverage.info
-GCOV_REPORT=report
+GCOV_REPORT=gcov_report
 
 # afl
 AFL_CC=afl-clang-fast

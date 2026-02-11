@@ -5,5 +5,5 @@ src/build
 src/chttp_client
 src/fjson_client
 src/fiberfs_test
-src/report
+src/gcov_report
 tests/afl_json/results
