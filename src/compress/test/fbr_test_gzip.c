@@ -21,3 +21,13 @@ fbr_var_gzip_enabled(struct fbr_test_context *ctx)
 		return "0";
 	}
 }
+
+void
+fbr_cmd_test_gzip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	assert(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+	assert(fbr_gzip_enabled());
+
+	fbr_test_logs("test_gzip passed");
+}

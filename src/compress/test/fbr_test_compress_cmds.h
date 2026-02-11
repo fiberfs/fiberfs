@@ -7,3 +7,4 @@
 #include "test/fbr_test_cmd_declare.h"
 
 FBR_TEST_VAR(gzip_enabled)
+FBR_TEST_CMD(test_gzip)
