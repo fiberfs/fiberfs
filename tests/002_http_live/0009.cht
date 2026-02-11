@@ -1,6 +1,6 @@
 chttp_test "Test nulltech H1 TLS"
 
-tls_or_skip
+skip_if_not $tls_enabled
 connect_or_skip nulltech.systems 443
 
 chttp_init

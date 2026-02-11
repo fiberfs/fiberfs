@@ -48,7 +48,7 @@ void chttp_test_md5_store_client(struct fbr_test_context *ctx, struct fbr_md5_ct
 
 CHTTP_TEST_CMD(chttp_test)
 CHTTP_TEST_CMD(connect_or_skip)
-CHTTP_TEST_CMD(tls_or_skip)
+CHTTP_TEST_VAR(tls_enabled)
 CHTTP_TEST_CMD(gzip_or_skip)
 
 CHTTP_TEST_CMD(chttp_init)

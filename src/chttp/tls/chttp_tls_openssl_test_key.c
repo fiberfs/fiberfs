@@ -134,4 +134,8 @@ chttp_openssl_test_key(void *ctx_priv)
 	EVP_PKEY_free(key);
 }
 
+#else
+
+void chttp_openssl_test_key_none(void);
+
 #endif /* CHTTP_OPENSSL */

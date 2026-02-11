@@ -1,7 +1,7 @@
 chttp_test "H1 PUT gzipped over TLS with 100-continue and reuse"
 
 gzip_or_skip
-tls_or_skip
+skip_if_not $tls_enabled
 
 server_init 127.0.0.1 1
 server_accept

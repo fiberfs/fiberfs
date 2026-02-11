@@ -96,19 +96,15 @@ chttp_test_cmd_connect_or_skip(struct fbr_test_context *ctx, struct fbr_test_cmd
 	return;
 }
 
-void
-chttp_test_cmd_tls_or_skip(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+char *
+chttp_test_var_tls_enabled(struct fbr_test_context *ctx)
 {
-	assert(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
+	fbr_test_context_ok(ctx);
 
 	if (chttp_tls_enabled()) {
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "TLS is supported");
-		return;
+		return "1";
 	} else {
-		fbr_test_skip(ctx);
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "TLS not configured");
-		return;
+		return "0";
 	}
 }
 

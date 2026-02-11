@@ -1,5 +1,7 @@
 fiber_test "cstore server with TLS"
 
+skip_if_not $tls_enabled
+
 test_log_always_flush
 
 cstore_init 0

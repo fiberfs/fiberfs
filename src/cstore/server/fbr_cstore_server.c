@@ -9,6 +9,7 @@
 
 #include "fiberfs.h"
 #include "chttp.h"
+#include "tls/chttp_tls.h"
 #include "fbr_cstore_server.h"
 #include "cstore/fbr_cstore_api.h"
 
@@ -39,6 +40,7 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 
 	server->port = server->addr.listen_port;
 	if (server->tls) {
+		fbr_ASSERT(chttp_tls_enabled(), "TLS not enabled");
 		server->addr.tls = 1;
 	}
 

@@ -1,6 +1,6 @@
 chttp_test "TLS connection timeout"
 
-tls_or_skip
+skip_if_not $tls_enabled
 
 server_init
 server_accept

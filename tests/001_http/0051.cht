@@ -1,6 +1,6 @@
 chttp_test "TLS bad stream"
 
-tls_or_skip
+skip_if_not $tls_enabled
 
 server_init 127.0.0.1 1
 server_accept

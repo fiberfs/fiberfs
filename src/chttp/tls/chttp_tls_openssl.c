@@ -334,4 +334,8 @@ chttp_openssl_read(struct chttp_addr *addr, void *buf, size_t buf_len)
 	return bytes;
 }
 
+#else
+
+void chttp_openssl_none(void);
+
 #endif /* CHTTP_OPENSSL */
