@@ -32,7 +32,7 @@ CSTORE_SRC:=$(wildcard cstore/*.c cstore/*/*.c)
 CSTORE_SRC:=$(filter-out $(TEST_SRC), $(CSTORE_SRC))
 CSTORE_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(CSTORE_SRC)))
 
-UTILS_SRC=$(wildcard utils/*.c compress/*.c)
+UTILS_SRC=$(wildcard utils/*.c compress/*.c config/*.c)
 UTILS_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(UTILS_SRC)))
 
 ALL_SOURCE:=$(shell find * -type f -name '*.c')
@@ -165,7 +165,7 @@ fiberfs_test:	libfiberfs.a libchttp.a libfjson.a libcstore.a libfibertest.a
 libfiberfs.so:	libfiberfs.a libchttp.a libfjson.a libcstore.a
 		$(CC) $(LDFLAGS) -o $@ libfiberfs.a libchttp.a libfjson.a libcstore.a
 
-libfiberfs.a:	$(OBJS)
+libfiberfs.a:	$(OBJS) $(UTILS_OBJS)
 		$(RM) $@
 		$(AR) $@ $(OBJS)
 
