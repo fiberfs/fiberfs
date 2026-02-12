@@ -216,7 +216,12 @@ int fbr_test_is_true(struct fbr_test_param *param);
 	}								\
 }
 #define fbr_test_ASSERT(cond, fmt, ...)					\
-	fbr_test_ERROR(!(cond), fmt, ##__VA_ARGS__);
+{									\
+	if (__builtin_expect(!(cond), 0)) {				\
+		fbr_test_do_abort(#cond, __func__, __FILE__, __LINE__,	\
+			fmt, ##__VA_ARGS__);				\
+	}								\
+}
 #define fbr_test_ABORT(fmt, ...)					\
 	fbr_test_do_abort(NULL, __func__, __FILE__, __LINE__, fmt,	\
 		##__VA_ARGS__);
