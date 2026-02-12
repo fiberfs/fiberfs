@@ -10,19 +10,7 @@
 #include <stdlib.h>
 
 #include "fbr_test.h"
-#include "commands/fbr_test_cmds.h"
-#include "test/chttp_test_cmds.h"
-#include "test/fjson_test_cmds.h"
-#include "core/fs/test/fbr_test_fs_cmds.h"
-#include "core/fuse/test/fbr_test_fuse_cmds.h"
-#include "core/operations/test/fbr_test_ops_cmds.h"
-#include "core/request/test/fbr_test_request_cmds.h"
-#include "core/store/test/fbr_test_store_cmds.h"
-#include "cstore/test/fbr_test_cstore_cmds.h"
-#include "log/test/fbr_test_log_cmds.h"
-#include "utils/test/fbr_test_util_cmds.h"
-#include "config/test/fbr_test_config_cmds.h"
-#include "compress/test/fbr_test_compress_cmds.h"
+#include "fbr_test_cmds_all.h"
 
 #define FBR_TEST_COMMAND_MAX		500
 
@@ -135,12 +123,6 @@ _test_cmds_free(struct fbr_test_context *ctx)
 	test->cmds_size = 0;
 }
 
-void
-fbr_test_cmds_init(struct fbr_test *test)
-{
-	fbr_test_ok(test);
-	assert(RB_EMPTY(&test->cmd_tree));
-
 #undef FBR_TEST_CMD
 #undef FBR_TEST_VAR
 #undef FBR_TEST_VARF
@@ -165,19 +147,13 @@ fbr_test_cmds_init(struct fbr_test *test)
 #define FJSON_TEST_VAR(var)					\
 	_test_var_register(test, "$" #var, &fjson_var_##var);
 
-#include "commands/fbr_test_cmds.h"
-#include "test/chttp_test_cmds.h"
-#include "test/fjson_test_cmds.h"
-#include "core/fuse/test/fbr_test_fuse_cmds.h"
-#include "core/fs/test/fbr_test_fs_cmds.h"
-#include "core/request/test/fbr_test_request_cmds.h"
-#include "utils/test/fbr_test_util_cmds.h"
-#include "core/store/test/fbr_test_store_cmds.h"
-#include "log/test/fbr_test_log_cmds.h"
-#include "core/operations/test/fbr_test_ops_cmds.h"
-#include "cstore/test/fbr_test_cstore_cmds.h"
-#include "config/test/fbr_test_config_cmds.h"
-#include "compress/test/fbr_test_compress_cmds.h"
+void
+fbr_test_cmds_init(struct fbr_test *test)
+{
+	fbr_test_ok(test);
+	assert(RB_EMPTY(&test->cmd_tree));
+
+#include "fbr_test_cmds_all.h"
 
 	fbr_test_register_finish(test->context, "cmd", _test_cmds_free);
 }
