@@ -2,9 +2,10 @@
  * Copyright (c) 2024-2026 FiberFS LLC
  * All rights reserved.
  *
- * Multi-process shared memory based ring buffer logging.
+ * Shared memory ring buffer based logging.
  * Readers and writers operate lock free (lock on write allocation only).
  * Most writers buffer writes locally and commit later in large batches (see fbr_rlog.c).
+ * Readers can operate out of process.
  *
  */
 
