@@ -13,4 +13,4 @@
 #define FBR_ENUM_VALUE(value)			FBR_ENUM_VALUES(value, #value)
 #define FBR_ENUM_VALUES(value, str)		value,
 #define FBR_ENUM_VALUES_INIT(value, str, init)	value = init,
-#define FBR_ENUM_END				};
+#define FBR_ENUM_END(error_str)			};

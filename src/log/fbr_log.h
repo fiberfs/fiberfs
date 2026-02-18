@@ -174,8 +174,10 @@ void fbr_log_cursor_close(struct fbr_log_cursor *cursor);
 void fbr_log_reader_free(struct fbr_log_reader *reader);
 
 int fbr_log_type_masked(enum fbr_log_type type);
-const char *fbr_log_type_str(enum fbr_log_type type);
 void fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len);
+
+#include "utils/fbr_enum_string_delcare.h"
+FBR_ENUM_LOG_TYPE
 
 #define fbr_log_ok(log)				fbr_magic_check(log, FBR_LOG_MAGIC)
 #define fbr_log_tag_ok(tag)			fbr_magic_check(tag, FBR_LOG_TAG_MAGIC)

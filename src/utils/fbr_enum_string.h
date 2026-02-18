@@ -9,8 +9,8 @@
 #undef FBR_ENUM_VALUES_INIT
 #undef FBR_ENUM_END
 
-#define FBR_ENUM_NAME(name) \
-	const char * name##_string(enum name value) { \
+#define FBR_ENUM_NAME(name)				\
+	const char * name##_string(enum name value) {	\
 		switch(value) {
 #define FBR_ENUM_VALUES(value, str)		case value: return str;
 #define FBR_ENUM_VALUES_INIT(value, str, init)	FBR_ENUM_VALUES(value, str)

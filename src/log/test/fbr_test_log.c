@@ -143,7 +143,7 @@ _test_log_printer_thread(void *arg)
 		char reqid_str[32];
 		fbr_log_reqid_str(log_line->request_id, reqid_str, sizeof(reqid_str));
 
-		const char *type_str = fbr_log_type_str(reader->cursor.tag.parts.class_data);
+		const char *type_str = fbr_log_type_string(reader->cursor.tag.parts.class_data);
 
 		printf("%s%.3f %s:%s %s\n", printer->prefix, time, reqid_str, type_str,
 			log_line->buffer);
