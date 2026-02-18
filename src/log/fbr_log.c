@@ -523,7 +523,7 @@ fbr_log_print_buf(void *buffer, size_t buffer_len, enum fbr_log_type type,
 {
 	assert(buffer);
 	assert(buffer_len > sizeof(struct fbr_log_line));
-	assert(type > __FBR_LOG_TYPE_NONE && type < __FBR_LOG_TYPE_END);
+	assert(type > FBR_LOG_TYPE_NONE && type < FBR_LOG_TYPE_END);
 	assert(request_id);
 	assert(fmt);
 	assert(*fmt);
