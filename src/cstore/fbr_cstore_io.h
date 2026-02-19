@@ -39,8 +39,8 @@
 	FBR_ENUM_END("ERROR")
 
 #include "utils/fbr_enum_define.h"
-FBR_ENUM_CSTORE_ENTRY_TYPE
-FBR_ENUM_CSTORE_OP_TYPE
+FBR_ENUM_CSTORE_ENTRY_TYPE;
+FBR_ENUM_CSTORE_OP_TYPE;
 
 struct fbr_cstore_op;
 struct fbr_cstore_worker;

@@ -42,7 +42,7 @@
 	FBR_ENUM_END("ERROR")
 
 #include "utils/fbr_enum_define.h"
-FBR_ENUM_CHUNK_STATE
+FBR_ENUM_CHUNK_STATE;
 
 struct fbr_chunk {
 	unsigned int				magic;
