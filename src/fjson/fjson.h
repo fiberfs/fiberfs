@@ -14,29 +14,35 @@
 
 #define FJSON_MAX_DEPTH			32
 
-enum fjson_state {
-	FJSON_STATE_INIT = 0,
-	FJSON_STATE_INDEXING,
-	FJSON_STATE_NEEDMORE,
-	FJSON_STATE_DONE,
-	FJSON_STATE_ERROR,
-	FJSON_STATE_ERROR_JSON,
-	FJSON_STATE_ERROR_SIZE,
-	FJSON_STATE_ERROR_CALLBACK
-};
+#define FJSON_ENUM_STATE 							\
+	FBR_ENUM_NAMES(fjson_state, fjson_state_name)				\
+		FBR_ENUM_VALUES_INIT(FJSON_STATE_INIT, "INIT", 0)		\
+		FBR_ENUM_VALUES(FJSON_STATE_INDEXING, "INDEXING")		\
+		FBR_ENUM_VALUES(FJSON_STATE_NEEDMORE, "NEEDMORE")		\
+		FBR_ENUM_VALUES(FJSON_STATE_DONE, "DONE")			\
+		FBR_ENUM_VALUES(FJSON_STATE_ERROR, "ERROR")			\
+		FBR_ENUM_VALUES(FJSON_STATE_ERROR_JSON, "ERROR_JSON")		\
+		FBR_ENUM_VALUES(FJSON_STATE_ERROR_SIZE, "ERROR_SIZE")		\
+		FBR_ENUM_VALUES(FJSON_STATE_ERROR_CALLBACK, "ERROR_CALLBACK")	\
+	FBR_ENUM_END("ERROR_BADSTATE")
 
-enum fjson_token_type {
-	FJSON_TOKEN_UNDEF = 0,
-	FJSON_TOKEN_ROOT,
-	FJSON_TOKEN_OBJECT,
-	FJSON_TOKEN_ARRAY,
-	FJSON_TOKEN_LABEL,
-	FJSON_TOKEN_STRING,
-	FJSON_TOKEN_NUMBER,
-	FJSON_TOKEN_TRUE,
-	FJSON_TOKEN_FALSE,
-	FJSON_TOKEN_NULL
-};
+#define FJSON_ENUM_TOKEN_TYPE 							\
+	FBR_ENUM_NAMES(fjson_token_type, fjson_token_name)			\
+		FBR_ENUM_VALUES_INIT(FJSON_TOKEN_UNDEF, "_UNDEFINED", 0)	\
+		FBR_ENUM_VALUES(FJSON_TOKEN_ROOT, "_ROOT")			\
+		FBR_ENUM_VALUES(FJSON_TOKEN_OBJECT, "OBJECT")			\
+		FBR_ENUM_VALUES(FJSON_TOKEN_ARRAY, "ARRAY")			\
+		FBR_ENUM_VALUES(FJSON_TOKEN_LABEL, "LABEL")			\
+		FBR_ENUM_VALUES(FJSON_TOKEN_STRING, "STRING")			\
+		FBR_ENUM_VALUES(FJSON_TOKEN_NUMBER, "NUMBER")			\
+		FBR_ENUM_VALUES(FJSON_TOKEN_TRUE, "TRUE")			\
+		FBR_ENUM_VALUES(FJSON_TOKEN_FALSE, "FALSE")			\
+		FBR_ENUM_VALUES(FJSON_TOKEN_NULL, "NULL")			\
+	FBR_ENUM_END("_ERROR")
+
+#include "utils/fbr_enum_define.h"
+FJSON_ENUM_STATE
+FJSON_ENUM_TOKEN_TYPE
 
 struct fjson_context;
 typedef int (fjson_parse_f)(struct fjson_context *, void *);
@@ -87,8 +93,9 @@ void fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len);
 size_t fjson_shift(struct fjson_context *ctx, char *buf, size_t buf_len, size_t buf_max);
 void fjson_context_free(struct fjson_context *ctx);
 
-const char *fjson_token_name(enum fjson_token_type type);
-const char *fjson_state_name(enum fjson_state state);
+#include "utils/fbr_enum_string.h"
+static inline FJSON_ENUM_STATE
+static inline FJSON_ENUM_TOKEN_TYPE
 
 #define fjson_context_ok(ctx)					\
 {								\
