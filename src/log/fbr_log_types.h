@@ -63,6 +63,6 @@ enum fbr_request_ids {
 	FBR_ENUM_END("UNKNOWN")
 
 #include "utils/fbr_enum_define.h"
-FBR_ENUM_LOG_TYPE;
+FBR_ENUM_LOG_TYPE
 
 #endif /* _FBR_LOG_TYPES_H_INCLUDED_ */

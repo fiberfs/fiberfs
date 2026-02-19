@@ -76,7 +76,7 @@ struct fbr_reader {
 	FBR_ENUM_END("ERROR")
 
 #include "utils/fbr_enum_define.h"
-FBR_ENUM_INDEX_LOCATION;
+FBR_ENUM_INDEX_LOCATION
 
 struct fbr_index_parser {
 	unsigned int				magic;

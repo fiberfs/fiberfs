@@ -41,8 +41,8 @@
 	FBR_ENUM_END("_ERROR")
 
 #include "utils/fbr_enum_define.h"
-FJSON_ENUM_STATE;
-FJSON_ENUM_TOKEN_TYPE;
+FJSON_ENUM_STATE
+FJSON_ENUM_TOKEN_TYPE
 
 struct fjson_context;
 typedef int (fjson_parse_f)(struct fjson_context *, void *);

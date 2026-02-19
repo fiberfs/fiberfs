@@ -67,8 +67,8 @@ enum chttp_version {
 	FBR_ENUM_END("unknown")
 
 #include "utils/fbr_enum_define.h"
-CHTTP_ENUM_STATE;
-CHTTP_ERROR_STATE;
+CHTTP_ENUM_STATE
+CHTTP_ERROR_STATE
 
 enum chttp_request_type {
 	CHTTP_REQUEST_NONE = 0,
