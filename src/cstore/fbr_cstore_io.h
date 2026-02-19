@@ -17,24 +17,30 @@
 #define FBR_CSTORE_ASYNC_THREAD_MAX		128
 #define FBR_CSTORE_ASYNC_THREAD_DEFAULT		4
 
-enum fbr_cstore_entry_type {
-	FBR_CSTORE_FILE_NONE = 0,
-	FBR_CSTORE_FILE_CHUNK,
-	FBR_CSTORE_FILE_INDEX,
-	FBR_CSTORE_FILE_ROOT
-};
+#define FBR_ENUM_CSTORE_ENTRY_TYPE 						\
+	FBR_ENUM_NAMES(fbr_cstore_entry_type, fbr_cstore_type_name)		\
+		FBR_ENUM_VALUES_INIT(FBR_CSTORE_FILE_NONE, "NONE", 0)		\
+		FBR_ENUM_VALUES(FBR_CSTORE_FILE_CHUNK, "CHUNK")			\
+		FBR_ENUM_VALUES(FBR_CSTORE_FILE_INDEX, "INDEX")			\
+		FBR_ENUM_VALUES(FBR_CSTORE_FILE_ROOT, "ROOT")			\
+	FBR_ENUM_END("ERROR")
 
-enum fbr_cstore_op_type {
-	FBR_CSOP_NONE = 0,
-	FBR_CSOP_TEST,
-	FBR_CSOP_WBUFFER_WRITE,
-	FBR_CSOP_WBUFFER_SEND,
-	FBR_CSOP_CHUNK_READ,
-	FBR_CSOP_URL_DELETE,
-	FBR_CSOP_INDEX_SEND,
-	FBR_CSOP_ROOT_WRITE,
-	__FBR_CSOP_END
-};
+#define FBR_ENUM_CSTORE_OP_TYPE 						\
+	FBR_ENUM_NAMES(fbr_cstore_op_type, fbr_cstore_async_type)		\
+		FBR_ENUM_VALUES_INIT(FBR_CSOP_NONE, "NONE", 0)			\
+		FBR_ENUM_VALUES(FBR_CSOP_TEST, "TEST")				\
+		FBR_ENUM_VALUES(FBR_CSOP_WBUFFER_WRITE, "WBUFFER_WRITE")	\
+		FBR_ENUM_VALUES(FBR_CSOP_WBUFFER_SEND, "WBUFFER_SEND")		\
+		FBR_ENUM_VALUES(FBR_CSOP_CHUNK_READ, "CHUNK_READ")		\
+		FBR_ENUM_VALUES(FBR_CSOP_URL_DELETE, "URL_DELETE")		\
+		FBR_ENUM_VALUES(FBR_CSOP_INDEX_SEND, "INDEX_SEND")		\
+		FBR_ENUM_VALUES(FBR_CSOP_ROOT_WRITE, "ROOT_WRITE")		\
+		FBR_ENUM_VALUES(__FBR_CSOP_END, "ERROR")			\
+	FBR_ENUM_END("ERROR")
+
+#include "utils/fbr_enum_define.h"
+FBR_ENUM_CSTORE_ENTRY_TYPE
+FBR_ENUM_CSTORE_OP_TYPE
 
 struct fbr_cstore_op;
 struct fbr_cstore_worker;
@@ -133,7 +139,8 @@ void fbr_cstore_op_sync_done(struct fbr_cstore_op *op, struct fbr_cstore_worker 
 void fbr_cstore_op_sync_wait(struct fbr_cstore_op_sync *sync);
 void fbr_cstore_op_sync_free(struct fbr_cstore_op_sync *sync);
 
-const char *fbr_cstore_async_type(enum fbr_cstore_op_type type);
+#include "utils/fbr_enum_string_declare.h"
+FBR_ENUM_CSTORE_OP_TYPE
 
 int fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
 	struct fbr_cstore_metadata *metadata);

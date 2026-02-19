@@ -550,29 +550,5 @@ fbr_cstore_op_sync_free(struct fbr_cstore_op_sync *sync)
 	fbr_zero(sync);
 }
 
-const char *
-fbr_cstore_async_type(enum fbr_cstore_op_type type)
-{
-	switch (type) {
-		case FBR_CSOP_NONE:
-			return "NONE";
-		case FBR_CSOP_TEST:
-			return "TEST";
-		case FBR_CSOP_WBUFFER_WRITE:
-			return "WBUFFER_WRITE";
-		case FBR_CSOP_WBUFFER_SEND:
-			return "WBUFFER_SEND";
-		case FBR_CSOP_CHUNK_READ:
-			return "CHUNK_READ";
-		case FBR_CSOP_URL_DELETE:
-			return "URL_DELETE";
-		case FBR_CSOP_INDEX_SEND:
-			return "INDEX_SEND";
-		case FBR_CSOP_ROOT_WRITE:
-			return "ROOT_WRITE";
-		case __FBR_CSOP_END:
-			break;
-	}
-
-	return "ERROR";
-}
+#include "utils/fbr_enum_string.h"
+FBR_ENUM_CSTORE_OP_TYPE
