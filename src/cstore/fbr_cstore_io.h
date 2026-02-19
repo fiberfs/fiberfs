@@ -17,7 +17,7 @@
 #define FBR_CSTORE_ASYNC_THREAD_MAX		128
 #define FBR_CSTORE_ASYNC_THREAD_DEFAULT		4
 
-#define FBR_ENUM_CSTORE_ENTRY_TYPE 						\
+#define FBR_ENUM_CSTORE_ENTRY_TYPE						\
 	FBR_ENUM_NAMES(fbr_cstore_entry_type, fbr_cstore_type_name)		\
 		FBR_ENUM_VALUES_INIT(FBR_CSTORE_FILE_NONE, "NONE", 0)		\
 		FBR_ENUM_VALUES(FBR_CSTORE_FILE_CHUNK, "CHUNK")			\
@@ -25,7 +25,7 @@
 		FBR_ENUM_VALUES(FBR_CSTORE_FILE_ROOT, "ROOT")			\
 	FBR_ENUM_END("ERROR")
 
-#define FBR_ENUM_CSTORE_OP_TYPE 						\
+#define FBR_ENUM_CSTORE_OP_TYPE						\
 	FBR_ENUM_NAMES(fbr_cstore_op_type, fbr_cstore_async_type)		\
 		FBR_ENUM_VALUES_INIT(FBR_CSOP_NONE, "NONE", 0)			\
 		FBR_ENUM_VALUES(FBR_CSOP_TEST, "TEST")				\

@@ -457,8 +457,8 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 
 		if (count < 3) {
 			fbr_rlog(FBR_LOG_DEBUG, "BODY chunk[%zu] state: %s off: %zu len: %zu"
-				" id: %lu", count, fbr_chunk_state(chunk->state), chunk->offset,
-				chunk->length, chunk->id);
+				" id: %lu", count, fbr_chunk_state_string(chunk->state),
+				chunk->offset, chunk->length, chunk->id);
 		}
 
 		count++;
@@ -471,7 +471,7 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 
 	for (size_t i = 0; i < fbr_array_len(state); i++) {
 		strncat(buffer, " ", sizeof(buffer) - strlen(buffer) - 1);
-		strncat(buffer, fbr_chunk_state(i), sizeof(buffer) - strlen(buffer) - 1);
+		strncat(buffer, fbr_chunk_state_string(i), sizeof(buffer) - strlen(buffer) - 1);
 		strncat(buffer, ": ", sizeof(buffer) - strlen(buffer) - 1);
 		size_t len = strlen(buffer);
 		snprintf(buffer + len, sizeof(buffer) - len, "%zu", state[i]);

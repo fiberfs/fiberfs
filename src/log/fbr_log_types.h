@@ -16,7 +16,7 @@ enum fbr_request_ids {
 	__FBR_REQID_MAX
 };
 
-#define FBR_ENUM_LOG_TYPE 							\
+#define FBR_ENUM_LOG_TYPE							\
 	FBR_ENUM_NAME(fbr_log_type)						\
 		FBR_ENUM_VALUE_INIT(FBR_LOG_TYPE_NONE,	0)			\
 		FBR_ENUM_VALUES(FBR_LOG_TEST,		"TEST")			\

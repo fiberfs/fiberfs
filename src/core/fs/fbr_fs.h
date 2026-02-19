@@ -30,15 +30,19 @@
 #define FBR_FILE_SLAB_DEFAULT_PTRS		16
 #define FBR_TTL_MAX				INT32_MAX
 
-enum fbr_chunk_state {
-	FBR_CHUNK_FREE = 0,
-	FBR_CHUNK_EMPTY,
-	FBR_CHUNK_LOADING,
-	FBR_CHUNK_READY,
-	FBR_CHUNK_SPLICED,
-	FBR_CHUNK_WBUFFER,
-	__FBR_CHUNK_STATE_SIZE
-};
+#define FBR_ENUM_CHUNK_STATE						\
+	FBR_ENUM_NAME(fbr_chunk_state)					\
+		FBR_ENUM_VALUES_INIT(FBR_CHUNK_FREE, "FREE", 0)		\
+		FBR_ENUM_VALUES(FBR_CHUNK_EMPTY, "EMPTY")		\
+		FBR_ENUM_VALUES(FBR_CHUNK_LOADING, "LOADING")		\
+		FBR_ENUM_VALUES(FBR_CHUNK_READY, "READY")		\
+		FBR_ENUM_VALUES(FBR_CHUNK_SPLICED, "SPLICED")		\
+		FBR_ENUM_VALUES(FBR_CHUNK_WBUFFER, "WBUFFER")		\
+		FBR_ENUM_VALUES(__FBR_CHUNK_STATE_SIZE, "ERROR")	\
+	FBR_ENUM_END("ERROR")
+
+#include "utils/fbr_enum_define.h"
+FBR_ENUM_CHUNK_STATE
 
 struct fbr_chunk {
 	unsigned int				magic;
@@ -404,7 +408,9 @@ void fbr_file_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st);
 void fbr_chunk_take(struct fbr_chunk *chunk);
 void fbr_chunk_release(struct fbr_chunk *chunk);
 int fbr_chunk_in_offset(struct fbr_chunk *chunk, size_t offset, size_t size);
-const char *fbr_chunk_state(enum fbr_chunk_state state);
+
+#include "utils/fbr_enum_string_declare.h"
+FBR_ENUM_CHUNK_STATE
 
 struct fbr_chunk_list *fbr_chunk_list_alloc(void);
 struct fbr_chunk_list *fbr_chunk_list_expand(struct fbr_chunk_list *chunks);

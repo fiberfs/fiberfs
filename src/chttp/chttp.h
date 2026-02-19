@@ -34,7 +34,7 @@ enum chttp_version {
 	_CHTTP_H_VERSION_ERROR
 };
 
-#define CHTTP_ENUM_STATE 								\
+#define CHTTP_ENUM_STATE								\
 	FBR_ENUM_NAME(chttp_state)							\
 		FBR_ENUM_VALUES_INIT(CHTTP_STATE_NONE, "none", 0)			\
 		FBR_ENUM_VALUES(CHTTP_STATE_INIT_METHOD, "init method")			\
@@ -48,7 +48,7 @@ enum chttp_version {
 		FBR_ENUM_VALUES(CHTTP_STATE_DONE_ERROR, "error")			\
 	FBR_ENUM_END("unknown")
 
-#define CHTTP_ERROR_STATE 								\
+#define CHTTP_ERROR_STATE								\
 	FBR_ENUM_NAMES(chttp_error, _error_string)							\
 		FBR_ENUM_VALUES_INIT(CHTTP_ERR_NONE, "none", 0)				\
 		FBR_ENUM_VALUES(CHTTP_ERR_INIT, "initialization")			\

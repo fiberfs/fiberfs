@@ -87,28 +87,8 @@ fbr_chunk_in_offset(struct fbr_chunk *chunk, size_t offset, size_t size)
 	return 0;
 }
 
-const char *
-fbr_chunk_state(enum fbr_chunk_state state)
-{
-	switch (state) {
-		case FBR_CHUNK_FREE:
-			return "FREE";
-		case FBR_CHUNK_EMPTY:
-			return "EMPTY";
-		case FBR_CHUNK_LOADING:
-			return "LOADING";
-		case FBR_CHUNK_READY:
-			return "READY";
-		case FBR_CHUNK_SPLICED:
-			return "SPLICE";
-		case FBR_CHUNK_WBUFFER:
-			return "WBUFFER";
-		case __FBR_CHUNK_STATE_SIZE:
-			break;
-	}
-
-	return "ERROR";
-}
+#include "utils/fbr_enum_string.h"
+FBR_ENUM_CHUNK_STATE
 
 struct fbr_chunk_list *
 fbr_chunk_list_alloc(void)
@@ -151,7 +131,7 @@ fbr_chunk_list_debug(struct fbr_fs *fs, struct fbr_chunk_list *chunks, const cha
 		fbr_chunk_ok(chunk);
 		fbr_rlog(FBR_LOG_DEBUG, "%s chunk[%zu] state: %s, data: %p off: %zu"
 			" len: %zu id: %lu",
-			name, i, fbr_chunk_state(chunk->state), (void*)chunk->data,
+			name, i, fbr_chunk_state_string(chunk->state), (void*)chunk->data,
 			chunk->offset, chunk->length, chunk->id);
 	}
 }
