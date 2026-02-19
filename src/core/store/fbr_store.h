@@ -66,13 +66,17 @@ struct fbr_reader {
 	unsigned int				was_gzip:1;
 };
 
-enum fbr_index_location {
-	FBR_INDEX_LOC_NONE = 0,
-	FBR_INDEX_LOC_DIRECTORY,
-	FBR_INDEX_LOC_FILE,
-	FBR_INDEX_LOC_BODY,
-	__FBR_INDEX_LOC_SIZE
-};
+#define FBR_ENUM_INDEX_LOCATION					\
+	FBR_ENUM_NAMES(fbr_index_location, _index_location)	\
+		FBR_ENUM_VALUE(FBR_INDEX_LOC_NONE)		\
+		FBR_ENUM_VALUE(FBR_INDEX_LOC_DIRECTORY)		\
+		FBR_ENUM_VALUE(FBR_INDEX_LOC_FILE)		\
+		FBR_ENUM_VALUE(FBR_INDEX_LOC_BODY)		\
+		FBR_ENUM_VALUE(__FBR_INDEX_LOC_SIZE)		\
+	FBR_ENUM_END("ERROR")
+
+#include "utils/fbr_enum_define.h"
+FBR_ENUM_INDEX_LOCATION
 
 struct fbr_index_parser {
 	unsigned int				magic;

@@ -49,7 +49,7 @@ enum chttp_version {
 	FBR_ENUM_END("unknown")
 
 #define CHTTP_ERROR_STATE 								\
-	FBR_ENUM_NAME(chttp_error)							\
+	FBR_ENUM_NAMES(chttp_error, _error_string)							\
 		FBR_ENUM_VALUES_INIT(CHTTP_ERR_NONE, "none", 0)				\
 		FBR_ENUM_VALUES(CHTTP_ERR_INIT, "initialization")			\
 		FBR_ENUM_VALUES(CHTTP_ERR_DNS, "DNS error")				\

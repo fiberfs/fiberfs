@@ -99,7 +99,7 @@ chttp_error_msg(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
-	return chttp_error_string(ctx->error);
+	return _error_string(ctx->error);
 }
 
 void

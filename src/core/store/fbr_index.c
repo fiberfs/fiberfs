@@ -638,26 +638,8 @@ _file_editable(struct fbr_file *file)
 	return 0;
 }
 
-static const char *
-_index_parse_loc(struct fbr_index_parser *parser)
-{
-	assert_dev(parser);
-
-	switch (parser->location) {
-		case FBR_INDEX_LOC_NONE:
-			return "NONE";
-		case FBR_INDEX_LOC_DIRECTORY:
-			return "DIRECTORY";
-		case FBR_INDEX_LOC_FILE:
-			return "FILE";
-		case FBR_INDEX_LOC_BODY:
-			return "BODY";
-		default:
-			break;
-	}
-
-	return "ERROR";
-}
+#include "utils/fbr_enum_string.h"
+static FBR_ENUM_INDEX_LOCATION
 
 static void
 _index_parse_debug(struct fbr_index_parser *parser, struct fjson_token *token, size_t depth)
@@ -670,7 +652,7 @@ _index_parse_debug(struct fbr_index_parser *parser, struct fjson_token *token, s
 	assert_dev(location);
 
 	fbr_rlog(FBR_LOG_DEBUG, "PARSER location: %s context: %c (prev: %c)",
-		_index_parse_loc(parser),
+		_index_location(parser->location),
 		parser->context[location] ? parser->context[location] : '-',
 		parser->context[location - 1] ? parser->context[location - 1] : '-');
 
