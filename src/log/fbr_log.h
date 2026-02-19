@@ -176,7 +176,7 @@ void fbr_log_reader_free(struct fbr_log_reader *reader);
 int fbr_log_type_masked(enum fbr_log_type type);
 void fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len);
 
-#include "utils/fbr_enum_string_delcare.h"
+#include "utils/fbr_enum_string_declare.h"
 FBR_ENUM_LOG_TYPE
 
 #define fbr_log_ok(log)				fbr_magic_check(log, FBR_LOG_MAGIC)
