@@ -90,72 +90,16 @@ chttp_print_hex(void *buf, size_t buf_len)
 	printf("\n");
 }
 
+#include "utils/fbr_enum_string.h"
+CHTTP_ENUM_STATE
+static CHTTP_ERROR_STATE
+
 const char *
 chttp_error_msg(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
-	switch (ctx->error) {
-		case CHTTP_ERR_NONE:
-			return "none";
-		case CHTTP_ERR_INIT:
-			return "initialization";
-		case CHTTP_ERR_DNS:
-			return "DNS error";
-		case CHTTP_ERR_CONNECT:
-			return "cannot make connection";
-		case CHTTP_ERR_NETWORK:
-			return "network error";
-		case CHTTP_ERR_REQ_BODY:
-			return "bad request body";
-		case CHTTP_ERR_RESP_PARSE:
-			return "cannot parse response";
-		case CHTTP_ERR_RESP_LENGTH:
-			return "cannot parse response body length";
-		case CHTTP_ERR_RESP_CHUNK:
-			return "cannot parse response body chunk";
-		case CHTTP_ERR_RESP_BODY:
-			return "cannot parse response body";
-		case CHTTP_ERR_TLS_INIT:
-			return "TLS initialization error";
-		case CHTTP_ERR_TLS_HANDSHAKE:
-			return "TLS handshake error";
-		case CHTTP_ERR_GZIP:
-			return "gzip error";
-		case CHTTP_ERR_BUFFER:
-			return "buffer error";
-	}
-
-	return "unknown";
-}
-
-const char *
-chttp_state_string(enum chttp_state state)
-{
-	switch (state) {
-		case CHTTP_STATE_NONE:
-			return "none";
-		case CHTTP_STATE_INIT_METHOD:
-			return "init method";
-		case CHTTP_STATE_INIT_HEADER:
-			return "init header";
-		case CHTTP_STATE_SENT:
-			return "sent";
-		case CHTTP_STATE_HEADERS:
-			return "resp headers";
-		case CHTTP_STATE_BODY:
-			return "body";
-		case CHTTP_STATE_IDLE:
-			return "idle";
-		case CHTTP_STATE_CLOSED:
-			return "closed";
-		case CHTTP_STATE_DONE:
-			return "done";
-		case CHTTP_STATE_DONE_ERROR:
-			return "error";
-	}
-
-	return "unknown";
+	return chttp_error_string(ctx->error);
 }
 
 void

@@ -60,7 +60,7 @@ enum fbr_request_ids {
 		FBR_ENUM_VALUES(FBR_LOG_CS_ROOT,	"CSTORE_ROOT")		\
 		FBR_ENUM_VALUES(FBR_LOG_CS_S3,		"CSTORE_S3")		\
 		FBR_ENUM_VALUE(FBR_LOG_TYPE_END)				\
-		FBR_ENUM_END("UNKNOWN")
+	FBR_ENUM_END("UNKNOWN")
 
 #include "utils/fbr_enum_define.h"
 FBR_ENUM_LOG_TYPE

@@ -34,35 +34,41 @@ enum chttp_version {
 	_CHTTP_H_VERSION_ERROR
 };
 
-enum chttp_state {
-	CHTTP_STATE_NONE = 0,
-	CHTTP_STATE_INIT_METHOD,
-	CHTTP_STATE_INIT_HEADER,
-	CHTTP_STATE_SENT,
-	CHTTP_STATE_HEADERS,
-	CHTTP_STATE_BODY,
-	CHTTP_STATE_IDLE,
-	CHTTP_STATE_CLOSED,
-	CHTTP_STATE_DONE,
-	CHTTP_STATE_DONE_ERROR
-};
+#define CHTTP_ENUM_STATE 								\
+	FBR_ENUM_NAME(chttp_state)							\
+		FBR_ENUM_VALUES_INIT(CHTTP_STATE_NONE, "none", 0)			\
+		FBR_ENUM_VALUES(CHTTP_STATE_INIT_METHOD, "init method")			\
+		FBR_ENUM_VALUES(CHTTP_STATE_INIT_HEADER,"init header")			\
+		FBR_ENUM_VALUES(CHTTP_STATE_SENT, "sent")				\
+		FBR_ENUM_VALUES(CHTTP_STATE_HEADERS, "headers")				\
+		FBR_ENUM_VALUES(CHTTP_STATE_BODY, "body")				\
+		FBR_ENUM_VALUES(CHTTP_STATE_IDLE, "idle")				\
+		FBR_ENUM_VALUES(CHTTP_STATE_CLOSED, "closed")				\
+		FBR_ENUM_VALUES(CHTTP_STATE_DONE, "done")				\
+		FBR_ENUM_VALUES(CHTTP_STATE_DONE_ERROR, "error")			\
+	FBR_ENUM_END("unknown")
 
-enum chttp_error {
-	CHTTP_ERR_NONE = 0,
-	CHTTP_ERR_INIT,
-	CHTTP_ERR_DNS,
-	CHTTP_ERR_CONNECT,
-	CHTTP_ERR_NETWORK,
-	CHTTP_ERR_REQ_BODY,
-	CHTTP_ERR_RESP_PARSE,
-	CHTTP_ERR_RESP_LENGTH,
-	CHTTP_ERR_RESP_CHUNK,
-	CHTTP_ERR_RESP_BODY,
-	CHTTP_ERR_TLS_INIT,
-	CHTTP_ERR_TLS_HANDSHAKE,
-	CHTTP_ERR_GZIP,
-	CHTTP_ERR_BUFFER
-};
+#define CHTTP_ERROR_STATE 								\
+	FBR_ENUM_NAME(chttp_error)							\
+		FBR_ENUM_VALUES_INIT(CHTTP_ERR_NONE, "none", 0)				\
+		FBR_ENUM_VALUES(CHTTP_ERR_INIT, "initialization")			\
+		FBR_ENUM_VALUES(CHTTP_ERR_DNS, "DNS error")				\
+		FBR_ENUM_VALUES(CHTTP_ERR_CONNECT, "cannot make connection")		\
+		FBR_ENUM_VALUES(CHTTP_ERR_NETWORK, "network error")			\
+		FBR_ENUM_VALUES(CHTTP_ERR_REQ_BODY, "bad request body")			\
+		FBR_ENUM_VALUES(CHTTP_ERR_RESP_PARSE, "cannot parse response")		\
+		FBR_ENUM_VALUES(CHTTP_ERR_RESP_LENGTH, "cannot parse resp body length")	\
+		FBR_ENUM_VALUES(CHTTP_ERR_RESP_CHUNK, "cannot parse resp body chunk")	\
+		FBR_ENUM_VALUES(CHTTP_ERR_RESP_BODY, "cannot parse resp body")		\
+		FBR_ENUM_VALUES(CHTTP_ERR_TLS_INIT, "TLS initialization error")		\
+		FBR_ENUM_VALUES(CHTTP_ERR_TLS_HANDSHAKE, "TLS handshake error")		\
+		FBR_ENUM_VALUES(CHTTP_ERR_GZIP, "gzip error")				\
+		FBR_ENUM_VALUES(CHTTP_ERR_BUFFER, "buffer error")			\
+	FBR_ENUM_END("unknown")
+
+#include "utils/fbr_enum_define.h"
+CHTTP_ENUM_STATE
+CHTTP_ERROR_STATE
 
 enum chttp_request_type {
 	CHTTP_REQUEST_NONE = 0,
@@ -163,6 +169,9 @@ const char *chttp_error_msg(struct chttp_context *ctx);
 const char *chttp_state_string(enum chttp_state state);
 void chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port);
 size_t chttp_make_chunk(char *buffer, size_t buffer_len, unsigned int chunk_len);
+
+#include "utils/fbr_enum_string_declare.h"
+CHTTP_ENUM_STATE
 
 #define chttp_context_ok(ctx)	\
 	fbr_magic_check(ctx, CHTTP_CTX_MAGIC)
