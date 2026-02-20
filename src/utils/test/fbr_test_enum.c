@@ -22,6 +22,7 @@
 		FBR_ENUM_VALUES(_t2_red, "Red")			\
 		FBR_ENUM_VALUES_INIT(_t2_blue, "Blue", 7)	\
 		FBR_ENUM_VALUE(_t3_green)			\
+		FBR_ENUM_VALUE_INIT(_t4_black, 17)		\
 	FBR_ENUM_END(NULL)
 
 #include "utils/fbr_enum_define.h"
@@ -48,11 +49,13 @@ fbr_cmd_test_enum(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(strcmp(_test_enum1_string(*e2), "_test_error"));
 
 	enum _test_enum2 t2 = _t2_blue;
-	enum _test_enum2 *t3 = (enum _test_enum2*)&unknown;
 	assert(t2 == 7)
+	assert(_t4_black == 17)
+	assert_zero(strcmp(_enum2_name(_t2_red), "Red"));
 	assert_zero(strcmp(_enum2_name(t2), "Blue"));
 	assert_zero(strcmp(_enum2_name(_t3_green), "_t3_green"));
-	assert_zero(_enum2_name(*t3));
+	assert_zero(strcmp(_enum2_name(17), "_t4_black"));
+	assert_zero(_enum2_name(25));
 
 	fbr_test_logs("test_enum passed");
 }
