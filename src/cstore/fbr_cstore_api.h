@@ -109,13 +109,13 @@ struct fbr_cstore {
 	unsigned int				magic;
 #define FBR_CSTORE_MAGIC			0xC8747276
 
-	unsigned int				do_free:1;
-	unsigned int				cant_splice_in:1;
-	unsigned int				cant_splice_out:1;
-	unsigned int				delete_cache:1;
-	unsigned int				cdn_put:1;
-	unsigned int				cdn_delete:1;
-	unsigned int				skip_content_hash:1;
+	fbr_bitflag_t				do_free:1;
+	fbr_bitflag_t				cant_splice_in:1;
+	fbr_bitflag_t				cant_splice_out:1;
+	fbr_bitflag_t				delete_cache:1;
+	fbr_bitflag_t				cdn_put:1;
+	fbr_bitflag_t				cdn_delete:1;
+	fbr_bitflag_t				skip_content_hash:1;
 
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 

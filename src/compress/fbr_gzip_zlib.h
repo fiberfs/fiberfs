@@ -14,6 +14,8 @@
 #include <stddef.h>
 #include <zlib.h>
 
+#include "fiberfs.h"
+
 #define FBR_ZLIB_WINDOW_BITS		(15 + 16)
 #define FBR_ZLIB_DEFLATE_LEVEL		6
 #define FBR_ZLIB_DEFLATE_MEM		8
@@ -32,7 +34,7 @@ struct fbr_zlib {
 	int				status;
 	int				zstate;
 
-	unsigned int			do_free:1;
+	fbr_bitflag_t			do_free:1;
 
 	unsigned char			*buffer;
 	size_t				buffer_len;

@@ -112,8 +112,8 @@ struct fbr_log {
 	unsigned int				magic;
 #define FBR_LOG_MAGIC				0x496108CB
 
-	unsigned int				do_free:1;
-	unsigned int				always_flush:1;
+	fbr_bitflag_t				do_free:1;
+	fbr_bitflag_t				always_flush:1;
 
 	char					shm_name[NAME_MAX + 1];
 	int					shm_fd;

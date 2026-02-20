@@ -58,7 +58,7 @@ struct fbr_test_param {
 
 	const char				*variable;
 
-	unsigned int				v_const:1;
+	fbr_bitflag_t				v_const:1;
 };
 
 struct fbr_test_cmd;
@@ -78,7 +78,7 @@ struct fbr_test_cmd {
 
 	fbr_test_cmd_f				*func;
 
-	unsigned int				async:1;
+	fbr_bitflag_t				async:1;
 };
 
 struct fbr_test_cmdentry {
@@ -92,9 +92,9 @@ struct fbr_test_cmdentry {
 	fbr_test_var_f				*var_func;
 	fbr_test_varf_f				*varf_func;
 
-	unsigned int				is_cmd:1;
-	unsigned int				is_var:1;
-	unsigned int				is_varf:1;
+	fbr_bitflag_t				is_cmd:1;
+	fbr_bitflag_t				is_var:1;
+	fbr_bitflag_t				is_varf:1;
 };
 
 RB_HEAD(fbr_test_tree, fbr_test_cmdentry);

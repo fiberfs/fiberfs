@@ -18,8 +18,8 @@ struct fbr_config_key {
 	unsigned int			magic;
 #define FBR_CONFIG_KEY_MAGIC		0xAA9D1921
 
-	unsigned int			is_long:1;
-	unsigned int			deleted:1;
+	fbr_bitflag_t			is_long:1;
+	fbr_bitflag_t			deleted:1;
 
 	const char			*name;
 	const char			*value;
@@ -37,7 +37,7 @@ struct fbr_config {
 	unsigned int			magic;
 #define FBR_CONFIG_MAGIC		0xC9BBC9DC
 
-	unsigned int			do_free:1;
+	fbr_bitflag_t			do_free:1;
 
 	pthread_rwlock_t		rwlock;
 

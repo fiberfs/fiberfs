@@ -11,6 +11,8 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
+#include "fiberfs.h"
+
 #define CHTTP_TIMEOUT_CONNECT		3000
 #define CHTTP_TIMEOUT_TRANSFER		60000
 
@@ -33,11 +35,11 @@ struct chttp_addr {
 	short				poll_revents;
 	int				listen_port;
 
-	unsigned int			resolved:1;
-	unsigned int			listen:1;
-	unsigned int			nonblocking:1;
-	unsigned int			reused:1;
-	unsigned int			tls:1;
+	fbr_bitflag_t			resolved:1;
+	fbr_bitflag_t			listen:1;
+	fbr_bitflag_t			nonblocking:1;
+	fbr_bitflag_t			reused:1;
+	fbr_bitflag_t			tls:1;
 
 	void				*tls_priv;
 

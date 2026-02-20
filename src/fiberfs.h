@@ -14,6 +14,7 @@
 #define FIBERFS_VERSION				"0.8.0"
 
 typedef unsigned int fbr_refcount_t;
+typedef unsigned int fbr_bitflag_t;
 typedef unsigned long fbr_inode_t;
 typedef unsigned long fbr_stats_t;
 

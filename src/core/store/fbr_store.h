@@ -20,8 +20,8 @@ struct fbr_buffer {
 	unsigned int				magic;
 #define FBR_BUFFER_MAGIC			0xDB60ECD5
 
-	unsigned int				buffer_free:1;
-	unsigned int				do_free:1;
+	fbr_bitflag_t				buffer_free:1;
+	fbr_bitflag_t				do_free:1;
 
 	char					*buffer;
 	size_t					buffer_pos;
@@ -45,10 +45,10 @@ struct fbr_writer {
 	size_t					raw_bytes;
 	size_t					bytes;
 
-	unsigned int				want_gzip:1;
-	unsigned int				is_gzip:1;
-	unsigned int				error:1;
-	unsigned int				do_free:1;
+	fbr_bitflag_t				want_gzip:1;
+	fbr_bitflag_t				is_gzip:1;
+	fbr_bitflag_t				error:1;
+	fbr_bitflag_t				do_free:1;
 };
 
 struct fbr_reader {
@@ -63,7 +63,7 @@ struct fbr_reader {
 	size_t					raw_bytes;
 	size_t					bytes;
 
-	unsigned int				was_gzip:1;
+	fbr_bitflag_t				was_gzip:1;
 };
 
 #define FBR_ENUM_INDEX_LOCATION					\
@@ -97,7 +97,7 @@ struct fbr_index_parser {
 		size_t				length;
 	} chunk;
 
-	unsigned int				current_exists:1;
+	fbr_bitflag_t				current_exists:1;
 
 	unsigned int				files_new;
 	unsigned int				files_existing;

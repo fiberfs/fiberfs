@@ -27,8 +27,8 @@ struct fbr_workspace {
 	unsigned int				magic;
 #define FBR_WORKSPACE_MAGIC			0xA78F66C6
 
-	unsigned int				reserved:1;
-	unsigned int				reserved_ptr:1;
+	fbr_bitflag_t				reserved:1;
+	fbr_bitflag_t				reserved_ptr:1;
 
 	uint8_t					*data;
 	size_t					size;

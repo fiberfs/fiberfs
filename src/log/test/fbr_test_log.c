@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "fiberfs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/request/fbr_request.h"
 #include "log/fbr_log.h"

@@ -32,9 +32,9 @@ struct fbr_fuse_context {
 	struct fbr_log				*log;
 	struct fbr_cstore			*cstore;
 
-	unsigned int				init:1;
-	unsigned int				debug:1;
-	unsigned int				signals:1;
+	fbr_bitflag_t				init:1;
+	fbr_bitflag_t				debug:1;
+	fbr_bitflag_t				signals:1;
 
 	volatile int				running;
 	volatile int				exited;

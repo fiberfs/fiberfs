@@ -50,9 +50,9 @@ struct fbr_chunk {
 
 	enum fbr_chunk_state			state;
 
-	unsigned int				fd_splice_ok:1;
-	unsigned int				do_free:1;
-	unsigned int				external:1;
+	fbr_bitflag_t				fd_splice_ok:1;
+	fbr_bitflag_t				do_free:1;
+	fbr_bitflag_t				external:1;
 
 	fbr_id_t				id;
 
@@ -208,7 +208,7 @@ struct fbr_directory {
 
 	size_t					file_count;
 
-	unsigned int				expired:1;
+	fbr_bitflag_t				expired:1;
 };
 
 struct fbr_dirbuffer {
@@ -218,16 +218,16 @@ struct fbr_dirbuffer {
 	size_t					pos;
 	size_t					free;
 
-	unsigned int				full:1;
+	fbr_bitflag_t				full:1;
 };
 
 struct fbr_dreader {
 	unsigned int				magic;
 #define FBR_DREADER_MAGIC			0xF3CFAEDF
 
-	unsigned int				read_dot:1;
-	unsigned int				read_dotdot:1;
-	unsigned int				end:1;
+	fbr_bitflag_t				read_dot:1;
+	fbr_bitflag_t				read_dotdot:1;
+	fbr_bitflag_t				end:1;
 
 	struct fbr_directory			*directory;
 	struct fbr_file_ptr			*position;
@@ -266,19 +266,19 @@ struct fbr_wbuffer {
 	struct fbr_chunk			*chunk;
 	struct fbr_wbuffer			*next;
 
-	unsigned int				free_buffer:1;
-	unsigned int				split:1;
+	fbr_bitflag_t				free_buffer:1;
+	fbr_bitflag_t				split:1;
 };
 
 struct fbr_fio {
 	unsigned int				magic;
 #define FBR_FIO_MAGIC				0xC476C0F5
 
-	unsigned int				error:1;
-	unsigned int				read_only:1;
-	unsigned int				write:1;
-	unsigned int				append:1;
-	unsigned int				truncate:1;
+	fbr_bitflag_t				error:1;
+	fbr_bitflag_t				read_only:1;
+	fbr_bitflag_t				write:1;
+	fbr_bitflag_t				append:1;
+	fbr_bitflag_t				truncate:1;
 
 	fbr_refcount_t				refcount;
 
@@ -323,7 +323,7 @@ struct fbr_fs_stats {
 };
 
 struct fbr_fs_config {
-	unsigned int				gzip_index:1;
+	fbr_bitflag_t				gzip_index:1;
 	double					dentry_ttl;
 	unsigned int				flush_attempts;
 	unsigned int				flush_timeout_sec;
@@ -333,7 +333,7 @@ struct fbr_fs {
 	unsigned int				magic;
 #define FBR_FS_MAGIC				0x150CC3D2
 
-	unsigned int				shutdown:1;
+	fbr_bitflag_t				shutdown:1;
 
 	struct fbr_inodes			*inodes;
 	struct fbr_dindex			*dindex;

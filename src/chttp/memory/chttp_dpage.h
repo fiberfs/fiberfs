@@ -19,7 +19,7 @@ struct chttp_dpage {
 	size_t				length;
 	size_t				offset;
 
-	unsigned int			free:1;
+	fbr_bitflag_t			free:1;
 
 	uint8_t				data[];
 };

@@ -23,8 +23,8 @@ struct fbr_sha256_ctx {
 	unsigned int			magic;
 #define FBR_SHA256_MAGIC		0x772F494A
 
-	unsigned int			openssl:1;
-	unsigned int			openssl_hmac:1;
+	fbr_bitflag_t			openssl:1;
+	fbr_bitflag_t			openssl_hmac:1;
 
 #ifdef CHTTP_OPENSSL
 	SHA256_CTX			openssl_ctx;

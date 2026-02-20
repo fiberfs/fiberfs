@@ -120,10 +120,10 @@ struct fbr_cstore_epool {
 
 	int					epfd;
 
-	unsigned int				init:1;
-	unsigned int				exit:1;
-	unsigned int				in_wait:1;
-	unsigned int				debug_close:1;
+	fbr_bitflag_t				init:1;
+	fbr_bitflag_t				exit:1;
+	fbr_bitflag_t				in_wait:1;
+	fbr_bitflag_t				debug_close:1;
 
 	size_t					waiting;
 

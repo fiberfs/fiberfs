@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "utils/fbr_assert.h"
+#include "fiberfs.h"
 
 #define FJSON_MAX_DEPTH			32
 
@@ -59,8 +59,8 @@ struct fjson_token {
 	size_t				svalue_len;
 	double				dvalue;
 
-	unsigned int			closed:1;
-	unsigned int			seperated:1;
+	fbr_bitflag_t			closed:1;
+	fbr_bitflag_t			seperated:1;
 };
 
 struct fjson_context {
@@ -72,9 +72,9 @@ struct fjson_context {
 	size_t				position;
 	size_t				pos;
 
-	unsigned int			do_free:1;
-	unsigned int			error:1;
-	unsigned int			finish:1;
+	fbr_bitflag_t			do_free:1;
+	fbr_bitflag_t			error:1;
+	fbr_bitflag_t			finish:1;
 
 	const char			*error_msg;
 

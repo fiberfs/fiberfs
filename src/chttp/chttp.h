@@ -91,7 +91,7 @@ struct chttp_context {
 
 	void				*gzip_priv;
 
-	unsigned int			do_free:1;
+	fbr_bitflag_t			do_free:1;
 
 	/* NOTE: see chttp_context_reset()
 	   Anything below here is reset between requests
@@ -104,18 +104,18 @@ struct chttp_context {
 	int				status;
 	long				length;
 
-	unsigned int			is_head:1;
-	unsigned int			has_host:1;
-	unsigned int			close:1;
-	unsigned int			raw_send:1;
-	unsigned int			chunked:1;
-	unsigned int			seen_first:1;
-	unsigned int			new_conn:1;
-	unsigned int			gzip:1;
-	unsigned int			want_100:1;
-	unsigned int			sent_100:1;
-	unsigned int			request:1;
-	unsigned int			pipeline:1;
+	fbr_bitflag_t			is_head:1;
+	fbr_bitflag_t			has_host:1;
+	fbr_bitflag_t			close:1;
+	fbr_bitflag_t			raw_send:1;
+	fbr_bitflag_t			chunked:1;
+	fbr_bitflag_t			seen_first:1;
+	fbr_bitflag_t			new_conn:1;
+	fbr_bitflag_t			gzip:1;
+	fbr_bitflag_t			want_100:1;
+	fbr_bitflag_t			sent_100:1;
+	fbr_bitflag_t			request:1;
+	fbr_bitflag_t			pipeline:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
