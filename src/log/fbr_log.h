@@ -140,8 +140,6 @@ struct fbr_log_line {
 
 	unsigned short				length;
 	unsigned short				truncated:1;
-	unsigned short				start:1;
-	unsigned short				end:1;
 
 	unsigned long				request_id;
 	double					timestamp;

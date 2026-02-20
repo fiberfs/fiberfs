@@ -360,8 +360,6 @@ _test_logline_debug(struct fbr_log_line *log_line)
 
 	fbr_test_logs("LOG_LINE->length: %u", log_line->length);
 	fbr_test_logs("LOG_LINE->truncated: %u", log_line->truncated);
-	fbr_test_logs("LOG_LINE->start: %u", log_line->start);
-	fbr_test_logs("LOG_LINE->end: %u", log_line->end);
 	fbr_test_logs("LOG_LINE->request_id: %lu", log_line->request_id);
 	fbr_test_logs("LOG_LINE->timestamp: %f", log_line->timestamp);
 	fbr_test_logs("LOG_LINE->buffer: '%s'", log_line->buffer);

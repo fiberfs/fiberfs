@@ -4,7 +4,7 @@
  *
  * Shared memory ring buffer based logging.
  * Readers and writers operate lock free (lock on write allocation only).
- * Most writers buffer writes locally and commit later in large batches (see fbr_rlog.c).
+ * Most writers buffer locally and commit later in large batches (see fbr_rlog.c).
  * Readers can operate out of process.
  *
  */
@@ -199,6 +199,7 @@ fbr_log_tag_gen(unsigned char sequence, enum fbr_log_tag_class class, unsigned s
 	assert(class && class < __FBR_LOG_TAG_END);
 
 	struct fbr_log_tag tag;
+	static_ASSERT(sizeof(tag.value) == sizeof(tag.parts));
 
 	tag.parts.magic = FBR_LOG_TAG_MAGIC;
 	tag.parts.sequence = sequence;
