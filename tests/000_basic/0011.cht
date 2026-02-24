@@ -1,7 +1,7 @@
 chttp_test "TCP pool tests 2"
 
-tcp_pool_size 5
-tcp_pool_age_ms 400
+config_add TCP_POOL_SIZE 5
+config_add TCP_POOL_AGE_MSEC 400
 
 dns_lookup_or_skip dns02.nulltech.systems
 

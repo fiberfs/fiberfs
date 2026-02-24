@@ -17,9 +17,6 @@
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
 
-extern double _TCP_POOL_AGE_SEC;
-extern size_t _TCP_POOL_SIZE;
-
 struct chttp_test_tcp_pool {
 	unsigned int				magic;
 #define _TCP_POOL_MAGIC				0xB1C2DA94
@@ -59,33 +56,6 @@ _tcp_pool_init(struct fbr_test_context *ctx)
 	}
 
 	assert(ctx->chttp_test->tcp_pool->magic == _TCP_POOL_MAGIC);
-}
-
-void
-chttp_test_cmd_tcp_pool_age_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	assert(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	long ttl = fbr_test_parse_long(cmd->params[0].value);
-
-	_TCP_POOL_AGE_SEC = ((double)ttl) / 1000;
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "tcp pool age %lf", _TCP_POOL_AGE_SEC);
-}
-
-void
-chttp_test_cmd_tcp_pool_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	assert(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	long size = fbr_test_parse_long(cmd->params[0].value);
-	assert(size > 0);
-
-	_TCP_POOL_SIZE = size;
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "tcp pool size %zu", _TCP_POOL_SIZE);
 }
 
 void

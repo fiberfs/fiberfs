@@ -13,7 +13,7 @@
 #include <pthread.h>
 
 #define CHTTP_TCP_POOL_SIZE				30
-#define CHTTP_TCP_POOL_AGE_SEC				30
+#define CHTTP_TCP_POOL_AGE_MSEC				(30 * 1000)
 
 struct chttp_tcp_pool_entry {
 	unsigned int					magic;
@@ -39,6 +39,7 @@ struct chttp_pool_stats {
 	size_t						nuked;
 	size_t						lru;
 	size_t						err_alloc;
+	size_t						size;
 };
 
 RB_HEAD(chttp_tcp_pool_tree, chttp_tcp_pool_entry);

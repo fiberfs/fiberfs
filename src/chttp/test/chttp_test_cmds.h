@@ -140,8 +140,6 @@ CHTTP_TEST_VAR(dns_err_too_long)
 CHTTP_TEST_VAR(dns_err_alloc)
 
 CHTTP_TEST_CMD(tcp_pool_debug)
-CHTTP_TEST_CMD(tcp_pool_age_ms)
-CHTTP_TEST_CMD(tcp_pool_size)
 CHTTP_TEST_CMD(tcp_pool_fake_connect)
 CHTTP_TEST_VAR(tcp_pool_lookups)
 CHTTP_TEST_VAR(tcp_pool_cache_hits)

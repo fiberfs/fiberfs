@@ -7,9 +7,6 @@
 #include "chttp.h"
 #include "chttp_tcp_pool.h"
 
-double _TCP_POOL_AGE_SEC = CHTTP_TCP_POOL_AGE_SEC;
-size_t _TCP_POOL_SIZE = CHTTP_TCP_POOL_SIZE;
-
 struct chttp_tcp_pool _TCP_POOL = {
 	CHTTP_TCP_POOL_MAGIC,
 	PTHREAD_MUTEX_INITIALIZER,
@@ -45,18 +42,21 @@ _tcp_pool_init(void)
 {
 	chttp_tcp_pool_ok();
 	assert_zero(_TCP_POOL.initialized);
-	assert(_TCP_POOL_SIZE <= CHTTP_TCP_POOL_SIZE);
 
 	assert(RB_EMPTY(&_TCP_POOL.pool_tree));
 	assert(TAILQ_EMPTY(&_TCP_POOL.free_list));
 	assert(TAILQ_EMPTY(&_TCP_POOL.lru_list));
 
+	size_t pool_size = fbr_conf_get_ulong("TCP_POOL_SIZE", CHTTP_TCP_POOL_SIZE);
+	assert(pool_size <= CHTTP_TCP_POOL_SIZE);
+
 	/* Create the free_list */
-	for (size_t i = 0; i < _TCP_POOL_SIZE; i++) {
+	for (size_t i = 0; i < pool_size; i++) {
 		assert_zero(_TCP_POOL.entries[i].magic);
 		TAILQ_INSERT_TAIL(&_TCP_POOL.free_list, &_TCP_POOL.entries[i], list_entry);
 	}
 
+	_TCP_POOL.stats.size = pool_size;
 	_TCP_POOL.initialized = 1;
 }
 
@@ -239,7 +239,10 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 	assert(addr->resolved);
 	assert_zero(addr->listen);
 
-	if (_TCP_POOL_AGE_SEC <= 0) {
+	long pool_age_ms = fbr_conf_get_long("TCP_POOL_AGE_MSEC", CHTTP_TCP_POOL_AGE_MSEC);
+	double pool_age = (double)pool_age_ms / 1000;
+
+	if (pool_age <= 0) {
 		chttp_tcp_close(addr);
 		return;
 	}
@@ -264,7 +267,7 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 	chttp_addr_connected(&entry->addr);
 
 	double now = fbr_get_time();
-	entry->expiration = now + _TCP_POOL_AGE_SEC;
+	entry->expiration = now + pool_age;
 
 	struct chttp_tcp_pool_entry *head = RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree,
 		entry);
@@ -338,8 +341,8 @@ chttp_tcp_pool_close(void)
 		size++;
 	}
 
-	fbr_ASSERT(size == _TCP_POOL_SIZE, "_TCP_POOL size fail, got %zu, expected %zu",
-		size, _TCP_POOL_SIZE);
+	fbr_ASSERT(size == _TCP_POOL.stats.size, "_TCP_POOL size fail, got %zu, expected %zu",
+		size, _TCP_POOL.stats.size);
 
 	_TCP_POOL.initialized = 0;
 
