@@ -1,3 +1,5 @@
-fiber_test "Enum tests"
+fiber_test "Gzip tests"
 
-test_enum
+skip_if_not $gzip_enabled
+
+test_gzip

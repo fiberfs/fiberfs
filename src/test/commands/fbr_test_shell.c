@@ -58,11 +58,31 @@ void
 fbr_cmd_shell(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
+	fbr_test_ASSERT(cmd->param_count >= 1, "Missing parameter");
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "shell cmd: '%s'", cmd->params[0].value);
+	const char *shell_cmd = NULL;
+	char buffer[4096];
 
-	int ret = system(cmd->params[0].value);
+	if (cmd->param_count == 1) {
+		shell_cmd = cmd->params[0].value;
+	} else {
+		size_t buffer_len = 0;
+		for (size_t i = 0; i < cmd->param_count; i++) {
+			buffer_len += fbr_snprintf(buffer + buffer_len,
+				sizeof(buffer) - buffer_len, "%s ", cmd->params[i].value);
+			assert(buffer_len < sizeof(buffer));
+		}
+
+		if (buffer_len) {
+			buffer[buffer_len - 1] = '\0';
+		}
+
+		shell_cmd = buffer;
+	}
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "shell cmd: '%s'", shell_cmd);
+
+	int ret = system(shell_cmd);
 
 	fbr_test_ASSERT(WIFEXITED(ret), "shell cmd failed");
 	fbr_test_ERROR(WEXITSTATUS(ret), "shell cmd returned an error");

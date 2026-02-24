@@ -7,6 +7,7 @@
 #include "test/fbr_test_cmd_declare.h"
 
 FBR_TEST_CMD(config_add)
+FBR_TEST_CMD(config_file)
 FBR_TEST_VARF(config)
 
 FBR_TEST_CMD(test_config_simple)

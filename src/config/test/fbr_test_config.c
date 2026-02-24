@@ -44,6 +44,24 @@ fbr_cmd_config_add(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_register_finish(ctx, "config", _sys_finish);
 }
 
+void
+fbr_cmd_config_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	const char *path = cmd->params[0].value;
+
+	size_t ret = fbr_conf_parse(path);
+
+	fbr_config_ok(_CONFIG);
+	assert_zero(_CONFIG->stats.errors);
+
+	fbr_test_logs("config_file '%s'=%zu", path, ret);
+
+	fbr_test_register_finish(ctx, "config", _sys_finish);
+}
+
 char *
 fbr_varf_config(struct fbr_test_context *ctx, struct fbr_test_param *param)
 {

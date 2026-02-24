@@ -64,6 +64,8 @@ size_t fbr_config_parse(struct fbr_config *config, const char *filepath);
 
 #define fbr_conf_add(name, name_len, value, value_len)	\
 	fbr_config_add(_CONFIG, name, name_len, value, value_len)
+#define fbr_conf_parse(path)				\
+	fbr_config_parse(_CONFIG, path)
 #define fbr_conf_get(name, fallback)			\
 	fbr_config_get(_CONFIG, name, fallback)
 #define fbr_conf_get_long(name, fallback)		\
