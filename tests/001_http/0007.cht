@@ -27,7 +27,7 @@ server_end_chunked
 
 random_range 4 32
 
-config_add CHTTP_DPAGE_MIN_SIZE $random
+config_add DEBUG_CHTTP_DPAGE_MIN_SIZE $random
 
 chttp_init_dynamic
 chttp_url /

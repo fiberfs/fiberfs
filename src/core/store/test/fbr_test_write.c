@@ -220,7 +220,7 @@ _write_test(void)
 	fbr_log_ok(fuse_ctx->log);
 	fuse_ctx->log->always_flush = 1;
 
-	fbr_test_conf_add_long("FS_WBUFFER_ALLOC_SIZE", _WBUFFER_SIZE);
+	fbr_test_conf_add_long("DEBUG_FS_WBUFFER_ALLOC_SIZE", _WBUFFER_SIZE);
 
 	size_t __ERROR_WBUFFER = _ERROR_WBUFFER;
 	size_t __ERROR_FLUSH = _ERROR_FLUSH;

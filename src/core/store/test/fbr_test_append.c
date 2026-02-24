@@ -511,7 +511,7 @@ fbr_cmd_append_thread_error_test(struct fbr_test_context *ctx, struct fbr_test_c
 	_APPEND_ERROR_WBUFFER = 5;
 	_APPEND_ERROR_FLUSH = 3;
 
-	fbr_test_conf_add_long("FS_WBUFFER_ALLOC_SIZE", 2);
+	fbr_test_conf_add_long("DEBUG_FS_WBUFFER_ALLOC_SIZE", 2);
 
 	fbr_test_fuse_mock(ctx);
 

@@ -11,7 +11,7 @@
 size_t
 chttp_dpage_size(int min)
 {
-	size_t min_size = fbr_conf_get_ulong("CHTTP_DPAGE_MIN_SIZE", 0);
+	size_t min_size = fbr_conf_get_ulong("DEBUG_CHTTP_DPAGE_MIN_SIZE", 0);
 
 	if (min) {
 		if (min_size) {
