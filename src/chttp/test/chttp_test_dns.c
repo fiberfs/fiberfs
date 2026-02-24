@@ -10,12 +10,10 @@
 
 #include "dns/chttp_dns.h"
 #include "dns/chttp_dns_cache.h"
+#include "config/fbr_config.h"
 
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
-
-extern long _DNS_CACHE_TTL;
-extern size_t _DNS_CACHE_SIZE;
 
 struct chttp_test_dns {
 	unsigned int				magic;
@@ -55,33 +53,6 @@ _dns_init(struct fbr_test_context *ctx)
 	}
 
 	assert(ctx->chttp_test->dns->magic == _DNS_MAGIC);
-}
-
-void
-chttp_test_cmd_dns_ttl(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	assert(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	long ttl = fbr_test_parse_long(cmd->params[0].value);
-
-	_DNS_CACHE_TTL = ttl;
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "DNS ttl %ld", _DNS_CACHE_SIZE);
-}
-
-void
-chttp_test_cmd_dns_cache_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	assert(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	long size = fbr_test_parse_long(cmd->params[0].value);
-	assert(size > 0);
-
-	_DNS_CACHE_SIZE = size;
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "DNS cache size %zu", _DNS_CACHE_SIZE);
 }
 
 void
@@ -138,6 +109,7 @@ chttp_dns_cache_debug(void)
 	struct chttp_dns_cache_entry *dns_entry, *dns_temp;
 	size_t tree_count = 0, tree_sub_count = 0;
 	size_t lru_count = 0, lru_sub_count = 0, free_count = 0, sub_count;
+	size_t cache_size = fbr_conf_get_ulong("DNS_CACHE_SIZE", CHTTP_DNS_CACHE_SIZE);
 
 	RB_FOREACH(dns_entry, chttp_dns_cache_tree, &_DNS_CACHE.cache_tree) {
 		chttp_dns_entry_ok(dns_entry);
@@ -196,7 +168,7 @@ chttp_dns_cache_debug(void)
 		free_count++;
 	}
 	printf("\tFREE count: %zu\n", free_count);
-	printf("\tTOTAL count: %zu (%zu %zu)\n", _DNS_CACHE_SIZE,
+	printf("\tTOTAL count: %zu (%zu %zu)\n", cache_size,
 		free_count + tree_count + tree_sub_count,
 		free_count + lru_count + lru_sub_count);
 

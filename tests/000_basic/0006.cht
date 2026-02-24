@@ -1,6 +1,6 @@
 chttp_test "Multiple DNS test with a small size"
 
-dns_cache_size 3
+config_add DNS_CACHE_SIZE 3
 
 dns_lookup 127.0.0.1
 dns_lookup 127.0.0.2

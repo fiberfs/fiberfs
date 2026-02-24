@@ -9,9 +9,7 @@
 #include "chttp.h"
 #include "dns/chttp_dns.h"
 #include "dns/chttp_dns_cache.h"
-
-long _DNS_CACHE_TTL = CHTTP_DNS_CACHE_TTL;
-size_t _DNS_CACHE_SIZE = CHTTP_DNS_CACHE_SIZE;
+#include "config/fbr_config.h"
 
 struct chttp_dns_cache _DNS_CACHE = {
 	CHTTP_DNS_CACHE_MAGIC,
@@ -48,14 +46,16 @@ _dns_cache_init(void)
 {
 	chttp_dns_cache_ok();
 	assert_zero(_DNS_CACHE.initialized);
-	assert(_DNS_CACHE_SIZE <= CHTTP_DNS_CACHE_SIZE);
 
 	assert(RB_EMPTY(&_DNS_CACHE.cache_tree));
 	assert(TAILQ_EMPTY(&_DNS_CACHE.free_list));
 	assert(TAILQ_EMPTY(&_DNS_CACHE.lru_list));
 
+	size_t cache_size = fbr_conf_get_ulong("DNS_CACHE_SIZE", CHTTP_DNS_CACHE_SIZE);
+	assert(cache_size <= CHTTP_DNS_CACHE_SIZE);
+
 	/* Create the free_list */
-	for (size_t i = 0; i < _DNS_CACHE_SIZE; i++) {
+	for (size_t i = 0; i < cache_size; i++) {
 		assert_zero(_DNS_CACHE.entries[i].magic);
 		TAILQ_INSERT_TAIL(&_DNS_CACHE.free_list, &_DNS_CACHE.entries[i], list_entry);
 	}
@@ -81,7 +81,9 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	assert(host_len);
 	assert(addr_dest);
 
-	if (_DNS_CACHE_TTL <= 0) {
+	long cache_ttl = fbr_conf_get_long("DNS_CACHE_TTL", CHTTP_DNS_CACHE_TTL);
+
+	if (cache_ttl <= 0) {
 		return 0;
 	}
 
@@ -237,7 +239,9 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	assert(host_len);
 	assert(ai_list);
 
-	if (_DNS_CACHE_TTL <= 0) {
+	long cache_ttl = fbr_conf_get_long("DNS_CACHE_TTL", CHTTP_DNS_CACHE_TTL);
+
+	if (cache_ttl <= 0) {
 		return;
 	}
 
@@ -291,7 +295,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	assert(dns_head);
 
 	dns_head->length = count;
-	dns_head->expiration = fbr_get_time() + _DNS_CACHE_TTL;
+	dns_head->expiration = fbr_get_time() + cache_ttl;
 	strncpy(dns_head->hostname, host, host_len + 1);
 
 	TAILQ_INSERT_HEAD(&_DNS_CACHE.lru_list, dns_head, list_entry);
