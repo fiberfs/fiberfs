@@ -142,17 +142,26 @@ _test_config_simple(struct fbr_config *config)
 	long lvalue = fbr_config_get_long(config, "long1", 0);
 	assert(lvalue == 123);
 
+	unsigned long luvalue = fbr_config_get_ulong(config, "long1", 0);
+	assert(luvalue == 123);
+
 	lvalue = fbr_config_get_long(config, "long2", 0);
 	assert(lvalue == -123);
 
 	lvalue = fbr_config_get_long(config, "long3", 0);
 	assert(lvalue == -1);
 
+	luvalue = fbr_config_get_ulong(config, "long3", 0);
+	assert(luvalue == 0);
+
 	lvalue = fbr_config_get_long(config, "long4", 123);
 	assert(lvalue == 123);
 
 	lvalue = fbr_config_get_long(config, "long5", 123);
 	assert(lvalue == 0);
+
+	luvalue = fbr_config_get_ulong(config, "long5", 123);
+	assert(luvalue == 0);
 
 	lvalue = fbr_config_get_long(config, "long6", 123);
 	assert(lvalue == 123);
