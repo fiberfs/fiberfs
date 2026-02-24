@@ -9,7 +9,6 @@
 #include "chttp.h"
 #include "dns/chttp_dns.h"
 #include "dns/chttp_dns_cache.h"
-#include "config/fbr_config.h"
 
 struct chttp_dns_cache _DNS_CACHE = {
 	CHTTP_DNS_CACHE_MAGIC,

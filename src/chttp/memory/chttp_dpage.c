@@ -7,7 +7,6 @@
 #include <stdlib.h>
 
 #include "chttp.h"
-#include "config/fbr_config.h"
 
 size_t
 chttp_dpage_size(int min)

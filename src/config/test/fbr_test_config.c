@@ -11,7 +11,6 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
-#include "config/fbr_config.h"
 
 #include "test/fbr_test.h"
 

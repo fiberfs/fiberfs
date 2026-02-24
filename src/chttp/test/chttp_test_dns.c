@@ -8,9 +8,9 @@
 
 #include <stdlib.h>
 
+#include "fiberfs.h"
 #include "dns/chttp_dns.h"
 #include "dns/chttp_dns_cache.h"
-#include "config/fbr_config.h"
 
 #include "test/fbr_test.h"
 #include "test/chttp_test_cmds.h"
