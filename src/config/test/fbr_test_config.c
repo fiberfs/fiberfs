@@ -139,6 +139,16 @@ _test_config_simple(struct fbr_config *config)
 	lvalue = fbr_config_get_long(config, "long6", 123);
 	assert(lvalue == 123);
 
+	fbr_config_add(config, "long6", 5, "66", 2);
+
+	lvalue = fbr_config_get_long(config, "long6", 123);
+	assert(lvalue == 66);
+
+	fbr_config_add(config, "long6", 5, NULL, 0);
+
+	lvalue = fbr_config_get_long(config, "long6", 123);
+	assert(lvalue == 123);
+
 	for (size_t i = 0; i < 1000; i++) {
 		char key_buffer[32];
 		char value_buffer[128];
