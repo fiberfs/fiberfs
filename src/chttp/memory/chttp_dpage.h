@@ -51,7 +51,6 @@ void chttp_dpage_ptr_reset(struct chttp_dpage_ptr *dptr);
 size_t chttp_dpage_ptr_offset(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr);
 uint8_t *chttp_dpage_ptr_convert(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr);
 void chttp_dpage_free(struct chttp_dpage *dpage);
-extern size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE;
 
 #define chttp_dpage_ok(dpage)	\
 	fbr_magic_check(dpage, CHTTP_DPAGE_MAGIC)

@@ -99,18 +99,7 @@ chttp_test_cmd_chttp_init_dynamic(struct fbr_test_context *ctx, struct fbr_test_
 {
 	fbr_test_context_ok(ctx);
 	chttp_test_context_ok(ctx->chttp_test);
-
-	fbr_test_ERROR(cmd->param_count > 1, "too many parameters");
-	fbr_test_ERROR(ctx->chttp_test->chttp != NULL, "chttp context exists");
-
-	long size = 0;
-
-	if (cmd->param_count == 1) {
-		size = fbr_test_parse_long(cmd->params[0].value);
-		fbr_test_ERROR(size <= 0, "chttp size must be greater than 0");
-	}
-
-	_DEBUG_CHTTP_DPAGE_MIN_SIZE = (size_t)size;
+	fbr_test_ERROR_param_count(cmd, 0);
 
 	ctx->chttp_test->chttp = chttp_context_alloc();
 	chttp_context_ok(ctx->chttp_test->chttp);

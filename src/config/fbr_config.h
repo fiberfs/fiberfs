@@ -58,6 +58,8 @@ void fbr_config_add(struct fbr_config *config, const char *name, size_t name_len
 	const char *value, size_t value_len);
 const char *fbr_config_get(struct fbr_config *config, const char *name, const char *fallback);
 long fbr_config_get_long(struct fbr_config *config, const char *name, long fallback);
+unsigned long fbr_config_get_ulong(struct fbr_config *config, const char *name,
+	unsigned long fallback);
 void fbr_config_free(struct fbr_config *config);
 
 size_t fbr_config_parse(struct fbr_config *config, const char *filepath);
@@ -70,6 +72,8 @@ size_t fbr_config_parse(struct fbr_config *config, const char *filepath);
 	fbr_config_get(_CONFIG, name, fallback)
 #define fbr_conf_get_long(name, fallback)		\
 	fbr_config_get_long(_CONFIG, name, fallback)
+#define fbr_conf_get_ulong(name, fallback)		\
+	fbr_config_get_ulong(_CONFIG, name, fallback)
 
 #define fbr_config_ok(config)		fbr_magic_check(config, FBR_CONFIG_MAGIC)
 #define fbr_config_key_ok(key)		fbr_magic_check(key, FBR_CONFIG_KEY_MAGIC)

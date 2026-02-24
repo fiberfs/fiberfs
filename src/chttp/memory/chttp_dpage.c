@@ -7,21 +7,22 @@
 #include <stdlib.h>
 
 #include "chttp.h"
-
-size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE = 0;
+#include "config/fbr_config.h"
 
 size_t
 chttp_dpage_size(int min)
 {
+	size_t min_size = fbr_conf_get_ulong("CHTTP_DPAGE_MIN_SIZE", 0);
+
 	if (min) {
-		if (_DEBUG_CHTTP_DPAGE_MIN_SIZE) {
-			return _DEBUG_CHTTP_DPAGE_MIN_SIZE;
+		if (min_size) {
+			return min_size;
 		} else {
 			return CHTTP_DPAGE_MIN_SIZE;
 		}
 	} else {
-		if (_DEBUG_CHTTP_DPAGE_MIN_SIZE) {
-			return (sizeof(struct chttp_dpage) + _DEBUG_CHTTP_DPAGE_MIN_SIZE);
+		if (min_size) {
+			return (sizeof(struct chttp_dpage) + min_size);
 		} else {
 			return CHTTP_DPAGE_SIZE;
 		}

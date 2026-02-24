@@ -193,6 +193,21 @@ fbr_config_get_long(struct fbr_config *config, const char *name, long fallback)
 	return key->long_value;
 }
 
+unsigned long
+fbr_config_get_ulong(struct fbr_config *config, const char *name, unsigned long fallback)
+{
+	fbr_config_ok(config);
+	assert(name);
+
+	long value = fbr_config_get_long(config, name, fallback);
+
+	if (value < 0) {
+		return fallback;
+	}
+
+	return value;
+}
+
 static void
 _config_key_free(struct fbr_config_key *key)
 {

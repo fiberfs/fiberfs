@@ -6,7 +6,9 @@ server_read_request
 server_send_response_partial 200
 server_send_random_body 20000 1
 
-chttp_init_dynamic 200
+config_add CHTTP_DPAGE_MIN_SIZE 200
+
+chttp_init_dynamic
 chttp_url /
 chttp_connect $server_host $server_port
 chttp_send
