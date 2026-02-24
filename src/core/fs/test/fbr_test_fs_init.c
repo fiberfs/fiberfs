@@ -136,23 +136,6 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 }
 
 void
-fbr_cmd_fs_test_dentry_ttl_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	long ttl = fbr_test_parse_long(cmd->params[0].value);
-
-	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
-	struct fbr_fs *fs = fuse_ctx->fs;
-	fbr_fs_ok(fs);
-
-	fs->config.dentry_ttl = (double)ttl / 1000.0;
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs dentry ttl %lf", fs->config.dentry_ttl);
-}
-
-void
 fbr_cmd_fs_test_release_all(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_ERROR(cmd->param_count > 1, "Too many params");

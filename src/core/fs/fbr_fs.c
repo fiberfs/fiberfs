@@ -21,11 +21,19 @@ _fs_config_init(struct fbr_fs *fs)
 	assert_dev(fs);
 
 	if (fbr_gzip_enabled()) {
-		fs->config.gzip_index = 1;
+		const char *gzip_index = fbr_conf_get("FS_GZIP_INDEX", "1");
+		if (fbr_is_true(gzip_index)) {
+			fs->config.gzip_index = 1;
+		}
 	}
 
-	fs->config.flush_attempts = 100;
-	fs->config.flush_timeout_sec = 60;
+	long dentry_ttl_msec = fbr_conf_get_long("FS_DENTRY_TTL_MSEC", 0);
+	if (dentry_ttl_msec > 0) {
+		fs->config.dentry_ttl = (double)dentry_ttl_msec / 1000;
+	}
+
+	fs->config.flush_attempts = fbr_conf_get_ulong("FS_FLUSH_ATTEMPTS", 100);
+	fs->config.flush_timeout_sec = fbr_conf_get_ulong("FS_FLUSH_TIMEOUT_SEC", 60);
 }
 
 struct fbr_fs *

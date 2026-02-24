@@ -385,3 +385,25 @@ fbr_check_name(const char *name)
 
 	return 0;
 }
+
+int
+fbr_is_false(const char *string)
+{
+	if (!string || !*string) {
+		return 1;
+	} else if (!strcmp(string, "0")) {
+		return 1;
+	} else if (!strcasecmp(string, "false")) {
+		return 1;
+	} else if (!strcasecmp(string, "null")) {
+		return 1;
+	}
+
+	return 0;
+}
+
+int
+fbr_is_true(const char *string)
+{
+	return !(fbr_is_false(string));
+}

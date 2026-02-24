@@ -37,6 +37,8 @@ size_t fbr_urlencode(const char *input, size_t input_len, char *output, size_t o
 size_t fbr_urldecode(const char *input, size_t input_len, char *output, size_t output_len);
 void fbr_thread_name(const char *name);
 int fbr_check_name(const char *name);
+int fbr_is_false(const char *string);
+int fbr_is_true(const char *string);
 
 #define _FBR_STRINGIFY(_value)			#_value
 #define FBR_STRINGIFY(value)			_FBR_STRINGIFY(value)

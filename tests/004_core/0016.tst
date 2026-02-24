@@ -2,9 +2,10 @@ fiber_test "File reading big and page cache"
 
 # Init
 
+config_add FS_DENTRY_TTL_MSEC 200
+
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir
-fs_test_dentry_ttl_ms 200
 fs_test_fuse_init_root
 
 # Do read

@@ -7,7 +7,6 @@ test_log_size 500000
 
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir
-fs_test_dentry_ttl_ms 0
 fs_test_fuse_init_root
 
 print "### Test 1"

@@ -47,8 +47,8 @@ fbr_fs_dentry_ttl(struct fbr_fs *fs)
 	return fs->config.dentry_ttl;
 }
 
-unsigned int
-fbr_fs_param_value(unsigned int param)
+unsigned long
+fbr_fs_param_value(unsigned long param)
 {
 	if (param == 0) {
 		return INT32_MAX;

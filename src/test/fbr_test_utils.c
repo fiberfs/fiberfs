@@ -318,13 +318,7 @@ fbr_test_is_false(struct fbr_test_param *param)
 {
 	assert(param);
 
-	if (param->len == 0) {
-		return 1;
-	} else if (!strcmp(param->value, "0")) {
-		return 1;
-	} else if (!strcmp(param->value, "false")) {
-		return 1;
-	} else if (!strcmp(param->value, "null")) {
+	if (fbr_is_false(param->value)) {
 		return 1;
 	}
 

@@ -2,12 +2,11 @@ fiber_test "RW test small buffer"
 
 # Init
 
+config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 3
 test_log_always_flush
+
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
-fs_test_dentry_ttl_ms 0
-
-config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 3
 
 # Operations
 

@@ -325,8 +325,8 @@ struct fbr_fs_stats {
 struct fbr_fs_config {
 	fbr_bitflag_t				gzip_index:1;
 	double					dentry_ttl;
-	unsigned int				flush_attempts;
-	unsigned int				flush_timeout_sec;
+	unsigned long				flush_attempts;
+	unsigned long				flush_timeout_sec;
 };
 
 struct fbr_fs {
@@ -368,7 +368,7 @@ void fbr_fs_stat_add(fbr_stats_t *stat);
 void fbr_fs_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value);
 void fbr_fs_stat_sub(fbr_stats_t *stat);
 double fbr_fs_dentry_ttl(struct fbr_fs *fs);
-unsigned int fbr_fs_param_value(unsigned int param);
+unsigned long fbr_fs_param_value(unsigned long param);
 int fbr_fs_timeout_expired(double time_start, double timeout);
 size_t fbr_fs_chunk_size(size_t offset);
 int fbr_fs_is_flag(enum fbr_flush_flags flags, enum fbr_flush_flags value);
