@@ -24,8 +24,6 @@
 #include "cstore/test/fbr_test_cstore_cmds.h"
 #include "log/test/fbr_test_log_cmds.h"
 
-extern int _DEBUG_WBUFFER_ALLOC_SIZE;
-
 static int
 _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
     struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags)
@@ -204,18 +202,4 @@ fbr_cmd_fs_test_rw_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(ret, "fs fuse mount failed: %s", mount);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", mount);
-}
-
-void
-fbr_cmd_fs_test_rw_buffer_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	long value = fbr_test_parse_long(cmd->params[0].value);
-	fbr_test_ASSERT(value > 0, "Buffer size needs to be greater than 0");
-
-	_DEBUG_WBUFFER_ALLOC_SIZE = value;
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs buffer_size: %d", _DEBUG_WBUFFER_ALLOC_SIZE);
 }

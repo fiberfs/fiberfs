@@ -76,6 +76,33 @@ fbr_varf_config(struct fbr_test_context *ctx, struct fbr_test_param *param)
 	return (char*)value;
 }
 
+void
+fbr_test_conf_add(const char *name, const char *value)
+{
+	assert(name);
+
+	size_t name_len = strlen(name);
+	size_t value_len = 0;
+	if (value) {
+		value_len = strlen(value);
+	}
+
+	fbr_conf_add(name, name_len, value, value_len);
+}
+
+void
+fbr_test_conf_add_long(const char *name, long value)
+{
+	assert(name);
+
+	size_t name_len = strlen(name);
+
+	char buffer[32];
+	size_t buffer_len = fbr_bprintf(buffer, "%ld", value);
+
+	fbr_conf_add(name, name_len, buffer, buffer_len);
+}
+
 static void
 _test_config_simple(struct fbr_config *config)
 {

@@ -16,6 +16,7 @@
 
 #include "test/fbr_test.h"
 #include "fbr_test_store_cmds.h"
+#include "config/test/fbr_test_config_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
@@ -25,8 +26,6 @@ struct _write_args {
 	struct fbr_file *file;
 	struct fbr_fio *fio;
 };
-
-extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
 #define _WBUFFER_SIZE		250
 #define _FILE_SIZE		(10 * 1000)
@@ -221,7 +220,7 @@ _write_test(void)
 	fbr_log_ok(fuse_ctx->log);
 	fuse_ctx->log->always_flush = 1;
 
-	_DEBUG_WBUFFER_ALLOC_SIZE = _WBUFFER_SIZE;
+	fbr_test_conf_add_long("FS_WBUFFER_ALLOC_SIZE", _WBUFFER_SIZE);
 
 	size_t __ERROR_WBUFFER = _ERROR_WBUFFER;
 	size_t __ERROR_FLUSH = _ERROR_FLUSH;

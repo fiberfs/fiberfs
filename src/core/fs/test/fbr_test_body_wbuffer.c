@@ -16,6 +16,7 @@
 
 #include "test/fbr_test.h"
 #include "fbr_test_fs_cmds.h"
+#include "config/test/fbr_test_config_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 #define _BODY_TEST_THREADS 10
@@ -34,8 +35,6 @@ static int _STORE_ERROR_THREAD_ID;
 static int _SHARED_FIO;
 static size_t _BODY_CHUNKS;
 static size_t _WBUFFER_ALLOC_SIZE;
-
-extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
 struct _thread_args {
 	struct fbr_fs *fs;
@@ -63,7 +62,7 @@ _test_thread_init(void)
 	_BODY_CHUNKS = (random() % _BODY_TEST_THREADS) + 1;
 	_WBUFFER_ALLOC_SIZE = (random() % (_BODY_WRITE_SIZE * 2)) + 1;
 
-	_DEBUG_WBUFFER_ALLOC_SIZE = _WBUFFER_ALLOC_SIZE;
+	fbr_test_conf_add_long("FS_WBUFFER_ALLOC_SIZE", _WBUFFER_ALLOC_SIZE);
 }
 
 static void

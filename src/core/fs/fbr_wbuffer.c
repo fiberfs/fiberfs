@@ -10,8 +10,6 @@
 #include "fbr_fs.h"
 #include "core/store/fbr_store.h"
 
-int _DEBUG_WBUFFER_ALLOC_SIZE;
-
 void _wbuffers_renew_id(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer,
 	int have_file_lock);
 
@@ -56,8 +54,10 @@ _wbuffer_alloc_buffer(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, siz
 
 	size_t wsize;
 
-	if (_DEBUG_WBUFFER_ALLOC_SIZE) {
-		wsize = _DEBUG_WBUFFER_ALLOC_SIZE;
+	size_t alloc_size = fbr_conf_get_ulong("FS_WBUFFER_ALLOC_SIZE", 0);
+
+	if (alloc_size) {
+		wsize = alloc_size;
 	} else {
 		wsize = fbr_fs_chunk_size(offset);
 	}

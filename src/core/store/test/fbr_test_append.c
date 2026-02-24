@@ -15,6 +15,7 @@
 #include "cstore/fbr_cstore_api.h"
 
 #include "test/fbr_test.h"
+#include "config/test/fbr_test_config_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
@@ -229,8 +230,6 @@ size_t _APPEND_COUNTER;
 ssize_t _APPEND_ERROR_TEST;
 ssize_t _APPEND_ERROR_WBUFFER;
 size_t _APPEND_ERROR_FLUSH;
-
-extern int _DEBUG_WBUFFER_ALLOC_SIZE;
 
 static void
 _append_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
@@ -511,7 +510,8 @@ fbr_cmd_append_thread_error_test(struct fbr_test_context *ctx, struct fbr_test_c
 	_APPEND_ERROR_TEST = 1;
 	_APPEND_ERROR_WBUFFER = 5;
 	_APPEND_ERROR_FLUSH = 3;
-	_DEBUG_WBUFFER_ALLOC_SIZE = 2;
+
+	fbr_test_conf_add_long("FS_WBUFFER_ALLOC_SIZE", 2);
 
 	fbr_test_fuse_mock(ctx);
 
