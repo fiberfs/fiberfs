@@ -31,7 +31,7 @@ cstore_clear 0
 equal $cstore_0_entries 0
 fs_test_release_all
 
-sleep_ms 100
+sleep_ms 250
 
 print "### READ INDEX AND FILE"
 
