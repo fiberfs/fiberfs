@@ -54,10 +54,8 @@ _wbuffer_alloc_buffer(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, siz
 
 	size_t wsize;
 
-	size_t alloc_size = fbr_conf_get_ulong("DEBUG_FS_WBUFFER_ALLOC_SIZE", 0);
-
-	if (alloc_size) {
-		wsize = alloc_size;
+	if (fs->config.debug_wbuffer_size) {
+		wsize = fs->config.debug_wbuffer_size;
 	} else {
 		wsize = fbr_fs_chunk_size(offset);
 	}

@@ -210,6 +210,8 @@ _write_test(void)
 {
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 
+	fbr_test_conf_add_long("DEBUG_FS_WBUFFER_ALLOC_SIZE", _WBUFFER_SIZE);
+
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(test_ctx);
 	fbr_fs_ok(fs);
 
@@ -219,8 +221,6 @@ _write_test(void)
 	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 	fbr_log_ok(fuse_ctx->log);
 	fuse_ctx->log->always_flush = 1;
-
-	fbr_test_conf_add_long("DEBUG_FS_WBUFFER_ALLOC_SIZE", _WBUFFER_SIZE);
 
 	size_t __ERROR_WBUFFER = _ERROR_WBUFFER;
 	size_t __ERROR_FLUSH = _ERROR_FLUSH;
