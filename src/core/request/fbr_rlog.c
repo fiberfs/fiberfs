@@ -36,11 +36,16 @@ fbr_rlog_workspace_alloc(struct fbr_request *request)
 {
 	fbr_request_ok(request);
 	fbr_fuse_context_ok(request->fuse_ctx);
+	fbr_fs_ok(request->fuse_ctx->fs);
 	assert_dev(request->id);
 	assert_zero(request->rlog);
 
-	// TODO pull this from fs->config
-	size_t rlog_size = FBR_RLOG_MIN_SIZE;
+	size_t rlog_size = request->fuse_ctx->fs->config.rlog_size;
+	if (rlog_size < FBR_RLOG_MIN_SIZE) {
+		rlog_size = FBR_RLOG_MIN_SIZE;
+	} else if (rlog_size >= FBR_LOG_SEGMENT_MIN_SIZE) {
+		rlog_size = FBR_LOG_SEGMENT_MIN_SIZE - 1;
+	}
 
 	request->rlog = fbr_workspace_alloc(request->workspace, rlog_size);
 	assert(request->rlog);

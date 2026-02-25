@@ -48,6 +48,7 @@ fbr_fs_config_load(struct fbr_fs *fs)
 
 	fs->config.flush_attempts = fbr_conf_get_ulong("FS_FLUSH_ATTEMPTS", 100);
 	fs->config.flush_timeout_sec = fbr_conf_get_ulong("FS_FLUSH_TIMEOUT_SEC", 60);
+	fs->config.rlog_size = fbr_conf_get_ulong("LOG_BUFFER_SIZE", FBR_RLOG_MIN_SIZE);
 
 	fs->config.debug_wbuffer_size = fbr_conf_get_ulong("DEBUG_FS_WBUFFER_ALLOC_SIZE", 0);
 

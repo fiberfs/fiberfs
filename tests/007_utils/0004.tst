@@ -2,6 +2,8 @@ fiber_test "Log rlog"
 
 test_log_size 150000
 
+config_add LOG_BUFFER_SIZE 1024
+
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir
 

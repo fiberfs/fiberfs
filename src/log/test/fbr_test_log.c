@@ -616,6 +616,9 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_request *request = fbr_test_request_mock();
 	fbr_request_ok(request);
 
+	fbr_test_logs("rlog size: %zu bytes", (request->rlog->log_end - request->rlog->data) *
+		sizeof(*request->rlog->data));
+
 	fbr_rlog(FBR_LOG_TEST, "TEST 1");
 	fbr_rlog(FBR_LOG_TEST, "TEST %d", 2);
 	fbr_rlog(FBR_LOG_TEST, "TEST THREE");

@@ -330,6 +330,7 @@ struct fbr_fs_config {
 	double					dentry_ttl;
 	unsigned long				flush_attempts;
 	unsigned long				flush_timeout_sec;
+	unsigned long				rlog_size;
 
 	unsigned long				debug_wbuffer_size;
 };
