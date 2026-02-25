@@ -104,12 +104,14 @@ _request_init(struct fbr_request *request, fuse_req_t fuse_req, const char *name
 	} else {
 		fbr_fuse_context_ok(request->fuse_ctx);
 	}
+	assert_dev(request->fuse_ctx->fs);
 
 	fbr_workspace_ok(request->workspace);
 	assert_dev(request->workspace->free >= FBR_WORKSPACE_MIN_SIZE);
 	assert_zero_dev(request->workspace->pos);
 
 	fbr_rlog_workspace_alloc(request);
+	fbr_fs_config_load(request->fuse_ctx->fs);
 }
 
 static struct fbr_request *

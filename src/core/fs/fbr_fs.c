@@ -16,10 +16,19 @@
 
 static const struct fbr_store_callbacks _STORE_CALLBACKS_EMPTY;
 
-static void
-_fs_config_init(struct fbr_fs *fs)
+void
+fbr_fs_config_load(struct fbr_fs *fs)
 {
-	assert_dev(fs);
+	fbr_fs_ok(fs);
+
+	struct fbr_config_reader *reader = &fs->config.reader;
+	fbr_config_reader_ok(reader);
+
+	int locked = fbr_config_reader_lock(reader);
+	if (!locked) {
+		assert_dev(reader->init);
+		return;
+	}
 
 	if (fbr_gzip_enabled()) {
 		const char *gzip_index = fbr_conf_get("FS_GZIP_INDEX", "1");
@@ -37,6 +46,8 @@ _fs_config_init(struct fbr_fs *fs)
 	fs->config.flush_timeout_sec = fbr_conf_get_ulong("FS_FLUSH_TIMEOUT_SEC", 60);
 
 	fs->config.debug_wbuffer_size = fbr_conf_get_ulong("DEBUG_FS_WBUFFER_ALLOC_SIZE", 0);
+
+	fbr_config_reader_ready(reader);
 }
 
 struct fbr_fs *
@@ -60,7 +71,10 @@ fbr_fs_alloc(void)
 
 	fs->store = &_STORE_CALLBACKS_EMPTY;
 
-	_fs_config_init(fs);
+	fs->config.reader.magic = FBR_CONFIG_READER_MAGIC;
+	fs->config.reader.update_interval = fbr_conf_get_ulong("CONFIG_UPDATE_INTERVAL", 0);
+
+	fbr_fs_config_load(fs);
 
 	fbr_fs_ok(fs);
 

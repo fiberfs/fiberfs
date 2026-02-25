@@ -138,12 +138,12 @@ extern struct chttp_config CHTTP_CONFIG;
 #define __chttp_attr_printf_p(fpos)	__attribute__((__format__( \
 						__printf__, (fpos), ((fpos) + 1))))
 
-void chttp_load_config(void);
 struct chttp_context *chttp_context_alloc(void);
 void chttp_context_init(struct chttp_context *ctx);
 struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);
 void chttp_context_reset(struct chttp_context *ctx);
 void chttp_context_free(struct chttp_context *ctx);
+void chttp_load_config(void);
 
 void chttp_set_version(struct chttp_context *ctx, enum chttp_version version);
 void chttp_set_method(struct chttp_context *ctx, const char *method);

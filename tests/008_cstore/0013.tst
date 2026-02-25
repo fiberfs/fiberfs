@@ -1,5 +1,7 @@
 fiber_test "cstore server PUT/GET with backend and s3"
 
+config_add CONFIG_UPDATE_INTERVAL 1
+
 cstore_init 0
 
 cstore_enable_server 127.0.0.1 0
@@ -89,3 +91,5 @@ cstore_debug 2
 equal $cstore_0_entries 3
 equal $cstore_1_entries 3
 equal $cstore_2_entries 3
+
+fs_test_stats

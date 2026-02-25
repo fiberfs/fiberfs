@@ -16,6 +16,7 @@
 
 #include "fiberfs.h"
 #include "fbr_path.h"
+#include "config/fbr_config.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "core/request/fbr_request.h"
 #include "data/queue.h"
@@ -323,6 +324,8 @@ struct fbr_fs_stats {
 };
 
 struct fbr_fs_config {
+	struct fbr_config_reader		reader;
+
 	fbr_bitflag_t				gzip_index:1;
 	double					dentry_ttl;
 	unsigned long				flush_attempts;
@@ -364,6 +367,7 @@ void fbr_fs_UNLOCK(struct fbr_fs *fs);
 void fbr_fs_release_all(struct fbr_fs *fs, int release_root_inode);
 void fbr_fs_set_store(struct fbr_fs *fs, const struct fbr_store_callbacks *store);
 void fbr_fs_free(struct fbr_fs *fs);
+void fbr_fs_config_load(struct fbr_fs *fs);
 
 void fbr_fs_stat_add_count(fbr_stats_t *stat, fbr_stats_t value);
 void fbr_fs_stat_add(fbr_stats_t *stat);

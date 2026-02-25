@@ -227,6 +227,10 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(chunk_slabs);
 	_FS_TEST_STAT_PRINT(file_ptr_slabs);
 	_FS_TEST_STAT_PRINT(buffers);
+
+	fbr_test_logs("fs.config.reader.updates: %lu (%lu,%lu)",
+		fs->config.reader.updates, fs->config.reader.attempts,
+		fs->config.reader.cas_race);
 }
 
 void
