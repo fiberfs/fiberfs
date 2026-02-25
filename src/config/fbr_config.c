@@ -322,5 +322,9 @@ fbr_config_reader_ready(struct fbr_config_reader *reader)
 	fbr_config_reader_ok(reader);
 	assert(reader->updates);
 
+	if (reader->init) {
+		return;
+	}
+
 	reader->init = 1;
 }
