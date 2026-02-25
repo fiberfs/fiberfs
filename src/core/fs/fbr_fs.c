@@ -10,6 +10,7 @@
 #include "fiberfs.h"
 #include "fbr_fs.h"
 #include "compress/fbr_gzip.h"
+#include "config/fbr_config.h"
 #include "core/request/fbr_request.h"
 #include "core/store/fbr_store.h"
 

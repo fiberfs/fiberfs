@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "chttp.h"
+#include "config/fbr_config.h"
 #include "dns/chttp_dns_cache.h"
 #include "network/chttp_tcp_pool.h"
 

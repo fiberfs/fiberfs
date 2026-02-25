@@ -14,7 +14,6 @@ typedef unsigned int fbr_bitflag_t;
 typedef unsigned long fbr_inode_t;
 typedef unsigned long fbr_stats_t;
 
-#include "config/fbr_config.h"
 #include "utils/fbr_assert.h"
 #include "utils/fbr_id.h"
 #include "utils/fbr_utils.h"
