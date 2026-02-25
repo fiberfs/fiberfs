@@ -34,12 +34,16 @@ fbr_fs_config_load(struct fbr_fs *fs)
 		const char *gzip_index = fbr_conf_get("FS_GZIP_INDEX", "1");
 		if (fbr_is_true(gzip_index)) {
 			fs->config.gzip_index = 1;
+		} else {
+			fs->config.gzip_index = 0;
 		}
 	}
 
 	long dentry_ttl_msec = fbr_conf_get_long("FS_DENTRY_TTL_MSEC", 0);
 	if (dentry_ttl_msec > 0) {
 		fs->config.dentry_ttl = (double)dentry_ttl_msec / 1000;
+	} else {
+		fs->config.dentry_ttl = 0;
 	}
 
 	fs->config.flush_attempts = fbr_conf_get_ulong("FS_FLUSH_ATTEMPTS", 100);

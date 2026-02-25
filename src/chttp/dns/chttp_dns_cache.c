@@ -96,7 +96,6 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	assert(_DNS_CACHE.initialized);
 
 	long cache_ttl = CHTTP_CONFIG.dns_cache_ttl;
-
 	if (cache_ttl <= 0) {
 		_dns_cache_UNLOCK();
 		return 0;
