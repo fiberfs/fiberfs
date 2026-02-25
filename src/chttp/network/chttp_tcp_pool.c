@@ -43,11 +43,14 @@ _tcp_pool_init(void)
 	chttp_tcp_pool_ok();
 	assert_zero(_TCP_POOL.initialized);
 
+	chttp_load_config();
+	assert_dev(CHTTP_CONFIG.init);
+
 	assert(RB_EMPTY(&_TCP_POOL.pool_tree));
 	assert(TAILQ_EMPTY(&_TCP_POOL.free_list));
 	assert(TAILQ_EMPTY(&_TCP_POOL.lru_list));
 
-	size_t pool_size = fbr_conf_get_ulong("TCP_POOL_SIZE", CHTTP_TCP_POOL_SIZE);
+	size_t pool_size = CHTTP_CONFIG.tcp_pool_size;
 	assert(pool_size <= CHTTP_TCP_POOL_SIZE);
 
 	/* Create the free_list */
@@ -239,20 +242,21 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 	assert(addr->resolved);
 	assert_zero(addr->listen);
 
-	long pool_age_ms = fbr_conf_get_long("TCP_POOL_AGE_MSEC", CHTTP_TCP_POOL_AGE_MSEC);
-	double pool_age = (double)pool_age_ms / 1000;
-
-	if (pool_age <= 0) {
-		chttp_tcp_close(addr);
-		return;
-	}
-
 	_tcp_pool_LOCK();
 
 	if (!_TCP_POOL.initialized) {
 		_tcp_pool_init();
 	}
 	assert(_TCP_POOL.initialized);
+
+	long pool_age_msec = CHTTP_CONFIG.tcp_pool_age_msec;
+	double pool_age = (double)pool_age_msec / 1000;
+
+	if (pool_age <= 0) {
+		chttp_tcp_close(addr);
+		_tcp_pool_UNLOCK();
+		return;
+	}
 
 	struct chttp_tcp_pool_entry *entry = _tcp_pool_get_entry();
 	if (!entry) {

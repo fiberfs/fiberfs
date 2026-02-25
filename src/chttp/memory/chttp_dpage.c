@@ -11,8 +11,9 @@
 size_t
 chttp_dpage_size(int min)
 {
-	// TODO read this indirectly so we dont overload config
-	size_t min_size = fbr_conf_get_ulong("DEBUG_CHTTP_DPAGE_MIN_SIZE", 0);
+	assert(CHTTP_CONFIG.init);
+
+	size_t min_size = CHTTP_CONFIG.debug_dpage_min_size;
 
 	if (min) {
 		if (min_size) {

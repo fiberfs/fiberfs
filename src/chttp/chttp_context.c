@@ -7,10 +7,52 @@
 #include <stdlib.h>
 
 #include "chttp.h"
+#include "dns/chttp_dns_cache.h"
+#include "network/chttp_tcp_pool.h"
+
+struct chttp_config CHTTP_CONFIG;
+
+void
+chttp_load_config(void)
+{
+	long now = fbr_get_time();
+	long last_update = CHTTP_CONFIG.last_update;
+
+	long update_interval = CHTTP_CONFIG.update_interval;
+	if (!update_interval) {
+		update_interval = CHTTP_CONFIG_RELOAD_SEC;
+	}
+	assert(update_interval > 0);
+
+	fbr_atomic_add(&CHTTP_CONFIG.attempts, 1);
+
+	if (now - last_update < update_interval) {
+		return;
+	}
+	assert_dev(now > last_update);
+
+	long previous = fbr_compare_swap(&CHTTP_CONFIG.last_update, last_update, now);
+	if (previous != last_update) {
+		return;
+	}
+
+	CHTTP_CONFIG.tcp_pool_age_msec = fbr_conf_get_long("TCP_POOL_AGE_MSEC",
+		CHTTP_TCP_POOL_AGE_MSEC);
+	CHTTP_CONFIG.tcp_pool_size = fbr_conf_get_ulong("TCP_POOL_SIZE", CHTTP_TCP_POOL_SIZE);
+	CHTTP_CONFIG.dns_cache_ttl = fbr_conf_get_long("DNS_CACHE_TTL", CHTTP_DNS_CACHE_TTL);
+	CHTTP_CONFIG.dns_cache_size = fbr_conf_get_ulong("DNS_CACHE_SIZE", CHTTP_DNS_CACHE_SIZE);
+	CHTTP_CONFIG.debug_dpage_min_size = fbr_conf_get_ulong("DEBUG_CHTTP_DPAGE_MIN_SIZE", 0);
+
+	CHTTP_CONFIG.updates++;
+	CHTTP_CONFIG.init = 1;
+}
 
 static void
 _context_init_size(struct chttp_context *ctx, size_t dpage_size)
 {
+	chttp_load_config();
+	assert_dev(CHTTP_CONFIG.init);
+
 	explicit_bzero(ctx, CHTTP_CTX_SIZE);
 
 	ctx->magic = CHTTP_CTX_MAGIC;

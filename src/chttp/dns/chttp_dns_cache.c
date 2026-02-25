@@ -7,8 +7,8 @@
 #include <stdio.h>
 
 #include "chttp.h"
-#include "dns/chttp_dns.h"
-#include "dns/chttp_dns_cache.h"
+#include "chttp_dns.h"
+#include "chttp_dns_cache.h"
 
 struct chttp_dns_cache _DNS_CACHE = {
 	CHTTP_DNS_CACHE_MAGIC,
@@ -46,11 +46,14 @@ _dns_cache_init(void)
 	chttp_dns_cache_ok();
 	assert_zero(_DNS_CACHE.initialized);
 
+	chttp_load_config();
+	assert_dev(CHTTP_CONFIG.init);
+
 	assert(RB_EMPTY(&_DNS_CACHE.cache_tree));
 	assert(TAILQ_EMPTY(&_DNS_CACHE.free_list));
 	assert(TAILQ_EMPTY(&_DNS_CACHE.lru_list));
 
-	size_t cache_size = fbr_conf_get_ulong("DNS_CACHE_SIZE", CHTTP_DNS_CACHE_SIZE);
+	size_t cache_size = CHTTP_CONFIG.dns_cache_size;
 	assert(cache_size <= CHTTP_DNS_CACHE_SIZE);
 
 	/* Create the free_list */
@@ -59,6 +62,7 @@ _dns_cache_init(void)
 		TAILQ_INSERT_TAIL(&_DNS_CACHE.free_list, &_DNS_CACHE.entries[i], list_entry);
 	}
 
+	_DNS_CACHE.stats.size = cache_size;
 	_DNS_CACHE.initialized = 1;
 }
 
@@ -80,12 +84,6 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	assert(host_len);
 	assert(addr_dest);
 
-	long cache_ttl = fbr_conf_get_long("DNS_CACHE_TTL", CHTTP_DNS_CACHE_TTL);
-
-	if (cache_ttl <= 0) {
-		return 0;
-	}
-
 	if (host_len >= CHTTP_DNS_CACHE_HOST_MAX) {
 		fbr_atomic_add(&_DNS_CACHE.stats.err_too_long, 1);
 		return 0;
@@ -97,6 +95,13 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 		_dns_cache_init();
 	}
 	assert(_DNS_CACHE.initialized);
+
+	long cache_ttl = CHTTP_CONFIG.dns_cache_ttl;
+
+	if (cache_ttl <= 0) {
+		_dns_cache_UNLOCK();
+		return 0;
+	}
 
 	_DNS_CACHE.stats.lookups++;
 
@@ -238,12 +243,6 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	assert(host_len);
 	assert(ai_list);
 
-	long cache_ttl = fbr_conf_get_long("DNS_CACHE_TTL", CHTTP_DNS_CACHE_TTL);
-
-	if (cache_ttl <= 0) {
-		return;
-	}
-
 	if (host_len >= CHTTP_DNS_CACHE_HOST_MAX) {
 		fbr_atomic_add(&_DNS_CACHE.stats.err_too_long, 1);
 		return;
@@ -256,6 +255,12 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	}
 	assert(_DNS_CACHE.initialized);
 
+	long cache_ttl = CHTTP_CONFIG.dns_cache_ttl;
+	if (cache_ttl <= 0) {
+		_dns_cache_UNLOCK();
+		return;
+	}
+
 	struct addrinfo *ai_entry;
 	struct chttp_dns_cache_entry *dns_head = NULL;
 	struct chttp_dns_cache_entry *dns_last = NULL;
@@ -267,6 +272,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 		if (!dns_entry) {
 			_dns_free_entry(dns_head);
 			_DNS_CACHE.stats.err_alloc++;
+			_dns_cache_UNLOCK();
 			return;
 		}
 

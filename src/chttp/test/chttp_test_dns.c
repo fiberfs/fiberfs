@@ -109,7 +109,6 @@ chttp_dns_cache_debug(void)
 	struct chttp_dns_cache_entry *dns_entry, *dns_temp;
 	size_t tree_count = 0, tree_sub_count = 0;
 	size_t lru_count = 0, lru_sub_count = 0, free_count = 0, sub_count;
-	size_t cache_size = fbr_conf_get_ulong("DNS_CACHE_SIZE", CHTTP_DNS_CACHE_SIZE);
 
 	RB_FOREACH(dns_entry, chttp_dns_cache_tree, &_DNS_CACHE.cache_tree) {
 		chttp_dns_entry_ok(dns_entry);
@@ -168,7 +167,7 @@ chttp_dns_cache_debug(void)
 		free_count++;
 	}
 	printf("\tFREE count: %zu\n", free_count);
-	printf("\tTOTAL count: %zu (%zu %zu)\n", cache_size,
+	printf("\tTOTAL count: %zu (%zu %zu)\n", _DNS_CACHE.stats.size,
 		free_count + tree_count + tree_sub_count,
 		free_count + lru_count + lru_sub_count);
 

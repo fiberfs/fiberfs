@@ -51,6 +51,7 @@ struct chttp_dns_stats {
 	size_t					lru;
 	size_t					err_too_long;
 	size_t					err_alloc;
+	size_t					size;
 };
 
 RB_HEAD(chttp_dns_cache_tree, chttp_dns_cache_entry);
