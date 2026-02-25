@@ -627,8 +627,6 @@ fbr_cmd_test_config_reader(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_config_reader_ready(&reader);
 	assert(reader.init);
 
-	reader.update_interval = 1;
-
 	locked = fbr_config_reader_lock(&reader);
 
 	fbr_test_logs("*** update 0s");
@@ -639,6 +637,8 @@ fbr_cmd_test_config_reader(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert_zero(locked);
 	assert(reader.updates == 1);
 	assert(reader.attempts == 2);
+
+	reader.update_interval = 1;
 
 	fbr_test_sleep_ms(1020);
 
@@ -653,6 +653,8 @@ fbr_cmd_test_config_reader(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert(reader.updates == 2);
 	assert(reader.attempts == 3);
 
+	reader.update_interval = 5;
+
 	locked = fbr_config_reader_lock(&reader);
 
 	fbr_test_logs("*** update 1s again");
@@ -663,6 +665,8 @@ fbr_cmd_test_config_reader(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert_zero(locked);
 	assert(reader.updates == 2);
 	assert(reader.attempts == 4);
+
+	reader.update_interval = 1;
 
 	fbr_test_sleep_ms(1020);
 
