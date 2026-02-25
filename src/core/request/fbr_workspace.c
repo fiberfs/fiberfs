@@ -9,6 +9,7 @@
 
 #include "fiberfs.h"
 #include "fbr_workspace.h"
+#include "config/fbr_config.h"
 
 #define _WORKSPACE_SIZE				(1024 * 16)
 #define _WORKSPACE_MIN_SIZE			(sizeof(struct fbr_workspace) + \
@@ -17,10 +18,14 @@
 size_t
 fbr_workspace_size(void)
 {
-	assert_dev(_WORKSPACE_SIZE > _WORKSPACE_MIN_SIZE);
+	static_ASSERT(_WORKSPACE_SIZE > _WORKSPACE_MIN_SIZE);
 
-	// TODO make this a config param
-	return sizeof(struct fbr_workspace) + _WORKSPACE_SIZE;
+	size_t workspace_size = fbr_conf_get_ulong("WORKSPACE_SIZE", _WORKSPACE_SIZE);
+	if (workspace_size < _WORKSPACE_MIN_SIZE) {
+		workspace_size = FBR_WORKSPACE_MIN_SIZE;
+	}
+
+	return workspace_size;
 }
 
 struct fbr_workspace *

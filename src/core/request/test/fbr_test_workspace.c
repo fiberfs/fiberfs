@@ -10,12 +10,15 @@
 #include "core/request/fbr_workspace.h"
 
 #include "test/fbr_test.h"
+#include "config/test/fbr_test_config_cmds.h"
 
 void
 fbr_cmd_workspace_test_asserts(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
+
+	size_t workspace_default = fbr_workspace_size();
 
 	fbr_test_logs("FBR_WORKSPACE_MIN_SIZE=%d", FBR_WORKSPACE_MIN_SIZE);
 	fbr_test_logs("FBR_PATH_MAX=%d", FBR_PATH_MAX);
@@ -24,6 +27,18 @@ fbr_cmd_workspace_test_asserts(struct fbr_test_context *ctx, struct fbr_test_cmd
 	fbr_test_logs("sizeof(struct fbr_workspace)=%zu", sizeof(struct fbr_workspace));
 
 	fbr_ASSERT(FBR_PATH_MAX <= FBR_WORKSPACE_MIN_SIZE, "FBR_PATH_MAX > FBR_WORKSPACE_MIN_SIZE");
+
+	fbr_test_conf_add_long("WORKSPACE_SIZE", 6500);
+	fbr_test_logs("WORKSPACE_SIZE(6500)=%zu", fbr_workspace_size());
+	assert(fbr_workspace_size() == 6500);
+
+	fbr_test_conf_add_long("WORKSPACE_SIZE", 0);
+	fbr_test_logs("WORKSPACE_SIZE(0)=%zu", fbr_workspace_size());
+	assert(fbr_workspace_size() >= FBR_WORKSPACE_MIN_SIZE);
+
+	fbr_test_conf_add("WORKSPACE_SIZE", NULL);
+	fbr_test_logs("WORKSPACE_SIZE(NULL)=%zu", fbr_workspace_size());
+	assert(fbr_workspace_size() == workspace_default);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "workspace_test_asserts done");
 }
