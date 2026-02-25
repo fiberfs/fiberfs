@@ -1,3 +1,0 @@
-chttp_test "CHTTP config test"
-
-chttp_config_test

@@ -47,7 +47,6 @@ _dns_cache_init(void)
 	assert_zero(_DNS_CACHE.initialized);
 
 	chttp_load_config();
-	assert_dev(CHTTP_CONFIG.init);
 
 	assert(RB_EMPTY(&_DNS_CACHE.cache_tree));
 	assert(TAILQ_EMPTY(&_DNS_CACHE.free_list));

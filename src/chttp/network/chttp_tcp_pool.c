@@ -44,7 +44,6 @@ _tcp_pool_init(void)
 	assert_zero(_TCP_POOL.initialized);
 
 	chttp_load_config();
-	assert_dev(CHTTP_CONFIG.init);
 
 	assert(RB_EMPTY(&_TCP_POOL.pool_tree));
 	assert(TAILQ_EMPTY(&_TCP_POOL.free_list));

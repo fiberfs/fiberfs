@@ -13,6 +13,7 @@
 #include "data/tree.h"
 
 #define FBR_CONFIG_MAX_FILE_LINE	4096
+#define FBRP_CONFIG_RELOAD_SEC		3
 
 struct fbr_config_key {
 	unsigned int			magic;
@@ -51,6 +52,20 @@ struct fbr_config {
 	} stats;
 };
 
+struct fbr_config_reader {
+	unsigned int			magic;
+#define FBR_CONFIG_READER_MAGIC		0x12F43767
+
+	volatile int			init;
+
+	long				last_update;
+	long				update_interval;
+
+	volatile fbr_stats_t		updates;
+	fbr_stats_t			attempts;
+	fbr_stats_t			cas_race;
+};
+
 extern struct fbr_config *_CONFIG;
 
 struct fbr_config *fbr_config_alloc(void);
@@ -63,6 +78,9 @@ unsigned long fbr_config_get_ulong(struct fbr_config *config, const char *name,
 void fbr_config_free(struct fbr_config *config);
 
 size_t fbr_config_parse(struct fbr_config *config, const char *filepath);
+
+int fbr_config_reader_lock(struct fbr_config_reader *reader);
+void fbr_config_reader_ready(struct fbr_config_reader *reader);
 
 #define fbr_conf_add(name, name_len, value, value_len)	\
 	fbr_config_add(_CONFIG, name, name_len, value, value_len)
@@ -77,5 +95,6 @@ size_t fbr_config_parse(struct fbr_config *config, const char *filepath);
 
 #define fbr_config_ok(config)		fbr_magic_check(config, FBR_CONFIG_MAGIC)
 #define fbr_config_key_ok(key)		fbr_magic_check(key, FBR_CONFIG_KEY_MAGIC)
+#define fbr_config_reader_ok(reader)	fbr_magic_check(reader, FBR_CONFIG_READER_MAGIC)
 
 #endif /* _FBR_CONFIG_H_INCLUDED_ */

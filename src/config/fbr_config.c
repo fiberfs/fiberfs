@@ -271,3 +271,56 @@ fbr_config_free(struct fbr_config *config)
 		_CONFIG = NULL;
 	}
 }
+
+int
+fbr_config_reader_lock(struct fbr_config_reader *reader)
+{
+	fbr_config_reader_ok(reader);
+
+	long now = fbr_get_time();
+	long last_update = reader->last_update;
+
+	long update_interval = reader->update_interval;
+	if (!update_interval) {
+		update_interval = FBRP_CONFIG_RELOAD_SEC;
+	}
+	assert(update_interval > 0);
+
+	fbr_atomic_add(&reader->attempts, 1);
+
+	if (now - last_update < update_interval) {
+		while (!reader->init) {
+			fbr_sleep_ms(1);
+		}
+		return 0;
+	}
+	assert_dev(now > last_update);
+
+	long previous = fbr_compare_swap(&reader->last_update, last_update, now);
+	if (previous != last_update) {
+		while (!reader->init) {
+			fbr_sleep_ms(1);
+		}
+		fbr_atomic_add(&reader->cas_race, 1);
+		return 0;
+	}
+
+	if (!reader->updates) {
+		assert_zero(reader->init);
+	} else {
+		assert(reader->init);
+	}
+
+	reader->updates++;
+
+	return 1;
+}
+
+void
+fbr_config_reader_ready(struct fbr_config_reader *reader)
+{
+	fbr_config_reader_ok(reader);
+	assert(reader->updates);
+
+	reader->init = 1;
+}

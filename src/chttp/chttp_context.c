@@ -12,28 +12,17 @@
 #include "network/chttp_tcp_pool.h"
 
 struct chttp_config CHTTP_CONFIG;
+static struct fbr_config_reader _READER = {
+	FBR_CONFIG_READER_MAGIC,
+	0, 0, 0, 0, 0, 0
+};
 
 void
 chttp_load_config(void)
 {
-	long now = fbr_get_time();
-	long last_update = CHTTP_CONFIG.last_update;
-
-	long update_interval = CHTTP_CONFIG.update_interval;
-	if (!update_interval) {
-		update_interval = CHTTP_CONFIG_RELOAD_SEC;
-	}
-	assert(update_interval > 0);
-
-	fbr_atomic_add(&CHTTP_CONFIG.attempts, 1);
-
-	if (now - last_update < update_interval) {
-		return;
-	}
-	assert_dev(now > last_update);
-
-	long previous = fbr_compare_swap(&CHTTP_CONFIG.last_update, last_update, now);
-	if (previous != last_update) {
+	int locked = fbr_config_reader_lock(&_READER);
+	if (!locked) {
+		assert_dev(_READER.init);
 		return;
 	}
 
@@ -44,15 +33,15 @@ chttp_load_config(void)
 	CHTTP_CONFIG.dns_cache_size = fbr_conf_get_ulong("DNS_CACHE_SIZE", CHTTP_DNS_CACHE_SIZE);
 	CHTTP_CONFIG.debug_dpage_min_size = fbr_conf_get_ulong("DEBUG_CHTTP_DPAGE_MIN_SIZE", 0);
 
-	CHTTP_CONFIG.updates++;
 	CHTTP_CONFIG.init = 1;
+
+	fbr_config_reader_ready(&_READER);
 }
 
 static void
 _context_init_size(struct chttp_context *ctx, size_t dpage_size)
 {
 	chttp_load_config();
-	assert_dev(CHTTP_CONFIG.init);
 
 	explicit_bzero(ctx, CHTTP_CTX_SIZE);
 

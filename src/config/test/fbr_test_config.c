@@ -556,3 +556,154 @@ fbr_cmd_test_config_thread(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_logs("test_config_thread passed");
 }
+
+#define _CONFIG_READER_THREADS	4
+volatile size_t _CONFIG_READER_COUNT;
+
+static void *
+_config_thread(void *arg)
+{
+	assert(arg);
+
+	struct fbr_config_reader *reader = arg;
+	fbr_config_reader_ok(reader);
+
+	size_t id = fbr_atomic_add(&_CONFIG_READER_COUNT, 1);
+
+	fbr_test_logs("Thread %zu started", id);
+
+	while (_CONFIG_READER_COUNT < _CONFIG_READER_THREADS) {
+		if (fbr_test_is_valgrind()) {
+			fbr_test_sleep_ms(1);
+		}
+		continue;
+	}
+
+	while (reader->updates < 2) {
+		int locked = fbr_config_reader_lock(reader);
+		if (locked) {
+			fbr_test_logs("Thread %zu got config lock: %lu", id, reader->updates);
+			fbr_config_reader_ready(reader);
+			reader->update_interval = 1;
+		}
+		assert(reader->init);
+	}
+
+	return NULL;
+}
+
+void
+fbr_cmd_test_config_reader(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	assert(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_config_reader reader;
+	fbr_zero(&reader);
+	reader.magic = FBR_CONFIG_READER_MAGIC;
+
+	fbr_test_logs("*** startup");
+	fbr_test_logs("reader.updates=%lu", reader.updates);
+	fbr_test_logs("reader.attempts=%lu", reader.attempts);
+
+	assert_zero(reader.init);
+	assert_zero(reader.updates);
+	assert_zero(reader.attempts);
+
+	int locked = fbr_config_reader_lock(&reader);
+
+	fbr_test_logs("*** init");
+	fbr_test_logs("locked=%d", locked);
+	fbr_test_logs("reader.init=%d", reader.init);
+	fbr_test_logs("reader.updates=%lu", reader.updates);
+	fbr_test_logs("reader.attempts=%lu", reader.attempts);
+
+	assert(locked);
+	assert_zero(reader.init);
+	assert(reader.updates == 1);
+	assert(reader.attempts == 1);
+	assert_zero(reader.update_interval);
+
+	fbr_config_reader_ready(&reader);
+	assert(reader.init);
+
+	reader.update_interval = 1;
+
+	locked = fbr_config_reader_lock(&reader);
+
+	fbr_test_logs("*** update 0s");
+	fbr_test_logs("locked=%d", locked);
+	fbr_test_logs("reader.updates=%lu", reader.updates);
+	fbr_test_logs("reader.attempts=%lu", reader.attempts);
+
+	assert_zero(locked);
+	assert(reader.updates == 1);
+	assert(reader.attempts == 2);
+
+	fbr_test_sleep_ms(1020);
+
+	locked = fbr_config_reader_lock(&reader);
+
+	fbr_test_logs("*** update 1s");
+	fbr_test_logs("locked=%d", locked);
+	fbr_test_logs("reader.updates=%lu", reader.updates);
+	fbr_test_logs("reader.attempts=%lu", reader.attempts);
+
+	assert(locked);
+	assert(reader.updates == 2);
+	assert(reader.attempts == 3);
+
+	locked = fbr_config_reader_lock(&reader);
+
+	fbr_test_logs("*** update 1s again");
+	fbr_test_logs("locked=%d", locked);
+	fbr_test_logs("reader.updates=%lu", reader.updates);
+	fbr_test_logs("reader.attempts=%lu", reader.attempts);
+
+	assert_zero(locked);
+	assert(reader.updates == 2);
+	assert(reader.attempts == 4);
+
+	fbr_test_sleep_ms(1020);
+
+	locked = fbr_config_reader_lock(&reader);
+
+	fbr_test_logs("*** init 3s");
+	fbr_test_logs("locked=%d", locked);
+	fbr_test_logs("reader.updates=%lu", reader.updates);
+	fbr_test_logs("reader.attempts=%lu", reader.attempts);
+
+	assert(locked);
+	assert(reader.updates == 3);
+	assert(reader.attempts == 5);
+
+	fbr_zero(&reader);
+	reader.magic = FBR_CONFIG_READER_MAGIC;
+
+	pthread_t threads[_CONFIG_READER_THREADS];
+	assert(fbr_array_len(threads) > 0);
+	assert_zero(_CONFIG_READER_COUNT);
+
+	for (size_t i = 0; i < fbr_array_len(threads); i++) {
+		pt_assert(pthread_create(&threads[i], NULL, _config_thread, &reader));
+	}
+
+	fbr_test_logs("*** threads created: %zu", fbr_array_len(threads));
+
+	for (size_t i = 0; i < fbr_array_len(threads); i++) {
+		pt_assert(pthread_join(threads[i], NULL));
+	}
+
+	fbr_test_logs("*** all threads joined");
+	assert(_CONFIG_READER_COUNT == 4);
+
+	fbr_test_logs("reader.init=%d", reader.init);
+	fbr_test_logs("reader.updates=%lu", reader.updates);
+	fbr_test_logs("reader.attempts=%lu", reader.attempts);
+	fbr_test_logs("reader.cas_race=%lu", reader.cas_race);
+
+	assert(reader.init);
+	assert(reader.updates == 2);
+
+	fbr_test_logs("test_config_reader passed");
+}
