@@ -186,6 +186,8 @@ struct fbr_cstore_config {
 	unsigned long				timeout_connect_ms;
 	unsigned long				timeout_transfer_ms;
 	unsigned long				keep_alive_sec;
+
+	unsigned long				rlog_size;
 };
 
 extern struct fbr_cstore_config _CSTORE_CONFIG;

@@ -65,8 +65,7 @@ fbr_wlog_workspace_alloc(struct fbr_cstore_worker *worker, struct fbr_log *log)
 	assert_dev(worker->request_id);
 	assert_zero(worker->rlog);
 
-	// TODO see above
-	size_t rlog_size = FBR_RLOG_MIN_SIZE;
+	size_t rlog_size = _CSTORE_CONFIG.rlog_size;
 
 	worker->rlog = fbr_workspace_alloc(worker->workspace, rlog_size);
 	assert(worker->rlog);
