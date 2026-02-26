@@ -22,6 +22,7 @@ typedef uint64_t fbr_hash_t;
 void fbr_sleep_ms(double ms);
 double fbr_get_time(void);
 double fbr_convert_timespec(struct timespec *ts);
+void fbr_convert_time(double timestamp, struct timespec *ts);
 void fbr_timespec_add_clock(struct timespec *ts);
 void fbr_sleep_backoff(unsigned int attempts);
 unsigned long fbr_parse_ulong(const char *str, size_t length, int *error);
@@ -39,6 +40,7 @@ void fbr_thread_name(const char *name);
 int fbr_check_name(const char *name);
 int fbr_is_false(const char *string);
 int fbr_is_true(const char *string);
+unsigned long fbr_ulong2octal(unsigned long value);
 
 #define _FBR_STRINGIFY(_value)			#_value
 #define FBR_STRINGIFY(value)			_FBR_STRINGIFY(value)

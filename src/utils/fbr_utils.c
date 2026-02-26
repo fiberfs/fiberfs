@@ -54,9 +54,18 @@ fbr_convert_timespec(struct timespec *ts)
 	assert(ts);
 
 	double timestamp = (double)ts->tv_sec;
-	timestamp += (double)ts->tv_nsec / (1000 * 1000 * 1000);
+	timestamp += (double)ts->tv_nsec / (1000.0 * 1000.0 * 1000.0);
 
 	return timestamp;
+}
+
+void
+fbr_convert_time(double timestamp, struct timespec *ts)
+{
+	assert(ts);
+
+	ts->tv_sec = (long)timestamp;
+	ts->tv_nsec = (long)((timestamp - (double)ts->tv_sec) * (1000.0 * 1000.0 * 1000.0));
 }
 
 void
@@ -406,4 +415,20 @@ int
 fbr_is_true(const char *string)
 {
 	return !(fbr_is_false(string));
+}
+
+unsigned long
+fbr_ulong2octal(unsigned long value)
+{
+	unsigned long octal = 0;
+	unsigned long pow8 = 1;
+
+	while (value > 0) {
+		unsigned long digit = value % 10;
+		octal += digit * pow8;
+		pow8 *= 8;
+		value /= 10;
+	}
+
+	return octal;
 }

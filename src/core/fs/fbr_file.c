@@ -537,6 +537,12 @@ fbr_file_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st)
 	st->st_uid = file->uid;
 	st->st_gid = file->gid;
 
+	// TODO pull from file and wire this into the index
+	double now = fbr_get_time();
+	fbr_convert_time(now, &st->st_atim);
+	fbr_convert_time(now, &st->st_mtim);
+	fbr_convert_time(now, &st->st_ctim);
+
 	fbr_file_UNLOCK(file);
 
 	st->st_nlink = 1;

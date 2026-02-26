@@ -413,6 +413,70 @@ fbr_cmd_sys_stat_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_stat_size done %ld", st.st_size);
 }
 
+void
+fbr_cmd_sys_stat_mode(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ERROR(cmd->param_count == 0, "Need at least 1 parameter");
+	fbr_test_ERROR(cmd->param_count > 2, "Too many parameters");
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	char *filename = cmd->params[0].value;
+	fbr_test_ERROR_string(filename);
+
+	struct stat st;
+	int ret = stat(filename, &st);
+	fbr_test_ERROR(ret, "stat failed for %s", filename);
+
+	if (cmd->param_count > 1) {
+		mode_t value = fbr_test_parse_long(cmd->params[1].value);
+		fbr_test_ASSERT(st.st_mode == value, "mode mismatch, expected %u, got %u",
+			value, st.st_mode);
+	}
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_stat_mode done %u", st.st_mode);
+}
+
+void
+fbr_cmd_sys_stat_uid(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_cmd_ok(cmd);
+	fbr_test_ERROR(cmd->param_count == 0, "Need at least 1 parameter");
+	fbr_test_ERROR(cmd->param_count > 3, "Too many parameters");
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	char *filename = cmd->params[0].value;
+	fbr_test_ERROR_string(filename);
+
+	struct stat st;
+	int ret = stat(filename, &st);
+	fbr_test_ERROR(ret, "stat failed for %s", filename);
+
+	if (cmd->param_count > 1) {
+		uid_t value = fbr_test_parse_long(cmd->params[1].value);
+		fbr_test_ASSERT(st.st_uid == value, "uid mismatch, expected %u, got %u",
+			value, st.st_uid);
+	}
+
+	if (cmd->param_count > 2) {
+		gid_t value = fbr_test_parse_long(cmd->params[2].value);
+		fbr_test_ASSERT(st.st_gid == value, "gid mismatch, expected %u, got %u",
+			value, st.st_gid);
+	}
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_stat_mode done %u %u", st.st_uid, st.st_gid);
+}
+
 static void
 _sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append)
 {

@@ -11,10 +11,11 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
-#include "data/queue.h"
-#include "data/tree.h"
+#include "config/fbr_config.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/store/fbr_store.h"
+#include "data/queue.h"
+#include "data/tree.h"
 
 static const struct fbr_path_name _FBR_DIRNAME_ROOT = {0, ""};
 const struct fbr_path_name *FBR_DIRNAME_ROOT = &_FBR_DIRNAME_ROOT;
@@ -43,10 +44,15 @@ _directory_root_init(struct fbr_fs *fs)
 			assert_dev(root_file->inode == FBR_INODE_ROOT);
 			assert_dev(root_file->state == FBR_FILE_OK);
 
-			// TODO mode needs to be configurable
-			root_file->mode = S_IFDIR | 0755;
-			root_file->uid = getuid();
-			root_file->gid = getgid();
+			unsigned long umode = fbr_conf_get_ulong("FS_ROOT_MODE", 755);
+			unsigned int mode = fbr_ulong2octal(umode);
+
+			unsigned int uid = fbr_conf_get_ulong("FS_ROOT_UID", getuid());
+			unsigned int gid = fbr_conf_get_ulong("FS_ROOT_GID", getgid());
+
+			root_file->mode = S_IFDIR | mode;
+			root_file->uid = uid;
+			root_file->gid = gid;
 
 			fbr_inode_add(fs, root_file);
 
