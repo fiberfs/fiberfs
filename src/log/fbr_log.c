@@ -26,13 +26,15 @@
 #include "core/request/fbr_request.h"
 #include "config/fbr_config.h"
 
-size_t _FBR_LOG_DEFAULT_SIZE = __FBR_LOG_DEFAULT_SIZE;
-
 size_t
 fbr_log_default_size(void)
 {
-	assert(_FBR_LOG_DEFAULT_SIZE >= __FBR_LOG_DEFAULT_SIZE);
-	return _FBR_LOG_DEFAULT_SIZE;
+	size_t log_size = fbr_conf_get_ulong("LOG_SIZE", FBR_LOG_MIN_SIZE);
+	if (log_size < FBR_LOG_MIN_SIZE) {
+		log_size = FBR_LOG_MIN_SIZE;
+	}
+
+	return log_size;
 }
 
 static void

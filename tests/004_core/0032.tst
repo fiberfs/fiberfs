@@ -1,6 +1,6 @@
 fiber_test "wbuffer tests"
 
-test_log_size 200000
+config_add LOG_SIZE 200000
 
 fs_test_body_spwbuffer_error
 fs_test_body_pwbuffer

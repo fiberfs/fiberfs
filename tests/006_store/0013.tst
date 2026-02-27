@@ -1,5 +1,5 @@
 fiber_test "Threaded append test"
 
-test_log_size 1000000
+config_add LOG_SIZE 1000000
 
 append_thread_test

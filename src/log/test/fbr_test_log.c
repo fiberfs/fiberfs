@@ -39,24 +39,6 @@ struct fbr_test_log_printer {
 #define fbr_test_log_printer_ok(print)		\
 	fbr_magic_check(print, FBR_TEST_LOG_PRINT_MAGIC)
 
-extern size_t _FBR_LOG_DEFAULT_SIZE;
-
-void
-fbr_cmd_test_log_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	long size = fbr_test_parse_long(cmd->params[0].value);
-	assert(size > 0 && (size_t)size >= __FBR_LOG_DEFAULT_SIZE);
-
-	_FBR_LOG_DEFAULT_SIZE = size;
-
-	assert(fbr_log_default_size() == (size_t)size);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_size: %zu", fbr_log_default_size());
-}
-
 static void *
 _test_log_printer_thread(void *arg)
 {
@@ -72,7 +54,8 @@ _test_log_printer_thread(void *arg)
 
 	printer->thread_running = 1;
 
-	fbr_test_logs("%s log printer running (%s)", printer->prefix, reader->log.shm_name);
+	fbr_test_logs("%s log printer running (%s size: %zu)", printer->prefix,
+		reader->log.shm_name, reader->log.mmap_size);
 
 	unsigned int sleep_count = 0;
 

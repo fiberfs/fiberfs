@@ -1,5 +1,5 @@
 fiber_test "Store write"
 
-test_log_size 200000
+config_add LOG_SIZE 200000
 
 store_write

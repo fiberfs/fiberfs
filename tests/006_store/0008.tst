@@ -1,5 +1,5 @@
 fiber_test "Store write with errors"
 
-test_log_size 150000
+config_add LOG_SIZE 150000
 
 store_write_error
