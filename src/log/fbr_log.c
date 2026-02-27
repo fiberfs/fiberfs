@@ -24,10 +24,10 @@
 #include "fiberfs.h"
 #include "fbr_log.h"
 #include "core/request/fbr_request.h"
+#include "config/fbr_config.h"
 
 size_t _FBR_LOG_DEFAULT_SIZE = __FBR_LOG_DEFAULT_SIZE;
 int _FBR_LOG_MASK_DEBUG = 1;
-int _FBR_LOG_ALWAYS_FLUSH;
 
 size_t
 fbr_log_default_size(void)
@@ -45,7 +45,11 @@ _log_init(struct fbr_log *log)
 
 	log->magic = FBR_LOG_MAGIC;
 	log->shm_fd = -1;
-	log->always_flush = _FBR_LOG_ALWAYS_FLUSH ? 1 : 0;
+
+	const char *always_flush = fbr_conf_get("LOG_ALWAYS_FLUSH", NULL);
+	if (fbr_is_true(always_flush)) {
+		log->always_flush = 1;
+	}
 }
 
 static void

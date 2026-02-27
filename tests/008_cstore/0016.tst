@@ -2,7 +2,7 @@ fiber_test "cstore server epool close (TLS)"
 
 skip_if_not $tls_enabled
 
-test_log_always_flush
+config_add LOG_ALWAYS_FLUSH 1
 
 cstore_init 0
 cstore_enable_server 127.0.0.1 0 1

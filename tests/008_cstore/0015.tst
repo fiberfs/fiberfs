@@ -2,7 +2,7 @@ fiber_test "cstore server with TLS"
 
 skip_if_not $tls_enabled
 
-test_log_always_flush
+config_add LOG_ALWAYS_FLUSH true
 
 cstore_init 0
 cstore_enable_server 127.0.0.1 0 1

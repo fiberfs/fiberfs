@@ -2,7 +2,8 @@ fiber_test "mkdir"
 
 # Init
 
-test_log_always_flush
+config_add LOG_ALWAYS_FLUSH 1
+
 test_log_allow_debug
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
