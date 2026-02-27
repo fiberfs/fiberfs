@@ -18,7 +18,6 @@ size_t fbr_test_log_printer_lines(void);
 #endif /* _FBR_TEST_LOG_CMDS_H_INCLUDED */
 
 FBR_TEST_CMD(test_log_size)
-FBR_TEST_CMD(test_log_allow_debug)
 FBR_TEST_CMD(test_log_assert)
 FBR_TEST_CMD(test_log_debug)
 FBR_TEST_CMD(test_log_init)

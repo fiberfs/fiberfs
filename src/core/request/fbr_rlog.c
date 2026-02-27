@@ -118,6 +118,10 @@ _rlog_log(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, va_lis
 	assert_dev(type);
 	assert_dev(fmt);
 
+	if (type == FBR_LOG_DEBUG && !rlog->log->show_debug) {
+		return;
+	}
+
 	size_t space = _rlog_space(rlog);
 	fbr_log_data_t *tag = NULL;
 	size_t length;
@@ -188,10 +192,6 @@ fbr_rlog(enum fbr_log_type type, const char *fmt, ...)
 	assert(type);
 	assert(fmt && *fmt);
 
-	if (fbr_log_type_masked(type)) {
-		return;
-	}
-
 	va_list ap;
 	va_start(ap, fmt);
 
@@ -216,10 +216,6 @@ fbr_rdlog(struct fbr_rlog *rlog, enum fbr_log_type type, const char *fmt, ...)
 	fbr_log_ok(rlog->log);
 	assert(type);
 	assert(fmt && *fmt);
-
-	if (fbr_log_type_masked(type)) {
-		return;
-	}
 
 	va_list ap;
 	va_start(ap, fmt);

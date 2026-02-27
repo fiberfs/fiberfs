@@ -40,7 +40,6 @@ struct fbr_test_log_printer {
 	fbr_magic_check(print, FBR_TEST_LOG_PRINT_MAGIC)
 
 extern size_t _FBR_LOG_DEFAULT_SIZE;
-extern int _FBR_LOG_MASK_DEBUG;
 
 void
 fbr_cmd_test_log_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
@@ -56,17 +55,6 @@ fbr_cmd_test_log_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fbr_log_default_size() == (size_t)size);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_size: %zu", fbr_log_default_size());
-}
-
-void
-fbr_cmd_test_log_allow_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
-
-	_FBR_LOG_MASK_DEBUG = 0;
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_allow_debug: %d", _FBR_LOG_MASK_DEBUG);
 }
 
 static void *

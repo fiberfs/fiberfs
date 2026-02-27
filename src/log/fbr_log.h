@@ -114,6 +114,7 @@ struct fbr_log {
 
 	fbr_bitflag_t				do_free:1;
 	fbr_bitflag_t				always_flush:1;
+	fbr_bitflag_t				show_debug:1;
 
 	char					shm_name[NAME_MAX + 1];
 	int					shm_fd;
@@ -171,7 +172,6 @@ struct fbr_log_line *fbr_log_reader_get(struct fbr_log_reader *reader, void *buf
 void fbr_log_cursor_close(struct fbr_log_cursor *cursor);
 void fbr_log_reader_free(struct fbr_log_reader *reader);
 
-int fbr_log_type_masked(enum fbr_log_type type);
 void fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len);
 
 #include "utils/fbr_enum_string_declare.h"

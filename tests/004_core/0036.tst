@@ -3,8 +3,8 @@ fiber_test "mkdir op test"
 set_timeout_sec 20
 
 config_add LOG_ALWAYS_FLUSH 1
+config_add LOG_SHOW_DEBUG true
 
-test_log_allow_debug
 sys_mkdir_tmp
 mkdir_op_test_mount $sys_tmpdir
 

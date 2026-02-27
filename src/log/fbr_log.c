@@ -27,7 +27,6 @@
 #include "config/fbr_config.h"
 
 size_t _FBR_LOG_DEFAULT_SIZE = __FBR_LOG_DEFAULT_SIZE;
-int _FBR_LOG_MASK_DEBUG = 1;
 
 size_t
 fbr_log_default_size(void)
@@ -49,6 +48,11 @@ _log_init(struct fbr_log *log)
 	const char *always_flush = fbr_conf_get("LOG_ALWAYS_FLUSH", NULL);
 	if (fbr_is_true(always_flush)) {
 		log->always_flush = 1;
+	}
+
+	const char *show_debug = fbr_conf_get("LOG_SHOW_DEBUG", NULL);
+	if (fbr_is_true(show_debug)) {
+		log->show_debug = 1;
 	}
 }
 
@@ -567,7 +571,7 @@ fbr_log_vprint(struct fbr_log *log, enum fbr_log_type type, unsigned long reques
 {
 	fbr_log_ok(log);
 
-	if (fbr_log_type_masked(type)) {
+	if (type == FBR_LOG_DEBUG && !log->show_debug) {
 		return;
 	}
 
@@ -581,7 +585,9 @@ void __fbr_attr_printf(4)
 fbr_log_print(struct fbr_log *log, enum fbr_log_type type, unsigned long request_id,
     const char *fmt, ...)
 {
-	if (fbr_log_type_masked(type)) {
+	fbr_log_ok(log);
+
+	if (type == FBR_LOG_DEBUG && !log->show_debug) {
 		return;
 	}
 
@@ -687,16 +693,6 @@ fbr_log_reader_free(struct fbr_log_reader *reader)
 	fbr_log_cursor_close(&reader->cursor);
 	_log_close(&reader->log);
 	fbr_zero(reader);
-}
-
-int
-fbr_log_type_masked(enum fbr_log_type type)
-{
-	if (type == FBR_LOG_DEBUG && _FBR_LOG_MASK_DEBUG) {
-		return 1;
-	}
-
-	return 0;
 }
 
 #include "utils/fbr_enum_string.h"
