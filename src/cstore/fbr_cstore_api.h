@@ -174,10 +174,6 @@ struct fbr_cstore_config {
 	size_t					async_threads;
 	size_t					loader_threads;
 
-	int					server;
-	char					server_address[128];
-	int					server_port;
-	int					server_tls;
 	size_t					server_workers;
 	size_t					server_workers_accept;
 
@@ -186,11 +182,9 @@ struct fbr_cstore_config {
 	unsigned long				timeout_connect_ms;
 	unsigned long				timeout_transfer_ms;
 	unsigned long				keep_alive_sec;
-
-	unsigned long				rlog_size;
 };
 
-extern struct fbr_cstore_config _CSTORE_CONFIG;
+extern struct fbr_cstore_config CSTORE_CONFIG;
 
 struct fbr_cstore *fbr_cstore_alloc(const char *root_path);
 void fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path);

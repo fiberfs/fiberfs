@@ -33,7 +33,7 @@ fbr_cstore_epool_init(struct fbr_cstore *cstore)
 	epool->epfd = epoll_create1(0);
         assert(epool->epfd >= 0);
 
-	epool->timeout_sec = _CSTORE_CONFIG.keep_alive_sec;
+	epool->timeout_sec = CSTORE_CONFIG.keep_alive_sec;
 	epool->init = 1;
 
 	fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_EPOOL, NULL);

@@ -1,6 +1,11 @@
 fiber_test "cstore server"
 
-cstore_enable_server 127.0.0.1 0
+config_add CSTORE_SERVER true
+config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
+config_add CSTORE_SERVER_PORT 0
+
+cstore_tls_timeout
+
 cstore_init
 cstore_init 1
 cstore_set_s3 1 "" 0 region access_key secret_key

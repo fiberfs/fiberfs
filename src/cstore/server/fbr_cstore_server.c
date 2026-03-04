@@ -47,12 +47,12 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 	fbr_log_print(cstore->log, FBR_LOG_CS_SERVER, FBR_REQID_CSTORE,
 		"server listening on %s:%d (tls: %d)", address, server->port, server->tls);
 
-	fbr_cstore_task_worker_add(cstore, _CSTORE_CONFIG.server_workers);
+	fbr_cstore_task_worker_add(cstore, CSTORE_CONFIG.server_workers);
 
 	static_ASSERT(FBR_CSTORE_WORKERS_ACCEPT_DEFAULT < FBR_CSTORE_WORKERS_DEFAULT);
-	assert(_CSTORE_CONFIG.server_workers_accept > 0);
-	assert(_CSTORE_CONFIG.server_workers_accept < _CSTORE_CONFIG.server_workers);
-	for (size_t i = 0; i < _CSTORE_CONFIG.server_workers_accept; i++) {
+	assert(CSTORE_CONFIG.server_workers_accept > 0);
+	assert(CSTORE_CONFIG.server_workers_accept < CSTORE_CONFIG.server_workers);
+	for (size_t i = 0; i < CSTORE_CONFIG.server_workers_accept; i++) {
 		fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_ACCEPT, server);
 	}
 
@@ -74,8 +74,8 @@ fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker)
 
 	struct chttp_addr *remote_addr = &task_worker->remote_addr;
 	chttp_addr_init(remote_addr);
-	remote_addr->timeout_connect_ms = _CSTORE_CONFIG.timeout_connect_ms;
-	remote_addr->timeout_transfer_ms = _CSTORE_CONFIG.timeout_transfer_ms;
+	remote_addr->timeout_connect_ms = CSTORE_CONFIG.timeout_connect_ms;
+	remote_addr->timeout_transfer_ms = CSTORE_CONFIG.timeout_transfer_ms;
 
 	int ret = chttp_tcp_accept(remote_addr, &server->addr);
 

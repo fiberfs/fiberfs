@@ -4,7 +4,11 @@ config_add CONFIG_UPDATE_INTERVAL 1
 
 cstore_init 0
 
-cstore_enable_server 127.0.0.1 0
+config_add CSTORE_SERVER true
+config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
+config_add CSTORE_SERVER_PORT 0
+cstore_tls_timeout
+
 cstore_init 1
 cstore_init 2
 

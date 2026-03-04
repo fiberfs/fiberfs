@@ -88,8 +88,8 @@ _s3_connection(struct fbr_cstore *cstore, struct chttp_context *http,
 
 	fbr_cstore_s3_autosign(cstore, http, hash_cb, hash_priv);
 
-	http->addr.timeout_connect_ms = _CSTORE_CONFIG.timeout_connect_ms;
-	http->addr.timeout_transfer_ms = _CSTORE_CONFIG.timeout_transfer_ms;
+	http->addr.timeout_connect_ms = CSTORE_CONFIG.timeout_connect_ms;
+	http->addr.timeout_transfer_ms = CSTORE_CONFIG.timeout_transfer_ms;
 
 	return 0;
 }

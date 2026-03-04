@@ -27,9 +27,9 @@ fbr_cmd_cstore_set_async(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	long max = fbr_test_parse_long(cmd->params[0].value);
 	assert(max >= 0);
 
-	_CSTORE_CONFIG.async_threads = max;
+	CSTORE_CONFIG.async_threads = max;
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_set_async: %zu", _CSTORE_CONFIG.async_threads);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_set_async: %zu", CSTORE_CONFIG.async_threads);
 }
 
 #define _ASYNC_TEST_MAX		2500

@@ -17,43 +17,22 @@
 extern struct fbr_cstore *_CSTORE;
 
 void
-fbr_cmd_cstore_enable_server(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_cstore_tls_timeout(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
-	fbr_test_cmd_ok(cmd);
-	assert(cmd->param_count <= 3);
+	fbr_test_ERROR_param_count(cmd, 0);
 
-	_CSTORE_CONFIG.server = 1;
+	int tls = fbr_is_true(fbr_conf_get("CSTORE_SERVER_TLS", NULL));
 
-	if (cmd->param_count >= 1) {
-		fbr_test_ERROR_string(cmd->params[0].value);
-		fbr_bprintf(_CSTORE_CONFIG.server_address, "%s", cmd->params[0].value);
-		fbr_test_logs("cstore_enable_server address: %s", _CSTORE_CONFIG.server_address);
-	}
-	if (cmd->param_count >= 2) {
-		fbr_test_ERROR_string(cmd->params[1].value);
-		_CSTORE_CONFIG.server_port = fbr_test_parse_long(cmd->params[1].value);
-		assert(_CSTORE_CONFIG.server_port >= 0 && _CSTORE_CONFIG.server_port < USHRT_MAX);
-		fbr_test_logs("cstore_enable_server port: %d", _CSTORE_CONFIG.server_port);
-	}
-	if (cmd->param_count >= 3) {
-		fbr_test_ERROR_string(cmd->params[1].value);
-		long tls = fbr_test_parse_long(cmd->params[2].value);
-		if (tls == 1) {
-			_CSTORE_CONFIG.server_tls = 1;
-		}
-		fbr_test_logs("cstore_enable_server tls: %d", _CSTORE_CONFIG.server_tls);
-	}
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_tls_timeout: %d", tls);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_enable_server: %d", _CSTORE_CONFIG.server);
-
-	if (_CSTORE_CONFIG.server_tls && fbr_test_is_valgrind()) {
-		_CSTORE_CONFIG.timeout_connect_ms = 60000;
-		_CSTORE_CONFIG.timeout_transfer_ms = 10000;
+	if (tls && fbr_test_is_valgrind()) {
+		CSTORE_CONFIG.timeout_connect_ms = 60000;
+		CSTORE_CONFIG.timeout_transfer_ms = 10000;
 		fbr_test_logs("cstore_enable_server timeout_connect_ms: %lu",
-			_CSTORE_CONFIG.timeout_connect_ms);
+			CSTORE_CONFIG.timeout_connect_ms);
 		fbr_test_logs("cstore_enable_server timeout_transfer_ms: %lu",
-			_CSTORE_CONFIG.timeout_transfer_ms);
+			CSTORE_CONFIG.timeout_transfer_ms);
 	}
 }
 

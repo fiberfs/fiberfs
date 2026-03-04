@@ -11,6 +11,7 @@
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
 #include "server/fbr_cstore_server.h"
+#include "config/fbr_config.h"
 #include "log/fbr_log.h"
 #include "network/chttp_tcp_pool.h"
 #include "tls/chttp_tls.h"
@@ -101,10 +102,16 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	fbr_cstore_async_init(cstore);
 	fbr_cstore_loader_init(cstore);
 
-	if (_CSTORE_CONFIG.server) {
+	int server = fbr_is_true(fbr_conf_get("CSTORE_SERVER", NULL));
+
+	if (server) {
+		const char *address = fbr_conf_get("CSTORE_SERVER_ADDRESS",
+			FBR_CSTORE_SERVER_ADDRESS);
+		int port = fbr_conf_get_long("CSTORE_SERVER_PORT", FBR_CSTORE_SERVER_PORT);
+		int tls = fbr_is_true(fbr_conf_get("CSTORE_SERVER_TLS", NULL));
+
 		fbr_cstore_tasks_alloc(cstore);
-		fbr_cstore_server_alloc(cstore, _CSTORE_CONFIG.server_address,
-			_CSTORE_CONFIG.server_port, _CSTORE_CONFIG.server_tls);
+		fbr_cstore_server_alloc(cstore, address, port, tls);
 		fbr_cstore_epool_init(cstore);
 	}
 

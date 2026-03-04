@@ -31,21 +31,39 @@ _rlog_init(struct fbr_rlog *rlog, size_t rlog_size, unsigned long request_id)
 	assert(rlog->log_pos < rlog->log_end);
 }
 
+size_t
+_rlog_size(struct fbr_request *request)
+{
+	size_t rlog_size = 0;
+
+	if (request) {
+		assert_dev(request->fuse_ctx);
+		fbr_fs_ok(request->fuse_ctx->fs);
+
+		rlog_size = request->fuse_ctx->fs->config.rlog_size;
+	} else {
+		rlog_size = fbr_conf_get_ulong("LOG_BUFFER_SIZE", FBR_RLOG_MIN_SIZE);
+	}
+
+	if (rlog_size < FBR_RLOG_MIN_SIZE) {
+		rlog_size = FBR_RLOG_MIN_SIZE;
+	} else if (rlog_size >= FBR_LOG_SEGMENT_MIN_SIZE) {
+		// TODO use the actual segment size
+		rlog_size = FBR_LOG_SEGMENT_MIN_SIZE - 1;
+	}
+
+	return rlog_size;
+}
+
 void
 fbr_rlog_workspace_alloc(struct fbr_request *request)
 {
 	fbr_request_ok(request);
 	fbr_fuse_context_ok(request->fuse_ctx);
-	fbr_fs_ok(request->fuse_ctx->fs);
 	assert_dev(request->id);
 	assert_zero(request->rlog);
 
-	size_t rlog_size = request->fuse_ctx->fs->config.rlog_size;
-	if (rlog_size < FBR_RLOG_MIN_SIZE) {
-		rlog_size = FBR_RLOG_MIN_SIZE;
-	} else if (rlog_size >= FBR_LOG_SEGMENT_MIN_SIZE) {
-		rlog_size = FBR_LOG_SEGMENT_MIN_SIZE - 1;
-	}
+	size_t rlog_size = _rlog_size(request);
 
 	request->rlog = fbr_workspace_alloc(request->workspace, rlog_size);
 	assert(request->rlog);
@@ -65,7 +83,7 @@ fbr_wlog_workspace_alloc(struct fbr_cstore_worker *worker, struct fbr_log *log)
 	assert_dev(worker->request_id);
 	assert_zero(worker->rlog);
 
-	size_t rlog_size = _CSTORE_CONFIG.rlog_size;
+	size_t rlog_size = _rlog_size(NULL);
 
 	worker->rlog = fbr_workspace_alloc(worker->workspace, rlog_size);
 	assert(worker->rlog);

@@ -37,7 +37,7 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 
 	loader->state = FBR_CSTORE_LOADER_READING;
 	loader->start_time = fbr_get_time() - FBR_CSTORE_LOAD_TIME_BUFFER;
-	loader->thread_count = _CSTORE_CONFIG.loader_threads;
+	loader->thread_count = CSTORE_CONFIG.loader_threads;
 	assert(loader->thread_count);
 
 	if (loader->thread_count > FBR_CSTORE_LOAD_THREAD_MAX) {
