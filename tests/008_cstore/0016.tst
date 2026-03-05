@@ -3,14 +3,14 @@ fiber_test "cstore server epool close (TLS)"
 skip_if_not $tls_enabled
 
 config_add LOG_ALWAYS_FLUSH 1
+config_add CSTORE_SERVER_TLS true
+cstore_tls_timeout
 
 cstore_init 0
 
 config_add CSTORE_SERVER true
 config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
 config_add CSTORE_SERVER_PORT 0
-config_add CSTORE_SERVER_TLS true
-cstore_tls_timeout
 
 cstore_init 1
 cstore_set_s3 0 $cstore_1_server_host $cstore_1_server_port region access_key secret_key $cstore_1_server_tls
