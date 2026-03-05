@@ -13,6 +13,7 @@
 #include "fbr_cstore_callback.h"
 #include "fbr_cstore_io.h"
 #include "fbr_cstore_path.h"
+#include "config/fbr_config.h"
 #include "core/fs/fbr_fs.h"
 #include "data/queue.h"
 #include "data/tree.h"
@@ -101,6 +102,22 @@ struct fbr_cstore_head {
 	pthread_mutex_t				lock;
 };
 
+struct fbr_cstore_config {
+	struct fbr_config_reader		reader;
+
+	size_t					async_threads;
+	size_t					loader_threads;
+
+	size_t					server_workers;
+	size_t					server_workers_accept;
+
+	int					delete_cache;
+
+	unsigned long				timeout_connect_ms;
+	unsigned long				timeout_transfer_ms;
+	unsigned long				keep_alive_sec;
+};
+
 struct fbr_cstore;
 typedef void (*fbr_cstore_delete_f)(struct fbr_cstore *cstore,
 	struct fbr_cstore_entry *entry);
@@ -140,6 +157,8 @@ struct fbr_cstore {
 	size_t					entries;
 	int					do_lru;
 
+	struct fbr_cstore_config		config;
+
 	struct {
 		fbr_stats_t			lru_pruned;
 		fbr_stats_t			removed;
@@ -170,22 +189,6 @@ struct fbr_cstore_metadata {
 	char					_context;
 };
 
-struct fbr_cstore_config {
-	size_t					async_threads;
-	size_t					loader_threads;
-
-	size_t					server_workers;
-	size_t					server_workers_accept;
-
-	int					delete_cache;
-
-	unsigned long				timeout_connect_ms;
-	unsigned long				timeout_transfer_ms;
-	unsigned long				keep_alive_sec;
-};
-
-extern struct fbr_cstore_config CSTORE_CONFIG;
-
 struct fbr_cstore *fbr_cstore_alloc(const char *root_path);
 void fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path);
 void fbr_cstore_max_size(struct fbr_cstore *cstore, size_t max_bytes, int lru);
@@ -206,6 +209,7 @@ void fbr_cstore_free(struct fbr_cstore *cstore);
 void fbr_cstore_loader_init(struct fbr_cstore *cstore);
 void fbr_cstore_loader_free(struct fbr_cstore *cstore);
 
+void fbr_cstore_config_load(struct fbr_cstore *cstore);
 void fbr_cstore_fuse_register(const char *root_path);
 struct fbr_cstore *fbr_cstore_find(void);
 size_t fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len);

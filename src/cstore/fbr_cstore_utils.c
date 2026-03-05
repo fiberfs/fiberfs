@@ -10,17 +10,6 @@
 #include "core/fuse/fbr_fuse.h"
 #include "core/store/fbr_store.h"
 
-struct fbr_cstore_config CSTORE_CONFIG = {
-	FBR_CSTORE_ASYNC_THREAD_DEFAULT,
-	FBR_CSTORE_LOAD_THREAD_DEFAULT,
-	FBR_CSTORE_WORKERS_DEFAULT,
-	FBR_CSTORE_WORKERS_ACCEPT_DEFAULT,
-	0,
-	FBR_CSTORE_TIMEOUT_CONNECT_MS,
-	FBR_CSTORE_TIMEOUT_TRANSFER_MS,
-	FBR_CSTORE_KEEP_ALIVE_DEFAULT
-};
-
 static const struct fbr_store_callbacks _CSTORE_DEFAULT_CALLBACKS = {
 	.chunk_read_f = fbr_cstore_async_chunk_read,
 	.chunk_delete_f = fbr_cstore_async_chunk_delete,
@@ -31,6 +20,37 @@ static const struct fbr_store_callbacks _CSTORE_DEFAULT_CALLBACKS = {
 	.root_read_f = fbr_cstore_root_read
 };
 const struct fbr_store_callbacks *FBR_CSTORE_DEFAULT_CALLBACKS = &_CSTORE_DEFAULT_CALLBACKS;
+
+void
+fbr_cstore_config_load(struct fbr_cstore *cstore)
+{
+	fbr_cstore_ok(cstore);
+
+	struct fbr_config_reader *reader = &cstore->config.reader;
+	fbr_config_reader_ok(reader);
+
+	int locked = fbr_config_reader_lock(reader);
+	if (!locked) {
+		assert_dev(reader->init);
+		return;
+	}
+
+	// TODO these go away, they dont need to be in here
+	cstore->config.async_threads = FBR_CSTORE_ASYNC_THREAD_DEFAULT;
+	cstore->config.loader_threads = FBR_CSTORE_LOAD_THREAD_DEFAULT;
+	cstore->config.server_workers = FBR_CSTORE_WORKERS_DEFAULT;
+	cstore->config.server_workers_accept = FBR_CSTORE_WORKERS_ACCEPT_DEFAULT;
+
+	cstore->config.delete_cache = fbr_conf_get_bool("CSTORE_DELETE_CACHE");
+	cstore->config.timeout_connect_ms = fbr_conf_get_ulong("HTTP_CONNECT_TIMEOUT_MSEC",
+		FBR_CSTORE_TIMEOUT_CONNECT_MS);
+	cstore->config.timeout_transfer_ms = fbr_conf_get_ulong("HTTP_TRANSFER_TIMEOUT_MSEC",
+		FBR_CSTORE_TIMEOUT_TRANSFER_MS);
+	cstore->config.keep_alive_sec = fbr_conf_get_ulong("HTTP_KEEP_ALIVE_SEC",
+		FBR_CSTORE_KEEP_ALIVE_DEFAULT);
+
+	fbr_config_reader_ready(reader);
+}
 
 void
 fbr_cstore_fuse_register(const char *root_path)

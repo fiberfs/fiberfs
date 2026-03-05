@@ -13,7 +13,7 @@
 #include "data/tree.h"
 
 #define FBR_CONFIG_MAX_FILE_LINE	4096
-#define FBRP_CONFIG_RELOAD_SEC		3
+#define FBR_CONFIG_RELOAD_SEC		3
 
 struct fbr_config_key {
 	unsigned int			magic;
@@ -79,6 +79,7 @@ void fbr_config_free(struct fbr_config *config);
 
 size_t fbr_config_parse(struct fbr_config *config, const char *filepath);
 
+void fbr_config_reader_init(struct fbr_config_reader *reader);
 int fbr_config_reader_lock(struct fbr_config_reader *reader);
 void fbr_config_reader_ready(struct fbr_config_reader *reader);
 
@@ -92,6 +93,8 @@ void fbr_config_reader_ready(struct fbr_config_reader *reader);
 	fbr_config_get_long(_CONFIG, name, fallback)
 #define fbr_conf_get_ulong(name, fallback)		\
 	fbr_config_get_ulong(_CONFIG, name, fallback)
+#define fbr_conf_get_bool(name)				\
+	fbr_is_true(fbr_config_get(_CONFIG, name, NULL))
 
 #define fbr_config_ok(config)		fbr_magic_check(config, FBR_CONFIG_MAGIC)
 #define fbr_config_key_ok(key)		fbr_magic_check(key, FBR_CONFIG_KEY_MAGIC)

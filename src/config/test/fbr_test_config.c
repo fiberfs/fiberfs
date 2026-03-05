@@ -599,8 +599,7 @@ fbr_cmd_test_config_reader(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	struct fbr_config_reader reader;
-	fbr_zero(&reader);
-	reader.magic = FBR_CONFIG_READER_MAGIC;
+	fbr_config_reader_init(&reader);
 
 	fbr_test_logs("*** startup");
 	fbr_test_logs("reader.updates=%lu", reader.updates);
@@ -681,8 +680,7 @@ fbr_cmd_test_config_reader(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert(reader.updates == 3);
 	assert(reader.attempts == 5);
 
-	fbr_zero(&reader);
-	reader.magic = FBR_CONFIG_READER_MAGIC;
+	fbr_config_reader_init(&reader);
 
 	pthread_t threads[_CONFIG_READER_THREADS];
 	assert(fbr_array_len(threads) > 0);

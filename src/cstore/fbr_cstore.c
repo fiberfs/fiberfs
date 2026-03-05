@@ -66,6 +66,8 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 
 	cstore->magic = FBR_CSTORE_MAGIC;
 
+	fbr_config_reader_init(&cstore->config.reader);
+	fbr_cstore_config_load(cstore);
 	fbr_cstore_cluster_init(&cstore->cluster);
 	fbr_cstore_cluster_init(&cstore->cdn);
 

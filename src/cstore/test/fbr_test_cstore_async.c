@@ -18,20 +18,6 @@
 
 extern struct fbr_cstore *_CSTORE;
 
-void
-fbr_cmd_cstore_set_async(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
-
-	long max = fbr_test_parse_long(cmd->params[0].value);
-	assert(max >= 0);
-
-	CSTORE_CONFIG.async_threads = max;
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_set_async: %zu", CSTORE_CONFIG.async_threads);
-}
-
 #define _ASYNC_TEST_MAX		2500
 #define _ASYNC_TEST_THREADS	8
 size_t _ASYNC_TEST_QUEUED;

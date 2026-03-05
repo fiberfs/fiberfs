@@ -75,9 +75,7 @@ fbr_fs_alloc(void)
 
 	fs->store = &_STORE_CALLBACKS_EMPTY;
 
-	fs->config.reader.magic = FBR_CONFIG_READER_MAGIC;
-	fs->config.reader.update_interval = fbr_conf_get_ulong("CONFIG_UPDATE_INTERVAL", 0);
-
+	fbr_config_reader_init(&fs->config.reader);
 	fbr_fs_config_load(fs);
 
 	fbr_fs_ok(fs);

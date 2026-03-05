@@ -272,6 +272,17 @@ fbr_config_free(struct fbr_config *config)
 	}
 }
 
+void
+fbr_config_reader_init(struct fbr_config_reader *reader)
+{
+	assert(reader);
+
+	fbr_zero(reader);
+
+	reader->magic = FBR_CONFIG_READER_MAGIC;
+	reader->update_interval = fbr_conf_get_ulong("CONFIG_UPDATE_INTERVAL", 0);
+}
+
 int
 fbr_config_reader_lock(struct fbr_config_reader *reader)
 {
@@ -282,7 +293,7 @@ fbr_config_reader_lock(struct fbr_config_reader *reader)
 
 	long update_interval = reader->update_interval;
 	if (!update_interval) {
-		update_interval = FBRP_CONFIG_RELOAD_SEC;
+		update_interval = FBR_CONFIG_RELOAD_SEC;
 	}
 	assert(update_interval > 0);
 
