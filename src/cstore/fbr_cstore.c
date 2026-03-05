@@ -104,13 +104,13 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	fbr_cstore_async_init(cstore);
 	fbr_cstore_loader_init(cstore);
 
-	int server = fbr_is_true(fbr_conf_get("CSTORE_SERVER", NULL));
+	int server = fbr_conf_get_bool("CSTORE_SERVER");
 
 	if (server) {
 		const char *address = fbr_conf_get("CSTORE_SERVER_ADDRESS",
 			FBR_CSTORE_SERVER_ADDRESS);
 		int port = fbr_conf_get_long("CSTORE_SERVER_PORT", FBR_CSTORE_SERVER_PORT);
-		int tls = fbr_is_true(fbr_conf_get("CSTORE_SERVER_TLS", NULL));
+		int tls = fbr_conf_get_bool("CSTORE_SERVER_TLS");
 
 		fbr_cstore_tasks_alloc(cstore);
 		fbr_cstore_server_alloc(cstore, address, port, tls);

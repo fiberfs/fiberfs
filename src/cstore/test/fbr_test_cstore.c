@@ -569,7 +569,7 @@ _cstore_test(void)
 {
 	fbr_cstore_ok(_CSTORE);
 
-	assert(fbr_is_false(fbr_conf_get("CSTORE_SERVER", NULL)));
+	assert_zero(fbr_conf_get_bool("CSTORE_SERVER"));
 	assert_zero(_CSTORE->servers);
 
 	fbr_test_random_seed();

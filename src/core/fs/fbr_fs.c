@@ -31,12 +31,7 @@ fbr_fs_config_load(struct fbr_fs *fs)
 	}
 
 	if (fbr_gzip_enabled()) {
-		const char *gzip_index = fbr_conf_get("FS_GZIP_INDEX", "1");
-		if (fbr_is_true(gzip_index)) {
-			fs->config.gzip_index = 1;
-		} else {
-			fs->config.gzip_index = 0;
-		}
+		fs->config.gzip_index = fbr_conf_get_bool("FS_GZIP_INDEX");
 	}
 
 	long dentry_ttl_msec = fbr_conf_get_long("FS_DENTRY_TTL_MSEC", 0);

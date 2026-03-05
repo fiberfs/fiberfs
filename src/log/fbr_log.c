@@ -47,15 +47,8 @@ _log_init(struct fbr_log *log)
 	log->magic = FBR_LOG_MAGIC;
 	log->shm_fd = -1;
 
-	const char *always_flush = fbr_conf_get("LOG_ALWAYS_FLUSH", NULL);
-	if (fbr_is_true(always_flush)) {
-		log->always_flush = 1;
-	}
-
-	const char *show_debug = fbr_conf_get("LOG_SHOW_DEBUG", NULL);
-	if (fbr_is_true(show_debug)) {
-		log->show_debug = 1;
-	}
+	log->always_flush = fbr_conf_get_bool("LOG_ALWAYS_FLUSH");
+	log->show_debug = fbr_conf_get_bool("LOG_SHOW_DEBUG");
 }
 
 static void

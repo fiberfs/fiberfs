@@ -680,7 +680,11 @@ fbr_cmd_test_config_reader(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert(reader.updates == 3);
 	assert(reader.attempts == 5);
 
+	reader.update_interval = 0;
+	fbr_test_conf_add_long("CONFIG_UPDATE_INTERVAL", 1);
+
 	fbr_config_reader_init(&reader);
+	assert(reader.update_interval == 1);
 
 	pthread_t threads[_CONFIG_READER_THREADS];
 	assert(fbr_array_len(threads) > 0);
