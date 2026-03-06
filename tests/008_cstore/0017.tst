@@ -1,9 +1,10 @@
-fiber_test "cstore server with TLS"
+fiber_test "cstore server with TLS and no gzip"
 
 skip_if_not $tls_enabled
 
 config_add LOG_ALWAYS_FLUSH true
 config_add CSTORE_SERVER_TLS true
+config_add FS_GZIP_INDEX false
 cstore_tls_timeout
 
 cstore_init 0
