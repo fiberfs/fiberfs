@@ -14,6 +14,8 @@
 
 #define FBR_CONFIG_MAX_FILE_LINE	4096
 #define FBR_CONFIG_RELOAD_SEC		3
+#define FBR_CONFIG_TRUE			"1"
+#define FBR_CONFIG_FALSE		"0"
 
 struct fbr_config_key {
 	unsigned int			magic;
@@ -83,18 +85,18 @@ void fbr_config_reader_init(struct fbr_config_reader *reader);
 int fbr_config_reader_lock(struct fbr_config_reader *reader);
 void fbr_config_reader_ready(struct fbr_config_reader *reader);
 
-#define fbr_conf_add(name, name_len, value, value_len)	\
+#define fbr_conf_add(name, name_len, value, value_len)		\
 	fbr_config_add(_CONFIG, name, name_len, value, value_len)
-#define fbr_conf_parse(path)				\
+#define fbr_conf_parse(path)					\
 	fbr_config_parse(_CONFIG, path)
-#define fbr_conf_get(name, fallback)			\
+#define fbr_conf_get(name, fallback)				\
 	fbr_config_get(_CONFIG, name, fallback)
-#define fbr_conf_get_long(name, fallback)		\
+#define fbr_conf_get_long(name, fallback)			\
 	fbr_config_get_long(_CONFIG, name, fallback)
-#define fbr_conf_get_ulong(name, fallback)		\
+#define fbr_conf_get_ulong(name, fallback)			\
 	fbr_config_get_ulong(_CONFIG, name, fallback)
-#define fbr_conf_get_bool(name)				\
-	fbr_is_true(fbr_config_get(_CONFIG, name, NULL))
+#define fbr_conf_get_bool(name, fallback)			\
+	fbr_is_true(fbr_config_get(_CONFIG, name, fallback))
 
 #define fbr_config_ok(config)		fbr_magic_check(config, FBR_CONFIG_MAGIC)
 #define fbr_config_key_ok(key)		fbr_magic_check(key, FBR_CONFIG_KEY_MAGIC)

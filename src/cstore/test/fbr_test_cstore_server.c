@@ -23,7 +23,7 @@ fbr_cmd_cstore_tls_timeout(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	int tls = fbr_conf_get_bool("CSTORE_SERVER_TLS");
+	int tls = fbr_conf_get_bool("CSTORE_SERVER_TLS", FBR_CONFIG_FALSE);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_tls_timeout: %d", tls);
 

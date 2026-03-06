@@ -31,7 +31,9 @@ fbr_fs_config_load(struct fbr_fs *fs)
 	}
 
 	if (fbr_gzip_enabled()) {
-		fs->config.gzip_index = fbr_conf_get_bool("FS_GZIP_INDEX");
+		fs->config.gzip_index = fbr_conf_get_bool("FS_GZIP_INDEX", FBR_CONFIG_TRUE);
+	} else {
+		assert_zero_dev(fs->config.gzip_index);
 	}
 
 	long dentry_ttl_msec = fbr_conf_get_long("FS_DENTRY_TTL_MSEC", 0);

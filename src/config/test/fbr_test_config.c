@@ -14,6 +14,7 @@
 #include "config/fbr_config.h"
 
 #include "test/fbr_test.h"
+#include "fbr_test_config_cmds.h"
 
 static void
 _sys_finish(struct fbr_test_context *ctx)
@@ -78,8 +79,9 @@ fbr_varf_config(struct fbr_test_context *ctx, struct fbr_test_param *param)
 }
 
 void
-fbr_test_conf_add(const char *name, const char *value)
+fbr_test_config_add(struct fbr_config *config, const char *name, const char *value)
 {
+	fbr_config_ok(config);
 	assert(name);
 
 	size_t name_len = strlen(name);
@@ -88,12 +90,13 @@ fbr_test_conf_add(const char *name, const char *value)
 		value_len = strlen(value);
 	}
 
-	fbr_conf_add(name, name_len, value, value_len);
+	fbr_config_add(config, name, name_len, value, value_len);
 }
 
 void
-fbr_test_conf_add_long(const char *name, long value)
+fbr_test_config_add_long(struct fbr_config *config, const char *name, long value)
 {
+	fbr_config_ok(config);
 	assert(name);
 
 	size_t name_len = strlen(name);
@@ -101,7 +104,7 @@ fbr_test_conf_add_long(const char *name, long value)
 	char buffer[32];
 	size_t buffer_len = fbr_bprintf(buffer, "%ld", value);
 
-	fbr_conf_add(name, name_len, buffer, buffer_len);
+	fbr_config_add(config, name, name_len, buffer, buffer_len);
 }
 
 static void
@@ -109,24 +112,26 @@ _test_config_simple(struct fbr_config *config)
 {
 	fbr_config_ok(config);
 
-	fbr_config_add(config, "test", 4, "true", 4);
-	fbr_config_add(config, "some_path", 9, "a/b/c", 5);
-	fbr_config_add(config, "empty", 5, "", 0);
-	fbr_config_add(config, "NULL", 4, NULL, 0);
-	fbr_config_add(config, "long1", 5, "123", 3);
-	fbr_config_add(config, "long2", 5, "-123", 4);
-	fbr_config_add(config, "long3", 5, "-1", 2);
-	fbr_config_add(config, "long4", 5, "-", 1);
-	fbr_config_add(config, "long5", 5, "000", 3);
+	fbr_test_config_add(config, "test", "true");
+	fbr_test_config_add(config, "some_path", "a/b/c");
+	fbr_test_config_add(config, "empty", "");
+	fbr_test_config_add(config, "NULL", NULL);
+	fbr_test_config_add_long(config, "long1", 123);
+	fbr_test_config_add_long(config, "long2", -123);
+	fbr_test_config_add_long(config, "long3", -1);
+	fbr_test_config_add(config, "long4", "-");
+	fbr_test_config_add(config, "long5", "000");
 	fbr_config_add(config, "long6", 5, "", 1);
-
-	assert(config->stats.keys == 10);
-	assert(config->stats.deleted == 0);
-
-	fbr_config_add(config, "key_42", 6, "zzz", 3);
-	fbr_config_add(config, "key_555", 7, "zzz", 3);
+	fbr_test_config_add(config, "True", FBR_CONFIG_TRUE);
+	fbr_test_config_add(config, "False", FBR_CONFIG_FALSE);
 
 	assert(config->stats.keys == 12);
+	assert(config->stats.deleted == 0);
+
+	fbr_test_config_add(config, "key_42", "zzz");
+	fbr_test_config_add(config, "key_555", "zzz");
+
+	assert(config->stats.keys == 14);
 	assert(config->stats.deleted == 0);
 
 	for (size_t i = 0; i < 1000; i++) {
@@ -140,7 +145,7 @@ _test_config_simple(struct fbr_config *config)
 		fbr_config_add(config, key_buffer, key_len, value_buffer, sizeof(value_buffer) - 1);
 	}
 
-	assert(config->stats.keys == 1010);
+	assert(config->stats.keys == 1012);
 	assert(config->stats.deleted == 2);
 
 	const char *value = fbr_config_get(config, "test", NULL);
@@ -216,6 +221,39 @@ _test_config_simple(struct fbr_config *config)
 		assert_zero(strcmp(value, value_buffer));
 	}
 
+	int ivalue = fbr_is_true(FBR_CONFIG_TRUE);
+	assert(ivalue);
+
+	ivalue = fbr_is_false(FBR_CONFIG_TRUE);
+	assert_zero(ivalue);
+
+	ivalue = fbr_is_false(FBR_CONFIG_FALSE);
+	assert(ivalue);
+
+	ivalue = fbr_is_true(FBR_CONFIG_FALSE);
+	assert_zero(ivalue);
+
+	ivalue = fbr_is_true(fbr_config_get(config, "True", FBR_CONFIG_FALSE));
+	assert(ivalue);
+
+	ivalue = fbr_is_false(fbr_config_get(config, "False", FBR_CONFIG_TRUE));
+	assert(ivalue);
+
+	value = fbr_config_get(config, "_NONE", NULL);
+	assert_zero(value);
+
+	ivalue = fbr_is_true(fbr_config_get(config, "_NONE", FBR_CONFIG_FALSE));
+	assert_zero(ivalue);
+
+	ivalue = fbr_is_true(fbr_config_get(config, "_NONE", FBR_CONFIG_TRUE));
+	assert(ivalue);
+
+	ivalue = fbr_is_false(fbr_config_get(config, "_NONE", FBR_CONFIG_FALSE));
+	assert(ivalue);
+
+	ivalue = fbr_is_false(fbr_config_get(config, "_NONE", FBR_CONFIG_TRUE));
+	assert_zero(ivalue);
+
 	fbr_test_logs("_config_simple done");
 }
 
@@ -244,6 +282,20 @@ fbr_cmd_test_config_static(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_config_ok(_CONFIG);
 
 	_test_config_simple(_CONFIG);
+
+	int value = fbr_conf_get_bool("True", FBR_CONFIG_FALSE);
+	assert(value);
+
+	value = fbr_conf_get_bool("False", FBR_CONFIG_TRUE);
+	assert_zero(value);
+
+	assert_zero(fbr_conf_get("_NONE", NULL));
+
+	value = fbr_conf_get_bool("_NONE", FBR_CONFIG_TRUE);
+	assert(value);
+
+	value = fbr_conf_get_bool("_NONE", FBR_CONFIG_FALSE);
+	assert_zero(value);
 
 	fbr_config_free(_CONFIG);
 	assert_zero(_CONFIG);

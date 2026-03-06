@@ -41,7 +41,7 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 	cstore->config.server_workers = FBR_CSTORE_WORKERS_DEFAULT;
 	cstore->config.server_workers_accept = FBR_CSTORE_WORKERS_ACCEPT_DEFAULT;
 
-	cstore->config.delete_cache = fbr_conf_get_bool("CSTORE_DELETE_CACHE");
+	cstore->config.delete_cache = fbr_conf_get_bool("CSTORE_DELETE_CACHE", FBR_CONFIG_FALSE);
 	cstore->config.timeout_connect_ms = fbr_conf_get_ulong("HTTP_CONNECT_TIMEOUT_MSEC",
 		FBR_CSTORE_TIMEOUT_CONNECT_MS);
 	cstore->config.timeout_transfer_ms = fbr_conf_get_ulong("HTTP_TRANSFER_TIMEOUT_MSEC",
