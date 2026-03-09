@@ -32,7 +32,7 @@ greater_equal $fs_test_stat_read_bytes 1048576
 
 print "### SLEEP PAST TTL"
 
-sleep_ms 200
+sleep_ms 250
 fs_test_stats
 fs_test_debug
 
@@ -52,7 +52,7 @@ fs_test_debug
 
 fs_test_release_all 1
 
-sleep_ms 100
+sleep_ms 250
 fs_test_stats
 fs_test_debug
 
