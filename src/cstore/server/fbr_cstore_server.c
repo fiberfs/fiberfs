@@ -47,12 +47,16 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 	fbr_log_print(cstore->log, FBR_LOG_CS_SERVER, FBR_REQID_CSTORE,
 		"server listening on %s:%d (tls: %d)", address, server->port, server->tls);
 
-	fbr_cstore_task_worker_add(cstore, cstore->config.server_workers);
+	size_t server_workers = fbr_conf_get_ulong("SERVER_WORKERS", FBR_CSTORE_WORKERS_DEFAULT);
+	size_t accept_workers = fbr_conf_get_ulong("SERVER_ACCEPT_WORKERS",
+		FBR_CSTORE_WORKERS_ACCEPT_DEFAULT);
+
+	fbr_cstore_task_worker_add(cstore, server_workers);
 
 	static_ASSERT(FBR_CSTORE_WORKERS_ACCEPT_DEFAULT < FBR_CSTORE_WORKERS_DEFAULT);
-	assert(cstore->config.server_workers_accept > 0);
-	assert(cstore->config.server_workers_accept < cstore->config.server_workers);
-	for (size_t i = 0; i < cstore->config.server_workers_accept; i++) {
+	assert(accept_workers > 0);
+	assert(accept_workers < server_workers);
+	for (size_t i = 0; i < accept_workers; i++) {
 		fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_ACCEPT, server);
 	}
 

@@ -105,12 +105,6 @@ struct fbr_cstore_head {
 struct fbr_cstore_config {
 	struct fbr_config_reader		reader;
 
-	size_t					async_threads;
-	size_t					loader_threads;
-
-	size_t					server_workers;
-	size_t					server_workers_accept;
-
 	int					delete_cache;
 
 	unsigned long				timeout_connect_ms;

@@ -35,12 +35,6 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 		return;
 	}
 
-	// TODO these go away, they dont need to be in here
-	cstore->config.async_threads = FBR_CSTORE_ASYNC_THREAD_DEFAULT;
-	cstore->config.loader_threads = FBR_CSTORE_LOAD_THREAD_DEFAULT;
-	cstore->config.server_workers = FBR_CSTORE_WORKERS_DEFAULT;
-	cstore->config.server_workers_accept = FBR_CSTORE_WORKERS_ACCEPT_DEFAULT;
-
 	cstore->config.delete_cache = fbr_conf_get_bool("CSTORE_DELETE_CACHE", FBR_CONFIG_FALSE);
 	cstore->config.timeout_connect_ms = fbr_conf_get_ulong("HTTP_CONNECT_TIMEOUT_MSEC",
 		FBR_CSTORE_TIMEOUT_CONNECT_MS);

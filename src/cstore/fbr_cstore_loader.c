@@ -15,6 +15,7 @@
 
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
+#include "config/fbr_config.h"
 #include "core/request/fbr_request.h"
 #include "utils/fbr_sys.h"
 
@@ -37,7 +38,7 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 
 	loader->state = FBR_CSTORE_LOADER_READING;
 	loader->start_time = fbr_get_time() - FBR_CSTORE_LOAD_TIME_BUFFER;
-	loader->thread_count = cstore->config.loader_threads;
+	loader->thread_count = fbr_conf_get_ulong("LOADER_THREADS", FBR_CSTORE_LOAD_THREAD_DEFAULT);
 	assert(loader->thread_count);
 
 	if (loader->thread_count > FBR_CSTORE_LOAD_THREAD_MAX) {

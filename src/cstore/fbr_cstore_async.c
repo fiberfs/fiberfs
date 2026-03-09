@@ -10,6 +10,7 @@
 
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
+#include "config/fbr_config.h"
 #include "core/request/fbr_request.h"
 
 static void *_cstore_async_loop(void *arg);
@@ -45,7 +46,7 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 		fbr_cstore_op_ok(op);
 	}
 
-	async->threads_max = cstore->config.async_threads;
+	async->threads_max = fbr_conf_get_ulong("ASYNC_THREADS", FBR_CSTORE_ASYNC_THREAD_DEFAULT);
 
 	for (size_t i = 0; i < async->threads_max; i++) {
 		pt_assert(pthread_create(&async->threads[i], NULL, _cstore_async_loop, cstore));
