@@ -314,6 +314,8 @@ fbr_test_run_all_finish(struct fbr_test *test)
 
 	_EXIT = 1;
 
+	pt_assert(pthread_mutex_unlock(&_FINISH_LOCK));
+
 	fbr_test_ok(test);
 	assert_zero(_ERROR);
 
@@ -337,8 +339,6 @@ fbr_test_run_all_finish(struct fbr_test *test)
 	}
 
 	assert(TAILQ_EMPTY(&test->finish_list));
-
-	pt_assert(pthread_mutex_unlock(&_FINISH_LOCK));
 }
 
 struct fbr_test_context *

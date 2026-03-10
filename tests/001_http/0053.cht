@@ -26,9 +26,10 @@ server_read_request
 server_send_response_partial
 server_send_header "test_1: first"
 server_send_header "Content-Length: 0"
+# 92B + 8B + 10141B + 4B into client 10240B (limit)
 server_send_raw "test_2: "
-server_send_random 10235
-server_send_raw "\r\n\r\n"
+server_send_random 10141
+#server_send_raw "\r\n\r\n"
 
 # Large ~9kb response
 chttp_init
