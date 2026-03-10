@@ -22,6 +22,7 @@ static struct fbr_test *_TEST;
 static int _EXIT;
 static int _ERROR;
 pthread_mutex_t _FINISH_LOCK;
+pthread_t _FINISH_TID;
 
 static void
 _finish_test(struct fbr_test_context *ctx)
@@ -305,6 +306,10 @@ fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 void
 fbr_test_run_all_finish(struct fbr_test *test)
 {
+	if (_EXIT && _FINISH_TID == pthread_self()) {
+		return;
+	}
+
 	pt_assert(pthread_mutex_lock(&_FINISH_LOCK));
 
 	if (_EXIT) {
@@ -313,8 +318,7 @@ fbr_test_run_all_finish(struct fbr_test *test)
 	}
 
 	_EXIT = 1;
-
-	pt_assert(pthread_mutex_unlock(&_FINISH_LOCK));
+	_FINISH_TID = pthread_self();
 
 	fbr_test_ok(test);
 	assert_zero(_ERROR);
@@ -339,6 +343,8 @@ fbr_test_run_all_finish(struct fbr_test *test)
 	}
 
 	assert(TAILQ_EMPTY(&test->finish_list));
+
+	pt_assert(pthread_mutex_unlock(&_FINISH_LOCK));
 }
 
 struct fbr_test_context *
