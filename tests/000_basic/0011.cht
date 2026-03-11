@@ -1,7 +1,7 @@
 chttp_test "TCP pool tests 2"
 
 config_add TCP_POOL_SIZE 5
-config_add TCP_POOL_AGE_MSEC 500
+config_add TCP_POOL_AGE_MSEC 700
 
 dns_lookup_or_skip dns02.nulltech.systems
 
@@ -50,7 +50,7 @@ chttp_reset
 # We added 10 connections to the pool, 5 were nuked (LRU) out
 #tcp_pool_debug
 
-sleep_ms 520
+sleep_ms 720
 
 chttp_connect dns02.nulltech.systems 2
 tcp_pool_fake_connect
