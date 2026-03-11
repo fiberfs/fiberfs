@@ -156,7 +156,7 @@ chttp_tcp_pool_lookup(struct chttp_addr *addr)
 			TAILQ_REMOVE(&_TCP_POOL.lru_list, head, list_entry);
 			TAILQ_INSERT_HEAD(&_TCP_POOL.lru_list, head, list_entry);
 
-			_TCP_POOL.stats.lru++;
+			_TCP_POOL.stats.lru_moved++;
 		}
 
 		// Find a good connection

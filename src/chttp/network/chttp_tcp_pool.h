@@ -37,7 +37,7 @@ struct chttp_pool_stats {
 	size_t						expired;
 	size_t						deleted;
 	size_t						nuked;
-	size_t						lru;
+	size_t						lru_moved;
 	size_t						err_alloc;
 	size_t						size;
 };

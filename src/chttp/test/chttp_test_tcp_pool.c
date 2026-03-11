@@ -106,7 +106,7 @@ _tcp_pool_debug(void)
 
 		chttp_sa_string(&entry->addr.sa, host, sizeof(host), &port);
 
-		printf("\t_TCP_POOL.lru_list: %s:%d age=%lf *ptr=%p\n", host, port,
+		printf("\t_TCP_POOL.lru_list: %s:%d ttl=%lf *ptr=%p\n", host, port,
 			entry->expiration - fbr_get_time(), (void*)entry);
 	}
 
@@ -123,7 +123,7 @@ _tcp_pool_debug(void)
 
 			chttp_sa_string(&entry->addr.sa, host, sizeof(host), &port);
 
-			printf("\t_TCP_POOL.pool_tree: %zu %s:%d age=%lf *ptr=%p fd=%d\n",
+			printf("\t_TCP_POOL.pool_tree: %zu %s:%d ttl=%lf *ptr=%p fd=%d\n",
 				count, host, port, entry->expiration - fbr_get_time(),
 				(void*)entry, entry->addr.sock);
 
@@ -141,7 +141,7 @@ _tcp_pool_debug(void)
 	printf("\tstats.expired: %zu\n", _TCP_POOL.stats.expired);
 	printf("\tstats.deleted: %zu\n", _TCP_POOL.stats.deleted);
 	printf("\tstats.nuked: %zu\n", _TCP_POOL.stats.nuked);
-	printf("\tstats.lru: %zu\n", _TCP_POOL.stats.lru);
+	printf("\tstats.lru_moved: %zu\n", _TCP_POOL.stats.lru_moved);
 	printf("\tstats.err_alloc: %zu\n", _TCP_POOL.stats.err_alloc);
 }
 
@@ -179,5 +179,5 @@ _TCP_POOL_STATS_NAME(insertions)
 _TCP_POOL_STATS_NAME(expired)
 _TCP_POOL_STATS_NAME(deleted)
 _TCP_POOL_STATS_NAME(nuked)
-_TCP_POOL_STATS_NAME(lru)
+_TCP_POOL_STATS_NAME(lru_moved)
 _TCP_POOL_STATS_NAME(err_alloc)

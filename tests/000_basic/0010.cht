@@ -74,4 +74,4 @@ tcp_pool_debug
 
 equal $tcp_pool_expired 1
 equal $tcp_pool_cache_misses 1
-equal $tcp_pool_lru 2
+equal $tcp_pool_lru_moved 2
