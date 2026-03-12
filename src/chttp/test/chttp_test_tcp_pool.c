@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "network/chttp_network.h"
 #include "network/chttp_tcp_pool.h"
@@ -61,17 +62,18 @@ _tcp_pool_init(struct fbr_test_context *ctx)
 void
 chttp_test_cmd_tcp_pool_fake_connect(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	int fd;
-
 	fbr_test_context_ok(ctx);
 	chttp_test_context_ok(ctx->chttp_test);
 	chttp_context_ok(ctx->chttp_test->chttp);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	fd = open("/dev/null", O_RDWR);
-	assert(fd >= 0);
+	int pfd[2];
+	int ret = pipe(pfd);
+	assert_zero(ret);
+	assert(pfd[0] >= 0);
+	assert_zero(close(pfd[1]));
 
-	ctx->chttp_test->chttp->addr.sock = fd;
+	ctx->chttp_test->chttp->addr.sock = pfd[0];
 	ctx->chttp_test->chttp->addr.state = CHTTP_ADDR_CONNECTED;
 	ctx->chttp_test->chttp->state = CHTTP_STATE_IDLE;
 
