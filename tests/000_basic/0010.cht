@@ -1,7 +1,7 @@
 chttp_test "TCP pool tests"
 
 config_add TCP_POOL_SIZE 3
-config_add TCP_POOL_AGE_MSEC 400
+config_add TCP_POOL_AGE_MSEC 700
 
 dns_lookup_or_skip dns03.nulltech.systems
 dns_lookup_or_skip dns04.nulltech.systems
@@ -62,7 +62,7 @@ tcp_pool_debug
 equal $tcp_pool_lookups 1
 equal $tcp_pool_cache_hits 1
 
-sleep_ms 420
+sleep_ms 720
 
 chttp_url /
 chttp_connect dns03.nulltech.systems 3
