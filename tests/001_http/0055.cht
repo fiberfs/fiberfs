@@ -60,7 +60,7 @@ server_read_request
 server_url_match /4
 server_send_response_partial 200
 server_send_raw "Content-Length: 4\r\n\r\n"
-server_sleep_ms 200
+server_sleep_ms 300
 server_send_raw "DATAHTTP"
 
 chttp_reset
