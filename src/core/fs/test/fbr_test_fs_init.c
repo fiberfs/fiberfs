@@ -249,7 +249,7 @@ fbr_cmd_fs_test_stats(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 #define _FS_TEST_STAT(name)							\
-char *										\
+const char *									\
 fbr_var_fs_test_stat_##name(struct fbr_test_context *ctx)			\
 {										\
 	struct fbr_test_fuse *test_fuse = ctx->test_fuse;			\

@@ -434,7 +434,7 @@ chttp_body_read(struct chttp_context *ctx, void *buf, size_t buf_len)
 }
 
 void
-chttp_body_send(struct chttp_context *ctx, void *buf, size_t buf_len)
+chttp_body_send(struct chttp_context *ctx, const void *buf, size_t buf_len)
 {
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_SENT);

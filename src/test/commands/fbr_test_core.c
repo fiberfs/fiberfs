@@ -53,8 +53,8 @@ fbr_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int ret;
 	size_t retries = 0;
 
-	char *v1 = cmd->params[0].value;
-	char *v2 = cmd->params[1].value;
+	const char *v1 = cmd->params[0].value;
+	const char *v2 = cmd->params[1].value;
 	const char *v1_var = cmd->params[0].variable;
 	const char *v2_var = cmd->params[1].variable;
 

@@ -94,7 +94,7 @@ fbr_cmd_mkdir_op_test_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	char *mount = cmd->params[0].value;
+	const char *mount = cmd->params[0].value;
 
 	int ret = fbr_fuse_test_mount(ctx, mount, &_TEST_FS_MKDIR_CALLBACKS);
 	assert_zero(ret);
@@ -113,7 +113,7 @@ fbr_cmd_mkdir_test_fail(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		return;
 	}
 
-	char *dirname = cmd->params[0].value;
+	const char *dirname = cmd->params[0].value;
 	errno = 0;
 
 	int ret = mkdir(dirname, S_IRWXU);

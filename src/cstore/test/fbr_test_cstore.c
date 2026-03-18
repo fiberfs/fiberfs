@@ -143,7 +143,7 @@ fbr_test_cstore_init(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 
-	char *root = fbr_test_mkdir_tmp(ctx, NULL);
+	const char *root = fbr_test_mkdir_tmp(ctx, NULL);
 
 	_test_cstore_init(ctx, root, "c0^");
 }
@@ -153,7 +153,7 @@ fbr_test_cstore_init_loader(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 
-	char *root = fbr_test_mkdir_tmp(ctx, NULL);
+	const char *root = fbr_test_mkdir_tmp(ctx, NULL);
 
 	char data_path[FBR_PATH_MAX];
 	fbr_bprintf(data_path, "%s/%s/", root, FBR_CSTORE_DATA_DIR);
@@ -196,7 +196,7 @@ fbr_cmd_cstore_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	if (!index) {
 		fbr_test_cstore_init(ctx);
 	} else {
-		char *root = fbr_test_mkdir_tmp(ctx, NULL);
+		const char *root = fbr_test_mkdir_tmp(ctx, NULL);
 		char prefix[8];
 		fbr_bprintf(prefix, "c%zu^", index);
 		_test_cstore_init(ctx, root, prefix);
@@ -399,7 +399,7 @@ fbr_test_cstore_stat_roots(void)
 }
 
 #define _CSTORE_TEST_ENTRIES(index)						\
-char *										\
+const char *									\
 fbr_var_cstore_##index##_entries(struct fbr_test_context *ctx)			\
 {										\
 	fbr_test_context_ok(ctx);						\
@@ -418,7 +418,7 @@ _CSTORE_TEST_ENTRIES(4)
 _CSTORE_TEST_ENTRIES(5)
 
 #define _CSTORE_TEST_STAT(var, stat)						\
-char *										\
+const char *									\
 fbr_var_cstore_stat_##var(struct fbr_test_context *ctx)				\
 {										\
 	fbr_test_context_ok(ctx);						\

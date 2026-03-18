@@ -69,7 +69,7 @@ chttp_test_cmd_connect_or_skip(struct fbr_test_context *ctx, struct fbr_test_cmd
 	assert(ctx);
 	fbr_test_ERROR_param_count(cmd, 2);
 
-	char *host = cmd->params[0].value;
+	const char *host = cmd->params[0].value;
 	long port = fbr_test_parse_long(cmd->params[1].value);
 	fbr_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
 
@@ -97,7 +97,7 @@ chttp_test_cmd_connect_or_skip(struct fbr_test_context *ctx, struct fbr_test_cmd
 	return;
 }
 
-char *
+const char *
 chttp_test_var_tls_enabled(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);

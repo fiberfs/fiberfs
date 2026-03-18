@@ -433,7 +433,7 @@ fbr_cmd_fuse_error_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(cmd->param_count < 1, "Need to pass in a mount");
 	fbr_test_ERROR(cmd->param_count > 2, "Too many params");
 
-	char *mount = cmd->params[0].value;
+	const char *mount = cmd->params[0].value;
 
 	if (cmd->param_count > 1) {
 		long value = fbr_test_parse_long(cmd->params[1].value);

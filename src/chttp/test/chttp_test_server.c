@@ -384,7 +384,7 @@ chttp_test_cmd_server_close(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 	chttp_addr_closed(&server->addr);
 }
 
-char *
+const char *
 chttp_test_var_server_host(struct fbr_test_context *ctx)
 {
 	struct chttp_test_server *server = _server_context_ok(ctx);
@@ -394,7 +394,7 @@ chttp_test_var_server_host(struct fbr_test_context *ctx)
 	return server->ip_str;
 }
 
-char *
+const char *
 chttp_test_var_server_port(struct fbr_test_context *ctx)
 {
 	struct chttp_test_server *server = _server_context_ok(ctx);
@@ -404,7 +404,7 @@ chttp_test_var_server_port(struct fbr_test_context *ctx)
 	return server->port_str;
 }
 
-char *
+const char *
 chttp_test_var_server_tls(struct fbr_test_context *ctx)
 {
 	struct chttp_test_server *server = _server_context_ok(ctx);
@@ -818,8 +818,8 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 	assert(cmd->param_count <= 4);
 
 	long status = 200;
-	char *reason = "OK";
-	char *body = "";
+	const char *reason = "OK";
+	const char *body = "";
 	size_t body_len = 0;
 	int do_gzip = 0;
 

@@ -149,7 +149,7 @@ _test_server_host(struct fbr_test_cstore *tcstore)
 }
 
 #define _CSTORE_SERVER_HOST(index)						\
-char *										\
+const char *									\
 fbr_var_cstore_##index##_server_host(struct fbr_test_context *ctx)		\
 {										\
 	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);	\
@@ -178,7 +178,7 @@ _test_server_port(struct fbr_test_cstore *tcstore)
 }
 
 #define _CSTORE_SERVER_PORT(index)						\
-char *										\
+const char *									\
 fbr_var_cstore_##index##_server_port(struct fbr_test_context *ctx)		\
 {										\
 	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);	\
@@ -209,7 +209,7 @@ _test_server_tls(struct fbr_test_cstore *tcstore)
 }
 
 #define _CSTORE_SERVER_TLS(index)						\
-char *										\
+const char *									\
 fbr_var_cstore_##index##_server_tls(struct fbr_test_context *ctx)		\
 {										\
 	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);	\

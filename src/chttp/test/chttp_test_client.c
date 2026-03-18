@@ -235,7 +235,7 @@ chttp_test_cmd_chttp_connect(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	}
 }
 
-char *
+const char *
 chttp_test_var_chttp_reused(struct fbr_test_context *ctx)
 {
 	struct chttp_context *chttp = _test_context_ok(ctx);
@@ -714,7 +714,7 @@ chttp_test_cmd_chttp_reset(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 }
 
 #define _CHTTP_FLAG_NAME(name, var)						\
-char *										\
+const char *									\
 chttp_test_var_chttp_##name(struct fbr_test_context *ctx)			\
 {										\
 	struct chttp_context *chttp;						\

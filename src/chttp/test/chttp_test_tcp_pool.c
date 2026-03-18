@@ -162,7 +162,7 @@ chttp_test_cmd_tcp_pool_debug(struct fbr_test_context *ctx,
 }
 
 #define _TCP_POOL_STATS_NAME(name)						\
-char *										\
+const char *									\
 chttp_test_var_tcp_pool_##name(struct fbr_test_context *ctx)			\
 {										\
 	_tcp_pool_init(ctx);							\

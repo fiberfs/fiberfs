@@ -53,7 +53,7 @@ struct fbr_test_context {
 };
 
 struct fbr_test_param {
-	char					*value;
+	const char				*value;
 	size_t					len;
 
 	const char				*variable;
@@ -64,8 +64,8 @@ struct fbr_test_param {
 struct fbr_test_cmd;
 
 typedef void (fbr_test_cmd_f)(struct fbr_test_context *, struct fbr_test_cmd *);
-typedef char* (fbr_test_var_f)(struct fbr_test_context *);
-typedef char* (fbr_test_varf_f)(struct fbr_test_context *, struct fbr_test_param *);
+typedef const char* (fbr_test_var_f)(struct fbr_test_context *);
+typedef const char* (fbr_test_varf_f)(struct fbr_test_context *, struct fbr_test_param *);
 
 struct fbr_test_cmd {
 	unsigned int				magic;
@@ -169,14 +169,14 @@ struct fbr_test_cmdentry *fbr_test_cmds_get(struct fbr_test *test, const char *n
 
 void fbr_test_unescape(struct fbr_test_param *param);
 int fbr_test_readline(struct fbr_test *test, size_t append_len);
-char *fbr_test_read_var(struct fbr_test *test, const char *variable);
+const char *fbr_test_read_var(struct fbr_test *test, const char *variable);
 void fbr_test_parse_cmd(struct fbr_test *test);
 
 void fbr_test_fork(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd);
 int fbr_test_can_fork(struct fbr_test_context *ctx);
 int fbr_test_can_vfork(struct fbr_test_context *ctx);
 
-char *fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot);
+const char *fbr_test_mkdir_tmp(struct fbr_test_context *ctx, const char *tmproot);
 
 struct fbr_test *fbr_test_convert(struct fbr_test_context *ctx);
 void fbr_test_skip(struct fbr_test_context *ctx);

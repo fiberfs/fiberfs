@@ -63,7 +63,7 @@ fbr_cmd_config_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_register_finish(ctx, "config", _sys_finish);
 }
 
-char *
+const char *
 fbr_varf_config(struct fbr_test_context *ctx, struct fbr_test_param *param)
 {
 	fbr_test_context_ok(ctx);
@@ -75,7 +75,7 @@ fbr_varf_config(struct fbr_test_context *ctx, struct fbr_test_param *param)
 		fbr_test_ABORT("config '%s' not found", param->value);
 	}
 
-	return (char*)value;
+	return value;
 }
 
 void
@@ -323,7 +323,7 @@ fbr_cmd_test_config_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_config *config = fbr_config_alloc();
 	fbr_config_ok(config);
 
-	char *tmpdir = fbr_test_mkdir_tmp(ctx, NULL);
+	const char *tmpdir = fbr_test_mkdir_tmp(ctx, NULL);
 	char confpath[FBR_PATH_MAX];
 	fbr_bprintf(confpath, "%s/conf", tmpdir);
 
@@ -382,7 +382,7 @@ fbr_cmd_test_config_file_errors(struct fbr_test_context *ctx, struct fbr_test_cm
 	struct fbr_config *config = fbr_config_alloc();
 	fbr_config_ok(config);
 
-	char *tmpdir = fbr_test_mkdir_tmp(ctx, NULL);
+	const char *tmpdir = fbr_test_mkdir_tmp(ctx, NULL);
 	char confpath[FBR_PATH_MAX];
 	fbr_bprintf(confpath, "%s/confbad", tmpdir);
 

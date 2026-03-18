@@ -387,7 +387,7 @@ fbr_cmd__fs_test_take_dir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	fbr_test_ASSERT(_TEST_DIR == NULL, "_TEST_DIR exists");
 
-	char *dirname = cmd->params[0].value;
+	const char *dirname = cmd->params[0].value;
 
 	_TEST_DIR = opendir(dirname);
 	fbr_test_ASSERT(_TEST_DIR, "opendir failed for %s", dirname);
@@ -423,7 +423,7 @@ fbr_cmd__fs_test_take_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_ASSERT(_TEST_FD == -1, "_TEST_FD exists");
 
-	char *filename = cmd->params[0].value;
+	const char *filename = cmd->params[0].value;
 
 	_TEST_FD = open(filename, O_RDONLY);
 	fbr_test_ASSERT(_TEST_FD >= 0, "open failed for %s", filename);

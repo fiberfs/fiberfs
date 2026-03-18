@@ -194,7 +194,7 @@ chttp_test_cmd_dns_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 }
 
-char *
+const char *
 chttp_test_var_dns_value(struct fbr_test_context *ctx)
 {
 	_dns_init(ctx);
@@ -203,7 +203,7 @@ chttp_test_var_dns_value(struct fbr_test_context *ctx)
 }
 
 #define _DNS_STATS_NAME(name)							\
-char *										\
+const char *									\
 chttp_test_var_dns_##name(struct fbr_test_context *ctx)				\
 {										\
 	_dns_init(ctx);								\

@@ -76,7 +76,7 @@ fbr_cmd_random_range(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		ctx->random->high);
 }
 
-char *
+const char *
 fbr_var_random(struct fbr_test_context *ctx)
 {
 	_random_init(ctx);

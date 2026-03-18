@@ -28,12 +28,13 @@ fbr_test_unescape(struct fbr_test_param *param)
 		return;
 	}
 
+	char *_value = (char*)param->value;
 	size_t offset = 0;
 
 	for (size_t i = 0; i < param->len; i++) {
 		if (param->value[i] != '\\') {
 			if (offset) {
-				param->value[i - offset] = param->value[i];
+				_value[i - offset] = param->value[i];
 			}
 
 			continue;
@@ -47,22 +48,22 @@ fbr_test_unescape(struct fbr_test_param *param)
 			case '\\':
 			case '\"':
 			case '\'':
-				param->value[i - offset] = val;
+				_value[i - offset] = val;
 				offset++;
 				i++;
 				continue;
 			case 'n':
-				param->value[i - offset] = '\n';
+				_value[i - offset] = '\n';
 				offset++;
 				i++;
 				continue;
 			case 'r':
-				param->value[i - offset] = '\r';
+				_value[i - offset] = '\r';
 				offset++;
 				i++;
 				continue;
 			case 't':
-				param->value[i - offset] = '\t';
+				_value[i - offset] = '\t';
 				offset++;
 				i++;
 				continue;
@@ -74,7 +75,7 @@ fbr_test_unescape(struct fbr_test_param *param)
 
 	if (offset) {
 		assert(offset < param->len);
-		param->value[param->len - offset] = '\0';
+		_value[param->len - offset] = '\0';
 		param->len -= offset;
 	}
 }
@@ -207,7 +208,7 @@ _match_quote(char *buf, size_t pos)
 	return quote;
 }
 
-char *
+const char *
 _test_read_varf(struct fbr_test *test, const char *variable)
 {
 	assert_dev(test);
@@ -239,14 +240,14 @@ _test_read_varf(struct fbr_test *test, const char *variable)
 	varf_param.len = param_len;
 	varf_param.variable = variable;
 
-	char *value = cmd_entry->varf_func(test->context, &varf_param);
+	const char *value = cmd_entry->varf_func(test->context, &varf_param);
 
 	free(varf);
 
 	return value;
 }
 
-char *
+const char *
 fbr_test_read_var(struct fbr_test *test, const char *variable)
 {
 	fbr_test_ok(test);
@@ -261,7 +262,7 @@ fbr_test_read_var(struct fbr_test *test, const char *variable)
 		return NULL;
 	}
 
-	char *value = cmd_entry->var_func(test->context);
+	const char *value = cmd_entry->var_func(test->context);
 	return value;
 }
 
@@ -346,14 +347,14 @@ fbr_test_parse_cmd(struct fbr_test *test)
 		if (cmd->params[i].value[0] == '$' && cmd->params[i].value[1] == '$') {
 			cmd->params[i].value += 1;
 		} else if (cmd->params[i].value[0] == '$') {
-			char *var = cmd->params[i].value;
+			const char *var = cmd->params[i].value;
 
 			cmd->params[i].variable = var;
 			cmd->params[i].v_const = 1;
 
 			fbr_test_log(test->context, FBR_LOG_VERY_VERBOSE, "Var: %s", var);
 
-			char *var_value = fbr_test_read_var(test, var);
+			const char *var_value = fbr_test_read_var(test, var);
 			fbr_test_ASSERT(var_value, "variable %s not found (line %zu)",
 				var, fbr_test_line_pos(test));
 

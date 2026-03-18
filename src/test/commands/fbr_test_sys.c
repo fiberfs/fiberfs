@@ -37,7 +37,7 @@ struct fbr_test_sys {
 
 	struct _sys_path		*dirs;
 
-	char				*tmpdir_str;
+	const char			*tmpdir_str;
 };
 
 static void
@@ -93,8 +93,8 @@ _sys_init(struct fbr_test_context *ctx)
 	fbr_magic_check(ctx->sys, _SYS_MAGIC);
 }
 
-char *
-fbr_test_mkdir_tmp(struct fbr_test_context *ctx, char *tmproot)
+const char *
+fbr_test_mkdir_tmp(struct fbr_test_context *ctx, const char *tmproot)
 {
 	_sys_init(ctx);
 
@@ -140,20 +140,20 @@ fbr_cmd_sys_mkdir_tmp(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_ERROR(cmd->param_count > 1, "Too many parameters");
 
-	char *tmproot = NULL;
+	const char *tmproot = NULL;
 
 	if (cmd->param_count == 1) {
 		tmproot = cmd->params[0].value;
 	}
 
-	char *tmpdir = fbr_test_mkdir_tmp(ctx, tmproot);
+	const char *tmpdir = fbr_test_mkdir_tmp(ctx, tmproot);
 
 	ctx->sys->tmpdir_str = tmpdir;
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "tmpdir '%s'", tmpdir);
 }
 
-char *
+const char *
 fbr_var_sys_tmpdir(struct fbr_test_context *ctx)
 {
 	_sys_init(ctx);
@@ -184,7 +184,7 @@ fbr_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		return;
 	}
 
-	char *filename = cmd->params[0].value;
+	const char *filename = cmd->params[0].value;
 	fbr_test_ERROR_string(filename);
 
 	int want_result = 0;
@@ -283,7 +283,7 @@ fbr_cmd_sys_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		return;
 	}
 
-	char *filename = cmd->params[0].value;
+	const char *filename = cmd->params[0].value;
 	fbr_test_ERROR_string(filename);
 
 	int want_result = 0;
@@ -349,8 +349,8 @@ fbr_cmd_sys_cat_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		return;
 	}
 
-	char *filename = cmd->params[0].value;
-	char *md5_result = cmd->params[1].value;
+	const char *filename = cmd->params[0].value;
+	const char *md5_result = cmd->params[1].value;
 	char md5_str[CHTTP_TEST_MD5_BUFLEN];
 
 	struct fbr_md5_ctx md5;
@@ -397,7 +397,7 @@ fbr_cmd_sys_stat_size(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		return;
 	}
 
-	char *filename = cmd->params[0].value;
+	const char *filename = cmd->params[0].value;
 	fbr_test_ERROR_string(filename);
 
 	struct stat st;
@@ -426,7 +426,7 @@ fbr_cmd_sys_stat_mode(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		return;
 	}
 
-	char *filename = cmd->params[0].value;
+	const char *filename = cmd->params[0].value;
 	fbr_test_ERROR_string(filename);
 
 	struct stat st;
@@ -455,7 +455,7 @@ fbr_cmd_sys_stat_uid(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		return;
 	}
 
-	char *filename = cmd->params[0].value;
+	const char *filename = cmd->params[0].value;
 	fbr_test_ERROR_string(filename);
 
 	struct stat st;
@@ -488,7 +488,7 @@ _sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append)
 		return;
 	}
 
-	char *filename = cmd->params[0].value;
+	const char *filename = cmd->params[0].value;
 
 	char *name = "write";
 	int write_flag = O_TRUNC;
@@ -504,7 +504,7 @@ _sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append)
 	size_t total_bytes = 0;
 
 	for (size_t i = 1; i < cmd->param_count; i++) {
-		char *text = cmd->params[i].value;
+		const char *text = cmd->params[i].value;
 		size_t text_len = cmd->params[i].len;
 
 		size_t size = fbr_sys_write(fd, text, text_len);
@@ -542,7 +542,7 @@ fbr_cmd_sys_write_seek(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		return;
 	}
 
-	char *filename = cmd->params[0].value;
+	const char *filename = cmd->params[0].value;
 	long seek_pos = fbr_test_parse_long(cmd->params[1].value);
 	fbr_test_ASSERT(seek_pos >= 0, "Bad seek_pos");
 
@@ -556,7 +556,7 @@ fbr_cmd_sys_write_seek(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	size_t total_bytes = 0;
 
 	for (size_t i = 2; i < cmd->param_count; i++) {
-		char *text = cmd->params[i].value;
+		const char *text = cmd->params[i].value;
 		size_t text_len = cmd->params[i].len;
 
 		size_t size = fbr_sys_write(fd, text, text_len);
@@ -583,7 +583,7 @@ fbr_cmd_sys_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		return;
 	}
 
-	char *dirname = cmd->params[0].value;
+	const char *dirname = cmd->params[0].value;
 
 	int ret = mkdir(dirname, S_IRWXU);
 	fbr_test_ERROR(ret, "mkdir failed %d %d (%s)", ret, errno, strerror(errno));

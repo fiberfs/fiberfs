@@ -17,7 +17,7 @@ fbr_cmd_cstore_backend_test(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	char *root = fbr_test_mkdir_tmp(ctx, NULL);
+	const char *root = fbr_test_mkdir_tmp(ctx, NULL);
 	struct fbr_cstore _cstore, *cstore;
 	struct fbr_cstore_backend *backend;
 

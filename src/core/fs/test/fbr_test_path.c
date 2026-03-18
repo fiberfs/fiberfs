@@ -95,8 +95,8 @@ _test_path_print_dir(struct fbr_test_context *ctx, struct fbr_directory *directo
 }
 
 static void
-_test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, char *name,
-	enum fbr_path_layout layout, char *d_check, char *f_check, char *fp_check)
+_test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, const char *name,
+	enum fbr_path_layout layout, const char *d_check, const char *f_check, const char *fp_check)
 {
 	fbr_test_context_ok(ctx);
 	assert(path);
@@ -156,7 +156,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_inode_t inode = file->inode;
 
 	for (size_t i = 0; i < cmd->param_count; i++) {
-		char *name = cmd->params[i].value;
+		const char *name = cmd->params[i].value;
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** %zu '%s'", i + 1, name);
 
 		// directory file

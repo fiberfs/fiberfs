@@ -42,7 +42,7 @@ chttp_test_md5_store_client(struct fbr_test_context *ctx, struct fbr_md5_ctx *md
 	chttp_test_md5_store(md5, ctx->chttp_test->md5_client, sizeof(ctx->chttp_test->md5_client));
 }
 
-char *
+const char *
 chttp_test_var_md5_server(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
@@ -52,7 +52,7 @@ chttp_test_var_md5_server(struct fbr_test_context *ctx)
 	return ctx->chttp_test->md5_server;
 }
 
-char *
+const char *
 chttp_test_var_md5_client(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
