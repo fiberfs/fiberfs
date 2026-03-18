@@ -223,6 +223,8 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(flush_errors);
 	_FS_TEST_STAT_PRINT(flush_conflicts);
 	_FS_TEST_STAT_PRINT(merges);
+	_FS_TEST_STAT_PRINT(lru_loops);
+	_FS_TEST_STAT_PRINT(lru_attempts);
 	_FS_TEST_STAT_PRINT(wbuffers);
 	_FS_TEST_STAT_PRINT(chunk_slabs);
 	_FS_TEST_STAT_PRINT(file_ptr_slabs);

@@ -316,6 +316,8 @@ struct fbr_fs_stats {
 	fbr_stats_t				flush_errors;
 	fbr_stats_t				flush_conflicts;
 	fbr_stats_t				merges;
+	fbr_stats_t				lru_loops;
+	fbr_stats_t				lru_attempts;
 
 	fbr_stats_t				wbuffers;
 	fbr_stats_t				chunk_slabs;
@@ -330,6 +332,8 @@ struct fbr_fs_config {
 	double					dentry_ttl;
 	unsigned long				flush_attempts;
 	unsigned long				flush_timeout_sec;
+	unsigned long				lru_dindex_max;
+	unsigned long				lru_sleep_ms;
 
 	unsigned long				rlog_size;
 
@@ -340,7 +344,7 @@ struct fbr_fs {
 	unsigned int				magic;
 #define FBR_FS_MAGIC				0x150CC3D2
 
-	fbr_bitflag_t				shutdown:1;
+	int					shutdown;
 
 	struct fbr_inodes			*inodes;
 	struct fbr_dindex			*dindex;

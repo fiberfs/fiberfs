@@ -4,6 +4,8 @@ fiber_test "Mount fs fuse and do external tests (small)"
 
 set_timeout_sec 20
 config_add LOG_SIZE 500000
+config_add LRU_SLEEP_MS 0
+config_add MAX_DIRECTORIES 0
 
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir
@@ -17,20 +19,7 @@ set_var2 "cd " $sys_tmpdir "; sleep 0.01; cat */* >/dev/null 2>&1 || true"
 shell_bg $var1
 shell_bg $var2
 
-sleep_ms 11
-fs_test_release_all
-fs_test_stats
-fs_test_debug
-
-fs_test_release_all
-fs_test_stats
-fs_test_debug
-
-sleep_ms 2
-fs_test_release_all
-fs_test_stats
-fs_test_debug
-
+sleep_ms 10
 fs_test_release_all
 fs_test_stats
 fs_test_debug

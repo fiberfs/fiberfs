@@ -161,6 +161,8 @@ _cstore_load_thread(void *arg)
 	struct fbr_cstore *cstore = arg;
 	fbr_cstore_ok(cstore);
 
+	fbr_thread_name("fbr_loader");
+
 	struct fbr_cstore_loader *loader = &cstore->loader;
 	size_t pos = fbr_atomic_add(&loader->thread_pos, 1);
 	size_t thread_id = fbr_request_id_thread_gen();

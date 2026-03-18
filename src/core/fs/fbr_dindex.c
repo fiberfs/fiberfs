@@ -35,10 +35,13 @@ struct fbr_dindex {
 	struct _dindex_lru_list			lru;
 	pthread_mutex_t				lru_lock;
 	volatile size_t				lru_len;
+	pthread_t				lru_thread;
 };
 
 #define fbr_dindex_ok(dindex)			fbr_magic_check(dindex, FBR_DINDEX_MAGIC)
 #define fbr_dindex_dirhead_ok(dirhead)		fbr_magic_check(dirhead, FBR_DINDEX_DIRHEAD_MAGIC)
+
+static void *_dindex_lru_purger(void *arg);
 
 RB_GENERATE_STATIC(fbr_dindex_tree, fbr_directory, dindex_entry, fbr_directory_cmp)
 
@@ -69,6 +72,8 @@ fbr_dindex_alloc(struct fbr_fs *fs)
 	pt_assert(pthread_mutex_init(&dindex->lru_lock, NULL));
 
 	fs->dindex = dindex;
+
+	pt_assert(pthread_create(&dindex->lru_thread, NULL, _dindex_lru_purger, fs));
 }
 
 static inline struct fbr_dindex *
@@ -540,7 +545,33 @@ fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max)
 	while (dindex->lru_len > lru_max && attempts) {
 		_dindex_lru_pop_release(fs);
 		attempts--;
+		fbr_fs_stat_add(&fs->stats.lru_attempts);
 	}
+}
+
+static void *
+_dindex_lru_purger(void *arg)
+{
+	struct fbr_fs *fs = arg;
+	fbr_fs_ok(fs);
+
+	fbr_thread_name("fbr_lru");
+
+	while (!fs->shutdown) {
+		fbr_fs_config_load(fs);
+
+		// TODO introduce a memory based limit
+
+		size_t lru_max = fs->config.lru_dindex_max;
+		fbr_dindex_lru_purge(fs, lru_max);
+
+		fbr_fs_stat_add(&fs->stats.lru_loops);
+
+		unsigned long sleep_ms = fs->config.lru_sleep_ms;
+		fbr_sleep_flag(sleep_ms, &fs->shutdown);
+	}
+
+	return NULL;
 }
 
 void
@@ -571,6 +602,8 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 	assert(fs->shutdown);
+
+	pt_assert(pthread_join(dindex->lru_thread, NULL));
 
 	for (size_t i = 0; i < _DINDEX_HEAD_COUNT; i++) {
 		struct fbr_dindex_dirhead *dirhead = &dindex->dirheads[i];

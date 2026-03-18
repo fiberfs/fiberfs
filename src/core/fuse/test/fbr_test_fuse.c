@@ -19,6 +19,7 @@
 
 #include "test/fbr_test.h"
 #include "fbr_test_fuse_cmds.h"
+#include "config/test/fbr_test_config_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 #include "log/test/fbr_test_log_cmds.h"
@@ -89,6 +90,13 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 
 	if (test->verbocity >= FBR_LOG_VERBOSE) {
 		ctx->debug = 1;
+	}
+
+	if (fbr_test_is_valgrind()) {
+		unsigned long lru_sleep = fbr_conf_get_ulong("LRU_SLEEP_MS", 1);
+		if (!lru_sleep) {
+			fbr_test_conf_add_long("LRU_SLEEP_MS", 1);
+		}
 	}
 
 	int ret = fbr_fuse_mount(ctx, path);

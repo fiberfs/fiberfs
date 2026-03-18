@@ -45,6 +45,8 @@ fbr_fs_config_load(struct fbr_fs *fs)
 
 	fs->config.flush_attempts = fbr_conf_get_ulong("FS_FLUSH_ATTEMPTS", 100);
 	fs->config.flush_timeout_sec = fbr_conf_get_ulong("FS_FLUSH_TIMEOUT_SEC", 60);
+	fs->config.lru_dindex_max = fbr_conf_get_ulong("MAX_DIRECTORIES", 250);
+	fs->config.lru_sleep_ms = fbr_conf_get_ulong("LRU_SLEEP_MS", 500);
 	fs->config.rlog_size = fbr_conf_get_ulong("LOG_BUFFER_SIZE", FBR_RLOG_MIN_SIZE);
 	fs->config.debug_wbuffer_size = fbr_conf_get_ulong("DEBUG_FS_WBUFFER_ALLOC_SIZE", 0);
 
@@ -61,6 +63,9 @@ fbr_fs_alloc(void)
 
 	fs->magic = FBR_FS_MAGIC;
 
+	fbr_config_reader_init(&fs->config.reader);
+	fbr_fs_config_load(fs);
+
 	fbr_context_request_init();
 	fbr_inodes_alloc(fs);
 	fbr_dindex_alloc(fs);
@@ -71,9 +76,6 @@ fbr_fs_alloc(void)
 	pt_assert(pthread_mutex_init(&fs->lock, NULL));
 
 	fs->store = &_STORE_CALLBACKS_EMPTY;
-
-	fbr_config_reader_init(&fs->config.reader);
-	fbr_fs_config_load(fs);
 
 	fbr_fs_ok(fs);
 
