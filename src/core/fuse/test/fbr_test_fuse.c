@@ -96,6 +96,8 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 		unsigned long lru_sleep = fbr_conf_get_ulong("LRU_SLEEP_MS", 1);
 		if (!lru_sleep) {
 			fbr_test_conf_add_long("LRU_SLEEP_MS", 1);
+		} else if (lru_sleep < 500) {
+			fbr_test_conf_add_long("LRU_SLEEP_MS", 500);
 		}
 	}
 

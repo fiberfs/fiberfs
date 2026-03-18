@@ -4,7 +4,7 @@ fiber_test "Mount fs fuse and do external tests"
 
 set_timeout_sec 30
 config_add LOG_SIZE 1250000
-config_add LRU_SLEEP_MS 0
+config_add LRU_SLEEP_MS 20
 config_add MAX_DIRECTORIES 0
 
 sys_mkdir_tmp
