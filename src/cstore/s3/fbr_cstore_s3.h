@@ -20,12 +20,16 @@
 #define FBR_CSTORE_TIMEOUT_CONNECT_MS		3000
 #define FBR_CSTORE_TIMEOUT_TRANSFER_MS		5000
 
-enum fbr_cstore_route {
-	FBR_CSTORE_ROUTE_NONE = 0,
-	FBR_CSTORE_ROUTE_CLUSTER,
-	FBR_CSTORE_ROUTE_CDN,
-	FBR_CSTORE_ROUTE_S3
-};
+#define FBR_ENUM_CSTORE_ROUTE						\
+	FBR_ENUM_NAMES(fbr_cstore_route, _cstore_route_string)		\
+		FBR_ENUM_VALUES_INIT(FBR_CSTORE_ROUTE_NONE, "NONE", 0)	\
+		FBR_ENUM_VALUES(FBR_CSTORE_ROUTE_CLUSTER, "CLUSTER")	\
+		FBR_ENUM_VALUES(FBR_CSTORE_ROUTE_CDN, "CDN")		\
+		FBR_ENUM_VALUES(FBR_CSTORE_ROUTE_S3, "S3")		\
+	FBR_ENUM_END("UNKNOWN")
+
+#include "utils/fbr_enum_define.h"
+FBR_ENUM_CSTORE_ROUTE
 
 struct fbr_cstore_backend {
 	unsigned int			magic;

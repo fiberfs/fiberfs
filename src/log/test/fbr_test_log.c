@@ -21,6 +21,8 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
 
+static double _LOG_PRINTER_TIME_START;
+
 struct fbr_test_log_printer {
 	unsigned int				magic;
 #define FBR_TEST_LOG_PRINT_MAGIC		0x57A22B5D
@@ -96,8 +98,11 @@ _test_log_printer_thread(void *arg)
 			continue;
 		}
 
-		double time = log_line->timestamp - header->time_created;
-		assert(time >= 0);
+		assert_dev(_LOG_PRINTER_TIME_START);
+		double time = log_line->timestamp - _LOG_PRINTER_TIME_START;
+		if (0 > time && time > -0.1) {
+			time = 0;
+		}
 
 		char reqid_str[32];
 		fbr_log_reqid_str(log_line->request_id, reqid_str, sizeof(reqid_str));
@@ -152,6 +157,10 @@ fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname
 	fbr_test_context_ok(test_ctx);
 	assert(logname);
 	assert(prefix);
+
+	if (!_LOG_PRINTER_TIME_START) {
+		_LOG_PRINTER_TIME_START = fbr_get_time();
+	}
 
 	struct fbr_test_log_printer *printer = test_ctx->printer;
 	while (printer) {

@@ -34,9 +34,10 @@ _backend_alloc(const char *host, int port, int tls)
 	backend->host = (char*)(backend + 1);
 	backend->host_len = host_len;
 	backend->tls = tls ? 1 : 0;
-	backend->hash = fbr_hash(host, host_len);
 
 	fbr_strcpy(backend->host, host_len + 1, host);
+
+	backend->hash = fbr_hash(backend, sizeof(*backend) + host_len);
 
 	fbr_cstore_backend_ok(backend);
 
@@ -181,6 +182,9 @@ fbr_cstore_backend_enabled(struct fbr_cstore *cstore)
 	return 0;
 }
 
+#include "utils/fbr_enum_string.h"
+static FBR_ENUM_CSTORE_ROUTE
+
 static int
 _backend_hash_cmp(const void *arg1, const void *arg2)
 {
@@ -280,13 +284,30 @@ fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, enum fbr_csto
 	assert(route && route <= FBR_CSTORE_ROUTE_S3);
 	assert(retries >= 0);
 
+	struct fbr_cstore_backend *backend = NULL;
+	const char *route_type = "";
+
 	if (route == FBR_CSTORE_ROUTE_CLUSTER && cstore->cluster.size) {
-		return _backend_rv_hash(&cstore->cluster, hash, retries);
+		backend = _backend_rv_hash(&cstore->cluster, hash, retries);
 	} else if (route <= FBR_CSTORE_ROUTE_CDN && cdn_ok && cstore->cdn.size) {
-		return _backend_rv_hash(&cstore->cdn, hash, retries);
+		backend = _backend_rv_hash(&cstore->cdn, hash, retries);
+
+		if (route != FBR_CSTORE_ROUTE_CDN) {
+			route_type = " CDN_FALLBACK";
+		}
 	}
 
-	fbr_cstore_backend_ok(cstore->s3.backend);
+	if (!backend) {
+		fbr_cstore_backend_ok(cstore->s3.backend);
+		backend = cstore->s3.backend;
 
-	return cstore->s3.backend;
+		if (route != FBR_CSTORE_ROUTE_S3) {
+			route_type = " S3_FALLBACK";
+		}
+	}
+
+	fbr_rlog(FBR_LOG_CS_S3, "BACKEND %s%s %s:%d (tls: %d)", _cstore_route_string(route),
+		route_type, backend->host, backend->port, backend->tls);
+
+	return backend;
 }
