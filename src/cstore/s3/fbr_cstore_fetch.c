@@ -79,6 +79,9 @@ _s3_connection(struct fbr_cstore *cstore, struct chttp_context *http,
 	assert_dev(http);
 	assert_dev(backend);
 
+	fbr_rlog(FBR_LOG_CS_S3, "S3 connection %s:%d (tls: %d)", backend->host, backend->port,
+		backend->tls);
+
 	chttp_connect(http, backend->host, backend->host_len, backend->port, backend->tls);
 	if (http->error) {
 		fbr_rlog(FBR_LOG_CS_S3, "S3 ERROR %s (%s %d)", backend->host, chttp_error_msg(http),

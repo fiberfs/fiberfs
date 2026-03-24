@@ -194,7 +194,7 @@ fbr_cstore_epool_proc(struct fbr_cstore_task_worker *task_worker)
 		pt_assert(pthread_mutex_unlock(&epool->lock));
 
 		// TODO schedule the timeout better, also include a breakout signal
-		event_count = epoll_wait(epool->epfd, &event, 1, 250);
+		event_count = epoll_wait(epool->epfd, &event, 1, 100);
 		assert(event_count >= 0 || errno == EINTR);
 		assert(event_count <= 1);
 
