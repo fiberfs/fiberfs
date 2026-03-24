@@ -238,7 +238,7 @@ fbr_cmd_set_timeout_sec(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "timeout %ldms", test->timeout_ms);
 }
 
-char *
+const char *
 fbr_var_is_valgrind(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
@@ -250,7 +250,7 @@ fbr_var_is_valgrind(struct fbr_test_context *ctx)
 	}
 }
 
-char *
+const char *
 fbr_var_test_counter(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
@@ -262,7 +262,7 @@ fbr_var_test_counter(struct fbr_test_context *ctx)
 	return TEST_COUNTER_STR;
 }
 
-char *
+const char *
 fbr_varf_test_varf(struct fbr_test_context *ctx, struct fbr_test_param *param)
 {
 	fbr_test_context_ok(ctx);

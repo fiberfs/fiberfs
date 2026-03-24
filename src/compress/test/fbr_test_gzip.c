@@ -10,7 +10,7 @@
 
 #include "test/fbr_test.h"
 
-char *
+const char *
 fbr_var_gzip_enabled(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);

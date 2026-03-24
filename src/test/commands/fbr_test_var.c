@@ -74,7 +74,7 @@ _var_get(struct fbr_test_context *ctx, size_t index)
 }
 
 #define _VAR_GET(index)						\
-char *								\
+const char *							\
 fbr_var_var##index(struct fbr_test_context *ctx)		\
 {								\
 	return _var_get(ctx, index);				\
