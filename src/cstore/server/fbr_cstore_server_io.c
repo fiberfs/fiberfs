@@ -142,7 +142,7 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 	assert_zero(http->length);
 }
 
-void
+static void
 _cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const char *url,
     fbr_id_t etag_id, fbr_id_t etag_match)
 {

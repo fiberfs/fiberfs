@@ -473,12 +473,12 @@ fbr_cmd_cstore_clear(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 #define _CSTORE_ALL_THREADS	(_CSTORE_THREADS + _CSTORE_RAND_THREADS)
 #define _CSTORE_ENTRY_MAX	((256 * 1024) + _CSTORE_THREADS)
 #define _CSTORE_HASH_MAX_BYTES	(2 * 1000 * 1000)
-size_t _CSTORE_MAX_BYTES;
-size_t _CSTORE_THREAD_COUNT;
-size_t _CSTORE_ENTRY_COUNTER;
-size_t _CSTORE_READ_COUNTER;
-size_t _CSTORE_BYTES_COUNTER;
-size_t _CSTORE_DELAY_COUNTER;
+static size_t _CSTORE_MAX_BYTES;
+static size_t _CSTORE_THREAD_COUNT;
+static size_t _CSTORE_ENTRY_COUNTER;
+static size_t _CSTORE_READ_COUNTER;
+static size_t _CSTORE_BYTES_COUNTER;
+static size_t _CSTORE_DELAY_COUNTER;
 
 static void
 _cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
@@ -666,10 +666,10 @@ fbr_cmd_cstore_test_lru(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 #define _CSTORE_ST_THREADS	40
 #define _CSTORE_ST_HASHES	10
-size_t _CSTORE_ST_THREAD_COUNT;
-size_t _CSTORE_ST_COUNTER[_CSTORE_ST_HASHES];
-size_t _CSTORE_ST_COMPLETED;
-size_t _CSTORE_ST_WAITING;
+static size_t _CSTORE_ST_THREAD_COUNT;
+static size_t _CSTORE_ST_COUNTER[_CSTORE_ST_HASHES];
+static size_t _CSTORE_ST_COMPLETED;
+static size_t _CSTORE_ST_WAITING;
 
 static void *
 _cstore_state_thread(void *arg)
@@ -793,10 +793,10 @@ fbr_cmd_cstore_state_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 #define _CSTORE_WAIT_THREADS	12
 #define _CSTORE_WAIT_COUNT_MAX  500
-size_t _CSTORE_WAIT_THREAD_COUNT;
-size_t _CSTORE_WAIT_FIRST_LOAD;
-size_t _CSTORE_WAIT_COUNT;
-size_t _CSTORE_WAIT_METER;
+static size_t _CSTORE_WAIT_THREAD_COUNT;
+static size_t _CSTORE_WAIT_FIRST_LOAD;
+static size_t _CSTORE_WAIT_COUNT;
+static size_t _CSTORE_WAIT_METER;
 
 static void *
 _cstore_wait_thread(void *arg)

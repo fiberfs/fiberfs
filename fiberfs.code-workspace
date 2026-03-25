@@ -21,7 +21,8 @@
 			"clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling",
 			"misc-include-cleaner",
 			"misc-no-recursion",
-			"misc-static-assert"
+			"misc-static-assert",
+			"misc-use-internal-linkage"
 		],
 		"C_Cpp.default.includePath": [
 			"src",
