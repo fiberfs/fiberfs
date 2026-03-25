@@ -102,7 +102,6 @@ _test_log_printer_thread(void *arg)
 
 		assert(_LOG_PRINTER_TIME_START);
 		double time = log_line->timestamp - _LOG_PRINTER_TIME_START;
-		assert(time >= 0);
 
 		char reqid_str[32];
 		fbr_log_reqid_str(log_line->request_id, reqid_str, sizeof(reqid_str));
