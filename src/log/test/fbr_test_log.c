@@ -80,6 +80,8 @@ _test_log_printer_thread(void *arg)
 				break;
 			}
 
+			// TODO synchronize so we get better log interleaving
+
 			fbr_test_sleep_ms(sleep_count);
 
 			if (sleep_count < 20) {
@@ -98,11 +100,9 @@ _test_log_printer_thread(void *arg)
 			continue;
 		}
 
-		assert_dev(_LOG_PRINTER_TIME_START);
+		assert(_LOG_PRINTER_TIME_START);
 		double time = log_line->timestamp - _LOG_PRINTER_TIME_START;
-		if (0 > time && time > -0.1) {
-			time = 0;
-		}
+		assert(time >= 0);
 
 		char reqid_str[32];
 		fbr_log_reqid_str(log_line->request_id, reqid_str, sizeof(reqid_str));
@@ -158,10 +158,6 @@ fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname
 	assert(logname);
 	assert(prefix);
 
-	if (!_LOG_PRINTER_TIME_START) {
-		_LOG_PRINTER_TIME_START = fbr_get_time();
-	}
-
 	struct fbr_test_log_printer *printer = test_ctx->printer;
 	while (printer) {
 		fbr_test_log_printer_ok(printer);
@@ -182,6 +178,13 @@ fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname
 
 	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {
 		fbr_log_reader_init(&printer->reader, logname);
+		fbr_log_reader_ok(&printer->reader);
+		fbr_log_ok(&printer->reader.log);
+		fbr_log_header_ok(printer->reader.log.header);
+
+		if (!_LOG_PRINTER_TIME_START) {
+			_LOG_PRINTER_TIME_START = printer->reader.log.header->time_created;
+		}
 
 		pt_assert(pthread_create(&printer->thread, NULL, _test_log_printer_thread,
 			printer));
