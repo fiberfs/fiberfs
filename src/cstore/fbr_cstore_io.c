@@ -1045,7 +1045,7 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", root_path->value);
 
 	int skip_ttl = 0;
-	if (!fbr_cstore_backend_enabled(cstore) || !cstore->root_ttl_sec) {
+	if (!fbr_cstore_backend_enabled(cstore) || !cstore->config.root_ttl_sec) {
 		skip_ttl = 1;
 	}
 
@@ -1076,7 +1076,7 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 
 	if (!skip_ttl) {
 		double now = fbr_get_time();
-		if (metadata.timestamp + cstore->root_ttl_sec < now) {
+		if (metadata.timestamp + cstore->config.root_ttl_sec < now) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "expired");
 			fbr_cstore_set_ok(entry);
 			fbr_cstore_release(cstore, entry);

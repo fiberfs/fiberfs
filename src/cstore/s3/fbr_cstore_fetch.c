@@ -222,6 +222,7 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 			chttp_header_add(http, "Content-Type", "application/json");
 
 			// TODO do we want to force a max-age in S3?
+			// see cstore->config.root_ttl_sec
 			//chttp_header_add(http, "Cache-Control", "max-age=86400");
 
 			break;

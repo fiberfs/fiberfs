@@ -113,6 +113,8 @@ struct fbr_cstore_config {
 
 	unsigned long				retries;
 	unsigned long				cluster_retries;
+
+	unsigned long				root_ttl_sec;
 };
 
 struct fbr_cstore;
@@ -145,8 +147,6 @@ struct fbr_cstore {
 
 	struct fbr_log				*log;
 	char					root[FBR_CSTORE_ROOT_LEN];
-
-	unsigned long				root_ttl_sec;
 
 	size_t					max_bytes;
 	size_t					bytes;

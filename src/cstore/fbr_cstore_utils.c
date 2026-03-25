@@ -44,6 +44,8 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 		FBR_CSTORE_KEEP_ALIVE_DEFAULT);
 	cstore->config.retries = fbr_conf_get_ulong("HTTP_RETRIES", FBR_CSTORE_RETRIES_DEFAULT);
 	cstore->config.cluster_retries = fbr_conf_get_ulong("HTTP_CLUSTER_RETRIES", 1);
+	cstore->config.root_ttl_sec = fbr_conf_get_ulong("ROOT_FILE_TTL_SEC",
+		FBR_CSTORE_ROOT_TTL_DEFAULT);
 
 	fbr_config_reader_ready(reader);
 }
