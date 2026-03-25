@@ -1,7 +1,5 @@
 fiber_test "cstore with backend cluster"
 
-set_timeout_sec 60
-
 config_add LOG_ALWAYS_FLUSH true
 
 config_add CSTORE_SERVER true

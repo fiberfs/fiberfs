@@ -168,6 +168,10 @@ struct fbr_cstore {
 		fbr_stats_t			workers;
 		fbr_stats_t			workers_active;
 		fbr_stats_t			retries;
+		fbr_stats_t			http_200;
+		fbr_stats_t			http_400;
+		fbr_stats_t			http_500;
+		fbr_stats_t			http_other;
 	} stats;
 	};
 

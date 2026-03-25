@@ -49,6 +49,16 @@ fbr_cstore_http_respond(struct fbr_cstore *cstore, struct chttp_context *http, i
 	chttp_tcp_error_check(http);
 
 	fbr_rlog(FBR_LOG_CS_WORKER, "sent response %d %s (error: %d)", status, reason, http->error);
+
+	if (status >= 200 && status <= 299) {
+		fbr_fs_stat_add(&cstore->stats.http_200);
+	} else if (status >= 400 && status <= 499) {
+		fbr_fs_stat_add(&cstore->stats.http_400);
+	} else if (status >= 500 && status <= 599) {
+		fbr_fs_stat_add(&cstore->stats.http_500);
+	} else {
+		fbr_fs_stat_add(&cstore->stats.http_other);
+	}
 }
 
 void
