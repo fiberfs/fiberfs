@@ -145,7 +145,6 @@ fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
     struct fbr_cstore_path *file_path, fbr_id_t id, enum fbr_cstore_route route)
 {
 	fbr_cstore_ok(cstore);
-	assert(cstore->retries >= 2);
 	chttp_context_ok(http);
 	assert_dev(http->state == CHTTP_STATE_NONE);
 	fbr_cstore_path_ok(file_path);
@@ -155,12 +154,13 @@ fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 	unsigned int attempts = 0;
 	enum fbr_cstore_route get_route = route;
 
-	while (attempts <= (cstore->retries + 1)) {
+	while (attempts <= (cstore->config.retries + 1)) {
 		attempts++;
 		if (attempts > 1) {
 			chttp_context_reset(http);
 		}
-		if (attempts > 2 && route != FBR_CSTORE_ROUTE_S3) {
+		if (attempts > (cstore->config.cluster_retries + 1) &&
+		    route != FBR_CSTORE_ROUTE_S3) {
 			if (attempts % 2 == 1) {
 				get_route = FBR_CSTORE_ROUTE_S3;
 			} else {
@@ -293,12 +293,12 @@ fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 
 	unsigned int attempts = 0;
 
-	while (attempts <= (cstore->retries + 1)) {
+	while (attempts <= (cstore->config.retries + 1)) {
 		attempts++;
 		if (attempts > 1) {
 			chttp_context_reset(http);
 		}
-		if (attempts > 2) {
+		if (attempts > (cstore->config.cluster_retries + 1)) {
 			route = FBR_CSTORE_ROUTE_S3;
 		}
 
@@ -491,7 +491,6 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
     enum fbr_cstore_route route)
 {
 	fbr_cstore_ok(cstore);
-	assert(cstore->retries >= 2);
 	fbr_cstore_url_ok(url);
 	assert(route);
 	assert(fbr_cstore_backend_enabled(cstore));
@@ -501,12 +500,12 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
 
 	unsigned int attempts = 0;
 
-	while (attempts <= (cstore->retries + 1)) {
+	while (attempts <= (cstore->config.retries + 1)) {
 		attempts++;
 		if (attempts > 1) {
 			chttp_context_reset(&http);
 		}
-		if (attempts > 2 || !cstore->delete_cache) {
+		if (attempts > (cstore->config.cluster_retries + 1) || !cstore->delete_cache) {
 			route = FBR_CSTORE_ROUTE_S3;
 		}
 
