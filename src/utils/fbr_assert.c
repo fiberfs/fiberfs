@@ -15,6 +15,7 @@
 
 #include "fbr_assert.h"
 #include "fbr_utils.h"
+#include "log/fbr_log.h"
 
 extern void fbr_context_abort(void);
 
@@ -78,6 +79,8 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
     const char *fmt, ...)
 {
 	unsigned long count = fbr_atomic_add(&_ASSERT_LOOP, 1);
+
+	fbr_log_restore_stderr();
 
 	fprintf(stderr, "%s:%d %s(): ", file, line, function);
 

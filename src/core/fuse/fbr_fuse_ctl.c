@@ -115,6 +115,19 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	assert(ctx->fuse_callbacks);
 	assert(path);
 
+	ctx->path = strdup(path);
+	assert(ctx->path);
+
+	assert_zero(_FUSE_CTX);
+	_FUSE_CTX = ctx;
+
+	ctx->log = fbr_log_alloc(ctx->path, fbr_log_default_size());
+	fbr_log_ok(ctx->log);
+
+	if (ctx->debug) {
+		fbr_log_redirect_stderr();
+	}
+
 	char *argv[6];
 	struct fuse_args fargs;
 	fargs.argv = argv;
@@ -149,9 +162,6 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 		ctx->signals = 1;
 	}
 
-	ctx->path = strdup(path);
-	assert(ctx->path);
-
 	ret = fuse_session_mount(ctx->session, path);
 
 	if (ret) {
@@ -162,16 +172,10 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	ctx->state = FBR_FUSE_MOUNTED;
 
-	ctx->log = fbr_log_alloc(ctx->path, fbr_log_default_size());
-	fbr_log_ok(ctx->log);
-
 	ctx->fs = fbr_fs_alloc();
 	fbr_fs_ok(ctx->fs);
 
 	ctx->fs->fuse_ctx = ctx;
-
-	assert_zero(_FUSE_CTX);
-	_FUSE_CTX = ctx;
 
 	fbr_log_print(ctx->log, FBR_LOG_FUSE, FBR_REQID_CORE, "initialized");
 
@@ -293,6 +297,8 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
+
+	fbr_log_restore_stderr();
 
 	_FUSE_CTX = NULL;
 
