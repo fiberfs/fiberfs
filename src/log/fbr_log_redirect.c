@@ -93,7 +93,7 @@ _log_redirect(struct _log_redirect *redirect)
 
 	redirect->pfd = pfd[0];
 
-	pt_assert(pthread_create(&redirect->thread, NULL, _log_redirector, &_LOG_STDERR));
+	pt_assert(pthread_create(&redirect->thread, NULL, _log_redirector, redirect));
 }
 
 static void
