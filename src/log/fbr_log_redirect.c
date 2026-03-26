@@ -18,12 +18,15 @@ struct _log_redirect {
 
 	int			active;
 	int			closed;
+
 	int			fd;
 	int			pfd;
 	int			ofd;
+
+	FILE			*flushd;
 } _LOG_STDERR = {
 	PTHREAD_MUTEX_INITIALIZER,
-	0, 0, 0, 0, 0, 0
+	0, 0, 0, 0, 0, 0, NULL
 };
 
 static void *
@@ -63,8 +66,8 @@ _log_redirector(void *arg)
 		}
 	}
 
+	assert_zero(buffer_len);
 	assert(redirect->closed);
-
 	assert_zero(close(fd));
 
 	return NULL;
@@ -85,7 +88,7 @@ _log_redirect(struct _log_redirect *redirect)
 
 	redirect->ofd = dup(redirect->fd);
 
-	fsync(redirect->fd);
+	fflush(redirect->flushd);
 
 	ret = dup2(pfd[1], redirect->fd);
 	assert(ret >= 0);
@@ -100,6 +103,7 @@ static void
 _log_restore(struct _log_redirect *redirect)
 {
 	assert(redirect);
+	assert(redirect->active == 1);
 
 	pt_assert(pthread_mutex_lock(&redirect->lock));
 
@@ -111,14 +115,19 @@ _log_restore(struct _log_redirect *redirect)
 	assert(redirect->active == 1);
 	redirect->closed = 1;
 
-	fsync(redirect->pfd);
+	fflush(redirect->flushd);
 
-	dup2(redirect->ofd, redirect->fd);
+	int ret = dup2(redirect->ofd, redirect->fd);
+	assert(ret >= 0);
 
 	assert_zero(close(redirect->ofd));
-	pt_assert(pthread_join(redirect->thread, NULL));
 
 	pt_assert(pthread_mutex_unlock(&redirect->lock));
+
+	// Note: this can be called on the abort path
+	if (redirect->thread != pthread_self()) {
+		pt_assert(pthread_join(redirect->thread, NULL));
+	}
 }
 
 void
@@ -129,6 +138,7 @@ fbr_log_redirect_stderr(void)
 
 	_LOG_STDERR.active = 1;
 	_LOG_STDERR.fd = STDERR_FILENO;
+	_LOG_STDERR.flushd = stderr;
 
 	_log_redirect(&_LOG_STDERR);
 }
@@ -136,5 +146,9 @@ fbr_log_redirect_stderr(void)
 void
 fbr_log_restore_stderr(void)
 {
+	if (_LOG_STDERR.active) {
+		assert_dev(_LOG_STDERR.fd == STDERR_FILENO);
+	}
+
 	_log_restore(&_LOG_STDERR);
 }

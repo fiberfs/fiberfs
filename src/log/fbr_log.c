@@ -545,7 +545,7 @@ fbr_log_print_buf(void *buffer, size_t buffer_len, enum fbr_log_type type,
 	assert_dev(log_line->length <= buffer_len);
 
 	int ret = vsnprintf(log_line->buffer, log_line->length, fmt, ap);
-	assert(ret > 0);
+	fbr_ASSERT(ret >= 0, "vsnprintf() ret=%d", ret);
 
 	if (ret >= log_line->length) {
 		log_line->truncated = 1;
