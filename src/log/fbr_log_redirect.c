@@ -103,7 +103,6 @@ static void
 _log_restore(struct _log_redirect *redirect)
 {
 	assert(redirect);
-	assert(redirect->active == 1);
 
 	pt_assert(pthread_mutex_lock(&redirect->lock));
 
@@ -146,9 +145,5 @@ fbr_log_redirect_stderr(void)
 void
 fbr_log_restore_stderr(void)
 {
-	if (_LOG_STDERR.active) {
-		assert_dev(_LOG_STDERR.fd == STDERR_FILENO);
-	}
-
 	_log_restore(&_LOG_STDERR);
 }
