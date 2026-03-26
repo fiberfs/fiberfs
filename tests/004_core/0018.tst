@@ -3,7 +3,7 @@ fiber_test "Mount fs fuse and do external tests"
 # Init
 
 set_timeout_sec 30
-config_add LOG_SIZE 2000000
+config_add LOG_SIZE 3000000
 config_add LRU_SLEEP_MS 20
 config_add MAX_DIRECTORIES 0
 
