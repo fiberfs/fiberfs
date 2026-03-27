@@ -922,7 +922,8 @@ fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 
 int
 fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-    struct fbr_cstore_path *root_path, fbr_id_t version, fbr_id_t existing, int enforce)
+    struct fbr_cstore_path *root_path, fbr_id_t version, fbr_id_t existing, int enforce,
+    double timestamp)
 {
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
@@ -938,8 +939,6 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 
 	fbr_rlog(FBR_LOG_CS_ROOT, "WRITE %s %lu %lu %s", root_path->value, existing, version,
 		hashpath.value);
-
-	double start = fbr_get_time();
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
@@ -981,9 +980,9 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 			fbr_cstore_release(cstore, entry);
 			fbr_writer_free(root_json);
 			return EAGAIN;
-		} else if (!enforce && start <= metadata.timestamp) {
+		} else if (!enforce && timestamp && timestamp <= metadata.timestamp) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR newer write found: %lf current: %lf",
-				metadata.timestamp, start);
+				metadata.timestamp, timestamp);
 			fbr_cstore_set_ok(entry);
 			fbr_cstore_release(cstore, entry);
 			fbr_writer_free(root_json);
@@ -995,8 +994,8 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 
 	struct fbr_cstore_metadata metadata;
 	fbr_zero(&metadata);
-	metadata.timestamp = start;
 	metadata.etag = version;
+	metadata.timestamp = timestamp;
 	metadata.type = FBR_CSTORE_FILE_ROOT;
 	fbr_strbcpy(metadata.path, root_path->value);
 

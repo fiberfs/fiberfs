@@ -578,6 +578,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		retry++;
 
+		// TODO root files need to lock on the loading state, see fbr_cstore_io_root_read()
+
 		entry = fbr_cstore_io_get_ok(cstore, hash);
 		if (!entry) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR ok state");

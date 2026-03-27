@@ -83,7 +83,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 			previous_version, FBR_CSTORE_ROUTE_CLUSTER);
 	} else {
 		fail = fbr_cstore_io_root_write(cstore, root_json, &root_path, directory->version,
-			previous_version, 1);
+			previous_version, 1, 0);
 	}
 
 	if (fail) {

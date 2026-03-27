@@ -157,7 +157,7 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 			return;
 		case FBR_CSOP_ROOT_WRITE:
 			fbr_cstore_io_root_write(op->param0, op->param1, op->param2,
-				(fbr_id_t)op->param3, 0, 0);
+				(fbr_id_t)op->param3, 0, 0, *((double*)op->param4));
 			return;
 		case FBR_CSOP_NONE:
 		case __FBR_CSOP_END:
@@ -449,10 +449,13 @@ _async_root_path_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker
 
 	struct fbr_cstore_path *path = op->param2;
 	fbr_cstore_path_ok(path);
-
 	fbr_zero_magic(path);
 	free(path);
 	op->param2 = NULL;
+
+	double *timestamp = op->param4;
+	free(timestamp);
+	op->param4 = NULL;
 }
 
 void
@@ -470,13 +473,18 @@ fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_j
 	assert(path_async);
 	fbr_cstore_s3_path_clone(path_async, root_path);
 
+	double *timestamp = malloc(sizeof(*timestamp));
+	assert(timestamp);
+	*timestamp = fbr_get_time();
+
 	static_ASSERT(sizeof(void*) >= sizeof(version));
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_ROOT_WRITE, cstore, root_json, path_async,
-		(void*)version, NULL, _async_root_path_done, NULL);
+		(void*)version, timestamp, _async_root_path_done, NULL);
 	if (ret) {
 		fbr_zero_magic(path_async);
 		free(path_async);
+		free(timestamp);
 		fbr_writer_free(root_json);
 		fbr_rlog(FBR_LOG_CS_ROOT, "Cannot schedule write, skipping");
 		return;
