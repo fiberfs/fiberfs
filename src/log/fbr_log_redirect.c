@@ -9,8 +9,8 @@
 #include <unistd.h>
 
 #include "fiberfs.h"
-#include "core/request/fbr_request.h"
-#include "core/request/fbr_rlog.h"
+#include "core/fuse/fbr_fuse.h"
+#include "log/fbr_log.h"
 
 struct _log_redirect {
 	pthread_mutex_t		lock;
@@ -42,27 +42,41 @@ _log_redirector(void *arg)
 
 	// TODO we can optionally allocate a request here and buffer
 
+	assert(fbr_fuse_has_context());
+	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+	struct fbr_log *log = fuse_ctx->log;
+	fbr_log_ok(log);
+
 	char buffer[4096];
 	ssize_t buffer_len;
+
 	while ((buffer_len = read(fd, buffer, sizeof(buffer) - 1)) > 0) {
 		assert_dev((size_t)buffer_len < sizeof(buffer));
 		buffer[buffer_len] = '\0';
 
 		char *line = buffer;
-		char *pos = buffer;
-		while (*pos) {
-			if (*pos == '\n') {
-				*pos = '\0';
-				fbr_rlog(FBR_LOG_STDERR, "%s", line);
+		size_t line_len = 0;
 
-				line = pos + 1;
+		while (line[line_len]) {
+			if (line[line_len] == '\n') {
+				line[line_len] = '\0';
+
+				if (line_len) {
+					fbr_log_print(log, FBR_LOG_STDERR, FBR_REQID_CORE, "%s",
+						line);
+				}
+
+				line += line_len + 1;
+				line_len = 0;
+
+				continue;
 			}
 
-			pos++;
+			line_len++;
 		}
 
-		if (line < buffer + buffer_len) {
-			fbr_rlog(FBR_LOG_STDERR, "%s", line);
+		if (line_len) {
+			fbr_log_print(log, FBR_LOG_STDERR, FBR_REQID_CORE, "%s", line);
 		}
 	}
 
@@ -78,7 +92,7 @@ _log_redirect(struct _log_redirect *redirect)
 {
 	assert(redirect);
 	assert(redirect->active == 1);
-	assert(redirect->fd > STDIN_FILENO);
+	assert(redirect->fd > STDOUT_FILENO);
 
 	int pfd[2];
 	int ret = pipe(pfd);
@@ -99,6 +113,7 @@ _log_redirect(struct _log_redirect *redirect)
 	pt_assert(pthread_create(&redirect->thread, NULL, _log_redirector, redirect));
 }
 
+// Note: this is used in the abort path
 static void
 _log_restore(struct _log_redirect *redirect)
 {
@@ -114,6 +129,8 @@ _log_restore(struct _log_redirect *redirect)
 	assert(redirect->active == 1);
 	redirect->closed = 1;
 
+	pt_assert(pthread_mutex_unlock(&redirect->lock));
+
 	fflush(redirect->flushd);
 
 	int ret = dup2(redirect->ofd, redirect->fd);
@@ -121,9 +138,7 @@ _log_restore(struct _log_redirect *redirect)
 
 	assert_zero(close(redirect->ofd));
 
-	pt_assert(pthread_mutex_unlock(&redirect->lock));
-
-	// Note: this can be called on the abort path
+	// Prevent abort deadlock
 	if (redirect->thread != pthread_self()) {
 		pt_assert(pthread_join(redirect->thread, NULL));
 	}
@@ -142,6 +157,7 @@ fbr_log_redirect_stderr(void)
 	_log_redirect(&_LOG_STDERR);
 }
 
+// Note: this is used in the abort path
 void
 fbr_log_restore_stderr(void)
 {
