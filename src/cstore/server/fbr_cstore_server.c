@@ -87,6 +87,8 @@ fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker)
 
 	int ret = chttp_tcp_accept(remote_addr, &server->addr);
 
+	// TODO request id assigned prior to accept (via task), so its not sequential anymore
+
 	fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_ACCEPT, server);
 
 	if (ret) {

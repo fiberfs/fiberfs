@@ -333,8 +333,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s unique: %d match: %lu",
-		fbr_cstore_type_name(file_type), hashpath.value, unique, etag_match);
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE %s %s unique: %d match: %lu (%lu)",
+		fbr_cstore_type_name(file_type), hashpath.value, unique, etag_match, etag_id);
 
 	struct fbr_cstore_entry *entry = NULL;
 	if (unique) {
