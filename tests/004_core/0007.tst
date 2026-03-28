@@ -3,6 +3,7 @@ fiber_test "Fuse and fs"
 # Init
 
 set_timeout_sec 30
+config_add LOG_SIZE 100000
 
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir
