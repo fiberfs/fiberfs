@@ -469,6 +469,8 @@ fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_j
 	assert(version);
 	assert(fbr_cstore_backend_enabled(cstore));
 
+	// TODO make a single alloc
+
 	struct fbr_cstore_path *path_async = malloc(sizeof(*path_async));
 	assert(path_async);
 	fbr_cstore_s3_path_clone(path_async, root_path);
