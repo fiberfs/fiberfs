@@ -476,6 +476,33 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	fbr_cstore_http_respond(cstore, http, 200, "OK");
 }
 
+static void
+_cstore_url_entry_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry,
+    enum fbr_cstore_entry_type file_type, int error)
+{
+	assert_dev(cstore);
+	assert_dev(entry);
+	assert(file_type >= FBR_CSTORE_FILE_CHUNK && file_type <= FBR_CSTORE_FILE_ROOT);
+
+	if (file_type == FBR_CSTORE_FILE_ROOT) {
+		assert(entry->state == FBR_CSTORE_LOADING);
+
+		if (error) {
+			fbr_cstore_set_error(entry);
+		} else {
+			fbr_cstore_set_ok(entry);
+		}
+	}
+
+	assert_dev(entry->state != FBR_CSTORE_LOADING);
+
+	if (error) {
+		fbr_cstore_remove(cstore, entry);
+	} else {
+		fbr_cstore_release(cstore, entry);
+	}
+}
+
 void
 fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http)
 {
@@ -578,20 +605,31 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		retry++;
 
-		// TODO root files need to lock on the loading state, see fbr_cstore_io_root_read()
+		if (file_type == FBR_CSTORE_FILE_ROOT) {
+			entry = fbr_cstore_get(cstore, hash);
+			if (!entry) {
+				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR entry");
+				continue;
+			}
 
-		entry = fbr_cstore_io_get_ok(cstore, hash);
-		if (!entry) {
-			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR ok state");
-			continue;
+			fbr_cstore_reset_loading(entry);
+			assert_dev(entry->state == FBR_CSTORE_LOADING);
+		} else {
+			entry = fbr_cstore_io_get_ok(cstore, hash);
+			if (!entry) {
+				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR ok state");
+				continue;
+			}
+
+			assert_dev(entry->state == FBR_CSTORE_OK);
 		}
 
-		assert_dev(entry->state == FBR_CSTORE_OK);
+		fbr_cstore_entry_ok(entry);
 
 		fd = open(hashpath.value, O_RDONLY);
 		if (fd < 0) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR open()");
-			fbr_cstore_remove(cstore, entry);
+			_cstore_url_entry_release(cstore, entry, file_type, 1);
 			continue;
 		}
 
@@ -599,7 +637,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		int ret = fstat(fd, &st);
 		if (ret) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR stat()");
-			fbr_cstore_remove(cstore, entry);
+			_cstore_url_entry_release(cstore, entry, file_type, 1);
 			assert_zero(close(fd));
 			continue;
 		}
@@ -617,7 +655,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		if (ret || metadata.size != size || metadata.offset != offset ||
 		    metadata.etag != etag_match || metadata.type != file_type) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR metadata()");
-			fbr_cstore_remove(cstore, entry);
+			_cstore_url_entry_release(cstore, entry, file_type, 1);
 			assert_zero(close(fd));
 			continue;
 		}
@@ -627,7 +665,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		if (cstore->config.root_ttl_sec &&
 		    metadata.timestamp + cstore->config.root_ttl_sec < now) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR root expired");
-			fbr_cstore_release(cstore, entry);
+			_cstore_url_entry_release(cstore, entry, file_type, 0);
 			assert_zero(close(fd));
 			continue;
 		}
@@ -665,7 +703,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 	if (http->error) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR send() headers");
-		fbr_cstore_release(cstore, entry);
+		_cstore_url_entry_release(cstore, entry, file_type, 0);
 		assert_zero(close(fd));
 		return;
 	}
@@ -676,12 +714,12 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 	if (bytes != size) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR splice_out");
-		fbr_cstore_release(cstore, entry);
+		_cstore_url_entry_release(cstore, entry, file_type, 0);
 		chttp_error(http, CHTTP_ERR_NETWORK);
 		return;
 	}
 
-	fbr_cstore_release(cstore, entry);
+	_cstore_url_entry_release(cstore, entry, file_type, 0);
 }
 
 void
