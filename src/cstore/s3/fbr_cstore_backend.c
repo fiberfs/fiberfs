@@ -212,8 +212,10 @@ _backend_hash_cmp(const void *arg1, const void *arg2)
 }
 
 static struct fbr_cstore_backend *
-_backend_rv_hash(struct fbr_cstore_cluster *cluster, fbr_hash_t hash, unsigned int retries)
+_backend_rv_hash(struct fbr_cstore *cstore, struct fbr_cstore_cluster *cluster,
+    fbr_hash_t hash, unsigned int retries)
 {
+	assert_dev(cstore);
 	assert_dev(cluster);
 	assert_dev(cluster->size);
 
@@ -288,9 +290,9 @@ fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, enum fbr_csto
 	const char *route_type = "";
 
 	if (route == FBR_CSTORE_ROUTE_CLUSTER && cstore->cluster.size) {
-		backend = _backend_rv_hash(&cstore->cluster, hash, retries);
+		backend = _backend_rv_hash(cstore, &cstore->cluster, hash, retries);
 	} else if (route <= FBR_CSTORE_ROUTE_CDN && cdn_ok && cstore->cdn.size) {
-		backend = _backend_rv_hash(&cstore->cdn, hash, retries);
+		backend = _backend_rv_hash(cstore, &cstore->cdn, hash, retries);
 
 		if (route != FBR_CSTORE_ROUTE_CDN) {
 			route_type = " CDN_FALLBACK";

@@ -155,6 +155,8 @@ struct fbr_cstore {
 
 	struct fbr_cstore_config		config;
 
+	fbr_bitflag_t				debug_allow_loop;
+
 	struct {
 		fbr_stats_t			lru_pruned;
 		fbr_stats_t			removed;

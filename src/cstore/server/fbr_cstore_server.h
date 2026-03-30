@@ -60,6 +60,7 @@ struct fbr_cstore_server {
 
 	struct fbr_cstore			*cstore;
 
+	char					*address;
 	struct chttp_addr			addr;
 	int					port;
 	int					tls;
@@ -131,9 +132,12 @@ struct fbr_cstore_epool {
 	TAILQ_HEAD(, fbr_cstore_epool_conn)	free_list;
 };
 
+struct fbr_cstore_backend;
+
 void fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls);
 void fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker);
 void fbr_cstore_server_proc(struct fbr_cstore_task_worker *task_worker, int new);
+int fbr_cstore_servers_contain(struct fbr_cstore *cstore, struct fbr_cstore_backend *backend);
 void fbr_cstore_servers_shutdown(struct fbr_cstore *cstore);
 void fbr_cstore_servers_free(struct fbr_cstore *cstore);
 

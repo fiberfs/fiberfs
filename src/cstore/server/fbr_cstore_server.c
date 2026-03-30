@@ -12,6 +12,7 @@
 #include "tls/chttp_tls.h"
 #include "fbr_cstore_server.h"
 #include "cstore/fbr_cstore_api.h"
+#include "cstore/s3/fbr_cstore_s3.h"
 
 void
 fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls)
@@ -28,6 +29,9 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 	server->cstore = cstore;
 	server->port = port;
 	server->tls = tls;
+
+	server->address = strdup(address);
+	assert(server->address);
 
 	// TODO we need to support binding on all addresses
 
@@ -127,6 +131,28 @@ fbr_cstore_server_proc(struct fbr_cstore_task_worker *task_worker, int new)
 	assert(task_worker->remote_addr.state == CHTTP_ADDR_NONE);
 }
 
+int
+fbr_cstore_servers_contain(struct fbr_cstore *cstore, struct fbr_cstore_backend *backend)
+{
+	fbr_cstore_ok(cstore);
+	fbr_cstore_backend_ok(backend);
+
+	struct fbr_cstore_server *server = cstore->servers;
+	while (server) {
+		fbr_cstore_server_ok(server);
+		assert_dev(server->address);
+
+		if (!strcmp(server->address, backend->host) && server->port == backend->port &&
+		    server->tls == backend->tls) {
+			return 1;
+		}
+
+		server = server->next;
+	}
+
+	return 0;
+}
+
 void
 fbr_cstore_servers_shutdown(struct fbr_cstore *cstore)
 {
@@ -153,6 +179,8 @@ fbr_cstore_servers_free(struct fbr_cstore *cstore)
 
 		(void)shutdown(server->addr.sock, SHUT_RDWR);
 		chttp_tcp_close(&server->addr);
+
+		free(server->address);
 
 		fbr_zero(server);
 		free(server);
