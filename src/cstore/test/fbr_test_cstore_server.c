@@ -38,6 +38,19 @@ fbr_cmd_cstore_tls_timeout(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 }
 
 void
+fbr_cmd_cstore_debug_allow_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
+
+	cstore->debug_allow_loop = 1;
+
+	fbr_test_logs("cstore_debug_allow_loop: %u", cstore->debug_allow_loop);
+}
+
+void
 fbr_cmd_cstore_set_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
