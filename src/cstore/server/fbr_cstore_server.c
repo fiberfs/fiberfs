@@ -132,7 +132,7 @@ fbr_cstore_server_proc(struct fbr_cstore_task_worker *task_worker, int new)
 }
 
 int
-fbr_cstore_servers_contain(struct fbr_cstore *cstore, struct fbr_cstore_backend *backend)
+fbr_cstore_servers_contains(struct fbr_cstore *cstore, struct fbr_cstore_backend *backend)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_backend_ok(backend);

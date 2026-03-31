@@ -297,6 +297,8 @@ fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, enum fbr_csto
 		if (route != FBR_CSTORE_ROUTE_CDN) {
 			route_type = " CDN_FALLBACK";
 		}
+
+		assert_zero(fbr_cstore_servers_contains(cstore, backend));
 	}
 
 	if (!backend) {
@@ -306,6 +308,8 @@ fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, enum fbr_csto
 		if (route != FBR_CSTORE_ROUTE_S3) {
 			route_type = " S3_FALLBACK";
 		}
+
+		assert_zero(fbr_cstore_servers_contains(cstore, backend));
 	}
 
 	fbr_rlog(FBR_LOG_CS_S3, "BACKEND %s%s %s:%d (tls: %d)", _cstore_route_string(route),

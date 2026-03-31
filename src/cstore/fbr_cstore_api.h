@@ -108,6 +108,7 @@ struct fbr_cstore_config {
 	int					delete_cache;
 	int					allow_cdn_put;
 	int					allow_cdn_delete;
+	int					force_chunk_write;
 
 	unsigned long				timeout_connect_ms;
 	unsigned long				timeout_transfer_ms;

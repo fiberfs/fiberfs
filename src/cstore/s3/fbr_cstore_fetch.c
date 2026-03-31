@@ -114,10 +114,18 @@ _s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 
 	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, route,
 		retries, 1);
+
+	int ret = fbr_cstore_servers_contains(cstore, backend);
+	if (ret && !cstore->debug_allow_loop) {
+		fbr_rlog(FBR_LOG_CS_S3, "BACKEND self detected");
+		assert(route == FBR_CSTORE_ROUTE_CLUSTER);
+		backend = fbr_cstore_backend_get(cstore, hash, FBR_CSTORE_ROUTE_CDN, retries, 1);
+	}
+
 	fbr_cstore_backend_ok(backend);
 	assert_zero_dev(http->error);
 
-	int ret = _s3_connection(cstore, http, backend, &fbr_cstore_s3_hash_none, NULL);
+	ret = _s3_connection(cstore, http, backend, &fbr_cstore_s3_hash_none, NULL);
 	if (ret) {
 		return;
 	}
@@ -233,10 +241,20 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 
 	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, route, retries,
 			cstore->config.allow_cdn_put);
+
+	int ret = fbr_cstore_servers_contains(cstore, backend);
+	if (ret && !cstore->debug_allow_loop) {
+		fbr_rlog(FBR_LOG_CS_S3, "BACKEND self detected");
+		assert(route == FBR_CSTORE_ROUTE_CLUSTER);
+		backend = fbr_cstore_backend_get(cstore, hash, FBR_CSTORE_ROUTE_CDN, retries,
+			cstore->config.allow_cdn_put);
+	}
+
 	fbr_cstore_backend_ok(backend);
+	assert_zero_dev(http->error);
 
 	// TODO data_cb...
-	int ret = _s3_connection(cstore, http, backend, NULL, NULL);
+	ret = _s3_connection(cstore, http, backend, NULL, NULL);
 	if (ret) {
 		return;
 	}
@@ -691,6 +709,24 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	chttp_context_free(&http);
 
+	fbr_rlog(FBR_LOG_CS_S3, "READ S3 %zu bytes", bytes);
+
+	if (!cstore->config.force_chunk_write) {
+		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash,
+			FBR_CSTORE_ROUTE_CLUSTER, 0, 0);
+
+		if (cstore->cluster.size && !fbr_cstore_servers_contains(cstore, backend)) {
+			fbr_rlog(FBR_LOG_CS_WBUFFER, "READ S3 WRITE skipping local");
+
+			fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
+
+			fbr_cstore_set_error(entry);
+			fbr_cstore_remove(cstore, entry);
+
+			return;
+		}
+	}
+
 	// Write back the chunk to the cstore
 
 	if (async) {
@@ -705,7 +741,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
-	fbr_rlog(FBR_LOG_CS_S3, "READ S3 %zu bytes WRITE S3 chunk: %s", bytes, hashpath.value);
+	fbr_rlog(FBR_LOG_CS_S3, "READ S3 WRITE chunk: %s", hashpath.value);
 
 	int ret = fbr_sys_mkdirs(hashpath.value);
 	if (ret || fbr_sys_exists(hashpath.value)) {
@@ -743,7 +779,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
 	ret = fbr_cstore_metadata_write(&hashpath, &metadata);
 	if (ret) {
-		fbr_rlog(FBR_LOG_CS_S3, "ERROR write metadata");
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR rwrite metadata");
 		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, async);
 		return;
 	}
@@ -755,7 +791,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 		fbr_inode_release(fs, &file);
 	}
 
-	fbr_rlog(FBR_LOG_CS_S3, "READ WRITE S3 done %zu bytes", bytes);
+	fbr_rlog(FBR_LOG_CS_S3, "READ S3 WRITE done %zu bytes", bytes);
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);

@@ -137,7 +137,7 @@ struct fbr_cstore_backend;
 void fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port, int tls);
 void fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker);
 void fbr_cstore_server_proc(struct fbr_cstore_task_worker *task_worker, int new);
-int fbr_cstore_servers_contain(struct fbr_cstore *cstore, struct fbr_cstore_backend *backend);
+int fbr_cstore_servers_contains(struct fbr_cstore *cstore, struct fbr_cstore_backend *backend);
 void fbr_cstore_servers_shutdown(struct fbr_cstore *cstore);
 void fbr_cstore_servers_free(struct fbr_cstore *cstore);
 

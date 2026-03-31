@@ -23,7 +23,7 @@ cstore_set_s3 1 $cstore_3_server_host $cstore_3_server_port region access_key se
 cstore_set_s3 2 $cstore_3_server_host $cstore_3_server_port region access_key secret_key
 
 # Build the cluster on the local
-#cstore_add_cluster 0 $cstore_0_server_host $cstore_0_server_port
+cstore_add_cluster 0 $cstore_0_server_host $cstore_0_server_port
 cstore_add_cluster 0 $cstore_1_server_host $cstore_1_server_port
 cstore_add_cluster 0 $cstore_2_server_host $cstore_2_server_port
 
