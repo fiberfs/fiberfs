@@ -68,6 +68,7 @@ FBR_TEST_CMD(cstore_clear)
 FBR_TEST_CMD(cstore_tls_timeout)
 FBR_TEST_CMD(cstore_set_s3)
 FBR_TEST_CMD(cstore_add_cluster)
+FBR_TEST_CMD(cstore_add_cdn)
 FBR_TEST_CMD(cstore_epool_close)
 
 FBR_TEST_VAR(cstore_0_entries)

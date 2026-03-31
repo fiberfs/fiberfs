@@ -85,11 +85,11 @@ fbr_cmd_cstore_set_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		cstore->s3.region, cstore->s3.access_key);
 }
 
-void
-fbr_cmd_cstore_add_cluster(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+static void
+_test_add_cluster(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int cdn)
 {
-	fbr_test_context_ok(ctx);
-	fbr_test_cmd_ok(cmd);
+	assert(ctx);
+	assert(cmd);
 	assert(cmd->param_count >= 3 && cmd->param_count <= 4);
 
 	long index = fbr_test_parse_long(cmd->params[0].value);
@@ -103,17 +103,43 @@ fbr_cmd_cstore_add_cluster(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	}
 
 	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
+	struct fbr_cstore_cluster *cluster = NULL;
 
-	size_t cluster_size = cstore->cluster.size;
+	if (cdn) {
+		cluster = &cstore->cdn;
+	} else {
+		cluster = &cstore->cluster;
+	}
 
-	fbr_cstore_cluster_add(&cstore->cluster, host, port, tls);
+	assert(cluster);
+	size_t cluster_size = cluster->size;
 
-	assert(cstore->cluster.size == cluster_size + 1);
-	struct fbr_cstore_backend *backend = cstore->cluster.backends[cluster_size];
+	fbr_cstore_cluster_add(cluster, host, port, tls);
+
+	assert(cluster->size == cluster_size + 1);
+	struct fbr_cstore_backend *backend = cluster->backends[cluster_size];
 	fbr_cstore_backend_ok(backend);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_add_cluster: %s:%d %d",
-		backend->host, backend->port, backend->tls);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_add_%s: %s:%d %d",
+		cdn ? "cdn" : "cluster", backend->host, backend->port, backend->tls);
+}
+
+void
+fbr_cmd_cstore_add_cluster(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+
+	_test_add_cluster(ctx, cmd, 0);
+}
+
+void
+fbr_cmd_cstore_add_cdn(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+
+	_test_add_cluster(ctx, cmd, 1);
 }
 
 static struct fbr_cstore_server *

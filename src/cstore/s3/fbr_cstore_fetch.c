@@ -232,7 +232,7 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 	}
 
 	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, route, retries,
-			cstore->cdn_put);
+			cstore->config.allow_cdn_put);
 	fbr_cstore_backend_ok(backend);
 
 	// TODO data_cb...
@@ -517,7 +517,7 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
 		chttp_header_add(&http, "If-Match", buffer);
 
 		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, route,
-			attempts - 1, cstore->cdn_delete);
+			attempts - 1, cstore->config.allow_cdn_delete);
 		fbr_cstore_backend_ok(backend);
 
 		int ret = _s3_connection(cstore, &http, backend, fbr_cstore_s3_hash_none, NULL);

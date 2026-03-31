@@ -36,14 +36,19 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 	}
 
 	cstore->config.delete_cache = fbr_conf_get_bool("CSTORE_DELETE_CACHE", FBR_CONFIG_FALSE);
+	cstore->config.allow_cdn_put = fbr_conf_get_bool("ALLOW_CDN_PUT", FBR_CONFIG_FALSE);
+	cstore->config.allow_cdn_delete = fbr_conf_get_bool("ALLOW_CDN_DELETE", FBR_CONFIG_FALSE);
+
 	cstore->config.timeout_connect_ms = fbr_conf_get_ulong("HTTP_CONNECT_TIMEOUT_MSEC",
 		FBR_CSTORE_TIMEOUT_CONNECT_MS);
 	cstore->config.timeout_transfer_ms = fbr_conf_get_ulong("HTTP_TRANSFER_TIMEOUT_MSEC",
 		FBR_CSTORE_TIMEOUT_TRANSFER_MS);
 	cstore->config.keep_alive_sec = fbr_conf_get_ulong("HTTP_KEEP_ALIVE_SEC",
 		FBR_CSTORE_KEEP_ALIVE_DEFAULT);
+
 	cstore->config.retries = fbr_conf_get_ulong("HTTP_RETRIES", FBR_CSTORE_RETRIES_DEFAULT);
 	cstore->config.cluster_retries = fbr_conf_get_ulong("HTTP_CLUSTER_RETRIES", 1);
+
 	cstore->config.root_ttl_sec = fbr_conf_get_ulong("ROOT_FILE_TTL_SEC",
 		FBR_CSTORE_ROOT_TTL_DEFAULT);
 

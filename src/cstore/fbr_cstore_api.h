@@ -106,6 +106,8 @@ struct fbr_cstore_config {
 	struct fbr_config_reader		reader;
 
 	int					delete_cache;
+	int					allow_cdn_put;
+	int					allow_cdn_delete;
 
 	unsigned long				timeout_connect_ms;
 	unsigned long				timeout_transfer_ms;
@@ -129,9 +131,8 @@ struct fbr_cstore {
 	fbr_bitflag_t				cant_splice_in:1;
 	fbr_bitflag_t				cant_splice_out:1;
 	fbr_bitflag_t				delete_cache:1;
-	fbr_bitflag_t				cdn_put:1;
-	fbr_bitflag_t				cdn_delete:1;
 	fbr_bitflag_t				skip_content_hash:1;
+	fbr_bitflag_t				debug_allow_loop:1;
 
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 
@@ -154,8 +155,6 @@ struct fbr_cstore {
 	int					do_lru;
 
 	struct fbr_cstore_config		config;
-
-	fbr_bitflag_t				debug_allow_loop;
 
 	struct {
 		fbr_stats_t			lru_pruned;
