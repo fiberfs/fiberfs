@@ -184,6 +184,8 @@ _test_server_host(struct fbr_test_cstore *tcstore)
 	chttp_sa_string(&server->addr.sa, tcstore->ip_str, sizeof(tcstore->ip_str),
 		&port);
 
+	assert(port == server->port);
+
 	return tcstore->ip_str;
 }
 

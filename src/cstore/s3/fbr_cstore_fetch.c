@@ -240,7 +240,7 @@ _s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
 	}
 
 	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, route, retries,
-			cstore->config.allow_cdn_put);
+		cstore->config.allow_cdn_put);
 
 	int ret = fbr_cstore_servers_contains(cstore, backend);
 	if (ret && !cstore->debug_allow_loop) {
@@ -720,8 +720,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 			fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
 
-			fbr_cstore_set_error(entry);
-			fbr_cstore_remove(cstore, entry);
+			_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, 0);
 
 			return;
 		}
