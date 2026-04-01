@@ -1,6 +1,7 @@
-fiber_test "cstore server with TLS and no gzip"
+fiber_test "cstore server with TLS, ipv6 and no gzip"
 
 skip_if_not $tls_enabled
+dns_lookup_or_skip ::1
 
 config_add LOG_ALWAYS_FLUSH true
 config_add CSTORE_SERVER_TLS true
@@ -10,7 +11,7 @@ cstore_tls_timeout
 cstore_init 0
 
 config_add CSTORE_SERVER true
-config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
+config_add CSTORE_SERVER_ADDRESS "::1"
 config_add CSTORE_SERVER_PORT 0
 
 cstore_init 1
