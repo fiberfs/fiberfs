@@ -1,7 +1,7 @@
 # FiberFS Makefile (src)
 
 CC=gcc
-CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC
+CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -std=gnu17
 CFLAGS_INCLUDE=-I. -Ichttp -Ifjson
 CFLAGS_EXTRA=-fno-omit-frame-pointer
 CFLAGS_GCC=
