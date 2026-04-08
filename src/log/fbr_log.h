@@ -174,6 +174,8 @@ void fbr_log_reader_free(struct fbr_log_reader *reader);
 
 void fbr_log_reqid_str(unsigned long request_id, char *buffer, size_t buffer_len);
 
+extern int _FBR_LOG_REDIRECTOR_HAS_FORK;
+
 void fbr_log_redirect_stderr(void);
 void fbr_log_restore_stderr(void);
 

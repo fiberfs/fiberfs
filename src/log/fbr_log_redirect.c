@@ -12,7 +12,7 @@
 #include "core/fuse/fbr_fuse.h"
 #include "log/fbr_log.h"
 
-int _FBR_LOG_REDIRECT_SKIP_THREAD;
+int _FBR_LOG_REDIRECTOR_HAS_FORK;
 
 struct _log_redirect {
 	pthread_mutex_t		lock;
@@ -146,7 +146,7 @@ _log_restore(struct _log_redirect *redirect)
 	assert_zero(close(redirect->ofd));
 
 	// Prevent abort deadlock
-	if (redirect->thread != pthread_self() && !_FBR_LOG_REDIRECT_SKIP_THREAD) {
+	if (redirect->thread != pthread_self() && !_FBR_LOG_REDIRECTOR_HAS_FORK) {
 		pt_assert(pthread_join(redirect->thread, NULL));
 	}
 }
