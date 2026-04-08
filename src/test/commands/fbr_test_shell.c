@@ -83,8 +83,6 @@ fbr_cmd_shell(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "shell cmd: '%s'", shell_cmd);
 
-	_FBR_LOG_REDIRECTOR_HAS_FORK = 1;
-
 	int ret = system(shell_cmd);
 
 	fbr_test_ASSERT(WIFEXITED(ret), "shell cmd failed");
@@ -100,8 +98,6 @@ fbr_cmd_skip_shell_failure(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "skip_shell cmd: '%s'", cmd->params[0].value);
-
-	_FBR_LOG_REDIRECTOR_HAS_FORK = 1;
 
 	int ret = system(cmd->params[0].value);
 
@@ -181,6 +177,8 @@ _test_shell_waitall(struct fbr_test_shell *shell)
 	}
 
 	shell->thread_count = 0;
+
+	_FBR_LOG_REDIRECTOR_HAS_FORK = 0;
 
 	return error;
 }
