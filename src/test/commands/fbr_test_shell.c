@@ -83,7 +83,11 @@ fbr_cmd_shell(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "shell cmd: '%s'", shell_cmd);
 
+	fbr_atomic_add(&_FBR_LOG_REDIRECTOR_HAS_FORK, 1);
+
 	int ret = system(shell_cmd);
+
+	fbr_atomic_sub(&_FBR_LOG_REDIRECTOR_HAS_FORK, 1);
 
 	fbr_test_ASSERT(WIFEXITED(ret), "shell cmd failed");
 	fbr_test_ERROR(WEXITSTATUS(ret), "shell cmd returned an error");
@@ -99,7 +103,11 @@ fbr_cmd_skip_shell_failure(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "skip_shell cmd: '%s'", cmd->params[0].value);
 
+	fbr_atomic_add(&_FBR_LOG_REDIRECTOR_HAS_FORK, 1);
+
 	int ret = system(cmd->params[0].value);
+
+	fbr_atomic_sub(&_FBR_LOG_REDIRECTOR_HAS_FORK, 1);
 
 	if (!WIFEXITED(ret) || WEXITSTATUS(ret)) {
 		fbr_test_skip(ctx);
@@ -147,7 +155,7 @@ fbr_cmd_shell_bg(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	char *shell_cmd = strdup(cmd->params[0].value);
 	assert(shell_cmd);
 
-	_FBR_LOG_REDIRECTOR_HAS_FORK = 1;
+	fbr_atomic_add(&_FBR_LOG_REDIRECTOR_HAS_FORK, 1);
 
 	pt_assert(pthread_create(&ctx->shell->threads[ctx->shell->thread_count - 1], NULL,
 		_test_shell_bg, shell_cmd));
@@ -174,11 +182,11 @@ _test_shell_waitall(struct fbr_test_shell *shell)
 		}
 
 		free(ret);
+
+		fbr_atomic_sub(&_FBR_LOG_REDIRECTOR_HAS_FORK, 1);
 	}
 
 	shell->thread_count = 0;
-
-	_FBR_LOG_REDIRECTOR_HAS_FORK = 0;
 
 	return error;
 }
@@ -191,4 +199,6 @@ fbr_cmd_shell_waitall(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	int shell_error = _test_shell_waitall(ctx->shell);
 	fbr_test_ERROR(shell_error, "shell_bg error detected");
+
+	assert_zero_dev(_FBR_LOG_REDIRECTOR_HAS_FORK);
 }
