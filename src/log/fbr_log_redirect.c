@@ -24,9 +24,11 @@ struct _log_redirect {
 	int			ofd;
 
 	FILE			*flushd;
+
+	enum fbr_log_type	log_type;
 } _LOG_STDERR = {
 	PTHREAD_MUTEX_INITIALIZER,
-	0, 0, 0, 0, 0, 0, NULL
+	0, 0, 0, 0, 0, 0, NULL, 0
 };
 
 static void *
@@ -34,6 +36,7 @@ _log_redirector(void *arg)
 {
 	struct _log_redirect *redirect = arg;
 	assert(redirect->active == 1);
+	assert_dev(redirect->log_type);
 
 	int fd = redirect->pfd;
 	assert(fd >= 0);
@@ -62,8 +65,8 @@ _log_redirector(void *arg)
 				line[line_len] = '\0';
 
 				if (line_len) {
-					fbr_log_print(log, FBR_LOG_STDERR, FBR_REQID_CORE, "%s",
-						line);
+					fbr_log_print(log, redirect->log_type, FBR_REQID_CORE,
+						"%s", line);
 				}
 
 				line += line_len + 1;
@@ -76,7 +79,7 @@ _log_redirector(void *arg)
 		}
 
 		if (line_len) {
-			fbr_log_print(log, FBR_LOG_STDERR, FBR_REQID_CORE, "%s", line);
+			fbr_log_print(log, redirect->log_type, FBR_REQID_CORE, "%s", line);
 		}
 	}
 
@@ -102,6 +105,7 @@ _log_redirect(struct _log_redirect *redirect)
 
 	redirect->ofd = dup(redirect->fd);
 
+	assert_dev(redirect->flushd);
 	fflush(redirect->flushd);
 
 	ret = dup2(pfd[1], redirect->fd);
@@ -131,6 +135,7 @@ _log_restore(struct _log_redirect *redirect)
 
 	pt_assert(pthread_mutex_unlock(&redirect->lock));
 
+	assert_dev(redirect->flushd);
 	fflush(redirect->flushd);
 
 	int ret = dup2(redirect->ofd, redirect->fd);
@@ -153,6 +158,7 @@ fbr_log_redirect_stderr(void)
 	_LOG_STDERR.active = 1;
 	_LOG_STDERR.fd = STDERR_FILENO;
 	_LOG_STDERR.flushd = stderr;
+	_LOG_STDERR.log_type = FBR_LOG_STDERR;
 
 	_log_redirect(&_LOG_STDERR);
 }
