@@ -142,6 +142,7 @@ CC_FILE=$(BUILD)/_cc_flags
 _CC_ALL=$(file < $(CC_FILE))
 ifeq ($(_CC_ALL),)
 else ifeq ($(findstring clean,$(MAKECMDGOALS)),clean)
+else ifeq ($(findstring gcov,$(MAKECMDGOALS)),gcov)
 else ifeq ($(CC_REUSE),true)
 CC_ALL=$(_CC_ALL)
 else ifneq ($(_CC_ALL),$(CC_ALL))

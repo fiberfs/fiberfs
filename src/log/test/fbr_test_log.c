@@ -21,6 +21,7 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
 
+extern int _FBR_LOG_REDIRECT_SKIP_THREAD;
 static double _LOG_PRINTER_TIME_START;
 
 struct fbr_test_log_printer {
@@ -234,6 +235,17 @@ fbr_test_log_printer_lines(void)
 	}
 
 	return lines;
+}
+
+void
+fbr_cmd_test_log_redirect_skip_thread(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_FBR_LOG_REDIRECT_SKIP_THREAD = 1;
+
+	fbr_test_logs("test_log_redirect_skip_thread: %d", _FBR_LOG_REDIRECT_SKIP_THREAD);
 }
 
 void

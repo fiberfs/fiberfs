@@ -23,3 +23,5 @@ FBR_TEST_CMD(test_log_init)
 FBR_TEST_CMD(test_log_loop)
 FBR_TEST_CMD(test_log_rlog)
 FBR_TEST_CMD(test_log_printer)
+
+FBR_TEST_CMD(test_log_redirect_skip_thread)
