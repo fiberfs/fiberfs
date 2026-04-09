@@ -47,7 +47,6 @@ void *fbr_workspace_alloc(struct fbr_workspace *workspace, size_t size);
 void *fbr_workspace_rbuffer(struct fbr_workspace *workspace);
 size_t fbr_workspace_rlen(struct fbr_workspace *workspace);
 void fbr_workspace_ralloc(struct fbr_workspace *workspace, size_t size);
-void fbr_workspace_debug(struct fbr_workspace *workspace, fbr_log_f *logger);
 
 #define fbr_workspace_ok(workspace)						\
 {										\

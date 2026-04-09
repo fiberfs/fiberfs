@@ -17,8 +17,6 @@ typedef unsigned long fbr_stats_t;
 #include "utils/fbr_assert.h"
 #include "utils/fbr_utils.h"
 
-typedef void __fbr_attr_printf(1) (fbr_log_f)(const char *fmt, ...);
-
 #define fbr_magic_check(obj, value)				\
 {								\
 	assert(obj);						\

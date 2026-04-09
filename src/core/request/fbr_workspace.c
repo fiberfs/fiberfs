@@ -201,26 +201,3 @@ fbr_workspace_ralloc(struct fbr_workspace *workspace, size_t size)
 	workspace->free -= size;
 	assert_dev(workspace->pos <= workspace->size);
 }
-
-void
-fbr_workspace_debug(struct fbr_workspace *workspace, fbr_log_f *logger)
-{
-	fbr_workspace_ok(workspace);
-	assert(logger);
-
-	// TODO address the newlines with a proper logger
-
-	logger("workspace.reserved=%u\n", workspace->reserved);
-	logger("workspace.reserved_ptr=%u\n", workspace->reserved_ptr);
-	logger("workspace.size=%zu\n", workspace->size);
-	logger("workspace.pos=%zu\n", workspace->pos);
-	logger("workspace.free=%zu\n", workspace->free);
-	logger("workspace.overflow_len=%zu\n", workspace->overflow_len);
-
-	struct fbr_workspace_ptr *ptr = workspace->pointers;
-	while (ptr) {
-		fbr_magic_check(ptr, FBR_WORKSPACE_PTR_MAGIC);
-		logger("workspace.ptr.size=%zu\n", ptr->size);
-		ptr = ptr->next;
-	}
-}
