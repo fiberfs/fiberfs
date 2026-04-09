@@ -52,17 +52,17 @@ struct chttp_openssl_ctx _OPENSSL_SERVER_CTX = {
 	NULL
 };
 
-#define chttp_openssl_ctx_ok(ctx)						\
-	do {									\
-		assert((ctx)->magic == CHTTP_OPENSSL_CTX_MAGIC);		\
-		assert((ctx)->type > CHTTP_OPENSSL_NONE);			\
-	} while (0)
-#define chttp_openssl_connected(addr, ssl_ctx)					\
-	do {									\
-		chttp_addr_ok(addr);						\
-		assert((addr)->tls_priv);					\
-		ssl_ctx = (SSL*)((addr)->tls_priv);				\
-	} while (0)
+#define chttp_openssl_ctx_ok(ctx)				\
+{								\
+	assert((ctx)->magic == CHTTP_OPENSSL_CTX_MAGIC);	\
+	assert((ctx)->type > CHTTP_OPENSSL_NONE);		\
+}
+#define chttp_openssl_connected(addr, ssl_ctx)			\
+{								\
+	chttp_addr_ok(addr);					\
+	assert((addr)->tls_priv);				\
+	ssl_ctx = (SSL*)((addr)->tls_priv);			\
+}
 
 static void
 _openssl_init(struct chttp_openssl_ctx *ctx)
