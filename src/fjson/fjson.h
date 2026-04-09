@@ -72,7 +72,6 @@ struct fjson_context {
 	size_t				position;
 	size_t				pos;
 
-	fbr_bitflag_t			do_free:1;
 	fbr_bitflag_t			error:1;
 	fbr_bitflag_t			finish:1;
 
@@ -86,7 +85,6 @@ struct fjson_context {
 };
 
 void fjson_context_init(struct fjson_context *ctx);
-struct fjson_context *fjson_context_alloc(void);
 struct fjson_token *fjson_get_token(struct fjson_context *ctx, size_t depth);
 void fjson_parse_partial(struct fjson_context *ctx, const char *buf, size_t buf_len);
 void fjson_parse(struct fjson_context *ctx, const char *buf, size_t buf_len);

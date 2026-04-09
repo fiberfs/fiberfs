@@ -67,21 +67,10 @@ void
 fjson_cmd_json_dynamic(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
 
-	fbr_test_unescape(&cmd->params[0]);
+	// This used to be a dynamic alloc...
 
-	struct fjson_context *fjson = fjson_context_alloc();
-
-	fjson_parse(fjson, cmd->params[0].value, cmd->params[0].len);
-
-	fbr_test_ERROR(fjson->error, "fjson error %s: %s", fjson_state_name(fjson->state),
-		fjson->error_msg);
-
-	fjson_context_free(fjson);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "json_test passed %s",
-		cmd->params[0].value);
+	fjson_cmd_json_test(ctx, cmd);
 }
 
 void

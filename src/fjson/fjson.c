@@ -32,34 +32,12 @@ fjson_context_init(struct fjson_context *ctx)
 	fjson_context_ok(ctx);
 }
 
-// Optional alloc (see above)
-struct fjson_context *
-fjson_context_alloc(void)
-{
-	struct fjson_context *ctx;
-
-	ctx = malloc(sizeof(*ctx));
-	assert(ctx);
-
-	fjson_context_init(ctx);
-
-	ctx->do_free = 1;
-
-	return ctx;
-}
-
 void
 fjson_context_free(struct fjson_context *ctx)
 {
 	fjson_context_ok(ctx);
 
-	int do_free = ctx->do_free;
-
 	fbr_zero(ctx);
-
-	if (do_free) {
-		free(ctx);
-	}
 }
 
 static void
