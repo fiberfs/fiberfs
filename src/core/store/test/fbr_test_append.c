@@ -225,11 +225,11 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 #define _APPEND_THREADS		8
 #define _APPEND_COUNTER_MAX	64
-size_t _APPEND_THREAD_COUNT;
-size_t _APPEND_COUNTER;
-ssize_t _APPEND_ERROR_TEST;
-ssize_t _APPEND_ERROR_WBUFFER;
-size_t _APPEND_ERROR_FLUSH;
+static size_t _APPEND_THREAD_COUNT;
+static size_t _APPEND_COUNTER;
+static ssize_t _APPEND_ERROR_TEST;
+static ssize_t _APPEND_ERROR_WBUFFER;
+static size_t _APPEND_ERROR_FLUSH;
 
 static void
 _append_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)

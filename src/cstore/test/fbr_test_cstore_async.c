@@ -20,9 +20,9 @@ extern struct fbr_cstore *_CSTORE;
 
 #define _ASYNC_TEST_MAX		2500
 #define _ASYNC_TEST_THREADS	8
-size_t _ASYNC_TEST_QUEUED;
-size_t _ASYNC_TEST_ERROR;
-size_t _ASYNC_TEST_CALLED;
+static size_t _ASYNC_TEST_QUEUED;
+static size_t _ASYNC_TEST_ERROR;
+static size_t _ASYNC_TEST_CALLED;
 
 static void
 _test_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)

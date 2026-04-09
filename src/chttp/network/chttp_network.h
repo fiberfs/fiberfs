@@ -64,6 +64,7 @@ int chttp_addr_cmp(const struct chttp_addr *a1, const struct chttp_addr *a2);
 
 void chttp_tcp_set_nonblocking(struct chttp_addr *addr);
 void chttp_tcp_set_blocking(struct chttp_addr *addr);
+void chttp_tcp_set_timeouts(struct chttp_addr *addr);
 void chttp_tcp_poll(struct chttp_addr *addr, short events, int timeout_msec);
 int chttp_tcp_listen(struct chttp_addr *addr, const char *ip, int port, int queue_len);
 int chttp_tcp_connect(struct chttp_addr *addr);

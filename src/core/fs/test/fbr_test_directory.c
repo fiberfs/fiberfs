@@ -21,10 +21,10 @@
 #define _TEST_DIR_RELEASES		4
 #define _TEST_DIR_MAX_TIME		2.0
 
-int _TEST_ROOT;
-fbr_inode_t _TEST_INODE;
-unsigned long _TEST_DIR_THREAD;
-unsigned long _TEST_DIR_GENERATION;
+static int _TEST_ROOT;
+static fbr_inode_t _TEST_INODE;
+static unsigned long _TEST_DIR_THREAD;
+static unsigned long _TEST_DIR_GENERATION;
 
 static void *
 _dir_test_alloc(void *arg)

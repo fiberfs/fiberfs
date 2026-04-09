@@ -41,6 +41,23 @@ chttp_tcp_set_blocking(struct chttp_addr *addr)
 }
 
 void
+chttp_tcp_set_timeouts(struct chttp_addr *addr)
+{
+	chttp_addr_connected(addr);
+
+	addr->time_start = fbr_get_time();
+
+	struct timeval timeout;
+	timeout.tv_sec = addr->timeout_transfer_ms / 1000;
+	timeout.tv_usec = (addr->timeout_transfer_ms % 1000) * 1000;
+
+	(void)setsockopt(addr->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+		sizeof(timeout));
+	(void)setsockopt(addr->sock, SOL_SOCKET, SO_SNDTIMEO, &timeout,
+		sizeof(timeout));
+}
+
+void
 chttp_tcp_poll(struct chttp_addr *addr, short events, int timeout_msec)
 {
 	chttp_addr_connected(addr);
@@ -84,23 +101,6 @@ _tcp_poll_connected(struct chttp_addr *addr)
 	}
 
 	return 1;
-}
-
-void
-_tcp_set_timeouts(struct chttp_addr *addr)
-{
-	chttp_addr_connected(addr);
-
-	addr->time_start = fbr_get_time();
-
-	struct timeval timeout;
-	timeout.tv_sec = addr->timeout_transfer_ms / 1000;
-	timeout.tv_usec = (addr->timeout_transfer_ms % 1000) * 1000;
-
-	(void)setsockopt(addr->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
-		sizeof(timeout));
-	(void)setsockopt(addr->sock, SOL_SOCKET, SO_SNDTIMEO, &timeout,
-		sizeof(timeout));
 }
 
 int
@@ -148,7 +148,7 @@ chttp_tcp_connect(struct chttp_addr *addr)
 	}
 	assert_zero(addr->nonblocking);
 
-	_tcp_set_timeouts(addr);
+	chttp_tcp_set_timeouts(addr);
 
 	if (addr->tls) {
 		chttp_tls_connect(addr);

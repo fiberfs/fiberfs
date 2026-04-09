@@ -16,8 +16,6 @@
 #include "dns/chttp_dns.h"
 #include "tls/chttp_tls.h"
 
-void _tcp_set_timeouts(struct chttp_addr *addr);
-
 static void
 _tcp_get_port(struct chttp_addr *addr)
 {
@@ -114,7 +112,7 @@ chttp_tcp_accept(struct chttp_addr *addr, struct chttp_addr *server_addr)
 
 	addr->state = CHTTP_ADDR_CONNECTED;
 
-	_tcp_set_timeouts(addr);
+	chttp_tcp_set_timeouts(addr);
 
 	if (server_addr->tls) {
 		addr->tls = 1;

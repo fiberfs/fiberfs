@@ -20,7 +20,7 @@
 
 #define _TEST_OPS_FUSE_TTL_SEC		2.0
 
-int _TEST_OPS_FUSE_STATE;
+static int _TEST_OPS_FUSE_STATE;
 
 static void
 _test_ops_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)

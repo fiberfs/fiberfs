@@ -208,7 +208,7 @@ _match_quote(char *buf, size_t pos)
 	return quote;
 }
 
-const char *
+static const char *
 _test_read_varf(struct fbr_test *test, const char *variable)
 {
 	assert_dev(test);

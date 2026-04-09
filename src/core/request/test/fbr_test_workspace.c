@@ -12,7 +12,6 @@
 #include "test/fbr_test.h"
 #include "config/test/fbr_test_config_cmds.h"
 
-
 static void
 _test_workspace_debug(struct fbr_workspace *workspace)
 {

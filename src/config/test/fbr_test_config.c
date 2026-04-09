@@ -467,13 +467,13 @@ fbr_cmd_test_config_file_errors(struct fbr_test_context *ctx, struct fbr_test_cm
 #define _MAX_KEY_LEN		2048
 #define _THREAD_READERS		6
 #define _THREAD_WRITERS		2
-size_t _DONE;
-size_t _WRITERS;
-size_t _ITERATIONS;
-size_t _WRITES;
-size_t _READS;
-size_t _NUMBERS;
-size_t _LENGTH;
+static size_t _DONE;
+static size_t _WRITERS;
+static size_t _ITERATIONS;
+static size_t _WRITES;
+static size_t _READS;
+static size_t _NUMBERS;
+static size_t _LENGTH;
 
 static void *
 _write_thread(void *arg)

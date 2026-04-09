@@ -20,8 +20,8 @@
 #define _ERR_FILE_INODE		1234
 #define _ERR_DIR_INODE		(_ERR_FILE_INODE + 1)
 
-int _ERR_STATE;
-char _ERR_FILENAME[128];
+static int _ERR_STATE;
+static char _ERR_FILENAME[128];
 
 static int *__CRASH_NULL;
 
