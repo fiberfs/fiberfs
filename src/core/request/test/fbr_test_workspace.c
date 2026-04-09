@@ -12,27 +12,23 @@
 #include "test/fbr_test.h"
 #include "config/test/fbr_test_config_cmds.h"
 
-typedef void __fbr_attr_printf(1) (_test_log_f)(const char *fmt, ...);
 
 static void
-_test_workspace_debug(struct fbr_workspace *workspace, _test_log_f *logger)
+_test_workspace_debug(struct fbr_workspace *workspace)
 {
 	fbr_workspace_ok(workspace);
-	assert(logger);
 
-	// TODO address the newlines with a proper logger
-
-	logger("workspace.reserved=%u\n", workspace->reserved);
-	logger("workspace.reserved_ptr=%u\n", workspace->reserved_ptr);
-	logger("workspace.size=%zu\n", workspace->size);
-	logger("workspace.pos=%zu\n", workspace->pos);
-	logger("workspace.free=%zu\n", workspace->free);
-	logger("workspace.overflow_len=%zu\n", workspace->overflow_len);
+	fbr_test_logs("workspace.reserved=%u", workspace->reserved);
+	fbr_test_logs("workspace.reserved_ptr=%u", workspace->reserved_ptr);
+	fbr_test_logs("workspace.size=%zu", workspace->size);
+	fbr_test_logs("workspace.pos=%zu", workspace->pos);
+	fbr_test_logs("workspace.free=%zu", workspace->free);
+	fbr_test_logs("workspace.overflow_len=%zu", workspace->overflow_len);
 
 	struct fbr_workspace_ptr *ptr = workspace->pointers;
 	while (ptr) {
 		fbr_magic_check(ptr, FBR_WORKSPACE_PTR_MAGIC);
-		logger("workspace.ptr.size=%zu\n", ptr->size);
+		fbr_test_logs("workspace.ptr.size=%zu", ptr->size);
 		ptr = ptr->next;
 	}
 }
@@ -127,7 +123,7 @@ fbr_cmd_workspace_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	void *buf17 = fbr_workspace_alloc(ws1, buf17_len);
 	assert(buf17);
 	memset(buf17, 1, buf17_len);
-	_test_workspace_debug(ws1, &fbr_test_logs_nl);
+	_test_workspace_debug(ws1);
 	assert(ws1->free == 24);
 	assert(ws1->overflow_len == buf14_len + buf16_len + buf17_len);
 	fbr_workspace_free(ws1);
@@ -159,7 +155,7 @@ fbr_cmd_workspace_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(ws2->pos);
 	assert(ws2->free == ws2->size);
 	assert_zero(fbr_workspace_rlen(ws2));
-	_test_workspace_debug(ws2, &fbr_test_logs_nl);
+	_test_workspace_debug(ws2);
 	fbr_workspace_free(ws2);
 
 	fbr_test_logs("*** ws3");
@@ -184,7 +180,7 @@ fbr_cmd_workspace_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	size_t buf35_len = 3300;
 	char *buf35 = fbr_workspace_alloc(ws3, buf35_len);
 	assert_zero(buf35);
-	_test_workspace_debug(ws3, &fbr_test_logs_nl);
+	_test_workspace_debug(ws3);
 
 	fbr_test_logs("*** ws3 (reset)");
 
@@ -204,7 +200,7 @@ fbr_cmd_workspace_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	size_t buf36_len = fbr_workspace_rlen(ws3);
 	assert(buf36_len >= FBR_WORKSPACE_MIN_SIZE);
 	fbr_workspace_ralloc(ws3, buf36_len);
-	_test_workspace_debug(ws3, &fbr_test_logs_nl);
+	_test_workspace_debug(ws3);
 	assert(ws3->pos == buf35_len);
 	assert(ws3->overflow_len == buf33_len + buf36_len);
 	fbr_workspace_free(ws3);
