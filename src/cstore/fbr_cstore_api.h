@@ -19,6 +19,7 @@
 #include "data/tree.h"
 #include "s3/fbr_cstore_s3.h"
 #include "server/fbr_cstore_server.h"
+#include "utils/fbr_id.h"
 
 #define FBR_CSTORE_HEAD_COUNT			64
 #define FBR_CSTORE_SLAB_SIZE			128

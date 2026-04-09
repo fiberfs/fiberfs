@@ -17,7 +17,7 @@ fbr_id_t
 fbr_id_gen(void)
 {
 	struct timespec ts;
-        assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
+	assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
 
 	struct fbr_id id;
 	id.parts.timestamp = ts.tv_sec % FBR_ID_TIMEBITS_MAX;

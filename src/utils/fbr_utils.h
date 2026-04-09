@@ -74,9 +74,9 @@ unsigned long fbr_ulong2octal(unsigned long value);
 		(s)[(len)] = '\0';					\
 	}
 #define	FBR_TRIM_STR(s, len)						\
-{								\
-	FBR_TRIM_STR_LEFT(s, len);				\
-	FBR_TRIM_STR_RIGHT(s, len);				\
+{									\
+	FBR_TRIM_STR_LEFT(s, len);					\
+	FBR_TRIM_STR_RIGHT(s, len);					\
 }
 
 #endif /* _FBR_UTILS_H_INCLUDED_ */

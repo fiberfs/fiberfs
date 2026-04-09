@@ -8,6 +8,7 @@
 #define _FBR_CSTORE_PATH_H_INCLUDED_
 
 #include "fiberfs.h"
+#include "utils/fbr_id.h"
 
 #define FBR_FIBERFS_NAME			".fiberfs"
 #define FBR_FIBERFS_CHUNK			"chunk"
