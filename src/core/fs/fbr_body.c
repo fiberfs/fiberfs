@@ -222,7 +222,7 @@ fbr_body_chunk_clone(struct fbr_fs *fs, struct fbr_body *body, struct fbr_chunk 
 	return clone;
 }
 
-// Note: must have body->lock
+// Note: must have file->lock
 void
 fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_list *remove)
 {
@@ -285,7 +285,7 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 	}
 }
 
-// Note: must have body->lock
+// Note: must have file->lock
 struct fbr_chunk_list *
 fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
     struct fbr_chunk_list **removed, struct fbr_wbuffer *wbuffers)
@@ -372,7 +372,7 @@ fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 	return chunks;
 }
 
-// Note: must have body->lock
+// Note: must have file->lock
 struct fbr_chunk_list *
 fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers)
 {
@@ -399,7 +399,7 @@ fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers)
 	return chunks;
 }
 
-// Note: must have body->lock
+// Note: must have file->lock
 unsigned long
 fbr_body_length(struct fbr_file *file, struct fbr_wbuffer *wbuffers)
 {
