@@ -36,6 +36,8 @@ FBR_TEST_CMD(sys_stat_uid)
 FBR_TEST_CMD(sys_write)
 FBR_TEST_CMD(sys_append)
 FBR_TEST_CMD(sys_write_seek)
+FBR_TEST_CMD(sys_write_random_md5)
+FBR_TEST_VAR(md5_write)
 FBR_TEST_CMD(sys_mkdir)
 
 FBR_TEST_CMD(set_var1)

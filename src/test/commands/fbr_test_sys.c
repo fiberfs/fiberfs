@@ -38,6 +38,8 @@ struct fbr_test_sys {
 	struct _sys_path		*dirs;
 
 	const char			*tmpdir_str;
+
+	char				md5_write[FBR_HEX_LEN(FBR_MD5_DIGEST_SIZE)];
 };
 
 static void
@@ -351,7 +353,6 @@ fbr_cmd_sys_cat_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	const char *filename = cmd->params[0].value;
 	const char *md5_result = cmd->params[1].value;
-	char md5_str[CHTTP_TEST_MD5_BUFLEN];
 
 	struct fbr_md5_ctx md5;
 	fbr_md5_init(&md5);
@@ -376,6 +377,8 @@ fbr_cmd_sys_cat_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(ret, "sys_cat close() failed");
 
 	fbr_md5_final(&md5);
+
+	char md5_str[FBR_HEX_LEN(FBR_MD5_DIGEST_SIZE)];
 	chttp_test_md5_store(&md5, md5_str, sizeof(md5_str));
 
 	fbr_test_ERROR(strcmp(md5_str, md5_result), "md5 failed, got %s, expected %s",
@@ -570,6 +573,71 @@ fbr_cmd_sys_write_seek(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		strerror(errno), errno);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_write_seek bytes %zu", total_bytes);
+}
+
+void
+fbr_cmd_sys_write_random_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 2);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+	long bytes = fbr_test_parse_long(cmd->params[1].value);
+	fbr_test_ASSERT(bytes >= 0, "Bad byte count: %ld", bytes);
+
+	int fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
+	fbr_test_ASSERT(fd >= 0, "sys_write_random_md5 open() failed %s (%d %s)", filename, fd,
+		strerror(errno));
+
+	unsigned char buffer[16 * 1024];
+	size_t remaining = bytes;
+	size_t writes = 0;
+
+	struct fbr_md5_ctx md5;
+	fbr_md5_init(&md5);
+
+	while (remaining > 0) {
+		size_t wsize = fbr_test_gen_random(1, sizeof(buffer));
+		if (wsize > remaining) {
+			wsize = remaining;
+		}
+
+		assert(wsize && wsize <= sizeof(buffer));
+		fbr_test_fill_random(buffer, wsize, 0);
+
+		size_t rsize = fbr_sys_write(fd, buffer, wsize);
+		assert(rsize == wsize);
+
+		fbr_md5_update(&md5, buffer, wsize);
+
+		remaining -= wsize;
+		writes++;
+	}
+
+	int ret = close(fd);
+	fbr_test_ERROR(ret, "sys_write_random_md5 close() failed (%d %s %d)", ret,
+		strerror(errno), errno);
+
+	fbr_md5_final(&md5);
+
+	chttp_test_md5_store(&md5, ctx->sys->md5_write, sizeof(ctx->sys->md5_write));
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_write_random_md5 bytes: %zu writes: %zu md5: %s",
+		bytes, writes, ctx->sys->md5_write);
+}
+
+const char *
+fbr_var_md5_write(struct fbr_test_context *ctx)
+{
+	_sys_init(ctx);
+	assert(strlen(ctx->sys->md5_write) == sizeof(ctx->sys->md5_write) - 1);
+
+	return ctx->sys->md5_write;
 }
 
 void

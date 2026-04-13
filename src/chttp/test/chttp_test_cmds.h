@@ -8,9 +8,11 @@
 #define _CHTTP_TEST_CMDS_H_INCLUDED
 
 #include "chttp.h"
+#include "utils/fbr_chash.h"
+
 #include "test/fbr_test.h"
 
-#define CHTTP_TEST_MD5_BUFLEN		33
+#define CHTTP_TEST_MD5_BUFLEN		(FBR_HEX_LEN(FBR_MD5_DIGEST_SIZE))
 #define CHTTP_TEST_GZIP_BUFLEN		4096
 
 struct chttp_test_context {
