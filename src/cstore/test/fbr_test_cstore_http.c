@@ -11,7 +11,7 @@
 #include "test/fbr_test.h"
 
 #define _url_parse(url, etag, offset)	\
-	fbr_cstore_url_parse(url, sizeof(url) - 1, etag, sizeof(etag) - 1, offset)
+	fbr_cstore_s3_url_parse(url, sizeof(url) - 1, etag, sizeof(etag) - 1, offset)
 
 void
 fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)

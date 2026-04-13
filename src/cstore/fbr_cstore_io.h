@@ -12,18 +12,11 @@
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
+#include "cstore/fbr_cstore_path.h"
 #include "data/queue.h"
 
 #define FBR_CSTORE_ASYNC_THREAD_MAX		128
 #define FBR_CSTORE_ASYNC_THREAD_DEFAULT		4
-
-#define FBR_ENUM_CSTORE_ENTRY_TYPE						\
-	FBR_ENUM_NAMES(fbr_cstore_entry_type, fbr_cstore_type_name)		\
-		FBR_ENUM_VALUES_INIT(FBR_CSTORE_FILE_NONE, "NONE", 0)		\
-		FBR_ENUM_VALUES(FBR_CSTORE_FILE_CHUNK, "CHUNK")			\
-		FBR_ENUM_VALUES(FBR_CSTORE_FILE_INDEX, "INDEX")			\
-		FBR_ENUM_VALUES(FBR_CSTORE_FILE_ROOT, "ROOT")			\
-	FBR_ENUM_END("ERROR")
 
 #define FBR_ENUM_CSTORE_OP_TYPE						\
 	FBR_ENUM_NAMES(fbr_cstore_op_type, fbr_cstore_async_type)		\
@@ -39,7 +32,6 @@
 	FBR_ENUM_END("ERROR")
 
 #include "utils/fbr_enum_define.h"
-FBR_ENUM_CSTORE_ENTRY_TYPE
 FBR_ENUM_CSTORE_OP_TYPE
 
 struct fbr_cstore_op;
@@ -171,8 +163,6 @@ int fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_
 fbr_id_t fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_path);
 int fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 
-enum fbr_cstore_entry_type fbr_cstore_url_parse(const char *url, size_t url_len, const char *etag,
-	size_t etag_len, size_t *offset);
 void fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http);
 void fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http);
 void fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *http);

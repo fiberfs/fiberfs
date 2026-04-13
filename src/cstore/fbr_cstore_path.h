@@ -20,6 +20,17 @@
 #define FBR_CSTORE_ROOT_LEN			512
 #define FBR_CSTORE_HASHPATH_LEN			(FBR_CSTORE_ROOT_LEN + 128)
 
+#define FBR_ENUM_CSTORE_ENTRY_TYPE						\
+	FBR_ENUM_NAMES(fbr_cstore_entry_type, fbr_cstore_type_name)		\
+		FBR_ENUM_VALUES_INIT(FBR_CSTORE_FILE_NONE, "NONE", 0)		\
+		FBR_ENUM_VALUES(FBR_CSTORE_FILE_CHUNK, "CHUNK")			\
+		FBR_ENUM_VALUES(FBR_CSTORE_FILE_INDEX, "INDEX")			\
+		FBR_ENUM_VALUES(FBR_CSTORE_FILE_ROOT, "ROOT")			\
+	FBR_ENUM_END("ERROR")
+
+#include "utils/fbr_enum_define.h"
+FBR_ENUM_CSTORE_ENTRY_TYPE
+
 struct fbr_cstore_path {
 	unsigned int				magic;
 #define FBR_CSTORE_PATH_MAGIC			0x7C45C8C8
@@ -81,6 +92,8 @@ void fbr_cstore_s3_path_init(struct fbr_cstore_path *dest, const char *path, siz
 void fbr_cstore_s3_path_clone(struct fbr_cstore_path *dest, struct fbr_cstore_path *src);
 void fbr_cstore_s3_url_init(struct fbr_cstore_url *dest, const char *url, size_t url_len);
 void fbr_cstore_s3_url_clone(struct fbr_cstore_url *dest, const struct fbr_cstore_url *src);
+enum fbr_cstore_entry_type fbr_cstore_s3_url_parse(const char *url, size_t url_len,
+	const char *etag, size_t etag_len, size_t *offset);
 
 #define fbr_cstore_path_ok(path)		fbr_magic_check(path, FBR_CSTORE_PATH_MAGIC)
 #define fbr_cstore_hashpath_ok(path)		fbr_magic_check(path, FBR_CSTORE_HASHPATH_MAGIC)
