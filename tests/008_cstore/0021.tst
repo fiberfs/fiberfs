@@ -2,7 +2,8 @@ fiber_test "cstore large write with cluster"
 
 skip_if $is_valgrind
 
-config_add LOG_ALWAYS_FLUSH true
+config_add LOG_SIZE 1000000
+#config_add LOG_ALWAYS_FLUSH true
 
 config_add CSTORE_SERVER true
 config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
