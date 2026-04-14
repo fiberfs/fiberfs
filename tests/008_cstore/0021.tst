@@ -37,7 +37,7 @@ fs_test_rw_mount $sys_tmpdir
 print "### WRITE"
 
 set_var1 $sys_tmpdir "/test_big1.txt"
-sys_write_random_md5 $var1 133000
+sys_write_random_md5 $var1 2000000
 
 fs_test_release_all
 
