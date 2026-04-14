@@ -545,12 +545,14 @@ _cstore_thread(void *arg)
 				fbr_atomic_add(&_CSTORE_ENTRY_COUNTER, 1);
 				fbr_atomic_add(&_CSTORE_DELAY_COUNTER, delay);
 				fbr_cstore_set_ok(entry);
-				fbr_cstore_release(_CSTORE, entry);
+				fbr_cstore_release(_CSTORE, &entry);
+				assert_zero(entry);
 			} else {
 				entry = fbr_cstore_get(_CSTORE, hash);
 				if (entry) {
 					fbr_cstore_entry_ok(entry);
-					fbr_cstore_release(_CSTORE, entry);
+					fbr_cstore_release(_CSTORE, &entry);
+					assert_zero(entry);
 				}
 			}
 		} else {
@@ -558,10 +560,12 @@ _cstore_thread(void *arg)
 			fbr_atomic_add(&_CSTORE_READ_COUNTER, 1);
 
 			if (random() % 10 == 0) {
-				fbr_cstore_remove(_CSTORE, entry);
+				fbr_cstore_remove(_CSTORE, &entry);
 			} else {
-				fbr_cstore_release(_CSTORE, entry);
+				fbr_cstore_release(_CSTORE, &entry);
 			}
+
+			assert_zero(entry);
 		}
 	}
 
@@ -746,7 +750,8 @@ _cstore_state_thread(void *arg)
 		}
 
 
-		fbr_cstore_release(_CSTORE, entry);
+		fbr_cstore_release(_CSTORE, &entry);
+		assert_zero(entry);
 	}
 
 	return NULL;
@@ -783,7 +788,8 @@ fbr_cmd_cstore_state_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 		struct fbr_cstore_entry *entry = fbr_cstore_get(_CSTORE, i);
 		fbr_cstore_entry_ok(entry);
 		assert(entry->state == FBR_CSTORE_OK);
-		fbr_cstore_remove(_CSTORE, entry);
+		fbr_cstore_remove(_CSTORE, &entry);
+		assert_zero(entry);
 	}
 
 	assert_zero(_CSTORE->entries);
@@ -831,7 +837,8 @@ _cstore_wait_thread(void *arg)
 				fbr_atomic_add(&_CSTORE_WAIT_FIRST_LOAD, 1);
 
 				fbr_cstore_set_ok(entry);
-				fbr_cstore_release(_CSTORE, entry);
+				fbr_cstore_release(_CSTORE, &entry);
+				assert_zero(entry);
 
 				continue;
 			}
@@ -852,7 +859,9 @@ _cstore_wait_thread(void *arg)
 		_CSTORE_WAIT_METER--;
 
 		fbr_cstore_set_ok(entry);
-		fbr_cstore_release(_CSTORE, entry);
+		fbr_cstore_release(_CSTORE, &entry);
+		assert_zero(entry);
+
 		fbr_sleep_ms(0.01);
 	}
 

@@ -204,8 +204,8 @@ enum fbr_cstore_state fbr_cstore_wait_loading(struct fbr_cstore_entry *entry);
 void fbr_cstore_reset_loading(struct fbr_cstore_entry *entry);
 void fbr_cstore_set_ok(struct fbr_cstore_entry *entry);
 void fbr_cstore_set_error(struct fbr_cstore_entry *entry);
-void fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
-void fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
+void fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref);
+void fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref);
 void fbr_cstore_clear(struct fbr_cstore *cstore);
 void fbr_cstore_free(struct fbr_cstore *cstore);
 

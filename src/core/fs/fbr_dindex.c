@@ -487,7 +487,7 @@ void
 fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 {
 	fbr_fs_ok(fs);
-	assert(*directory_ref);
+	assert(directory_ref);
 
 	struct fbr_directory *directory = *directory_ref;
 	fbr_directory_ok(directory);

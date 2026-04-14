@@ -144,7 +144,7 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *hpath, unsigned char h1,
 			fbr_atomic_add(&cstore->stats.loaded, 1);
 			insertions++;
 
-			fbr_cstore_release(cstore, centry);
+			fbr_cstore_release(cstore, &centry);
 		}
 	}
 

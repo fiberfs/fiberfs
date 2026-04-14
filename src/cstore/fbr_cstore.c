@@ -569,15 +569,20 @@ fbr_cstore_set_error(struct fbr_cstore_entry *entry)
 }
 
 static void
-_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, int prune_lru)
+_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref, int prune_lru)
 {
 	fbr_cstore_ok(cstore);
+	assert(entry_ref)
+
+	struct fbr_cstore_entry *entry = *entry_ref;
 	fbr_cstore_entry_ok(entry);
 	assert(entry->alloc == FBR_CSTORE_ENTRY_USED);
 
 	struct fbr_cstore_head *head = _cstore_get_head(cstore, entry->hash);
 	pt_assert(pthread_mutex_lock(&head->lock));
 	fbr_cstore_head_ok(head);
+
+	*entry_ref = NULL;
 
 	assert(entry->refcount);
 	entry->refcount--;
@@ -597,15 +602,15 @@ _cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, int p
 }
 
 void
-fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
+fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref)
 {
-	_cstore_release(cstore, entry, 0);
+	_cstore_release(cstore, entry_ref, 0);
 }
 
 void
-fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
+fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref)
 {
-	_cstore_release(cstore, entry, 1);
+	_cstore_release(cstore, entry_ref, 1);
 
 	fbr_fs_stat_add(&cstore->stats.removed);
 }

@@ -290,7 +290,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		if (ret) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR metadata");
 			fbr_cstore_set_error(entry);
-			fbr_cstore_remove(cstore, entry);
+			fbr_cstore_remove(cstore, &entry);
 			fbr_cstore_http_respond(cstore, http, 500, "Error");
 			return;
 		}
@@ -300,7 +300,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 				"URL_WRITE ERROR bad version want: %lu got: %lu",
 				etag_match, metadata.etag);
 			fbr_cstore_set_ok(entry);
-			fbr_cstore_release(cstore, entry);
+			fbr_cstore_release(cstore, &entry);
 			fbr_cstore_http_respond(cstore, http, 500, "Error");
 			return;
 		}
@@ -314,7 +314,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	if (fd < 0) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR open()");
 		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_remove(cstore, &entry);
 		fbr_cstore_http_respond(cstore, http, 500, "Error");
 		return;
 	}
@@ -328,7 +328,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 			bytes);
 
 		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_remove(cstore, &entry);
 
 		if (!http->error) {
 			chttp_error(http, CHTTP_ERR_NETWORK);
@@ -360,7 +360,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	if (ret) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR metadata");
 		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_remove(cstore, &entry);
 		fbr_cstore_http_respond(cstore, http, 500, "Error");
 		return;
 	}
@@ -381,7 +381,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 			metadata.gzipped, _cstore_entry_sendfile, &pair, FBR_CSTORE_ROUTE_CDN);
 
 		if (http_backend.error || http_backend.status != 200) {
-			fbr_cstore_release(cstore, entry);
+			fbr_cstore_release(cstore, &entry);
 			chttp_context_free(&http_backend);
 			fbr_cstore_http_respond(cstore, http, 500, "Error");
 			return;
@@ -392,7 +392,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		chttp_context_free(&http_backend);
 	}
 
-	fbr_cstore_release(cstore, entry);
+	fbr_cstore_release(cstore, &entry);
+	assert_zero_dev(entry);
 
 	fbr_cstore_http_respond(cstore, http, 200, "OK");
 }
@@ -418,10 +419,12 @@ _cstore_url_entry_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *en
 	assert_dev(entry->state != FBR_CSTORE_LOADING);
 
 	if (error) {
-		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_remove(cstore, &entry);
 	} else {
-		fbr_cstore_release(cstore, entry);
+		fbr_cstore_release(cstore, &entry);
 	}
+
+	assert_zero_dev(entry);
 }
 
 void
@@ -509,8 +512,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			fbr_cstore_type_name(file_type), hashpath.value, retry);
 
 		if (entry_ref) {
-			fbr_cstore_release(cstore, entry_ref);
-			entry_ref = NULL;
+			fbr_cstore_release(cstore, &entry_ref);
+			assert_zero_dev(entry_ref);
 		}
 
 		if (retry == 1) {
@@ -552,8 +555,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		}
 
 		if (entry_ref) {
-			fbr_cstore_release(cstore, entry_ref);
-			entry_ref = NULL;
+			fbr_cstore_release(cstore, &entry_ref);
+			assert_zero_dev(entry_ref);
 		}
 
 		fbr_cstore_entry_ok(entry);
@@ -760,13 +763,14 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 			int ret = fbr_cstore_metadata_read(&hashpath, &metadata);
 			if (ret || metadata.etag != etag_match) {
 				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR etag");
-				fbr_cstore_release(cstore, entry);
+				fbr_cstore_release(cstore, &entry);
 				fbr_cstore_http_respond(cstore, http, 500, "Error");
 				return;
 			}
 		}
 
-		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_remove(cstore, &entry);
+		assert_zero_dev(entry);
 
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE success");
 	} else {

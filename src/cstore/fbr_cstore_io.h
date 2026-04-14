@@ -16,9 +16,9 @@
 #include "data/queue.h"
 
 #define FBR_CSTORE_ASYNC_THREAD_MAX		128
-#define FBR_CSTORE_ASYNC_THREAD_DEFAULT		8
+#define FBR_CSTORE_ASYNC_THREAD_DEFAULT		4
 
-#define FBR_ENUM_CSTORE_OP_TYPE						\
+#define FBR_ENUM_CSTORE_OP_TYPE							\
 	FBR_ENUM_NAMES(fbr_cstore_op_type, fbr_cstore_async_type)		\
 		FBR_ENUM_VALUES_INIT(FBR_CSOP_NONE, "NONE", 0)			\
 		FBR_ENUM_VALUES(FBR_CSOP_TEST, "TEST")				\

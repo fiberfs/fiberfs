@@ -399,7 +399,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	if (http.error || http.status != 200) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET: %d %d", http.error, http.status);
 		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_remove(cstore, &entry);
 
 		int error = http.status ? http.status : 1;
 		assert_dev(error > 0);
@@ -409,7 +409,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	} else if (!http.chunked && size && (size_t)http.length != size) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET length");
 		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_remove(cstore, &entry);
 		chttp_context_free(&http);
 		return 1;
 	}
@@ -419,7 +419,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 		if (!etag) {
 			fbr_rlog(FBR_LOG_CS_S3, "S3_GET ERROR no id_etag");
 			fbr_cstore_set_error(entry);
-			fbr_cstore_remove(cstore, entry);
+			fbr_cstore_remove(cstore, &entry);
 			chttp_context_free(&http);
 			return 1;
 		}
@@ -434,7 +434,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 		if (!id) {
 			fbr_rlog(FBR_LOG_CS_S3, "S3_GET ERROR bad id_etag");
 			fbr_cstore_set_error(entry);
-			fbr_cstore_remove(cstore, entry);
+			fbr_cstore_remove(cstore, &entry);
 			chttp_context_free(&http);
 			return 1;
 		}
@@ -444,7 +444,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET open()");
 		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_remove(cstore, &entry);
 		chttp_context_free(&http);
 		return 1;
 	}
@@ -456,7 +456,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	if (http.error || (size && bytes != size) || !bytes) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET bytes");
 		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_remove(cstore, &entry);
 		chttp_context_free(&http);
 		return 1;
 	} else {
@@ -472,7 +472,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 		if (ret) {
 			fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET size");
 			fbr_cstore_set_error(entry);
-			fbr_cstore_remove(cstore, entry);
+			fbr_cstore_remove(cstore, &entry);
 			chttp_context_free(&http);
 			return 1;
 		}
@@ -494,7 +494,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	if (ret) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET metadata");
 		fbr_cstore_set_error(entry);
-		fbr_cstore_remove(cstore, entry);
+		fbr_cstore_remove(cstore, &entry);
 		return 1;
 	}
 
@@ -509,7 +509,8 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	}
 
 	fbr_cstore_set_ok(entry);
-	fbr_cstore_release(cstore, entry);
+	fbr_cstore_release(cstore, &entry);
+	assert_zero_dev(entry);
 
 	return 0;
 }
@@ -627,7 +628,7 @@ _s3_chunk_read_error(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fbr_cs
 	fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 
 	fbr_cstore_set_error(entry);
-	fbr_cstore_release(cstore, entry);
+	fbr_cstore_release(cstore, &entry);
 
 	chttp_context_free(http);
 }
@@ -644,7 +645,7 @@ _s3_chunk_readwrite_error(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	}
 
 	fbr_cstore_set_error(entry);
-	fbr_cstore_remove(cstore, entry);
+	fbr_cstore_remove(cstore, &entry);
 }
 
 void
@@ -803,7 +804,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	fbr_rlog(FBR_LOG_CS_S3, "READ S3 WRITE done %zu bytes", bytes);
 
 	fbr_cstore_set_ok(entry);
-	fbr_cstore_release(cstore, entry);
+	fbr_cstore_release(cstore, &entry);
 }
 
 static void
