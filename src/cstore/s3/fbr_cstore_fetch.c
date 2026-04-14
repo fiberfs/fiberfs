@@ -866,7 +866,8 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 		return error;
 	}
 
-	fbr_cstore_async_root_write(cstore, root_json, root_path, version);
+	double now = fbr_get_time();
+	fbr_cstore_io_root_write(cstore, root_json, root_path, version, 0, 0, now);
 
 	return 0;
 }
