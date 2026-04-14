@@ -76,6 +76,7 @@ fbr_cstore_async_queue(struct fbr_cstore *cstore, enum fbr_cstore_op_type type, 
 
 	if (TAILQ_EMPTY(&async->free_list) || async->queue_len >= async->threads_max) {
 		pt_assert(pthread_mutex_unlock(&async->queue_lock));
+		fbr_rlog(FBR_LOG_CS_ASYNC, "queue FULL");
 		return 1;
 	}
 
@@ -289,8 +290,11 @@ fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_WRITE, fs, file, wbuffer, NULL,
 		NULL, NULL, NULL);
 	if (ret) {
+		fbr_rlog(FBR_LOG_CS_ASYNC, "synchronous fallback");
+
 		wbuffer->state = FBR_WBUFFER_READY;
 		fbr_cstore_io_wbuffer_write(fs, file, wbuffer);
+
 		return;
 	}
 }
@@ -313,8 +317,11 @@ fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_CHUNK_READ, fs, file, chunk, NULL, NULL,
 		NULL, NULL);
 	if (ret) {
+		fbr_rlog(FBR_LOG_CS_ASYNC, "synchronous fallback");
+
 		chunk->state = FBR_CHUNK_EMPTY;
 		fbr_cstore_io_chunk_read(fs, file, chunk);
+
 		return;
 	}
 }
@@ -351,9 +358,13 @@ _async_url_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url, f
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_URL_DELETE, cstore, url_async,
 		(void*)id, (void*)type, NULL, _async_chunk_url_done, NULL);
 	if (ret) {
+		fbr_rlog(FBR_LOG_CS_ASYNC, "synchronous fallback");
+
 		fbr_zero_magic(url_async);
 		free(url_async);
+
 		fbr_cstore_io_delete_url(cstore, url, id, type);
+
 		return;
 	}
 }
@@ -392,8 +403,11 @@ fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *h
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_WBUFFER_SEND, cstore, http, path,
 		wbuffer, NULL, fbr_cstore_op_sync_done, sync);
 	if (ret) {
+		fbr_rlog(FBR_LOG_CS_ASYNC, "synchronous fallback");
+
 		fbr_cstore_s3_wbuffer_send(cstore, http, path, wbuffer);
 		sync->done = 1;
+
 		return;
 	}
 }
@@ -417,8 +431,11 @@ fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *htt
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_INDEX_SEND, cstore, http, path,
 		writer, (void*)id, fbr_cstore_op_sync_done, sync);
 	if (ret) {
+		fbr_rlog(FBR_LOG_CS_ASYNC, "synchronous fallback");
+
 		fbr_cstore_s3_index_send(cstore, http, path, writer, id);
 		sync->done = 1;
+
 		return;
 	}
 }
@@ -485,7 +502,9 @@ fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_j
 		fbr_zero_magic(path_async);
 		free(timestamp);
 		fbr_writer_free(root_json);
+
 		fbr_rlog(FBR_LOG_CS_ROOT, "Cannot schedule write, skipping");
+
 		return;
 	}
 }
