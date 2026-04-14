@@ -579,7 +579,7 @@ void
 fbr_cmd_sys_write_random_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_init(ctx);
-	fbr_test_ERROR_param_count(cmd, 2);
+	fbr_test_ASSERT(cmd->param_count >= 2 && cmd->param_count <= 3, "Need 2 or 3 params");
 
 	if (fbr_test_can_vfork(ctx)) {
 		fbr_test_fork(ctx, cmd);
@@ -589,6 +589,11 @@ fbr_cmd_sys_write_random_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	const char *filename = cmd->params[0].value;
 	long bytes = fbr_test_parse_long(cmd->params[1].value);
 	fbr_test_ASSERT(bytes >= 0, "Bad byte count: %ld", bytes);
+
+	int sequence = 0;
+	if (cmd->param_count >= 3) {
+		sequence = fbr_test_parse_long(cmd->params[2].value);
+	}
 
 	int fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
 	fbr_test_ASSERT(fd >= 0, "sys_write_random_md5 open() failed %s (%d %s)", filename, fd,
@@ -608,7 +613,15 @@ fbr_cmd_sys_write_random_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *
 		}
 
 		assert(wsize && wsize <= sizeof(buffer));
-		fbr_test_fill_random(buffer, wsize, 0);
+		if (sequence) {
+			for (size_t pos = bytes - remaining, i = 0; i < wsize; pos++, i++) {
+				assert(pos < (size_t)bytes);
+				assert(i < sizeof(buffer));
+				buffer[i] = (pos % 10) + '0';
+			}
+		} else {
+			fbr_test_fill_random(buffer, wsize, 0);
+		}
 
 		size_t rsize = fbr_sys_write(fd, buffer, wsize);
 		assert(rsize == wsize);
