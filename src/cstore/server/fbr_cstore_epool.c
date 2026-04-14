@@ -100,6 +100,7 @@ _epool_return_conn_entry(struct fbr_cstore *cstore, struct fbr_cstore_epool_conn
 
 	assert_dev(conn_entry->addr.state == CHTTP_ADDR_NONE);
 	chttp_addr_reset(&conn_entry->addr);
+	fbr_zero_magic(conn_entry);
 
 	TAILQ_REMOVE(&epool->conn_list, conn_entry, entry);
 	TAILQ_INSERT_TAIL(&epool->free_list, conn_entry, entry);

@@ -370,7 +370,7 @@ fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *
 int
 fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
     struct fbr_cstore_path *file_path, fbr_id_t id, size_t size, enum fbr_cstore_entry_type type,
-    enum fbr_cstore_route route)
+    enum fbr_cstore_route route, struct fbr_cstore_entry **entry_ref, size_t offset)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_path_ok(file_path);
@@ -482,6 +482,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	fbr_zero(&metadata);
 	metadata.etag = id;
 	metadata.size = size;
+	metadata.offset = offset;
 	metadata.type = type;
 	metadata.gzipped = http.gzip;
 	fbr_strbcpy(metadata.path, file_path->value);
@@ -498,6 +499,14 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	}
 
 	fbr_rlog(FBR_LOG_CS_S3, "S3_GET done %zu bytes", bytes);
+
+	if (entry_ref) {
+		assert_zero_dev(*entry_ref);
+
+		*entry_ref = fbr_cstore_get(cstore, hash);
+		fbr_cstore_entry_ok(*entry_ref);
+		assert_dev((*entry_ref)->state == FBR_CSTORE_LOADING);
+	}
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, entry);
@@ -664,6 +673,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, chunk->length,
 		NULL, 1);
 	if (!entry) {
+		// TODO we can just read the chunk and not write back if this is a problem
 		fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR s3 loading state");
 		return;

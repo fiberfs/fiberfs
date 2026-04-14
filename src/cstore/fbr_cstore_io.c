@@ -501,7 +501,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_ok(cstore, hash);
 	if (!entry) {
-		fbr_rlog(FBR_LOG_CS_CHUNK, "ERROR ok state");
+		fbr_rlog(FBR_LOG_CS_CHUNK, "NO ok state");
 		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
 		return;
 	}
@@ -707,6 +707,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_cstore_metadata metadata;
 	struct fbr_cstore_entry *entry;
+	struct fbr_cstore_entry *entry_ref = NULL;
 	int fd;
 	int retry = 0;
 
@@ -717,13 +718,18 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_rlog(FBR_LOG_CS_INDEX, "READ %s %lu (retry: %d)", path.value,
 			directory->version, retry);
 
+		if (entry_ref) {
+			fbr_cstore_release(cstore, entry_ref);
+			entry_ref = NULL;
+		}
+
 		if (retry == 1) {
 			if (!fbr_cstore_backend_enabled(cstore)) {
 				return 1;
 			}
 
 			int ret = fbr_cstore_s3_get_write(cstore, hash, &path, directory->version,
-				0, FBR_CSTORE_FILE_INDEX, FBR_CSTORE_ROUTE_CLUSTER);
+				0, FBR_CSTORE_FILE_INDEX, FBR_CSTORE_ROUTE_CLUSTER, &entry_ref, 0);
 			if (ret == 400 || ret == 404) {
 				return EAGAIN;
 			} else if (ret) {
@@ -737,15 +743,22 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		entry = fbr_cstore_io_get_ok(cstore, hash);
 		if (!entry) {
-			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR ok state");
+			fbr_rlog(FBR_LOG_CS_INDEX, "NO ok state");
 
 			if (!fbr_cstore_backend_enabled(cstore)) {
+				assert_zero(entry_ref);
 				return EAGAIN;
 			}
 
 			continue;
 		}
 
+		if (entry_ref) {
+			fbr_cstore_release(cstore, entry_ref);
+			entry_ref = NULL;
+		}
+
+		fbr_cstore_entry_ok(entry);
 		assert_dev(entry->state == FBR_CSTORE_OK);
 
 		struct fbr_cstore_hashpath hashpath;
@@ -775,6 +788,8 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		break;
 	}
+
+	assert_zero(entry_ref);
 
 	struct fbr_request *request = fbr_request_get();
 
@@ -1074,7 +1089,7 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path->value, root_path->length);
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
 	if (!entry) {
-		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR ok state");
+		fbr_rlog(FBR_LOG_CS_ROOT, "NO ok state");
 		return 0;
 	}
 

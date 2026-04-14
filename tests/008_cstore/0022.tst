@@ -1,7 +1,8 @@
 fiber_test "cstore lots of chunks, LRU, and with a cluster"
 
-config_add LOG_SIZE 2000000
-config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 1
+config_add LOG_SIZE 4000000
+#config_add LOG_ALWAYS_FLUSH true
+config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 2000
 
 config_add CSTORE_SERVER true
 config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
@@ -19,9 +20,9 @@ cstore_init 3
 cstore_set_s3 3 "" 0 region access_key secret_key
 
 # Set the LRU
-cstore_set_lru 0 250000
-cstore_set_lru 1 250000
-cstore_set_lru 2 250000
+cstore_set_lru 0 100000
+cstore_set_lru 1 100000
+cstore_set_lru 2 100000
 
 # Set the S3 origin for all cstores
 cstore_set_s3 0 $cstore_3_server_host $cstore_3_server_port region access_key secret_key
@@ -47,8 +48,7 @@ fs_test_release_all
 
 print "### READ"
 
-# There is a problem here...
-#sys_cat_md5 $var1 499411682260e00edacbe06cd283fbf4
+sys_cat_md5 $var1 499411682260e00edacbe06cd283fbf4
 
 sleep_ms 100
 

@@ -496,6 +496,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
 	struct fbr_cstore_metadata metadata;
 	struct fbr_cstore_entry *entry;
+	struct fbr_cstore_entry *entry_ref = NULL;
 	int fd;
 	size_t size;
 	int retry = 0;
@@ -506,6 +507,11 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s (retry: %d)",
 			fbr_cstore_type_name(file_type), hashpath.value, retry);
+
+		if (entry_ref) {
+			fbr_cstore_release(cstore, entry_ref);
+			entry_ref = NULL;
+		}
 
 		if (retry == 1) {
 			if (!fbr_cstore_backend_enabled(cstore)) {
@@ -518,7 +524,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 			// Its possible someone else fetched this, ignore the error...
 			(void)fbr_cstore_s3_get_write(cstore, hash, &file_path, etag_match, 0,
-				file_type, FBR_CSTORE_ROUTE_CDN);
+				file_type, FBR_CSTORE_ROUTE_CDN, &entry_ref, offset);
 		} else if (retry > 1) {
 			fbr_cstore_http_respond(cstore, http, 500, "Error");
 			return;
@@ -529,7 +535,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		if (file_type == FBR_CSTORE_FILE_ROOT) {
 			entry = fbr_cstore_get(cstore, hash);
 			if (!entry) {
-				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR entry");
+				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ NO entry");
 				continue;
 			}
 
@@ -538,11 +544,16 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		} else {
 			entry = fbr_cstore_io_get_ok(cstore, hash);
 			if (!entry) {
-				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR ok state");
+				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ NO ok state");
 				continue;
 			}
 
 			assert_dev(entry->state == FBR_CSTORE_OK);
+		}
+
+		if (entry_ref) {
+			fbr_cstore_release(cstore, entry_ref);
+			entry_ref = NULL;
 		}
 
 		fbr_cstore_entry_ok(entry);
@@ -593,6 +604,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		break;
 	}
+
+	assert_zero(entry_ref);
 
 	// TODO do we care about accept-encoding gzip?
 
@@ -757,7 +770,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE success");
 	} else {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR ok state");
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE NO ok state");
 		error = 1;
 	}
 
