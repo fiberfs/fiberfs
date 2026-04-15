@@ -172,43 +172,36 @@ _get_server(struct fbr_cstore *cstore, int pos)
 	return server;
 }
 
-static char *
-_test_server_host(struct fbr_test_cstore *tcstore)
+const char *
+fbr_varf_cstore_server_host(struct fbr_test_context *ctx, struct fbr_test_param *param)
 {
-	fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
+	fbr_test_context_ok(ctx);
+	assert(param && param->len);
 
+	long index = fbr_test_parse_long(param->value);
+	assert(index >= 0);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);
 	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, -1);
 	chttp_addr_connected(&server->addr);
 
 	int port;
-	chttp_sa_string(&server->addr.sa, tcstore->ip_str, sizeof(tcstore->ip_str),
-		&port);
-
+	chttp_sa_string(&server->addr.sa, tcstore->ip_str, sizeof(tcstore->ip_str), &port);
 	assert(port == server->port);
 
 	return tcstore->ip_str;
 }
 
-#define _CSTORE_SERVER_HOST(index)						\
-const char *									\
-fbr_var_cstore_##index##_server_host(struct fbr_test_context *ctx)		\
-{										\
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);	\
-	return _test_server_host(tcstore);					\
-}
-
-_CSTORE_SERVER_HOST(0)
-_CSTORE_SERVER_HOST(1)
-_CSTORE_SERVER_HOST(2)
-_CSTORE_SERVER_HOST(3)
-_CSTORE_SERVER_HOST(4)
-_CSTORE_SERVER_HOST(5)
-
-static char *
-_test_server_port(struct fbr_test_cstore *tcstore)
+const char *
+fbr_varf_cstore_server_port(struct fbr_test_context *ctx, struct fbr_test_param *param)
 {
-	fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
+	fbr_test_context_ok(ctx);
+	assert(param && param->len);
 
+	long index = fbr_test_parse_long(param->value);
+	assert(index >= 0);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);
 	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, -1);
 	chttp_addr_connected(&server->addr);
 	assert(server->port > 0);
@@ -218,26 +211,16 @@ _test_server_port(struct fbr_test_cstore *tcstore)
 	return tcstore->port_str;
 }
 
-#define _CSTORE_SERVER_PORT(index)						\
-const char *									\
-fbr_var_cstore_##index##_server_port(struct fbr_test_context *ctx)		\
-{										\
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);	\
-	return _test_server_port(tcstore);					\
-}
-
-_CSTORE_SERVER_PORT(0)
-_CSTORE_SERVER_PORT(1)
-_CSTORE_SERVER_PORT(2)
-_CSTORE_SERVER_PORT(3)
-_CSTORE_SERVER_PORT(4)
-_CSTORE_SERVER_PORT(5)
-
-static char *
-_test_server_tls(struct fbr_test_cstore *tcstore)
+const char *
+fbr_varf_cstore_server_tls(struct fbr_test_context *ctx, struct fbr_test_param *param)
 {
-	fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
+	fbr_test_context_ok(ctx);
+	assert(param && param->len);
 
+	long index = fbr_test_parse_long(param->value);
+	assert(index >= 0);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);
 	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, -1);
 	chttp_addr_connected(&server->addr);
 
@@ -248,21 +231,6 @@ _test_server_tls(struct fbr_test_cstore *tcstore)
 
 	return "0";
 }
-
-#define _CSTORE_SERVER_TLS(index)						\
-const char *									\
-fbr_var_cstore_##index##_server_tls(struct fbr_test_context *ctx)		\
-{										\
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);	\
-	return _test_server_tls(tcstore);					\
-}
-
-_CSTORE_SERVER_TLS(0)
-_CSTORE_SERVER_TLS(1)
-_CSTORE_SERVER_TLS(2)
-_CSTORE_SERVER_TLS(3)
-_CSTORE_SERVER_TLS(4)
-_CSTORE_SERVER_TLS(5)
 
 void
 fbr_cmd_cstore_epool_close(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)

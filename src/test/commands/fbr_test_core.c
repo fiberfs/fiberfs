@@ -267,6 +267,7 @@ fbr_varf_test_varf(struct fbr_test_context *ctx, struct fbr_test_param *param)
 {
 	fbr_test_context_ok(ctx);
 	assert(param && param->len);
+	assert(strlen(param->value) == param->len);
 
 	if (!strcmp(param->value, "1")) {
 		return "1";

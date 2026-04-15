@@ -16,11 +16,11 @@ cstore_init 1
 cstore_set_s3 1 "" 0 region access_key secret_key
 
 # Set the S3 origin for cstore
-cstore_set_s3 0 $cstore_1_server_host $cstore_1_server_port region access_key secret_key $cstore_1_server_tls
+cstore_set_s3 0 $cstore_server_host:1 $cstore_server_port:1 region access_key secret_key $cstore_server_tls:1
 
 # Make the cluster loop
 cstore_debug_allow_loop
-cstore_add_cluster 0 $cstore_0_server_host $cstore_0_server_port
+cstore_add_cluster 0 $cstore_server_host:0 $cstore_server_port:0
 
 # Start the test
 

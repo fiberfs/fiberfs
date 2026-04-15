@@ -18,14 +18,14 @@ cstore_init 3
 cstore_set_s3 3 "" 0 region access_key secret_key
 
 # Set the S3 origin for all cstores
-cstore_set_s3 0 $cstore_3_server_host $cstore_3_server_port region access_key secret_key
-cstore_set_s3 1 $cstore_3_server_host $cstore_3_server_port region access_key secret_key
-cstore_set_s3 2 $cstore_3_server_host $cstore_3_server_port region access_key secret_key
+cstore_set_s3 0 $cstore_server_host:3 $cstore_server_port:3 region access_key secret_key
+cstore_set_s3 1 $cstore_server_host:3 $cstore_server_port:3 region access_key secret_key
+cstore_set_s3 2 $cstore_server_host:3 $cstore_server_port:3 region access_key secret_key
 
 # Build the cluster on the local
-cstore_add_cluster 0 $cstore_0_server_host $cstore_0_server_port
-cstore_add_cluster 0 $cstore_1_server_host $cstore_1_server_port
-cstore_add_cluster 0 $cstore_2_server_host $cstore_2_server_port
+cstore_add_cluster 0 $cstore_server_host:0 $cstore_server_port:0
+cstore_add_cluster 0 $cstore_server_host:1 $cstore_server_port:1
+cstore_add_cluster 0 $cstore_server_host:2 $cstore_server_port:2
 
 # Start the test
 

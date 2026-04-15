@@ -12,11 +12,11 @@ config_add CSTORE_SERVER_PORT 0
 cstore_init 1
 cstore_init 2
 
-cstore_set_s3 0 $cstore_2_server_host $cstore_2_server_port region access_key secret_key
-cstore_set_s3 1 $cstore_2_server_host $cstore_2_server_port region access_key secret_key
+cstore_set_s3 0 $cstore_server_host:2 $cstore_server_port:2 region access_key secret_key
+cstore_set_s3 1 $cstore_server_host:2 $cstore_server_port:2 region access_key secret_key
 cstore_set_s3 2 "" 0 region access_key secret_key
 
-cstore_add_cluster 0 $cstore_1_server_host $cstore_1_server_port
+cstore_add_cluster 0 $cstore_server_host:1 $cstore_server_port:1
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir

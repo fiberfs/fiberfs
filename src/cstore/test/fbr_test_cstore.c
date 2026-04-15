@@ -119,6 +119,7 @@ fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t index)
 
 	while (index) {
 		tcstore = tcstore->next;
+		fbr_ASSERT(tcstore, "cstore index not found");
 		fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC);
 		index--;
 	}
