@@ -29,10 +29,10 @@ fs_test_debug
 
 cstore_debug
 
-equal $cstore_stat_chunk_write_bytes 25
-equal $cstore_stat_chunk_read_bytes 25
-greater_than $cstore_stat_index_write_bytes 0
-greater_than $cstore_stat_root_write_bytes 0
+equal $cstore_stat_chunk_write_bytes:0 25
+equal $cstore_stat_chunk_read_bytes:0 25
+greater_than $cstore_stat_index_write_bytes:0 0
+greater_than $cstore_stat_root_write_bytes:0 0
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0

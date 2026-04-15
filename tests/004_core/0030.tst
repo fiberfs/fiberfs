@@ -17,7 +17,7 @@ sys_write $var1 "123" "4" "567" "89012" "345" "6" "7890"
 
 cstore_debug
 
-equal $cstore_stat_chunks 7
+equal $cstore_stat_chunks:0 7
 
 sleep_ms 100
 
@@ -54,7 +54,7 @@ equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
-equal $cstore_stat_chunks 3
+equal $cstore_stat_chunks:0 3
 
 test_log_debug
 

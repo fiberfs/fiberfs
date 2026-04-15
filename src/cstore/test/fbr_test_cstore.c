@@ -384,16 +384,19 @@ fbr_varf_cstore_entries(struct fbr_test_context *ctx, struct fbr_test_param *par
 	return tcstore->stat_buf;
 }
 
-#define _CSTORE_TEST_STAT(var, stat)						\
-const char *									\
-fbr_var_cstore_stat_##var(struct fbr_test_context *ctx)				\
-{										\
-	fbr_test_context_ok(ctx);						\
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, 0);		\
-	assert(tcstore);							\
-	fbr_cstore_ok(&tcstore->cstore);					\
-	fbr_bprintf(tcstore->stat_buf, "%lu", tcstore->cstore.stats.stat);	\
-	return tcstore->stat_buf;						\
+#define _CSTORE_TEST_STAT(var, stat)							\
+const char *										\
+fbr_varf_cstore_stat_##var(struct fbr_test_context *ctx, struct fbr_test_param *param)	\
+{											\
+	fbr_test_context_ok(ctx);							\
+	assert(param);									\
+	long index = fbr_test_parse_long(param->value);					\
+	assert(index >= 0);								\
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);		\
+	assert(tcstore);								\
+	fbr_cstore_ok(&tcstore->cstore);						\
+	fbr_bprintf(tcstore->stat_buf, "%lu", tcstore->cstore.stats.stat);		\
+	return tcstore->stat_buf;							\
 }
 
 _CSTORE_TEST_STAT(chunks, wr_chunks)

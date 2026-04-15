@@ -53,8 +53,8 @@ fs_test_stats
 fs_test_debug
 cstore_debug
 
-equal $cstore_stat_roots 4
-equal $cstore_stat_indexes 4
+equal $cstore_stat_roots:0 4
+equal $cstore_stat_indexes:0 4
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0

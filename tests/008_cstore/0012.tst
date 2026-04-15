@@ -23,9 +23,9 @@ sleep_ms 100
 
 cstore_debug
 cstore_debug 1
-equal $cstore_stat_chunks 2
-equal $cstore_stat_indexes 3
-equal $cstore_stat_roots 1
+equal $cstore_stat_chunks:0 2
+equal $cstore_stat_indexes:0 3
+equal $cstore_stat_roots:0 1
 equal $cstore_entries:0 6
 equal $cstore_entries:1 4
 

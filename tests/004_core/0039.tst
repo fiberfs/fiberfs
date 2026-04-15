@@ -37,8 +37,8 @@ fs_test_debug
 
 cstore_debug
 
-equal $cstore_stat_chunk_write_bytes 15
-equal $cstore_stat_chunk_read_bytes 15
+equal $cstore_stat_chunk_write_bytes:0 15
+equal $cstore_stat_chunk_read_bytes:0 15
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0
