@@ -50,6 +50,7 @@ FBR_TEST_CMD(cstore_loader_test)
 FBR_TEST_CMD(cstore_backend_test)
 
 FBR_TEST_CMD(cstore_debug)
+FBR_TEST_VARF(cstore_entries)
 FBR_TEST_VAR(cstore_stat_chunks)
 FBR_TEST_VAR(cstore_stat_indexes)
 FBR_TEST_VAR(cstore_stat_roots)
@@ -66,14 +67,6 @@ FBR_TEST_CMD(cstore_set_s3)
 FBR_TEST_CMD(cstore_add_cluster)
 FBR_TEST_CMD(cstore_add_cdn)
 FBR_TEST_CMD(cstore_epool_close)
-
-// TODO varf these and make more stats available...
-FBR_TEST_VAR(cstore_0_entries)
-FBR_TEST_VAR(cstore_1_entries)
-FBR_TEST_VAR(cstore_2_entries)
-FBR_TEST_VAR(cstore_3_entries)
-FBR_TEST_VAR(cstore_4_entries)
-FBR_TEST_VAR(cstore_5_entries)
 
 FBR_TEST_VARF(cstore_server_host)
 FBR_TEST_VARF(cstore_server_port)

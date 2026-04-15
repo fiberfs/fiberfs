@@ -290,8 +290,7 @@ _write_test(void)
 	fbr_fio_release(fs, fio);
 	fbr_test_index_request_finish();
 
-	fbr_fuse_context_ok(fs->fuse_ctx);
-	struct fbr_cstore *cstore = fs->fuse_ctx->cstore;
+	struct fbr_cstore *cstore = fbr_test_cstore_get(test_ctx, 0);
 	fbr_cstore_ok(cstore);
 	fbr_test_cstore_debug(cstore);
 	assert(cstore->stats.wr_chunks > _FILE_SIZE / _WBUFFER_SIZE);

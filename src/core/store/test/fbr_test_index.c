@@ -379,8 +379,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_inodes_debug(fs);
 	fbr_test_fs_dindex_debug(fs);
 
-	fbr_fuse_context_ok(fs->fuse_ctx);
-	struct fbr_cstore *cstore = fs->fuse_ctx->cstore;
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
 	fbr_cstore_ok(cstore);
 	fbr_test_cstore_debug(cstore);
 
@@ -473,8 +472,7 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_inodes_debug(fs);
 	fbr_test_fs_dindex_debug(fs);
 
-	fbr_fuse_context_ok(fs->fuse_ctx);
-	struct fbr_cstore *cstore = fs->fuse_ctx->cstore;
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
 	fbr_cstore_ok(cstore);
 	fbr_test_cstore_debug(cstore);
 
@@ -614,12 +612,7 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_inodes_debug(fs_2);
 	fbr_test_fs_dindex_debug(fs_2);
 
-	fbr_fuse_context_ok(fs_1->fuse_ctx);
-	fbr_fuse_context_ok(fs_2->fuse_ctx);
-	fbr_cstore_ok(fs_1->fuse_ctx->cstore);
-	fbr_cstore_ok(fs_2->fuse_ctx->cstore);
-	assert(fs_1->fuse_ctx->cstore == fs_2->fuse_ctx->cstore)
-	struct fbr_cstore *cstore = fs_1->fuse_ctx->cstore;
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
 	fbr_test_cstore_debug(cstore);
 
 	fbr_test_ERROR(fs_2->stats.directories, "non zero");

@@ -42,7 +42,7 @@ sleep_ms 100
 cstore_debug
 cstore_debug 1
 
-equal $cstore_1_entries 4
+equal $cstore_entries:1 4
 
 fs_test_release_all
 
@@ -58,6 +58,6 @@ sleep_ms 100
 cstore_debug
 cstore_debug 1
 
-equal $cstore_1_entries 4
+equal $cstore_entries:1 4
 
 fs_test_stats

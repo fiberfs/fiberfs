@@ -34,9 +34,9 @@ cstore_debug
 cstore_debug 1
 cstore_debug 2
 
-equal $cstore_0_entries 4
-equal $cstore_1_entries 4
-equal $cstore_2_entries 3
+equal $cstore_entries:0 4
+equal $cstore_entries:1 4
+equal $cstore_entries:2 3
 
 print "### WRITE OVER"
 
@@ -48,15 +48,15 @@ cstore_debug
 cstore_debug 1
 cstore_debug 2
 
-equal $cstore_0_entries 6
-equal $cstore_1_entries 6
-equal $cstore_2_entries 3
+equal $cstore_entries:0 6
+equal $cstore_entries:1 6
+equal $cstore_entries:2 3
 
 cstore_clear 0
 cstore_clear 1
-equal $cstore_0_entries 0
-equal $cstore_1_entries 0
-equal $cstore_2_entries 3
+equal $cstore_entries:0 0
+equal $cstore_entries:1 0
+equal $cstore_entries:2 3
 fs_test_release_all
 
 sleep_ms 100
@@ -71,13 +71,13 @@ cstore_debug
 cstore_debug 1
 cstore_debug 2
 
-equal $cstore_0_entries 3
-equal $cstore_1_entries 3
-equal $cstore_2_entries 3
+equal $cstore_entries:0 3
+equal $cstore_entries:1 3
+equal $cstore_entries:2 3
 
 cstore_clear 0
-equal $cstore_0_entries 0
-equal $cstore_1_entries 3
+equal $cstore_entries:0 0
+equal $cstore_entries:1 3
 fs_test_release_all
 
 sleep_ms 100
@@ -92,8 +92,8 @@ cstore_debug
 cstore_debug 1
 cstore_debug 2
 
-equal $cstore_0_entries 3
-equal $cstore_1_entries 3
-equal $cstore_2_entries 3
+equal $cstore_entries:0 3
+equal $cstore_entries:1 3
+equal $cstore_entries:2 3
 
 fs_test_stats

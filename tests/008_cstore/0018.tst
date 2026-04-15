@@ -49,19 +49,16 @@ cstore_debug 1
 cstore_debug 2
 cstore_debug 3
 
-#equal $cstore_0_entries 3
-#equal $cstore_1_entries 3
-#equal $cstore_2_entries 3
-equal $cstore_3_entries 4
+equal $cstore_entries:3 4
 
 cstore_clear 0
 cstore_clear 1
 cstore_clear 2
 
-equal $cstore_0_entries 0
-equal $cstore_1_entries 0
-equal $cstore_2_entries 0
-equal $cstore_3_entries 4
+equal $cstore_entries:0 0
+equal $cstore_entries:1 0
+equal $cstore_entries:2 0
+equal $cstore_entries:3 4
 
 fs_test_release_all
 
@@ -79,9 +76,6 @@ cstore_debug 1
 cstore_debug 2
 cstore_debug 3
 
-#equal $cstore_0_entries 3
-#equal $cstore_1_entries 3
-#equal $cstore_2_entries 3
-equal $cstore_3_entries 4
+equal $cstore_entries:3 4
 
 fs_test_stats

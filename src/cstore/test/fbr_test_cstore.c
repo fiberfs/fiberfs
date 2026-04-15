@@ -366,24 +366,23 @@ fbr_cmd_cstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_cstore_debug(cstore);
 }
 
-#define _CSTORE_TEST_ENTRIES(index)						\
-const char *									\
-fbr_var_cstore_##index##_entries(struct fbr_test_context *ctx)			\
-{										\
-	fbr_test_context_ok(ctx);						\
-	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);	\
-	assert(tcstore);							\
-	fbr_cstore_ok(&tcstore->cstore);					\
-	fbr_bprintf(tcstore->stat_buf, "%lu", tcstore->cstore.entries);		\
-	return tcstore->stat_buf;						\
-}
+const char *
+fbr_varf_cstore_entries(struct fbr_test_context *ctx, struct fbr_test_param *param)
+{
+	fbr_test_context_ok(ctx);
+	assert(param && param->len);
 
-_CSTORE_TEST_ENTRIES(0)
-_CSTORE_TEST_ENTRIES(1)
-_CSTORE_TEST_ENTRIES(2)
-_CSTORE_TEST_ENTRIES(3)
-_CSTORE_TEST_ENTRIES(4)
-_CSTORE_TEST_ENTRIES(5)
+	long index = fbr_test_parse_long(param->value);
+	assert(index >= 0);
+
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);
+	assert(tcstore);
+	fbr_cstore_ok(&tcstore->cstore);
+
+	fbr_bprintf(tcstore->stat_buf, "%lu", tcstore->cstore.entries);
+
+	return tcstore->stat_buf;
+}
 
 #define _CSTORE_TEST_STAT(var, stat)						\
 const char *									\

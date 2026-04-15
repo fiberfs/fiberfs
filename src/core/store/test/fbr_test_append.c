@@ -189,12 +189,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_inodes_debug(fs_1);
 	fbr_test_fs_dindex_debug(fs_1);
 
-	fbr_fuse_context_ok(fs_1->fuse_ctx);
-	fbr_fuse_context_ok(fs_2->fuse_ctx);
-	fbr_cstore_ok(fs_1->fuse_ctx->cstore);
-	fbr_cstore_ok(fs_2->fuse_ctx->cstore);
-	assert(fs_1->fuse_ctx->cstore == fs_2->fuse_ctx->cstore)
-	struct fbr_cstore *cstore = fs_1->fuse_ctx->cstore;
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
 	fbr_test_cstore_debug(cstore);
 
 	assert_zero(fs_1->stats.directories);
@@ -365,9 +360,8 @@ _append_thread(void *arg)
 		appends++;
 	}
 
-	fbr_fuse_context_ok(fs->fuse_ctx);
-	struct fbr_cstore *cstore = fs->fuse_ctx->cstore;
-	fbr_cstore_ok(cstore);
+	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
+	struct fbr_cstore *cstore = fbr_test_cstore_get(test_ctx, 0);
 	fbr_test_cstore_wait(cstore);
 
 	fbr_fs_release_all(fs, 1);
@@ -471,8 +465,7 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_test_ASSERT(checks[i], "%zu missing from check", i);
 	}
 
-	fbr_fuse_context_ok(fs->fuse_ctx);
-	struct fbr_cstore *cstore = fs->fuse_ctx->cstore;
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
 	fbr_cstore_ok(cstore);
 	fbr_test_cstore_debug(cstore);
 
