@@ -225,15 +225,6 @@ fbr_test_cstore_wait(struct fbr_cstore *cstore)
 	assert_zero(cstore->async.queue_len);
 }
 
-void
-fbr_test_cstore_wait_0(void)
-{
-	struct fbr_test_context *ctx = fbr_test_get_ctx();
-	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
-
-	fbr_test_cstore_wait(cstore);
-}
-
 static void
 _cstore_debug_meta(const char *filename, struct fbr_cstore_metadata *metadata)
 {
@@ -356,15 +347,6 @@ fbr_test_cstore_debug(struct fbr_cstore *cstore)
 }
 
 void
-fbr_test_cstore_debug_0(void)
-{
-	struct fbr_test_context *ctx = fbr_test_get_ctx();
-	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
-
-	fbr_test_cstore_debug(cstore);
-}
-
-void
 fbr_cmd_cstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
@@ -382,27 +364,6 @@ fbr_cmd_cstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
 
 	fbr_test_cstore_debug(cstore);
-}
-
-fbr_stats_t
-fbr_test_cstore_stat_chunks(void)
-{
-	fbr_cstore_ok(_CSTORE);
-	return _CSTORE->stats.wr_chunks;
-}
-
-fbr_stats_t
-fbr_test_cstore_stat_indexes(void)
-{
-	fbr_cstore_ok(_CSTORE);
-	return _CSTORE->stats.wr_indexes;
-}
-
-fbr_stats_t
-fbr_test_cstore_stat_roots(void)
-{
-	fbr_cstore_ok(_CSTORE);
-	return _CSTORE->stats.wr_roots;
 }
 
 #define _CSTORE_TEST_ENTRIES(index)						\

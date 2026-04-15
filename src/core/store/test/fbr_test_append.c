@@ -188,7 +188,14 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_stats(fs_1);
 	fbr_test_fs_inodes_debug(fs_1);
 	fbr_test_fs_dindex_debug(fs_1);
-	fbr_test_cstore_debug_0();
+
+	fbr_fuse_context_ok(fs_1->fuse_ctx);
+	fbr_fuse_context_ok(fs_2->fuse_ctx);
+	fbr_cstore_ok(fs_1->fuse_ctx->cstore);
+	fbr_cstore_ok(fs_2->fuse_ctx->cstore);
+	assert(fs_1->fuse_ctx->cstore == fs_2->fuse_ctx->cstore)
+	struct fbr_cstore *cstore = fs_1->fuse_ctx->cstore;
+	fbr_test_cstore_debug(cstore);
 
 	assert_zero(fs_1->stats.directories);
 	assert_zero(fs_1->stats.directories_dindex);
@@ -358,7 +365,10 @@ _append_thread(void *arg)
 		appends++;
 	}
 
-	fbr_test_cstore_wait_0();
+	fbr_fuse_context_ok(fs->fuse_ctx);
+	struct fbr_cstore *cstore = fs->fuse_ctx->cstore;
+	fbr_cstore_ok(cstore);
+	fbr_test_cstore_wait(cstore);
 
 	fbr_fs_release_all(fs, 1);
 	fbr_fs_free(fs);
@@ -461,22 +471,25 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_test_ASSERT(checks[i], "%zu missing from check", i);
 	}
 
-	fbr_test_cstore_debug_0();
+	fbr_fuse_context_ok(fs->fuse_ctx);
+	struct fbr_cstore *cstore = fs->fuse_ctx->cstore;
+	fbr_cstore_ok(cstore);
+	fbr_test_cstore_debug(cstore);
 
 	if (!_APPEND_ERROR_TEST) {
-		fbr_test_ASSERT(fbr_test_cstore_stat_chunks() == _APPEND_COUNTER_MAX,
-			"chunks: %lu != %d", fbr_test_cstore_stat_chunks(), _APPEND_COUNTER_MAX);
+		fbr_test_ASSERT(cstore->stats.wr_chunks == _APPEND_COUNTER_MAX,
+			"chunks: %lu != %d", cstore->stats.wr_chunks, _APPEND_COUNTER_MAX);
 	} else {
 		size_t chunks = _APPEND_COUNTER_MAX;
 		if (chunks >= 10) {
 			chunks += _APPEND_COUNTER_MAX - 9;
 		}
-		fbr_test_ASSERT(fbr_test_cstore_stat_chunks() == chunks,
-			"chunks: %lu != %zu", fbr_test_cstore_stat_chunks(), chunks);
+		fbr_test_ASSERT(cstore->stats.wr_chunks == chunks,
+			"chunks: %lu != %zu", cstore->stats.wr_chunks, chunks);
 	}
 
-	assert(fbr_test_cstore_stat_roots() == 1);
-	assert(fbr_test_cstore_stat_indexes() == 1);
+	assert(cstore->stats.wr_roots == 1);
+	assert(cstore->stats.wr_indexes == 1);
 
 	fbr_test_logs("*** All %d checks PASSED", _APPEND_COUNTER_MAX);
 
@@ -486,7 +499,6 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_fs_release_all(fs, 1);
 	fbr_fs_free(fs);
-	fbr_test_cstore_debug_0();
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "append_thread_test done%s",
 		_APPEND_ERROR_TEST ? " (ERROR TEST)" : "");
