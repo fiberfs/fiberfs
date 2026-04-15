@@ -40,6 +40,7 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 	cstore->config.allow_cdn_delete = fbr_conf_get_bool("ALLOW_CDN_DELETE", FBR_CONFIG_FALSE);
 	cstore->config.force_chunk_write = fbr_conf_get_bool("FORCE_CHUNK_WRITE",
 		FBR_CONFIG_FALSE);
+	cstore->config.async_write = fbr_conf_get_bool("ASYNC_WRITE", FBR_CONFIG_TRUE);
 
 	cstore->config.timeout_connect_ms = fbr_conf_get_ulong("HTTP_CONNECT_TIMEOUT_MSEC",
 		FBR_CSTORE_TIMEOUT_CONNECT_MS);

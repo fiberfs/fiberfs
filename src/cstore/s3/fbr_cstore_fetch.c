@@ -866,8 +866,12 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 		return error;
 	}
 
-	double now = fbr_get_time();
-	fbr_cstore_io_root_write(cstore, root_json, root_path, version, 0, 0, now);
+	if (cstore->config.async_write) {
+		fbr_cstore_async_root_write(cstore, root_json, root_path, version);
+	} else {
+		double now = fbr_get_time();
+		fbr_cstore_io_root_write(cstore, root_json, root_path, version, 0, 0, now);
+	}
 
 	return 0;
 }
@@ -925,7 +929,12 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	fbr_writer_flush(fs, json_writer);
 	assert_zero(json_writer->error);
 
-	fbr_cstore_async_root_write(cstore, json_writer, root_path, version);
+	if (cstore->config.async_write) {
+		fbr_cstore_async_root_write(cstore, json_writer, root_path, version);
+	} else {
+		double now = fbr_get_time();
+		fbr_cstore_io_root_write(cstore, json_writer, root_path, version, 0, 0, now);
+	}
 
 	return version;
 }

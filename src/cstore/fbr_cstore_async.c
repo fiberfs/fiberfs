@@ -499,11 +499,12 @@ fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_j
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_ROOT_WRITE, cstore, root_json, path_async,
 		(void*)version, timestamp, _async_root_path_done, NULL);
 	if (ret) {
+		fbr_rlog(FBR_LOG_CS_ASYNC, "synchronous fallback");
+
+		fbr_cstore_io_root_write(cstore, root_json, root_path, version, 0, 0, *timestamp);
+
 		fbr_zero_magic(path_async);
 		free(timestamp);
-		fbr_writer_free(root_json);
-
-		fbr_rlog(FBR_LOG_CS_ROOT, "Cannot schedule write, skipping");
 
 		return;
 	}
