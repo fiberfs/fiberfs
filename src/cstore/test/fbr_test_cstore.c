@@ -334,6 +334,7 @@ fbr_test_cstore_debug(struct fbr_cstore *cstore)
 	fbr_test_logs("CSTORE_DEBUG chunks: %lu", cstore->stats.wr_chunks);
 	fbr_test_logs("CSTORE_DEBUG indexes: %lu", cstore->stats.wr_indexes);
 	fbr_test_logs("CSTORE_DEBUG roots: %lu", cstore->stats.wr_roots);
+	fbr_test_logs("CSTORE_DEBUG root updates: %lu", cstore->stats.wr_root_updates);
 	fbr_test_logs("CSTORE_DEBUG chunk wr bytes: %lu", cstore->stats.wr_chunk_bytes);
 	fbr_test_logs("CSTORE_DEBUG index wr bytes: %lu", cstore->stats.wr_index_bytes);
 	fbr_test_logs("CSTORE_DEBUG root wr bytes: %lu", cstore->stats.wr_root_bytes);

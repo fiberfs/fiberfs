@@ -310,6 +310,10 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE conditions passed");
 
+	if (file_type == FBR_CSTORE_FILE_ROOT && !fbr_sys_exists(hashpath.value)) {
+		fbr_fs_stat_add(&cstore->stats.wr_roots);
+	}
+
 	int fd = open(hashpath.value, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR open()");
@@ -396,6 +400,23 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	assert_zero_dev(entry);
 
 	fbr_cstore_http_respond(cstore, http, 200, "OK");
+
+	switch (file_type) {
+		case FBR_CSTORE_FILE_CHUNK:
+			fbr_fs_stat_add_count(&cstore->stats.wr_chunk_bytes, bytes);
+			fbr_fs_stat_add(&cstore->stats.wr_chunks);
+			break;
+		case FBR_CSTORE_FILE_INDEX:
+			fbr_fs_stat_add_count(&cstore->stats.wr_index_bytes, bytes);
+			fbr_fs_stat_add(&cstore->stats.wr_indexes);
+			break;
+		case FBR_CSTORE_FILE_ROOT:
+			fbr_fs_stat_add_count(&cstore->stats.wr_root_bytes, bytes);
+			fbr_fs_stat_add(&cstore->stats.wr_root_updates);
+			break;
+		default:
+			break;
+	}
 }
 
 static void
@@ -657,6 +678,10 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	}
 
 	_cstore_url_entry_release(cstore, entry, file_type, 0);
+
+	if (file_type == FBR_CSTORE_FILE_CHUNK) {
+		fbr_fs_stat_add_count(&cstore->stats.rd_chunk_bytes, bytes);
+	}
 }
 
 void
@@ -790,5 +815,20 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		fbr_cstore_http_respond(cstore, http, 500, "Error");
 	} else {
 		fbr_cstore_http_respond(cstore, http, 200, "OK");
+	}
+
+	switch (file_type) {
+		case FBR_CSTORE_FILE_CHUNK:
+			fbr_fs_stat_sub(&cstore->stats.wr_chunks);
+			break;
+		case FBR_CSTORE_FILE_INDEX:
+			fbr_fs_stat_sub(&cstore->stats.wr_indexes);
+			break;
+		case FBR_CSTORE_FILE_ROOT:
+			// TODO this hasn't been wired in yet... see fbr_cstore_io_root_remove()
+			//fbr_fs_stat_sub(&cstore->stats.wr_roots);
+			break;
+		default:
+			break;
 	}
 }

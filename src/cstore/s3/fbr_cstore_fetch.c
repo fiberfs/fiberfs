@@ -722,6 +722,8 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	fbr_rlog(FBR_LOG_CS_S3, "READ S3 %zu bytes", bytes);
 
+	fbr_fs_stat_add_count(&cstore->stats.rd_chunk_bytes, bytes);
+
 	if (!cstore->config.force_chunk_write) {
 		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash,
 			FBR_CSTORE_ROUTE_CLUSTER, 0, 0);

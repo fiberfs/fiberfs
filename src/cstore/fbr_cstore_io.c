@@ -1065,6 +1065,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	}
 
 	fbr_fs_stat_add_count(&cstore->stats.wr_root_bytes, root_json->bytes);
+	fbr_fs_stat_add(&cstore->stats.wr_root_updates);
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, &entry);
