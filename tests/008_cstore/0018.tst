@@ -49,6 +49,9 @@ cstore_debug 1
 cstore_debug 2
 cstore_debug 3
 
+equal $cstore_stat_indexes:0 3
+equal $cstore_stat_roots:0 1
+
 equal $cstore_entries:3 4
 
 cstore_clear 0
@@ -77,5 +80,8 @@ cstore_debug 2
 cstore_debug 3
 
 equal $cstore_entries:3 4
+equal $cstore_stat_chunks:3 2
+equal $cstore_stat_indexes:3 1
+equal $cstore_stat_roots:3 1
 
 fs_test_stats

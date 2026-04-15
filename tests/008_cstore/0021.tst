@@ -52,6 +52,14 @@ cstore_debug 1
 cstore_debug 2
 cstore_debug 3
 
+equal $cstore_entries:3 12
+equal $cstore_stat_chunks:3 10
+equal $cstore_stat_indexes:3 1
+equal $cstore_stat_roots:3 1
+
+equal $cstore_stat_chunk_read_bytes:0 2000000
+equal $cstore_stat_chunk_write_bytes:3 2000000
+
 fs_test_release_all 1
 
 sleep_ms 200

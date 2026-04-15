@@ -43,6 +43,9 @@ cstore_debug
 cstore_debug 1
 
 equal $cstore_entries:1 4
+equal $cstore_stat_chunks:1 2
+equal $cstore_stat_indexes:1 1
+equal $cstore_stat_roots:1 1
 
 fs_test_release_all
 

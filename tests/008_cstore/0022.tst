@@ -58,6 +58,12 @@ cstore_debug 1
 cstore_debug 2
 cstore_debug 3
 
+equal $cstore_stat_indexes:3 1
+equal $cstore_stat_roots:3 1
+
+equal $cstore_stat_chunk_read_bytes:0 2000000
+equal $cstore_stat_chunk_write_bytes:3 2000000
+
 fs_test_release_all 1
 
 sleep_ms 200
@@ -70,7 +76,5 @@ equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
-
-# TODO fix cstore counters?
 
 fuse_test_unmount
