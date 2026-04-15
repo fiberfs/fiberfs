@@ -41,6 +41,8 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 	cstore->config.force_chunk_write = fbr_conf_get_bool("FORCE_CHUNK_WRITE",
 		FBR_CONFIG_FALSE);
 	cstore->config.async_write = fbr_conf_get_bool("ASYNC_WRITE", FBR_CONFIG_TRUE);
+	cstore->config.prune_attempts = fbr_conf_get_ulong("PRUNE_ATTEMPTS",
+		FBR_CSTORE_PRUNE_ATTEMPTS);
 
 	cstore->config.timeout_connect_ms = fbr_conf_get_ulong("HTTP_CONNECT_TIMEOUT_MSEC",
 		FBR_CSTORE_TIMEOUT_CONNECT_MS);

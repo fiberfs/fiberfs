@@ -512,6 +512,10 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	fbr_cstore_release(cstore, &entry);
 	assert_zero_dev(entry);
 
+	if (type == FBR_CSTORE_FILE_CHUNK) {
+		fbr_fs_stat_add(&cstore->stats.fetch_chunks);
+	}
+
 	return 0;
 }
 
@@ -671,8 +675,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset);
 
-	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, chunk->length,
-		NULL, 1);
+	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, 0, NULL, 1);
 	if (!entry) {
 		// TODO we can just read the chunk and not write back if this is a problem
 		fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
@@ -723,6 +726,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	fbr_rlog(FBR_LOG_CS_S3, "READ S3 %zu bytes", bytes);
 
 	fbr_fs_stat_add_count(&cstore->stats.rd_chunk_bytes, bytes);
+	fbr_fs_stat_add(&cstore->stats.fetch_chunks);
 
 	if (!cstore->config.force_chunk_write) {
 		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash,
@@ -732,7 +736,6 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 			fbr_rlog(FBR_LOG_CS_WBUFFER, "READ S3 WRITE skipping local");
 
 			fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
-
 			_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, 0);
 
 			return;
@@ -740,6 +743,16 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	}
 
 	// Write back the chunk to the cstore
+
+	int ret = fbr_cstore_set_size(cstore, entry, bytes);
+	if (ret) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR READ S3 WRITE size");
+
+		fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
+		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, 0);
+
+		return;
+	}
 
 	if (async) {
 		fbr_file_ref_inode(fs, file);
@@ -755,7 +768,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	fbr_rlog(FBR_LOG_CS_S3, "READ S3 WRITE chunk: %s", hashpath.value);
 
-	int ret = fbr_sys_mkdirs(hashpath.value);
+	ret = fbr_sys_mkdirs(hashpath.value);
 	if (ret || fbr_sys_exists(hashpath.value)) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR rwrite mkdir/exists (%d)", ret);
 		_s3_chunk_readwrite_error(fs, cstore, entry, file, chunk, async);

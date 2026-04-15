@@ -23,6 +23,7 @@
 
 #define FBR_CSTORE_HEAD_COUNT			64
 #define FBR_CSTORE_SLAB_SIZE			128
+#define FBR_CSTORE_PRUNE_ATTEMPTS		5
 #define FBR_CSTORE_DATA_DIR			"data"
 #define FBR_CSTORE_META_DIR			"meta"
 #define FBR_CSTORE_LOAD_THREAD_MAX		32
@@ -111,6 +112,7 @@ struct fbr_cstore_config {
 	int					allow_cdn_delete;
 	int					force_chunk_write;
 	int					async_write;
+	unsigned long				prune_attempts;
 
 	unsigned long				timeout_connect_ms;
 	unsigned long				timeout_transfer_ms;
@@ -172,6 +174,7 @@ struct fbr_cstore {
 		fbr_stats_t			wr_index_bytes;
 		fbr_stats_t			wr_root_bytes;
 		fbr_stats_t			rd_chunk_bytes;
+		fbr_stats_t			fetch_chunks;
 		fbr_stats_t			workers;
 		fbr_stats_t			workers_active;
 		fbr_stats_t			retries;

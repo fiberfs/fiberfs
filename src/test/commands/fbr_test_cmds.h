@@ -40,6 +40,7 @@ FBR_TEST_CMD(sys_write_random_md5)
 FBR_TEST_VAR(md5_write)
 FBR_TEST_CMD(sys_mkdir)
 
+// TODO use a varf for this?
 FBR_TEST_CMD(set_var1)
 FBR_TEST_CMD(set_var2)
 FBR_TEST_CMD(set_var3)

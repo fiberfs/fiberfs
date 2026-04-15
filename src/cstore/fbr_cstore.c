@@ -306,7 +306,7 @@ _cstore_lru_prune(struct fbr_cstore *cstore, struct fbr_cstore_head *head, size_
 	size_t count = 0;
 
 	while (_cstore_full(cstore, new_bytes)) {
-		if (TAILQ_EMPTY(&head->lru_list) || count > 5) {
+		if (TAILQ_EMPTY(&head->lru_list) || count > cstore->config.prune_attempts) {
 			break;
 		}
 		count++;

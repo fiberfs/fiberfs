@@ -72,6 +72,7 @@ FBR_TEST_CMD(cstore_add_cluster)
 FBR_TEST_CMD(cstore_add_cdn)
 FBR_TEST_CMD(cstore_epool_close)
 
+// TODO varf these and make more stats available...
 FBR_TEST_VAR(cstore_0_entries)
 FBR_TEST_VAR(cstore_1_entries)
 FBR_TEST_VAR(cstore_2_entries)
