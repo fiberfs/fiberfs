@@ -22,10 +22,12 @@ fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		return;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_url url;
 	fbr_cstore_s3_chunk_url(cstore, file, chunk, &url);
@@ -49,10 +51,12 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_writer_ok(writer);
 	assert_dev(writer->output);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		return 1;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	int fail = fbr_cstore_io_index_write(fs, directory, writer);
 	if (fail) {
@@ -113,10 +117,12 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int attem
 	fbr_fs_ok(fs);
 	assert(dirpath);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		return 0;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_path path;
 	fbr_cstore_path_root(dirpath, &path);

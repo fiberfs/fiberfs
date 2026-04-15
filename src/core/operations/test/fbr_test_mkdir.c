@@ -49,8 +49,8 @@ _test_mkdir_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fs_ok(ctx->fs);
 	assert(conn);
 
+	ctx->fs->cstore = fbr_test_cstore_init(fbr_test_get_ctx());
 	fbr_fs_set_store(ctx->fs, &_TEST_MKDIR_CALLBACKS);
-	fbr_test_cstore_init(fbr_test_get_ctx());
 
 	fbr_test_fuse_root_alloc(ctx->fs);
 }
@@ -134,6 +134,7 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	struct fbr_fs *fs_remote = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_remote);
+	fs_remote->cstore = fbr_test_cstore_get(ctx, 0);
 	fbr_fs_set_store(fs_remote, &_TEST_MKDIR_CALLBACKS);
 
 	struct fbr_directory *root = fbr_directory_load(fs_remote, FBR_DIRNAME_ROOT,
@@ -171,6 +172,7 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	fbr_inode_release(fs_remote, &file);
 	fbr_dindex_release(fs_remote, &root);
+	fbr_test_cstore_unregister(fs_remote);
 	fbr_fs_free(fs_remote);
 
 	fbr_test_logs("mkdir_test_remote: %s", dirname.name);

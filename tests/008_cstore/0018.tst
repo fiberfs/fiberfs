@@ -85,3 +85,5 @@ equal $cstore_stat_indexes:3 1
 equal $cstore_stat_roots:3 1
 
 fs_test_stats
+
+fuse_test_unmount

@@ -30,7 +30,6 @@ struct fbr_fuse_context {
 
 	struct fbr_fs				*fs;
 	struct fbr_log				*log;
-	struct fbr_cstore			*cstore;
 
 	fbr_bitflag_t				init:1;
 	fbr_bitflag_t				debug:1;

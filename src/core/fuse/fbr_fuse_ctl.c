@@ -14,7 +14,6 @@
 #include "fbr_fuse.h"
 #include "fbr_fuse_lowlevel.h"
 #include "core/fs/fbr_fs.h"
-#include "cstore/fbr_cstore_api.h"
 #include "log/fbr_log.h"
 
 struct fbr_fuse_context *_FUSE_CTX;
@@ -304,10 +303,6 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 
 	if (ctx->session) {
 		fuse_session_destroy(ctx->session);
-	}
-
-	if (ctx->cstore) {
-		fbr_cstore_free(ctx->cstore);
 	}
 
 	if (ctx->path) {

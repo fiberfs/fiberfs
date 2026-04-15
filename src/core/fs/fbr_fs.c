@@ -13,6 +13,7 @@
 #include "config/fbr_config.h"
 #include "core/request/fbr_request.h"
 #include "core/store/fbr_store.h"
+#include "cstore/fbr_cstore_api.h"
 
 static const struct fbr_store_callbacks _STORE_CALLBACKS_EMPTY;
 
@@ -139,6 +140,10 @@ fbr_fs_free(struct fbr_fs *fs)
 	fbr_context_request_finish();
 	fbr_dindex_free_all(fs);
 	fbr_inodes_free_all(fs);
+
+	if (fs->cstore) {
+		fbr_cstore_free(fs->cstore);
+	}
 
 	pt_assert(pthread_mutex_destroy(&fs->lock));
 

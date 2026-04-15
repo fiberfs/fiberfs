@@ -355,6 +355,7 @@ struct fbr_fs {
 	pthread_mutex_t				lock;
 
 	const struct fbr_store_callbacks	*store;
+	struct fbr_cstore			*cstore;
 
 	struct fbr_fs_config			config;
 	struct fbr_fs_stats			stats;

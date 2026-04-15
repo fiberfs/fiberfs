@@ -38,8 +38,6 @@ _fuse_finish(struct fbr_test_context *test_ctx)
 	fbr_fuse_unmount(fuse_ctx);
 	fbr_finish_ERROR(fuse_ctx->error, "fuse context has an error flag");
 
-	fbr_test_cstore_unregister();
-
 	fbr_fuse_free(fuse_ctx);
 
 	fbr_zero(test_ctx->test_fuse);
@@ -108,7 +106,14 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 	}
 
 	fbr_test_log_printer_init(test_ctx, path, "#");
-	fbr_test_cstore_register();
+
+	if (fbr_test_cstore_exists()) {
+		struct fbr_cstore *cstore = fbr_test_cstore_get(test_ctx, 0);
+
+		fbr_fs_ok(ctx->fs);
+		ctx->fs->cstore = cstore;
+	}
+
 
 	return ctx->error;
 }
@@ -118,6 +123,8 @@ fbr_fuse_test_unmount(struct fbr_test_context *test_ctx)
 {
 	struct fbr_fuse_context *ctx = _fuse_init(test_ctx);
 	fbr_fuse_context_ok(ctx);
+
+	fbr_test_cstore_unregister(NULL);
 
 	fbr_fuse_unmount(ctx);
 

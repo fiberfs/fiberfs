@@ -97,3 +97,5 @@ equal $cstore_entries:1 3
 equal $cstore_entries:2 3
 
 fs_test_stats
+
+fuse_test_unmount

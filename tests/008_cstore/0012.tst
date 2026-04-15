@@ -47,3 +47,5 @@ sleep_ms 100
 cstore_debug
 cstore_debug 1
 equal $cstore_entries:0 4
+
+fuse_test_unmount

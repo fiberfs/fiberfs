@@ -214,8 +214,7 @@ _write_test(void)
 
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(test_ctx);
 	fbr_fs_ok(fs);
-
-	fbr_test_cstore_init(test_ctx);
+	fs->cstore = fbr_test_cstore_init(test_ctx);
 	fbr_fs_set_store(fs, &_WRITE_CALLBACKS);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
@@ -290,10 +289,9 @@ _write_test(void)
 	fbr_fio_release(fs, fio);
 	fbr_test_index_request_finish();
 
-	struct fbr_cstore *cstore = fbr_test_cstore_get(test_ctx, 0);
-	fbr_cstore_ok(cstore);
-	fbr_test_cstore_debug(cstore);
-	assert(cstore->stats.wr_chunks > _FILE_SIZE / _WBUFFER_SIZE);
+	fbr_cstore_ok(fs->cstore);
+	fbr_test_cstore_debug(fs->cstore);
+	assert(fs->cstore->stats.wr_chunks > _FILE_SIZE / _WBUFFER_SIZE);
 
 	fbr_test_logs("*** Starting write threads");
 
@@ -386,7 +384,7 @@ _write_test(void)
 	fbr_test_fs_stats(fs);
 	fbr_test_fs_inodes_debug(fs);
 	fbr_test_fs_dindex_debug(fs);
-	fbr_test_cstore_debug(cstore);
+	fbr_test_cstore_debug(fs->cstore);
 
 	fbr_test_ERROR(fs->stats.directories, "non zero");
 	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
@@ -395,12 +393,12 @@ _write_test(void)
 	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
 	if (_SHARED_FIO) {
-		fbr_test_ASSERT(cstore->stats.wr_chunks >= _FILE_SIZE / _WBUFFER_SIZE,
-			"mismatch %lu %d", cstore->stats.wr_chunks,
+		fbr_test_ASSERT(fs->cstore->stats.wr_chunks >= _FILE_SIZE / _WBUFFER_SIZE,
+			"mismatch %lu %d", fs->cstore->stats.wr_chunks,
 			_FILE_SIZE / _WBUFFER_SIZE);
 	} else {
-		fbr_test_ASSERT(cstore->stats.wr_chunks == _FILE_SIZE / _WBUFFER_SIZE,
-			"mismatch %lu %d", cstore->stats.wr_chunks,
+		fbr_test_ASSERT(fs->cstore->stats.wr_chunks == _FILE_SIZE / _WBUFFER_SIZE,
+			"mismatch %lu %d", fs->cstore->stats.wr_chunks,
 			_FILE_SIZE / _WBUFFER_SIZE);
 	}
 
@@ -409,6 +407,7 @@ _write_test(void)
 			__ERROR_FLUSH);
 	}
 
+	fbr_test_cstore_unregister(fs);
 	fbr_request_pool_shutdown(fs);
 	fbr_fs_free(fs);
 }

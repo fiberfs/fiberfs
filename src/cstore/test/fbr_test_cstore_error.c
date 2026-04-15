@@ -18,8 +18,6 @@
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
-extern struct fbr_cstore *_CSTORE;
-
 void
 fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -30,11 +28,12 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
-	fbr_test_cstore_init_loader(ctx);
+	fs->cstore = fbr_test_cstore_init_loader(ctx);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
+
 	struct fbr_request *request = fbr_request_alloc(NULL, __func__);
 
-	assert(_CSTORE->loader.start_time);
+	assert(fs->cstore->loader.start_time);
 
 	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(directory);
@@ -86,7 +85,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert(chunk->state == FBR_CHUNK_EMPTY);
 
 	struct fbr_cstore_hashpath hashpath;
-	struct fbr_cstore *cstore = fbr_cstore_find();
+	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file_1, chunk->id, chunk->offset);
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
@@ -241,7 +240,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_fs_stats(fs);
 	fbr_test_fs_inodes_debug(fs);
 	fbr_test_fs_dindex_debug(fs);
-	fbr_test_cstore_debug(_CSTORE);
+	fbr_test_cstore_debug(fs->cstore);
 
 	fbr_test_ERROR(fs->stats.directories, "non zero");
 	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");
@@ -249,12 +248,13 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_ERROR(fs->stats.files, "non zero");
 	fbr_test_ERROR(fs->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs->stats.file_refs, "non zero");
-	assert(_CSTORE->stats.wr_roots == 2);
-	assert(_CSTORE->stats.wr_indexes == 2);
-	assert_zero(_CSTORE->stats.loaded);
-	assert_zero(_CSTORE->stats.lazy_loaded);
+	assert(fs->cstore->stats.wr_roots == 2);
+	assert(fs->cstore->stats.wr_indexes == 2);
+	assert_zero(fs->cstore->stats.loaded);
+	assert_zero(fs->cstore->stats.lazy_loaded);
 
 	fbr_request_free(request);
+	fbr_test_cstore_unregister(fs);
 	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_error_test done");

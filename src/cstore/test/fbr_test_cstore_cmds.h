@@ -10,14 +10,14 @@
 #include "cstore/fbr_cstore_api.h"
 #include "test/fbr_test_cmd_declare.h"
 
+int fbr_test_cstore_exists(void);
 struct fbr_test_cstore *fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t index);
 struct fbr_cstore *fbr_test_cstore_get(struct fbr_test_context *ctx, size_t index);
 
-void fbr_test_cstore_register(void);
-void fbr_test_cstore_unregister(void);
-void fbr_test_cstore_init(struct fbr_test_context *ctx);
-void fbr_test_cstore_init_loader(struct fbr_test_context *ctx);
-void fbr_test_cstore_reload(struct fbr_test_context *ctx);
+void fbr_test_cstore_unregister(struct fbr_fs *fs);
+struct fbr_cstore *fbr_test_cstore_init(struct fbr_test_context *ctx);
+struct fbr_cstore *fbr_test_cstore_init_loader(struct fbr_test_context *ctx);
+struct fbr_cstore *fbr_test_cstore_reload(struct fbr_test_context *ctx);
 void fbr_test_cstore_wait(struct fbr_cstore *cstore);
 void fbr_test_cstore_debug(struct fbr_cstore *cstore);
 

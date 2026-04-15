@@ -16,8 +16,6 @@
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
-extern struct fbr_cstore *_CSTORE;
-
 void
 fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -28,7 +26,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
-	fbr_test_cstore_init(ctx);
+	fs->cstore = fbr_test_cstore_init(ctx);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
@@ -69,8 +67,10 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	//fbr_fs_release_all(fs, 1);
 	//fbr_test_fs_stats(fs);
-	fbr_test_cstore_debug(_CSTORE);
-	assert(_CSTORE->entries == 3);
+	fbr_test_cstore_debug(fs->cstore);
+	assert(fs->cstore->entries == 3);
+
+	fbr_test_cstore_unregister(fs);
 	fbr_fs_free(fs);
 
 	fbr_test_logs("*** Sleep %f", FBR_CSTORE_LOAD_TIME_BUFFER);
@@ -80,7 +80,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
-	fbr_test_cstore_reload(ctx);
+	fs->cstore = fbr_test_cstore_reload(ctx);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	fbr_test_logs("*** Read root");
@@ -105,21 +105,22 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_logs("*** Cleanup 2");
 
-	fbr_test_cstore_debug(_CSTORE);
-	assert(_CSTORE->entries == 3);
+	fbr_test_cstore_debug(fs->cstore);
+	assert(fs->cstore->entries == 3);
 
-	size_t loaded = _CSTORE->stats.loaded + _CSTORE->stats.lazy_loaded;
+	size_t loaded = fs->cstore->stats.loaded + fs->cstore->stats.lazy_loaded;
 	int checks = 40;
 	while (loaded < 3 && checks) {
 		fbr_test_sleep_ms(25);
-		loaded = _CSTORE->stats.loaded + _CSTORE->stats.lazy_loaded;
+		loaded = fs->cstore->stats.loaded + fs->cstore->stats.lazy_loaded;
 		checks--;
 	}
-	fbr_test_logs("loaded: %zu (%zu+%zu)", loaded, _CSTORE->stats.loaded,
-		_CSTORE->stats.lazy_loaded);
-	fbr_ASSERT(loaded == 3, "loaded: %lu lazy: %lu", _CSTORE->stats.loaded,
-		_CSTORE->stats.lazy_loaded);
+	fbr_test_logs("loaded: %zu (%zu+%zu)", loaded, fs->cstore->stats.loaded,
+		fs->cstore->stats.lazy_loaded);
+	fbr_ASSERT(loaded == 3, "loaded: %lu lazy: %lu", fs->cstore->stats.loaded,
+		fs->cstore->stats.lazy_loaded);
 
+	fbr_test_cstore_unregister(fs);
 	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_loader_test done");

@@ -218,8 +218,6 @@ void fbr_cstore_loader_init(struct fbr_cstore *cstore);
 void fbr_cstore_loader_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_config_load(struct fbr_cstore *cstore);
-void fbr_cstore_fuse_register(const char *root_path);
-struct fbr_cstore *fbr_cstore_find(void);
 size_t fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len);
 void fbr_cstore_request_id(char *buffer, size_t buffer_len);
 

@@ -64,3 +64,5 @@ cstore_debug 1
 equal $cstore_entries:1 4
 
 fs_test_stats
+
+fuse_test_unmount

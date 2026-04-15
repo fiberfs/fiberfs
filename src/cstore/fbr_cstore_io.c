@@ -362,11 +362,13 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_wbuffer_ok(wbuffer);
 	assert(wbuffer->state == FBR_WBUFFER_READY || wbuffer->state == FBR_WBUFFER_SYNC);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		fbr_cstore_wbuffer_update(fs, wbuffer, FBR_WBUFFER_ERROR);
 		return;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, wbuffer->id, wbuffer->offset);
 	size_t wbuf_bytes = wbuffer->end;
@@ -484,11 +486,13 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	assert(chunk->id);
 	assert_zero(chunk->external);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 		return;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset);
 
@@ -607,10 +611,12 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_writer_ok(writer);
 	assert(writer->bytes);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		return 1;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	fbr_hash_t hash = fbr_cstore_hash_index(cstore, directory);
 
@@ -698,10 +704,12 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	assert(directory->version);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		return 1;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	fbr_hash_t hash = fbr_cstore_hash_index(cstore, directory);
 
@@ -918,10 +926,12 @@ fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		return;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_url url;
 	fbr_cstore_s3_index_url(cstore, directory, &url);
@@ -1164,10 +1174,12 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_dev(directory->version);
 	assert_zero_dev(directory->file_count);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		return 1;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);

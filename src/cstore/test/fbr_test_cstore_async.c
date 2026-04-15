@@ -16,8 +16,6 @@
 #include "fbr_test_cstore_cmds.h"
 #include "log/test/fbr_test_log_cmds.h"
 
-extern struct fbr_cstore *_CSTORE;
-
 #define _ASYNC_TEST_MAX		2500
 #define _ASYNC_TEST_THREADS	8
 static size_t _ASYNC_TEST_QUEUED;
@@ -40,11 +38,13 @@ _cstore_state_thread(void *arg)
 {
 	assert_zero(arg);
 
-	struct fbr_cstore_worker *worker = fbr_cstore_worker_alloc(_CSTORE, "state_test");
+	struct fbr_cstore *cstore = fbr_test_cstore_get(NULL, 0);
+
+	struct fbr_cstore_worker *worker = fbr_cstore_worker_alloc(cstore, "state_test");
 	fbr_cstore_worker_init(worker, NULL);
 
 	while (_ASYNC_TEST_QUEUED < _ASYNC_TEST_MAX) {
-		int ret = fbr_cstore_async_queue(_CSTORE, FBR_CSOP_TEST, NULL, NULL, NULL, NULL,
+		int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_TEST, NULL, NULL, NULL, NULL,
 			NULL, NULL, NULL);
 		if (ret) {
 			fbr_atomic_add(&_ASYNC_TEST_ERROR, 1);
@@ -68,12 +68,12 @@ fbr_cmd_cstore_async_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	fbr_test_random_seed();
 
-	fbr_test_cstore_init(ctx);
-	fbr_cstore_ok(_CSTORE);
+	struct fbr_cstore *cstore = fbr_test_cstore_init(ctx);
+	fbr_cstore_ok(cstore);
 
 	fbr_test_log_printer_silent(1);
 
-	_CSTORE->async.callback = _test_async_op;
+	cstore->async.callback = _test_async_op;
 	assert_zero(_ASYNC_TEST_QUEUED);
 	assert_zero(_ASYNC_TEST_CALLED);
 

@@ -15,8 +15,6 @@
 #include "fbr_test_cstore_cmds.h"
 #include "config/test/fbr_test_config_cmds.h"
 
-extern struct fbr_cstore *_CSTORE;
-
 void
 fbr_cmd_cstore_tls_timeout(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {

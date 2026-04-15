@@ -279,11 +279,13 @@ fbr_cstore_async_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	fbr_wbuffer_ok(wbuffer);
 	assert(wbuffer->state == FBR_WBUFFER_READY);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		wbuffer->state = FBR_WBUFFER_ERROR;
 		return;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	wbuffer->state = FBR_WBUFFER_SYNC;
 
@@ -307,10 +309,12 @@ fbr_cstore_async_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_EMPTY);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		return;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	chunk->state = FBR_CHUNK_LOADING;
 
@@ -376,10 +380,12 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		return;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_url url;
 	fbr_cstore_s3_chunk_url(cstore, file, chunk, &url);
@@ -446,10 +452,12 @@ fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 
-	struct fbr_cstore *cstore = fbr_cstore_find();
-	if (!cstore) {
+	if (!fs->cstore) {
 		return;
 	}
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_url url;
 	fbr_cstore_s3_index_url(cstore, directory, &url);
