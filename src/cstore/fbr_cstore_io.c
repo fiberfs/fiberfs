@@ -45,34 +45,34 @@ fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
 
 	// e: etag
 	char buf[64];
-	fbr_id_string(metadata->etag, buf, sizeof(buf));
+	size_t length = fbr_id_string(metadata->etag, buf, sizeof(buf));
 
 	fbr_sys_write(fd, "\",\"e\":\"", 7);
-	fbr_sys_write(fd, buf, strlen(buf));
+	fbr_sys_write(fd, buf, length);
 
 	// i: timestamp
-	fbr_bprintf(buf, "%f", metadata->timestamp);
+	length = fbr_bprintf(buf, "%f", metadata->timestamp);
 
 	fbr_sys_write(fd, "\",\"i\":", 6);
-	fbr_sys_write(fd, buf, strlen(buf));
+	fbr_sys_write(fd, buf, length);
 
 	// s: size
-	fbr_bprintf(buf, "%lu", metadata->size);
+	length = fbr_bprintf(buf, "%lu", metadata->size);
 
 	fbr_sys_write(fd, ",\"s\":", 5);
-	fbr_sys_write(fd, buf, strlen(buf));
+	fbr_sys_write(fd, buf, length);
 
 	// o: offset
-	fbr_bprintf(buf, "%zu", metadata->offset);
+	length = fbr_bprintf(buf, "%zu", metadata->offset);
 
 	fbr_sys_write(fd, ",\"o\":", 5);
-	fbr_sys_write(fd, buf, strlen(buf));
+	fbr_sys_write(fd, buf, length);
 
 	// t: type
-	fbr_bprintf(buf, "%d", metadata->type);
+	length = fbr_bprintf(buf, "%d", metadata->type);
 
 	fbr_sys_write(fd, ",\"t\":", 5);
-	fbr_sys_write(fd, buf, strlen(buf));
+	fbr_sys_write(fd, buf, length);
 
 	// g: gzipped
 	fbr_sys_write(fd, ",\"g\":", 5);
@@ -180,15 +180,11 @@ fbr_cstore_metadata_read(struct fbr_cstore_hashpath *hashpath,
 	json.callback_priv = metadata;
 
 	fjson_parse(&json, buffer, bytes);
-	int ret = json.error;
+	metadata->error = json.error;
 
 	fjson_context_free(&json);
 
-	if (ret) {
-		metadata->error = ret;
-	}
-
-	return ret;
+	return metadata->error;
 }
 
 void
