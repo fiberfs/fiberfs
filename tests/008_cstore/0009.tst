@@ -11,6 +11,8 @@ cstore_set_s3 1 "" 0 region access_key secret_key
 config_add CSTORE_SERVER_TLS true
 cstore_init 2
 
+sleep_ms 100
+
 chttp_init
 chttp_url /
 chttp_connect $cstore_server_host:0 $cstore_server_port:0
