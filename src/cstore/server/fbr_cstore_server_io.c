@@ -437,8 +437,6 @@ _cstore_url_entry_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *en
 		}
 	}
 
-	assert_dev(entry->state != FBR_CSTORE_LOADING);
-
 	if (error) {
 		fbr_cstore_remove(cstore, &entry);
 	} else {

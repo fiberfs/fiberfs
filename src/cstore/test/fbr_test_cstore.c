@@ -6,6 +6,7 @@
 
 #define FBR_TEST_FILE
 
+#include <pthread.h>
 #include <stdlib.h>
 
 #include "fiberfs.h"
@@ -17,8 +18,10 @@
 #include "fbr_test_cstore_cmds.h"
 #include "log/test/fbr_test_log_cmds.h"
 
+static pthread_mutex_t _TEST_CSTORE_LOCK = PTHREAD_MUTEX_INITIALIZER;
+
 static void
-_test_cstore_finish(struct fbr_test_context *test_ctx)
+_test_cstore_free(struct fbr_test_context *test_ctx)
 {
 	fbr_test_context_ok(test_ctx);
 	assert(test_ctx->cstore);
@@ -41,10 +44,20 @@ _test_cstore_finish(struct fbr_test_context *test_ctx)
 	assert_zero(test_ctx->cstore);
 }
 
+static void
+_test_cstore_finish(struct fbr_test_context *test_ctx)
+{
+	_test_cstore_free(test_ctx);
+
+	pt_assert(pthread_mutex_destroy(&_TEST_CSTORE_LOCK));
+}
+
 static struct fbr_cstore *
 _test_cstore_init(struct fbr_test_context *ctx, const char *root, const char *log_prefix)
 {
 	assert_dev(ctx);
+
+	pt_assert(pthread_mutex_lock(&_TEST_CSTORE_LOCK));
 
 	struct fbr_test_cstore *tcstore = calloc(1, sizeof(*tcstore));
 	assert(tcstore);
@@ -66,6 +79,8 @@ _test_cstore_init(struct fbr_test_context *ctx, const char *root, const char *lo
 
 	fbr_test_log_printer_init(ctx, root, log_prefix);
 	fbr_test_register_finish(ctx, "cstore", _test_cstore_finish);
+
+	pt_assert(pthread_mutex_unlock(&_TEST_CSTORE_LOCK));
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore root: %s (%s)", tcstore->cstore.root,
 		log_prefix);
@@ -207,7 +222,7 @@ fbr_test_cstore_reload(struct fbr_test_context *ctx, struct fbr_fs *fs)
 	char root[FBR_PATH_MAX];
 	fbr_bprintf(root, "%s", cstore->root);
 
-	_test_cstore_finish(ctx);
+	_test_cstore_free(ctx);
 
 	fbr_test_sleep_ms(50);
 	assert_zero(fbr_test_cstore_count(ctx));

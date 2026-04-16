@@ -1031,6 +1031,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	struct fbr_cstore_metadata metadata;
 	fbr_zero(&metadata);
 	metadata.etag = version;
+	metadata.size = root_json->bytes;
 	metadata.timestamp = timestamp;
 	metadata.type = FBR_CSTORE_FILE_ROOT;
 	fbr_strbcpy(metadata.path, root_path->value);
