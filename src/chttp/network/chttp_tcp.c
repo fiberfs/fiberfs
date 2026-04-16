@@ -45,7 +45,9 @@ chttp_tcp_set_timeouts(struct chttp_addr *addr)
 {
 	chttp_addr_connected(addr);
 
-	addr->time_start = fbr_get_time();
+	if (!addr->time_start) {
+		addr->time_start = fbr_get_time();
+	}
 
 	struct timeval timeout;
 	timeout.tv_sec = addr->timeout_transfer_ms / 1000;
@@ -122,6 +124,7 @@ chttp_tcp_connect(struct chttp_addr *addr)
 	(void)setsockopt(addr->sock, IPPROTO_TCP, TCP_FASTOPEN, &val, sizeof(val));
 
 	addr->state = CHTTP_ADDR_CONNECTED;
+	addr->time_start = fbr_get_time();
 
 	if (addr->timeout_connect_ms > 0) {
 		chttp_tcp_set_nonblocking(addr);

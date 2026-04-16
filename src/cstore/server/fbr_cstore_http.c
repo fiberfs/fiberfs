@@ -67,9 +67,10 @@ fbr_cstore_http_log(struct chttp_context *http)
 	chttp_context_ok(http);
 
 	fbr_rlog(FBR_LOG_CS_WORKER,
-		"state: %d error: %d ver: %d status: %d length: %ld chunk: %u gzip: %u tls: %u "
-		"req: %d pipeline %u",
-		http->state, http->error, http->version, http->status, http->length, http->chunked,
+		"state: %d (%s) error: %d (%s) ver: %d status: %d length: %ld chunk: %u gzip: %u "
+		"tls: %u req: %d pipeline: %u",
+		http->state, chttp_state_string(http->state), http->error, chttp_error_msg(http),
+		http->version, http->status, http->length, http->chunked,
 		http->gzip, http->addr.tls, http->request, http->pipeline);
 
 	int first = 1;

@@ -364,9 +364,15 @@ chttp_test_cmd_chttp_send(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 {
 	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
+	struct fbr_test *test = fbr_test_convert(ctx);
 
 	chttp_test_cmd_chttp_send_only(ctx, cmd);
-	fbr_test_ERROR(chttp->error, "chttp send error");
+
+	if (chttp->error && test->verbocity == FBR_LOG_VERY_VERBOSE) {
+		printf("--- ");
+		chttp_context_debug(chttp);
+	}
+	fbr_test_ERROR(chttp->error, "chttp send error (%s)", chttp_error_msg(chttp));
 
 	chttp_test_cmd_chttp_receive(ctx, cmd);
 }
