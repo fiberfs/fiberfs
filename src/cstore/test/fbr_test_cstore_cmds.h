@@ -21,6 +21,9 @@ void fbr_test_cstore_reload(struct fbr_test_context *ctx, struct fbr_fs *fs);
 void fbr_test_cstore_wait(struct fbr_cstore *cstore);
 void fbr_test_cstore_debug(struct fbr_cstore *cstore);
 
+void fbr_test_cstore_backend_add(struct fbr_cstore *cstore, struct fbr_cstore *backend,
+	enum fbr_cstore_route route);
+
 #define FBR_CSTORE_MAX_CSTORES		6
 
 struct fbr_test_cstore {

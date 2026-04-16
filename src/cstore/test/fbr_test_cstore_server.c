@@ -97,7 +97,34 @@ fbr_cmd_cstore_set_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 static void
-_test_add_cluster(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int cdn)
+_test_add_cluster(struct fbr_cstore *cstore, const char *host, int port, int tls, int cdn)
+{
+	fbr_cstore_ok(cstore);
+	assert(host);
+	assert(port)
+
+	struct fbr_cstore_cluster *cluster;
+
+	if (cdn) {
+		cluster = &cstore->cdn;
+	} else {
+		cluster = &cstore->cluster;
+	}
+
+	size_t cluster_size = cluster->size;
+
+	fbr_cstore_cluster_add(cluster, host, port, tls);
+
+	assert(cluster->size == cluster_size + 1);
+	struct fbr_cstore_backend *backend = cluster->backends[cluster_size];
+	fbr_cstore_backend_ok(backend);
+
+	fbr_test_logs("cstore_add_%s: %s:%d %d",
+		cdn ? "cdn" : "cluster", backend->host, backend->port, backend->tls);
+}
+
+static void
+_test_add_cluster_ctx(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int cdn)
 {
 	assert(ctx);
 	assert(cmd);
@@ -114,25 +141,8 @@ _test_add_cluster(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int cd
 	}
 
 	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
-	struct fbr_cstore_cluster *cluster = NULL;
 
-	if (cdn) {
-		cluster = &cstore->cdn;
-	} else {
-		cluster = &cstore->cluster;
-	}
-
-	assert(cluster);
-	size_t cluster_size = cluster->size;
-
-	fbr_cstore_cluster_add(cluster, host, port, tls);
-
-	assert(cluster->size == cluster_size + 1);
-	struct fbr_cstore_backend *backend = cluster->backends[cluster_size];
-	fbr_cstore_backend_ok(backend);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_add_%s: %s:%d %d",
-		cdn ? "cdn" : "cluster", backend->host, backend->port, backend->tls);
+	_test_add_cluster(cstore, host, port, tls, cdn);
 }
 
 void
@@ -141,7 +151,7 @@ fbr_cmd_cstore_add_cluster(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
 
-	_test_add_cluster(ctx, cmd, 0);
+	_test_add_cluster_ctx(ctx, cmd, 0);
 }
 
 void
@@ -150,18 +160,18 @@ fbr_cmd_cstore_add_cdn(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
 
-	_test_add_cluster(ctx, cmd, 1);
+	_test_add_cluster_ctx(ctx, cmd, 1);
 }
 
 static struct fbr_cstore_server *
-_get_server(struct fbr_cstore *cstore, int pos)
+_get_server(struct fbr_cstore *cstore, size_t pos)
 {
 	fbr_cstore_ok(cstore);
 
 	struct fbr_cstore_server *server = cstore->servers;
 	fbr_cstore_server_ok(server);
 
-	while (server->next && pos != 0) {
+	while (server->next && pos) {
 		server = server->next;
 		fbr_cstore_server_ok(server);
 		pos--;
@@ -180,7 +190,7 @@ fbr_varf_cstore_server_host(struct fbr_test_context *ctx, struct fbr_test_param 
 	assert(index >= 0);
 
 	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);
-	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, -1);
+	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, 0);
 	chttp_addr_connected(&server->addr);
 
 	int port;
@@ -200,7 +210,7 @@ fbr_varf_cstore_server_port(struct fbr_test_context *ctx, struct fbr_test_param 
 	assert(index >= 0);
 
 	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);
-	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, -1);
+	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, 0);
 	chttp_addr_connected(&server->addr);
 	assert(server->port > 0);
 
@@ -219,7 +229,7 @@ fbr_varf_cstore_server_tls(struct fbr_test_context *ctx, struct fbr_test_param *
 	assert(index >= 0);
 
 	struct fbr_test_cstore *tcstore = fbr_test_tcstore_get(ctx, index);
-	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, -1);
+	struct fbr_cstore_server *server = _get_server(&tcstore->cstore, 0);
 	chttp_addr_connected(&server->addr);
 
 	if (server->tls) {
@@ -245,4 +255,42 @@ fbr_cmd_cstore_epool_close(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	epool->debug_close = 1;
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_epool_close: %d", epool->debug_close);
+}
+
+void
+fbr_test_cstore_backend_add(struct fbr_cstore *cstore, struct fbr_cstore *backend,
+    enum fbr_cstore_route route)
+{
+	fbr_cstore_ok(cstore);
+	fbr_cstore_ok(backend);
+
+	struct fbr_cstore_server *server = _get_server(backend, 0);
+
+	char host[128];
+	int port;
+	chttp_sa_string(&server->addr.sa, host, sizeof(host), &port);
+	assert(port == server->port);
+
+	switch (route) {
+		case FBR_CSTORE_ROUTE_CLUSTER:
+			_test_add_cluster(cstore, host, port, server->addr.tls, 0);
+			return;
+		case FBR_CSTORE_ROUTE_CDN:
+			_test_add_cluster(cstore, host, port, server->addr.tls, 1);
+			return;
+		default:
+			break;
+	}
+
+	assert(route == FBR_CSTORE_ROUTE_S3);
+	assert_zero(cstore->s3.backend);
+
+	fbr_cstore_s3_init(cstore, host, port, server->addr.tls, backend->s3.prefix,
+		backend->s3.region, backend->s3.access_key, backend->s3.secret_key);
+
+	struct fbr_cstore_backend *s3 = cstore->s3.backend;
+	fbr_cstore_backend_ok(s3);
+
+	fbr_test_logs("cstore_set_s3 backend: %s:%d/%s %d",
+		s3->host, s3->port, cstore->s3.prefix ? cstore->s3.prefix : "", s3->tls);
 }
