@@ -364,9 +364,7 @@ _append_thread(void *arg)
 		appends++;
 	}
 
-	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
-	struct fbr_cstore *cstore = fbr_test_cstore_get(test_ctx, 0);
-	fbr_test_cstore_wait(cstore);
+	fbr_test_cstore_wait(fs->cstore);
 
 	fbr_fs_release_all(fs, 1);
 	fbr_fs_free(fs);
