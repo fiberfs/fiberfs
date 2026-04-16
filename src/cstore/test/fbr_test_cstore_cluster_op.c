@@ -43,13 +43,7 @@ _op_thread(void *arg)
 	fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CDN);
 	fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C1_S3, FBR_CSTORE_ROUTE_S3);
 
-	struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
-	if (!root) {
-		root = fbr_directory_root_alloc(fs);
-		fbr_directory_ok(root);
-		assert(root->state == FBR_DIRSTATE_LOADING);
-		fbr_index_read(fs, root);
-	}
+	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
 
