@@ -155,7 +155,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
 
-	fbr_test_cstore_bind(fs, 0);
+	fbr_test_cstore_bind_new(fs);
 	fbr_cstore_ok(fs->cstore);
 
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
@@ -411,7 +411,7 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
 
-	fbr_test_cstore_bind(fs, 0);
+	fbr_test_cstore_bind_new(fs);
 	fbr_cstore_ok(fs->cstore);
 
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
@@ -500,12 +500,12 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_1);
-	fbr_test_cstore_bind(fs_1, 0);
+	fbr_test_cstore_bind_new(fs_1);
 	fbr_fs_set_store(fs_1, &_INDEX_TEST_CALLBACKS);
 
 	struct fbr_fs *fs_2 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_2);
-	fbr_test_cstore_bind(fs_2, 1);
+	fbr_test_cstore_bind(fs_2, 0);
 	fbr_fs_set_store(fs_2, &_INDEX_TEST_CALLBACKS);
 
 	assert(fbr_test_cstore_count(ctx) == 1);
@@ -639,7 +639,7 @@ _index_thread(void *arg)
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
-	fbr_test_cstore_bind(fs, 1);
+	fbr_test_cstore_bind(fs, 0);
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
 
 	assert(fbr_test_cstore_count(fbr_test_get_ctx()) == 1);
@@ -754,7 +754,7 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
-	fbr_test_cstore_bind(fs, 1);
+	fbr_test_cstore_bind(fs, 0);
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
 
 	fbr_test_logs("*** Final read and validation");

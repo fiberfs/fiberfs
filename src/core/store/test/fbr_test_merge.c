@@ -26,12 +26,12 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_1);
-	fbr_test_cstore_bind(fs_1, 0);
+	fbr_test_cstore_bind_new(fs_1);
 	fbr_fs_set_store(fs_1, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	struct fbr_fs *fs_2 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_2);
-	fbr_test_cstore_bind(fs_2, 1);
+	fbr_test_cstore_bind(fs_2, 0);
 	fbr_fs_set_store(fs_2, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	assert(fbr_test_cstore_count(ctx) == 1);

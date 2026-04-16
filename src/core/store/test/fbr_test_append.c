@@ -28,12 +28,12 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_fs *fs_1 = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs_1);
-	fbr_test_cstore_bind(fs_1, 0);
+	fbr_test_cstore_bind_new(fs_1);
 	fbr_fs_set_store(fs_1, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	struct fbr_fs *fs_2 = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs_2);
-	fbr_test_cstore_bind(fs_2, 1);
+	fbr_test_cstore_bind(fs_2, 0);
 	fbr_fs_set_store(fs_2, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	assert(fbr_test_cstore_count(ctx) == 1);
@@ -291,7 +291,7 @@ _append_thread(void *arg)
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
-	fbr_test_cstore_bind(fs, 1);
+	fbr_test_cstore_bind(fs, 0);
 
 	if (!_APPEND_ERROR_TEST) {
 		fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
@@ -384,7 +384,7 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
-	fbr_test_cstore_bind(fs, 0);
+	fbr_test_cstore_bind_new(fs);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	fbr_test_logs("*** Allocating root");

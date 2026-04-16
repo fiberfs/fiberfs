@@ -14,7 +14,8 @@ struct fbr_test_cstore *fbr_test_tcstore_get(struct fbr_test_context *ctx, size_
 struct fbr_cstore *fbr_test_cstore_get(struct fbr_test_context *ctx, size_t index);
 size_t fbr_test_cstore_count(struct fbr_test_context *ctx);
 struct fbr_cstore *fbr_test_cstore_init(struct fbr_test_context *ctx);
-void fbr_test_cstore_bind(struct fbr_fs *fs, int existing);
+void fbr_test_cstore_bind(struct fbr_fs *fs, int index);
+void fbr_test_cstore_bind_new(struct fbr_fs *fs);
 void fbr_test_cstore_init_loader(struct fbr_test_context *ctx, struct fbr_fs *fs);
 void fbr_test_cstore_reload(struct fbr_test_context *ctx, struct fbr_fs *fs);
 void fbr_test_cstore_wait(struct fbr_cstore *cstore);

@@ -26,7 +26,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
-	fbr_test_cstore_bind(fs, 0);
+	fbr_test_cstore_bind_new(fs);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);

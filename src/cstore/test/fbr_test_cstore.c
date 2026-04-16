@@ -129,10 +129,10 @@ _test_cstore_init_pos(struct fbr_test_context *ctx, const char *root)
 	assert(ctx);
 	assert(root);
 
-	size_t position = fbr_test_cstore_count(ctx);
+	size_t index = fbr_test_cstore_count(ctx);
 
 	char prefix[8];
-	fbr_bprintf(prefix, "c%zu^", position);
+	fbr_bprintf(prefix, "c%zu^", index);
 
 	return _test_cstore_init(ctx, root, prefix);
 }
@@ -148,7 +148,7 @@ fbr_test_cstore_init(struct fbr_test_context *ctx)
 }
 
 void
-fbr_test_cstore_bind(struct fbr_fs *fs, int existing)
+fbr_test_cstore_bind(struct fbr_fs *fs, int index)
 {
 	fbr_fs_ok(fs);
 	assert_zero(fs->cstore);
@@ -156,8 +156,8 @@ fbr_test_cstore_bind(struct fbr_fs *fs, int existing)
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 	struct fbr_cstore *cstore = NULL;
 
-	if (existing) {
-		cstore = fbr_test_cstore_get(test_ctx, 0);
+	if (index >= 0) {
+		cstore = fbr_test_cstore_get(test_ctx, index);
 	} else {
 		cstore = fbr_test_cstore_init(test_ctx);
 	}
@@ -166,6 +166,12 @@ fbr_test_cstore_bind(struct fbr_fs *fs, int existing)
 
 	fs->cstore = cstore;
 	fs->cstore_managed = 1;
+}
+
+void
+fbr_test_cstore_bind_new(struct fbr_fs *fs)
+{
+	fbr_test_cstore_bind(fs, -1);
 }
 
 void

@@ -49,7 +49,7 @@ _test_mkdir_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fs_ok(ctx->fs);
 	assert(conn);
 
-	fbr_test_cstore_bind(ctx->fs, 0);
+	fbr_test_cstore_bind_new(ctx->fs);
 	fbr_fs_set_store(ctx->fs, &_TEST_MKDIR_CALLBACKS);
 
 	fbr_test_fuse_root_alloc(ctx->fs);
@@ -135,7 +135,7 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	struct fbr_fs *fs_remote = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_remote);
-	fbr_test_cstore_bind(fs_remote, 1);
+	fbr_test_cstore_bind(fs_remote, 0);
 	fbr_fs_set_store(fs_remote, &_TEST_MKDIR_CALLBACKS);
 
 	struct fbr_directory *root = fbr_directory_load(fs_remote, FBR_DIRNAME_ROOT,

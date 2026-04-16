@@ -116,9 +116,9 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 
 	if (fbr_test_cstore_count(test_ctx)) {
-		fbr_test_cstore_bind(ctx->fs, 1);
-	} else {
 		fbr_test_cstore_bind(ctx->fs, 0);
+	} else {
+		fbr_test_cstore_bind_new(ctx->fs);
 	}
 
 	fbr_fs_set_store(ctx->fs, &_TEST_FS_RW_STORE_CALLBACKS);
