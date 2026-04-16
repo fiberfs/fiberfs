@@ -9,6 +9,7 @@ cstore_init 1
 cstore_set_s3 1 "" 0 region access_key secret_key
 
 config_add CSTORE_SERVER_TLS true
+cstore_tls_timeout
 cstore_init 2
 
 sleep_ms 100
