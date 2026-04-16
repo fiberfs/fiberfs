@@ -23,17 +23,18 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_test_fuse_mock(ctx);
-	struct fbr_cstore *cstore = fbr_test_cstore_init(ctx);
 
 	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_1);
-	fs_1->cstore = cstore;
+	fbr_test_cstore_bind(fs_1, 0);
 	fbr_fs_set_store(fs_1, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	struct fbr_fs *fs_2 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_2);
-	fs_2->cstore = cstore;
+	fbr_test_cstore_bind(fs_2, 1);
 	fbr_fs_set_store(fs_2, FBR_CSTORE_DEFAULT_CALLBACKS);
+
+	assert(fbr_test_cstore_count(ctx) == 1);
 
 	fbr_test_logs("*** Allocating dir_fs1 and file.merge2");
 
@@ -290,7 +291,6 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(fs_1->stats.flush_conflicts == 1, "zero");
 	fbr_test_ASSERT(fs_1->stats.merges == 1, "zero");
 
-	fbr_test_cstore_unregister(fs_1);
 	fbr_fs_free(fs_1);
 
 	fbr_test_logs("*** Cleanup fs_2");
@@ -312,7 +312,6 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(fs_2->stats.flush_conflicts == 1, "zero");
 	fbr_test_ASSERT(fs_2->stats.merges == 1, "zero");
 
-	fbr_test_cstore_unregister(fs_2);
 	fbr_fs_free(fs_2);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "merge_2fs_test done");

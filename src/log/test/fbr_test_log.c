@@ -157,18 +157,7 @@ fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname
 	assert(logname);
 	assert(prefix);
 
-	struct fbr_test_log_printer *printer = test_ctx->printer;
-	while (printer) {
-		fbr_test_log_printer_ok(printer);
-
-		if (!strcmp(prefix, printer->prefix)) {
-			return;
-		}
-
-		printer = printer->next;
-	}
-
-	printer = calloc(1, sizeof(*printer));
+	struct fbr_test_log_printer *printer = calloc(1, sizeof(*printer));
 	assert(printer);
 	printer->magic = FBR_TEST_LOG_PRINT_MAGIC;
 

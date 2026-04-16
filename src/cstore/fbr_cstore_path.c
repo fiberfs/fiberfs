@@ -369,7 +369,7 @@ fbr_cstore_s3_url(struct fbr_cstore *cstore, struct fbr_cstore_path *path,
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_path_ok(path);
-	assert(url)
+	assert(url);
 
 	const char *prefix = cstore->s3.prefix;
 	if (!prefix || !fbr_cstore_backend_enabled(cstore)) {

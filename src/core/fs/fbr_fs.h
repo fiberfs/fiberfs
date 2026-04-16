@@ -359,6 +359,8 @@ struct fbr_fs {
 
 	struct fbr_fs_config			config;
 	struct fbr_fs_stats			stats;
+
+	fbr_bitflag_t				cstore_managed:1;
 };
 
 extern const struct fbr_path_name *FBR_DIRNAME_ROOT;

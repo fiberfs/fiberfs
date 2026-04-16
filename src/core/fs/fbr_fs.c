@@ -141,7 +141,7 @@ fbr_fs_free(struct fbr_fs *fs)
 	fbr_dindex_free_all(fs);
 	fbr_inodes_free_all(fs);
 
-	if (fs->cstore) {
+	if (fs->cstore && !fs->cstore_managed) {
 		fbr_cstore_free(fs->cstore);
 	}
 

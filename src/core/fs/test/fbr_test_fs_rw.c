@@ -113,16 +113,18 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fs_ok(ctx->fs);
 	assert(conn);
 
-	fbr_fs_set_store(ctx->fs, &_TEST_FS_RW_STORE_CALLBACKS);
+	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 
-	if (fbr_test_cstore_exists()) {
-		ctx->fs->cstore = fbr_test_cstore_get(NULL, 0);
+	if (fbr_test_cstore_count(test_ctx)) {
+		fbr_test_cstore_bind(ctx->fs, 1);
 	} else {
-		ctx->fs->cstore = fbr_test_cstore_init(fbr_test_get_ctx());
+		fbr_test_cstore_bind(ctx->fs, 0);
 	}
 
-	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
+	fbr_fs_set_store(ctx->fs, &_TEST_FS_RW_STORE_CALLBACKS);
+
 	fbr_test_log_printer_init(test_ctx, ctx->path, "#");
+
 	//ctx->log->always_flush = 1;
 
 	//conn->max_readahead

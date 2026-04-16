@@ -26,7 +26,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
-	fs->cstore = fbr_test_cstore_init(ctx);
+	fbr_test_cstore_bind(fs, 0);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
@@ -70,7 +70,6 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_cstore_debug(fs->cstore);
 	assert(fs->cstore->entries == 3);
 
-	fbr_test_cstore_unregister(fs);
 	fbr_fs_free(fs);
 
 	fbr_test_logs("*** Sleep %f", FBR_CSTORE_LOAD_TIME_BUFFER);
@@ -80,7 +79,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
-	fs->cstore = fbr_test_cstore_reload(ctx);
+	fbr_test_cstore_reload(ctx, fs);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	fbr_test_logs("*** Read root");
@@ -120,7 +119,6 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_ASSERT(loaded == 3, "loaded: %lu lazy: %lu", fs->cstore->stats.loaded,
 		fs->cstore->stats.lazy_loaded);
 
-	fbr_test_cstore_unregister(fs);
 	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_loader_test done");

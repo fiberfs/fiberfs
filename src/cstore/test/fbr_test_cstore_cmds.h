@@ -10,14 +10,13 @@
 #include "cstore/fbr_cstore_api.h"
 #include "test/fbr_test_cmd_declare.h"
 
-int fbr_test_cstore_exists(void);
 struct fbr_test_cstore *fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t index);
 struct fbr_cstore *fbr_test_cstore_get(struct fbr_test_context *ctx, size_t index);
-
-void fbr_test_cstore_unregister(struct fbr_fs *fs);
+size_t fbr_test_cstore_count(struct fbr_test_context *ctx);
 struct fbr_cstore *fbr_test_cstore_init(struct fbr_test_context *ctx);
-struct fbr_cstore *fbr_test_cstore_init_loader(struct fbr_test_context *ctx);
-struct fbr_cstore *fbr_test_cstore_reload(struct fbr_test_context *ctx);
+void fbr_test_cstore_bind(struct fbr_fs *fs, int existing);
+void fbr_test_cstore_init_loader(struct fbr_test_context *ctx, struct fbr_fs *fs);
+void fbr_test_cstore_reload(struct fbr_test_context *ctx, struct fbr_fs *fs);
 void fbr_test_cstore_wait(struct fbr_cstore *cstore);
 void fbr_test_cstore_debug(struct fbr_cstore *cstore);
 
@@ -35,6 +34,9 @@ struct fbr_test_cstore {
 
 	struct fbr_test_cstore		*next;
 };
+
+#define fbr_tcstore_ok(tcstore)		\
+	fbr_magic_check(tcstore, FBR_TEST_CSTORE_MAGIC)
 
 #endif /* _FBR_TEST_FCACHE_CMDS_H_INCLUDED */
 

@@ -214,7 +214,7 @@ _write_test(void)
 
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(test_ctx);
 	fbr_fs_ok(fs);
-	fs->cstore = fbr_test_cstore_init(test_ctx);
+	fbr_test_cstore_bind(fs, 0);
 	fbr_fs_set_store(fs, &_WRITE_CALLBACKS);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
@@ -407,7 +407,6 @@ _write_test(void)
 			__ERROR_FLUSH);
 	}
 
-	fbr_test_cstore_unregister(fs);
 	fbr_request_pool_shutdown(fs);
 	fbr_fs_free(fs);
 }

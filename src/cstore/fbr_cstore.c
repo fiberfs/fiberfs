@@ -572,7 +572,7 @@ static void
 _cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref, int prune_lru)
 {
 	fbr_cstore_ok(cstore);
-	assert(entry_ref)
+	assert(entry_ref);
 
 	struct fbr_cstore_entry *entry = *entry_ref;
 	fbr_cstore_entry_ok(entry);

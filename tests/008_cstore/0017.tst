@@ -51,5 +51,3 @@ cstore_debug
 cstore_debug 1
 
 equal $cstore_entries:0 3
-
-fuse_test_unmount

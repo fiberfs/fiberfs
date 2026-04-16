@@ -154,7 +154,8 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
-	fs->cstore = fbr_test_cstore_init(ctx);
+
+	fbr_test_cstore_bind(fs, 0);
 	fbr_cstore_ok(fs->cstore);
 
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
@@ -395,7 +396,6 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fs->cstore->stats.wr_roots == 1);
 	assert(fs->cstore->stats.wr_indexes == 1);
 
-	fbr_test_cstore_unregister(fs);
 	fbr_request_pool_shutdown(fs);
 	fbr_fs_free(fs);
 
@@ -410,7 +410,8 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
 	fbr_fs_ok(fs);
-	fs->cstore = fbr_test_cstore_init(ctx);
+
+	fbr_test_cstore_bind(fs, 0);
 	fbr_cstore_ok(fs->cstore);
 
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
@@ -483,7 +484,6 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs->stats.flush_conflicts, "non zero");
 	fbr_test_ERROR(fs->stats.merges, "non zero");
 
-	fbr_test_cstore_unregister(fs);
 	fbr_request_pool_shutdown(fs);
 	fbr_fs_free(fs);
 
@@ -497,17 +497,18 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_test_fuse_mock(ctx);
-	struct fbr_cstore *cstore = fbr_test_cstore_init(ctx);
 
 	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_1);
-	fs_1->cstore = cstore;
+	fbr_test_cstore_bind(fs_1, 0);
 	fbr_fs_set_store(fs_1, &_INDEX_TEST_CALLBACKS);
 
 	struct fbr_fs *fs_2 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_2);
-	fs_2->cstore = cstore;
+	fbr_test_cstore_bind(fs_2, 1);
 	fbr_fs_set_store(fs_2, &_INDEX_TEST_CALLBACKS);
+
+	assert(fbr_test_cstore_count(ctx) == 1);
 
 	fbr_test_logs("*** Allocating dir_fs1");
 
@@ -603,7 +604,6 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_1->stats.flush_conflicts, "non zero");
 	fbr_test_ERROR(fs_1->stats.merges, "non zero");
 
-	fbr_test_cstore_unregister(fs_1);
 	fbr_fs_free(fs_1);
 
 	fbr_test_logs("*** Cleanup fs_2");
@@ -624,7 +624,6 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_2->stats.flush_conflicts, "non zero");
 	fbr_test_ERROR(fs_2->stats.merges, "non zero");
 
-	fbr_test_cstore_unregister(fs_2);
 	fbr_fs_free(fs_2);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "index_2fs_test done");
@@ -640,8 +639,10 @@ _index_thread(void *arg)
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
-	fs->cstore = fbr_test_cstore_get(NULL, 0);
+	fbr_test_cstore_bind(fs, 1);
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
+
+	assert(fbr_test_cstore_count(fbr_test_get_ctx()) == 1);
 
 	size_t thread_id = fbr_atomic_add(&_THREAD_COUNT, 1);
 	fbr_test_logs("*** thread %zu running", thread_id);
@@ -717,7 +718,6 @@ _index_thread(void *arg)
 	fbr_test_ERROR(fs->stats.flush_conflicts, "non zero");
 	fbr_test_ERROR(fs->stats.merges, "non zero");
 
-	fbr_test_cstore_unregister(fs);
 	fbr_fs_free(fs);
 
 	return NULL;
@@ -747,13 +747,14 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 
 	fbr_test_logs("*** all threads joined");
 
+	assert(fbr_test_cstore_count(ctx) == 1);
 	assert(fbr_test_cstore_get(ctx, 0) == cstore);
 	fbr_cstore_ok(cstore);
 	fbr_test_cstore_debug(cstore);
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
-	fs->cstore = cstore;
+	fbr_test_cstore_bind(fs, 1);
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
 
 	fbr_test_logs("*** Final read and validation");
@@ -785,7 +786,6 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	assert(cstore->stats.wr_roots == 1);
 	assert(cstore->stats.wr_indexes == 1);
 
-	fbr_test_cstore_unregister(fs);
 	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "index_2fs_test done");
