@@ -75,3 +75,5 @@ FBR_TEST_VARF(cstore_server_port)
 FBR_TEST_VARF(cstore_server_tls)
 
 FBR_TEST_CMD(cstore_url_test)
+
+FBR_TEST_CMD(cstore_cluster_ops)
