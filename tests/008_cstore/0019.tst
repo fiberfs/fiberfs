@@ -13,7 +13,7 @@ cstore_init 0
 
 # S3
 cstore_init 1
-cstore_set_s3 1 "" 0 region access_key secret_key
+cstore_mock_s3 1 region access_key secret_key
 
 # Set the S3 origin for cstore
 cstore_set_s3 0 $cstore_server_host:1 $cstore_server_port:1 region access_key secret_key $cstore_server_tls:1

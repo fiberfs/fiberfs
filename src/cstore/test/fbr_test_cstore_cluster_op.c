@@ -97,7 +97,7 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	_CSTORE_C1_S3 = fbr_test_cstore_init(ctx);
 	fbr_cstore_ok(_CSTORE_C1_S3);
-	fbr_cstore_s3_init(_CSTORE_C1_S3, NULL, 0, 0, NULL, "NYC", "AccessKEY", "SECRET!@#");
+	fbr_cstore_s3_mock(_CSTORE_C1_S3, NULL, "NYC", "AccessKEY", "SECRET!@#");
 
 	fbr_test_cstore_backend_add(_CSTORE_C0_SHARED, _CSTORE_C1_S3, FBR_CSTORE_ROUTE_S3);
 

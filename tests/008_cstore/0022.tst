@@ -20,7 +20,7 @@ cstore_init 2
 
 # S3
 cstore_init 3
-cstore_set_s3 3 "" 0 region access_key secret_key
+cstore_mock_s3 3 region access_key secret_key
 
 # Set the LRU
 cstore_set_lru 0 100000

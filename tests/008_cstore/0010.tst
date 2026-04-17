@@ -5,7 +5,7 @@ config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
 config_add CSTORE_SERVER_PORT 0
 
 cstore_init 0
-cstore_set_s3 0 "" 0 region access_key secret_key
+cstore_mock_s3 0 region access_key secret_key
 
 chttp_init
 chttp_method PUT

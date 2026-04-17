@@ -57,7 +57,9 @@ fbr_cmd_cstore_set_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	long index = fbr_test_parse_long(cmd->params[0].value);
 	const char *host = cmd->params[1].value;
+	fbr_test_ERROR_string(host);
 	long port = fbr_test_parse_long(cmd->params[2].value);
+	assert(port > 0);
 	const char *region = cmd->params[3].value;
 	fbr_test_ERROR_string(region);
 	const char *access_key = cmd->params[4].value;
@@ -74,26 +76,53 @@ fbr_cmd_cstore_set_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		prefix = cmd->params[7].value;
 	}
 
-	if (!*host) {
-		host = NULL;
-	}
-
 	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
 
 	fbr_cstore_s3_init(cstore, host, port, tls, prefix, region, access_key, secret_key);
 
-	if (host) {
-		struct fbr_cstore_backend *s3 = cstore->s3.backend;
-		fbr_cstore_backend_ok(s3);
+	struct fbr_cstore_backend *s3 = cstore->s3.backend;
+	fbr_cstore_backend_ok(s3);
 
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_set_s3 backend: %s:%d/%s %d",
-			s3->host, s3->port,
-			cstore->s3.prefix ? cstore->s3.prefix : "",
-			s3->tls);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_set_s3 backend: %s:%d/%s %d cred: %s %s",
+		s3->host, s3->port,
+		cstore->s3.prefix ? cstore->s3.prefix : "",
+		s3->tls,
+		cstore->s3.region, cstore->s3.access_key);
+}
+
+void
+fbr_cmd_cstore_mock_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	assert(cmd->param_count >= 4 && cmd->param_count <= 5);
+
+	long index = fbr_test_parse_long(cmd->params[0].value);
+	const char *region = cmd->params[1].value;
+	fbr_test_ERROR_string(region);
+	const char *access_key = cmd->params[2].value;
+	fbr_test_ERROR_string(access_key);
+	const char *secret_key = cmd->params[3].value;
+	fbr_test_ERROR_string(secret_key);
+	const char *prefix = NULL;
+
+	if (cmd->param_count >= 5) {
+		prefix = cmd->params[4].value;
 	}
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_set_s3 cred: %s %s",
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
+
+	fbr_cstore_s3_mock(cstore, prefix, region, access_key, secret_key);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_mock_s3 cred: %s %s",
 		cstore->s3.region, cstore->s3.access_key);
+}
+
+void
+fbr_cstore_s3_mock(struct fbr_cstore *cstore, const char *prefix, const char *region,
+    const char *access_key, const char *secret_key)
+{
+	fbr_cstore_s3_init(cstore, NULL, 0, 0, prefix, region, access_key, secret_key);
 }
 
 static void
