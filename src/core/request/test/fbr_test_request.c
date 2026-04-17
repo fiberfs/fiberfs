@@ -35,16 +35,17 @@ fbr__test_request_mock(const char *function)
 }
 
 static void
-_debug_request_stats(struct fbr_fs *fs)
+_debug_request_stats(void)
 {
-	fbr_fs_ok(fs);
+	struct fbr_request_stats *stats = fbr_request_get_stats();
+	assert(stats);
 
 	fbr_test_logs("# debug fs.stats.request");
-	fbr_test_logs("  fs.stats.requests_active=%lu", fs->stats.requests_active);
-	fbr_test_logs("  fs.stats.requests_pooled=%lu", fs->stats.requests_pooled);
-	fbr_test_logs("  fs.stats.requests_alloc=%lu", fs->stats.requests_alloc);
-	fbr_test_logs("  fs.stats.requests_recycled=%lu", fs->stats.requests_recycled);
-	fbr_test_logs("  fs.stats.requests_freed=%lu", fs->stats.requests_freed);
+	fbr_test_logs("  stats.requests_active=%lu", stats->requests_active);
+	fbr_test_logs("  stats.requests_pooled=%lu", stats->requests_pooled);
+	fbr_test_logs("  stats.requests_alloc=%lu", stats->requests_alloc);
+	fbr_test_logs("  stats.requests_recycled=%lu", stats->requests_recycled);
+	fbr_test_logs("  stats.requests_freed=%lu", stats->requests_freed);
 }
 
 void
@@ -62,24 +63,27 @@ fbr_cmd_request_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_request *r1 = fbr_test_request_mock();
 	fbr_request_ok(r1);
-	assert(fs->stats.requests_active == 1);
-	assert(fs->stats.requests_pooled == 0);
+
+	struct fbr_request_stats *stats = fbr_request_get_stats();
+	assert(stats);
+	assert(stats->requests_active == 1);
+	assert(stats->requests_pooled == 0);
 	fbr_request_free(r1);
 
-	_debug_request_stats(fs);
+	_debug_request_stats();
 
 	assert_zero(fbr_request_get());
 
-	assert(fs->stats.requests_active == 0);
-	assert(fs->stats.requests_pooled == 1);
-	assert(fs->stats.requests_alloc == 1);
-	assert(fs->stats.requests_recycled == 0);
-	assert(fs->stats.requests_freed == 0);
+	assert(stats->requests_active == 0);
+	assert(stats->requests_pooled == 1);
+	assert(stats->requests_alloc == 1);
+	assert(stats->requests_recycled == 0);
+	assert(stats->requests_freed == 0);
 
 	struct fbr_request *r2 = fbr_test_request_mock();
 	fbr_request_ok(r2);
-	assert(fs->stats.requests_active == 1);
-	assert(fs->stats.requests_pooled == 0);
+	assert(stats->requests_active == 1);
+	assert(stats->requests_pooled == 0);
 
 	char *buf = fbr_workspace_rbuffer(r2->workspace);
 	size_t buf_len = fbr_workspace_rlen(r2->workspace);
@@ -89,17 +93,21 @@ fbr_cmd_request_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_request_free(r2);
 
-	_debug_request_stats(fs);
+	_debug_request_stats();
 
-	assert(fs->stats.requests_alloc == 1);
-	assert(fs->stats.requests_recycled == 1);
+	assert(stats->requests_alloc == 1);
+	assert(stats->requests_recycled == 1);
 
-	fbr_request_pool_shutdown(fs);
+	fbr_request_pool_shutdown();
 
-	assert_zero(fs->stats.requests_pooled);
-	assert(fs->stats.requests_alloc == fs->stats.requests_freed);
+	assert_zero(stats->requests_pooled);
+	assert(stats->requests_alloc == stats->requests_freed);
 
 	fbr_fs_free(fs);
+	fbr_zero(stats);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	assert_zero(fuse_ctx->error);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "request_test done");
 }
@@ -179,20 +187,26 @@ fbr_cmd_request_test_thread(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 
 	assert_zero(fbr_request_get());
 
-	_debug_request_stats(fs);
+	_debug_request_stats();
 
-	assert(fs->stats.requests_active == 0);
-	assert(fs->stats.requests_pooled == FBR_REQUEST_POOL_MAX_SIZE);
-	assert(fs->stats.requests_alloc >= _TEST_REQUEST_THREADS);
-	assert(fs->stats.requests_recycled >= FBR_REQUEST_POOL_MAX_SIZE);
-	assert(fs->stats.requests_freed >= _TEST_REQUEST_THREADS - FBR_REQUEST_POOL_MAX_SIZE);
+	struct fbr_request_stats *stats = fbr_request_get_stats();
+	assert(stats);
+	assert(stats->requests_active == 0);
+	assert(stats->requests_pooled == FBR_REQUEST_POOL_MAX_SIZE);
+	assert(stats->requests_alloc >= _TEST_REQUEST_THREADS);
+	assert(stats->requests_recycled >= FBR_REQUEST_POOL_MAX_SIZE);
+	assert(stats->requests_freed >= _TEST_REQUEST_THREADS - FBR_REQUEST_POOL_MAX_SIZE);
 
-	fbr_request_pool_shutdown(fs);
+	fbr_request_pool_shutdown();
 
-	assert_zero(fs->stats.requests_pooled);
-	assert(fs->stats.requests_alloc == fs->stats.requests_freed);
+	assert_zero(stats->requests_pooled);
+	assert(stats->requests_alloc == stats->requests_freed);
 
 	fbr_fs_free(fs);
+	fbr_zero(stats);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	assert_zero(fuse_ctx->error);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "request_test_thread done");
 }
@@ -208,26 +222,34 @@ fbr_cmd_request_test_active(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 
 	struct fbr_request *r1 = fbr_test_request_mock();
 	fbr_request_ok(r1);
-	assert(fs->stats.requests_active == 1);
 
-	fbr_request_pool_shutdown(fs);
+	struct fbr_request_stats *stats = fbr_request_get_stats();
+	assert(stats);
+	assert(stats->requests_active == 1);
+
+	fbr_request_pool_shutdown();
 
 	fbr_request_free(r1);
 
-	_debug_request_stats(fs);
+	_debug_request_stats();
 
-	assert(fs->stats.requests_active == 0);
-	assert(fs->stats.requests_pooled == 1);
-	assert(fs->stats.requests_alloc == 1);
-	assert(fs->stats.requests_recycled == 0);
-	assert(fs->stats.requests_freed == 0);
+	assert(stats->requests_active == 0);
+	assert(stats->requests_pooled == 1);
+	assert(stats->requests_alloc == 1);
+	assert(stats->requests_recycled == 0);
+	assert(stats->requests_freed == 0);
 
-	fbr_request_pool_shutdown(fs);
+	fbr_request_pool_shutdown();
 
-	assert_zero(fs->stats.requests_pooled);
-	assert(fs->stats.requests_alloc == fs->stats.requests_freed);
+	assert_zero(stats->requests_pooled);
+	assert(stats->requests_alloc == stats->requests_freed);
 
 	fbr_fs_free(fs);
+	fbr_zero(stats);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	assert(fuse_ctx->error);
+	fuse_ctx->error = 0;
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "request_test_active done");
 }

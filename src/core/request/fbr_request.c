@@ -25,12 +25,14 @@ struct {
 
 	size_t					free_size;
 	size_t					active_size;
+
+	struct fbr_request_stats		stats;
 } __REQUEST_POOL = {
 	_REQUEST_POOL_MAGIC,
 	PTHREAD_MUTEX_INITIALIZER,
 	TAILQ_HEAD_INITIALIZER(__REQUEST_POOL.free_list),
 	TAILQ_HEAD_INITIALIZER(__REQUEST_POOL.active_list),
-	0, 0
+	0, 0, {0}
 }, *_REQUEST_POOL = &__REQUEST_POOL;
 
 static unsigned int _REQUEST_KEY_COUNT;
@@ -143,13 +145,9 @@ _request_pool_get(fuse_req_t fuse_req, const char *name)
 	TAILQ_INSERT_TAIL(&_REQUEST_POOL->active_list, request, entry);
 	_REQUEST_POOL->active_size++;
 
-	assert_dev(request->fuse_ctx);
-	struct fbr_fs *fs = request->fuse_ctx->fs;
-	fbr_fs_ok(fs);
-
-	fbr_fs_stat_add(&fs->stats.requests_recycled);
-	fbr_fs_stat_add(&fs->stats.requests_active);
-	fbr_fs_stat_sub(&fs->stats.requests_pooled);
+	fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_recycled);
+	fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_active);
+	fbr_fs_stat_sub(&_REQUEST_POOL->stats.requests_pooled);
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 
@@ -167,12 +165,8 @@ _request_pool_active(struct fbr_request *request)
 	TAILQ_INSERT_TAIL(&_REQUEST_POOL->active_list, request, entry);
 	_REQUEST_POOL->active_size++;
 
-	assert_dev(request->fuse_ctx);
-	struct fbr_fs *fs = request->fuse_ctx->fs;
-	fbr_fs_ok(fs);
-
-	fbr_fs_stat_add(&fs->stats.requests_alloc);
-	fbr_fs_stat_add(&fs->stats.requests_active);
+	fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_alloc);
+	fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_active);
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 }
@@ -256,10 +250,6 @@ _request_pool_put(struct fbr_request *request)
 {
 	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
 	assert_dev(request);
-	assert_dev(request->fuse_ctx);
-
-	struct fbr_fs *fs = request->fuse_ctx->fs;
-	assert_dev(fs);
 
 	pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));
 
@@ -269,7 +259,7 @@ _request_pool_put(struct fbr_request *request)
 	_REQUEST_POOL->active_size--;
 
 	if (_REQUEST_POOL->free_size >= FBR_REQUEST_POOL_MAX_SIZE) {
-		fbr_fs_stat_add(&fs->stats.requests_freed);
+		fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_freed);
 		pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 		_request_free(request);
 		return;
@@ -278,7 +268,7 @@ _request_pool_put(struct fbr_request *request)
 	TAILQ_INSERT_TAIL(&_REQUEST_POOL->free_list, request, entry);
 	_REQUEST_POOL->free_size++;
 
-	fbr_fs_stat_add(&fs->stats.requests_pooled);
+	fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_pooled);
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 }
@@ -287,7 +277,6 @@ void
 fbr_request_free(struct fbr_request *request)
 {
 	fbr_request_ok(request);
-	fbr_fuse_context_ok(request->fuse_ctx);
 	assert_zero(request->fuse_req);
 	assert(_REQUEST_KEY_COUNT);
 
@@ -295,10 +284,7 @@ fbr_request_free(struct fbr_request *request)
 	pt_assert(pthread_setspecific(_REQUEST_KEY, NULL));
 	assert_zero_dev(fbr_request_get());
 
-	struct fbr_fs *fs = request->fuse_ctx->fs;
-	fbr_fs_ok(fs);
-
-	fbr_fs_stat_sub(&fs->stats.requests_active);
+	fbr_fs_stat_sub(&_REQUEST_POOL->stats.requests_active);
 
 	request->not_fuse = 0;
 	request->id = 0;
@@ -313,19 +299,26 @@ fbr_request_free(struct fbr_request *request)
 	_request_pool_put(request);
 }
 
-void
-fbr_request_pool_shutdown(struct fbr_fs *fs)
+struct fbr_request_stats *
+fbr_request_get_stats(void)
 {
 	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
-	fbr_fs_ok(fs);
+
+	return &_REQUEST_POOL->stats;
+}
+
+void
+fbr_request_pool_shutdown(void)
+{
+	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
 
 	int max_ms = 500;
 	int wait_ms = 0;
 	int sleep_ms = 25;
 	while (wait_ms < max_ms && !TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
-		if (fs->fuse_ctx) {
-			fbr_fuse_context_ok(fs->fuse_ctx);
-			if (fs->fuse_ctx->error) {
+		if (fbr_fuse_has_context()) {
+			struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+			if (fuse_ctx->error) {
 				break;
 			}
 		}
@@ -346,18 +339,18 @@ fbr_request_pool_shutdown(struct fbr_fs *fs)
 
 		_request_free(request);
 
-		fbr_fs_stat_sub(&fs->stats.requests_pooled);
-		fbr_fs_stat_add(&fs->stats.requests_freed);
+		fbr_fs_stat_sub(&_REQUEST_POOL->stats.requests_pooled);
+		fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_freed);
 	}
 
 	assert_zero(_REQUEST_POOL->free_size);
 	assert(TAILQ_EMPTY(&_REQUEST_POOL->free_list));
-	assert_zero_dev(fs->stats.requests_pooled);
+	assert_zero_dev(_REQUEST_POOL->stats.requests_pooled);
 
 	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
-		if (fs->fuse_ctx) {
-			fbr_fuse_context_ok(fs->fuse_ctx);
-			fs->fuse_ctx->error = 1;
+		if (fbr_fuse_has_context()) {
+			struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+			fuse_ctx->error = 1;
 		}
 	}
 

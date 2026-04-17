@@ -249,7 +249,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 	fbr_rlog(FBR_LOG_FUSE, "unmount starting");
 
 	_fuse_abort(ctx);
-	fbr_request_pool_shutdown(ctx->fs);
+	fbr_request_pool_shutdown();
 
 	assert_dev(ctx->session);
 

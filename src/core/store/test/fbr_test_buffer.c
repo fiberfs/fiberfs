@@ -127,7 +127,7 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(fs->stats.buffers == 0, "buffer mismatch");
 
 	fbr_request_free(r1);
-	fbr_request_pool_shutdown(fs);
+	fbr_request_pool_shutdown();
 	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "writer_test done");
@@ -181,7 +181,7 @@ fbr_cmd_reader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(fs->stats.buffers == 0, "buffer mismatch");
 
 	fbr_request_free(r1);
-	fbr_request_pool_shutdown(fs);
+	fbr_request_pool_shutdown();
 	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "reader_test done");

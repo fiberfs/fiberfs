@@ -40,6 +40,14 @@ struct fbr_request {
 	TAILQ_ENTRY(fbr_request)		entry;
 };
 
+struct fbr_request_stats {
+	fbr_stats_t				requests_active;
+	fbr_stats_t				requests_alloc;
+	fbr_stats_t				requests_freed;
+	fbr_stats_t				requests_recycled;
+	fbr_stats_t				requests_pooled;
+};
+
 struct fbr_fuse_callbacks {
 	void (*init)(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);
 	void (*destroy)(struct fbr_fuse_context *ctx);
@@ -79,8 +87,8 @@ struct fbr_request *fbr_request_get(void);
 fuse_req_t fbr_request_take_fuse(struct fbr_request *request);
 void fbr_request_free(struct fbr_request *request);
 
-struct fbr_fs;
-void fbr_request_pool_shutdown(struct fbr_fs *fs);
+struct fbr_request_stats *fbr_request_get_stats(void);
+void fbr_request_pool_shutdown(void);
 
 void fbr_fuse_reply_none(struct fbr_request *request);
 void fbr_fuse_reply_err(struct fbr_request *request, int error);

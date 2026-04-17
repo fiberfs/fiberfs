@@ -396,7 +396,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fs->cstore->stats.wr_roots == 1);
 	assert(fs->cstore->stats.wr_indexes == 1);
 
-	fbr_request_pool_shutdown(fs);
+	fbr_request_pool_shutdown();
 	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "index_test done");
@@ -484,7 +484,7 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs->stats.flush_conflicts, "non zero");
 	fbr_test_ERROR(fs->stats.merges, "non zero");
 
-	fbr_request_pool_shutdown(fs);
+	fbr_request_pool_shutdown();
 	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "index_large_test done");

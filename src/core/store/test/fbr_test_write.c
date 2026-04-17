@@ -407,7 +407,7 @@ _write_test(void)
 			__ERROR_FLUSH);
 	}
 
-	fbr_request_pool_shutdown(fs);
+	fbr_request_pool_shutdown();
 	fbr_fs_free(fs);
 }
 

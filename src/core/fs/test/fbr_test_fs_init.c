@@ -211,11 +211,6 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(files_inodes);
 	_FS_TEST_STAT_PRINT(files_total);
 	_FS_TEST_STAT_PRINT(file_refs);
-	_FS_TEST_STAT_PRINT(requests_active);
-	_FS_TEST_STAT_PRINT(requests_alloc);
-	_FS_TEST_STAT_PRINT(requests_freed);
-	_FS_TEST_STAT_PRINT(requests_recycled);
-	_FS_TEST_STAT_PRINT(requests_pooled);
 	_FS_TEST_STAT_PRINT(read_bytes);
 	_FS_TEST_STAT_PRINT(write_bytes);
 	_FS_TEST_STAT_PRINT(appends);
@@ -229,6 +224,14 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(chunk_slabs);
 	_FS_TEST_STAT_PRINT(file_ptr_slabs);
 	_FS_TEST_STAT_PRINT(buffers);
+
+	struct fbr_request_stats *req_stats = fbr_request_get_stats();
+	assert(req_stats);
+	fbr_test_logs("request.stats.requests_active: %lu", req_stats->requests_active);
+	fbr_test_logs("request.stats.requests_alloc: %lu", req_stats->requests_alloc);
+	fbr_test_logs("request.stats.requests_freed: %lu", req_stats->requests_freed);
+	fbr_test_logs("request.stats.requests_pooled: %lu", req_stats->requests_pooled);
+	fbr_test_logs("request.stats.requests_recycled: %lu", req_stats->requests_recycled);
 
 	fbr_test_logs("fs.config.reader.updates: %lu (%lu,%lu)",
 		fs->config.reader.updates, fs->config.reader.attempts,
@@ -270,9 +273,6 @@ _FS_TEST_STAT(files)
 _FS_TEST_STAT(files_inodes)
 _FS_TEST_STAT(files_total)
 _FS_TEST_STAT(file_refs)
-_FS_TEST_STAT(requests_alloc)
-_FS_TEST_STAT(requests_freed)
-_FS_TEST_STAT(requests_recycled)
 _FS_TEST_STAT(read_bytes)
 _FS_TEST_STAT(write_bytes)
 _FS_TEST_STAT(appends)

@@ -20,9 +20,11 @@
 
 #define _OP_THREADS	4
 
-static size_t _THREADS;
 static struct fbr_cstore *_CSTORE_C0_SHARED;
 static struct fbr_cstore *_CSTORE_C1_S3;
+static size_t _THREADS;
+static size_t _MKDIR_SUCCESS;
+static size_t _MKDIR_EXIST;
 
 static void *
 _op_thread(void *arg)
@@ -50,11 +52,15 @@ _op_thread(void *arg)
 		fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CDN);
 	}
 
+	struct fbr_request *request = fbr_test_request_mock();
+
 	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
 
 	fbr_dindex_release(fs, &root);
+
+	fbr_request_free(request);
 
 	fbr_fs_free(fs);
 
@@ -120,6 +126,9 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert(_CSTORE_C1_S3->stats.wr_roots == 1);
 
 	assert_zero(_THREADS);
+	assert_zero(_MKDIR_SUCCESS);
+	assert_zero(_MKDIR_EXIST);
+
 	pthread_t threads[_OP_THREADS];
 
 	for (size_t i = 0; i < fbr_array_len(threads); i++) {
@@ -134,6 +143,8 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	_debug_cstores();
 
 	assert(fbr_test_cstore_count(ctx) == 2 + 1 + _OP_THREADS);
+
+	fbr_request_pool_shutdown();
 
 	_CSTORE_C0_SHARED = NULL;
 	_CSTORE_C1_S3 = NULL;
