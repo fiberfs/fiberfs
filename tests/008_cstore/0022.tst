@@ -1,5 +1,7 @@
 fiber_test "cstore lots of chunks, LRU, and with a cluster"
 
+set_timeout_sec 25
+
 config_add LOG_SIZE 4000000
 #config_add LOG_ALWAYS_FLUSH true
 config_add ASYNC_WRITE false
