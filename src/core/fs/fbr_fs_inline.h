@@ -31,7 +31,8 @@ static inline struct fbr_dreader *fbr_fh_dreader(uint64_t fh)
 static inline struct fbr_fs *fbr_request_fs(struct fbr_request *request)
 {
 	fbr_request_valid(request);
-	fbr_fuse_context_ok(request->fuse_ctx);
+	assert(request->fuse_req);
+	assert_dev(request->fuse_ctx);
 	fbr_fs_ok(request->fuse_ctx->fs);
 
 	return request->fuse_ctx->fs;

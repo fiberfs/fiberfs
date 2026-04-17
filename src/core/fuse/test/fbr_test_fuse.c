@@ -149,8 +149,11 @@ fbr_test_fuse_mock(struct fbr_test_context *test_ctx)
 		assert(fuse_ctx->init);
 	} else {
 		fbr_fuse_context_ok(fuse_ctx);
+		assert(fbr_fuse_get_context() == fuse_ctx);
+		assert(fbr_test_fuse_get_ctx(test_ctx) == fuse_ctx);
 		return;
 	}
+
 	assert(fbr_fuse_get_context() == fuse_ctx);
 	assert(fbr_test_fuse_get_ctx(test_ctx) == fuse_ctx);
 	assert_zero(fuse_ctx->path);
@@ -181,13 +184,16 @@ fbr_test_fuse_mock_fs(struct fbr_test_context *test_ctx)
 
 	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 	fbr_fuse_context_ok(fuse_ctx);
+	assert_zero(fuse_ctx->fs);
 
-	fuse_ctx->fs = fbr_test_fs_alloc();
-	fbr_fs_ok(fuse_ctx->fs);
+	struct fbr_fs *fs = fbr_test_fs_alloc();
+	fbr_fs_ok(fs);
+	assert_zero(fs->fuse_ctx);
 
-	return fuse_ctx->fs;
+	return fs;
 }
 
+// TODO this needs to go into fs
 void
 fbr_test_fuse_root_alloc(struct fbr_fs *fs)
 {

@@ -38,10 +38,14 @@ _rlog_size(struct fbr_request *request)
 
 	if (request) {
 		assert_dev(request->fuse_ctx);
-		fbr_fs_ok(request->fuse_ctx->fs);
 
-		rlog_size = request->fuse_ctx->fs->config.rlog_size;
-	} else {
+		if (request->fuse_ctx->fs) {
+			fbr_fs_ok(request->fuse_ctx->fs);
+			rlog_size = request->fuse_ctx->fs->config.rlog_size;
+		}
+	}
+
+	if (!rlog_size) {
 		rlog_size = fbr_conf_get_ulong("LOG_BUFFER_SIZE", FBR_RLOG_MIN_SIZE);
 	}
 
