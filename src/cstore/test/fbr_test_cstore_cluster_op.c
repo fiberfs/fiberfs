@@ -7,6 +7,7 @@
 #define FBR_TEST_FILE
 
 #include <pthread.h>
+#include <stdlib.h>
 
 #include "fiberfs.h"
 #include "cstore/fbr_cstore_api.h"
@@ -14,6 +15,7 @@
 #include "test/fbr_test.h"
 #include "config/test/fbr_test_config_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+#include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
 #define _OP_THREADS	4
@@ -40,8 +42,13 @@ _op_thread(void *arg)
 	fbr_fs_ok(fs);
 	fbr_test_cstore_bind_new(fs);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
-	fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CDN);
 	fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C1_S3, FBR_CSTORE_ROUTE_S3);
+
+	if (!random() % 4) {
+		fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CLUSTER);
+	} else {
+		fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CDN);
+	}
 
 	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
 	fbr_directory_ok(root);
@@ -68,6 +75,8 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_random_seed();
 
 	fbr_test_conf_add("LOG_SIZE", "1000000");
 	fbr_test_conf_add("ASYNC_WRITE", "false");

@@ -129,6 +129,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	size_t offset;
 	size_t length = http->length;
 	assert(length);
+	size_t cstore_len = length;
 
 	const char *url_encoded = chttp_header_get_url(http);
 	assert(url_encoded);
@@ -236,6 +237,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 				fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 				return;
 			}
+			cstore_len = FBR_CSTORE_ROOT_LEN;
 			break;
 		default:
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url type");
@@ -259,7 +261,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	struct fbr_cstore_entry *entry = NULL;
 	if (unique) {
-		entry = fbr_cstore_io_get_loading(cstore, hash, length, &hashpath, 1);
+		entry = fbr_cstore_io_get_loading(cstore, hash, cstore_len, &hashpath, 1);
 		if (!entry) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR loading state");
 			fbr_cstore_http_respond(cstore, http, 500, "Error");

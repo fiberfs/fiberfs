@@ -467,8 +467,11 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	if (!size) {
 		assert_zero_dev(entry->bytes);
 		size = bytes;
+		if (type == FBR_CSTORE_FILE_ROOT) {
+			size = FBR_CSTORE_ROOT_LEN;
+		}
 
-		int ret = fbr_cstore_set_size(cstore, entry, bytes);
+		int ret = fbr_cstore_set_size(cstore, entry, size);
 		if (ret) {
 			fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET size");
 			fbr_cstore_set_error(entry);
@@ -481,7 +484,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	struct fbr_cstore_metadata metadata;
 	fbr_zero(&metadata);
 	metadata.etag = id;
-	metadata.size = size;
+	metadata.size = bytes;
 	metadata.offset = offset;
 	metadata.type = type;
 	metadata.gzipped = http.gzip;

@@ -276,7 +276,7 @@ fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t byt
 		entry = fbr_cstore_get(cstore, hash);
 		if (!entry) {
 			return NULL;
-		} else if (entry->bytes != bytes) {
+		} else if (bytes && entry->bytes != bytes) {
 			_cstore_release(cstore, entry, remove_on_error);
 			return NULL;
 		}
@@ -985,7 +985,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 			return EAGAIN;
 		}
 
-		entry = fbr_cstore_io_get_loading(cstore, hash, 100, &hashpath, 0);
+		entry = fbr_cstore_io_get_loading(cstore, hash, FBR_CSTORE_ROOT_SIZE, &hashpath, 0);
 		if (!entry) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR loading state");
 			fbr_writer_free(root_json);
