@@ -389,22 +389,7 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** Allocating root");
 
-	struct fbr_directory *root = fbr_directory_root_alloc(fs);
-	fbr_directory_ok(root);
-	assert(root->state == FBR_DIRSTATE_LOADING);
-	root->generation = 1;
-
-	fbr_test_logs("*** Storing root (gen %lu)", root->generation);
-
-	struct fbr_index_data index_data;
-	fbr_index_data_init(NULL, &index_data, root, NULL, NULL, NULL, FBR_FLUSH_NONE);
-	int ret = fbr_index_write(fs, &index_data);
-	fbr_test_ERROR(ret, "fbr_index_write(fs) failed");
-	fbr_index_data_free(&index_data);
-
-	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
-
-	fbr_dindex_release(fs, &root);
+	fbr_test_fs_root_alloc(fs);
 
 	fbr_test_logs("*** Starting threads...");
 
@@ -426,7 +411,7 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** Validation");
 
-	root = fbr_directory_root_alloc(fs);
+	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_LOADING);
 	fbr_index_read(fs, root);

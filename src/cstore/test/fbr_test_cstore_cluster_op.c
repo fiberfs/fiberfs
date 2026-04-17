@@ -14,6 +14,7 @@
 
 #include "test/fbr_test.h"
 #include "config/test/fbr_test_config_cmds.h"
+#include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
@@ -112,7 +113,7 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CDN);
 	fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C1_S3, FBR_CSTORE_ROUTE_S3);
 
-	fbr_test_fuse_root_alloc(fs);
+	fbr_test_fs_root_alloc(fs);
 
 	fbr_fs_free(fs);
 

@@ -143,21 +143,11 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_request_ok(request);
 	assert_zero(request->not_fuse);
 
-	struct fbr_directory *root = fbr_directory_root_alloc(ctx->fs);
+	fbr_test_fs_root_alloc(ctx->fs);
+
+	struct fbr_directory *root = fbr_dindex_take(ctx->fs, FBR_DIRNAME_ROOT, 0);
 	fbr_directory_ok(root);
-	assert(root->state == FBR_DIRSTATE_LOADING);
-
-	root->generation++;
-	assert(root->generation == 1);
-
-	struct fbr_index_data index_data;
-	fbr_index_data_init(NULL, &index_data, root, NULL, NULL, NULL, FBR_FLUSH_NONE);
-
-	int ret = fbr_index_write(ctx->fs, &index_data);
-	fbr_ASSERT(!ret, "INIT fbr_index_write(root) failed");
-
-	fbr_directory_set_state(ctx->fs, root, FBR_DIRSTATE_OK);
-	fbr_index_data_free(&index_data);
+	assert(root->state == FBR_DIRSTATE_OK);
 
 	fbr_test_cstore_wait(ctx->fs->cstore);
 
@@ -209,4 +199,28 @@ fbr_cmd_fs_test_rw_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(ret, "fs fuse mount failed: %s", mount);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", mount);
+}
+
+void
+fbr_test_fs_root_alloc(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
+
+	struct fbr_directory *root = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_LOADING);
+	assert_zero(root->generation);
+
+	root->generation = 1;
+
+	struct fbr_index_data index_data;
+	fbr_index_data_init(NULL, &index_data, root, NULL, NULL, NULL, FBR_FLUSH_NONE);
+
+	int ret = fbr_index_write(fs, &index_data);
+	fbr_ASSERT(!ret, "fbr_index_write() root failed: %d", ret);
+
+	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
+
+	fbr_index_data_free(&index_data);
+	fbr_dindex_release(fs, &root);
 }

@@ -52,7 +52,7 @@ _test_mkdir_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_test_cstore_bind_new(ctx->fs);
 	fbr_fs_set_store(ctx->fs, &_TEST_MKDIR_CALLBACKS);
 
-	fbr_test_fuse_root_alloc(ctx->fs);
+	fbr_test_fs_root_alloc(ctx->fs);
 }
 
 static void
