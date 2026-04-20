@@ -123,8 +123,6 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	fbr_fs_set_store(ctx->fs, &_TEST_FS_RW_STORE_CALLBACKS);
 
-	fbr_test_log_printer_init(test_ctx, ctx->path, "#");
-
 	//ctx->log->always_flush = 1;
 
 	//conn->max_readahead

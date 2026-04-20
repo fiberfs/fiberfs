@@ -8,6 +8,7 @@
 
 #include "fiberfs.h"
 #include "fbr_request.h"
+#include "fbr_rlog.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 
@@ -32,15 +33,20 @@ fbr_fuse_reply_none(struct fbr_request *request)
 	fuse_req_t fuse_req = _fuse_reply_init(request);
 
 	fuse_reply_none(fuse_req);
+
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_none");
 }
 
 void
-fbr_fuse_reply_err(struct fbr_request *request, int error)
+fbr_fuse_reply__err(struct fbr_request *request, int error, const char *error_str)
 {
 	fuse_req_t fuse_req = _fuse_reply_init(request);
 
 	int ret = fuse_reply_err(fuse_req, error);
 	(void)ret;
+
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_err %s (%d)", error_str, error);
+
 }
 
 void
@@ -50,6 +56,8 @@ fbr_fuse_reply_buf(struct fbr_request *request, const char *buf, size_t size)
 
 	int ret = fuse_reply_buf(fuse_req, buf, size);
 	(void)ret;
+
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_buf %zu", size);
 }
 
 void
@@ -59,6 +67,8 @@ fbr_fuse_reply_iov(struct fbr_request *request, const struct iovec *iov, int cou
 
 	int ret = fuse_reply_iov(fuse_req, iov, count);
 	(void)ret;
+
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_iov %d", count);
 }
 
 void
@@ -66,9 +76,12 @@ fbr_fuse_reply_data(struct fbr_request *request, struct fuse_bufvec *bufv,
     enum fuse_buf_copy_flags flags)
 {
 	fuse_req_t fuse_req = _fuse_reply_init(request);
+	assert(bufv);
 
 	int ret = fuse_reply_data(fuse_req, bufv, flags);
 	(void)ret;
+
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_data %zu", bufv->count);
 }
 
 void
@@ -78,6 +91,8 @@ fbr_fuse_reply_entry(struct fbr_request *request, const struct fuse_entry_param 
 
 	int ret = fuse_reply_entry(fuse_req, entry);
 	(void)ret;
+
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_entry");
 }
 
 void
@@ -87,6 +102,8 @@ fbr_fuse_reply_attr(struct fbr_request *request, const struct stat *attr, double
 
 	int ret = fuse_reply_attr(fuse_req, attr, attr_timeout);
 	(void)ret;
+
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_attr");
 }
 
 void
@@ -96,6 +113,8 @@ fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_info *fi
 
 	int ret = fuse_reply_open(fuse_req, fi);
 	(void)ret;
+
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_open");
 }
 
 void
@@ -106,6 +125,8 @@ fbr_fuse_reply_create(struct fbr_request *request, const struct fuse_entry_param
 
 	int ret = fuse_reply_create(fuse_req, e, fi);
 	(void)ret;
+
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_create");
 }
 
 void
@@ -115,4 +136,6 @@ fbr_fuse_reply_write(struct fbr_request *request, size_t count)
 
 	int ret = fuse_reply_write(fuse_req, count);
 	(void)ret;
+
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_write %zu", count);
 }
