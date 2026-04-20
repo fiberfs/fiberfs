@@ -16,10 +16,10 @@ void fbr_test_fs_stats(struct fbr_fs *fs);
 void fbr_test_fs_inodes_debug(struct fbr_fs *fs);
 void fbr_test_fs_dindex_debug(struct fbr_fs *fs);
 struct fbr_fs * fbr_test_fs_alloc(void);
+struct fbr_fs *fbr_test_fs_mock(struct fbr_test_context *test_ctx);
+void fbr_test_fs_root_alloc(struct fbr_fs *fs);
 size_t fbr_test_fs_read(struct fbr_fs *fs, struct fbr_file *file, size_t offset, char *buffer,
 	size_t buffer_len);
-
-void fbr_test_fs_root_alloc(struct fbr_fs *fs);
 
 size_t fbr_test_fs_count_chunks(struct fbr_file *file);
 struct fbr_chunk *fbr_test_fs_get_chunk(struct fbr_file *file, size_t position);

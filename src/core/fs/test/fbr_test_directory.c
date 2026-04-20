@@ -255,7 +255,7 @@ _dir_test_release(void *arg)
 static void
 _directory_parallel(void)
 {
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(NULL);
+	struct fbr_fs *fs = fbr_test_fs_mock(NULL);
 
 	fbr_test_random_seed();
 
@@ -378,7 +378,7 @@ fbr_cmd_fs_test_directory_parallel(struct fbr_test_context *ctx, struct fbr_test
 static void
 _directory_release(int ttl)
 {
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(NULL);
+	struct fbr_fs *fs = fbr_test_fs_mock(NULL);
 	fbr_fs_ok(fs);
 
 	if (ttl) {

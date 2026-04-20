@@ -202,7 +202,7 @@ _test_concurrent_fio(void)
 {
 	assert(_FIO_THREAD_ID == -1);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(NULL);
+	struct fbr_fs *fs = fbr_test_fs_mock(NULL);
 
 	fbr_fs_set_store(fs, &_TEST_CONCURRENT_CALLBACKS);
 

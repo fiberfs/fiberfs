@@ -133,7 +133,7 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_cmd_ok(cmd);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** ROOT");
 

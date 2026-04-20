@@ -24,7 +24,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_logs("*** Allocating fs, root, and file");
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs);
 	fbr_test_cstore_bind_new(fs);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
@@ -77,7 +77,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_logs("*** Allocating fs again");
 
-	fs = fbr_test_fuse_mock_fs(ctx);
+	fs = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs);
 	fbr_test_cstore_reload(ctx, fs);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);

@@ -323,7 +323,7 @@ fbr_cmd_merge_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);

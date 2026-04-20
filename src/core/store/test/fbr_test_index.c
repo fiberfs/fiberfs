@@ -152,7 +152,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs);
 
 	fbr_test_cstore_bind_new(fs);
@@ -408,7 +408,7 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs);
 
 	fbr_test_cstore_bind_new(fs);

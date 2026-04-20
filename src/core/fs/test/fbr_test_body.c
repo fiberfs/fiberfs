@@ -95,7 +95,7 @@ fbr_cmd_fs_test_body(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);
@@ -419,7 +419,7 @@ fbr_cmd_fs_test_body_fio(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 
 	fbr_fs_set_store(fs, &_TEST_BODY_STORE_CALLBACKS);
 
@@ -478,7 +478,7 @@ fbr_cmd_fs_test_body_hole(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);

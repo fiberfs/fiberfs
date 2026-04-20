@@ -15,6 +15,7 @@
 
 #include "test/fbr_test.h"
 #include "fbr_test_request_cmds.h"
+#include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 struct fbr_request *
@@ -54,7 +55,7 @@ fbr_cmd_request_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs);
 
 	static_ASSERT(__FBR_REQID_MAX < FBR_REQUEST_ID_THREAD_MIN);
@@ -172,7 +173,7 @@ fbr_cmd_request_test_thread(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 	fbr_test_ERROR_param_count(cmd, 0);
 	assert(_TEST_REQUEST_THREADS > FBR_REQUEST_POOL_MAX_SIZE);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs);
 
 	pthread_t threads[_TEST_REQUEST_THREADS];
@@ -217,7 +218,7 @@ fbr_cmd_request_test_active(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs);
 
 	struct fbr_request *r1 = fbr_test_request_mock();

@@ -212,7 +212,7 @@ _write_test(void)
 
 	fbr_test_conf_add_long("DEBUG_FS_WBUFFER_ALLOC_SIZE", _WBUFFER_SIZE);
 
-	struct fbr_fs *fs = fbr_test_fuse_mock_fs(test_ctx);
+	struct fbr_fs *fs = fbr_test_fs_mock(test_ctx);
 	fbr_fs_ok(fs);
 	fbr_test_cstore_bind_new(fs);
 	fbr_fs_set_store(fs, &_WRITE_CALLBACKS);

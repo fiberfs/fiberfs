@@ -26,12 +26,12 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	struct fbr_fs *fs_1 = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs_1 = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs_1);
 	fbr_test_cstore_bind_new(fs_1);
 	fbr_fs_set_store(fs_1, FBR_CSTORE_DEFAULT_CALLBACKS);
 
-	struct fbr_fs *fs_2 = fbr_test_fuse_mock_fs(ctx);
+	struct fbr_fs *fs_2 = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs_2);
 	fbr_test_cstore_bind(fs_2, 0);
 	fbr_fs_set_store(fs_2, FBR_CSTORE_DEFAULT_CALLBACKS);
