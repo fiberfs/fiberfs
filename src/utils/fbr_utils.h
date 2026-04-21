@@ -52,6 +52,8 @@ unsigned long fbr_ulong2octal(unsigned long value);
 	fbr_snprintf(buf, sizeof(buf), fmt, ##__VA_ARGS__)
 #define fbr_atomic_add(dest_ptr, value)					\
 	__sync_add_and_fetch(dest_ptr, value);
+#define fbr_atomic_get_add(dest_ptr, value)				\
+	__sync_fetch_and_add(dest_ptr, value);
 #define fbr_atomic_sub(dest_ptr, value)					\
 	__sync_sub_and_fetch(dest_ptr, value);
 #define fbr_compare_swap(dest_ptr, old_value, new_value)		\

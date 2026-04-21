@@ -35,6 +35,7 @@ struct fbr_test_log_printer {
 	int					silent;
 	size_t					lines;
 	char					prefix[8];
+	char					logname[128];
 	struct fbr_test_log_printer		*next;
 };
 
@@ -157,11 +158,26 @@ fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname
 	assert(logname);
 	assert(prefix);
 
-	struct fbr_test_log_printer *printer = calloc(1, sizeof(*printer));
+	struct fbr_test_log_printer *printer = test_ctx->printer;
+	while (printer) {
+		fbr_test_log_printer_ok(printer);
+
+		if (!strcmp(prefix, printer->prefix)) {
+			fbr_ABORT("Duplicate printer prefix detected: %s", prefix);
+		} else if (!strcmp(logname, printer->logname) && printer->thread_running &&
+		    !printer->thread_exited) {
+			fbr_ABORT("Duplicate printer name detected: %s", logname);
+		}
+
+		printer = printer->next;
+	}
+
+	printer = calloc(1, sizeof(*printer));
 	assert(printer);
 	printer->magic = FBR_TEST_LOG_PRINT_MAGIC;
 
 	fbr_strbcpy(printer->prefix, prefix);
+	fbr_strbcpy(printer->logname, logname);
 	fbr_test_log_printer_ok(printer);
 
 	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {

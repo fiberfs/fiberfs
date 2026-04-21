@@ -19,6 +19,7 @@
 #include "log/test/fbr_test_log_cmds.h"
 
 static pthread_mutex_t _TEST_CSTORE_LOCK = PTHREAD_MUTEX_INITIALIZER;
+static size_t _TEST_CSTORE_COUNT;
 
 static void
 _test_cstore_free(struct fbr_test_context *test_ctx)
@@ -144,7 +145,7 @@ _test_cstore_init_pos(struct fbr_test_context *ctx, const char *root)
 	assert(ctx);
 	assert(root);
 
-	size_t index = fbr_test_cstore_count(ctx);
+	size_t index = fbr_atomic_get_add(&_TEST_CSTORE_COUNT, 1);
 
 	char prefix[8];
 	fbr_bprintf(prefix, "c%zu^", index);
@@ -224,7 +225,7 @@ fbr_test_cstore_reload(struct fbr_test_context *ctx, struct fbr_fs *fs)
 
 	_test_cstore_free(ctx);
 
-	fbr_test_sleep_ms(50);
+	fbr_test_sleep_ms(100);
 	assert_zero(fbr_test_cstore_count(ctx));
 
 	fs->cstore = _test_cstore_init(ctx, root, "c00^");
