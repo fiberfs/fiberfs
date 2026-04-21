@@ -11,6 +11,8 @@
 #include "test/fbr_test_cmd_declare.h"
 
 struct fbr_test_cstore *fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t index);
+struct fbr_test_cstore *fbr_test_tcstore_match(struct fbr_test_context *ctx,
+	struct fbr_cstore *cstore);
 struct fbr_cstore *fbr_test_cstore_get(struct fbr_test_context *ctx, size_t index);
 size_t fbr_test_cstore_count(struct fbr_test_context *ctx);
 struct fbr_cstore *fbr_test_cstore_init(struct fbr_test_context *ctx);
@@ -34,6 +36,7 @@ struct fbr_test_cstore {
 
 	struct fbr_cstore		cstore;
 
+	char				prefix[8];
 	char 				stat_buf[32];
 	char				ip_str[128];
 	char				port_str[16];

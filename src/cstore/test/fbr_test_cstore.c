@@ -81,6 +81,8 @@ _test_cstore_init(struct fbr_test_context *ctx, const char *root, const char *lo
 	fbr_test_log_printer_init(ctx, root, log_prefix);
 	fbr_test_register_finish(ctx, "cstore", _test_cstore_finish);
 
+	fbr_strbcpy(tcstore->prefix, log_prefix);
+
 	pt_assert(pthread_mutex_unlock(&_TEST_CSTORE_LOCK));
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore root: %s (%s)", tcstore->cstore.root,
@@ -107,6 +109,27 @@ fbr_test_tcstore_get(struct fbr_test_context *ctx, size_t index)
 	}
 
 	return tcstore;
+}
+
+struct fbr_test_cstore *
+fbr_test_tcstore_match(struct fbr_test_context *ctx, struct fbr_cstore *cstore)
+{
+	fbr_test_context_ok(ctx);
+	fbr_cstore_ok(cstore);
+
+	struct fbr_test_cstore *tcstore = ctx->cstore;
+	while (tcstore) {
+		fbr_tcstore_ok(tcstore);
+		fbr_cstore_ok(&tcstore->cstore);
+
+		if (&tcstore->cstore == cstore) {
+			return tcstore;
+		}
+
+		tcstore = tcstore->next;
+	}
+
+	return NULL;
 }
 
 struct fbr_cstore *

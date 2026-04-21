@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
+#include "core/request/fbr_rlog.h"
 #include "cstore/fbr_cstore_api.h"
 
 #include "test/fbr_test.h"
@@ -34,16 +35,13 @@ _op_thread(void *arg)
 
 	size_t id = fbr_atomic_add(&_THREADS, 1);
 
-	while (_THREADS < _OP_THREADS) {
-		fbr_sleep_ms(0.1);
-	}
-	assert(_THREADS == _OP_THREADS);
-
 	fbr_test_logs("*** op thread %zu running", id);
 
 	struct fbr_fs *fs = fbr_test_fs_mock(NULL);
 	fbr_fs_ok(fs);
 	fbr_test_cstore_bind_new(fs);
+	fbr_cstore_ok(fs->cstore);
+	assert(fs->cstore_managed);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 	fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C1_S3, FBR_CSTORE_ROUTE_S3);
 
@@ -53,7 +51,16 @@ _op_thread(void *arg)
 		fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CDN);
 	}
 
+	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
+	struct fbr_test_cstore *tcstore = fbr_test_tcstore_match(test_ctx, fs->cstore);
 	struct fbr_request *request = fbr_test_request_mock();
+
+	while (_THREADS < _OP_THREADS) {
+		fbr_sleep_ms(0.1);
+	}
+	assert(_THREADS == _OP_THREADS);
+
+	fbr_rlog(FBR_LOG_TEST, "OP thread %zu cstore: %s", id, tcstore->prefix);
 
 	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
 	fbr_directory_ok(root);
