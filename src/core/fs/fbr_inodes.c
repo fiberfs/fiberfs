@@ -50,7 +50,7 @@ fbr_inodes_alloc(struct fbr_fs *fs)
 	assert(inodes);
 
 	inodes->magic = FBR_INODES_MAGIC;
-	inodes->next = _INODE_START - 1;
+	inodes->next = _INODE_START;
 
 	assert(_INODES_HEAD_COUNT);
 
@@ -80,7 +80,7 @@ fbr_inode_gen(struct fbr_fs *fs)
 {
 	struct fbr_inodes *inodes = _inodes_fs_get(fs);
 
-	fbr_inode_t inode_next = fbr_atomic_add(&inodes->next, 1);
+	fbr_inode_t inode_next = fbr_atomic_get_add(&inodes->next, 1);
 	assert(inode_next >= _INODE_START);
 
 	return inode_next;
