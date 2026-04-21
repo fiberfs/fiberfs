@@ -60,7 +60,8 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	assert_zero_dev(file->size);
 	assert_zero_dev(file->generation);
 
-	const struct fuse_ctx *fctx = fuse_req_ctx(request->fuse_req);
+	struct fuse_ctx fusectx;
+	const struct fuse_ctx *fctx = fbr_fuse_req_ctx(request, &fusectx);
 	assert(fctx);
 
 	file->uid = fctx->uid;

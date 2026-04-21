@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include "fiberfs.h"
 #include "fbr_request.h"
@@ -167,4 +168,25 @@ fbr_fuse_reply_write(struct fbr_request *request, size_t count)
 	}
 
 	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_write %zu", count);
+}
+
+const struct fuse_ctx *
+fbr_fuse_req_ctx(struct fbr_request *request, struct fuse_ctx *fctx)
+{
+	assert(fctx);
+
+	if (_fuse_exists(request)) {
+		fbr_request_valid(request);
+		assert(request->fuse_req);
+
+		return fuse_req_ctx(request->fuse_req);
+	}
+
+	fbr_zero(fctx);
+
+	fctx->uid = getuid();
+	fctx->gid = getgid();
+	fctx->pid = getpid();
+
+	return fctx;
 }

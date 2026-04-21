@@ -103,6 +103,7 @@ void fbr_fuse_reply_open(struct fbr_request *request, const struct fuse_file_inf
 void fbr_fuse_reply_create(struct fbr_request *request, const struct fuse_entry_param *e,
     const struct fuse_file_info *fi);
 void fbr_fuse_reply_write(struct fbr_request *request, size_t count);
+const struct fuse_ctx *fbr_fuse_req_ctx(struct fbr_request *request, struct fuse_ctx *fctx);
 
 #define fbr_request_ok(request)						\
 	fbr_magic_check(request, FBR_REQUEST_MAGIC)
