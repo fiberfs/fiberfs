@@ -110,6 +110,7 @@ static void
 _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
 	fbr_fuse_mounted(ctx);
+	assert_zero(ctx->detached);
 	fbr_fs_ok(ctx->fs);
 	assert(conn);
 

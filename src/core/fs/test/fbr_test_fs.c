@@ -22,6 +22,7 @@ fbr_cmd_fs_test_release_all(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	fbr_fuse_mounted(fuse_ctx);
+	assert_zero(fuse_ctx->detached);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
