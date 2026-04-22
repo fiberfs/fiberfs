@@ -34,6 +34,7 @@ struct fbr_fuse_context {
 	fbr_bitflag_t				init:1;
 	fbr_bitflag_t				debug:1;
 	fbr_bitflag_t				signals:1;
+	fbr_bitflag_t				detached:1;
 
 	volatile int				running;
 	volatile int				exited;
@@ -58,14 +59,23 @@ void fbr_fuse_unmount_signal(void);
 
 void fbr_fuse_LOCK(struct fbr_fuse_context *fuse_ctx, pthread_mutex_t *lock);
 
-#define fbr_fuse_context_ok(ctx)				\
+#define fbr_fuse_context_ok(ctx)					\
 	fbr_magic_check(ctx, FBR_FUSE_CTX_MAGIC)
-#define fbr_fuse_mounted(ctx)					\
-{								\
-	fbr_fuse_context_ok(ctx);				\
-	assert((ctx)->state == FBR_FUSE_MOUNTED);		\
-	assert_zero((ctx)->exited);				\
-	assert_zero((ctx)->error);				\
+#define fbr_fuse_mounted(ctx)						\
+{									\
+	fbr_fuse_context_ok(ctx);					\
+	assert((ctx)->state == FBR_FUSE_MOUNTED || (ctx)->detached);	\
+	assert((ctx)->detached || (ctx)->fs);				\
+	assert_zero((ctx)->exited);					\
+	assert_zero((ctx)->error);					\
 }
+#define fbr_fuse_detached(ctx)						\
+{									\
+	fbr_fuse_context_ok(ctx);					\
+	assert((ctx)->state == FBR_FUSE_NONE);				\
+	assert((ctx)->detached);					\
+	assert_zero((ctx)->fs);						\
+}
+
 
 #endif /* _FBR_FUSE_H_INCLUDED_ */

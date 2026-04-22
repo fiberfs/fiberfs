@@ -233,7 +233,7 @@ fbr_test_fs_mock(struct fbr_test_context *test_ctx)
 
 	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 	fbr_fuse_context_ok(fuse_ctx);
-	assert_zero(fuse_ctx->fs);
+	fbr_fuse_detached(fuse_ctx);
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 

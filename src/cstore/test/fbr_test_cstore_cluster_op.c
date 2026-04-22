@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include "fiberfs.h"
+#include "core/operations/fbr_operations.h"
 #include "core/request/fbr_rlog.h"
 #include "cstore/fbr_cstore_api.h"
 
@@ -53,18 +54,31 @@ _op_thread(void *arg)
 
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 	struct fbr_test_cstore *tcstore = fbr_test_tcstore_match(test_ctx, fs->cstore);
+
 	struct fbr_request *request = fbr_test_request_mock();
+	fbr_fuse_detached(request->fuse_ctx);
+
+	request->fs = fs;
+
+	fbr_request_valid(request);
 
 	while (_THREADS < _OP_THREADS) {
 		fbr_sleep_ms(0.1);
 	}
 	assert(_THREADS == _OP_THREADS);
 
-	fbr_rlog(FBR_LOG_TEST, "OP thread %zu cstore: %s", id, tcstore->prefix);
+	fbr_rlog(FBR_LOG_TEST, "OP_thread %zu cstore: %s", id, tcstore->prefix);
 
 	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
+
+	char dirname[32];
+	fbr_bprintf(dirname, "directory_%zu", id);
+
+	fbr_rlog(FBR_LOG_TEST, "OP_thread %zu calling mkdir()", id);
+
+	//fbr_ops_mkdir(request, root->inode, dirname, 0);
 
 	fbr_dindex_release(fs, &root);
 

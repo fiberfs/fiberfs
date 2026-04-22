@@ -105,6 +105,8 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 {
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
+	assert(ctx->init);
+	assert_zero(ctx->detached);
 
 	pt_assert(pthread_mutex_lock(&ctx->mount_lock));
 

@@ -34,6 +34,7 @@ struct fbr_request {
 	fuse_req_t				fuse_req;
 
 	struct fbr_fuse_context			*fuse_ctx;
+	struct fbr_fs				*fs;
 	struct fbr_workspace			*workspace;
 	struct fbr_rlog				*rlog;
 

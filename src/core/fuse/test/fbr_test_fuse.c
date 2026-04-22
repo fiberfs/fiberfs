@@ -143,32 +143,33 @@ fbr_test_fuse_mock(struct fbr_test_context *test_ctx)
 	fbr_test_context_ok(test_ctx);
 
 	struct fbr_fuse_context *fuse_ctx = _fuse_init(test_ctx);
-	if (fuse_ctx->init) {
-		fbr_fuse_context_ok(fuse_ctx);
-		assert(fuse_ctx->state == FBR_FUSE_NONE);
-		assert(fbr_fuse_get_context() == fuse_ctx);
-		assert(fbr_test_fuse_get_ctx(test_ctx) == fuse_ctx);
-		return;
+	if (!fuse_ctx->init) {
+		fbr_object_empty(fuse_ctx);
+
+		fbr_fuse_init(fuse_ctx);
+		fuse_ctx->detached = 1;
+
+		_FUSE_CTX = fuse_ctx;
+
+		assert_zero(fuse_ctx->path);
+		assert_zero(fuse_ctx->log);
+
+		fbr_test_random_seed();
+
+		char mock_name[100];
+		fbr_bprintf(mock_name, "/fuse/mock/%ld/%d", random(), getpid());
+		fuse_ctx->path = strdup(mock_name);
+		assert(fuse_ctx->path);
+
+		fuse_ctx->log = fbr_log_alloc(fuse_ctx->path, fbr_log_default_size());
+		fbr_log_ok(fuse_ctx->log);
+
+		fbr_test_log_printer_init(test_ctx, fuse_ctx->path, "#");
 	}
 
-	fbr_fuse_init(fuse_ctx);
-	_FUSE_CTX = fuse_ctx;
-	assert(fuse_ctx->init);
-	assert(fuse_ctx->state == FBR_FUSE_NONE);
+	fbr_fuse_context_ok(fuse_ctx);
+	fbr_fuse_detached(fuse_ctx);
+	fbr_fuse_mounted(fuse_ctx);
 	assert(fbr_fuse_get_context() == fuse_ctx);
 	assert(fbr_test_fuse_get_ctx(test_ctx) == fuse_ctx);
-	assert_zero(fuse_ctx->path);
-	assert_zero(fuse_ctx->log);
-
-	fbr_test_random_seed();
-
-	char mock_name[100];
-	fbr_bprintf(mock_name, "/fuse/mock/%ld/%d", random(), getpid());
-	fuse_ctx->path = strdup(mock_name);
-	assert(fuse_ctx->path);
-
-	fuse_ctx->log = fbr_log_alloc(fuse_ctx->path, fbr_log_default_size());
-	fbr_log_ok(fuse_ctx->log);
-
-	fbr_test_log_printer_init(test_ctx, fuse_ctx->path, "#");
 }

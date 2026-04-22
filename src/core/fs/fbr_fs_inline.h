@@ -31,11 +31,10 @@ static inline struct fbr_dreader *fbr_fh_dreader(uint64_t fh)
 static inline struct fbr_fs *fbr_request_fs(struct fbr_request *request)
 {
 	fbr_request_valid(request);
-	assert(request->fuse_req);
-	assert_dev(request->fuse_ctx);
-	fbr_fs_ok(request->fuse_ctx->fs);
+	assert(request->fuse_req || request->not_fuse);
+	fbr_fs_ok(request->fs);
 
-	return request->fuse_ctx->fs;
+	return request->fs;
 }
 
 static inline int fbr_file_is_dir(struct fbr_file *file)

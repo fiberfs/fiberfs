@@ -105,6 +105,7 @@ _request_init(struct fbr_request *request, fuse_req_t fuse_req, const char *name
 		request->fuse_ctx = fbr_fuse_get_context();
 	} else {
 		fbr_fuse_context_ok(request->fuse_ctx);
+		assert_dev(request->fuse_ctx == fbr_fuse_get_context());
 	}
 
 	fbr_workspace_ok(request->workspace);
@@ -114,7 +115,11 @@ _request_init(struct fbr_request *request, fuse_req_t fuse_req, const char *name
 	fbr_rlog_workspace_alloc(request);
 
 	if (request->fuse_ctx->fs) {
-		fbr_fs_config_load(request->fuse_ctx->fs);
+		fbr_fs_ok(request->fuse_ctx->fs);
+		assert_zero_dev(request->fs);
+		request->fs = request->fuse_ctx->fs;
+
+		fbr_fs_config_load(request->fs);
 	}
 }
 
@@ -292,6 +297,7 @@ fbr_request_free(struct fbr_request *request)
 	request->id = 0;
 	request->name = NULL;
 	request->time_start = 0;
+	request->fs = NULL;
 
 	fbr_zero(&request->thread);
 
