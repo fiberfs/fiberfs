@@ -178,6 +178,7 @@ fbr_fuse_req_ctx(struct fbr_request *request, struct fuse_ctx *fctx)
 
 	if (_fuse_exists(request)) {
 		fbr_request_valid(request);
+		assert_zero(request->fuse_ctx->detached);
 		assert(request->fuse_req);
 
 		return fuse_req_ctx(request->fuse_req);
