@@ -887,6 +887,7 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 		existing, root_json->is_gzip, _s3_writer_data_cb, root_json, route);
 	int error = fbr_cstore_s3_send_finish(cstore, NULL, &http, 0);
 	if (error) {
+		fbr_writer_free(root_json);
 		return error;
 	}
 
