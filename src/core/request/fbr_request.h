@@ -29,6 +29,7 @@ struct fbr_request {
 	unsigned long				id;
 	const char				*name;
 	double					time_start;
+	int					error;
 	pthread_t				thread;
 
 	fuse_req_t				fuse_req;

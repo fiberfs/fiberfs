@@ -21,13 +21,14 @@
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
-#define _OP_THREADS	1
+#define _OP_THREADS	4
 
 static struct fbr_cstore *_CSTORE_C0_SHARED;
 static struct fbr_cstore *_CSTORE_C1_S3;
 static size_t _THREADS;
 static size_t _MKDIR_SUCCESS;
 static size_t _MKDIR_EXIST;
+static size_t _CONFLICTS;
 
 static void *
 _op_thread(void *arg)
@@ -80,9 +81,13 @@ _op_thread(void *arg)
 
 	fbr_ops_mkdir(request, root->inode, dirname, 0);
 
+	fbr_rlog(FBR_LOG_TEST, "OP_thread %zu mkdir() ret: %d", id, request->error);
+
 	fbr_dindex_release(fs, &root);
 
 	fbr_request_free(request);
+
+	fbr_atomic_add(&_CONFLICTS, fs->stats.flush_conflicts);
 
 	fbr_fs_free(fs);
 
@@ -152,6 +157,8 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert_zero(_MKDIR_SUCCESS);
 	assert_zero(_MKDIR_EXIST);
 
+	fbr_test_logs("*** starting %d threads", _OP_THREADS);
+
 	pthread_t threads[_OP_THREADS];
 
 	for (size_t i = 0; i < fbr_array_len(threads); i++) {
@@ -165,10 +172,15 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	_debug_cstores();
 
+	fbr_test_logs("FLUSH_CONFLICTS: %zu", _CONFLICTS);
+
 	assert(fbr_test_cstore_count(ctx) == 2 + 1 + _OP_THREADS);
 	assert(_CSTORE_C1_S3->entries == 2 + (_OP_THREADS * 2));
 	assert(_CSTORE_C1_S3->stats.wr_indexes == 1 + _OP_THREADS);
 	assert(_CSTORE_C1_S3->stats.wr_roots == 1 + _OP_THREADS);
+
+	assert_zero(_CSTORE_C1_S3->stats.http_500);
+	assert_zero(_CSTORE_C0_SHARED->stats.http_500);
 
 	fbr_request_pool_shutdown();
 

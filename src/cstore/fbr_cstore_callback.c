@@ -42,6 +42,16 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	fbr_cstore_io_wbuffer_write(fs, file, wbuffer);
 }
 
+static int
+_cstore_write_conflict(int error_code)
+{
+	if (error_code == 409 || error_code == 412) {
+		return 1;
+	}
+
+	return 0;
+}
+
 int
 fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
     struct fbr_writer *writer, struct fbr_directory *previous)
@@ -60,10 +70,6 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	int fail = fbr_cstore_io_index_write(fs, directory, writer);
 	if (fail) {
-		if (fail >= 400 && fail <= 499) {
-			// TODO we potentially have a conflict index, delete it?
-		}
-
 		return EIO;
 	}
 
@@ -90,7 +96,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		fail = fbr_cstore_s3_root_put(cstore, root_json, &root_path, directory->version,
 			previous_version, FBR_CSTORE_ROUTE_CLUSTER);
 
-		if (fail >= 400 && fail <= 499) {
+		if (_cstore_write_conflict(fail)) {
 			fail = EAGAIN;
 		} else if (fail) {
 			fail = EIO;

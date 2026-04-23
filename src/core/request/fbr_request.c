@@ -100,6 +100,7 @@ _request_init(struct fbr_request *request, fuse_req_t fuse_req, const char *name
 	request->time_start = fbr_get_time();
 	request->id = fbr_request_id_gen();
 	request->thread = pthread_self();
+	request->error = 0;
 
 	if (!request->fuse_ctx) {
 		request->fuse_ctx = fbr_fuse_get_context();
