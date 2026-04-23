@@ -179,6 +179,7 @@ fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_i
 	struct fbr_directory *directory = fbr_directory_alloc(fs, dirname, inode);
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
+		// TODO return a ref to directory->previous if reading fails or is duplicate?
 		fbr_index_read(fs, directory, 0);
 	}
 

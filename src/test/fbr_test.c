@@ -272,14 +272,13 @@ main(int argc, char **argv)
 }
 
 void
-fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
-    fbr_test_finish_f *func)
+fbr_test_register_finish(struct fbr_test_context *ctx, const char *name, fbr_test_finish_f *func)
 {
 	fbr_test_context_ok(ctx);
+	assert(name && *name);
+	assert(func);
 
 	struct fbr_test *test = fbr_test_convert(ctx);
-	assert(name && *name);
-
 	struct fbr_test_finish *finish;
 
 	TAILQ_FOREACH(finish, &test->finish_list, entry) {

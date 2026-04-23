@@ -6,6 +6,7 @@
 
 #define FBR_TEST_FILE
 
+#include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
 
@@ -28,6 +29,7 @@ static struct fbr_cstore *_CSTORE_C1_S3;
 static size_t _THREADS;
 static size_t _MKDIR_SUCCESS;
 static size_t _MKDIR_EXIST;
+static size_t _MKDIR_ERROR;
 static size_t _CONFLICTS;
 
 static void *
@@ -56,36 +58,55 @@ _op_thread(void *arg)
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
 	struct fbr_test_cstore *tcstore = fbr_test_tcstore_match(test_ctx, fs->cstore);
 
-	struct fbr_request *request = fbr_test_request_mock();
-	fbr_fuse_detached(request->fuse_ctx);
-
-	request->fs = fs;
-
-	fbr_request_valid(request);
-
 	while (_THREADS < _OP_THREADS) {
 		fbr_sleep_ms(0.1);
 	}
 	assert(_THREADS == _OP_THREADS);
 
-	fbr_rlog(FBR_LOG_TEST, "OP_thread %zu cstore: %s", id, tcstore->prefix);
+	while (_MKDIR_SUCCESS < _OP_THREADS) {
+		struct fbr_request *request = fbr_test_request_mock();
+		fbr_fuse_detached(request->fuse_ctx);
+		request->fs = fs;
+		fbr_request_valid(request);
+		assert_zero(request->error);
 
-	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
-	fbr_directory_ok(root);
-	assert(root->state == FBR_DIRSTATE_OK);
+		fbr_rlog(FBR_LOG_TEST, "OP_thread %zu cstore: %s", id, tcstore->prefix);
 
-	char dirname[32];
-	fbr_bprintf(dirname, "directory_%zu", id);
+		struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
+		if (!root) {
+			root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+			if (!root) {
+				continue;
+			}
+		}
+		fbr_directory_ok(root);
+		assert(root->state == FBR_DIRSTATE_OK);
 
-	fbr_rlog(FBR_LOG_TEST, "OP_thread %zu calling mkdir()", id);
+		//long dir_id = fbr_test_gen_random(1, _OP_THREADS);
+		long dir_id = id;
+		char dirname[32];
+		fbr_bprintf(dirname, "directory_%zu", dir_id);
 
-	fbr_ops_mkdir(request, root->inode, dirname, 0);
+		fbr_rlog(FBR_LOG_TEST, "OP_thread %zu calling mkdir(%s)", id, dirname);
 
-	fbr_rlog(FBR_LOG_TEST, "OP_thread %zu mkdir() ret: %d", id, request->error);
+		fbr_ops_mkdir(request, root->inode, dirname, 0);
 
-	fbr_dindex_release(fs, &root);
+		fbr_rlog(FBR_LOG_TEST, "OP_thread %zu mkdir() ret: %d", id, request->error);
 
-	fbr_request_free(request);
+		if (request->error == EEXIST) {
+			fbr_atomic_add(&_MKDIR_EXIST, 1);
+		} else if (request->error) {
+			fbr_atomic_add(&_MKDIR_ERROR, 1);
+		} else {
+			fbr_atomic_add(&_MKDIR_SUCCESS, 1);
+		}
+
+		fbr_dindex_release(fs, &root);
+
+		fbr_request_free(request);
+
+		break;
+	}
 
 	fbr_atomic_add(&_CONFLICTS, fs->stats.flush_conflicts);
 
@@ -120,6 +141,8 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_conf_add("ALLOW_CDN_PUT", "true");
 	fbr_test_conf_add("ALLOW_CDN_DELETE", "true");
 
+	fbr_test_fuse_mock(ctx);
+
 	_CSTORE_C0_SHARED = fbr_test_cstore_init(ctx);
 	fbr_cstore_ok(_CSTORE_C0_SHARED);
 
@@ -153,9 +176,11 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert(_CSTORE_C1_S3->stats.wr_indexes == 1);
 	assert(_CSTORE_C1_S3->stats.wr_roots == 1);
 
+	assert(_OP_THREADS > 0);
 	assert_zero(_THREADS);
 	assert_zero(_MKDIR_SUCCESS);
 	assert_zero(_MKDIR_EXIST);
+	assert_zero(_MKDIR_ERROR);
 
 	fbr_test_logs("*** starting %d threads", _OP_THREADS);
 
@@ -173,11 +198,16 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	_debug_cstores();
 
 	fbr_test_logs("FLUSH_CONFLICTS: %zu", _CONFLICTS);
+	fbr_test_logs("MKDIR SUCCESS: %zu", _MKDIR_SUCCESS);
+	fbr_test_logs("MKDIR EXIST: %zu", _MKDIR_EXIST);
+	fbr_test_logs("MKDIR ERROR: %zu", _MKDIR_ERROR);
 
 	assert(fbr_test_cstore_count(ctx) == 2 + 1 + _OP_THREADS);
 	assert(_CSTORE_C1_S3->entries == 2 + (_OP_THREADS * 2));
 	assert(_CSTORE_C1_S3->stats.wr_indexes == 1 + _OP_THREADS);
 	assert(_CSTORE_C1_S3->stats.wr_roots == 1 + _OP_THREADS);
+
+	assert(_MKDIR_SUCCESS == _OP_THREADS);
 
 	assert_zero(_CSTORE_C1_S3->stats.http_500);
 	assert_zero(_CSTORE_C0_SHARED->stats.http_500);
