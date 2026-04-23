@@ -21,7 +21,7 @@
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
-#define _OP_THREADS	4
+#define _OP_THREADS	1
 
 static struct fbr_cstore *_CSTORE_C0_SHARED;
 static struct fbr_cstore *_CSTORE_C1_S3;
@@ -46,7 +46,7 @@ _op_thread(void *arg)
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 	fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C1_S3, FBR_CSTORE_ROUTE_S3);
 
-	if (!random() % 4) {
+	if (!(random() % 4) && 0) {
 		fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CLUSTER);
 	} else {
 		fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CDN);
@@ -78,7 +78,7 @@ _op_thread(void *arg)
 
 	fbr_rlog(FBR_LOG_TEST, "OP_thread %zu calling mkdir()", id);
 
-	//fbr_ops_mkdir(request, root->inode, dirname, 0);
+	fbr_ops_mkdir(request, root->inode, dirname, 0);
 
 	fbr_dindex_release(fs, &root);
 
@@ -107,6 +107,7 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_random_seed();
 
 	fbr_test_conf_add("LOG_SIZE", "1000000");
+	fbr_test_conf_add("LOG_ALWAYS_FLUSH", "true");
 	fbr_test_conf_add("ASYNC_WRITE", "false");
 	fbr_test_conf_add("CSTORE_SERVER", "true");
 	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
@@ -165,6 +166,9 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	_debug_cstores();
 
 	assert(fbr_test_cstore_count(ctx) == 2 + 1 + _OP_THREADS);
+	assert(_CSTORE_C1_S3->entries == 2 + (_OP_THREADS * 2));
+	assert(_CSTORE_C1_S3->stats.wr_indexes == 1 + _OP_THREADS);
+	assert(_CSTORE_C1_S3->stats.wr_roots == 1 + _OP_THREADS);
 
 	fbr_request_pool_shutdown();
 

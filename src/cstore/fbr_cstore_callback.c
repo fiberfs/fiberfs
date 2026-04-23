@@ -60,7 +60,11 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	int fail = fbr_cstore_io_index_write(fs, directory, writer);
 	if (fail) {
-		return fail;
+		if (fail >= 400 && fail <= 499) {
+			// TODO we potentially have a conflict index, delete it?
+		}
+
+		return EIO;
 	}
 
 	// TODO we can delay wbuffer upload completion to here
@@ -85,6 +89,12 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	if (fbr_cstore_backend_enabled(cstore)) {
 		fail = fbr_cstore_s3_root_put(cstore, root_json, &root_path, directory->version,
 			previous_version, FBR_CSTORE_ROUTE_CLUSTER);
+
+		if (fail >= 400 && fail <= 499) {
+			fail = EAGAIN;
+		} else if (fail) {
+			fail = EIO;
+		}
 	} else {
 		fail = fbr_cstore_io_root_write(cstore, root_json, &root_path, directory->version,
 			previous_version, 1, 0);

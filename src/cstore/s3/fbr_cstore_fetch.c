@@ -357,7 +357,8 @@ fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *
 		http->error, chttp_error_msg(http));
 
 	if (http->error || http->status != 200) {
-		error = 1;
+		error = http->status ? http->status : 1;
+		assert_dev(error > 0);
 	} else {
 		error = 0;
 	}
@@ -582,8 +583,13 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
 
 	if (http.error || http.status != 200) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp: %d %d", http.error, http.status);
+
+		int error = http.status ? http.status : 1;
+		assert_dev(error > 0);
+
 		chttp_context_free(&http);
-		return 1;
+
+		return error;
 	}
 
 	chttp_context_free(&http);

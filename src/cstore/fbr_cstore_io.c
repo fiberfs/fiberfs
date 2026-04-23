@@ -239,6 +239,9 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 				case FBR_CSTORE_FILE_INDEX:
 					fbr_fs_stat_sub(&cstore->stats.wr_indexes);
 					break;
+				case FBR_CSTORE_FILE_ROOT:
+					fbr_fs_stat_sub(&cstore->stats.wr_roots);
+					break;
 				default:
 					fbr_ABORT("Bad type: %s", fbr_cstore_type_name(type));
 			}
@@ -1218,7 +1221,10 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	fbr_fs_stat_sub(&cstore->stats.wr_roots);
 
-	// TODO send this to S3...
+	struct fbr_cstore_url url;
+	fbr_cstore_s3_root_url(cstore, &dirpath, &url);
+
+	fbr_cstore_io_delete_url(cstore, &url, directory->version, FBR_CSTORE_FILE_ROOT);
 
 	return 0;
 }

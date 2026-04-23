@@ -101,7 +101,8 @@ _cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const 
 	int error = fbr_cstore_s3_root_put(cstore, root_json, &root_path, etag_id, etag_match,
 		FBR_CSTORE_ROUTE_CDN);
 	if (error) {
-		fbr_cstore_http_respond(cstore, http, 500, "Error");
+		assert_dev(error != 200);
+		fbr_cstore_http_respond(cstore, http, error, "Error");
 		return;
 	}
 
@@ -303,7 +304,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 				etag_match, metadata.etag);
 			fbr_cstore_set_ok(entry);
 			fbr_cstore_release(cstore, &entry);
-			fbr_cstore_http_respond(cstore, http, 500, "Error");
+			fbr_cstore_http_respond(cstore, http, 412, "Mismatch");
 			return;
 		}
 
@@ -389,11 +390,11 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		if (http_backend.error || http_backend.status != 200) {
 			fbr_cstore_release(cstore, &entry);
 			chttp_context_free(&http_backend);
-			fbr_cstore_http_respond(cstore, http, 500, "Error");
+			fbr_cstore_http_respond(cstore, http, http_backend.status, "Error");
 			return;
 		}
 
-		// TODO return the http_backend response
+		// TODO return the http_backend response better
 
 		chttp_context_free(&http_backend);
 	}
@@ -762,7 +763,8 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		int error = fbr_cstore_s3_send_delete(cstore, &url_enc, etag_match,
 			FBR_CSTORE_ROUTE_CDN);
 		if (error) {
-			fbr_cstore_http_respond(cstore, http, 500, "Error");
+			assert_dev(error != 200);
+			fbr_cstore_http_respond(cstore, http, error, "Error");
 		} else {
 			fbr_cstore_http_respond(cstore, http, 200, "OK");
 		}
@@ -812,7 +814,8 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 	}
 
 	if (error) {
-		fbr_cstore_http_respond(cstore, http, 500, "Error");
+		assert_dev(error != 200);
+		fbr_cstore_http_respond(cstore, http, error, "Error");
 	} else {
 		fbr_cstore_http_respond(cstore, http, 200, "OK");
 	}
@@ -825,8 +828,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 			fbr_fs_stat_sub(&cstore->stats.wr_indexes);
 			break;
 		case FBR_CSTORE_FILE_ROOT:
-			// TODO this hasn't been wired in yet... see fbr_cstore_io_root_remove()
-			//fbr_fs_stat_sub(&cstore->stats.wr_roots);
+			fbr_fs_stat_sub(&cstore->stats.wr_roots);
 			break;
 		default:
 			break;

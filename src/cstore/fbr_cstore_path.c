@@ -414,6 +414,20 @@ fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *directo
 }
 
 void
+fbr_cstore_s3_root_url(struct fbr_cstore *cstore, struct fbr_path_name *dirpath,
+    struct fbr_cstore_url *url)
+{
+	fbr_cstore_ok(cstore);
+	assert(dirpath);
+	assert(url);
+
+	struct fbr_cstore_path path;
+	fbr_cstore_path_root(dirpath, &path);
+
+	fbr_cstore_s3_url(cstore, &path, url);
+}
+
+void
 fbr_cstore_s3_path_init(struct fbr_cstore_path *dest, const char *path, size_t path_len)
 {
 	assert(dest);

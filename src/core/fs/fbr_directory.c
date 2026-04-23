@@ -751,6 +751,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			fbr_directory_add_file(fs, directory, file);
 		}
 
+		// TODO we need to bypass all caches here...
 		fbr_index_read(fs, directory);
 		if (directory->state == FBR_DIRSTATE_ERROR) {
 			fbr_dindex_release(fs, &directory);

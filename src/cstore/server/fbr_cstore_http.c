@@ -21,8 +21,11 @@ fbr_cstore_http_respond(struct fbr_cstore *cstore, struct chttp_context *http, i
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
 	assert(http->version == CHTTP_H_VERSION_1_1);
-	assert(status >= 100 && status <= 999);
 	assert(reason);
+
+	if (status < 100 || status > 999) {
+		status = 500;
+	}
 
 	const char *close = "";
 	if (status >= 400) {

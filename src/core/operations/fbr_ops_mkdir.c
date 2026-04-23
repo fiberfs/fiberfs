@@ -79,6 +79,7 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	// Create a new root on the store
 	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, file->inode);
 	fbr_directory_ok(new_directory);
+	// TODO what if we have a directory->previous?
 	if (new_directory->state != FBR_DIRSTATE_LOADING) {
 		fbr_fuse_reply_err(request, EEXIST);
 
