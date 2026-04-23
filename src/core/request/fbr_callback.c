@@ -31,6 +31,7 @@ _fuse_reply_init(struct fbr_request *request)
 
 	fuse_req_t fuse_req = fbr_request_take_fuse(request);
 	fbr_request_valid(request);
+	assert_zero(request->fuse_ctx->detached);
 	assert(fuse_req);
 	assert_zero_dev(request->fuse_req);
 

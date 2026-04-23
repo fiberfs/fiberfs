@@ -23,6 +23,7 @@ _fuse_setup(fuse_req_t fuse_req, const char *name)
 
 	request = fbr_request_alloc(fuse_req, name);
 	fbr_request_valid(request);
+	assert_zero(request->fuse_ctx->detached);
 	assert_dev(request->fuse_ctx->fuse_callbacks);
 	assert_dev(request->fuse_req);
 	assert_zero_dev(request->not_fuse);
@@ -62,6 +63,7 @@ _fuse_ops_init(void *userdata, struct fuse_conn_info *conn)
 	ctx = (struct fbr_fuse_context*)userdata;
 
 	fbr_fuse_mounted(ctx);
+	assert_zero(ctx->detached);
 	assert(ctx->fuse_callbacks);
 	assert(conn);
 
