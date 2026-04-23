@@ -179,7 +179,7 @@ fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_i
 	struct fbr_directory *directory = fbr_directory_alloc(fs, dirname, inode);
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
-		fbr_index_read(fs, directory);
+		fbr_index_read(fs, directory, 0);
 	}
 
 	if (directory->state == FBR_DIRSTATE_ERROR) {
@@ -596,7 +596,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 					add_file_init = 0;
 				}
 
-				fbr_index_read(fs, directory);
+				fbr_index_read(fs, directory, 0);
 
 				if (directory->state == FBR_DIRSTATE_ERROR) {
 					fbr_dindex_release(fs, &directory);
@@ -751,8 +751,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			fbr_directory_add_file(fs, directory, file);
 		}
 
-		// TODO we need to bypass all caches here...
-		fbr_index_read(fs, directory);
+		fbr_index_read(fs, directory, attempts);
 		if (directory->state == FBR_DIRSTATE_ERROR) {
 			fbr_dindex_release(fs, &directory);
 			ret = EIO;

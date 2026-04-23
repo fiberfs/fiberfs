@@ -909,7 +909,7 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 
 	enum fbr_cstore_route route = FBR_CSTORE_ROUTE_CLUSTER;
 	if (attempts) {
-		route = FBR_CSTORE_ROUTE_CDN;
+		route = FBR_CSTORE_ROUTE_S3;
 	}
 
 	struct chttp_context http;

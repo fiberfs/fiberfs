@@ -73,7 +73,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(dir_fs2->previous);
 	assert(dir_fs2->state == FBR_DIRSTATE_LOADING);
 
-	fbr_index_read(fs_2, dir_fs2);
+	fbr_index_read(fs_2, dir_fs2, 0);
 	assert(dir_fs2->state == FBR_DIRSTATE_OK);
 	assert(dir_fs2->generation == 1);
 	assert(dir_fs2->file_count == 1);
@@ -205,7 +205,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs1->previous->generation == 5);
 	assert(dir_fs1->state == FBR_DIRSTATE_LOADING);
 
-	fbr_index_read(fs_1, dir_fs1);
+	fbr_index_read(fs_1, dir_fs1, 0);
 	assert(dir_fs1->state == FBR_DIRSTATE_ERROR);
 	fbr_dindex_release(fs_1, &dir_fs1);
 
@@ -246,7 +246,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs2->previous->generation == 4);
 	assert(dir_fs2->state == FBR_DIRSTATE_LOADING);
 
-	fbr_index_read(fs_2, dir_fs2);
+	fbr_index_read(fs_2, dir_fs2, 0);
 	assert(dir_fs2->state == FBR_DIRSTATE_OK);
 	assert(dir_fs2->generation == 5);
 	assert(dir_fs2->file_count == 2);

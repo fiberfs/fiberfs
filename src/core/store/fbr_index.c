@@ -520,7 +520,7 @@ fbr_root_json_parse(const char *json_buf, size_t json_buf_len)
 }
 
 void
-fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
+fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, unsigned int attempts)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -531,7 +531,6 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
-	unsigned int attempts = 0;
 	unsigned int version_matches = 0;
 	fbr_id_t last_version = 0;
 	double time_start = fbr_get_time();

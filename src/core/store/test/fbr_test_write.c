@@ -332,7 +332,7 @@ _write_test(void)
 
 	fbr_test_index_request_start();
 
-	fbr_index_read(fs, directory);
+	fbr_index_read(fs, directory, 0);
 	assert(directory->state == FBR_DIRSTATE_OK);
 	assert(directory->file_count == 1);
 
