@@ -37,6 +37,7 @@ static void
 _test_err_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
 	fbr_fuse_mounted(ctx);
+	assert_zero(ctx->detached);
 	assert(conn);
 
 	struct fbr_fs *fs = ctx->fs;

@@ -65,7 +65,7 @@ void fbr_fuse_LOCK(struct fbr_fuse_context *fuse_ctx, pthread_mutex_t *lock);
 {									\
 	fbr_fuse_context_ok(ctx);					\
 	assert((ctx)->state == FBR_FUSE_MOUNTED || (ctx)->detached);	\
-	assert((ctx)->detached || (ctx)->fs);				\
+	assert((ctx)->fs || (ctx)->detached);				\
 	assert_zero((ctx)->exited);					\
 	assert_zero((ctx)->error);					\
 }

@@ -263,6 +263,7 @@ static void
 _test_fs_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
 	fbr_fuse_mounted(ctx);
+	assert_zero(ctx->detached);
 	fbr_fs_ok(ctx->fs);
 	assert(conn);
 
@@ -345,6 +346,8 @@ fbr_cmd_fs_test_fuse_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", cmd->params[0].value);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_fuse_mounted(fuse_ctx);
+	assert_zero(fuse_ctx->detached);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 }
@@ -357,6 +360,7 @@ fbr_cmd_fs_test_fuse_init_root(struct fbr_test_context *ctx, struct fbr_test_cmd
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	fbr_fuse_mounted(fuse_ctx);
+	assert_zero(fuse_ctx->detached);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 

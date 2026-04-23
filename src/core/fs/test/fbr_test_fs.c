@@ -45,6 +45,7 @@ fbr_cmd_fs_test_lru_purge(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	fbr_fuse_mounted(fuse_ctx);
+	assert_zero(fuse_ctx->detached);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
@@ -108,6 +109,7 @@ fbr_cmd_fs_test_stats(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	fbr_fuse_mounted(fuse_ctx);
+	assert_zero(fuse_ctx->detached);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
@@ -205,6 +207,7 @@ fbr_cmd_fs_test_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	fbr_fuse_mounted(fuse_ctx);
+	assert_zero(fuse_ctx->detached);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 

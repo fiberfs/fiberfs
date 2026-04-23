@@ -20,6 +20,7 @@ static void
 _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
 	fbr_fuse_mounted(ctx);
+	assert_zero(ctx->detached);
 	assert(conn);
 
 	struct fbr_fs *fs = ctx->fs;
@@ -78,6 +79,8 @@ fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_ERROR(ret, "fs init fuse mount failed: %s", cmd->params[0].value);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_fuse_mounted(fuse_ctx);
+	assert_zero(fuse_ctx->detached);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
@@ -138,6 +141,7 @@ fbr_cmd_fs_test_assert_root(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	fbr_fuse_mounted(fuse_ctx);
+	assert_zero(fuse_ctx->detached);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 

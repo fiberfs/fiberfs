@@ -13,6 +13,7 @@
 #include "fiberfs.h"
 #include "fbr_fuse.h"
 #include "fbr_fuse_lowlevel.h"
+#include "config/fbr_config.h"
 #include "core/fs/fbr_fs.h"
 #include "log/fbr_log.h"
 
@@ -87,7 +88,7 @@ _fuse_mount_thread(void *arg)
 
 	struct fuse_loop_config config;
 	fbr_zero(&config);
-	config.max_idle_threads = 16;
+	config.max_idle_threads = fbr_conf_get_ulong("FUSE_MAX_IDLE_THREADS", 16);
 
 	ctx->exit_value = fuse_session_loop_mt(ctx->session, &config);
 
