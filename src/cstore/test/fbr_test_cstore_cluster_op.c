@@ -165,8 +165,6 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_fs_root_alloc(fs);
 
-	fbr_fs_free(fs);
-
 	_debug_cstores();
 
 	assert(_CSTORE_C0_SHARED->entries == 2);
@@ -212,6 +210,7 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert_zero(_CSTORE_C1_S3->stats.http_500);
 	assert_zero(_CSTORE_C0_SHARED->stats.http_500);
 
+	fbr_fs_free(fs);
 	fbr_request_pool_shutdown();
 
 	_CSTORE_C0_SHARED = NULL;
