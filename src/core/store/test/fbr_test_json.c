@@ -219,17 +219,68 @@ fbr_cmd_index_print_json(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_root_alloc(fs);
 
 	fbr_test_cstore_wait(fs->cstore);
-
 	assert(fs->cstore->entries == 2);
-
-	_index_print_root(fs);
 
 	struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
 	fbr_directory_ok(root);
 
+	_index_print_root(fs);
 	_index_print_index(fs, root);
 
 	fbr_dindex_release(fs, &root);
+
+	fbr_test_logs("* Adding files to root");
+
+	root = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_LOADING);
+	fbr_directory_ok(root->previous);
+	assert(root->previous->generation == 1);
+
+	root->generation = root->previous->generation + 1;
+
+	struct fbr_path_name filename;
+	fbr_path_name_init(&filename, "file_1");
+	struct fbr_file *file = fbr_file_alloc(fs, root, &filename);
+	file->generation = 1;
+	file->size = 2048;
+	file->mode = S_IFREG | 0444;
+	file->uid = 1000;
+	file->gid = 1000;
+	fbr_body_chunk_add(fs, file, fbr_id_gen(), 0 , 1024);
+	fbr_body_chunk_add(fs, file, fbr_id_gen(), 1024 , 1024);
+	file->state = FBR_FILE_OK;
+
+	fbr_path_name_init(&filename, "file_XYZ");
+	file = fbr_file_alloc(fs, root, &filename);
+	file->generation = 1;
+	file->size = 200;
+	file->mode = S_IFREG | 0444;
+	file->uid = 1000;
+	file->gid = 1000;
+	fbr_body_chunk_add(fs, file, fbr_id_gen(), 0 , 150);
+	fbr_body_chunk_add(fs, file, fbr_id_gen(), 150 , 50);
+	file->state = FBR_FILE_OK;
+
+	fbr_test_logs("* Writing root index");
+
+	struct fbr_index_data index_data;
+	fbr_index_data_init(NULL, &index_data, root, root->previous, NULL, NULL, FBR_FLUSH_NONE);
+	int ret = fbr_index_write(fs, &index_data);
+	fbr_test_ERROR(ret, "fbr_index_write() failed");
+	fbr_index_data_free(&index_data);
+
+	assert(root->state == FBR_DIRSTATE_LOADING);
+	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
+
+	fbr_test_cstore_wait(fs->cstore);
+	assert(fs->cstore->entries == 2);
+
+	_index_print_root(fs);
+	_index_print_index(fs, root);
+
+	fbr_dindex_release(fs, &root);
+
 	fbr_fs_free(fs);
 
 	fbr_test_logs("index_print_json done");
