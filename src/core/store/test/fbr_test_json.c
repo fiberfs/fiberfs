@@ -123,12 +123,37 @@ _index_print_file_gz(const char *path, size_t gz_bytes)
 }
 
 static void
+_index_metadata(struct fbr_cstore_hashpath *hashpath, struct fbr_cstore_metadata *metadata)
+{
+	assert(hashpath);
+	assert(metadata);
+
+	int ret = fbr_cstore_metadata_read(hashpath, metadata);
+	assert_zero(ret);
+	assert(ret == metadata->error);
+
+	char etag[FBR_ID_STRING_MAX];
+	fbr_id_string(metadata->etag, etag, sizeof(etag));
+
+	fbr_test_logs(" *** hashpath: %s", hashpath->value);
+	fbr_test_logs(" *** metadata.type: %s", fbr_cstore_type_name(metadata->type));
+	fbr_test_logs(" *** metadata.path: '%s'", metadata->path);
+	fbr_test_logs(" *** metadata.etag: '%s' (%lu)", etag, metadata->etag);
+	fbr_test_logs(" *** metadata.size: %lu", metadata->size);
+	fbr_test_logs(" *** metadata.offset: %lu", metadata->offset);
+	fbr_test_logs(" *** metadata.timestamp: %lf", metadata->timestamp);
+	fbr_test_logs(" *** metadata.gzip: %d", metadata->gzipped);
+}
+
+static void
 _index_print_root(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
 
 	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
+
+	fbr_test_logs(" * ROOT");
 
 	fbr_hash_t hash = fbr_cstore_hash_root(cstore, FBR_DIRNAME_ROOT);
 	_index_hash_ok(cstore, hash);
@@ -137,18 +162,7 @@ _index_print_root(struct fbr_fs *fs)
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
 
 	struct fbr_cstore_metadata metadata;
-	fbr_cstore_metadata_read(&hashpath, &metadata);
-	assert_zero(metadata.error);
-
-	char id_str[FBR_ID_STRING_MAX];
-	fbr_id_string(metadata.etag, id_str, sizeof(id_str));
-
-	fbr_test_logs(" * ROOT");
-	fbr_test_logs(" *** metadata.type: %s", fbr_cstore_type_name(metadata.type));
-	fbr_test_logs(" *** metadata.path: '%s'", metadata.path);
-	fbr_test_logs(" *** metadata.etag: '%s' (%lu)", id_str, metadata.etag);
-	fbr_test_logs(" *** metadata.size: %lu", metadata.size);
-
+	_index_metadata(&hashpath, &metadata);
 	assert(metadata.type == FBR_CSTORE_FILE_ROOT);
 	assert_zero(metadata.gzipped);
 
@@ -167,6 +181,8 @@ _index_print_index(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
 
+	fbr_test_logs(" * INDEX");
+
 	fbr_hash_t hash = fbr_cstore_hash_index(cstore, directory);
 	_index_hash_ok(cstore, hash);
 
@@ -174,19 +190,7 @@ _index_print_index(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
 
 	struct fbr_cstore_metadata metadata;
-	fbr_cstore_metadata_read(&hashpath, &metadata);
-	assert_zero(metadata.error);
-
-	char id_str[FBR_ID_STRING_MAX];
-	fbr_id_string(metadata.etag, id_str, sizeof(id_str));
-
-	fbr_test_logs(" * INDEX");
-	fbr_test_logs(" *** metadata.type: %s", fbr_cstore_type_name(metadata.type));
-	fbr_test_logs(" *** metadata.path: '%s'", metadata.path);
-	fbr_test_logs(" *** metadata.etag: '%s' (%lu)", id_str, metadata.etag);
-	fbr_test_logs(" *** metadata.size: %lu", metadata.size);
-	fbr_test_logs(" *** metadata.gzip: %d", metadata.gzipped);
-
+	_index_metadata(&hashpath, &metadata);
 	assert(metadata.type == FBR_CSTORE_FILE_INDEX);
 
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
@@ -214,7 +218,7 @@ fbr_cmd_index_print_json(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_fs_root_alloc(fs);
 
-	fbr_test_cstore_debug(fs->cstore);
+	fbr_test_cstore_wait(fs->cstore);
 
 	assert(fs->cstore->entries == 2);
 
