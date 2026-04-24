@@ -199,6 +199,7 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
+	assert_zero(directory->previous);
 	assert_zero(directory->refcounts.in_dindex);
 	assert_zero(directory->refcounts.in_lru);
 
@@ -206,7 +207,6 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 		_directory_expire(fs, directory);
 	}
 
-	assert_zero_dev(directory->previous);
 	assert_zero_dev(directory->next);
 
 	struct fbr_file_ptr *file_ptr, *temp;
@@ -329,7 +329,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert_dev(directory->state == FBR_DIRSTATE_OK);
-	assert_zero(directory->previous);
+	assert_zero_dev(directory->previous);
 
 	struct fbr_directory *next = directory->next;
 
