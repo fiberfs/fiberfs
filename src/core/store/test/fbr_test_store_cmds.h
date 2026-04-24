@@ -22,6 +22,8 @@ FBR_TEST_CMD(index_large_test)
 FBR_TEST_CMD(index_2fs_test)
 FBR_TEST_CMD(index_2fs_thread_test)
 
+FBR_TEST_CMD(index_print_json)
+
 FBR_TEST_CMD(store_write)
 FBR_TEST_CMD(store_write_shared)
 FBR_TEST_CMD(store_write_error)
