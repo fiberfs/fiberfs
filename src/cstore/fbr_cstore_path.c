@@ -134,7 +134,7 @@ fbr_cstore_path_index(const struct fbr_directory *directory, struct fbr_cstore_p
 }
 
 void
-fbr_cstore_path_root(struct fbr_path_name *dirpath, struct fbr_cstore_path *path)
+fbr_cstore_path_root(const struct fbr_path_name *dirpath, struct fbr_cstore_path *path)
 {
 	assert(dirpath);
 	assert(path);
@@ -295,7 +295,7 @@ fbr_cstore_hash_index(struct fbr_cstore *cstore, struct fbr_directory *directory
 }
 
 fbr_hash_t
-fbr_cstore_hash_root(struct fbr_cstore *cstore, struct fbr_path_name *dirpath)
+fbr_cstore_hash_root(struct fbr_cstore *cstore, const struct fbr_path_name *dirpath)
 {
 	fbr_cstore_ok(cstore);
 	assert(dirpath);
@@ -414,7 +414,7 @@ fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *directo
 }
 
 void
-fbr_cstore_s3_root_url(struct fbr_cstore *cstore, struct fbr_path_name *dirpath,
+fbr_cstore_s3_root_url(struct fbr_cstore *cstore, const struct fbr_path_name *dirpath,
     struct fbr_cstore_url *url)
 {
 	fbr_cstore_ok(cstore);
