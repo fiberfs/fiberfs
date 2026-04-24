@@ -813,13 +813,6 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 			FBR_CSTORE_ROUTE_CDN);
 	}
 
-	if (error) {
-		assert_dev(error != 200);
-		fbr_cstore_http_respond(cstore, http, error, "Error");
-	} else {
-		fbr_cstore_http_respond(cstore, http, 200, "OK");
-	}
-
 	switch (file_type) {
 		case FBR_CSTORE_FILE_CHUNK:
 			fbr_fs_stat_sub(&cstore->stats.wr_chunks);
@@ -832,5 +825,12 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 			break;
 		default:
 			break;
+	}
+
+	if (error) {
+		assert_dev(error != 200);
+		fbr_cstore_http_respond(cstore, http, error, "Error");
+	} else {
+		fbr_cstore_http_respond(cstore, http, 200, "OK");
 	}
 }
