@@ -837,12 +837,11 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 			if (gzip.status == FBR_GZIP_DONE) {
 				read_bytes = fbr_sys_read(fd, gbuffer->buffer,
 					gbuffer->buffer_len);
+				if (read_bytes < 0) {
+					break;
+				}
 
 				bytes_in += read_bytes;
-			}
-
-			if (read_bytes < 0) {
-				break;
 			}
 
 			unsigned char *input = (unsigned char *)gbuffer->buffer;
