@@ -483,6 +483,7 @@ fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory)
 // NOTE: Always release after replying to fuse
 // This can call fuse_lowlevel_notify_inval_entry() on expiration
 // See: https://libfuse.github.io/doxygen/fuse__lowlevel_8h.html#ab14032b74b0a57a2b3155dd6ba8d6095
+// TODO make a directory free queue under the purger
 void
 fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 {
