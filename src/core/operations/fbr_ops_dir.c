@@ -19,13 +19,9 @@ fbr_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 
 	fbr_rlog(FBR_LOG_OP, "OPENDIR open req: %lu ino: %lu", request->id, ino);
 
-	struct fbr_directory *stale;
-	struct fbr_directory *directory = fbr_directory_from_inode(fs, ino, &stale);
+	struct fbr_directory *directory = fbr_directory_from_inode(fs, ino);
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOTDIR);
-		if (stale) {
-			fbr_dindex_release(fs, &stale);
-		}
 		return;
 	}
 
@@ -38,10 +34,6 @@ fbr_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 	fi->cache_readdir = 1;
 
 	fbr_fuse_reply_open(request, fi);
-
-	if (stale) {
-		fbr_dindex_release(fs, &stale);
-	}
 }
 
 static void

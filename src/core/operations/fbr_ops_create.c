@@ -24,13 +24,9 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		return;
 	}
 
-	struct fbr_directory *stale;
-	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent, &stale);
+	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent);
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOTDIR);
-		if (stale) {
-			fbr_dindex_release(fs, &stale);
-		}
 		return;
 	}
 
@@ -88,11 +84,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		}
 
 		fbr_fuse_reply_err(request, EIO);
-
 		fbr_dindex_release(fs, &directory);
-		if (stale) {
-			fbr_dindex_release(fs, &stale);
-		}
 
 		return;
 	}
@@ -116,7 +108,4 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	fbr_fuse_reply_create(request, &entry, fi);
 
 	fbr_dindex_release(fs, &directory);
-	if (stale) {
-		fbr_dindex_release(fs, &stale);
-	}
 }

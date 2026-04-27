@@ -771,13 +771,10 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 }
 
 struct fbr_directory *
-fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode, struct fbr_directory **stale)
+fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 {
 	fbr_fs_ok(fs);
 	assert(inode);
-	assert(stale);
-
-	*stale = NULL;
 
 	struct fbr_file *file = fbr_inode_take(fs, inode);
 	if (!file) {
@@ -809,15 +806,14 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode, struct fbr_direct
 	if (directory && directory->inode > inode) {
 		fbr_rlog(FBR_LOG_FS, "directory inode: %lu found newer inode: %lu (return error)",
 			inode, directory->inode);
-
-		*stale = directory;
+		fbr_dindex_release(fs, &directory);
 		return NULL;
 	} else if (directory && directory->inode < inode) {
 		fbr_rlog(FBR_LOG_FS, "directory inode: %lu mismatch inode: %lu (will make new)",
 			inode, directory->inode);
 
-		*stale = directory;
-		directory = NULL;
+		fbr_dindex_release(fs, &directory);
+		assert_zero_dev(directory);
 	} else if (directory && directory->state == FBR_DIRSTATE_ERROR) {
 		fbr_rlog(FBR_LOG_FS, "directory error state (will make new)");
 
