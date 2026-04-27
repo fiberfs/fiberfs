@@ -154,10 +154,8 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs);
-
 	fbr_test_cstore_bind_new(fs);
 	fbr_cstore_ok(fs->cstore);
-
 	fbr_fs_set_store(fs, &_INDEX_TEST_CALLBACKS);
 
 	fbr_test_logs("*** Allocating directory");
@@ -219,6 +217,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("*** Releasing directory");
 
 	fbr_fs_release_all(fs, 0);
+	fbr_test_fs_wait(fs);
 
 	fbr_test_logs("*** Loading index");
 
@@ -337,12 +336,13 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("*** Releasing directory v2");
 
 	fbr_fs_release_all(fs, 0);
+	fbr_test_fs_wait(fs);
 
 	fbr_test_logs("*** Loading index v2 (duplicate error)");
 
 	directory = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(directory);
-	fbr_directory_ok(directory->previous); // We are olding old_directory...
+	fbr_directory_ok(directory->previous); // We are holding old_directory...
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 
 	fbr_test_index_request_start();
@@ -357,6 +357,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("*** Releasing directory v3");
 
 	fbr_fs_release_all(fs, 0);
+	fbr_test_fs_wait(fs);
 
 	fbr_test_logs("*** Loading index v3");
 
@@ -708,6 +709,7 @@ _index_thread(void *arg)
 	}
 
 	fbr_fs_release_all(fs, 1);
+	fbr_test_fs_wait(fs);
 
 	fbr_test_ERROR(fs->stats.directories, "non zero");
 	fbr_test_ERROR(fs->stats.directories_dindex, "non zero");

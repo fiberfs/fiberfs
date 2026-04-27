@@ -106,11 +106,19 @@ fbr_sleep_backoff(unsigned int attempts)
 }
 
 void
-fbr_sleep_flag(double ms, volatile int *exit)
+fbr_sleep_flag(double ms, volatile int *exit, volatile size_t *count)
 {
-	assert(exit);
+	int _exit = 0;
+	size_t _count = 0;
 
-	while (ms > 0 && !*exit) {
+	if (!exit) {
+		exit = &_exit;
+	}
+	if (!count) {
+		count = &_count;
+	}
+
+	while (ms > 0 && !*exit && !*count) {
 		double sleep_ms = ms;
 		if (sleep_ms > FBR_SLEEP_FLAG_INTERVAL_MS) {
 			sleep_ms = FBR_SLEEP_FLAG_INTERVAL_MS;

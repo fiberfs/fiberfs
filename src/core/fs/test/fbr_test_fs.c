@@ -60,9 +60,35 @@ fbr_cmd_fs_test_lru_purge(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 }
 
 void
+fbr_test_fs_wait(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
+
+	int max = 40;
+	int count = 0;
+
+	if (fbr_test_is_valgrind()) {
+		max = 100;
+	}
+
+	while (fbr_dindex_dirfree_len(fs) && max) {
+		fbr_test_sleep_ms(count);
+		max--;
+		count++;
+	}
+
+	assert_zero(fbr_dindex_dirfree_len(fs));
+
+	// There is a function call delay between the len and free call
+	fbr_test_sleep_ms(1);
+}
+
+void
 fbr_test_fs_stats(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
+
+	fbr_test_fs_wait(fs);
 
 #define _FS_TEST_STAT_PRINT(name)	\
 	fbr_test_logs("fs.stats." #name ": %lu", fs->stats.name)
@@ -82,6 +108,7 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(flush_errors);
 	_FS_TEST_STAT_PRINT(flush_conflicts);
 	_FS_TEST_STAT_PRINT(merges);
+	_FS_TEST_STAT_PRINT(dirfree_count);
 	_FS_TEST_STAT_PRINT(lru_loops);
 	_FS_TEST_STAT_PRINT(lru_attempts);
 	_FS_TEST_STAT_PRINT(wbuffers);
@@ -97,6 +124,7 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	fbr_test_logs("request.stats.requests_pooled: %lu", req_stats->requests_pooled);
 	fbr_test_logs("request.stats.requests_recycled: %lu", req_stats->requests_recycled);
 
+	fbr_test_logs("fs.dindex.dirfree_len: %zu", fbr_dindex_dirfree_len(fs));
 	fbr_test_logs("fs.config.reader.updates: %lu (%lu,%lu)",
 		fs->config.reader.updates, fs->config.reader.attempts,
 		fs->config.reader.cas_race);

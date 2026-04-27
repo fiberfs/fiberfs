@@ -194,6 +194,9 @@ fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_i
 	return directory;
 }
 
+// NOTE: Always free after replying to fuse
+// This can call fuse_lowlevel_notify_inval_entry() on expiration
+// See: https://libfuse.github.io/doxygen/fuse__lowlevel_8h.html#ab14032b74b0a57a2b3155dd6ba8d6095
 void
 fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 {

@@ -324,6 +324,7 @@ _write_test(void)
 	fbr_test_logs("*** Load index");
 
 	fbr_fs_release_all(fs, 0);
+	fbr_test_fs_wait(fs);
 
 	directory = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(directory);

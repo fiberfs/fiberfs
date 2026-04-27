@@ -12,6 +12,7 @@
 
 #include "test/fbr_test_cmd_declare.h"
 
+void fbr_test_fs_wait(struct fbr_fs *fs);
 void fbr_test_fs_stats(struct fbr_fs *fs);
 void fbr_test_fs_inodes_debug(struct fbr_fs *fs);
 void fbr_test_fs_dindex_debug(struct fbr_fs *fs);

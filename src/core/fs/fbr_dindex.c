@@ -36,6 +36,11 @@ struct fbr_dindex {
 	pthread_mutex_t				lru_lock;
 	volatile size_t				lru_len;
 	pthread_t				lru_thread;
+
+	struct fbr_directory			*dirfree_head;
+	struct fbr_directory			*dirfree_tail;
+	pthread_mutex_t				dirfree_lock;
+	size_t					dirfree_len;
 };
 
 #define fbr_dindex_ok(dindex)			fbr_magic_check(dindex, FBR_DINDEX_MAGIC)
@@ -70,6 +75,7 @@ fbr_dindex_alloc(struct fbr_fs *fs)
 
 	TAILQ_INIT(&dindex->lru);
 	pt_assert(pthread_mutex_init(&dindex->lru_lock, NULL));
+	pt_assert(pthread_mutex_init(&dindex->dirfree_lock, NULL));
 
 	fs->dindex = dindex;
 
@@ -107,6 +113,7 @@ static void
 _dindex_lru_add(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	struct fbr_dindex *dindex = fs->dindex;
+	fbr_dindex_ok(dindex);
 	assert_zero(directory->refcounts.in_lru);
 	assert(directory->refcounts.fs);
 
@@ -127,6 +134,7 @@ static void
 _dindex_lru_move(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	struct fbr_dindex *dindex = fs->dindex;
+	fbr_dindex_ok(dindex);
 
 	pt_assert(pthread_mutex_lock(&dindex->lru_lock));
 
@@ -147,6 +155,7 @@ static void
 _dindex_lru_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	struct fbr_dindex *dindex = fs->dindex;
+	fbr_dindex_ok(dindex);
 
 	pt_assert(pthread_mutex_lock(&dindex->lru_lock));
 
@@ -170,6 +179,7 @@ static struct fbr_directory *
 _dindex_lru_pop(struct fbr_fs *fs)
 {
 	struct fbr_dindex *dindex = fs->dindex;
+	fbr_dindex_ok(dindex);
 
 	pt_assert(pthread_mutex_lock(&dindex->lru_lock));
 
@@ -231,6 +241,7 @@ static struct fbr_dindex_dirhead *
 _dindex_LOCK(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	struct fbr_dindex *dindex = fs->dindex;
+	fbr_dindex_ok(dindex);
 
 	struct fbr_dindex_dirhead *dirhead = _dindex_dirhead_get(dindex, directory);
 
@@ -480,12 +491,73 @@ fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory)
 	_dindex_UNLOCK(dirhead);
 }
 
-// NOTE: Always release after replying to fuse
-// This can call fuse_lowlevel_notify_inval_entry() on expiration
-// See: https://libfuse.github.io/doxygen/fuse__lowlevel_8h.html#ab14032b74b0a57a2b3155dd6ba8d6095
-// TODO make a directory free queue under the purger
-void
-fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
+static void
+_dindex_dirfree_add(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	struct fbr_dindex *dindex = _dindex_fs_get(fs);
+	assert_zero(fs->shutdown);
+	assert_dev(directory);
+	assert_zero(directory->previous);
+
+	pt_assert(pthread_mutex_lock(&dindex->dirfree_lock));
+
+	if (dindex->dirfree_tail) {
+		fbr_directory_ok(dindex->dirfree_tail);
+		assert_zero_dev(dindex->dirfree_tail->previous);
+		dindex->dirfree_tail->previous = directory;
+		dindex->dirfree_tail = directory;
+	} else {
+		assert_zero(dindex->dirfree_head);
+		assert_zero(dindex->dirfree_len);
+
+		dindex->dirfree_head = directory;
+		dindex->dirfree_tail = directory;
+	}
+
+	dindex->dirfree_len++;
+	fs->stats.dirfree_count++;
+
+	pt_assert(pthread_mutex_unlock(&dindex->dirfree_lock));
+}
+
+static struct fbr_directory *
+_dindex_dirfree_get(struct fbr_fs *fs)
+{
+	struct fbr_dindex *dindex = _dindex_fs_get(fs);
+
+	pt_assert(pthread_mutex_lock(&dindex->dirfree_lock));
+
+	if (!dindex->dirfree_len) {
+		assert_zero_dev(dindex->dirfree_head);
+		assert_zero_dev(dindex->dirfree_tail);
+
+		pt_assert(pthread_mutex_unlock(&dindex->dirfree_lock));
+
+		return NULL;
+	}
+
+	struct fbr_directory *directory = dindex->dirfree_head;
+	fbr_directory_ok(directory);
+
+	dindex->dirfree_head = directory->previous;
+	dindex->dirfree_len--;
+
+	directory->previous = NULL;
+
+	if (!dindex->dirfree_len) {
+		assert_zero_dev(dindex->dirfree_head);
+		assert_dev(dindex->dirfree_tail == directory);
+
+		dindex->dirfree_tail = NULL;
+	}
+
+	pt_assert(pthread_mutex_unlock(&dindex->dirfree_lock));
+
+	return directory;
+}
+
+static void
+_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref, int direct_free)
 {
 	fbr_fs_ok(fs);
 	assert(directory_ref);
@@ -515,7 +587,17 @@ fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
 
 	_dindex_UNLOCK(dirhead);
 
-	fbr_directory_free(fs, directory);
+	if (direct_free || fs->shutdown) {
+		fbr_directory_free(fs, directory);
+	} else {
+		_dindex_dirfree_add(fs, directory);
+	}
+}
+
+void
+fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref)
+{
+	_dindex_release(fs, directory_ref, 0);
 }
 
 static void
@@ -530,9 +612,7 @@ _dindex_lru_pop_release(struct fbr_fs *fs)
 	}
 
 	// Release LRU reference
-	fbr_directory_ok(directory);
-
-	fbr_dindex_release(fs, &directory);
+	_dindex_release(fs, &directory, 1);
 	assert_zero_dev(directory);
 }
 
@@ -556,9 +636,12 @@ _dindex_lru_purger(void *arg)
 	struct fbr_fs *fs = arg;
 	fbr_fs_ok(fs);
 
+	struct fbr_dindex *dindex = fs->dindex;
+	fbr_dindex_ok(dindex);
+
 	fbr_thread_name("fbr_lru");
 
-	while (!fs->shutdown) {
+	while (!fs->shutdown || dindex->dirfree_len) {
 		fbr_fs_config_load(fs);
 
 		// TODO introduce a memory based limit
@@ -566,13 +649,34 @@ _dindex_lru_purger(void *arg)
 		size_t lru_max = fs->config.lru_dindex_max;
 		fbr_dindex_lru_purge(fs, lru_max);
 
+		size_t dirfree_count = 0;
+		struct fbr_directory *directory = _dindex_dirfree_get(fs);
+		while (directory) {
+			fbr_directory_free(fs, directory);
+
+			dirfree_count++;
+			if (dirfree_count > 10) {
+				break;
+			}
+
+			directory = _dindex_dirfree_get(fs);
+		}
+
 		fbr_fs_stat_add(&fs->stats.lru_loops);
 
 		unsigned long sleep_ms = fs->config.lru_sleep_ms;
-		fbr_sleep_flag(sleep_ms, &fs->shutdown);
+		fbr_sleep_flag(sleep_ms, &fs->shutdown, &dindex->dirfree_len);
 	}
 
 	return NULL;
+}
+
+size_t
+fbr_dindex_dirfree_len(struct fbr_fs *fs)
+{
+	struct fbr_dindex *dindex = _dindex_fs_get(fs);
+
+	return dindex->dirfree_len;
 }
 
 void
@@ -637,6 +741,11 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 	assert(TAILQ_EMPTY(&dindex->lru));
 	assert_zero(dindex->lru_len);
 	pt_assert(pthread_mutex_destroy(&dindex->lru_lock));
+
+	assert_zero_dev(dindex->dirfree_head);
+	assert_zero_dev(dindex->dirfree_tail);
+	assert_zero(dindex->dirfree_len);
+	pt_assert(pthread_mutex_destroy(&dindex->dirfree_lock));
 
 	fbr_zero(dindex);
 	free(dindex);

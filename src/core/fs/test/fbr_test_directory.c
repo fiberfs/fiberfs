@@ -423,6 +423,10 @@ _directory_release(int ttl)
 
 	fbr_fs_release_all(fs, 0);
 
+	fbr_test_logs("*** directories (pre wait): %zu", fs->stats.directories);
+
+	fbr_test_fs_wait(fs);
+
 	fbr_test_logs("*** directories: %zu", fs->stats.directories);
 
 	if (ttl) {
@@ -434,6 +438,10 @@ _directory_release(int ttl)
 	fbr_test_logs("*** releasing dir1");
 
 	fbr_dindex_release(fs, &dir1);
+
+	fbr_test_logs("*** directories (pre wait): %zu", fs->stats.directories);
+
+	fbr_test_fs_wait(fs);
 
 	fbr_test_logs("*** directories: %zu", fs->stats.directories);
 	assert_zero(fs->stats.directories);
