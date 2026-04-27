@@ -110,6 +110,7 @@ _op_thread(void *arg)
 
 	fbr_atomic_add(&_CONFLICTS, fs->stats.flush_conflicts);
 
+	fbr_test_cstore_wait(fs->cstore);
 	fbr_fs_free(fs);
 
 	return NULL;
