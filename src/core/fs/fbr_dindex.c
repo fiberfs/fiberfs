@@ -643,6 +643,8 @@ _dindex_lru_purger(void *arg)
 
 	fbr_thread_name("fbr_lru");
 
+	// TODO allocate a request with a purger specific id
+
 	while (!fs->shutdown || dindex->dirfree_len) {
 		fbr_fs_config_load(fs);
 
