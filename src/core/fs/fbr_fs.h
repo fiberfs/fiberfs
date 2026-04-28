@@ -481,7 +481,7 @@ struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_n
 	int wait_for_new);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
 void fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max);
-size_t fbr_dindex_dirfree_len(struct fbr_fs *fs);
+size_t fbr_dindex_dirfree_count(struct fbr_fs *fs);
 void fbr_dindex_debug(struct fbr_fs *fs, fbr_dindex_debug_f *callback);
 void fbr_dindex_free_all(struct fbr_fs *fs);
 

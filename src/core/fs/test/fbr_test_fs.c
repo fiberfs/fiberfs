@@ -71,16 +71,13 @@ fbr_test_fs_wait(struct fbr_fs *fs)
 		max = 100;
 	}
 
-	while (fbr_dindex_dirfree_len(fs) && max) {
+	while (fbr_dindex_dirfree_count(fs) && max) {
 		fbr_test_sleep_ms(count);
 		max--;
 		count++;
 	}
 
-	assert_zero(fbr_dindex_dirfree_len(fs));
-
-	// There is a function call delay between the len and free call
-	fbr_test_sleep_ms(1);
+	assert_zero(fbr_dindex_dirfree_count(fs));
 }
 
 void
@@ -124,7 +121,7 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	fbr_test_logs("request.stats.requests_pooled: %lu", req_stats->requests_pooled);
 	fbr_test_logs("request.stats.requests_recycled: %lu", req_stats->requests_recycled);
 
-	fbr_test_logs("fs.dindex.dirfree_len: %zu", fbr_dindex_dirfree_len(fs));
+	fbr_test_logs("fs.dindex.dirfree_len: %zu", fbr_dindex_dirfree_count(fs));
 	fbr_test_logs("fs.config.reader.updates: %lu (%lu,%lu)",
 		fs->config.reader.updates, fs->config.reader.attempts,
 		fs->config.reader.cas_race);

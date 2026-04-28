@@ -41,6 +41,7 @@ struct fbr_dindex {
 	struct fbr_directory			*dirfree_tail;
 	pthread_mutex_t				dirfree_lock;
 	size_t					dirfree_len;
+	size_t					dirfree_count;
 };
 
 #define fbr_dindex_ok(dindex)			fbr_magic_check(dindex, FBR_DINDEX_MAGIC)
@@ -514,6 +515,7 @@ _dindex_dirfree_add(struct fbr_fs *fs, struct fbr_directory *directory)
 		dindex->dirfree_tail = directory;
 	}
 
+	fbr_atomic_add(&dindex->dirfree_count, 1);
 	dindex->dirfree_len++;
 	fs->stats.dirfree_count++;
 
@@ -654,6 +656,8 @@ _dindex_lru_purger(void *arg)
 		while (directory) {
 			fbr_directory_free(fs, directory);
 
+			fbr_atomic_sub(&dindex->dirfree_count, 1);
+
 			dirfree_count++;
 			if (dirfree_count > 10) {
 				break;
@@ -672,11 +676,11 @@ _dindex_lru_purger(void *arg)
 }
 
 size_t
-fbr_dindex_dirfree_len(struct fbr_fs *fs)
+fbr_dindex_dirfree_count(struct fbr_fs *fs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
 
-	return dindex->dirfree_len;
+	return dindex->dirfree_count;
 }
 
 void
