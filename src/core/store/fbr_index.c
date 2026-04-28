@@ -601,6 +601,7 @@ fbr_index_parser_init(struct fbr_fs *fs, struct fbr_index_parser *parser,
 	fbr_fs_ok(fs);
 	assert(parser);
 	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
 	assert_zero(directory->generation);
 
 	fbr_zero(parser);

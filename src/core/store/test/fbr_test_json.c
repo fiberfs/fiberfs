@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 
 #include "fiberfs.h"
+#include "fjson.h"
 #include "compress/fbr_gzip.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
@@ -343,4 +344,49 @@ fbr_cmd_index_root_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	assert_zero(id);
 
 	fbr_test_logs("index_root_json_parse done");
+}
+
+void
+fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_fuse_mock(ctx);
+
+	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
+	fbr_fs_ok(fs);
+
+	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
+	assert_zero(directory->previous);
+	assert_zero(directory->generation);
+
+	struct fbr_index_parser parser;
+	fbr_index_parser_init(fs, &parser, directory);
+
+	const char *index;
+	struct fjson_context json;
+	fjson_context_init(&json);
+	json.callback = &fbr_index_parse_json;
+	json.callback_priv = &parser;
+
+	index = "{\"fiberfs\":1,\"g\":1,\"f\":[]}";
+	fjson_parse(&json, index, strlen(index));
+
+	if (json.error) {
+		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+		fbr_test_logs("JSON error: %s", fjson_state_name(json.state));
+	} else {
+		assert(directory->generation);
+		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+	}
+
+	fjson_context_free(&json);
+	fbr_index_parser_free(&parser);
+	fbr_dindex_release(fs, &directory);
+	fbr_fs_free(fs);
+
+	fbr_test_logs("index_json_parse done");
 }
