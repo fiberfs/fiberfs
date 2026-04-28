@@ -20,6 +20,7 @@
 
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
+#include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
 static void
@@ -291,6 +292,55 @@ fbr_cmd_index_root_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd 
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_fuse_mock(ctx);
+	const char *root;
+	fbr_id_t id;
+
+	root = "{\"fiberfs\":1,\"v\":\"17773978380341182558\"}";
+	id = fbr_root_json_parse(root, strlen(root));
+	assert(id == 7633865586532288606);
+
+	root = "{\"fiberfs\":99999,\"v\":\"17773978380341182558\"}";
+	id = fbr_root_json_parse(root, strlen(root));
+	assert_zero(id);
+
+	root = "{\"v\":\"17773978380341182558\"}";
+	id = fbr_root_json_parse(root, strlen(root));
+	assert_zero(id);
+
+	root = "{\"fiberfs\":3,\"v\":\"1234567890\",\"zzz\":63}";
+	id = fbr_root_json_parse(root, strlen(root));
+	assert(id == 1234567890);
+
+	root = "{\"fiberfs\":1,\"aaa\":{\"bbb\":\"222\"},"
+		"\"v\":\"0\",\"v\":\"11234567890\",\"V\":\"end\"}";
+	id = fbr_root_json_parse(root, strlen(root));
+	fbr_ASSERT(id == 5529535186, "id: %lu", id);
+
+	root = "{\"fiberfs\":3,\"v\":\"17774010392543342732\",\"v\":{\"v\":\"123\"}}";
+	id = fbr_root_json_parse(root, strlen(root));
+	assert(id == 7633879336924763276);
+
+	root = "{\"fiberfs\":1,\"v\":\"17773978380341182558}";
+	id = fbr_root_json_parse(root, strlen(root));
+	assert_zero(id);
+
+	root = "{\"fiberfs\":1}";
+	id = fbr_root_json_parse(root, strlen(root));
+	assert_zero(id);
+
+	root = "{}";
+	id = fbr_root_json_parse(root, strlen(root));
+	assert_zero(id);
+
+	root = "xyz";
+	id = fbr_root_json_parse(root, strlen(root));
+	assert_zero(id);
+
+	root = "\"123\"";
+	id = fbr_root_json_parse(root, strlen(root));
+	assert_zero(id);
 
 	fbr_test_logs("index_root_json_parse done");
 }

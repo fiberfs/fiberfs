@@ -179,4 +179,31 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	for (size_t i = 0; i < 10; i++) {
 		_id_cast(_id_random());
 	}
+
+	struct fbr_id time0;
+	time0.parts.timestamp = 0;
+	time0.parts.random_parts.random = FBR_ID_RANDBITS_MAX;
+	time0.parts.random_parts.other = FBR_ID_OTHERBITS_MAX;
+
+	char time_string[FBR_ID_STRING_MAX];
+	size_t time_len = fbr_id_string(time0.value, time_string, sizeof(time_string));
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "time0=%lu", time0.value);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "time0_string=%s:%zu", time_string, time_len);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "UINT32_MAX=%u", UINT32_MAX);
+
+	assert(time0.parts.full_random == UINT32_MAX);
+	assert(time0.value == UINT32_MAX);
+
+	struct fbr_id time1;
+	time1.parts.timestamp = 1;
+	time1.parts.random_parts.random = FBR_ID_RANDBITS_MAX;
+	time1.parts.random_parts.other = FBR_ID_OTHERBITS_MAX;
+
+	time_len = fbr_id_string(time1.value, time_string, sizeof(time_string));
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "time1=%lu", time1.value);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "time1_string=%s:%zu", time_string, time_len);
+
+	assert(time1.value == (time0.value * 2) + 1)
 }
