@@ -404,8 +404,8 @@ fbr_path_shared_init(struct fbr_path_shared *shared, const struct fbr_path_name 
 
 	shared->magic = FBR_PATH_SHARED_MAGIC;
 	shared->refcount = 0;
-
-	fbr_path_name_init(&shared->value, value->name);
+	shared->value.length = value->length;
+	shared->value.name = value->name;
 
 	assert_dev(strlen(shared->value.name) == shared->value.length);
 
@@ -421,7 +421,9 @@ fbr_path_shared_alloc(const struct fbr_path_name *value)
 	assert(shared);
 
 	struct fbr_path_name value_dup;
-	fbr_path_name_init(&value_dup, strdup(value->name));
+	value_dup.length = value->length;
+	value_dup.name = strdup(value->name);
+	assert(value_dup.name);
 
 	fbr_path_shared_init(shared, &value_dup);
 
