@@ -319,7 +319,9 @@ fbr_config_reader_lock(struct fbr_config_reader *reader)
 	if (!reader->updates) {
 		assert_zero(reader->init);
 	} else {
-		assert(reader->init);
+		while (!reader->init) {
+			fbr_sleep_ms(1);
+		}
 	}
 
 	reader->updates++;
