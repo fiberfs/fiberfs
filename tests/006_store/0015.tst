@@ -1,3 +1,3 @@
-fiber_test "JSON index tests"
+fiber_test "JSON print tests"
 
 index_print_json
