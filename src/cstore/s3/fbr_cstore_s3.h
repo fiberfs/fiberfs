@@ -65,12 +65,27 @@ struct fbr_cstore_cluster {
 	size_t				size;
 };
 
+typedef void (*fbr_cstore_fetch_f)(struct chttp_context *http, void *arg);
+
 struct fbr_cstore_fetch_context {
 	struct fbr_cstore		*cstore;
 	struct chttp_context		*http;
-};
 
-typedef void (*fbr_cstore_s3_put_f)(struct chttp_context *http, void *arg);
+	enum fbr_cstore_file_type	type;
+	struct fbr_cstore_path		*file_path;
+	fbr_id_t			etag;
+	size_t				length;
+	size_t				offset;
+
+	fbr_id_t			existing;
+
+	int				gzip;
+	enum fbr_cstore_route		route;
+	unsigned int			attempts;
+
+	fbr_cstore_fetch_f		data_callback;
+	void				*data_arg;
+};
 
 struct fbr_cstore;
 
@@ -90,13 +105,11 @@ size_t fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *ad
 size_t fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, int fd_out,
 	size_t size);
 void fbr_cstore_fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
-	struct chttp_context *http);
-void fbr_cstore_s3_send_get(struct fbr_cstore_fetch_context *fetch,
-	struct fbr_cstore_path *file_path, fbr_id_t id, enum fbr_cstore_route route);
-void fbr_s3_send_put(struct fbr_cstore_fetch_context *fetch,
-	enum fbr_cstore_file_type type, struct fbr_cstore_path *path, size_t length,
-	fbr_id_t etag, fbr_id_t existing, int gzip, fbr_cstore_s3_put_f data_cb, void *put_arg,
-	enum fbr_cstore_route route);
+	struct chttp_context *http, enum fbr_cstore_file_type type,
+	struct fbr_cstore_path *file_path, fbr_id_t etag, size_t length, size_t offset,
+	fbr_id_t existing, int gzip, enum fbr_cstore_route route);
+void fbr_cstore_s3_send_get(struct fbr_cstore_fetch_context *fetch);
+void fbr_s3_send_put(struct fbr_cstore_fetch_context *fetch);
 int fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,
 	struct chttp_context *http, int error);
 int fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
