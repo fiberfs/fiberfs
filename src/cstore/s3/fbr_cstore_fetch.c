@@ -24,6 +24,7 @@ _fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
 	assert(fetch);
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
+	assert_dev(http->state == CHTTP_STATE_NONE);
 
 	fbr_zero(fetch);
 	fetch->cstore = cstore;
@@ -196,7 +197,6 @@ void
 fbr_cstore_s3_send_get(struct fbr_cstore_fetch_context *fetch)
 {
 	fbr_cstore_fetch_ok(fetch);
-	assert_dev(fetch->http->state == CHTTP_STATE_NONE);
 	fbr_cstore_path_ok(fetch->file_path);
 	assert(fbr_cstore_backend_enabled(fetch->cstore));
 	assert_zero(fetch->existing);
@@ -342,7 +342,6 @@ void
 fbr_s3_send_put(struct fbr_cstore_fetch_context *fetch)
 {
 	fbr_cstore_fetch_ok(fetch);
-	assert(fetch->http->state == CHTTP_STATE_NONE);
 	assert_dev(fetch->file_path);
 	assert_dev(fetch->length);
 	assert_dev(fetch->etag);
@@ -413,7 +412,6 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
     struct fbr_cstore_entry **entry_ref)
 {
 	fbr_cstore_fetch_ok(fetch);
-	assert(fetch->http->state == CHTTP_STATE_NONE);
 	fbr_cstore_path_ok(fetch->file_path);
 	assert_dev(fetch->type);
 	assert_dev(fetch->route);

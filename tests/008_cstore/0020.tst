@@ -52,6 +52,8 @@ fs_test_release_all
 
 sleep_ms 100
 
+fs_test_stats
+
 print "### READ"
 
 sys_cat $var1 "test CLUSTER"

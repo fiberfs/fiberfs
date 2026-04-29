@@ -104,6 +104,7 @@ size_t fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *ad
 	size_t size);
 size_t fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, int fd_out,
 	size_t size);
+
 void fbr_cstore_fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
 	struct chttp_context *http, enum fbr_cstore_file_type type,
 	struct fbr_cstore_path *file_path, fbr_id_t etag, size_t length, size_t offset,
@@ -144,10 +145,11 @@ int fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http
 
 #define fbr_cstore_backend_ok(backend)				\
 	fbr_magic_check(backend, FBR_CSTORE_BACKEND_MAGIC)
-#define fbr_cstore_fetch_ok(ctx)				\
+#define fbr_cstore_fetch_ok(fetch)				\
 {								\
-	fbr_cstore_ok((ctx)->cstore);				\
-	chttp_context_ok((ctx)->http);				\
+	assert(fetch)						\
+	fbr_cstore_ok((fetch)->cstore);				\
+	chttp_context_ok((fetch)->http);			\
 }
 
 #endif /* _FBR_CSTORE_S3_H_INCLUDED_ */
