@@ -40,6 +40,8 @@ fbr_cstore_http_respond(struct fbr_cstore *cstore, struct chttp_context *http, i
 	char fiber_id[32];
 	fbr_cstore_request_id(fiber_id, sizeof(fiber_id));
 
+	// TODO merge with fbr_cstore_url_read()
+
 	char buffer[1024];
 	size_t bytes = fbr_bprintf(buffer,
 		"HTTP/1.1 %d %s\r\n"
