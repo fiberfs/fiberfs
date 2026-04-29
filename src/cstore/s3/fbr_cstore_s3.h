@@ -65,6 +65,11 @@ struct fbr_cstore_cluster {
 	size_t				size;
 };
 
+struct fbr_cstore_fetch_context {
+	struct fbr_cstore		*cstore;
+	struct chttp_context		*http;
+};
+
 typedef void (*fbr_cstore_s3_put_f)(struct chttp_context *http, void *arg);
 
 struct fbr_cstore;
@@ -84,9 +89,11 @@ size_t fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *ad
 	size_t size);
 size_t fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, int fd_out,
 	size_t size);
-void fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
+void fbr_cstore_fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
+	struct chttp_context *http);
+void fbr_cstore_s3_send_get(struct fbr_cstore_fetch_context *fetch,
 	struct fbr_cstore_path *file_path, fbr_id_t id, enum fbr_cstore_route route);
-void fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
+void fbr_s3_send_put(struct fbr_cstore_fetch_context *fetch,
 	enum fbr_cstore_file_type type, struct fbr_cstore_path *path, size_t length,
 	fbr_id_t etag, fbr_id_t existing, int gzip, fbr_cstore_s3_put_f data_cb, void *put_arg,
 	enum fbr_cstore_route route);
@@ -124,7 +131,12 @@ void fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_c
 	const char *secret_key);
 int fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http);
 
-#define fbr_cstore_backend_ok(backend)		\
+#define fbr_cstore_backend_ok(backend)				\
 	fbr_magic_check(backend, FBR_CSTORE_BACKEND_MAGIC)
+#define fbr_cstore_fetch_context_ok(ctx)			\
+{								\
+	fbr_cstore_ok((ctx)->cstore);				\
+	chttp_context_ok((ctx)->http);				\
+}
 
 #endif /* _FBR_CSTORE_S3_H_INCLUDED_ */

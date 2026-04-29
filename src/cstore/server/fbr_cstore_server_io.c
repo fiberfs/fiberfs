@@ -377,14 +377,17 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	if (fbr_cstore_backend_enabled(cstore)) {
 		assert(file_type != FBR_CSTORE_FILE_ROOT);
 
+		struct fbr_cstore_fetch_context fetch;
 		struct chttp_context http_backend;
+
 		chttp_context_init(&http_backend);
+		fbr_cstore_fetch_init(&fetch, cstore, &http_backend);
 
 		struct _cstore_entry_pair pair;
 		pair.cstore = cstore;
 		pair.entry = entry;
 
-		fbr_s3_send_put(cstore, &http_backend, file_type, &file_path, length, etag_id, 0,
+		fbr_s3_send_put(&fetch, file_type, &file_path, length, etag_id, 0,
 			metadata.gzipped, _cstore_entry_sendfile, &pair, FBR_CSTORE_ROUTE_CDN);
 
 		if (http_backend.error || http_backend.status != 200) {
