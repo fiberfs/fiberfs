@@ -194,6 +194,7 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	assert(time0.parts.full_random == UINT32_MAX);
 	assert(time0.value == UINT32_MAX);
+	_id_cast(time0.value);
 
 	struct fbr_id time1;
 	time1.parts.timestamp = 1;
@@ -206,4 +207,5 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "time1_string=%s:%zu", time_string, time_len);
 
 	assert(time1.value == (time0.value * 2) + 1)
+	_id_cast(time1.value);
 }
