@@ -75,7 +75,7 @@ fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len)
 }
 
 #include "utils/fbr_enum_string.h"
-FBR_ENUM_CSTORE_ENTRY_TYPE
+FBR_ENUM_CSTORE_FILE_TYPE
 
 void
 fbr_cstore_request_id(char *buffer, size_t buffer_len)

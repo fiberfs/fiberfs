@@ -20,7 +20,7 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	size_t offset;
-	enum fbr_cstore_entry_type type;
+	enum fbr_cstore_file_type type;
 
 	type = _url_parse("/", "", &offset);
 	assert(type == FBR_CSTORE_FILE_NONE);

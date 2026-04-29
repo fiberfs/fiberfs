@@ -203,7 +203,7 @@ fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *e
 
 void
 fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url *url, fbr_id_t id,
-    enum fbr_cstore_entry_type type)
+    enum fbr_cstore_file_type type)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_url_ok(url);

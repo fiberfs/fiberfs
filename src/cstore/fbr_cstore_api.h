@@ -192,7 +192,7 @@ struct fbr_cstore_metadata {
 	double					timestamp;
 	unsigned long				size;
 	size_t					offset;
-	enum fbr_cstore_entry_type		type;
+	enum fbr_cstore_file_type		type;
 	int					gzipped;
 	int					error;
 	char					_context;
@@ -223,7 +223,7 @@ size_t fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len);
 void fbr_cstore_request_id(char *buffer, size_t buffer_len);
 
 #include "utils/fbr_enum_string_declare.h"
-FBR_ENUM_CSTORE_ENTRY_TYPE
+FBR_ENUM_CSTORE_FILE_TYPE
 
 #define fbr_cstore_ok(cstore)			fbr_magic_check(cstore, FBR_CSTORE_MAGIC)
 #define fbr_cstore_head_ok(head)		fbr_magic_check(head, FBR_CSTORE_HEAD_MAGIC)

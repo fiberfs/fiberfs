@@ -474,7 +474,7 @@ fbr_cstore_s3_url_clone(struct fbr_cstore_url *dest, const struct fbr_cstore_url
 	fbr_cstore_s3_url_init(dest, src->value, src->length);
 }
 
-enum fbr_cstore_entry_type
+enum fbr_cstore_file_type
 fbr_cstore_s3_url_parse(const char *url, size_t url_len, const char *etag, size_t etag_len,
     size_t *offset)
 {

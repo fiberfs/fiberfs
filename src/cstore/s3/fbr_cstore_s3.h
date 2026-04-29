@@ -87,14 +87,14 @@ size_t fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *
 void fbr_cstore_s3_send_get(struct fbr_cstore *cstore, struct chttp_context *http,
 	struct fbr_cstore_path *file_path, fbr_id_t id, enum fbr_cstore_route route);
 void fbr_s3_send_put(struct fbr_cstore *cstore, struct chttp_context *http,
-	enum fbr_cstore_entry_type type, struct fbr_cstore_path *path, size_t length,
+	enum fbr_cstore_file_type type, struct fbr_cstore_path *path, size_t length,
 	fbr_id_t etag, fbr_id_t existing, int gzip, fbr_cstore_s3_put_f data_cb, void *put_arg,
 	enum fbr_cstore_route route);
 int fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,
 	struct chttp_context *http, int error);
 int fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	struct fbr_cstore_path *file_path, fbr_id_t id, size_t size,
-	enum fbr_cstore_entry_type type, enum fbr_cstore_route route,
+	enum fbr_cstore_file_type type, enum fbr_cstore_route route,
 	struct fbr_cstore_entry **entry_ref, size_t offset);
 int fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url,
 	fbr_id_t id, enum fbr_cstore_route route);

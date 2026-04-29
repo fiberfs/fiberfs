@@ -213,7 +213,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		}
 	}
 
-	enum fbr_cstore_entry_type file_type = fbr_cstore_s3_url_parse(url, url_len, etag, etag_len,
+	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, etag, etag_len,
 		&offset);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url");
@@ -424,7 +424,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 static void
 _cstore_url_entry_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry,
-    enum fbr_cstore_entry_type file_type, int error)
+    enum fbr_cstore_file_type file_type, int error)
 {
 	assert_dev(cstore);
 	assert_dev(entry);
@@ -510,7 +510,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 	size_t offset;
 
-	enum fbr_cstore_entry_type file_type = fbr_cstore_s3_url_parse(url, url_len, if_match,
+	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, if_match,
 		if_match_len, &offset);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url");
@@ -746,7 +746,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	size_t offset;
 
-	enum fbr_cstore_entry_type file_type = fbr_cstore_s3_url_parse(url, url_len, if_match,
+	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, if_match,
 		if_match_len, &offset);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR url");

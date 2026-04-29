@@ -347,7 +347,7 @@ _async_chunk_url_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker
 
 static void
 _async_url_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url, fbr_id_t id,
-    enum fbr_cstore_entry_type type)
+    enum fbr_cstore_file_type type)
 {
 	assert_dev(cstore);
 	fbr_cstore_url_ok(url);
