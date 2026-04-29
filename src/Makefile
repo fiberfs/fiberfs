@@ -11,7 +11,7 @@ DEPFLAGS=-MMD -MP
 CC_ALL=$(CC) $(CFLAGS) $(CFLAGS_INCLUDE) $(CFLAGS_EXTRA) $(CFLAGS_CC) $(CFLAGS_BUILD) $(DEPFLAGS)
 LDFLAGS=-shared
 LIBFLAGS=-lrt -lpthread
-AR=ar cr
+AR=ar crs
 BUILD=build
 
 TEST_SRC:=$(shell find * -type f -name '*.c' -path '*test/*')
@@ -110,8 +110,10 @@ endif
 
 # Release build (RELEASE=true)
 RELEASE_CFLAGS=-flto -DFBR_NO_ASSERT_DEV -DFBR_RELEASE
+RELEASE_LIBFLAGS=-flto -O3
 ifeq ($(RELEASE),true)
 	CFLAGS_BUILD+=$(RELEASE_CFLAGS)
+	LIBFLAGS+=$(RELEASE_LIBFLAGS)
 endif
 
 # Detect compiler
