@@ -29,7 +29,7 @@ _fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
 	fetch->cstore = cstore;
 	fetch->http = http;
 
-	fbr_cstore_fetch_context_ok(fetch);
+	fbr_cstore_fetch_ok(fetch);
 }
 
 void
@@ -138,7 +138,7 @@ _s3_connection(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore_backend
 static void
 _s3_send_get(struct fbr_cstore_fetch_context *fetch)
 {
-	fbr_cstore_fetch_context_ok(fetch);
+	fbr_cstore_fetch_ok(fetch);
 	assert_dev(fetch->file_path);
 	assert_dev(fetch->route);
 	assert_dev(fetch->attempts);
@@ -195,7 +195,7 @@ _s3_send_get(struct fbr_cstore_fetch_context *fetch)
 void
 fbr_cstore_s3_send_get(struct fbr_cstore_fetch_context *fetch)
 {
-	fbr_cstore_fetch_context_ok(fetch);
+	fbr_cstore_fetch_ok(fetch);
 	assert_dev(fetch->http->state == CHTTP_STATE_NONE);
 	fbr_cstore_path_ok(fetch->file_path);
 	assert(fbr_cstore_backend_enabled(fetch->cstore));
@@ -232,7 +232,7 @@ fbr_cstore_s3_send_get(struct fbr_cstore_fetch_context *fetch)
 static void
 _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 {
-	fbr_cstore_fetch_context_ok(fetch);
+	fbr_cstore_fetch_ok(fetch);
 	assert_dev(fetch->file_path);
 	assert(fetch->length);
 	assert_dev(fetch->etag);
@@ -341,7 +341,7 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 void
 fbr_s3_send_put(struct fbr_cstore_fetch_context *fetch)
 {
-	fbr_cstore_fetch_context_ok(fetch);
+	fbr_cstore_fetch_ok(fetch);
 	assert(fetch->http->state == CHTTP_STATE_NONE);
 	assert_dev(fetch->file_path);
 	assert_dev(fetch->length);
@@ -412,7 +412,7 @@ int
 fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
     struct fbr_cstore_entry **entry_ref)
 {
-	fbr_cstore_fetch_context_ok(fetch);
+	fbr_cstore_fetch_ok(fetch);
 	assert(fetch->http->state == CHTTP_STATE_NONE);
 	fbr_cstore_path_ok(fetch->file_path);
 	assert_dev(fetch->type);
