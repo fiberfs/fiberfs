@@ -739,8 +739,16 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 				return 1;
 			}
 
-			int ret = fbr_cstore_s3_get_write(cstore, hash, &path, directory->version,
-				0, FBR_CSTORE_FILE_INDEX, FBR_CSTORE_ROUTE_CLUSTER, &entry_ref, 0);
+			struct fbr_cstore_fetch_context fetch;
+			struct chttp_context http;
+
+			chttp_context_init(&http);
+			fbr_cstore_fetch_init(&fetch, cstore, &http, FBR_CSTORE_FILE_INDEX,
+				&path, directory->version, 0, 0, 0, 0, FBR_CSTORE_ROUTE_CLUSTER);
+
+			int ret = fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
+			assert_dev(http.state == CHTTP_STATE_NONE);
+
 			if (ret == 400 || ret == 404) {
 				return EAGAIN;
 			} else if (ret) {

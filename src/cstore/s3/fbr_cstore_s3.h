@@ -112,10 +112,8 @@ void fbr_cstore_s3_send_get(struct fbr_cstore_fetch_context *fetch);
 void fbr_s3_send_put(struct fbr_cstore_fetch_context *fetch);
 int fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,
 	struct chttp_context *http, int error);
-int fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
-	struct fbr_cstore_path *file_path, fbr_id_t id, size_t size,
-	enum fbr_cstore_file_type type, enum fbr_cstore_route route,
-	struct fbr_cstore_entry **entry_ref, size_t offset);
+int fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
+	struct fbr_cstore_entry **entry_ref);
 int fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url,
 	fbr_id_t id, enum fbr_cstore_route route);
 void fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,

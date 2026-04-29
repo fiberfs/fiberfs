@@ -408,24 +408,25 @@ fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *
 	return error;
 }
 
-// TODO convert this to a fetch context
 int
-fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
-    struct fbr_cstore_path *file_path, fbr_id_t id, size_t size, enum fbr_cstore_file_type type,
-    enum fbr_cstore_route route, struct fbr_cstore_entry **entry_ref, size_t offset)
+fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
+    struct fbr_cstore_entry **entry_ref)
 {
-	fbr_cstore_ok(cstore);
-	fbr_cstore_path_ok(file_path);
-	assert(type > FBR_CSTORE_FILE_NONE && type <= FBR_CSTORE_FILE_ROOT);
-	assert(route);
+	fbr_cstore_fetch_context_ok(fetch);
+	assert(fetch->http->state == CHTTP_STATE_NONE);
+	fbr_cstore_path_ok(fetch->file_path);
+	assert_dev(fetch->type);
+	assert_dev(fetch->route);
+
+	struct fbr_cstore *cstore = fetch->cstore;
 	assert(fbr_cstore_backend_enabled(cstore));
 
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
-	fbr_rlog(FBR_LOG_CS_S3, "S3_GET %s", file_path->value);
+	fbr_rlog(FBR_LOG_CS_S3, "S3_GET %s", fetch->file_path->value);
 
-	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, size,
+	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, fetch->length,
 		&hashpath, 1);
 	if (!entry) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET loading state");
@@ -434,39 +435,36 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
-	struct fbr_cstore_fetch_context fetch;
-	struct chttp_context http;
+	fbr_cstore_s3_send_get(fetch);
 
-	chttp_context_init(&http);
-	fbr_cstore_fetch_init(&fetch, cstore, &http, type, file_path, id, 0, offset, 0, 0, route);
+	struct chttp_context *http = fetch->http;
+	chttp_context_ok(http);
 
-	fbr_cstore_s3_send_get(&fetch);
-
-	if (http.error || http.status != 200) {
-		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET: %d %d", http.error, http.status);
+	if (http->error || http->status != 200) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET: %d %d", http->error, http->status);
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, &entry);
 
-		int error = http.status ? http.status : 1;
+		int error = http->status ? http->status : 1;
 		assert_dev(error > 0);
-		chttp_context_free(&http);
+		chttp_context_free(http);
 
 		return error;
-	} else if (!http.chunked && size && (size_t)http.length != size) {
+	} else if (!http->chunked && fetch->length && (size_t)http->length != fetch->length) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET length");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, &entry);
-		chttp_context_free(&http);
+		chttp_context_free(http);
 		return 1;
 	}
 
-	if (!id) {
-		const char *etag = chttp_header_get(&http, "ETag");
+	if (!fetch->etag) {
+		const char *etag = chttp_header_get(http, "ETag");
 		if (!etag) {
 			fbr_rlog(FBR_LOG_CS_S3, "S3_GET ERROR no id_etag");
 			fbr_cstore_set_error(entry);
 			fbr_cstore_remove(cstore, &entry);
-			chttp_context_free(&http);
+			chttp_context_free(http);
 			return 1;
 		}
 
@@ -476,12 +474,12 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 			etag_len -= 2;
 		}
 
-		id = fbr_id_parse(etag, etag_len);
-		if (!id) {
+		fetch->etag = fbr_id_parse(etag, etag_len);
+		if (!fetch->etag) {
 			fbr_rlog(FBR_LOG_CS_S3, "S3_GET ERROR bad id_etag");
 			fbr_cstore_set_error(entry);
 			fbr_cstore_remove(cstore, &entry);
-			chttp_context_free(&http);
+			chttp_context_free(http);
 			return 1;
 		}
 	}
@@ -491,52 +489,52 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, &entry);
-		chttp_context_free(&http);
+		chttp_context_free(http);
 		return 1;
 	}
 
-	size_t bytes = fbr_cstore_s3_splice_in(cstore, &http, fd, size);
+	size_t bytes = fbr_cstore_s3_splice_in(cstore, http, fd, fetch->length);
 
 	assert_zero(close(fd));
 
-	if (http.error || (size && bytes != size) || !bytes) {
+	if (http->error || (fetch->length && bytes != fetch->length) || !bytes) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET bytes");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, &entry);
-		chttp_context_free(&http);
+		chttp_context_free(http);
 		return 1;
 	} else {
-		assert_dev(http.state >= CHTTP_STATE_IDLE);
-		assert_zero_dev(http.length);
+		assert_dev(http->state >= CHTTP_STATE_IDLE);
+		assert_zero_dev(http->length);
 	}
 
-	if (!size) {
+	if (!fetch->length) {
 		assert_zero_dev(entry->bytes);
-		size = bytes;
-		if (type == FBR_CSTORE_FILE_ROOT) {
-			size = FBR_CSTORE_ROOT_LEN;
+		fetch->length = bytes;
+		if (fetch->type == FBR_CSTORE_FILE_ROOT) {
+			fetch->length = FBR_CSTORE_ROOT_LEN;
 		}
 
-		int ret = fbr_cstore_set_size(cstore, entry, size);
+		int ret = fbr_cstore_set_size(cstore, entry, fetch->length);
 		if (ret) {
 			fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET size");
 			fbr_cstore_set_error(entry);
 			fbr_cstore_remove(cstore, &entry);
-			chttp_context_free(&http);
+			chttp_context_free(http);
 			return 1;
 		}
 	}
 
 	struct fbr_cstore_metadata metadata;
 	fbr_zero(&metadata);
-	metadata.etag = id;
+	metadata.etag = fetch->etag;
 	metadata.size = bytes;
-	metadata.offset = offset;
-	metadata.type = type;
-	metadata.gzipped = http.gzip;
-	fbr_strbcpy(metadata.path, file_path->value);
+	metadata.offset = fetch->offset;
+	metadata.type = fetch->type;
+	metadata.gzipped = http->gzip;
+	fbr_strbcpy(metadata.path, fetch->file_path->value);
 
-	chttp_context_free(&http);
+	chttp_context_free(http);
 
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
 	int ret = fbr_cstore_metadata_write(&hashpath, &metadata);
@@ -561,7 +559,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore *cstore, fbr_hash_t hash,
 	fbr_cstore_release(cstore, &entry);
 	assert_zero_dev(entry);
 
-	if (type == FBR_CSTORE_FILE_CHUNK) {
+	if (fetch->type == FBR_CSTORE_FILE_CHUNK) {
 		fbr_fs_stat_add(&cstore->stats.fetch_chunks);
 	}
 
