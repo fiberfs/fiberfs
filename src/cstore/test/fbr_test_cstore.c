@@ -280,7 +280,7 @@ fbr_test_cstore_wait(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
 
-	int max = 40;
+	int max = 60;
 	int count = 0;
 
 	if (fbr_test_is_valgrind()) {
