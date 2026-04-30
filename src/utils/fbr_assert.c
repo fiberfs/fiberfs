@@ -16,8 +16,7 @@
 #include "fbr_assert.h"
 #include "fbr_utils.h"
 
-extern void fbr_context_pre_abort(void);
-extern void fbr_context_abort(void);
+extern void fbr_context_abort(int pre_abort);
 
 static unsigned long _ASSERT_LOOP;
 static int _ASSERT_SPLIT_TRACE;
@@ -86,7 +85,7 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
 {
 	unsigned long count = fbr_atomic_add(&_ASSERT_LOOP, 1);
 
-	fbr_context_pre_abort();
+	fbr_context_abort(1);
 
 	fprintf(stderr, "%s:%d %s(): ", file, line, function);
 
@@ -115,7 +114,7 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
 		abort();
 	}
 
-	fbr_context_abort();
+	fbr_context_abort(0);
 
 	abort();
 }

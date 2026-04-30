@@ -145,10 +145,7 @@ main(int argc, char **argv)
 
 // Required for fiber asserting
 void
-fbr_context_pre_abort(void)
+fbr_context_abort(int pre_abort)
 {
-}
-void
-fbr_context_abort(void)
-{
+	(void)pre_abort;
 }

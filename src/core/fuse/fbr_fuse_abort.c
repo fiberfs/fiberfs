@@ -49,14 +49,13 @@ extern void fbr_test_context_abort(void);
  */
 
 void
-fbr_context_pre_abort(void)
+fbr_context_abort(int pre_abort)
 {
-	fbr_log_restore_stderr();
-}
+	if (pre_abort) {
+		fbr_log_restore_stderr();
+		return;
+	}
 
-void
-fbr_context_abort(void)
-{
 	struct fbr_request *request = fbr_request_get();
 
 	if (!request || request->not_fuse) {

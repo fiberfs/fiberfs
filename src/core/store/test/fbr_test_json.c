@@ -302,7 +302,7 @@ fbr_cmd_index_root_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	id = fbr_root_json_parse(root, strlen(root));
 	assert(id == 7633865586532288606);
 
-	root = "{\"fiberfs\":99999,\"v\":\"17773978380341182558\"}";
+	root = "{\"fiberfs\":9999999,\"v\":\"17773978380341182558\"}";
 	id = fbr_root_json_parse(root, strlen(root));
 	assert_zero(id);
 
@@ -394,8 +394,14 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_directory *directory = _parse_directory(fs, json);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
-
 	fbr_dindex_release(fs, &directory);
+
+	json = "{\"fiberfs\":9999999,\"g\":1,\"f\":[]}";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+	fbr_dindex_release(fs, &directory);
+
 	fbr_fs_free(fs);
 
 	fbr_test_logs("index_json_parse done");
