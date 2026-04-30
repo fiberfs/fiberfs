@@ -586,6 +586,8 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, unsigned int 
 		}
 	} while (ret == EAGAIN);
 
+	// TODO store error in request so we can read it back out somewhere else
+
 	if (ret) {
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
 		return;
