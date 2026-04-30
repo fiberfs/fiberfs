@@ -23,6 +23,8 @@ struct _root_parser {
 	fbr_id_t			root_version;
 };
 
+static int _index_parse_json(struct fjson_context *ctx, void *priv);
+
 static int
 _json_header_peek(const char *json_buf, size_t json_buf_len)
 {
@@ -589,26 +591,31 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, unsigned int 
 		return;
 	}
 
-	assert_dev(directory->generation);
-
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 }
 
 void
 fbr_index_parser_init(struct fbr_fs *fs, struct fbr_index_parser *parser,
-    struct fbr_directory *directory)
+    struct fbr_directory *directory, struct fjson_context *json)
 {
 	fbr_fs_ok(fs);
 	assert(parser);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	assert_zero(directory->generation);
+	assert(json);
 
 	fbr_zero(parser);
 
 	parser->magic = FBR_INDEX_PARSER_MAGIC;
 	parser->fs = fs;
 	parser->directory = directory;
+
+	fjson_context_init(json);
+	json->callback = &_index_parse_json;
+	json->callback_priv = parser;
+
+	parser->json = json;
 
 	fbr_index_parser_ok(parser);
 }
@@ -617,6 +624,10 @@ void
 fbr_index_parser_free(struct fbr_index_parser *parser)
 {
 	fbr_index_parser_ok(parser);
+	assert_dev(parser->json);
+
+	fjson_context_free(parser->json);
+
 	fbr_zero(parser);
 }
 
@@ -1001,7 +1012,8 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 
 				if (previous && previous->generation == directory->generation &&
 				    previous->version == directory->version && !error) {
-					fbr_rlog(FBR_LOG_ERROR, "PARSER directory matches prev");
+					fbr_rlog(FBR_LOG_CS_INDEX,
+						"ERROR PARSER directory matches prev");
 					return 1;
 				}
 			}
@@ -1013,8 +1025,8 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 	return 0;
 }
 
-int
-fbr_index_parse_json(struct fjson_context *ctx, void *priv)
+static int
+_index_parse_json(struct fjson_context *ctx, void *priv)
 {
 	fjson_context_ok(ctx);
 	assert(priv);
@@ -1082,4 +1094,30 @@ fbr_index_parse_json(struct fjson_context *ctx, void *priv)
 	fbr_rlog(FBR_LOG_ERROR, "PARSER root error");
 
 	return 1;
+}
+
+int
+fbr_index_parser_validate(struct fbr_index_parser *parser)
+{
+	fbr_index_parser_ok(parser);
+
+	struct fjson_context *json = parser->json;
+	fjson_context_ok(json);
+
+	struct fbr_directory *directory = parser->directory;
+	fbr_directory_ok(directory);
+
+	if (json->error) {
+		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR json: %s", fjson_state_name(json->state));
+		parser->error = 1;
+		return 1;
+	}
+
+	if (!directory->generation) {
+		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR generation missing");
+		parser->error = 1;
+		return 1;
+	}
+
+	return parser->error;
 }

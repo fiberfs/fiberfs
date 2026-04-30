@@ -346,6 +346,39 @@ fbr_cmd_index_root_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_test_logs("index_root_json_parse done");
 }
 
+static struct fbr_directory *
+_parse_directory(struct fbr_fs *fs, const char *index_json)
+{
+	fbr_fs_ok(fs);
+	assert(index_json);
+
+	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
+	assert_zero(directory->generation);
+
+	struct fbr_index_parser parser;
+	struct fjson_context json;
+	fbr_index_parser_init(fs, &parser, directory, &json);
+	assert(json.callback);
+	assert(json.callback_priv == &parser);
+
+	fjson_parse(&json, index_json, strlen(index_json));
+
+	int ret = fbr_index_parser_validate(&parser);
+
+	if (ret) {
+		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+	} else {
+		assert(directory->generation);
+		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+	}
+
+	fbr_index_parser_free(&parser);
+
+	return directory;
+}
+
 void
 fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -357,34 +390,11 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs);
 
-	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
+	const char *json = "{\"fiberfs\":1,\"g\":1,\"f\":[]}";
+	struct fbr_directory *directory = _parse_directory(fs, json);
 	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_LOADING);
-	assert_zero(directory->previous);
-	assert_zero(directory->generation);
+	assert(directory->state == FBR_DIRSTATE_OK);
 
-	struct fbr_index_parser parser;
-	fbr_index_parser_init(fs, &parser, directory);
-
-	const char *index;
-	struct fjson_context json;
-	fjson_context_init(&json);
-	json.callback = &fbr_index_parse_json;
-	json.callback_priv = &parser;
-
-	index = "{\"fiberfs\":1,\"g\":1,\"f\":[]}";
-	fjson_parse(&json, index, strlen(index));
-
-	if (json.error) {
-		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
-		fbr_test_logs("JSON error: %s", fjson_state_name(json.state));
-	} else {
-		assert(directory->generation);
-		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
-	}
-
-	fjson_context_free(&json);
-	fbr_index_parser_free(&parser);
 	fbr_dindex_release(fs, &directory);
 	fbr_fs_free(fs);
 

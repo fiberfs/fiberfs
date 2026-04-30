@@ -818,12 +818,8 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_buffer_ok(output);
 
 	struct fbr_index_parser parser;
-	fbr_index_parser_init(fs, &parser, directory);
-
 	struct fjson_context json;
-	fjson_context_init(&json);
-	json.callback = &fbr_index_parse_json;
-	json.callback_priv = &parser;
+	fbr_index_parser_init(fs, &parser, directory, &json);
 
 	struct fbr_gzip gzip;
 	if (metadata.gzipped) {
@@ -904,22 +900,19 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fjson_parse(&json, output->buffer, output->buffer_pos);
 	assert(parser.magic == FBR_INDEX_PARSER_MAGIC);
 
-	int ret = 0;
+	int errors = 0;
 
 	if (metadata.gzipped) {
 		if (gzip.status != FBR_GZIP_DONE) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR gunzip");
-			ret = 1;
+			errors += 1;
 		}
 
 		fbr_gzip_free(&gzip);
 	}
-	if (json.error) {
-		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR json");
-		ret = 1;
-	}
 
-	fjson_context_free(&json);
+	errors += fbr_index_parser_validate(&parser);
+
 	fbr_index_parser_free(&parser);
 	fbr_reader_free(fs, &reader);
 
@@ -927,7 +920,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	fbr_cstore_release(cstore, &entry);
 
-	return ret;
+	return errors;
 }
 
 void
