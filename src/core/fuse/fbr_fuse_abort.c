@@ -9,6 +9,7 @@
 #include "fiberfs.h"
 #include "fbr_fuse.h"
 #include "core/request/fbr_request.h"
+#include "log/fbr_log.h"
 
 extern void fbr_test_context_abort(void);
 
@@ -46,6 +47,12 @@ extern void fbr_test_context_abort(void);
  *
  * 4. If not a fiber_test context, abort() is called. (See fbr_assert.c)
  */
+
+void
+fbr_context_pre_abort(void)
+{
+	fbr_log_restore_stderr();
+}
 
 void
 fbr_context_abort(void)
