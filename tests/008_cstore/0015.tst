@@ -39,6 +39,8 @@ fs_test_release_all
 
 sleep_ms 100
 
+fs_test_stats
+
 print "### READ INDEX AND FILE"
 
 sys_cat $var1 "testing 123"
