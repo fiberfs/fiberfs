@@ -15,6 +15,7 @@
 #include "fjson.h"
 #include "compress/fbr_gzip.h"
 #include "core/fs/fbr_fs.h"
+#include "core/request/fbr_request.h"
 #include "core/store/fbr_store.h"
 #include "cstore/fbr_cstore_callback.h"
 #include "utils/fbr_sys.h"
@@ -22,6 +23,7 @@
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+#include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
 static void
@@ -352,6 +354,8 @@ _parse_directory(struct fbr_fs *fs, const char *index_json)
 	fbr_fs_ok(fs);
 	assert(index_json);
 
+	struct fbr_request *request = fbr_test_request_mock();
+
 	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
@@ -376,6 +380,8 @@ _parse_directory(struct fbr_fs *fs, const char *index_json)
 
 	fbr_index_parser_free(&parser);
 
+	fbr_request_free(request);
+
 	return directory;
 }
 
@@ -394,14 +400,93 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_directory *directory = _parse_directory(fs, json);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
+	assert(directory->generation == 1);
 	fbr_dindex_release(fs, &directory);
 
 	json = "{\"fiberfs\":9999999,\"g\":1,\"f\":[]}";
 	directory = _parse_directory(fs, json);
 	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_OK);
+	assert(directory->state == FBR_DIRSTATE_ERROR);
 	fbr_dindex_release(fs, &directory);
 
+	json = "{\"g\":1,\"f\":[]}";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_ERROR);
+	fbr_dindex_release(fs, &directory);
+
+	json = "{\"z\":1}";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_ERROR);
+	fbr_dindex_release(fs, &directory);
+
+	json = "{}";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_ERROR);
+	fbr_dindex_release(fs, &directory);
+
+	json = "123";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_ERROR);
+	fbr_dindex_release(fs, &directory);
+
+	json = "zzz";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_ERROR);
+	fbr_dindex_release(fs, &directory);
+
+	json = "{\"fiberfs\":3,\"f\":[]}";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_ERROR);
+	fbr_dindex_release(fs, &directory);
+
+	json = "{\"fiberfs\":1,\"f\":[],\"g\":3}";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+	assert(directory->generation == 3);
+	fbr_dindex_release(fs, &directory);
+
+	json = "{\"fiberfs\":6,\"g\":665}";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+	assert(directory->generation == 665);
+	fbr_dindex_release(fs, &directory);
+
+	json = "{\"fiberfs\":1,\"g\":2,\"f\":[{\"n\":\"file_1\",\"j\":1,\"s\":2048,\"m\":33060,"
+		"\"u\":1000,\"p\":1000,\"b\":[{\"i\":\"17775679553136982062\",\"o\":0,\"l\":1024},"
+		"{\"i\":\"17775679550948149444\",\"o\":1024,\"l\":1024}]},{\"n\":\"file_XYZ\","
+		"\"j\":1,\"s\":200,\"m\":33060,\"u\":1000,\"p\":1000,\"b\":[{\"i\":"
+		"\"17775679552912043528\",\"o\":0,\"l\":150},{\"i\":\"17775679552326286274\","
+		"\"o\":150,\"l\":50}]}]}";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+	assert(directory->generation == 2);
+	assert(directory->file_count == 2);
+	struct fbr_file *file = fbr_directory_find_file(directory, "file_1", 6);
+	fbr_file_ok(file);
+	assert(fbr_test_fs_count_chunks(file) == 2);
+	assert(fbr_test_fs_get_chunk(file, 0)->offset == 0);
+	assert(fbr_test_fs_get_chunk(file, 0)->length == 1024);
+	assert(fbr_test_fs_get_chunk(file, 1)->offset == 1024);
+	assert(fbr_test_fs_get_chunk(file, 1)->length == 1024);
+	file = fbr_directory_find_file(directory, "file_XYZ", 8);
+	fbr_file_ok(file);
+	assert(fbr_test_fs_count_chunks(file) == 2);
+	assert(fbr_test_fs_get_chunk(file, 0)->offset == 0);
+	assert(fbr_test_fs_get_chunk(file, 0)->length == 150);
+	assert(fbr_test_fs_get_chunk(file, 1)->offset == 150);
+	assert(fbr_test_fs_get_chunk(file, 1)->length == 50);
+	fbr_dindex_release(fs, &directory);
+
+	fbr_request_pool_shutdown();
 	fbr_fs_free(fs);
 
 	fbr_test_logs("index_json_parse done");

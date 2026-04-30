@@ -85,6 +85,8 @@ struct fbr_index_parser {
 	char					context[__FBR_INDEX_LOC_SIZE];
 	enum fbr_index_location			location;
 
+	unsigned long				version;
+
 	struct fjson_context 			*json;
 	struct fbr_fs				*fs;
 	struct fbr_directory			*directory;

@@ -496,7 +496,7 @@ fbr_root_json_parse(const char *json_buf, size_t json_buf_len)
 
 	int json_version = _json_header_peek(json_buf, json_buf_len);
 	if (json_version < 1 || json_version >= 10) {
-		fbr_rlog(FBR_LOG_INDEX, "bad json version: %d", json_version);
+		fbr_rlog(FBR_LOG_INDEX, "bad fiberfs json version: %d", json_version);
 		return 0;
 	}
 
@@ -1016,10 +1016,27 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 						"ERROR PARSER directory matches prev");
 					return 1;
 				}
+			} else if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'v')) {
+				const char *val = token->svalue;
+				size_t val_len = token->svalue_len;
+				int error;
+
+				parser->version = fbr_parse_ulong(val, val_len, &error);
+
+				if (error || parser->version < 1 || parser->version >= 10) {
+					fbr_rlog(FBR_LOG_INDEX, "bad fiberfs json version: %lu",
+						parser->version);
+					return 1;
+				}
 			}
 			break;
 		default:
 			break;
+	}
+
+	if (!parser->version) {
+		fbr_rlog(FBR_LOG_INDEX, "missing fiberfs json version");
+		return 1;
 	}
 
 	return 0;
@@ -1065,6 +1082,9 @@ _index_parse_json(struct fjson_context *ctx, void *priv)
 		case FJSON_TOKEN_LABEL:
 			if (token->svalue_len == 1) {
 				parser->context[parser->location] = token->svalue[0];
+			} else if (depth == 1 && token->svalue_len == 7 &&
+			    !strncmp(token->svalue, "fiberfs", 7)) {
+				parser->context[parser->location] = 'v';
 			} else {
 				parser->context[parser->location] = 0;
 			}
@@ -1109,6 +1129,12 @@ fbr_index_parser_validate(struct fbr_index_parser *parser)
 
 	if (json->error) {
 		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR json: %s", fjson_state_name(json->state));
+		parser->error = 1;
+		return 1;
+	}
+
+	if (!parser->version) {
+		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR fiberfs json version missing");
 		parser->error = 1;
 		return 1;
 	}
