@@ -819,7 +819,7 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 
 	int changed = 0;
 	if (!generation || error) {
-		changed = 1;
+		return;
 	} else if (file->generation < generation) {
 		changed = 1;
 	} else if (fbr_file_has_wbuffer(file)) {
@@ -906,9 +906,11 @@ _index_parse_file_end(struct fbr_index_parser *parser)
 		parser->files_new++;
 	} else {
 		assert_dev(file->state >= FBR_FILE_OK);
-		fbr_file_free(fs, file);
+		fbr_directory_add_file(fs, directory, file);
 
-		fbr_rlog(FBR_LOG_INDEX, "PARSER existing no gen found, skipping");
+		parser->files_existing++;
+
+		fbr_rlog(FBR_LOG_INDEX, "PARSER existing no gen found, keeping");
 	}
 
 	parser->file = NULL;
