@@ -1012,8 +1012,8 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 
 				directory->generation = fbr_parse_ulong(val, val_len, &error);
 
-				if (previous && previous->generation == directory->generation &&
-				    previous->version == directory->version && !error) {
+				if (previous && (previous->generation >= directory->generation ||
+				    previous->version == directory->version) && !error) {
 					fbr_rlog(FBR_LOG_CS_INDEX,
 						"ERROR PARSER directory matches prev");
 					return 1;
