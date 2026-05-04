@@ -546,9 +546,11 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(directory->file_count == 2);
 	file = fbr_directory_find_file(directory, "file_ABC", 8);
 	fbr_file_ok(file);
+	assert(file->generation == 1);
 	assert_zero(fbr_test_fs_count_chunks(file));
 	file = fbr_directory_find_file(directory, "file_XYZ", 8);
 	fbr_file_ok(file);
+	assert(file->generation == 2);
 	assert_zero(fbr_test_fs_count_chunks(file));
 	fbr_dindex_release(fs, &directory);
 
@@ -561,6 +563,21 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(directory->file_count == 1);
 	file = fbr_directory_find_file(directory, "file_ABC", 8);
 	fbr_file_ok(file);
+	assert(file->generation == 1);
+	assert_zero(fbr_test_fs_count_chunks(file));
+	fbr_dindex_release(fs, &directory);
+
+	// duplicate filename (merged)
+	json = "{\"fiberfs\":1,\"g\":6,\"f\":[{\"n\":\"file_ABC\",\"j\":1},"
+		"{\"n\":\"file_ABC\",\"j\":2}]}";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+	assert(directory->generation == 6);
+	assert(directory->file_count == 1);
+	file = fbr_directory_find_file(directory, "file_ABC", 8);
+	fbr_file_ok(file);
+	assert(file->generation == 2);
 	assert_zero(fbr_test_fs_count_chunks(file));
 	fbr_dindex_release(fs, &directory);
 

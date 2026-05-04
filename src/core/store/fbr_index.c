@@ -765,6 +765,7 @@ _index_parse_file_alloc(struct fbr_index_parser *parser, const char *filename, s
 	parser->file = fbr_file_alloc_new(fs, directory, &filepath);
 	assert_dev(parser->file);
 	assert_dev(parser->file->state == FBR_FILE_INIT);
+	assert_zero_dev(parser->file->generation);
 }
 
 static void
@@ -835,7 +836,11 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 			assert_dev(file->state >= FBR_FILE_OK);
 
 			if (fbr_file_has_wbuffer(file)) {
-				fbr_rlog(FBR_LOG_DEBUG, "PARSER merge candidate found");
+				fbr_rlog(FBR_LOG_DEBUG, "PARSER wbuffer merge candidate");
+				assert_zero_dev(parser->merge);
+				parser->merge = file;
+			} else if (parser->current_exists) {
+				fbr_rlog(FBR_LOG_DEBUG, "PARSER existing merge candidate");
 				assert_zero_dev(parser->merge);
 				parser->merge = file;
 			} else {

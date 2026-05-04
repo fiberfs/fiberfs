@@ -591,6 +591,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			case FBR_DIRSTATE_OK:
 				break;
 			case FBR_DIRSTATE_LOADING:
+				// TODO this will force a merge...
 				if (add_file_init) {
 					file->state = FBR_FILE_OK;
 					file->generation = 0;
@@ -750,6 +751,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 
 		// Read from index store
+		// TODO we force merging here too
 		if (add_file) {
 			file->generation = 0;
 			fbr_directory_add_file(fs, directory, file);
