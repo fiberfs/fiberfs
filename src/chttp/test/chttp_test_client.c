@@ -346,6 +346,7 @@ chttp_test_cmd_chttp_receive(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	struct chttp_context *chttp = _test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 	struct fbr_test *test = fbr_test_convert(ctx);
+	fbr_test_ERROR(chttp->error, "chttp receive error (%s)", chttp_error_msg(chttp));
 
 	chttp_receive(chttp);
 
