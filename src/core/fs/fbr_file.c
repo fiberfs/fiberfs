@@ -432,11 +432,12 @@ _file_pointer_init(struct fbr_file *file, struct fbr_file_ptr *file_ptr)
 	file_ptr->file = file;
 }
 
-// Note: only use while under a directory loading state
 struct fbr_file_ptr *
-fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_file *file)
+fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
 
 	for (size_t i = 0; i < fbr_array_len(file->ptr_head.ptrs); i++) {

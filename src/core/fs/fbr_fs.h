@@ -411,7 +411,8 @@ void fbr_file_ref_wbuffer(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_release_wbuffer(struct fbr_fs *fs, struct fbr_file *file);
 int fbr_file_has_wbuffer(struct fbr_file *file);
 void fbr_file_free(struct fbr_fs *fs, struct fbr_file *file);
-struct fbr_file_ptr *fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_file *file);
+struct fbr_file_ptr *fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_directory *directory,
+	struct fbr_file *file);
 void fbr_file_ptr_free(struct fbr_file_ptr *file_ptr);
 void fbr_file_ptrs_free(struct fbr_file *file);
 void fbr_file_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st);

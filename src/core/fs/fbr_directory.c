@@ -287,7 +287,7 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	fbr_file_ref_dindex(fs, file);
 
-	struct fbr_file_ptr *file_ptr = fbr_file_ptr_get(fs, file);
+	struct fbr_file_ptr *file_ptr = fbr_file_ptr_get(fs, directory, file);
 	fbr_file_ptr_ok(file_ptr);
 
 	file_ptr = RB_INSERT(fbr_filename_tree, &directory->filename_tree, file_ptr);
