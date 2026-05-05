@@ -168,7 +168,7 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	// flush parent
 	assert(fs_remote->store);
 	assert(fs_remote->store->optional.directory_flush_f);
-	ret = fs_remote->store->optional.directory_flush_f(fs_remote, file, NULL, FBR_FLUSH_NONE);
+	ret = fs_remote->store->optional.directory_flush_f(fs_remote, file, NULL, FBR_FLUSH_MKDIR);
 	assert_zero(ret);
 	assert(file->state == FBR_FILE_OK);
 

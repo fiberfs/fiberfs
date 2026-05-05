@@ -62,6 +62,8 @@ unsigned long fbr_ulong2octal(unsigned long value);
 	__sync_synchronize()
 #define fbr_zero(ptr)							\
 	explicit_bzero(ptr, sizeof(*(ptr)))
+#define fbr_is_flag(flags, bits)					\
+	((flags) & (bits))
 #define fbr_array_len(array)						\
 	(sizeof(array) / sizeof(*(array)))
 

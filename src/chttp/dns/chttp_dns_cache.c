@@ -120,7 +120,7 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	size_t pos = 0;
 
 	// Calculate next for RR
-	if (!(flags & DNS_DISABLE_RR)) {
+	if (!fbr_is_flag(flags, DNS_DISABLE_RR)) {
 		pos = (dns_head->current + 1) % dns_head->length;
 		dns_head->current = pos;
 	}

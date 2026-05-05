@@ -55,7 +55,7 @@ chttp_dns_resolve(struct chttp_addr *addr, const char *host, size_t host_len, in
 
 	chttp_addr_reset(addr);
 
-	if (!(flags & DNS_FRESH_LOOKUP)) {
+	if (!fbr_is_flag(flags, DNS_FRESH_LOOKUP)) {
 		int ret = chttp_dns_cache_lookup(host, host_len, addr, port, flags);
 
 		if (ret) {

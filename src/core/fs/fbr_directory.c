@@ -533,6 +533,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
+	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR));
 
 	fbr_inode_t inode = file->parent_inode;
 	struct fbr_file *parent = fbr_inode_take(fs, inode);

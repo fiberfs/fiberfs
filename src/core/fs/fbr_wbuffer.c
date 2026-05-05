@@ -602,7 +602,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	assert_dev(fbr_file_has_wbuffer(fio->file));
 
 	struct fbr_file *file = fio->file;
-	enum fbr_flush_flags flags = FBR_FLUSH_NONE;
+	enum fbr_flush_flags flags = FBR_FLUSH_WBUFFER;
 
 	if (fio->append) {
 		flags |= FBR_FLUSH_APPEND;
@@ -614,7 +614,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	int error = 0;
-	if (!fbr_fs_is_flag(flags, FBR_FLUSH_DELAY_WRITE)) {
+	if (!fbr_is_flag(flags, FBR_FLUSH_DELAY_WRITE)) {
 		error = fbr_wbuffer_flush_store(fs, file, fio->wbuffers, 0, 0);
 	}
 

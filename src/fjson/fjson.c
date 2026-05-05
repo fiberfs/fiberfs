@@ -150,7 +150,7 @@ _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 
 		token->length++;
 
-		if(!token->length) {
+		if (!token->length) {
 			_set_error(ctx, FJSON_STATE_ERROR_SIZE, "length too long");
 			return _bad_token();
 		}

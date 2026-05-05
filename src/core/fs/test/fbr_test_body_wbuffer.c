@@ -236,7 +236,7 @@ _test_flush_directory(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_wbuffer_ok(wbuffers);
-	assert_zero(flags);
+	assert(flags == FBR_FLUSH_WBUFFER);
 
 	struct fbr_wbuffer *wbuffer = wbuffers;
 	size_t errors = 0;
@@ -324,7 +324,7 @@ _test_fio_thread(void *arg)
 		int ret = fbr_wbuffer_flush_fio(fs, fio);
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
-			_test_flush_directory(fs, file, fio->wbuffers, 0);
+			_test_flush_directory(fs, file, fio->wbuffers, FBR_FLUSH_WBUFFER);
 			fbr_wbuffers_reset_lock(fs, fio);
 		} else {
 			assert_zero(ret);
@@ -465,7 +465,7 @@ _test_concurrent_fio(void)
 		int ret = fbr_wbuffer_flush_fio(fs, fio);
 		if (_STORE_ERROR_THREAD_ID >= 0) {
 			assert(ret);
-			_test_flush_directory(fs, file, fio->wbuffers, 0);
+			_test_flush_directory(fs, file, fio->wbuffers, FBR_FLUSH_WBUFFER);
 			fbr_wbuffers_reset_lock(fs, fio);
 		} else {
 			assert_zero(ret);

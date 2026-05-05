@@ -129,7 +129,7 @@ _json_body_modified_gen(struct fbr_fs *fs, struct fbr_writer *json,
 		_json_chunk_gen(fs, json, chunk);
 	}
 
-	if (fbr_fs_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
+	if (fbr_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
 		assert_dev(index_data->wbuffers);
 		struct fbr_wbuffer *wbuffer = index_data->wbuffers;
 		while (wbuffer) {
@@ -307,7 +307,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		fbr_wbuffer_ok(wbuffers);
 		fbr_file_ok(file);
 
-		if (fbr_fs_is_flag(flags, FBR_FLUSH_TRUNCATE)) {
+		if (fbr_is_flag(flags, FBR_FLUSH_TRUNCATE)) {
 			fbr_rlog(FBR_LOG_INDEX, "TRUNCATE flagged");
 
 			index_data->chunks = fbr_wbuffer_chunks(wbuffers);
@@ -319,10 +319,10 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 					index_data->size, file->size);
 				file->size = index_data->size;
 			}
-		} else if (fbr_fs_is_flag(flags, FBR_FLUSH_APPEND)) {
+		} else if (fbr_is_flag(flags, FBR_FLUSH_APPEND)) {
 			fbr_rlog(FBR_LOG_INDEX, "APPEND flagged");
 
-			assert(fbr_fs_is_flag(flags, FBR_FLUSH_DELAY_WRITE));
+			assert(fbr_is_flag(flags, FBR_FLUSH_DELAY_WRITE));
 
 			index_data->size = fbr_body_length(file, NULL);
 			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
@@ -386,12 +386,12 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_write()");
 
 	int do_append = 0;
-	if (fbr_fs_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
+	if (fbr_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
 		assert_dev(index_data->wbuffers);
 		do_append = 1;
 	}
 
-	if (fbr_fs_is_flag(index_data->flags, FBR_FLUSH_DELAY_WRITE)) {
+	if (fbr_is_flag(index_data->flags, FBR_FLUSH_DELAY_WRITE)) {
 		int ret = fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers,
 			do_append, 1);
 		if (ret) {
