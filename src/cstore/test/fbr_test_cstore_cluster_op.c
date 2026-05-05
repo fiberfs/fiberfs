@@ -211,8 +211,8 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert_zero(_CSTORE_C1_S3->stats.http_500);
 	assert_zero(_CSTORE_C0_SHARED->stats.http_500);
 
-	fbr_fs_free(fs);
 	fbr_request_pool_shutdown();
+	fbr_fs_free(fs);
 
 	_CSTORE_C0_SHARED = NULL;
 	_CSTORE_C1_S3 = NULL;
