@@ -307,8 +307,8 @@ fbr_config_reader_lock(struct fbr_config_reader *reader)
 	}
 	assert_dev(now > last_update);
 
-	long previous = fbr_compare_swap(&reader->last_update, last_update, now);
-	if (previous != last_update) {
+	int success = fbr_compare_swap(&reader->last_update, &last_update, now);
+	if (!success) {
 		while (!reader->init) {
 			fbr_sleep_ms(1);
 		}

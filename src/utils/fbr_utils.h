@@ -65,8 +65,9 @@ unsigned long fbr_ulong2octal(unsigned long value);
 	__atomic_sub_fetch(dest_ptr, value, __ATOMIC_SEQ_CST)
 #define fbr_atomic_sub_relaxed(dest_ptr, value)				\
 	__atomic_sub_fetch(dest_ptr, value, __ATOMIC_RELAXED)
-#define fbr_compare_swap(dest_ptr, old_value, new_value)		\
-	__sync_val_compare_and_swap(dest_ptr, old_value, new_value)
+#define fbr_compare_swap(dest_ptr, old_value_ptr, new_value)		\
+	__atomic_compare_exchange_n(dest_ptr, old_value_ptr, new_value,	\
+		0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)
 #define fbr_memory_sync()						\
 	__atomic_thread_fence(__ATOMIC_SEQ_CST)
 #define fbr_zero(ptr)							\

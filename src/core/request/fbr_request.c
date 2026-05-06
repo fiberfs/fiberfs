@@ -228,13 +228,14 @@ fbr_request_take_fuse(struct fbr_request *request)
 
 	fuse_req_t fuse_req = request->fuse_req;
 	if (fuse_req) {
-		fuse_req_t ret = fbr_compare_swap(&request->fuse_req, fuse_req, NULL);
+		int success = fbr_compare_swap(&request->fuse_req, &fuse_req, NULL);
 
-		if (ret == fuse_req) {
+		if (success) {
+			assert(fuse_req);
 			return fuse_req;
 		}
 
-		assert_zero_dev(ret);
+		assert_zero_dev(fuse_req);
 	}
 
 	assert_zero_dev(request->fuse_req);
