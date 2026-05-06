@@ -56,19 +56,19 @@ unsigned long fbr_ulong2octal(unsigned long value);
 #define fbr_bprintf(buf, fmt, ...)					\
 	fbr_snprintf(buf, sizeof(buf), fmt, ##__VA_ARGS__)
 #define fbr_atomic_add(dest_ptr, value)					\
-	__atomic_add_fetch(dest_ptr, value, __ATOMIC_SEQ_CST);
+	__atomic_add_fetch(dest_ptr, value, __ATOMIC_SEQ_CST)
 #define fbr_atomic_add_relaxed(dest_ptr, value)				\
-	__atomic_add_fetch(dest_ptr, value, __ATOMIC_RELAXED);
+	__atomic_add_fetch(dest_ptr, value, __ATOMIC_RELAXED)
 #define fbr_atomic_get_add(dest_ptr, value)				\
-	__atomic_fetch_add(dest_ptr, value, __ATOMIC_SEQ_CST);
+	__atomic_fetch_add(dest_ptr, value, __ATOMIC_SEQ_CST)
 #define fbr_atomic_sub(dest_ptr, value)					\
-	__atomic_sub_fetch(dest_ptr, value, __ATOMIC_SEQ_CST);
+	__atomic_sub_fetch(dest_ptr, value, __ATOMIC_SEQ_CST)
 #define fbr_atomic_sub_relaxed(dest_ptr, value)				\
-	__atomic_sub_fetch(dest_ptr, value, __ATOMIC_RELAXED);
+	__atomic_sub_fetch(dest_ptr, value, __ATOMIC_RELAXED)
 #define fbr_compare_swap(dest_ptr, old_value, new_value)		\
 	__sync_val_compare_and_swap(dest_ptr, old_value, new_value)
 #define fbr_memory_sync()						\
-	__sync_synchronize()
+	__atomic_thread_fence(__ATOMIC_SEQ_CST)
 #define fbr_zero(ptr)							\
 	explicit_bzero(ptr, sizeof(*(ptr)))
 #define fbr_is_flag(flags, bits)					\
