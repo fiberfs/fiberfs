@@ -282,7 +282,7 @@ fbr_test_fs_root_alloc(struct fbr_fs *fs)
 	root->generation = 1;
 
 	struct fbr_index_data index_data;
-	fbr_index_data_init(NULL, &index_data, root, NULL, NULL, NULL, FBR_FLUSH_NONE);
+	fbr_index_data_init(fs, &index_data, root, NULL, NULL, NULL, FBR_FLUSH_MKDIR);
 
 	int ret = fbr_index_write(fs, &index_data);
 	fbr_ASSERT(!ret, "fbr_index_write() root failed: %d", ret);

@@ -84,7 +84,7 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	new_directory->generation = 1;
 
 	struct fbr_index_data index_data;
-	fbr_index_data_init(NULL, &index_data, new_directory, NULL, NULL, NULL, FBR_FLUSH_NONE);
+	fbr_index_data_init(fs, &index_data, new_directory, NULL, NULL, NULL, FBR_FLUSH_MKDIR);
 
 	int ret = fbr_index_write(fs, &index_data);
 	if (ret) {

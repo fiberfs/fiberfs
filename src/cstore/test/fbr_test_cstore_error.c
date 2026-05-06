@@ -53,7 +53,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	}
 
 	struct fbr_index_data index_data;
-	fbr_index_data_init(NULL, &index_data, directory, NULL, NULL, NULL, FBR_FLUSH_NONE);
+	fbr_index_data_init(fs, &index_data, directory, NULL, NULL, NULL, FBR_FLUSH_NONE);
 	int ret = fbr_index_write(fs, &index_data);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
 	fbr_index_data_free(&index_data);

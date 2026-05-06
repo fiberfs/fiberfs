@@ -291,6 +291,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
     struct fbr_directory *directory, struct fbr_directory *previous, struct fbr_file *file,
     struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags)
 {
+	fbr_fs_ok(fs);
 	assert(index_data);
 	fbr_directory_ok(directory);
 
@@ -302,10 +303,10 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	index_data->wbuffers = wbuffers;
 	index_data->flags = flags;
 
-	if (wbuffers) {
-		fbr_fs_ok(fs);
-		fbr_wbuffer_ok(wbuffers);
+	if (fbr_is_flag(flags, FBR_FLUSH_WBUFFER)) {
 		fbr_file_ok(file);
+		fbr_wbuffer_ok(wbuffers);
+		assert_zero(fbr_is_flag(flags, FBR_FLUSH_MKDIR));
 
 		if (fbr_is_flag(flags, FBR_FLUSH_TRUNCATE)) {
 			fbr_rlog(FBR_LOG_INDEX, "TRUNCATE flagged");
@@ -351,6 +352,12 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
 				&index_data->removed, wbuffers);
 		}
+	} else if (fbr_is_flag(flags, FBR_FLUSH_MKDIR)) {
+		assert(flags == FBR_FLUSH_MKDIR);
+		assert_zero(wbuffers);
+	} else {
+		assert(flags == FBR_FLUSH_NONE);
+		assert_zero(wbuffers);
 	}
 }
 
