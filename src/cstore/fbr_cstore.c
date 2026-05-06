@@ -485,7 +485,7 @@ fbr_cstore_get(struct fbr_cstore *cstore, fbr_hash_t hash)
 			if (bytes) {
 				entry = _cstore_insert_entry(cstore, head, hash, bytes, 0);
 				if (entry) {
-					fbr_fs_stat_add(&cstore->stats.lazy_loaded);
+					fbr_stat_add(&cstore->stats.lazy_loaded);
 				}
 			}
 		}
@@ -612,7 +612,7 @@ fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref
 {
 	_cstore_release(cstore, entry_ref, 1);
 
-	fbr_fs_stat_add(&cstore->stats.removed);
+	fbr_stat_add(&cstore->stats.removed);
 }
 
 void

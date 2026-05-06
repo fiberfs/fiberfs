@@ -98,7 +98,7 @@ _dindex_ref(struct fbr_fs *fs, struct fbr_directory *directory)
 	directory->refcounts.fs++;
 	assert(directory->refcounts.fs);
 
-	fbr_fs_stat_add(&fs->stats.directory_refs);
+	fbr_stat_add(&fs->stats.directory_refs);
 }
 
 static inline void
@@ -107,7 +107,7 @@ _dindex_deref(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(directory->refcounts.fs);
 	directory->refcounts.fs--;
 
-	fbr_fs_stat_sub(&fs->stats.directory_refs);
+	fbr_stat_sub(&fs->stats.directory_refs);
 }
 
 static void
@@ -317,7 +317,7 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 		assert_zero_dev(directory->previous);
 		directory->previous = existing;
 	} else {
-		fbr_fs_stat_add(&fs->stats.directories_dindex);
+		fbr_stat_add(&fs->stats.directories_dindex);
 	}
 
 	directory->state = FBR_DIRSTATE_LOADING;
@@ -425,7 +425,7 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 			(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
 			directory->refcounts.in_dindex = 0;
 
-			fbr_fs_stat_sub(&fs->stats.directories_dindex);
+			fbr_stat_sub(&fs->stats.directories_dindex);
 		}
 
 		_dindex_lru_remove(fs, directory);
@@ -443,7 +443,7 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 				fbr_directory_ok(existing);
 			} else {
 				previous->refcounts.in_dindex = 1;
-				fbr_fs_stat_add(&fs->stats.directories_dindex);
+				fbr_stat_add(&fs->stats.directories_dindex);
 
 				_dindex_lru_add(fs, previous);
 			}
@@ -582,7 +582,7 @@ _dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref, int dir
 		(void)RB_REMOVE(fbr_dindex_tree, &dirhead->tree, directory);
 		directory->refcounts.in_dindex = 0;
 
-		fbr_fs_stat_sub(&fs->stats.directories_dindex);
+		fbr_stat_sub(&fs->stats.directories_dindex);
 	}
 
 	assert_zero_dev(directory->refcounts.in_lru);
@@ -628,7 +628,7 @@ fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max)
 	while (dindex->lru_len > lru_max && attempts) {
 		_dindex_lru_pop_release(fs);
 		attempts--;
-		fbr_fs_stat_add(&fs->stats.lru_attempts);
+		fbr_stat_add(&fs->stats.lru_attempts);
 	}
 }
 
@@ -668,7 +668,7 @@ _dindex_lru_purger(void *arg)
 			directory = _dindex_dirfree_get(fs);
 		}
 
-		fbr_fs_stat_add(&fs->stats.lru_loops);
+		fbr_stat_add(&fs->stats.lru_loops);
 
 		unsigned long sleep_ms = fs->config.lru_sleep_ms;
 		fbr_sleep_flag(sleep_ms, &fs->shutdown, &dindex->dirfree_len);
@@ -730,7 +730,7 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 
 			_dindex_lru_remove(fs, directory);
 
-			fbr_fs_stat_sub(&fs->stats.directories_dindex);
+			fbr_stat_sub(&fs->stats.directories_dindex);
 
 			fbr_directory_free(fs, directory);
 		}

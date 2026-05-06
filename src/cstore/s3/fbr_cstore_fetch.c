@@ -558,7 +558,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 	assert_zero_dev(entry);
 
 	if (fetch->type == FBR_CSTORE_FILE_CHUNK) {
-		fbr_fs_stat_add(&cstore->stats.fetch_chunks);
+		fbr_stat_add(&cstore->stats.fetch_chunks);
 	}
 
 	return 0;
@@ -791,8 +791,8 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	fbr_rlog(FBR_LOG_CS_S3, "READ S3 %zu bytes", bytes);
 
-	fbr_fs_stat_add_count(&cstore->stats.rd_chunk_bytes, bytes);
-	fbr_fs_stat_add(&cstore->stats.fetch_chunks);
+	fbr_stat_add_count(&cstore->stats.rd_chunk_bytes, bytes);
+	fbr_stat_add(&cstore->stats.fetch_chunks);
 
 	if (!cstore->config.force_chunk_write) {
 		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash,

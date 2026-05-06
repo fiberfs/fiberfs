@@ -26,7 +26,7 @@ fbr_buffer_init(struct fbr_fs *fs, struct fbr_buffer *fbuf, char *buffer, size_t
 
 		if (fs) {
 			fbr_fs_ok(fs);
-			fbr_fs_stat_add(&fs->stats.buffers);
+			fbr_stat_add(&fs->stats.buffers);
 		}
 	}
 

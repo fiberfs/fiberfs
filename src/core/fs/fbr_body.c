@@ -74,7 +74,7 @@ _body_chunk_alloc(struct fbr_fs *fs, struct fbr_body *body)
 	slab->next = body->chunk_head.next;
 	body->chunk_head.next = slab;
 
-	fbr_fs_stat_add(&fs->stats.chunk_slabs);
+	fbr_stat_add(&fs->stats.chunk_slabs);
 
 	return &slab->chunks[0];
 }

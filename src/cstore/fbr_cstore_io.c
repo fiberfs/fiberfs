@@ -234,13 +234,13 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 
 			switch (type) {
 				case FBR_CSTORE_FILE_CHUNK:
-					fbr_fs_stat_sub(&cstore->stats.wr_chunks);
+					fbr_stat_sub(&cstore->stats.wr_chunks);
 					break;
 				case FBR_CSTORE_FILE_INDEX:
-					fbr_fs_stat_sub(&cstore->stats.wr_indexes);
+					fbr_stat_sub(&cstore->stats.wr_indexes);
 					break;
 				case FBR_CSTORE_FILE_ROOT:
-					fbr_fs_stat_sub(&cstore->stats.wr_roots);
+					fbr_stat_sub(&cstore->stats.wr_roots);
 					break;
 				default:
 					fbr_ABORT("Bad type: %s", fbr_cstore_type_name(type));
@@ -450,8 +450,8 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		return;
 	}
 
-	fbr_fs_stat_add_count(&cstore->stats.wr_chunk_bytes, bytes);
-	fbr_fs_stat_add(&cstore->stats.wr_chunks);
+	fbr_stat_add_count(&cstore->stats.wr_chunk_bytes, bytes);
+	fbr_stat_add(&cstore->stats.wr_chunks);
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, &entry);
@@ -567,7 +567,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 		return;
 	}
 
-	fbr_fs_stat_add_count(&cstore->stats.rd_chunk_bytes, chunk->length);
+	fbr_stat_add_count(&cstore->stats.rd_chunk_bytes, chunk->length);
 
 	fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
 	fbr_cstore_release(cstore, &entry);
@@ -690,8 +690,8 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_cstore_release(cstore, &entry);
 	assert_zero_dev(entry);
 
-	fbr_fs_stat_add_count(&cstore->stats.wr_index_bytes, writer->bytes);
-	fbr_fs_stat_add(&cstore->stats.wr_indexes);
+	fbr_stat_add_count(&cstore->stats.wr_index_bytes, writer->bytes);
+	fbr_stat_add(&cstore->stats.wr_indexes);
 
 	fbr_rlog(FBR_LOG_CS_INDEX, "WRITE success %zu bytes", writer->bytes);
 
@@ -1055,7 +1055,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		version, existing, enforce);
 
 	if (!fbr_sys_exists(hashpath.value)) {
-		fbr_fs_stat_add(&cstore->stats.wr_roots);
+		fbr_stat_add(&cstore->stats.wr_roots);
 	}
 
 	int fd = open(hashpath.value, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
@@ -1078,8 +1078,8 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		return 1;
 	}
 
-	fbr_fs_stat_add_count(&cstore->stats.wr_root_bytes, root_json->bytes);
-	fbr_fs_stat_add(&cstore->stats.wr_root_updates);
+	fbr_stat_add_count(&cstore->stats.wr_root_bytes, root_json->bytes);
+	fbr_stat_add(&cstore->stats.wr_root_updates);
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, &entry);
@@ -1219,7 +1219,7 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	fbr_cstore_remove(cstore, &entry);
 
-	fbr_fs_stat_sub(&cstore->stats.wr_roots);
+	fbr_stat_sub(&cstore->stats.wr_roots);
 
 	struct fbr_cstore_url url;
 	fbr_cstore_s3_root_url(cstore, &dirpath, &url);

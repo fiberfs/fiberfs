@@ -314,7 +314,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE conditions passed");
 
 	if (file_type == FBR_CSTORE_FILE_ROOT && !fbr_sys_exists(hashpath.value)) {
-		fbr_fs_stat_add(&cstore->stats.wr_roots);
+		fbr_stat_add(&cstore->stats.wr_roots);
 	}
 
 	int fd = open(hashpath.value, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
@@ -412,16 +412,16 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	switch (file_type) {
 		case FBR_CSTORE_FILE_CHUNK:
-			fbr_fs_stat_add_count(&cstore->stats.wr_chunk_bytes, bytes);
-			fbr_fs_stat_add(&cstore->stats.wr_chunks);
+			fbr_stat_add_count(&cstore->stats.wr_chunk_bytes, bytes);
+			fbr_stat_add(&cstore->stats.wr_chunks);
 			break;
 		case FBR_CSTORE_FILE_INDEX:
-			fbr_fs_stat_add_count(&cstore->stats.wr_index_bytes, bytes);
-			fbr_fs_stat_add(&cstore->stats.wr_indexes);
+			fbr_stat_add_count(&cstore->stats.wr_index_bytes, bytes);
+			fbr_stat_add(&cstore->stats.wr_indexes);
 			break;
 		case FBR_CSTORE_FILE_ROOT:
-			fbr_fs_stat_add_count(&cstore->stats.wr_root_bytes, bytes);
-			fbr_fs_stat_add(&cstore->stats.wr_root_updates);
+			fbr_stat_add_count(&cstore->stats.wr_root_bytes, bytes);
+			fbr_stat_add(&cstore->stats.wr_root_updates);
 			break;
 		default:
 			break;
@@ -671,7 +671,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	chttp_tcp_error_check(http);
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "sent response 200 OK");
-	fbr_fs_stat_add(&cstore->stats.http_200);
+	fbr_stat_add(&cstore->stats.http_200);
 
 	if (http->error) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR send() headers");
@@ -694,7 +694,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	_cstore_url_entry_release(cstore, entry, file_type, 0);
 
 	if (file_type == FBR_CSTORE_FILE_CHUNK) {
-		fbr_fs_stat_add_count(&cstore->stats.rd_chunk_bytes, bytes);
+		fbr_stat_add_count(&cstore->stats.rd_chunk_bytes, bytes);
 	}
 }
 
@@ -828,13 +828,13 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	switch (file_type) {
 		case FBR_CSTORE_FILE_CHUNK:
-			fbr_fs_stat_sub(&cstore->stats.wr_chunks);
+			fbr_stat_sub(&cstore->stats.wr_chunks);
 			break;
 		case FBR_CSTORE_FILE_INDEX:
-			fbr_fs_stat_sub(&cstore->stats.wr_indexes);
+			fbr_stat_sub(&cstore->stats.wr_indexes);
 			break;
 		case FBR_CSTORE_FILE_ROOT:
-			fbr_fs_stat_sub(&cstore->stats.wr_roots);
+			fbr_stat_sub(&cstore->stats.wr_roots);
 			break;
 		default:
 			break;

@@ -375,10 +375,6 @@ void fbr_fs_set_store(struct fbr_fs *fs, const struct fbr_store_callbacks *store
 void fbr_fs_free(struct fbr_fs *fs);
 void fbr_fs_config_load(struct fbr_fs *fs);
 
-void fbr_fs_stat_add_count(fbr_stats_t *stat, fbr_stats_t value);
-void fbr_fs_stat_add(fbr_stats_t *stat);
-void fbr_fs_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value);
-void fbr_fs_stat_sub(fbr_stats_t *stat);
 double fbr_fs_dentry_ttl(struct fbr_fs *fs);
 unsigned long fbr_fs_param_value(unsigned long param);
 int fbr_fs_timeout_expired(double time_start, double timeout);

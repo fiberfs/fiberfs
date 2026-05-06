@@ -153,9 +153,9 @@ _request_pool_get(fuse_req_t fuse_req, const char *name)
 	TAILQ_INSERT_TAIL(&_REQUEST_POOL->active_list, request, entry);
 	_REQUEST_POOL->active_size++;
 
-	fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_recycled);
-	fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_active);
-	fbr_fs_stat_sub(&_REQUEST_POOL->stats.requests_pooled);
+	fbr_stat_add(&_REQUEST_POOL->stats.requests_recycled);
+	fbr_stat_add(&_REQUEST_POOL->stats.requests_active);
+	fbr_stat_sub(&_REQUEST_POOL->stats.requests_pooled);
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 
@@ -173,8 +173,8 @@ _request_pool_active(struct fbr_request *request)
 	TAILQ_INSERT_TAIL(&_REQUEST_POOL->active_list, request, entry);
 	_REQUEST_POOL->active_size++;
 
-	fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_alloc);
-	fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_active);
+	fbr_stat_add(&_REQUEST_POOL->stats.requests_alloc);
+	fbr_stat_add(&_REQUEST_POOL->stats.requests_active);
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 }
@@ -267,7 +267,7 @@ _request_pool_put(struct fbr_request *request)
 	_REQUEST_POOL->active_size--;
 
 	if (_REQUEST_POOL->free_size >= FBR_REQUEST_POOL_MAX_SIZE) {
-		fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_freed);
+		fbr_stat_add(&_REQUEST_POOL->stats.requests_freed);
 		pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 		_request_free(request);
 		return;
@@ -276,7 +276,7 @@ _request_pool_put(struct fbr_request *request)
 	TAILQ_INSERT_TAIL(&_REQUEST_POOL->free_list, request, entry);
 	_REQUEST_POOL->free_size++;
 
-	fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_pooled);
+	fbr_stat_add(&_REQUEST_POOL->stats.requests_pooled);
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 }
@@ -292,7 +292,7 @@ fbr_request_free(struct fbr_request *request)
 	pt_assert(pthread_setspecific(_REQUEST_KEY, NULL));
 	assert_zero_dev(fbr_request_get());
 
-	fbr_fs_stat_sub(&_REQUEST_POOL->stats.requests_active);
+	fbr_stat_sub(&_REQUEST_POOL->stats.requests_active);
 
 	request->not_fuse = 0;
 	request->id = 0;
@@ -348,8 +348,8 @@ fbr_request_pool_shutdown(void)
 
 		_request_free(request);
 
-		fbr_fs_stat_sub(&_REQUEST_POOL->stats.requests_pooled);
-		fbr_fs_stat_add(&_REQUEST_POOL->stats.requests_freed);
+		fbr_stat_sub(&_REQUEST_POOL->stats.requests_pooled);
+		fbr_stat_add(&_REQUEST_POOL->stats.requests_freed);
 	}
 
 	assert_zero(_REQUEST_POOL->free_size);

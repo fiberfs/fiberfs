@@ -53,8 +53,8 @@ _file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 
 	fbr_body_init(&file->body);
 
-	fbr_fs_stat_add(&fs->stats.files);
-	fbr_fs_stat_add(&fs->stats.files_total);
+	fbr_stat_add(&fs->stats.files);
+	fbr_stat_add(&fs->stats.files_total);
 
 	if (parent) {
 		if (!create) {
@@ -117,7 +117,7 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	const char *filename = fbr_path_get_file(&dest->path, NULL);
 	fbr_rlog(FBR_LOG_MERGE, "'%s' gen: %lu", filename, source->generation);
 
-	fbr_fs_stat_add(&fs->stats.merges);
+	fbr_stat_add(&fs->stats.merges);
 
 	fbr_file_LOCK(fs, dest);
 
@@ -265,7 +265,7 @@ fbr_file_ref_dindex(struct fbr_fs *fs, struct fbr_file *file)
 	file->refcounts.dindex++;
 	assert(file->refcounts.dindex);
 
-	fbr_fs_stat_add(&fs->stats.file_refs);
+	fbr_stat_add(&fs->stats.file_refs);
 
 	pt_assert(pthread_mutex_unlock(&file->refcount_lock));
 }
@@ -286,7 +286,7 @@ fbr_file_release_dindex(struct fbr_fs *fs, struct fbr_file **file_ref)
 	assert(file->refcounts.dindex);
 	file->refcounts.dindex--;
 
-	fbr_fs_stat_sub(&fs->stats.file_refs);
+	fbr_stat_sub(&fs->stats.file_refs);
 
 	int do_free = 0;
 	if (!file->refcounts.dindex && !file->refcounts.inode) {
@@ -313,7 +313,7 @@ fbr_file_ref_inode(struct fbr_fs *fs, struct fbr_file *file)
 	file->refcounts.inode++;
 	assert(file->refcounts.inode);
 
-	fbr_fs_stat_add(&fs->stats.file_refs);
+	fbr_stat_add(&fs->stats.file_refs);
 
 	pt_assert(pthread_mutex_unlock(&file->refcount_lock));
 }
@@ -337,7 +337,7 @@ fbr_file_forget_inode_lock(struct fbr_fs *fs, struct fbr_file *file, fbr_refcoun
 	assert(file->refcounts.inode >= refs);
 	file->refcounts.inode -= refs;
 
-	fbr_fs_stat_sub_count(&fs->stats.file_refs, refs);
+	fbr_stat_sub_count(&fs->stats.file_refs, refs);
 
 	// NOTE: caller must unlock when done
 }
@@ -394,7 +394,7 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_zero(file);
 	free(file);
 
-	fbr_fs_stat_sub(&fs->stats.files);
+	fbr_stat_sub(&fs->stats.files);
 }
 
 static inline int
@@ -468,7 +468,7 @@ fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_
 	ptr_slab->next = file->ptr_head.next;
 	file->ptr_head.next = ptr_slab;
 
-	fbr_fs_stat_add(&fs->stats.file_ptr_slabs);
+	fbr_stat_add(&fs->stats.file_ptr_slabs);
 
 	struct fbr_file_ptr *file_ptr = &ptr_slab->ptrs[0];
 	_file_pointer_init(file, file_ptr);

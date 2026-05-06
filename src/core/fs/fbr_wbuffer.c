@@ -39,7 +39,7 @@ _wbuffer_alloc(struct fbr_fs *fs, struct fbr_fio *fio)
 	wbuffer->id = fbr_id_gen();
 	wbuffer->fio = fio;
 
-	fbr_fs_stat_add(&fs->stats.wbuffers);
+	fbr_stat_add(&fs->stats.wbuffers);
 
 	return wbuffer;
 }
@@ -572,7 +572,7 @@ fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 	pt_assert(pthread_mutex_unlock(&fio->wbuffer_update_lock));
 
 	if (error) {
-		fbr_fs_stat_add(&fs->stats.flush_errors);
+		fbr_stat_add(&fs->stats.flush_errors);
 		fbr_wbuffers_error_reset(fs, file, wbuffers, revert_on_error, have_file_lock);
 	}
 
@@ -594,7 +594,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 		return 0;
 	}
 
-	fbr_fs_stat_add(&fs->stats.flushes);
+	fbr_stat_add(&fs->stats.flushes);
 
 	fbr_wbuffer_ok(fio->wbuffers);
 	assert(fio->write);
@@ -607,7 +607,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	if (fio->append) {
 		flags |= FBR_FLUSH_APPEND;
 		flags |= FBR_FLUSH_DELAY_WRITE;
-		fbr_fs_stat_add(&fs->stats.appends);
+		fbr_stat_add(&fs->stats.appends);
 	}
 	if (fio->truncate) {
 		flags |= FBR_FLUSH_TRUNCATE;
@@ -633,7 +633,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 		fbr_wbuffers_reset(fs, fio);
 		fio->truncate = 0;
 	} else {
-		fbr_fs_stat_add(&fs->stats.flush_errors);
+		fbr_stat_add(&fs->stats.flush_errors);
 	}
 
 	_wbuffer_UNLOCK(fio);

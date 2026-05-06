@@ -17,9 +17,14 @@
 #define FBR_HEX_LEN(len)			(((len) * 2) + 1)
 #define FBR_HASH_SLEN				FBR_HEX_LEN(sizeof(fbr_hash_t))
 
+typedef unsigned long fbr_stats_t;
 typedef uint64_t fbr_hash_t;
 
 void fbr_sleep_ms(double ms);
+void fbr_stat_add_count(fbr_stats_t *stat, fbr_stats_t value);
+void fbr_stat_add(fbr_stats_t *stat);
+void fbr_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value);
+void fbr_stat_sub(fbr_stats_t *stat);
 double fbr_get_time(void);
 double fbr_convert_timespec(struct timespec *ts);
 void fbr_convert_time(double timestamp, struct timespec *ts);
@@ -51,11 +56,15 @@ unsigned long fbr_ulong2octal(unsigned long value);
 #define fbr_bprintf(buf, fmt, ...)					\
 	fbr_snprintf(buf, sizeof(buf), fmt, ##__VA_ARGS__)
 #define fbr_atomic_add(dest_ptr, value)					\
-	__sync_add_and_fetch(dest_ptr, value);
+	__atomic_add_fetch(dest_ptr, value, __ATOMIC_SEQ_CST);
+#define fbr_atomic_add_relaxed(dest_ptr, value)				\
+	__atomic_add_fetch(dest_ptr, value, __ATOMIC_RELAXED);
 #define fbr_atomic_get_add(dest_ptr, value)				\
-	__sync_fetch_and_add(dest_ptr, value);
+	__atomic_fetch_add(dest_ptr, value, __ATOMIC_SEQ_CST);
 #define fbr_atomic_sub(dest_ptr, value)					\
-	__sync_sub_and_fetch(dest_ptr, value);
+	__atomic_sub_fetch(dest_ptr, value, __ATOMIC_SEQ_CST);
+#define fbr_atomic_sub_relaxed(dest_ptr, value)				\
+	__atomic_sub_fetch(dest_ptr, value, __ATOMIC_RELAXED);
 #define fbr_compare_swap(dest_ptr, old_value, new_value)		\
 	__sync_val_compare_and_swap(dest_ptr, old_value, new_value)
 #define fbr_memory_sync()						\

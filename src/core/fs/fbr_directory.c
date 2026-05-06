@@ -84,8 +84,8 @@ _directory_init(struct fbr_fs *fs, struct fbr_directory *directory, fbr_inode_t 
 
 	fbr_directory_ok(directory);
 
-	fbr_fs_stat_add(&fs->stats.directories);
-	fbr_fs_stat_add(&fs->stats.directories_total);
+	fbr_stat_add(&fs->stats.directories);
+	fbr_stat_add(&fs->stats.directories_total);
 }
 
 struct fbr_directory *
@@ -240,7 +240,7 @@ fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_zero(directory);
 	free(directory);
 
-	fbr_fs_stat_sub(&fs->stats.directories);
+	fbr_stat_sub(&fs->stats.directories);
 }
 
 void
@@ -510,7 +510,7 @@ _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_ino
 		}
 		assert_zero_dev(directory);
 
-		fbr_fs_stat_add(&fs->stats.flush_conflicts);
+		fbr_stat_add(&fs->stats.flush_conflicts);
 
 		(*attempts)++;
 		if (*attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
@@ -731,7 +731,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			break;
 		}
 
-		fbr_fs_stat_add(&fs->stats.flush_conflicts);
+		fbr_stat_add(&fs->stats.flush_conflicts);
 
 		attempts++;
 		if (attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {

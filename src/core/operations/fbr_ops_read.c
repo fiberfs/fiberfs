@@ -39,7 +39,7 @@ fbr_ops_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off
 
 	fbr_rlog(FBR_LOG_OP_READ, "chunks: %u bufvecs: %zu", vector->chunks->length,
 		vector->bufvec->count);
-	fbr_fs_stat_add_count(&fs->stats.read_bytes, vector->size);
+	fbr_stat_add_count(&fs->stats.read_bytes, vector->size);
 
 	fbr_fuse_reply_data(request, vector->bufvec, FUSE_BUF_SPLICE_MOVE);
 

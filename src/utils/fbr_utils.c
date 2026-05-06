@@ -41,6 +41,34 @@ fbr_sleep_ms(double ms)
 	}
 }
 
+void
+fbr_stat_add_count(fbr_stats_t *stat, fbr_stats_t value)
+{
+	assert(stat);
+	// TODO move this to relaxed
+	fbr_atomic_add(stat, value);
+}
+
+void
+fbr_stat_add(fbr_stats_t *stat)
+{
+	fbr_stat_add_count(stat, 1);
+}
+
+void
+fbr_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value)
+{
+	assert(stat);
+	// TODO move this to relatex
+	fbr_atomic_sub(stat, value);
+}
+
+void
+fbr_stat_sub(fbr_stats_t *stat)
+{
+	fbr_stat_sub_count(stat, 1);
+}
+
 double
 fbr_get_time(void)
 {
