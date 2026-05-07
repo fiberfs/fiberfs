@@ -45,8 +45,7 @@ void
 fbr_stat_add_count(fbr_stats_t *stat, fbr_stats_t value)
 {
 	assert(stat);
-	// TODO move this to relaxed
-	fbr_atomic_add(stat, value);
+	fbr_atomic_add_relaxed(stat, value);
 }
 
 void
@@ -59,8 +58,7 @@ void
 fbr_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value)
 {
 	assert(stat);
-	// TODO move this to relatex
-	fbr_atomic_sub(stat, value);
+	fbr_atomic_sub_relaxed(stat, value);
 }
 
 void
