@@ -136,6 +136,8 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	conn->want &= ~FUSE_CAP_SPLICE_READ;
 
 	// TODO fuse said this breaks distributed append if enabled
+	// We might be able to use this because we invalidate the inode after each merge
+	// If a client reads during an append, they will get out of sync, so no use blocking this
 	conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
 
 	struct fbr_request *request = fbr_request_alloc(NULL, __func__);
