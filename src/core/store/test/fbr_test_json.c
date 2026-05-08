@@ -520,20 +520,12 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fbr_test_fs_count_chunks(file) == 2);
 	fbr_dindex_release(fs, &directory);
 
-	// 1 unchanged, 1 dropped/inherited (no gen)
+	// 1 unchanged, 1 nogen error
 	json = "{\"fiberfs\":1,\"g\":3,\"f\":[{\"n\":\"file_ABC\",\"j\":1},"
 		"{\"n\":\"file_XYZ\"}]}";
 	directory = _parse_directory(fs, json);
 	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_OK);
-	assert(directory->generation == 3);
-	assert(directory->file_count == 2);
-	file = fbr_directory_find_file(directory, "file_ABC", 8);
-	fbr_file_ok(file);
-	assert_zero(fbr_test_fs_count_chunks(file));
-	file = fbr_directory_find_file(directory, "file_XYZ", 8);
-	fbr_file_ok(file);
-	assert(fbr_test_fs_count_chunks(file) == 2);
+	assert(directory->state == FBR_DIRSTATE_ERROR);
 	fbr_dindex_release(fs, &directory);
 
 	// 1 other new file, 1 unchanged/inherited
@@ -567,18 +559,12 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(fbr_test_fs_count_chunks(file));
 	fbr_dindex_release(fs, &directory);
 
-	// duplicate filename (merged)
+	// duplicate filename (error)
 	json = "{\"fiberfs\":1,\"g\":6,\"f\":[{\"n\":\"file_ABC\",\"j\":1},"
 		"{\"n\":\"file_ABC\",\"j\":2}]}";
 	directory = _parse_directory(fs, json);
 	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_OK);
-	assert(directory->generation == 6);
-	assert(directory->file_count == 1);
-	file = fbr_directory_find_file(directory, "file_ABC", 8);
-	fbr_file_ok(file);
-	assert(file->generation == 2);
-	assert_zero(fbr_test_fs_count_chunks(file));
+	assert(directory->state == FBR_DIRSTATE_ERROR);
 	fbr_dindex_release(fs, &directory);
 
 	fbr_fs_release_all(fs, 1);

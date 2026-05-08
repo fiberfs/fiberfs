@@ -194,6 +194,7 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	assert_dev(fs);
 	assert_dev(json);
 	assert_dev(file);
+	assert(file->generation);
 	assert_dev(index_data);
 
 	int modified = 0;
@@ -260,6 +261,7 @@ _json_directory_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_index
 
 	struct fbr_directory *directory = index_data->directory;
 	assert_dev(directory);
+	assert(directory->generation);
 
 	// g: generation
 	fbr_writer_add(fs, json, "\"g\":", 4);
@@ -529,7 +531,8 @@ fbr_root_json_parse(const char *json_buf, size_t json_buf_len)
 }
 
 void
-fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, unsigned int attempts)
+fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, int want_merge,
+    unsigned int attempts)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -600,7 +603,11 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, unsigned int 
 		return;
 	}
 
-	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+	if (want_merge) {
+		assert_dev(directory->state == FBR_DIRSTATE_LOADING);
+	} else {
+		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+	}
 }
 
 void
@@ -747,7 +754,7 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 			break;
 	}
 
-	return 0;
+	return parser->error;
 }
 
 static void
@@ -782,8 +789,6 @@ _index_parse_file_start(struct fbr_index_parser *parser, const char *filename, s
 	assert_dev(parser->fs);
 	assert_dev(parser->directory);
 	assert_zero_dev(parser->file);
-	assert_zero_dev(parser->merge);
-	assert_zero_dev(parser->current_exists);
 	assert_dev(filename);
 
 	if (!filename_len) {
@@ -793,11 +798,15 @@ _index_parse_file_start(struct fbr_index_parser *parser, const char *filename, s
 	struct fbr_directory *directory = parser->directory;
 	struct fbr_directory *previous = directory->previous;
 
-	parser->file = fbr_directory_find_file(directory, filename, filename_len);
+	struct fbr_file *dup = fbr_directory_find_file(directory, filename, filename_len);
 
-	if (parser->file) {
-		parser->current_exists = 1;
-	} else if (previous && !parser->file) {
+	if (dup) {
+		fbr_rlog(FBR_LOG_DEBUG, "PARSER file duplicate found");
+		parser->error = 1;
+		return;
+	}
+
+	if (previous) {
 		parser->file = fbr_directory_find_file(previous, filename, filename_len);
 	}
 
@@ -815,6 +824,7 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 	assert_dev(token);
 
 	if (!parser->file) {
+		parser->error = 1;
 		return;
 	}
 
@@ -827,33 +837,22 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 
 	int changed = 0;
 	if (!generation || error) {
+		parser->error = 1;
+		return;
+	} else if (file->state == FBR_FILE_INIT && file->generation) {
+		parser->error = 1;
 		return;
 	} else if (file->generation < generation) {
-		changed = 1;
-	} else if (fbr_file_has_wbuffer(file)) {
 		changed = 1;
 	}
 
 	if (changed) {
 		if (file->state == FBR_FILE_INIT) {
-			assert_zero_dev(parser->current_exists);
-			assert_zero_dev(file->generation);
 			file->generation = generation;
 		} else  {
 			assert_dev(file->state >= FBR_FILE_OK);
 
-			if (fbr_file_has_wbuffer(file)) {
-				fbr_rlog(FBR_LOG_DEBUG, "PARSER wbuffer merge candidate");
-				assert_zero_dev(parser->merge);
-				parser->merge = file;
-			} else if (parser->current_exists) {
-				fbr_rlog(FBR_LOG_DEBUG, "PARSER existing merge candidate");
-				assert_zero_dev(parser->merge);
-				parser->merge = file;
-			} else {
-				fbr_rlog(FBR_LOG_DEBUG, "PARSER dropping previous");
-				assert_zero_dev(parser->current_exists);
-			}
+			fbr_rlog(FBR_LOG_DEBUG, "PARSER new gen found, dropping previous");
 
 			parser->file = NULL;
 
@@ -867,9 +866,7 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 	} else {
 		assert_dev(file->state >= FBR_FILE_OK);
 
-		if (!parser->current_exists) {
-			fbr_directory_add_file(fs, directory, file);
-		}
+		fbr_directory_add_file(fs, directory, file);
 
 		parser->file = NULL;
 		parser->files_existing++;
@@ -886,30 +883,14 @@ _index_parse_file_end(struct fbr_index_parser *parser)
 	struct fbr_fs *fs = parser->fs;
 	struct fbr_directory *directory = parser->directory;
 	struct fbr_file *file = parser->file;
-	struct fbr_file *merge = parser->merge;
 
 	if (!file) {
-		assert_zero_dev(merge);
-	} else if (merge) {
-		assert_dev(file->state == FBR_FILE_INIT);
-
-		fbr_file_merge(fs, file, merge);
-
-		if (!parser->current_exists) {
-			fbr_directory_add_file(fs, directory, merge);
-		}
-
-		fbr_file_free(fs, file);
-
-		parser->files_merged++;
+		// Existing file successfully added
 	} else if (!file->generation) {
 		assert_dev(file->state == FBR_FILE_INIT);
 		fbr_file_free(fs, file);
-
-		fbr_rlog(FBR_LOG_INDEX, "PARSER new no gen found, skipping");
+		parser->error = 1;
 	} else if (file->state == FBR_FILE_INIT) {
-		assert_zero_dev(parser->current_exists);
-		assert_dev(file->generation);
 		file->state = FBR_FILE_OK;
 		fbr_directory_add_file(fs, directory, file);
 
@@ -918,16 +899,10 @@ _index_parse_file_end(struct fbr_index_parser *parser)
 		parser->files_new++;
 	} else {
 		assert_dev(file->state >= FBR_FILE_OK);
-		fbr_directory_add_file(fs, directory, file);
-
-		parser->files_existing++;
-
-		fbr_rlog(FBR_LOG_INDEX, "PARSER existing no gen found, keeping");
+		parser->error = 1;
 	}
 
 	parser->file = NULL;
-	parser->merge = NULL;
-	parser->current_exists = 0;
 }
 
 static int
@@ -993,7 +968,7 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 			break;
 	}
 
-	return 0;
+	return parser->error;
 }
 
 static int
@@ -1055,7 +1030,7 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 		return 1;
 	}
 
-	return 0;
+	return parser->error;
 }
 
 static int
@@ -1069,6 +1044,7 @@ _index_parse_json(struct fjson_context *ctx, void *priv)
 	fbr_index_parser_ok(parser);
 	assert_dev(parser->fs);
 	assert_dev(parser->directory);
+	assert_zero(parser->error);
 
 	struct fjson_token *token = fjson_get_token(ctx, 0);
 	fjson_token_ok(token);
@@ -1088,9 +1064,8 @@ _index_parse_json(struct fjson_context *ctx, void *priv)
 					fbr_directory_ok(directory);
 
 					fbr_rlog(FBR_LOG_INDEX, "PARSER COMPLETED "
-						"(%zu files [%u+%u+%u])", directory->file_count,
-						parser->files_existing, parser->files_merged,
-						parser->files_new);
+						"(%zu files [%ue %un])", directory->file_count,
+						parser->files_existing, parser->files_new);
 				}
 				return 0;
 			}
@@ -1128,6 +1103,8 @@ _index_parse_json(struct fjson_context *ctx, void *priv)
 	}
 
 	fbr_rlog(FBR_LOG_ERROR, "PARSER root error");
+
+	parser->error = 1;
 
 	return 1;
 }

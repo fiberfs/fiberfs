@@ -228,7 +228,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_index_request_start();
 
-	fbr_index_read(fs, directory, 0);
+	fbr_index_read(fs, directory, 0, 0);
 	assert(directory->state == FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 1);
 
@@ -244,7 +244,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_index_request_start();
 
-	fbr_index_read(fs, directory, 0);
+	fbr_index_read(fs, directory, 0, 0);
 	assert(directory->state == FBR_DIRSTATE_ERROR);
 
 	fbr_test_index_request_finish();
@@ -347,7 +347,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_index_request_start();
 
-	fbr_index_read(fs, directory, 0);
+	fbr_index_read(fs, directory, 0, 0);
 	assert(directory->state == FBR_DIRSTATE_ERROR);
 
 	fbr_test_index_request_finish();
@@ -368,7 +368,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_index_request_start();
 
-	fbr_index_read(fs, directory, 0);
+	fbr_index_read(fs, directory, 0, 0);
 	assert(directory->state == FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 1);
 
@@ -461,7 +461,7 @@ fbr_cmd_index_large_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_index_request_start();
 
-	fbr_index_read(fs, directory, 0);
+	fbr_index_read(fs, directory, 0, 0);
 	assert(directory->state == FBR_DIRSTATE_OK);
 	_index_validate_directory(directory, 0);
 
@@ -541,7 +541,7 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(dir_fs2->previous);
 	assert(dir_fs2->state == FBR_DIRSTATE_LOADING);
 
-	fbr_index_read(fs_2, dir_fs2, 0);
+	fbr_index_read(fs_2, dir_fs2, 0, 0);
 	assert(dir_fs2->state == FBR_DIRSTATE_OK);
 	assert(dir_fs2->generation == 1);
 	_index_validate_directory(dir_fs2, 1);
@@ -581,7 +581,7 @@ fbr_cmd_index_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs1->previous->generation == 1);
 	assert(dir_fs1->state == FBR_DIRSTATE_LOADING);
 
-	fbr_index_read(fs_1, dir_fs1, 0);
+	fbr_index_read(fs_1, dir_fs1, 0, 0);
 	assert(dir_fs1->state == FBR_DIRSTATE_OK);
 	assert(dir_fs1->generation == 2);
 	_index_validate_directory(dir_fs1, 1);
@@ -690,7 +690,7 @@ _index_thread(void *arg)
 			fbr_directory_ok(directory);
 			assert(directory->state == FBR_DIRSTATE_LOADING);
 
-			fbr_index_read(fs, directory, 0);
+			fbr_index_read(fs, directory, 0, 0);
 			assert(directory->state == FBR_DIRSTATE_OK);
 
 			fbr_test_logs("*** Reading index thread: %zu generation: %lu",
@@ -765,7 +765,7 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 
-	fbr_index_read(fs, directory, 0);
+	fbr_index_read(fs, directory, 0, 0);
 	assert(directory->state == FBR_DIRSTATE_OK);
 
 	_index_validate_directory(directory, 0);

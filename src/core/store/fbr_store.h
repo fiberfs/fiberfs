@@ -91,7 +91,6 @@ struct fbr_index_parser {
 	struct fbr_fs				*fs;
 	struct fbr_directory			*directory;
 	struct fbr_file				*file;
-	struct fbr_file				*merge;
 
 	struct {
 		fbr_id_t			id;
@@ -100,11 +99,8 @@ struct fbr_index_parser {
 		size_t				length;
 	} chunk;
 
-	fbr_bitflag_t				current_exists:1;
-
 	unsigned int				files_new;
 	unsigned int				files_existing;
-	unsigned int				files_merged;
 
 	int					error;
 };
@@ -148,7 +144,8 @@ void fbr_index_data_free(struct fbr_index_data *index_data);
 int fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data);
 void fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);
 fbr_id_t fbr_root_json_parse(const char *json_buf, size_t json_buf_len);
-void fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, unsigned int attempts);
+void fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, int want_merge,
+	unsigned int attempts);
 
 void fbr_index_parser_init(struct fbr_fs *fs, struct fbr_index_parser *parser,
 	struct fbr_directory *directory, struct fjson_context *json);
