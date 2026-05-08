@@ -98,6 +98,8 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(files_inodes);
 	_FS_TEST_STAT_PRINT(files_total);
 	_FS_TEST_STAT_PRINT(file_refs);
+	_FS_TEST_STAT_PRINT(dir_alloc_hit);
+	_FS_TEST_STAT_PRINT(dir_alloc_miss);
 	_FS_TEST_STAT_PRINT(read_bytes);
 	_FS_TEST_STAT_PRINT(write_bytes);
 	_FS_TEST_STAT_PRINT(appends);

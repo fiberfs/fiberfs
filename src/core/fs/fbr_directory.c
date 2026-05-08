@@ -144,6 +144,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_
 			// The insertion inodes are equal, return an ok directory
 			if (!newer) {
 				fbr_directory_free(fs, directory);
+				fbr_stat_add(&fs->stats.dir_alloc_hit);
 				return inserted;
 			}
 		} else {
@@ -152,6 +153,8 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_
 		}
 
 		fbr_dindex_release(fs, &inserted);
+
+		fbr_stat_add(&fs->stats.dir_alloc_miss);
 
 		// Try the insertion again, we have the newest inode right now
 	}

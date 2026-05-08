@@ -305,6 +305,9 @@ struct fbr_fs_stats {
 	fbr_stats_t				files_total;
 	fbr_stats_t				file_refs;
 
+	fbr_stats_t				dir_alloc_hit;
+	fbr_stats_t				dir_alloc_miss;
+
 	fbr_stats_t				read_bytes;
 	fbr_stats_t				write_bytes;
 	fbr_stats_t				appends;
