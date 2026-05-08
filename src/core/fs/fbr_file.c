@@ -105,13 +105,35 @@ fbr_file_UNLOCK(struct fbr_file *file)
 	pt_assert(pthread_mutex_unlock(&file->lock));
 }
 
+// Note: file isnt added to directory, its returned unreferenced
+struct fbr_file *
+fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file *source)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(source);
+	assert(source->state == FBR_FILE_OK);
+	assert_zero(fbr_file_has_wbuffer(source));
+
+	struct fbr_path_name filename;
+	fbr_path_get_file(&source->path, &filename);
+
+	struct fbr_file *clone = fbr_file_alloc_new(fs, parent, &filename);
+	assert_dev(clone);
+	assert_dev(clone->state == FBR_FILE_INIT);
+
+	fbr_file_merge(fs, source, clone);
+	assert_dev(source->size == clone->size);
+
+	return NULL;
+}
+
 void
 fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(source);
+	assert_zero(fbr_file_has_wbuffer(source));
 	fbr_file_ok(dest);
-	assert(dest->state == FBR_FILE_OK);
 	assert(source != dest);
 
 	const char *filename = fbr_path_get_file(&dest->path, NULL);
@@ -119,6 +141,7 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 
 	fbr_stat_add(&fs->stats.merges);
 
+	fbr_file_LOCK(fs, source);
 	fbr_file_LOCK(fs, dest);
 
 	dest->generation = source->generation;
@@ -209,7 +232,7 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 
 	fbr_body_debug(fs, dest);
 
-	if (fs->fuse_ctx) {
+	if (fs->fuse_ctx && dest->state == FBR_FILE_OK) {
 		fbr_fuse_mounted(fs->fuse_ctx);
 		assert(fs->fuse_ctx->session);
 		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, dest->inode,
@@ -217,6 +240,7 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 		assert_dev(ret != -ENOSYS);
 	}
 
+	fbr_file_UNLOCK(source);
 	fbr_file_UNLOCK(dest);
 }
 

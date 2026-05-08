@@ -395,6 +395,8 @@ struct fbr_file * fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *pa
 	const struct fbr_path_name *filename);
 void fbr_file_LOCK(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_UNLOCK(struct fbr_file *file);
+struct fbr_file * fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent,
+	struct fbr_file *source);
 void fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest);
 int fbr_file_ptr_cmp(const struct fbr_file_ptr *p1, const struct fbr_file_ptr *p2);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);

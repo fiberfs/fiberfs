@@ -96,7 +96,11 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file
 
 	if (fbr_is_flag(flags, FBR_FLUSH_WBUFFER)) {
 		assert_zero_dev(fbr_is_flag(flags, FBR_FLUSH_MKDIR));
+		assert(fbr_file_has_wbuffer(file));
+
 		if (merge) {
+			assert_zero(fbr_file_has_wbuffer(latest));
+
 			fbr_file_merge(fs, latest, file);
 			fbr_directory_remove_file(fs, directory, latest);
 			fbr_directory_add_file(fs, directory, file);
@@ -145,8 +149,6 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 	fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' file: '%s'", dirpath.path.name, filename.name);
 
-	int merged = 0;
-
 	// Read from dindex
 	struct fbr_directory *directory = NULL;
 	int wait_for_new = 1;
@@ -168,6 +170,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		wait_for_new = 0;
 	} while (!directory);
 
+	int merged = 0;
 	int ret;
 
 	// dindex empty, read from index store
@@ -333,6 +336,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		}
 
 		ret = _flush_merge(fs, directory, file, flags);
+		assert_dev(merged);
 
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
