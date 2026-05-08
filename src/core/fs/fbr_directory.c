@@ -574,12 +574,12 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file
 
 	fbr_rlog(FBR_LOG_FLUSH, "Starting merge on %s", filename.name);
 
-	struct fbr_file *latest = fbr_directory_find_file(directory, filename.name,
-		filename.length);
-
 	if (file->state == FBR_FILE_INIT) {
 		file->state = FBR_FILE_OK;
 	}
+
+	struct fbr_file *latest = fbr_directory_find_file(directory, filename.name,
+		filename.length);
 
 	int merge = 0;
 	if (latest && latest->generation > file->generation) {
@@ -641,10 +641,6 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' file: '%s'", dirpath.path.name, filename.name);
 
 	int merged = 0;
-	int new_file = 0;
-	if (file->state == FBR_FILE_INIT) {
-		new_file = 1;
-	}
 
 	// Read from dindex
 	struct fbr_directory *directory = NULL;
@@ -694,9 +690,6 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 				fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
 				if (ret) {
-					if (new_file) {
-						file->state = FBR_FILE_INIT;
-					}
 					return ret;
 				}
 
@@ -841,10 +834,6 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		if (ret) {
 			break;
 		}
-	}
-
-	if (ret && new_file) {
-		file->state = FBR_FILE_INIT;
 	}
 
 	return ret;
