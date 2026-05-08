@@ -487,7 +487,7 @@ fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_dir
 	assert_zero(dest->file_count);
 	assert_dev(RB_EMPTY(&dest->filename_tree));
 	fbr_directory_ok(source);
-	assert(source->state >= FBR_DIRSTATE_LOADING);
+	assert(source->state == FBR_DIRSTATE_OK);
 	assert_zero_dev(source->expired);
 
 	dest->generation = source->generation;
