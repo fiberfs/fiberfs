@@ -208,6 +208,7 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 	fbr_cstore_ok(cstore);
 	fbr_cstore_url_ok(url);
 	assert(id);
+	assert(type == FBR_CSTORE_FILE_CHUNK || type == FBR_CSTORE_FILE_INDEX);
 
 	int backend = fbr_cstore_backend_enabled(cstore);
 
@@ -238,9 +239,6 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 					break;
 				case FBR_CSTORE_FILE_INDEX:
 					fbr_stat_sub(&cstore->stats.wr_indexes);
-					break;
-				case FBR_CSTORE_FILE_ROOT:
-					fbr_stat_sub(&cstore->stats.wr_roots);
 					break;
 				default:
 					fbr_ABORT("Bad type: %s", fbr_cstore_type_name(type));
@@ -1193,6 +1191,8 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
+	int backend = fbr_cstore_backend_enabled(cstore);
+
 	fbr_rlog(FBR_LOG_CS_ROOT, "DELETE %s %lu", hashpath.value, directory->version);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
@@ -1211,20 +1211,21 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	fbr_cstore_set_ok(entry);
 
-	if (!ret && metadata.etag != directory->version) {
+	if (!ret && metadata.etag != directory->version && !backend) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR version etag");
 		fbr_cstore_release(cstore, &entry);
-		return 1;
+	} else {
+		fbr_cstore_remove(cstore, &entry);
+		fbr_stat_sub(&cstore->stats.wr_roots);
 	}
 
-	fbr_cstore_remove(cstore, &entry);
+	if (backend) {
+		struct fbr_cstore_url url;
+		fbr_cstore_s3_root_url(cstore, &dirpath, &url);
 
-	fbr_stat_sub(&cstore->stats.wr_roots);
-
-	struct fbr_cstore_url url;
-	fbr_cstore_s3_root_url(cstore, &dirpath, &url);
-
-	fbr_cstore_io_delete_url(cstore, &url, directory->version, FBR_CSTORE_FILE_ROOT);
+		fbr_cstore_s3_send_delete(cstore, &url, directory->version,
+			FBR_CSTORE_ROUTE_CLUSTER);
+	}
 
 	return 0;
 }

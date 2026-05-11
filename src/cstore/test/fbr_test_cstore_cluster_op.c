@@ -105,6 +105,7 @@ _op_mkdir_thread(void *arg)
 
 		fbr_request_free(request);
 
+		// TODO dont break
 		break;
 	}
 
@@ -166,6 +167,8 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 
 	fbr_test_fs_root_alloc(fs);
 
+	fbr_test_sleep_ms(20);
+
 	_debug_cstores();
 
 	assert(_CSTORE_C0_SHARED->entries == 2);
@@ -193,6 +196,8 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 		pt_assert(pthread_join(threads[i], NULL));
 	}
 	assert(_THREADS == _OP_THREADS);
+
+	fbr_test_sleep_ms(20);
 
 	_debug_cstores();
 

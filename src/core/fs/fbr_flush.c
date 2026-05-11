@@ -112,6 +112,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file
 	} else if (fbr_is_flag(flags, FBR_FLUSH_MKDIR)) {
 		assert_dev(flags == FBR_FLUSH_MKDIR);
 		if (latest) {
+			fbr_rlog(FBR_LOG_FLUSH, "mkdir EEXIST detected");
 			return EEXIST;
 		}
 
