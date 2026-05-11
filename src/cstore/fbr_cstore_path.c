@@ -200,6 +200,7 @@ _hash_s3(XXH3_state_t *hash, struct fbr_cstore *cstore)
 	// host + NULL + [/prefix] + /
 
 	if (!cstore->s3.backend) {
+		// TODO breaks mocked s3 hashing since no backend hostname...
 		XXH3_64bits_update(hash, "", 1);
 		XXH3_64bits_update(hash, "/", 1);
 		return;

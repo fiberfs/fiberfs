@@ -21,6 +21,7 @@ static struct fbr_cstore_backend *
 _backend_alloc(const char *host, int port, int tls)
 {
 	assert(host);
+	assert(port > 0);
 
 	size_t host_len = strlen(host);
 	assert(host_len);
@@ -63,6 +64,8 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 	assert(secret_key);
 
 	struct fbr_cstore_s3 *s3 = &cstore->s3;
+	assert_zero_dev(s3->backend);
+	assert_zero_dev(s3->region);
 	fbr_zero(s3);
 
 	if (host) {
