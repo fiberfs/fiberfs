@@ -5,6 +5,7 @@
  */
 
 #include <limits.h>
+#include <sys/stat.h>
 
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"

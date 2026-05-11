@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "fiberfs.h"
 #include "core/operations/fbr_operations.h"
@@ -31,6 +32,22 @@ static size_t _MKDIR_SUCCESS;
 static size_t _MKDIR_EXIST;
 static size_t _MKDIR_ERROR;
 static size_t _CONFLICTS;
+
+static void
+_assert_fs(struct fbr_fs *fs)
+{
+	fbr_fs_ok(fs);
+
+	fbr_fs_release_all(fs, 1);
+	fbr_test_fs_wait(fs);
+
+	assert_zero(fs->stats.directories);
+	assert_zero(fs->stats.directories_dindex);
+	assert_zero(fs->stats.directory_refs);
+	assert_zero(fs->stats.files);
+	assert_zero(fs->stats.files_inodes);
+	assert_zero(fs->stats.file_refs);
+}
 
 static void *
 _op_mkdir_thread(void *arg)
@@ -82,8 +99,7 @@ _op_mkdir_thread(void *arg)
 		fbr_directory_ok(root);
 		assert(root->state == FBR_DIRSTATE_OK);
 
-		//long dir_id = fbr_test_gen_random(1, _OP_THREADS);
-		long dir_id = id;
+		long dir_id = fbr_test_gen_random(1, _OP_THREADS);
 		char dirname[32];
 		fbr_bprintf(dirname, "directory_%zu", dir_id);
 
@@ -105,13 +121,15 @@ _op_mkdir_thread(void *arg)
 
 		fbr_request_free(request);
 
-		// TODO dont break
-		break;
+		if (_MKDIR_EXIST > 10) {
+			fbr_test_sleep_ms(_MKDIR_EXIST);
+		}
 	}
 
 	fbr_atomic_add(&_CONFLICTS, fs->stats.flush_conflicts);
 
 	fbr_test_cstore_wait(fs->cstore);
+	//_assert_fs(fs);
 	fbr_fs_free(fs);
 
 	return NULL;
@@ -124,6 +142,26 @@ _debug_cstores(void)
 	fbr_test_cstore_debug(_CSTORE_C0_SHARED);
 	fbr_test_logs("CSTORE_DEBUG OBJECT: cstore_c1_s3");
 	fbr_test_cstore_debug(_CSTORE_C1_S3);
+}
+
+static void
+_validate_root(struct fbr_directory *root)
+{
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_OK);
+	assert(root->file_count == _OP_THREADS);
+
+	for (size_t i = 1; i < _OP_THREADS; i++) {
+		char dirname[32];
+		size_t len = fbr_bprintf(dirname, "directory_%zu", i);
+
+		struct fbr_file *file = fbr_directory_find_file(root, dirname, len);
+		fbr_file_ok(file);
+		assert(file->state == FBR_FILE_OK);
+		assert(file->mode | S_IFDIR);
+	}
+
+	fbr_test_logs("root passed all directories found");
 }
 
 void
@@ -154,6 +192,8 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 
 	fbr_test_cstore_backend_add(_CSTORE_C0_SHARED, _CSTORE_C1_S3, FBR_CSTORE_ROUTE_S3);
 
+	assert(fbr_test_cstore_get(ctx, 0) == _CSTORE_C0_SHARED);
+	assert(fbr_test_cstore_get(ctx, 1) == _CSTORE_C1_S3);
 	assert(fbr_test_cstore_count(ctx) == 2);
 
 	fbr_test_conf_add("CSTORE_SERVER", NULL);
@@ -197,6 +237,30 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	}
 	assert(_THREADS == _OP_THREADS);
 
+	fbr_test_sleep_ms(100);
+
+	fbr_fs_release_all(fs, 0);
+	fbr_cstore_clear(fs->cstore);
+	fbr_test_fs_wait(fs);
+
+	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_OK);
+
+	fbr_test_sleep_ms(20);
+
+	fbr_test_logs("*** loading root directly from _CSTORE_C1_S3");
+
+	struct fbr_fs *fs_s3 = fbr_test_fs_mock(ctx);
+	fbr_fs_ok(fs_s3);
+	fbr_test_cstore_bind_new(fs_s3);
+	fbr_test_cstore_backend_add(fs_s3->cstore, _CSTORE_C1_S3, FBR_CSTORE_ROUTE_S3);
+	fbr_fs_set_store(fs_s3, FBR_CSTORE_DEFAULT_CALLBACKS);
+
+	struct fbr_directory *root_s3 = fbr_directory_load(fs_s3, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+	fbr_directory_ok(root_s3);
+	assert(root_s3->state == FBR_DIRSTATE_OK);
+
 	fbr_test_sleep_ms(20);
 
 	_debug_cstores();
@@ -206,7 +270,7 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	fbr_test_logs("MKDIR EXIST: %zu", _MKDIR_EXIST);
 	fbr_test_logs("MKDIR ERROR: %zu", _MKDIR_ERROR);
 
-	assert(fbr_test_cstore_count(ctx) == 2 + 1 + _OP_THREADS);
+	assert(fbr_test_cstore_count(ctx) == 2 + 2 + _OP_THREADS);
 	assert(_CSTORE_C1_S3->entries == 2 + (_OP_THREADS * 2));
 	assert(_CSTORE_C1_S3->stats.wr_indexes == 1 + _OP_THREADS);
 	assert(_CSTORE_C1_S3->stats.wr_roots == 1 + _OP_THREADS);
@@ -216,8 +280,18 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	assert_zero(_CSTORE_C1_S3->stats.http_500);
 	assert_zero(_CSTORE_C0_SHARED->stats.http_500);
 
+	_validate_root(root);
+	_validate_root(root_s3);
+
+	fbr_dindex_release(fs, &root);
+	fbr_dindex_release(fs_s3, &root_s3);
+
+	_assert_fs(fs);
+	_assert_fs(fs_s3);
+
 	fbr_request_pool_shutdown();
 	fbr_fs_free(fs);
+	fbr_fs_free(fs_s3);
 
 	_CSTORE_C0_SHARED = NULL;
 	_CSTORE_C1_S3 = NULL;

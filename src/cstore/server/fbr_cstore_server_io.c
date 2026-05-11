@@ -246,8 +246,10 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 			return;
 	}
 
+	int backend = fbr_cstore_backend_enabled(cstore);
+
 	// root files put first then write
-	if (fbr_cstore_backend_enabled(cstore) && file_type == FBR_CSTORE_FILE_ROOT) {
+	if (backend && file_type == FBR_CSTORE_FILE_ROOT) {
 		_cstore_root_proxy(cstore, http, url_encoded, etag_id, etag_match);
 		return;
 	}
@@ -262,10 +264,14 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	struct fbr_cstore_entry *entry = NULL;
 	if (unique) {
-		entry = fbr_cstore_io_get_loading(cstore, hash, cstore_len, &hashpath, 1);
+		entry = fbr_cstore_io_get_loading(cstore, hash, cstore_len, &hashpath, backend);
 		if (!entry) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR loading state");
-			fbr_cstore_http_respond(cstore, http, 500, "Error");
+			if (backend) {
+				fbr_cstore_http_respond(cstore, http, 500, "Error");
+			} else {
+				fbr_cstore_http_respond(cstore, http, 412, "Exists");
+			}
 			return;
 		}
 	} else {
@@ -374,7 +380,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	fbr_cstore_set_ok(entry);
 
-	if (fbr_cstore_backend_enabled(cstore)) {
+	if (backend) {
 		assert(file_type != FBR_CSTORE_FILE_ROOT);
 
 		struct fbr_cstore_fetch_context fetch;
