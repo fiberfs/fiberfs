@@ -143,7 +143,9 @@ _sha256_update(struct fbr_sha256_ctx *ctx, const void *buffer, size_t buffer_len
 	ctx->total_bytes += buffer_len;
 
 	if (ctx->block_len || buffer_len < FBR_SHA256_BLOCK_SIZE) {
-		assert_dev(ctx->block_len < FBR_SHA256_BLOCK_SIZE);
+		if (ctx->block_len >= FBR_SHA256_BLOCK_SIZE) {
+			return;
+		}
 
 		size_t block_free = FBR_SHA256_BLOCK_SIZE - ctx->block_len;
 		size_t block_copy = buffer_len < block_free ? buffer_len : block_free;
@@ -223,7 +225,8 @@ _hmac_key_init(const void *key, size_t key_len, uint8_t *key_block, size_t key_b
 	if (key_len > key_block_len) {
 		fbr_sha256(key, key_len, key_block, key_block_len);
 	} else {
-		memcpy(key_block, key, key_len);
+		size_t copy_len = key_len < key_block_len ? key_len : key_block_len;
+		memcpy(key_block, key, copy_len);
 	}
 
 	for (size_t i = 0; i < key_block_len; i++) {
