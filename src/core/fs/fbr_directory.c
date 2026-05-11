@@ -181,7 +181,7 @@ fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_i
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
 		// TODO return a ref to directory->previous if reading fails or is duplicate?
-		fbr_index_read(fs, directory, 0, 0);
+		fbr_index_read(fs, directory);
 	}
 
 	if (directory->state == FBR_DIRSTATE_ERROR) {

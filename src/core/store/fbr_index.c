@@ -531,8 +531,7 @@ fbr_root_json_parse(const char *json_buf, size_t json_buf_len)
 }
 
 void
-fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, int want_merge,
-    unsigned int attempts)
+fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory, unsigned int attempts)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -603,11 +602,21 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, int want_merg
 		return;
 	}
 
-	if (want_merge) {
-		assert_dev(directory->state == FBR_DIRSTATE_LOADING);
-	} else {
+	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
+}
+
+void
+fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_index_read_merge(fs, directory, 0);
+
+	fbr_directory_ok(directory);
+
+	if (directory->state == FBR_DIRSTATE_LOADING) {
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	}
+
+	assert(directory->state >= FBR_DIRSTATE_OK);
 }
 
 void
