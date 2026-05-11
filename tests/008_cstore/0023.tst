@@ -1,3 +1,3 @@
-fiber_test "cstore cluster operation test"
+fiber_test "cstore cluster mkdir test"
 
-cstore_cluster_ops
+cstore_cluster_mkdir

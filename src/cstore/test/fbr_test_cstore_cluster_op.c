@@ -33,7 +33,7 @@ static size_t _MKDIR_ERROR;
 static size_t _CONFLICTS;
 
 static void *
-_op_thread(void *arg)
+_op_mkdir_thread(void *arg)
 {
 	(void)arg;
 
@@ -126,7 +126,7 @@ _debug_cstores(void)
 }
 
 void
-fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
@@ -186,7 +186,7 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	pthread_t threads[_OP_THREADS];
 
 	for (size_t i = 0; i < fbr_array_len(threads); i++) {
-		pt_assert(pthread_create(&threads[i], NULL, _op_thread, NULL));
+		pt_assert(pthread_create(&threads[i], NULL, _op_mkdir_thread, NULL));
 	}
 
 	for (size_t i = 0; i < fbr_array_len(threads); i++) {
@@ -217,5 +217,5 @@ fbr_cmd_cstore_cluster_ops(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	_CSTORE_C0_SHARED = NULL;
 	_CSTORE_C1_S3 = NULL;
 
-	fbr_test_logs("cstore_cluster_ops done");
+	fbr_test_logs("cstore_cluster_mkdir done");
 }
