@@ -49,15 +49,18 @@ struct fbr_cstore_backend {
 struct fbr_cstore_s3 {
 	struct fbr_cstore_backend	*backend;
 
-	char				*prefix;
-	size_t				prefix_len;
-
 	char				*region;
 	size_t				region_len;
 	char				*access_key;
 	size_t				access_key_len;
 	char				*secret_key;
 	size_t				secret_key_len;
+
+	char				*prefix;
+	size_t				prefix_len;
+
+	char				*host_hash;
+	size_t				host_hash_len;
 };
 
 struct fbr_cstore_cluster {
@@ -91,6 +94,7 @@ struct fbr_cstore;
 
 void fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tls,
 	const char *prefix, const char *region, const char *access_key, const char *secret_key);
+void fbr_cstore_s3_host_hash(struct fbr_cstore *cstore, const char *host_hash);
 void fbr_cstore_s3_free(struct fbr_cstore *cstore);
 void fbr_cstore_cluster_init(struct fbr_cstore_cluster *cluster);
 void fbr_cstore_cluster_add(struct fbr_cstore_cluster *cluster, const char *host, int port,

@@ -199,16 +199,25 @@ _hash_s3(XXH3_state_t *hash, struct fbr_cstore *cstore)
 
 	// host + NULL + [/prefix] + /
 
-	if (!cstore->s3.backend) {
-		// TODO breaks mocked s3 hashing since no backend hostname...
+	const char *host;
+	size_t host_len = 0;
+
+	if (cstore->s3.backend) {
+		fbr_cstore_backend_ok(cstore->s3.backend);
+		host = cstore->s3.backend->host;
+		host_len = cstore->s3.backend->host_len;
+	} else if (cstore->s3.host_hash) {
+		host = cstore->s3.host_hash;
+		host_len = cstore->s3.host_hash_len;
+	}
+
+	if (!host_len) {
 		XXH3_64bits_update(hash, "", 1);
 		XXH3_64bits_update(hash, "/", 1);
 		return;
 	}
 
-	struct fbr_cstore_backend *s3 = cstore->s3.backend;
-	fbr_cstore_backend_ok(s3);
-	XXH3_64bits_update(hash, s3->host, s3->host_len + 1);
+	XXH3_64bits_update(hash, host, host_len + 1);
 
 	if (cstore->s3.prefix) {
 		assert_dev(cstore->s3.prefix_len);

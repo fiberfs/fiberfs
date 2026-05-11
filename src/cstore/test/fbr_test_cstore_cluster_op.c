@@ -253,8 +253,8 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 
 	struct fbr_fs *fs_s3 = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs_s3);
-	fbr_test_cstore_bind_new(fs_s3);
-	fbr_test_cstore_backend_add(fs_s3->cstore, _CSTORE_C1_S3, FBR_CSTORE_ROUTE_S3);
+	fbr_test_cstore_bind(fs_s3, 1);
+	assert(fs_s3->cstore == _CSTORE_C1_S3);
 	fbr_fs_set_store(fs_s3, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	struct fbr_directory *root_s3 = fbr_directory_load(fs_s3, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
@@ -270,7 +270,7 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	fbr_test_logs("MKDIR EXIST: %zu", _MKDIR_EXIST);
 	fbr_test_logs("MKDIR ERROR: %zu", _MKDIR_ERROR);
 
-	assert(fbr_test_cstore_count(ctx) == 2 + 2 + _OP_THREADS);
+	assert(fbr_test_cstore_count(ctx) == 2 + 1 + _OP_THREADS);
 	assert(_CSTORE_C1_S3->entries == 2 + (_OP_THREADS * 2));
 	assert(_CSTORE_C1_S3->stats.wr_indexes == 1 + _OP_THREADS);
 	assert(_CSTORE_C1_S3->stats.wr_roots == 1 + _OP_THREADS);

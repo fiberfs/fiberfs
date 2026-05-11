@@ -127,6 +127,8 @@ chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port)
 		default:
 			fbr_ABORT("Invalid sockaddr family");
 	}
+
+	assert_dev(strlen(buf) < buf_len);
 }
 
 size_t

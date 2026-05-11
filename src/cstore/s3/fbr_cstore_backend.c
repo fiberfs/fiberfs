@@ -66,6 +66,7 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 	struct fbr_cstore_s3 *s3 = &cstore->s3;
 	assert_zero_dev(s3->backend);
 	assert_zero_dev(s3->region);
+	assert_zero_dev(s3->host_hash);
 	fbr_zero(s3);
 
 	if (host) {
@@ -106,6 +107,21 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 }
 
 void
+fbr_cstore_s3_host_hash(struct fbr_cstore *cstore, const char *host_hash)
+{
+	fbr_cstore_ok(cstore);
+	assert(host_hash);
+
+	struct fbr_cstore_s3 *s3 = &cstore->s3;
+	assert_zero(s3->backend);
+
+	s3->host_hash = strdup(host_hash);
+	assert(s3->host_hash);
+	s3->host_hash_len = strlen(s3->host_hash);
+	assert(s3->host_hash_len);
+}
+
+void
 fbr_cstore_s3_free(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
@@ -118,6 +134,10 @@ fbr_cstore_s3_free(struct fbr_cstore *cstore)
 
 	if (s3->prefix) {
 		free(s3->prefix);
+	}
+
+	if (s3->host_hash) {
+		free(s3->host_hash);
 	}
 
 	free(s3->region);

@@ -48,6 +48,23 @@ fbr_cmd_cstore_debug_allow_loop(struct fbr_test_context *ctx, struct fbr_test_cm
 	fbr_test_logs("cstore_debug_allow_loop: %u", cstore->debug_allow_loop);
 }
 
+static struct fbr_cstore_server *
+_get_server(struct fbr_cstore *cstore, size_t pos)
+{
+	fbr_cstore_ok(cstore);
+
+	struct fbr_cstore_server *server = cstore->servers;
+	fbr_cstore_server_ok(server);
+
+	while (server->next && pos) {
+		server = server->next;
+		fbr_cstore_server_ok(server);
+		pos--;
+	}
+
+	return server;
+}
+
 void
 fbr_cmd_cstore_set_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -122,7 +139,18 @@ void
 fbr_cstore_s3_mock(struct fbr_cstore *cstore, const char *prefix, const char *region,
     const char *access_key, const char *secret_key)
 {
+	fbr_cstore_ok(cstore);
+
 	fbr_cstore_s3_init(cstore, NULL, 0, 0, prefix, region, access_key, secret_key);
+
+	struct fbr_cstore_server *server = _get_server(cstore, 0);
+
+	char host[128];
+	int port;
+	chttp_sa_string(&server->addr.sa, host, sizeof(host), &port);
+	assert(port == server->port);
+
+	fbr_cstore_s3_host_hash(cstore, host);
 }
 
 static void
@@ -190,23 +218,6 @@ fbr_cmd_cstore_add_cdn(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_cmd_ok(cmd);
 
 	_test_add_cluster_ctx(ctx, cmd, 1);
-}
-
-static struct fbr_cstore_server *
-_get_server(struct fbr_cstore *cstore, size_t pos)
-{
-	fbr_cstore_ok(cstore);
-
-	struct fbr_cstore_server *server = cstore->servers;
-	fbr_cstore_server_ok(server);
-
-	while (server->next && pos) {
-		server = server->next;
-		fbr_cstore_server_ok(server);
-		pos--;
-	}
-
-	return server;
 }
 
 const char *
