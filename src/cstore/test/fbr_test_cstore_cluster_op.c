@@ -129,7 +129,7 @@ _op_mkdir_thread(void *arg)
 	fbr_atomic_add(&_CONFLICTS, fs->stats.flush_conflicts);
 
 	fbr_test_cstore_wait(fs->cstore);
-	//_assert_fs(fs);
+	_assert_fs(fs);
 	fbr_fs_free(fs);
 
 	return NULL;

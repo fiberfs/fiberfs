@@ -138,6 +138,10 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 
 	fbr_fuse_reply_entry(request, &entry);
 
+	if (request->not_fuse) {
+		fbr_inode_release(fs, &file);
+	}
+
 	fbr_dindex_release(fs, &directory);
 	fbr_dindex_release(fs, &new_directory);
 }
