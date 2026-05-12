@@ -975,13 +975,13 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 
 fbr_id_t
 fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
-    struct fbr_cstore_path *root_path, int attempts)
+    struct fbr_cstore_path *root_path, int route_s3)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_path_ok(root_path);
 
 	enum fbr_cstore_route route = FBR_CSTORE_ROUTE_CLUSTER;
-	if (attempts) {
+	if (route_s3) {
 		route = FBR_CSTORE_ROUTE_S3;
 	}
 
