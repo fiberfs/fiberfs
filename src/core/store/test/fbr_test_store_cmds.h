@@ -21,6 +21,7 @@ FBR_TEST_CMD(index_test)
 FBR_TEST_CMD(index_large_test)
 FBR_TEST_CMD(index_2fs_test)
 FBR_TEST_CMD(index_2fs_thread_test)
+FBR_TEST_CMD(index_2fs_s3_test)
 
 FBR_TEST_CMD(index_print_json)
 FBR_TEST_CMD(index_root_json_parse)

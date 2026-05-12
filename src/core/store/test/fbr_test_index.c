@@ -14,6 +14,7 @@
 #include "cstore/fbr_cstore_callback.h"
 
 #include "test/fbr_test.h"
+#include "config/test/fbr_test_config_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
@@ -791,4 +792,156 @@ fbr_cmd_index_2fs_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_fs_free(fs);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "index_2fs_test done");
+}
+
+void
+fbr_cmd_index_2fs_s3_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_conf_add("LOG_SIZE", "100000");
+	fbr_test_conf_add("ASYNC_WRITE", "false");
+	fbr_test_conf_add("CSTORE_SERVER", "true");
+	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
+	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
+
+	fbr_test_fuse_mock(ctx);
+
+	struct fbr_cstore *cstore_s3 = fbr_test_cstore_init(ctx);
+	fbr_cstore_ok(cstore_s3);
+	fbr_cstore_s3_mock(cstore_s3, NULL, "region", "key", "secret");
+
+	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
+	fbr_fs_ok(fs_1);
+	fbr_test_cstore_bind_new(fs_1);
+	fbr_fs_set_store(fs_1, &_INDEX_TEST_CALLBACKS);
+	fbr_test_cstore_backend_add(fs_1->cstore, cstore_s3, FBR_CSTORE_ROUTE_S3);
+
+	struct fbr_fs *fs_2 = fbr_test_fs_alloc();
+	fbr_fs_ok(fs_2);
+	fbr_test_cstore_bind_new(fs_2);
+	fbr_fs_set_store(fs_2, &_INDEX_TEST_CALLBACKS);
+	fbr_test_cstore_backend_add(fs_2->cstore, cstore_s3, FBR_CSTORE_ROUTE_S3);
+
+	assert(fbr_test_cstore_count(ctx) == 3);
+
+	fbr_test_logs("*** Allocating dir_fs1");
+
+	struct fbr_directory *dir_fs1 = fbr_directory_root_alloc(fs_1);
+	fbr_directory_ok(dir_fs1);
+	assert_zero(dir_fs1->previous);
+	assert(dir_fs1->state == FBR_DIRSTATE_LOADING);
+	dir_fs1->generation = 1;
+	_index_add_file(fs_1, dir_fs1, 1);
+	_index_add_file(fs_1, dir_fs1, 1);
+	_index_add_file(fs_1, dir_fs1, 1);
+
+	fbr_test_logs("*** Storing dir_fs1 (gen %lu)", dir_fs1->generation);
+
+	struct fbr_index_data index_data;
+	fbr_index_data_init(fs_1, &index_data, dir_fs1, NULL, NULL, NULL, FBR_FLUSH_NONE);
+	int ret = fbr_index_write(fs_1, &index_data);
+	fbr_test_ERROR(ret, "fbr_index_write() failed");
+	fbr_index_data_free(&index_data);
+
+	fbr_directory_set_state(fs_1, dir_fs1, FBR_DIRSTATE_OK);
+
+	fbr_dindex_release(fs_1, &dir_fs1);
+
+	fbr_test_logs("*** Loading dir_fs2");
+
+	struct fbr_directory *dir_fs2 = fbr_directory_load(fs_2, FBR_DIRNAME_ROOT,
+		FBR_INODE_ROOT, 0);
+	assert(dir_fs2->state == FBR_DIRSTATE_OK);
+	assert(dir_fs2->generation == 1);
+	_index_validate_directory(dir_fs2, 1);
+
+	fbr_dindex_release(fs_2, &dir_fs2);
+
+	fbr_test_logs("*** Making changes dir_fs2");
+
+	dir_fs2 = fbr_directory_root_alloc(fs_2);
+	fbr_directory_ok(dir_fs2);
+	fbr_directory_ok(dir_fs2->previous);
+	assert(dir_fs2->state == FBR_DIRSTATE_LOADING);
+	fbr_directory_copy(fs_2, dir_fs2, dir_fs2->previous);
+	dir_fs2->generation++;
+	_index_add_file(fs_2, dir_fs2, 1);
+	_index_add_file(fs_2, dir_fs2, 1);
+	_index_add_file(fs_2, dir_fs2, 1);
+
+	fbr_test_logs("*** Storing dir_fs2 (gen %lu)", dir_fs2->generation);
+
+	fbr_index_data_init(fs_1, &index_data, dir_fs2, dir_fs2->previous, NULL, NULL,
+		FBR_FLUSH_NONE);
+	ret = fbr_index_write(fs_2, &index_data);
+	fbr_test_ERROR(ret, "fbr_index_write() failed");
+	fbr_index_data_free(&index_data);
+
+	fbr_directory_set_state(fs_2, dir_fs2, FBR_DIRSTATE_OK);
+	_index_validate_directory(dir_fs2, 1);
+
+	fbr_dindex_release(fs_2, &dir_fs2);
+
+	fbr_test_logs("*** Loading dir_fs1 (stale gen 1)");
+
+	dir_fs1 = fbr_directory_load(fs_1, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0);
+	assert(dir_fs1->state == FBR_DIRSTATE_OK);
+	assert(dir_fs1->generation == 1);
+
+	fbr_dindex_release(fs_1, &dir_fs1);
+
+	fbr_test_logs("*** Loading dir_fs1 (s3 gen 1)");
+
+	dir_fs1 = fbr_directory_load(fs_1, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 1);
+	assert(dir_fs1->state == FBR_DIRSTATE_OK);
+	assert(dir_fs1->generation == 2);
+	_index_validate_directory(dir_fs1, 1);
+
+	fbr_dindex_release(fs_1, &dir_fs1);
+
+	fbr_test_logs("*** Cleanup fs_1");
+
+	fbr_fs_release_all(fs_1, 1);
+
+	fbr_test_fs_stats(fs_1);
+	fbr_test_fs_inodes_debug(fs_1);
+	fbr_test_fs_dindex_debug(fs_1);
+	fbr_test_cstore_debug(fs_1->cstore);
+
+	fbr_test_ERROR(fs_1->stats.directories, "non zero");
+	fbr_test_ERROR(fs_1->stats.directories_dindex, "non zero");
+	fbr_test_ERROR(fs_1->stats.directory_refs, "non zero");
+	fbr_test_ERROR(fs_1->stats.files, "non zero");
+	fbr_test_ERROR(fs_1->stats.files_inodes, "non zero");
+	fbr_test_ERROR(fs_1->stats.file_refs, "non zero");
+	fbr_test_ERROR(fs_1->stats.flush_conflicts, "non zero");
+	fbr_test_ERROR(fs_1->stats.merges, "non zero");
+
+	fbr_fs_free(fs_1);
+
+	fbr_test_logs("*** Cleanup fs_2");
+
+	fbr_fs_release_all(fs_2, 1);
+
+	fbr_test_fs_stats(fs_2);
+	fbr_test_fs_inodes_debug(fs_2);
+	fbr_test_fs_dindex_debug(fs_2);
+	fbr_test_cstore_debug(fs_2->cstore);
+
+	fbr_test_ERROR(fs_2->stats.directories, "non zero");
+	fbr_test_ERROR(fs_2->stats.directories_dindex, "non zero");
+	fbr_test_ERROR(fs_2->stats.directory_refs, "non zero");
+	fbr_test_ERROR(fs_2->stats.files, "non zero");
+	fbr_test_ERROR(fs_2->stats.files_inodes, "non zero");
+	fbr_test_ERROR(fs_2->stats.file_refs, "non zero");
+	fbr_test_ERROR(fs_2->stats.flush_conflicts, "non zero");
+	fbr_test_ERROR(fs_2->stats.merges, "non zero");
+
+	fbr_fs_free(fs_2);
+
+	fbr_test_cstore_debug(cstore_s3);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "index_2fs_s3_test done");
 }
