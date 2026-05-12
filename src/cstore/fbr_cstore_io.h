@@ -124,7 +124,7 @@ void fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context
 	struct fbr_cstore_op_sync *sync);
 void fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-	struct fbr_cstore_path *root_path, fbr_id_t version);
+	struct fbr_cstore_path *root_path, fbr_id_t version, double timestamp);
 
 void fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync);
 void fbr_cstore_op_sync_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker);

@@ -146,17 +146,19 @@ _validate_root(struct fbr_directory *root)
 {
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
-	assert(root->file_count == _OP_THREADS);
 
 	for (size_t i = 1; i < _OP_THREADS; i++) {
 		char dirname[32];
 		size_t len = fbr_bprintf(dirname, "directory_%zu", i);
 
 		struct fbr_file *file = fbr_directory_find_file(root, dirname, len);
+		fbr_ASSERT(file, "ERROR directory missing: %s", dirname);
 		fbr_file_ok(file);
 		assert(file->state == FBR_FILE_OK);
 		assert(file->mode | S_IFDIR);
 	}
+
+	assert(root->file_count == _OP_THREADS);
 
 	fbr_test_logs("root passed all directories found");
 }

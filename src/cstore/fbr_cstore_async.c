@@ -484,7 +484,7 @@ _async_root_path_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker
 
 void
 fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-    struct fbr_cstore_path *root_path, fbr_id_t version)
+    struct fbr_cstore_path *root_path, fbr_id_t version, double timestamp)
 {
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
@@ -495,24 +495,24 @@ fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_j
 
 	struct fbr_cstore_path *path_async;
 
-	double *timestamp = malloc(sizeof(*timestamp) + sizeof(*path_async));
-	assert(timestamp);
-	*timestamp = fbr_get_time();
+	double *timestamp_p = malloc(sizeof(*timestamp_p) + sizeof(*path_async));
+	assert(timestamp_p);
+	*timestamp_p = timestamp;
 
-	path_async = (struct fbr_cstore_path*)(timestamp + 1);
+	path_async = (struct fbr_cstore_path*)(timestamp_p + 1);
 	fbr_cstore_s3_path_clone(path_async, root_path);
 
 	static_ASSERT(sizeof(void*) >= sizeof(version));
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_ROOT_WRITE, cstore, root_json, path_async,
-		(void*)version, timestamp, _async_root_path_done, NULL);
+		(void*)version, timestamp_p, _async_root_path_done, NULL);
 	if (ret) {
 		fbr_rlog(FBR_LOG_CS_ASYNC, "synchronous fallback");
 
-		fbr_cstore_io_root_write(cstore, root_json, root_path, version, 0, 0, *timestamp);
+		fbr_cstore_io_root_write(cstore, root_json, root_path, version, 0, 0, timestamp);
 
 		fbr_zero_magic(path_async);
-		free(timestamp);
+		free(timestamp_p);
 
 		return;
 	}

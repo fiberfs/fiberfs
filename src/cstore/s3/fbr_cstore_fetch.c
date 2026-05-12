@@ -945,6 +945,8 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	assert(route);
 	assert(fbr_cstore_backend_enabled(cstore));
 
+	double timestamp = fbr_get_time();
+
 	struct fbr_cstore_fetch_context fetch;
 	struct chttp_context http;
 
@@ -963,10 +965,9 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	}
 
 	if (cstore->config.async_write) {
-		fbr_cstore_async_root_write(cstore, root_json, root_path, version);
+		fbr_cstore_async_root_write(cstore, root_json, root_path, version, timestamp);
 	} else {
-		double now = fbr_get_time();
-		fbr_cstore_io_root_write(cstore, root_json, root_path, version, 0, 0, now);
+		fbr_cstore_io_root_write(cstore, root_json, root_path, version, 0, 0, timestamp);
 	}
 
 	return 0;
@@ -1025,16 +1026,17 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 		return 0;
 	}
 
+	double timestamp = fbr_id_timestamp(version);
+
 	struct fbr_writer *json_writer = fbr_writer_alloc_dynamic(fs, FBR_ROOT_JSON_SIZE);
 	fbr_writer_add(fs, json_writer, root_json, bytes);
 	fbr_writer_flush(fs, json_writer);
 	assert_zero(json_writer->error);
 
 	if (cstore->config.async_write) {
-		fbr_cstore_async_root_write(cstore, json_writer, root_path, version);
+		fbr_cstore_async_root_write(cstore, json_writer, root_path, version, timestamp);
 	} else {
-		double now = fbr_get_time();
-		fbr_cstore_io_root_write(cstore, json_writer, root_path, version, 0, 0, now);
+		fbr_cstore_io_root_write(cstore, json_writer, root_path, version, 0, 0, timestamp);
 	}
 
 	return version;

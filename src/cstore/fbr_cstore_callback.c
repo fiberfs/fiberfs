@@ -102,8 +102,9 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 			fail = EIO;
 		}
 	} else {
+		double now = fbr_get_time();
 		fail = fbr_cstore_io_root_write(cstore, root_json, &root_path, directory->version,
-			previous_version, 1, 0);
+			previous_version, 1, now);
 	}
 
 	if (fail) {

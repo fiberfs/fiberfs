@@ -967,6 +967,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	assert(root_json->bytes);
 	fbr_cstore_path_ok(root_path);
 	assert(version);
+	assert(timestamp);
 	assert(enforce || fbr_cstore_backend_enabled(cstore));
 
 	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path->value, root_path->length);
@@ -1017,7 +1018,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 			fbr_cstore_release(cstore, &entry);
 			fbr_writer_free(root_json);
 			return EAGAIN;
-		} else if (!enforce && timestamp && timestamp <= metadata.timestamp) {
+		} else if (!enforce && timestamp <= metadata.timestamp) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR newer write found: %lf current: %lf",
 				metadata.timestamp, timestamp);
 			fbr_cstore_set_ok(entry);
