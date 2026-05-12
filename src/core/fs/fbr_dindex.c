@@ -390,6 +390,19 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname, int wait
 }
 
 void
+fbr_dindex_ref(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+
+	struct fbr_dindex_dirhead *dirhead = _dindex_LOCK(fs, directory);
+
+	_dindex_ref(fs, directory);
+
+	_dindex_UNLOCK(dirhead);
+}
+
+void
 fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
     enum fbr_directory_state state)
 {

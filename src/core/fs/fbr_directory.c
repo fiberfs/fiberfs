@@ -181,10 +181,9 @@ fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_i
 	struct fbr_directory *previous = NULL;
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
-		if (directory->previous) {
-			previous = fbr_dindex_take(fs, dirname, 0);
-			fbr_directory_ok(previous);
-			assert(directory->previous == previous);
+		previous = directory->previous;
+		if (previous) {
+			fbr_dindex_ref(fs, previous);
 		}
 
 		fbr_index_read(fs, directory);

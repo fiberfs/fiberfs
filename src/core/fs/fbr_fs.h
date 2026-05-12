@@ -478,12 +478,13 @@ int fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 struct fbr_directory *fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
-void fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
-	enum fbr_directory_state state);
-void fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	int wait_for_new);
+void fbr_dindex_ref(struct fbr_fs *fs, struct fbr_directory *directory);
+void fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
+	enum fbr_directory_state state);
+void fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_dindex_release(struct fbr_fs *fs, struct fbr_directory **directory_ref);
 void fbr_dindex_lru_purge(struct fbr_fs *fs, size_t lru_max);
 size_t fbr_dindex_dirfree_count(struct fbr_fs *fs);
