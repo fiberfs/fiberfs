@@ -92,9 +92,6 @@ _op_mkdir_thread(void *arg)
 		struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
 		if (!root) {
 			root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
-			if (!root) {
-				continue;
-			}
 		}
 		fbr_directory_ok(root);
 		assert(root->state == FBR_DIRSTATE_OK);

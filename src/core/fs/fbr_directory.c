@@ -178,19 +178,29 @@ fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_i
 	assert(inode);
 
 	struct fbr_directory *directory = fbr_directory_alloc(fs, dirname, inode);
+	struct fbr_directory *previous = NULL;
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
-		// TODO return a ref to directory->previous if reading fails or is duplicate?
+		if (directory->previous) {
+			previous = fbr_dindex_take(fs, dirname, 0);
+			fbr_directory_ok(previous);
+			assert(directory->previous == previous);
+		}
+
 		fbr_index_read(fs, directory);
 	}
 
 	if (directory->state == FBR_DIRSTATE_ERROR) {
 		fbr_dindex_release(fs, &directory);
-		return NULL;
+		return previous;
 	}
 
 	fbr_ASSERT(directory->state == FBR_DIRSTATE_OK,
 		"fbr_directory_load() directory->state: %d", directory->state);
+
+	if (previous) {
+		fbr_dindex_release(fs, &previous);
+	}
 
 	return directory;
 }
