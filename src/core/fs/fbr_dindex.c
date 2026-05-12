@@ -417,6 +417,7 @@ fbr_directory_set_state(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	directory->state = state;
 	directory->creation = fbr_get_time();
+	directory->updated = directory->creation;
 
 	int release_previous = 0;
 	struct fbr_directory *previous = directory->previous;

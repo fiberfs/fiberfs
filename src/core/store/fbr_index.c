@@ -559,6 +559,7 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory, unsigne
 			}
 
 			directory->version = version;
+			directory->written = fbr_id_timestamp(version);
 		} else {
 			directory->version = 0;
 		}

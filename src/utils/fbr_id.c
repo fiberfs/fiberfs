@@ -107,3 +107,12 @@ fbr_id_parse(const char *buffer, size_t buffer_len)
 
 	return id.value;
 }
+
+double
+fbr_id_timestamp(fbr_id_t id)
+{
+	struct fbr_id _id;
+	_id.value = id;
+
+	return (double)_id.parts.timestamp;
+}

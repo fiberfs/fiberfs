@@ -80,9 +80,9 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id2_string=%s", id2_string);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id3_string=%s", id3_string);
 
-	char now[FBR_ID_PART_CHAR_MAX + 1];
-	fbr_bprintf(now, "%ld", (long)fbr_get_time());
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "timestamp_=%s", now);
+	char now_str[FBR_ID_PART_CHAR_MAX + 1];
+	fbr_bprintf(now_str, "%ld", (long)fbr_get_time());
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "timestamp_=%s", now_str);
 
 	fbr_id_t id1_parsed = fbr_id_parse(id1_string, strlen(id1_string));
 	fbr_id_t id2_parsed = fbr_id_parse(id2_string, strlen(id2_string));
@@ -91,6 +91,14 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id1_parsed=%lu", id1_parsed);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id2_parsed=%lu", id2_parsed);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id3_parsed=%lu", id3_parsed);
+
+	double id1_time = fbr_id_timestamp(id1_parsed);
+	double id2_time = fbr_id_timestamp(id2_parsed);
+	double id3_time = fbr_id_timestamp(id3_parsed);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id1_time=%lf", id1_time);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id2_time=%lf", id2_time);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id3_time=%lf", id3_time);
 
 	char *end;
 	double id3_double = strtod(id3_string, &end);
@@ -110,6 +118,9 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	char id_max_string[FBR_ID_STRING_MAX];
 	size_t id_max_len = fbr_id_string(id_max.value, id_max_string, sizeof(id_max_string));
+
+	struct fbr_id id_max2;
+	id_max2.value = fbr_id_parse(id_max_string, id_max_len);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_max=%lu:%zu", id_max.value, _id_max_len);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "id_max_string=%s", id_max_string);
@@ -152,6 +163,13 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ASSERT(id1 == id1_parsed, "id1 != id1_parsed");
 	fbr_test_ASSERT(id2 == id2_parsed, "id2 != id2_parsed");
 	fbr_test_ASSERT(id3 == id3_parsed, "id3 != id3_parsed");
+	fbr_test_ASSERT(id_max.value == id_max2.value, "id_max != id_max parsed");
+	fbr_test_ASSERT(id_max2.parts.timestamp == FBR_ID_TIMEBITS_MAX, "id_max timestamp");
+
+	double now = fbr_get_time();
+	assert(abs((int)(now - id1_time)) < 2);
+	assert(abs((int)(now - id2_time)) < 2);
+	assert(abs((int)(now - id3_time)) < 2);
 
 	struct fbr_id id_rand1;
 	fbr_zero(&id_rand1);
