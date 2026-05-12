@@ -187,7 +187,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			case FBR_DIRSTATE_OK:
 				break;
 			case FBR_DIRSTATE_LOADING:
-				fbr_index_read_merge(fs, directory, 0);
+				fbr_index_read_merge(fs, directory, 0, 0);
 
 				if (directory->state == FBR_DIRSTATE_ERROR) {
 					fbr_dindex_release(fs, &directory);
@@ -328,7 +328,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		}
 		assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 
-		fbr_index_read_merge(fs, directory, attempts);
+		fbr_index_read_merge(fs, directory, attempts, 1);
 
 		if (directory->state == FBR_DIRSTATE_ERROR) {
 			fbr_dindex_release(fs, &directory);

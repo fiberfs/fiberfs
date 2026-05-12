@@ -531,7 +531,8 @@ fbr_root_json_parse(const char *json_buf, size_t json_buf_len)
 }
 
 void
-fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory, int route_s3)
+fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory, unsigned int attempts,
+    int route_s3)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -542,14 +543,13 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory, int rou
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
-	unsigned int attempts = route_s3;
 	unsigned int version_matches = 0;
 	fbr_id_t last_version = 0;
 	double time_start = fbr_get_time();
 	int ret;
 
 	do {
-		fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_read() attempt: %u route_s3: %d",
+		fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_read() attempts: %u route_s3: %d",
 			attempts, route_s3);
 
 		if (fs->store->root_read_f) {
@@ -610,13 +610,13 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory, int rou
 	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 }
 
-static void
-_index_read(struct fbr_fs *fs, struct fbr_directory *directory, int route_s3)
+void
+fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, int route_s3)
 {
 	assert_dev(fs);
 	assert_dev(directory);
 
-	fbr_index_read_merge(fs, directory, route_s3);
+	fbr_index_read_merge(fs, directory, 0, route_s3);
 
 	fbr_directory_ok(directory);
 
@@ -625,18 +625,6 @@ _index_read(struct fbr_fs *fs, struct fbr_directory *directory, int route_s3)
 	}
 
 	assert(directory->state >= FBR_DIRSTATE_OK);
-}
-
-void
-fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
-{
-	_index_read(fs, directory, 0);
-}
-
-void
-fbr_index_read_s3(struct fbr_fs *fs, struct fbr_directory *directory)
-{
-	_index_read(fs, directory, 1);
 }
 
 void

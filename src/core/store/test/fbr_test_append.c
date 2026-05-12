@@ -66,7 +66,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(dir_fs2->previous);
 	assert(dir_fs2->state == FBR_DIRSTATE_LOADING);
 
-	fbr_index_read(fs_2, dir_fs2);
+	fbr_index_read(fs_2, dir_fs2, 0);
 	assert(dir_fs2->state == FBR_DIRSTATE_OK);
 	assert(dir_fs2->generation == 1);
 	assert_zero(dir_fs2->file_count);
@@ -166,7 +166,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs2->previous);
 	assert(dir_fs2->state == FBR_DIRSTATE_LOADING);
 
-	fbr_index_read(fs_2, dir_fs2);
+	fbr_index_read(fs_2, dir_fs2, 0);
 	assert(dir_fs2->state == FBR_DIRSTATE_OK);
 	assert(dir_fs2->generation == 4);
 	assert(dir_fs2->file_count == 1);
@@ -313,7 +313,7 @@ _append_thread(void *arg)
 			root = fbr_directory_root_alloc(fs);
 			fbr_directory_ok(root);
 			assert(root->state == FBR_DIRSTATE_LOADING);
-			fbr_index_read(fs, root);
+			fbr_index_read(fs, root, 0);
 		}
 		fbr_directory_ok(root);
 		assert(root->state == FBR_DIRSTATE_OK);
@@ -414,7 +414,7 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_LOADING);
-	fbr_index_read(fs, root);
+	fbr_index_read(fs, root, 0);
 	assert(root->state == FBR_DIRSTATE_OK);
 	fbr_test_ASSERT(root->generation == _APPEND_COUNTER_MAX + 1, "root->generation: %lu",
 		root->generation);

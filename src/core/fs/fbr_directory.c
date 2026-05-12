@@ -171,14 +171,24 @@ fbr_directory_root_alloc(struct fbr_fs *fs)
 }
 
 struct fbr_directory *
-fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_inode_t inode)
+fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_inode_t inode,
+    int route_s3)
 {
 	fbr_fs_ok(fs);
 	assert(dirname);
 	assert(inode);
 
-	struct fbr_directory *directory = fbr_directory_alloc(fs, dirname, inode);
+	struct fbr_directory *directory = NULL;
 	struct fbr_directory *previous = NULL;
+
+	while (!directory) {
+		directory = fbr_directory_alloc(fs, dirname, inode);
+		fbr_directory_ok(directory);
+
+		if (route_s3 && directory->state == FBR_DIRSTATE_OK) {
+			fbr_dindex_release(fs, &directory);
+		}
+	}
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
 		previous = directory->previous;
@@ -186,7 +196,7 @@ fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_i
 			fbr_dindex_ref(fs, previous);
 		}
 
-		fbr_index_read(fs, directory);
+		fbr_index_read(fs, directory, route_s3);
 	}
 
 	if (directory->state == FBR_DIRSTATE_ERROR) {
@@ -566,7 +576,7 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 	}
 
 	if (!directory) {
-		directory = fbr_directory_load(fs, &dirpath.path, inode);
+		directory = fbr_directory_load(fs, &dirpath.path, inode, 0);
 		if (!directory) {
 			return NULL;
 		}

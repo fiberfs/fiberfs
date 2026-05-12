@@ -91,7 +91,7 @@ _op_mkdir_thread(void *arg)
 
 		struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
 		if (!root) {
-			root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+			root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0);
 		}
 		fbr_directory_ok(root);
 		assert(root->state == FBR_DIRSTATE_OK);
@@ -242,9 +242,13 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	fbr_cstore_clear(fs->cstore);
 	fbr_test_fs_wait(fs);
 
-	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
+
+	struct fbr_directory *root_d3 = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 1);
+	fbr_directory_ok(root_d3);
+	assert(root_d3->state == FBR_DIRSTATE_OK);
 
 	fbr_test_sleep_ms(20);
 
@@ -256,7 +260,8 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	assert(fs_s3->cstore == _CSTORE_C1_S3);
 	fbr_fs_set_store(fs_s3, FBR_CSTORE_DEFAULT_CALLBACKS);
 
-	struct fbr_directory *root_s3 = fbr_directory_load(fs_s3, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+	struct fbr_directory *root_s3 = fbr_directory_load(fs_s3, FBR_DIRNAME_ROOT,
+		FBR_INODE_ROOT, 0);
 	fbr_directory_ok(root_s3);
 	assert(root_s3->state == FBR_DIRSTATE_OK);
 
@@ -280,9 +285,11 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	assert_zero(_CSTORE_C0_SHARED->stats.http_500);
 
 	_validate_root(root);
+	_validate_root(root_d3);
 	_validate_root(root_s3);
 
 	fbr_dindex_release(fs, &root);
+	fbr_dindex_release(fs, &root_d3);
 	fbr_dindex_release(fs_s3, &root_s3);
 
 	_assert_fs(fs);

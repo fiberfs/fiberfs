@@ -213,7 +213,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert(dir2->state == FBR_DIRSTATE_LOADING);
 	fbr_directory_ok(dir2->previous);
 	assert(dir2->previous->generation == 1);
-	fbr_index_read(fs, dir2);
+	fbr_index_read(fs, dir2, 0);
 	assert(dir2->state == FBR_DIRSTATE_ERROR);
 	fbr_dindex_release(fs, &dir2);
 
@@ -230,7 +230,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert(dir2->state == FBR_DIRSTATE_LOADING);
 	fbr_directory_ok(dir2->previous);
 	assert(dir2->previous->generation == 1);
-	fbr_index_read(fs, dir2);
+	fbr_index_read(fs, dir2, 0);
 	assert(dir2->state == FBR_DIRSTATE_ERROR);
 	fbr_dindex_release(fs, &dir2);
 

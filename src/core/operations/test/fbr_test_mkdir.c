@@ -140,7 +140,7 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_fs_set_store(fs_remote, &_TEST_MKDIR_CALLBACKS);
 
 	struct fbr_directory *root = fbr_directory_load(fs_remote, FBR_DIRNAME_ROOT,
-		FBR_INODE_ROOT);
+		FBR_INODE_ROOT, 0);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
 
