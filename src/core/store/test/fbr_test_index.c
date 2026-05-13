@@ -873,7 +873,7 @@ fbr_cmd_index_2fs_s3_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	fbr_test_logs("*** Storing dir_fs2 (gen %lu)", dir_fs2->generation);
 
-	fbr_index_data_init(fs_1, &index_data, dir_fs2, dir_fs2->previous, NULL, NULL,
+	fbr_index_data_init(fs_2, &index_data, dir_fs2, dir_fs2->previous, NULL, NULL,
 		FBR_FLUSH_NONE);
 	ret = fbr_index_write(fs_2, &index_data);
 	fbr_test_ERROR(ret, "fbr_index_write() failed");
@@ -886,9 +886,15 @@ fbr_cmd_index_2fs_s3_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	fbr_test_logs("*** Loading dir_fs1 (stale gen 1)");
 
+	assert_zero(fs_1->stats.index_matches);
+	assert_zero(fs_1->stats.index_loads);
+
 	dir_fs1 = fbr_directory_load(fs_1, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0);
 	assert(dir_fs1->state == FBR_DIRSTATE_OK);
 	assert(dir_fs1->generation == 1);
+
+	assert(fs_1->stats.index_matches == 1);
+	assert_zero(fs_1->stats.index_loads);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
@@ -898,6 +904,9 @@ fbr_cmd_index_2fs_s3_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert(dir_fs1->state == FBR_DIRSTATE_OK);
 	assert(dir_fs1->generation == 2);
 	_index_validate_directory(dir_fs1, 1);
+
+	assert(fs_1->stats.index_matches == 1);
+	assert(fs_1->stats.index_loads == 1);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 

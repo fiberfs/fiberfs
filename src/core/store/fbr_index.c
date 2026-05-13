@@ -544,6 +544,8 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
+	struct fbr_directory *previous = directory->previous;
+
 	unsigned int version_matches = 0;
 	fbr_id_t last_version = 0;
 	int ret;
@@ -557,11 +559,28 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory,
 
 			if (version == 0) {
 				fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+				fbr_stat_add(&fs->stats.index_errors);
 				return;
 			}
 
 			directory->version = version;
 			directory->written = fbr_id_timestamp(version);
+
+			if (previous) {
+				fbr_directory_ok(previous);
+				if (previous->version == version) {
+					fbr_rlog(FBR_LOG_INDEX, "root version matches previous, "
+						"aborting");
+
+					previous->updated = fbr_get_time();
+
+					fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+
+					fbr_stat_add(&fs->stats.index_matches);
+
+					return;
+				}
+			}
 		} else {
 			directory->version = 0;
 		}
@@ -579,6 +598,7 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory,
 			ret = EIO;
 		} else if (directory->version == last_version) {
 			version_matches++;
+
 			fbr_rlog(FBR_LOG_INDEX, "warning index hasn't changed (%u)",
 				version_matches);
 
@@ -599,10 +619,13 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	if (ret) {
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+		fbr_stat_add(&fs->stats.index_errors);
 		return;
 	}
 
 	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
+
+	fbr_stat_add(&fs->stats.index_loads);
 }
 
 void

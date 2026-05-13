@@ -322,7 +322,6 @@ fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	directory->state = FBR_DIRSTATE_LOADING;
 	directory->version = fbr_id_gen();
-	directory->creation = fbr_get_time();
 
 	// Caller owns this ref
 	_dindex_ref(fs, directory);

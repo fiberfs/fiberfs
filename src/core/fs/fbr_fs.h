@@ -310,6 +310,9 @@ struct fbr_fs_stats {
 
 	fbr_stats_t				dir_alloc_hit;
 	fbr_stats_t				dir_alloc_miss;
+	fbr_stats_t				index_matches;
+	fbr_stats_t				index_loads;
+	fbr_stats_t				index_errors;
 
 	fbr_stats_t				read_bytes;
 	fbr_stats_t				write_bytes;
