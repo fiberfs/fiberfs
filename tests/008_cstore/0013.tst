@@ -65,7 +65,7 @@ print "### READ"
 
 sys_cat $var1 "XYZ 22"
 
-sleep_ms 100
+sleep_ms 200
 
 cstore_debug
 cstore_debug 1
