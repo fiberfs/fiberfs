@@ -366,6 +366,11 @@ struct fbr_fs {
 	fbr_bitflag_t				cstore_managed:1;
 };
 
+struct fbr_fs_timeout {
+	unsigned int				attempts;
+	double					time_start;
+};
+
 extern const struct fbr_path_name *FBR_DIRNAME_ROOT;
 struct fbr_store_callbacks;
 struct fbr_dindex_dirhead;
@@ -383,8 +388,9 @@ void fbr_fs_config_load(struct fbr_fs *fs);
 
 double fbr_fs_dentry_ttl(struct fbr_fs *fs);
 unsigned long fbr_fs_param_value(unsigned long param);
-int fbr_fs_timeout_expired(double time_start, double timeout);
 size_t fbr_fs_chunk_size(size_t offset);
+void fbr_fs_timeout_init(struct fbr_fs_timeout *timeout);
+int fbr_fs_is_timeout(struct fbr_fs *fs, struct fbr_fs_timeout *timeout);
 
 void fbr_inodes_alloc(struct fbr_fs *fs);
 fbr_inode_t fbr_inode_gen(struct fbr_fs *fs);

@@ -10,12 +10,12 @@
 
 static struct fbr_directory *
 _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_inode_t inode,
-    struct fbr_directory **previous, unsigned int *attempts, double time_start)
+    struct fbr_directory **previous, struct fbr_fs_timeout *timeout)
 {
 	assert_dev(fs);
 	assert_dev(dirname);
 	assert_dev(inode);
-	assert_dev(attempts);
+	assert_dev(timeout);
 
 	struct fbr_directory *directory = NULL;
 
@@ -49,12 +49,7 @@ _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_ino
 
 		fbr_stat_add(&fs->stats.flush_conflicts);
 
-		(*attempts)++;
-		if (*attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
-			fbr_rlog(FBR_LOG_ERROR, "flush_attempts limit hit on alloc");
-			return NULL;
-		} else if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
-			fbr_rlog(FBR_LOG_ERROR, "flush_timeout_sec limit hit on alloc");
+		if (fbr_fs_is_timeout(fs, timeout)) {
 			return NULL;
 		}
 	}
@@ -148,6 +143,9 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
 
+	struct fbr_fs_timeout timeout;
+	fbr_fs_timeout_init(&timeout);
+
 	fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' file: '%s'", dirpath.path.name, filename.name);
 
 	// Read from dindex
@@ -187,7 +185,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			case FBR_DIRSTATE_OK:
 				break;
 			case FBR_DIRSTATE_LOADING:
-				fbr_index_read_merge(fs, directory, 0, 0);
+				fbr_index_read_merge(fs, directory, &timeout, 0);
 
 				if (directory->state == FBR_DIRSTATE_ERROR) {
 					fbr_dindex_release(fs, &directory);
@@ -213,20 +211,19 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 	// Start sync/write loop
 
-	unsigned int attempts = 0;
+	struct fbr_index_data index_data;
 	unsigned int generation_matches = 0;
 	unsigned long last_generation = 0;
-	double time_start = fbr_get_time();
-	struct fbr_index_data index_data;
+
 	ret = EIO;
 
 	while (directory) {
 		assert_dev(directory->state == FBR_DIRSTATE_OK);
 
 		fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' found generation: %lu attempts: %u",
-			dirpath.path.name, directory->generation, attempts);
+			dirpath.path.name, directory->generation, timeout.attempts);
 
-		if (attempts && directory->generation == last_generation) {
+		if (timeout.attempts && directory->generation == last_generation) {
 			generation_matches++;
 			fbr_rlog(FBR_LOG_FLUSH, "warning generation hasn't changed (%u)",
 				generation_matches);
@@ -236,7 +233,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 				ret = EIO;
 				break;
 			} else {
-				fbr_sleep_backoff(attempts);
+				fbr_sleep_backoff(timeout.attempts);
 			}
 		} else {
 			last_generation = directory->generation;
@@ -245,7 +242,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 		// Lock on LOADING state
 		struct fbr_directory *new_directory = _directory_get_loading(fs, &dirpath.path,
-			inode, &directory, &attempts, time_start);
+			inode, &directory, &timeout);
 		if (!new_directory) {
 			fbr_dindex_release(fs, &directory);
 			ret = EIO;
@@ -310,25 +307,19 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 		fbr_stat_add(&fs->stats.flush_conflicts);
 
-		attempts++;
-		if (attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
-			fbr_rlog(FBR_LOG_ERROR, "flush_attempts limit hit on write");
-			break;
-		} else if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
-			fbr_rlog(FBR_LOG_ERROR, "flush_timeout_sec limit hit on write");
+		if (fbr_fs_is_timeout(fs, &timeout)) {
 			break;
 		}
 
 		// Retry, lock on LOADING state
-		directory = _directory_get_loading(fs, &dirpath.path, inode, NULL, &attempts,
-			time_start);
+		directory = _directory_get_loading(fs, &dirpath.path, inode, NULL, &timeout);
 		if (!directory) {
 			ret = EIO;
 			break;
 		}
 		assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 
-		fbr_index_read_merge(fs, directory, attempts, 1);
+		fbr_index_read_merge(fs, directory, &timeout, 1);
 
 		if (directory->state == FBR_DIRSTATE_ERROR) {
 			fbr_dindex_release(fs, &directory);

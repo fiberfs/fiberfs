@@ -531,26 +531,26 @@ fbr_root_json_parse(const char *json_buf, size_t json_buf_len)
 }
 
 void
-fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory, unsigned int attempts,
-    int route_s3)
+fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_fs_timeout *timeout, int route_s3)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
 	fbr_directory_ok(directory);
 	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 	assert_zero_dev(directory->generation);
+	assert(timeout);
 
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
 	unsigned int version_matches = 0;
 	fbr_id_t last_version = 0;
-	double time_start = fbr_get_time();
 	int ret;
 
 	do {
 		fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_read() attempts: %u route_s3: %d",
-			attempts, route_s3);
+			timeout->attempts, route_s3);
 
 		if (fs->store->root_read_f) {
 			fbr_id_t version = fs->store->root_read_f(fs, &dirpath, route_s3);
@@ -575,12 +575,7 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory, unsigne
 			}
 		}
 
-		attempts++;
-		if (attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
-			fbr_rlog(FBR_LOG_ERROR, "flush_attempts limit hit on read");
-			ret = EIO;
-		} else if (fbr_fs_timeout_expired(time_start, fs->config.flush_timeout_sec)) {
-			fbr_rlog(FBR_LOG_ERROR, "flush_timeout_sec limit hit on read");
+		if (fbr_fs_is_timeout(fs, timeout)) {
 			ret = EIO;
 		} else if (directory->version == last_version) {
 			version_matches++;
@@ -590,7 +585,7 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory, unsigne
 			if (version_matches > 3) {
 				ret = EIO;
 			} else {
-				fbr_sleep_backoff(attempts);
+				fbr_sleep_backoff(timeout->attempts);
 			}
 		} else {
 			last_version = directory->version;
@@ -611,12 +606,19 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory, unsigne
 }
 
 void
-fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, int route_s3)
+fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs_timeout *timeout,
+    int route_s3)
 {
 	assert_dev(fs);
 	assert_dev(directory);
 
-	fbr_index_read_merge(fs, directory, 0, route_s3);
+	struct fbr_fs_timeout _timeout;
+	if (!timeout) {
+		fbr_fs_timeout_init(&_timeout);
+		timeout = &_timeout;
+	}
+
+	fbr_index_read_merge(fs, directory, timeout, route_s3);
 
 	fbr_directory_ok(directory);
 

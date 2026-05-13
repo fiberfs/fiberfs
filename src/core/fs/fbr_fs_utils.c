@@ -31,21 +31,6 @@ fbr_fs_param_value(unsigned long param)
 	return param;
 }
 
-int
-fbr_fs_timeout_expired(double time_start, double timeout)
-{
-	if (timeout <= 0) {
-		return 0;
-	}
-
-	double time_now = fbr_get_time();
-	if (time_now - time_start > timeout) {
-		return 1;
-	}
-
-	return 0;
-}
-
 size_t
 fbr_fs_chunk_size(size_t offset)
 {
@@ -69,4 +54,48 @@ fbr_fs_chunk_size(size_t offset)
 	}
 
 	return 1024 * 1024 * 2;
+}
+
+void
+fbr_fs_timeout_init(struct fbr_fs_timeout *timeout)
+{
+	assert(timeout);
+
+	timeout->attempts = 0;
+	timeout->time_start = fbr_get_time();
+}
+
+static int
+_timeout_expired(double time_start, double timeout)
+{
+	if (timeout <= 0) {
+		return 0;
+	}
+
+	double time_now = fbr_get_time();
+	if (time_now - time_start > timeout) {
+		return 1;
+	}
+
+	return 0;
+}
+
+int
+fbr_fs_is_timeout(struct fbr_fs *fs, struct fbr_fs_timeout *timeout)
+{
+	fbr_fs_ok(fs);
+	assert(timeout);
+
+	timeout->attempts++;
+
+	if (timeout->attempts >= fbr_fs_param_value(fs->config.flush_attempts)) {
+		fbr_rlog(FBR_LOG_ERROR, "timeout attempt limit hit on write %u", timeout->attempts);
+		return 1;
+	} else if (_timeout_expired(timeout->time_start, fs->config.flush_timeout_sec)) {
+		fbr_rlog(FBR_LOG_ERROR, "timeout time limit hit on write %lf",
+			fbr_get_time() - timeout->time_start);
+		return 1;
+	}
+
+	return 0;
 }

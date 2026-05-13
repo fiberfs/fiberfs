@@ -178,6 +178,9 @@ fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_i
 	assert(dirname);
 	assert(inode);
 
+	struct fbr_fs_timeout timeout;
+	fbr_fs_timeout_init(&timeout);
+
 	struct fbr_directory *directory = NULL;
 	struct fbr_directory *previous = NULL;
 
@@ -187,6 +190,10 @@ fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_i
 
 		if (route_s3 && directory->state == FBR_DIRSTATE_OK) {
 			fbr_dindex_release(fs, &directory);
+
+			if (fbr_fs_is_timeout(fs, &timeout)) {
+				return NULL;
+			}
 		}
 	}
 
@@ -196,7 +203,7 @@ fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_i
 			fbr_dindex_ref(fs, previous);
 		}
 
-		fbr_index_read(fs, directory, route_s3);
+		fbr_index_read(fs, directory, &timeout, route_s3);
 	}
 
 	if (directory->state == FBR_DIRSTATE_ERROR) {
