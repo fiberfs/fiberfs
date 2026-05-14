@@ -540,7 +540,10 @@ fbr_directory_stale(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	double now = fbr_get_time();
 
-	if (directory->updated + fs->config.root_ttl_sec < now) {
+	double dir_time = directory->updated +
+		(fs->config.root_ttl_sec ? fs->config.root_ttl_sec : FBR_ROOT_TTL_MIN);
+
+	if (dir_time < now) {
 		return 1;
 	}
 

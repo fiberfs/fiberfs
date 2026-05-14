@@ -31,6 +31,7 @@
 #define FBR_CSTORE_LOAD_TIME_BUFFER		1.1
 #define FBR_CSTORE_RETRIES_DEFAULT		2
 #define FBR_CSTORE_ROOT_SIZE			100
+#define FBR_CSTORE_ROOT_TTL_MIN			0.1
 
 enum fbr_cstore_alloc_state {
 	FBR_CSTORE_ENTRY_NONE = 0,
@@ -152,7 +153,7 @@ struct fbr_cstore {
 	struct fbr_cstore_cluster		cluster;
 
 	struct fbr_log				*log;
-	char					root[FBR_CSTORE_ROOT_LEN];
+	char					root[FBR_CSTORE_CROOT_LEN];
 
 	size_t					max_bytes;
 	size_t					bytes;

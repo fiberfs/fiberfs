@@ -238,7 +238,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 				fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 				return;
 			}
-			cstore_len = FBR_CSTORE_ROOT_LEN;
+			cstore_len = FBR_CSTORE_ROOT_SIZE;
 			break;
 		default:
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url type");
@@ -637,9 +637,11 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		}
 
 		double now = fbr_get_time();
+		double root_time = metadata.timestamp +
+			(cstore->config.root_ttl_sec ? cstore->config.root_ttl_sec :
+				FBR_CSTORE_ROOT_TTL_MIN);
 
-		if (file_type == FBR_CSTORE_FILE_ROOT &&
-		    metadata.timestamp + cstore->config.root_ttl_sec < now) {
+		if (file_type == FBR_CSTORE_FILE_ROOT && root_time < now) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR root expired");
 			_cstore_url_entry_release(cstore, entry, file_type, 0);
 			assert_zero(close(fd));

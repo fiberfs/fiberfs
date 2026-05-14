@@ -1127,7 +1127,11 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 
 	if (!skip_ttl) {
 		double now = fbr_get_time();
-		if (metadata.timestamp + cstore->config.root_ttl_sec < now) {
+		double root_time = metadata.timestamp +
+			(cstore->config.root_ttl_sec ? cstore->config.root_ttl_sec :
+				FBR_CSTORE_ROOT_TTL_MIN);
+
+		if (root_time < now) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "expired");
 			fbr_cstore_set_ok(entry);
 			fbr_cstore_release(cstore, &entry);

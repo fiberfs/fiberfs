@@ -31,7 +31,7 @@
 #define FBR_FILE_SLAB_DEFAULT_PTRS		16
 #define FBR_TTL_MAX				INT32_MAX
 #define FBR_ROOT_TTL_DEFAULT			60
-#define FBR_ROOT_TTL_ADD			0.2
+#define FBR_ROOT_TTL_MIN			0.2
 
 #define FBR_ENUM_CHUNK_STATE						\
 	FBR_ENUM_NAME(fbr_chunk_state)					\

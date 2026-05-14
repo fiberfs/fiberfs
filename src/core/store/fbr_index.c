@@ -572,7 +572,7 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory,
 					fbr_rlog(FBR_LOG_INDEX, "root version matches previous, "
 						"aborting");
 
-					previous->updated = fbr_get_time() + FBR_ROOT_TTL_ADD;
+					previous->updated = fbr_get_time();
 
 					fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
 

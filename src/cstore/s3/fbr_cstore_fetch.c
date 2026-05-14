@@ -510,7 +510,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 		assert_zero_dev(entry->bytes);
 		fetch->length = bytes;
 		if (fetch->type == FBR_CSTORE_FILE_ROOT) {
-			fetch->length = FBR_CSTORE_ROOT_LEN;
+			fetch->length = FBR_CSTORE_ROOT_SIZE;
 		}
 
 		int ret = fbr_cstore_set_size(cstore, entry, fetch->length);
