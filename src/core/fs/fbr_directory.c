@@ -531,6 +531,22 @@ fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_dir
 	assert_dev(dest->file_count == source->file_count);
 }
 
+int
+fbr_directory_stale(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert_dev(directory->state == FBR_DIRSTATE_OK);
+
+	double now = fbr_get_time();
+
+	if (directory->updated + fs->config.root_ttl_sec < now) {
+		return 1;
+	}
+
+	return 0;
+}
+
 struct fbr_directory *
 fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 {
@@ -564,22 +580,23 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 
 	struct fbr_directory *directory = fbr_dindex_take(fs, &dirpath.path, 0);
 
-	if (directory && directory->inode > inode) {
+	if (!directory) {
+		// Do nothing
+	} else if (directory->inode > inode) {
 		fbr_rlog(FBR_LOG_FS, "directory inode: %lu found newer inode: %lu (return error)",
 			inode, directory->inode);
 		fbr_dindex_release(fs, &directory);
 		return NULL;
-	} else if (directory && directory->inode < inode) {
+	} else if (directory->inode < inode) {
 		fbr_rlog(FBR_LOG_FS, "directory inode: %lu mismatch inode: %lu (will make new)",
 			inode, directory->inode);
-
 		fbr_dindex_release(fs, &directory);
-		assert_zero_dev(directory);
-	} else if (directory && directory->state == FBR_DIRSTATE_ERROR) {
+	} else if (directory->state == FBR_DIRSTATE_ERROR) {
 		fbr_rlog(FBR_LOG_FS, "directory error state (will make new)");
-
 		fbr_dindex_release(fs, &directory);
-		assert_zero_dev(directory);
+	} else if (fbr_directory_stale(fs, directory)) {
+		fbr_rlog(FBR_LOG_FS, "directory stale (will fetch new)");
+		fbr_dindex_release(fs, &directory);
 	}
 
 	if (!directory) {

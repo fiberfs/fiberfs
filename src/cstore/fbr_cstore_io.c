@@ -1096,7 +1096,7 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", root_path->value);
 
 	int skip_ttl = 0;
-	if (!fbr_cstore_backend_enabled(cstore) || !cstore->config.root_ttl_sec) {
+	if (!fbr_cstore_backend_enabled(cstore)) {
 		skip_ttl = 1;
 	}
 

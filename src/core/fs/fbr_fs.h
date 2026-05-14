@@ -30,6 +30,8 @@
 #define FBR_FILE_DEFAULT_PTRS			3
 #define FBR_FILE_SLAB_DEFAULT_PTRS		16
 #define FBR_TTL_MAX				INT32_MAX
+#define FBR_ROOT_TTL_DEFAULT			60
+#define FBR_ROOT_TTL_ADD			0.2
 
 #define FBR_ENUM_CHUNK_STATE						\
 	FBR_ENUM_NAME(fbr_chunk_state)					\
@@ -340,6 +342,7 @@ struct fbr_fs_config {
 	unsigned long				flush_timeout_sec;
 	unsigned long				lru_dindex_max;
 	unsigned long				lru_sleep_ms;
+	unsigned long				root_ttl_sec;
 
 	unsigned long				rlog_size;
 
@@ -485,9 +488,10 @@ struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const 
 	size_t filename_len);
 void fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest,
 	struct fbr_directory *source);
+int fbr_directory_stale(struct fbr_fs *fs, struct fbr_directory *directory);
+struct fbr_directory *fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode);
 int fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
 	enum fbr_flush_flags flags);
-struct fbr_directory *fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);

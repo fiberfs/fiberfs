@@ -48,6 +48,7 @@ fbr_fs_config_load(struct fbr_fs *fs)
 	fs->config.flush_timeout_sec = fbr_conf_get_ulong("FS_FLUSH_TIMEOUT_SEC", 15);
 	fs->config.lru_dindex_max = fbr_conf_get_ulong("MAX_DIRECTORIES", 250);
 	fs->config.lru_sleep_ms = fbr_conf_get_ulong("LRU_SLEEP_MS", 500);
+	fs->config.root_ttl_sec = fbr_conf_get_ulong("ROOT_FILE_TTL_SEC", FBR_ROOT_TTL_DEFAULT);
 	fs->config.rlog_size = fbr_conf_get_ulong("LOG_BUFFER_SIZE", FBR_RLOG_MIN_SIZE);
 	fs->config.debug_wbuffer_size = fbr_conf_get_ulong("DEBUG_FS_WBUFFER_ALLOC_SIZE", 0);
 
