@@ -487,24 +487,62 @@ fbr_cmd_fs_test_directory_release_ttl(struct fbr_test_context *ctx, struct fbr_t
 	_directory_release(1);
 }
 
-#define _LOAD_TTL_THREADS	3
-
+#define _LOAD_TTL_THREADS	4
+#define _LOAD_TTL_GEN_MAX	2
 static size_t _LOAD_TTL_THREAD_COUNT;
+static fbr_stats_t _LOAD_TTL_GEN_HITS[_LOAD_TTL_GEN_MAX];
+
+static void *
+_directory_load_thread(void *arg)
+{
+	assert(arg);
+
+	struct fbr_fs *fs = arg;
+	fbr_fs_ok(fs);
+
+	size_t thread_id = fbr_atomic_add(&_LOAD_TTL_THREAD_COUNT, 1);
+
+	fbr_test_logs("*** thread %zu running", thread_id);
+
+	while (_LOAD_TTL_THREAD_COUNT < _LOAD_TTL_THREADS) {
+		fbr_sleep_ms(0.1);
+	}
+	assert(_LOAD_TTL_THREAD_COUNT == _LOAD_TTL_THREADS);
+
+	unsigned long generation;
+
+	do {
+		struct fbr_directory *directory = fbr_directory_from_inode(fs, FBR_INODE_ROOT);
+		fbr_directory_ok(directory);
+		assert(directory->generation);
+
+		generation = directory->generation;
+
+		fbr_dindex_release(fs, &directory);
+
+		fbr_stat_add(&_LOAD_TTL_GEN_HITS[generation - 1]);
+
+		fbr_test_sleep_ms(20);
+	} while (generation < _LOAD_TTL_GEN_MAX);
+
+	return NULL;
+}
 
 static void
 _directory_load_ttl(struct fbr_test_context *ctx)
 {
 	assert_zero(_LOAD_TTL_THREAD_COUNT);
 
-	fbr_test_conf_add("LOG_SIZE", "100000");
+	fbr_test_conf_add("LOG_SIZE", "1000000");
 	fbr_test_conf_add("ASYNC_WRITE", "false");
 	fbr_test_conf_add("CSTORE_SERVER", "true");
 	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
 	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
+	fbr_test_conf_add("ROOT_FILE_TTL_SEC", "1");
 
 	fbr_test_fuse_mock(ctx);
 
-	fbr_test_logs("*** init");
+	fbr_test_logs("*** init fs_read fs_write");
 
 	struct fbr_cstore *cstore_s3 = fbr_test_cstore_init(ctx);
 	fbr_cstore_ok(cstore_s3);
@@ -520,30 +558,91 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	struct fbr_fs *fs_write = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_write);
 	fbr_test_cstore_bind(fs_write, 0);
+	fbr_fs_set_store(fs_write, FBR_CSTORE_DEFAULT_CALLBACKS);
+
+	fbr_test_logs("*** init root");
+
+	double time_start = fbr_get_time();
+
+	fbr_test_fs_root_alloc(fs_write);
+	struct fbr_directory *root = fbr_directory_load(fs_read, FBR_DIRNAME_ROOT,
+		FBR_INODE_ROOT, 0);
+	fbr_directory_ok(root);
+	assert(root->generation == 1);
+	fbr_dindex_release(fs_read, &root);
+
+	fbr_test_logs("*** creating threads");
+
+	pthread_t threads[_LOAD_TTL_THREADS];
+
+	for (size_t i = 0; i < _LOAD_TTL_THREADS; i++) {
+		pt_assert(pthread_create(&threads[i], NULL, _directory_load_thread, fs_read));
+	}
+
+	fbr_test_logs("*** threads created: %d", _LOAD_TTL_THREADS);
+
+	fbr_test_logs("*** writing generation 2");
+
+	root = fbr_directory_root_alloc(fs_write);
+	fbr_directory_ok(root);
+	fbr_directory_ok(root->previous);
+	assert(root->state == FBR_DIRSTATE_LOADING);
+	assert(root->previous->generation == 1);
+	fbr_directory_copy(fs_write, root, root->previous);
+	root->generation++;
+	struct fbr_index_data index_data;
+	fbr_index_data_init(fs_write, &index_data, root, root->previous, NULL, NULL,
+		FBR_FLUSH_NONE);
+	int ret = fbr_index_write(fs_write, &index_data);
+	fbr_test_ERROR(ret, "fbr_index_write() failed");
+	fbr_index_data_free(&index_data);
+	fbr_directory_set_state(fs_write, root, FBR_DIRSTATE_OK);
+	fbr_dindex_release(fs_write, &root);
+
+	fbr_test_logs("*** joining threads....");
+
+	for (size_t i = 0; i < fbr_array_len(threads); i++) {
+		pt_assert(pthread_join(threads[i], NULL));
+	}
+
+	fbr_test_logs("*** all threads joined");
+
+	double time_end = fbr_get_time();
+
+	for (size_t i = 0; i < fbr_array_len(_LOAD_TTL_GEN_HITS); i++) {
+		fbr_test_logs("root generation %zu hits: %lu", i + 1, _LOAD_TTL_GEN_HITS[i]);
+	}
+
+	fbr_test_logs("time: %lf", time_end - time_start);
 
 	fbr_test_logs("*** cleanup fs_read");
 
 	fbr_fs_release_all(fs_read, 1);
 	fbr_test_fs_stats(fs_read);
-	fbr_test_ERROR(fs_read->stats.directories, "non zero");
-	fbr_test_ERROR(fs_read->stats.directories_dindex, "non zero");
-	fbr_test_ERROR(fs_read->stats.directory_refs, "non zero");
-	fbr_test_ERROR(fs_read->stats.files, "non zero");
-	fbr_test_ERROR(fs_read->stats.files_inodes, "non zero");
-	fbr_test_ERROR(fs_read->stats.file_refs, "non zero");
+	assert_zero(fs_read->stats.directories);
+	assert_zero(fs_read->stats.directories_dindex);
+	assert_zero(fs_read->stats.directory_refs);
+	assert_zero(fs_read->stats.files);
+	assert_zero(fs_read->stats.files_inodes);
+	assert_zero(fs_read->stats.file_refs);
+	assert(fs_read->stats.index_loads == _LOAD_TTL_GEN_MAX);
 	fbr_fs_free(fs_read);
 
 	fbr_test_logs("*** cleanup fs_write");
 
 	fbr_fs_release_all(fs_write, 1);
-	fbr_test_fs_stats(fs_write);
-	fbr_test_ERROR(fs_write->stats.directories, "non zero");
-	fbr_test_ERROR(fs_write->stats.directories_dindex, "non zero");
-	fbr_test_ERROR(fs_write->stats.directory_refs, "non zero");
-	fbr_test_ERROR(fs_write->stats.files, "non zero");
-	fbr_test_ERROR(fs_write->stats.files_inodes, "non zero");
-	fbr_test_ERROR(fs_write->stats.file_refs, "non zero");
+	fbr_test_fs_wait(fs_write);
+	assert_zero(fs_write->stats.directories);
+	assert_zero(fs_write->stats.directories_dindex);
+	assert_zero(fs_write->stats.directory_refs);
+	assert_zero(fs_write->stats.files);
+	assert_zero(fs_write->stats.files_inodes);
+	assert_zero(fs_write->stats.file_refs);
 	fbr_fs_free(fs_write);
+
+	fbr_test_cstore_wait(cstore_s3);
+	assert(cstore_s3->entries == 2);
+	assert(cstore_s3->stats.http_200 == 4);
 }
 
 void

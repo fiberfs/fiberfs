@@ -223,7 +223,8 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 			hash = fbr_cstore_hash_url(cstore->s3.backend->host,
 				cstore->s3.backend->host_len, url_decoded, url_decoded_len);
 		} else {
-			hash = fbr_cstore_hash_url(NULL, 0, url_decoded, url_decoded_len);
+			hash = fbr_cstore_hash_url(cstore->s3.host_hash, cstore->s3.host_hash_len,
+				url_decoded, url_decoded_len);
 		}
 
 		fbr_rlog(FBR_LOG_CSTORE, "DELETE %s %lu", url_decoded, id);

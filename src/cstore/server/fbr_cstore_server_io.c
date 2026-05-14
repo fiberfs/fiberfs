@@ -530,6 +530,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		return;
 	}
 
+	int backend = fbr_cstore_backend_enabled(cstore);
+
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
 	struct fbr_cstore_metadata metadata;
 	struct fbr_cstore_entry *entry;
@@ -551,7 +553,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		}
 
 		if (retry == 1) {
-			if (!fbr_cstore_backend_enabled(cstore)) {
+			if (!backend) {
 				fbr_cstore_http_respond(cstore, http, 500, "Error");
 				return;
 			}
@@ -636,16 +638,18 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			continue;
 		}
 
-		double now = fbr_get_time();
-		double root_time = metadata.timestamp +
-			(cstore->config.root_ttl_sec ? cstore->config.root_ttl_sec :
-				FBR_CSTORE_ROOT_TTL_MIN);
+		if (backend && file_type == FBR_CSTORE_FILE_ROOT) {
+			double now = fbr_get_time();
+			double root_time = metadata.timestamp +
+				(cstore->config.root_ttl_sec ? cstore->config.root_ttl_sec :
+					FBR_CSTORE_ROOT_TTL_MIN);
 
-		if (file_type == FBR_CSTORE_FILE_ROOT && root_time < now) {
-			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR root expired");
-			_cstore_url_entry_release(cstore, entry, file_type, 0);
-			assert_zero(close(fd));
-			continue;
+			if (root_time < now) {
+				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR root expired");
+				_cstore_url_entry_release(cstore, entry, file_type, 0);
+				assert_zero(close(fd));
+				continue;
+			}
 		}
 
 		break;
