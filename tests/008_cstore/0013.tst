@@ -59,13 +59,13 @@ equal $cstore_entries:1 0
 equal $cstore_entries:2 3
 fs_test_release_all
 
-sleep_ms 100
+sleep_ms 250
 
 print "### READ"
 
 sys_cat $var1 "XYZ 22"
 
-sleep_ms 200
+sleep_ms 100
 
 cstore_debug
 cstore_debug 1
