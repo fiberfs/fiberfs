@@ -25,7 +25,7 @@ _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_ino
 
 		switch (directory->state) {
 			case FBR_DIRSTATE_ERROR:
-				// inode is stale, a top level change was made
+				fbr_rlog(FBR_LOG_ERROR, "dindex inode stale (%lu)", inode);
 				fbr_dindex_release(fs, &directory);
 				return NULL;
 			case FBR_DIRSTATE_OK:
@@ -283,9 +283,6 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		if (!ret) {
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 		} else {
-			fbr_rlog(FBR_LOG_ERROR, "flush fbr_index_write(new_directory) failed"
-				" (%d %s)", ret, strerror(ret));
-
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
 
 			file->generation--;
@@ -293,6 +290,9 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			if (ret == EAGAIN) {
 				retry = 1;
 			}
+
+			fbr_rlog(FBR_LOG_ERROR, "flush fbr_index_write(new_directory) failed"
+				" (%d %s) retry: %d", ret, strerror(ret), retry);
 		}
 
 		fbr_file_UNLOCK(file);
@@ -335,6 +335,10 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		if (ret) {
 			break;
 		}
+	}
+
+	if (ret) {
+		fbr_rlog(FBR_LOG_ERROR, "flush failed %s (%d)", strerror(ret), ret);
 	}
 
 	return ret;

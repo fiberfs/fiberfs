@@ -97,6 +97,8 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 		} else if (lru_sleep < 500) {
 			fbr_test_conf_add_long("LRU_SLEEP_MS", 500);
 		}
+
+		fbr_test_conf_add_long("FS_FLUSH_TIMEOUT_SEC", 60);
 	}
 
 	int ret = fbr_fuse_mount(ctx, path);
