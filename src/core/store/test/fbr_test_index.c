@@ -810,7 +810,7 @@ fbr_cmd_index_2fs_s3_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	struct fbr_cstore *cstore_s3 = fbr_test_cstore_init(ctx);
 	fbr_cstore_ok(cstore_s3);
-	fbr_cstore_s3_mock(cstore_s3, NULL, "region", "key", "secret");
+	fbr_test_cstore_s3_mock(cstore_s3, NULL, "region", "key", "secret");
 
 	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_1);

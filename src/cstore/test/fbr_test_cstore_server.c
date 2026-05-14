@@ -129,14 +129,14 @@ fbr_cmd_cstore_mock_s3(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
 
-	fbr_cstore_s3_mock(cstore, prefix, region, access_key, secret_key);
+	fbr_test_cstore_s3_mock(cstore, prefix, region, access_key, secret_key);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_mock_s3 cred: %s %s",
 		cstore->s3.region, cstore->s3.access_key);
 }
 
 void
-fbr_cstore_s3_mock(struct fbr_cstore *cstore, const char *prefix, const char *region,
+fbr_test_cstore_s3_mock(struct fbr_cstore *cstore, const char *prefix, const char *region,
     const char *access_key, const char *secret_key)
 {
 	fbr_cstore_ok(cstore);

@@ -10,10 +10,13 @@
 #include <stdlib.h>
 
 #include "core/fs/fbr_fs.h"
+#include "cstore/fbr_cstore_api.h"
 
 #include "test/fbr_test.h"
 #include "fbr_test_fs_cmds.h"
+#include "config/test/fbr_test_config_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+#include "cstore/test/fbr_test_cstore_cmds.h"
 
 #define _TEST_DIR_THREADS_ALLOC		3
 #define _TEST_DIR_THREADS_READ		3
@@ -482,4 +485,74 @@ fbr_cmd_fs_test_directory_release_ttl(struct fbr_test_context *ctx, struct fbr_t
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	_directory_release(1);
+}
+
+#define _LOAD_TTL_THREADS	3
+
+static size_t _LOAD_TTL_THREAD_COUNT;
+
+static void
+_directory_load_ttl(struct fbr_test_context *ctx)
+{
+	assert_zero(_LOAD_TTL_THREAD_COUNT);
+
+	fbr_test_conf_add("LOG_SIZE", "100000");
+	fbr_test_conf_add("ASYNC_WRITE", "false");
+	fbr_test_conf_add("CSTORE_SERVER", "true");
+	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
+	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
+
+	fbr_test_fuse_mock(ctx);
+
+	fbr_test_logs("*** init");
+
+	struct fbr_cstore *cstore_s3 = fbr_test_cstore_init(ctx);
+	fbr_cstore_ok(cstore_s3);
+	fbr_test_cstore_s3_mock(cstore_s3, NULL, "region", "key", "secret");
+	assert(fbr_test_cstore_get(ctx, 0) == cstore_s3);
+
+	struct fbr_fs *fs_read = fbr_test_fs_alloc();
+	fbr_fs_ok(fs_read);
+	fbr_test_cstore_bind_new(fs_read);
+	fbr_fs_set_store(fs_read, FBR_CSTORE_DEFAULT_CALLBACKS);
+	fbr_test_cstore_backend_add(fs_read->cstore, cstore_s3, FBR_CSTORE_ROUTE_S3);
+
+	struct fbr_fs *fs_write = fbr_test_fs_alloc();
+	fbr_fs_ok(fs_write);
+	fbr_test_cstore_bind(fs_write, 0);
+
+	fbr_test_logs("*** cleanup fs_read");
+
+	fbr_fs_release_all(fs_read, 1);
+	fbr_test_fs_stats(fs_read);
+	fbr_test_ERROR(fs_read->stats.directories, "non zero");
+	fbr_test_ERROR(fs_read->stats.directories_dindex, "non zero");
+	fbr_test_ERROR(fs_read->stats.directory_refs, "non zero");
+	fbr_test_ERROR(fs_read->stats.files, "non zero");
+	fbr_test_ERROR(fs_read->stats.files_inodes, "non zero");
+	fbr_test_ERROR(fs_read->stats.file_refs, "non zero");
+	fbr_fs_free(fs_read);
+
+	fbr_test_logs("*** cleanup fs_write");
+
+	fbr_fs_release_all(fs_write, 1);
+	fbr_test_fs_stats(fs_write);
+	fbr_test_ERROR(fs_write->stats.directories, "non zero");
+	fbr_test_ERROR(fs_write->stats.directories_dindex, "non zero");
+	fbr_test_ERROR(fs_write->stats.directory_refs, "non zero");
+	fbr_test_ERROR(fs_write->stats.files, "non zero");
+	fbr_test_ERROR(fs_write->stats.files_inodes, "non zero");
+	fbr_test_ERROR(fs_write->stats.file_refs, "non zero");
+	fbr_fs_free(fs_write);
+}
+
+void
+fbr_cmd_fs_test_directory_load_ttl_none(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_directory_load_ttl(ctx);
+
+	fbr_test_logs("directory_load_ttl_none done");
 }
