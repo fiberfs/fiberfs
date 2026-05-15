@@ -235,6 +235,7 @@ _write_test(void)
 	struct fbr_directory *directory = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
+	assert_zero(directory->previous);
 	directory->generation = 1;
 
 	struct fbr_path_name filename;
@@ -245,13 +246,7 @@ _write_test(void)
 
 	fbr_test_index_request_start();
 
-	struct fbr_index_data index_data;
-	fbr_index_data_init(fs, &index_data, directory, NULL, NULL, NULL, FBR_FLUSH_NONE);
-	int ret = fbr_index_write(fs, &index_data);
-	fbr_test_ERROR(ret, "fbr_index_write() failed");
-	fbr_index_data_free(&index_data);
-
-	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+	fbr_test_fs_write_index(fs, directory);
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_index_request_finish();
@@ -275,7 +270,7 @@ _write_test(void)
 	while (offset < _FILE_SIZE) {
 		fbr_wbuffer_write(fs, fio, offset, buffer, sizeof(buffer));
 		if (offset % 1000 == 0) {
-			ret = fbr_wbuffer_flush_fio(fs, fio);
+			int ret = fbr_wbuffer_flush_fio(fs, fio);
 			assert_zero(ret);
 		}
 		offset += sizeof(buffer);
@@ -283,7 +278,7 @@ _write_test(void)
 	assert(offset == _FILE_SIZE);
 	assert(file->size == _FILE_SIZE);
 
-	ret = fbr_wbuffer_flush_fio(fs, fio);
+	int ret = fbr_wbuffer_flush_fio(fs, fio);
 	assert_zero(ret);
 
 	fbr_fio_release(fs, fio);

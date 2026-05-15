@@ -52,16 +52,11 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 		file->state = FBR_FILE_OK;
 	}
 
-	struct fbr_index_data index_data;
-	fbr_index_data_init(fs, &index_data, directory, NULL, NULL, NULL, FBR_FLUSH_NONE);
-	int ret = fbr_index_write(fs, &index_data);
-	fbr_test_ERROR(ret, "fbr_index_write() failed");
-	fbr_index_data_free(&index_data);
+	fbr_test_fs_write_index(fs, directory);
 
 	struct fbr_file *file_1 = fbr_directory_find_file(directory, "file_1", 6);
 	fbr_file_ok(file_1);
 
-	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 	fbr_dindex_release(fs, &directory);
 
 	fbr_test_logs("*** Write file_1");
@@ -69,7 +64,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file_1, 0);
 	fbr_fio_ok(fio);
 	fbr_wbuffer_write(fs, fio, 0, "write1", 6);
-	ret = fbr_wbuffer_flush_fio(fs, fio);
+	int ret = fbr_wbuffer_flush_fio(fs, fio);
 	assert_zero(ret);
 	fbr_fio_release(fs, fio);
 
@@ -156,12 +151,9 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	struct fbr_directory *dir2 = fbr_directory_alloc(fs, &dir2name, dir2inode);
 	fbr_directory_ok(dir2);
 	assert(dir2->state == FBR_DIRSTATE_LOADING);
+	assert_zero(dir2->previous);
 	dir2->generation = 1;
-	fbr_index_data_init(fs, &index_data, dir2, NULL, NULL, NULL, FBR_FLUSH_NONE);
-	ret = fbr_index_write(fs, &index_data);
-	assert_zero(ret);
-	fbr_directory_set_state(fs, dir2, FBR_DIRSTATE_OK);
-	fbr_index_data_free(&index_data);
+	fbr_test_fs_write_index(fs, dir2);
 	fbr_dindex_release(fs, &dir2);
 
 	// Flush root
@@ -192,6 +184,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert(fd > 0);
 	assert_zero(close(fd));
 
+	struct fbr_index_data index_data;
 	fbr_index_data_init(fs, &index_data, dir2, dir2->previous, NULL, NULL, FBR_FLUSH_NONE);
 	ret = fbr_index_write(fs, &index_data);
 	assert(ret);

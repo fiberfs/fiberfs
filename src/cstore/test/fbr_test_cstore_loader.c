@@ -35,13 +35,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	assert(root->state == FBR_DIRSTATE_LOADING);
 	root->generation = 1;
 
-	struct fbr_index_data index_data;
-	fbr_index_data_init(fs, &index_data, root, NULL, NULL, NULL, FBR_FLUSH_NONE);
-	int ret = fbr_index_write(fs, &index_data);
-	fbr_test_ERROR(ret, "fbr_index_write() failed");
-	fbr_index_data_free(&index_data);
-
-	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
+	fbr_test_fs_write_index(fs, root);
 
 	struct fbr_path_name filename;
 	fbr_path_name_init(&filename, "File");
@@ -54,7 +48,7 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_fio_ok(fio);
 	char *file_contents = "File Contents.";
 	fbr_wbuffer_write(fs, fio, 0, file_contents, 14);
-	ret = fbr_wbuffer_flush_fio(fs, fio);
+	int ret = fbr_wbuffer_flush_fio(fs, fio);
 	assert_zero(ret);
 	fbr_fio_release(fs, fio);
 	assert(file->state == FBR_FILE_OK);

@@ -268,14 +268,7 @@ fbr_cmd_index_print_json(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("* Writing root index");
 
-	struct fbr_index_data index_data;
-	fbr_index_data_init(fs, &index_data, root, root->previous, NULL, NULL, FBR_FLUSH_NONE);
-	int ret = fbr_index_write(fs, &index_data);
-	fbr_test_ERROR(ret, "fbr_index_write() failed");
-	fbr_index_data_free(&index_data);
-
-	assert(root->state == FBR_DIRSTATE_LOADING);
-	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
+	fbr_test_fs_write_index(fs, root);
 
 	fbr_test_cstore_wait(fs->cstore);
 	assert(fs->cstore->entries == 2);

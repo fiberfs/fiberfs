@@ -286,16 +286,28 @@ fbr_test_fs_root_alloc(struct fbr_fs *fs)
 
 	root->generation = 1;
 
+	fbr_test_fs_write_index(fs, root);
+
+	fbr_dindex_release(fs, &root);
+}
+
+void
+fbr_test_fs_write_index(struct fbr_fs *fs, struct fbr_directory *directory)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
+
 	struct fbr_index_data index_data;
-	fbr_index_data_init(fs, &index_data, root, NULL, NULL, NULL, FBR_FLUSH_MKDIR);
+	fbr_index_data_init(fs, &index_data, directory, directory->previous, NULL, NULL,
+		FBR_FLUSH_NONE);
 
 	int ret = fbr_index_write(fs, &index_data);
-	fbr_ASSERT(!ret, "fbr_index_write() root failed: %d", ret);
+	fbr_ASSERT(!ret, "fbr_index_write() failed (%d)", ret);
 
-	fbr_directory_set_state(fs, root, FBR_DIRSTATE_OK);
+	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
 	fbr_index_data_free(&index_data);
-	fbr_dindex_release(fs, &root);
 }
 
 size_t

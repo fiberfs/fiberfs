@@ -48,13 +48,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("*** Storing dir_fs1 (gen %lu)", dir_fs1->generation);
 
-	struct fbr_index_data index_data;
-	fbr_index_data_init(fs_1, &index_data, dir_fs1, NULL, NULL, NULL, FBR_FLUSH_MKDIR);
-	int ret = fbr_index_write(fs_1, &index_data);
-	fbr_test_ERROR(ret, "fbr_index_write(fs_1) failed");
-	fbr_index_data_free(&index_data);
-
-	fbr_directory_set_state(fs_1, dir_fs1, FBR_DIRSTATE_OK);
+	fbr_test_fs_write_index(fs_1, dir_fs1);
 	assert_zero(dir_fs1->file_count);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
@@ -92,7 +86,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_fio *fio = fbr_fio_alloc(fs_1, file, 0);
 	fio->append = 1;
 	fbr_wbuffer_write(fs_1, fio, 0, "111", 3);
-	ret = fbr_wbuffer_flush_fio(fs_1, fio);
+	int ret = fbr_wbuffer_flush_fio(fs_1, fio);
 	fbr_test_ERROR(ret, "fbr_wbuffer_flush_fio(fs_1) failed");
 	fbr_fio_release(fs_1, fio);
 

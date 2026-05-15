@@ -590,13 +590,7 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	assert(root->previous->generation == 1);
 	fbr_directory_copy(fs_write, root, root->previous);
 	root->generation++;
-	struct fbr_index_data index_data;
-	fbr_index_data_init(fs_write, &index_data, root, root->previous, NULL, NULL,
-		FBR_FLUSH_NONE);
-	int ret = fbr_index_write(fs_write, &index_data);
-	fbr_test_ERROR(ret, "fbr_index_write() failed");
-	fbr_index_data_free(&index_data);
-	fbr_directory_set_state(fs_write, root, FBR_DIRSTATE_OK);
+	fbr_test_fs_write_index(fs_write, root);
 	fbr_dindex_release(fs_write, &root);
 
 	fbr_test_logs("*** joining threads....");

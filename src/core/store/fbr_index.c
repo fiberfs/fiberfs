@@ -296,6 +296,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	fbr_fs_ok(fs);
 	assert(index_data);
 	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
 
 	fbr_zero(index_data);
 
