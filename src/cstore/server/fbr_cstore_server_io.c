@@ -545,6 +545,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	int fd;
 	size_t size;
 	int retry = 0;
+	int skip_ttl = 0;
 
 	while (1) {
 		struct fbr_cstore_hashpath hashpath;
@@ -654,7 +655,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			continue;
 		}
 
-		if (backend && file_type == FBR_CSTORE_FILE_ROOT) {
+		if (backend && file_type == FBR_CSTORE_FILE_ROOT && !skip_ttl) {
 			double now = fbr_get_time();
 			double root_time = metadata.timestamp +
 				(cstore->config.root_ttl_sec ? cstore->config.root_ttl_sec :
@@ -665,6 +666,9 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 					"URL_READ ERROR root expired");
 				_cstore_url_entry_release(cstore, entry, file_type, 0);
 				assert_zero(close(fd));
+
+				skip_ttl = 1;
+
 				continue;
 			}
 		}
