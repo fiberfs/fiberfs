@@ -562,8 +562,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			fbr_cstore_path_url(cstore, url_encoded, &file_path);
 
 			// TODO we might need an entry_ref here
-			(void)fbr_cstore_s3_root_get(NULL, cstore, &file_path,
-				FBR_CSTORE_ROUTE_CDN);
+			fbr_cstore_s3_root_get(NULL, cstore, &file_path, FBR_CSTORE_ROUTE_CDN);
 
 			etag_match = 0;
 		} else if (retry == 1) {
@@ -582,8 +581,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			fbr_cstore_fetch_init(&fetch, cstore, &http, file_type,
 				&file_path, etag_match, 0, offset, 0, 0, FBR_CSTORE_ROUTE_CDN);
 
-			// Its possible someone else fetched this, ignore the error...
-			(void)fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
+			fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
 			assert_dev(http.state == CHTTP_STATE_NONE);
 		} else if (retry > 1) {
 			fbr_cstore_http_respond(cstore, http, 500, "Error");

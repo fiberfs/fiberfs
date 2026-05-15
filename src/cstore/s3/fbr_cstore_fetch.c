@@ -414,6 +414,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 	fbr_cstore_fetch_ok(fetch);
 	fbr_cstore_path_ok(fetch->file_path);
 	assert_dev(fetch->type);
+	assert(fetch->type != FBR_CSTORE_FILE_ROOT);
 	assert_dev(fetch->route);
 
 	struct fbr_cstore *cstore = fetch->cstore;
@@ -557,8 +558,18 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 	fbr_cstore_release(cstore, &entry);
 	assert_zero_dev(entry);
 
-	if (fetch->type == FBR_CSTORE_FILE_CHUNK) {
-		fbr_stat_add(&cstore->stats.fetch_chunks);
+	switch (fetch->type) {
+		case FBR_CSTORE_FILE_CHUNK:
+			fbr_stat_add(&cstore->stats.fetch_chunks);
+			fbr_stat_add_count(&cstore->stats.wr_chunk_bytes, bytes);
+			fbr_stat_add(&cstore->stats.wr_chunks);
+			break;
+		case FBR_CSTORE_FILE_INDEX:
+			fbr_stat_add_count(&cstore->stats.wr_index_bytes, bytes);
+			fbr_stat_add(&cstore->stats.wr_indexes);
+			break;
+		default:
+			break;
 	}
 
 	return 0;
