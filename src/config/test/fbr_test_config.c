@@ -492,7 +492,7 @@ _write_thread(void *arg)
 	}
 
 	while (_ITERATIONS < _MAX_ITERATIONS) {
-		fbr_atomic_add(&_ITERATIONS, 1);
+		fbr_stat_add(&_ITERATIONS);
 
 		long key_id = random() % _MAX_KEYS;
 		long value_len = random() % _MAX_KEY_LEN;
@@ -509,7 +509,7 @@ _write_thread(void *arg)
 
 		fbr_config_add(config, key_name, key_len, value_buf, value_len);
 
-		fbr_atomic_add(&_WRITES, 1);
+		fbr_stat_add(&_WRITES);
 	}
 
 	return NULL;
@@ -536,7 +536,7 @@ _read_thread(void *arg)
 
 		long lvalue = fbr_config_get_long(config, key_name, -1);
 		if (lvalue >= 0) {
-			fbr_atomic_add(&_NUMBERS, 1);
+			fbr_stat_add(&_NUMBERS);
 		}
 
 		const char *value = fbr_config_get(config, key_name, NULL);
@@ -544,10 +544,10 @@ _read_thread(void *arg)
 			continue;
 		}
 
-		fbr_atomic_add(&_READS, 1);
+		fbr_stat_add(&_READS);
 
 		size_t len = strlen(value);
-		fbr_atomic_add(&_LENGTH, len);
+		fbr_stat_add_count(&_LENGTH, len);
 	}
 
 	return NULL;

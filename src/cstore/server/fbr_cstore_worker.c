@@ -129,7 +129,7 @@ fbr_cstore_worker_init(struct fbr_cstore_worker *worker, struct fbr_log *log)
 	fbr_wlog_workspace_alloc(worker, log);
 
 	fbr_atomic_add(&_WORKER_POOL->active, 1);
-	fbr_atomic_add(&worker->cstore->stats.workers_active, 1);
+	fbr_stat_add(&worker->cstore->stats.workers_active);
 }
 
 void
@@ -149,7 +149,7 @@ fbr_cstore_worker_finish(struct fbr_cstore_worker *worker)
 	assert(worker->cstore->stats.workers_active);
 
 	fbr_atomic_sub(&_WORKER_POOL->active, 1);
-	fbr_atomic_sub(&worker->cstore->stats.workers_active, 1);
+	fbr_stat_sub(&worker->cstore->stats.workers_active);
 }
 
 void

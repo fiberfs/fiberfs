@@ -19,7 +19,7 @@ fbr_config_parse(struct fbr_config *config, const char *filepath)
 
 	FILE *f = fopen(filepath, "r");
 	if (!f) {
-		fbr_atomic_add(&config->stats.errors, 1);
+		fbr_stat_add(&config->stats.errors);
 		return 0;
 	}
 
@@ -41,7 +41,7 @@ fbr_config_parse(struct fbr_config *config, const char *filepath)
 			line_error = 1;
 			continue;
 		} else if (line_error) {
-			fbr_atomic_add(&config->stats.errors, 1);
+			fbr_stat_add(&config->stats.errors);
 			line_error = 0;
 			continue;
 		}
@@ -58,13 +58,13 @@ fbr_config_parse(struct fbr_config *config, const char *filepath)
 
 		if (name_len == 0) {
 			if (name[0] == '=') {
-				fbr_atomic_add(&config->stats.errors, 1);
+				fbr_stat_add(&config->stats.errors);
 			}
 			continue;
 		} else if (name[0] == '#') {
 			continue;
 		} else if (name[name_len] != '=') {
-			fbr_atomic_add(&config->stats.errors, 1);
+			fbr_stat_add(&config->stats.errors);
 			continue;
 		}
 
@@ -82,12 +82,12 @@ fbr_config_parse(struct fbr_config *config, const char *filepath)
 	}
 
 	if (!feof(f)) {
-		fbr_atomic_add(&config->stats.errors, 1);
+		fbr_stat_add(&config->stats.errors);
 	}
 
 	int ret = fclose(f);
 	if (ret) {
-		fbr_atomic_add(&config->stats.errors, 1);
+		fbr_stat_add(&config->stats.errors);
 	}
 
 	return entries;

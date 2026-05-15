@@ -288,7 +288,7 @@ _cstore_lru_delete(struct fbr_cstore *cstore, struct fbr_cstore_head *head,
 	entry->refcount--;
 	entry->in_lru = 0;
 
-	fbr_atomic_add(&cstore->stats.lru_pruned, 1);
+	fbr_stat_add(&cstore->stats.lru_pruned);
 }
 
 static void

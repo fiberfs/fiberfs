@@ -84,7 +84,7 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	assert(addr_dest);
 
 	if (host_len >= CHTTP_DNS_CACHE_HOST_MAX) {
-		fbr_atomic_add(&_DNS_CACHE.stats.err_too_long, 1);
+		fbr_stat_add(&_DNS_CACHE.stats.err_too_long);
 		return 0;
 	}
 
@@ -242,7 +242,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	assert(ai_list);
 
 	if (host_len >= CHTTP_DNS_CACHE_HOST_MAX) {
-		fbr_atomic_add(&_DNS_CACHE.stats.err_too_long, 1);
+		fbr_stat_add(&_DNS_CACHE.stats.err_too_long);
 		return;
 	}
 

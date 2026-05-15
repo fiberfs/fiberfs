@@ -22,9 +22,7 @@ typedef uint64_t fbr_hash_t;
 
 void fbr_sleep_ms(double ms);
 void fbr_stat_add_count(fbr_stats_t *stat, fbr_stats_t value);
-void fbr_stat_add(fbr_stats_t *stat);
 void fbr_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value);
-void fbr_stat_sub(fbr_stats_t *stat);
 double fbr_get_time(void);
 double fbr_convert_timespec(struct timespec *ts);
 void fbr_convert_time(double timestamp, struct timespec *ts);
@@ -55,6 +53,10 @@ unsigned long fbr_ulong2octal(unsigned long value);
 	fbr_strcpy(dest, sizeof(dest), source)
 #define fbr_bprintf(buf, fmt, ...)					\
 	fbr_snprintf(buf, sizeof(buf), fmt, ##__VA_ARGS__)
+#define fbr_stat_add(stat)						\
+	fbr_stat_add_count(stat, 1)
+#define fbr_stat_sub(stat)						\
+	fbr_stat_sub_count(stat, 1)
 #define fbr_atomic_add(dest_ptr, value)					\
 	__atomic_add_fetch(dest_ptr, value, __ATOMIC_SEQ_CST)
 #define fbr_atomic_add_relaxed(dest_ptr, value)				\

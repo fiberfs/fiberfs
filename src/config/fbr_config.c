@@ -297,7 +297,7 @@ fbr_config_reader_lock(struct fbr_config_reader *reader)
 	}
 	assert(update_interval > 0);
 
-	fbr_atomic_add(&reader->attempts, 1);
+	fbr_stat_add(&reader->attempts);
 
 	if (now - last_update < update_interval) {
 		while (!reader->init) {
@@ -312,7 +312,7 @@ fbr_config_reader_lock(struct fbr_config_reader *reader)
 		while (!reader->init) {
 			fbr_sleep_ms(1);
 		}
-		fbr_atomic_add(&reader->cas_race, 1);
+		fbr_stat_add(&reader->cas_race);
 		return 0;
 	}
 
@@ -324,7 +324,7 @@ fbr_config_reader_lock(struct fbr_config_reader *reader)
 		}
 	}
 
-	reader->updates++;
+	fbr_atomic_add(&reader->updates, 1);
 
 	return 1;
 }

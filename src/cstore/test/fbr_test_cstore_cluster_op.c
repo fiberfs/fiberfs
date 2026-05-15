@@ -107,11 +107,11 @@ _op_mkdir_thread(void *arg)
 		fbr_rlog(FBR_LOG_TEST, "OP_thread %zu mkdir() ret: %d", id, request->error);
 
 		if (request->error == EEXIST) {
-			fbr_atomic_add(&_MKDIR_EXIST, 1);
+			fbr_stat_add(&_MKDIR_EXIST);
 		} else if (request->error) {
-			fbr_atomic_add(&_MKDIR_ERROR, 1);
+			fbr_stat_add(&_MKDIR_ERROR);
 		} else {
-			fbr_atomic_add(&_MKDIR_SUCCESS, 1);
+			fbr_stat_add(&_MKDIR_SUCCESS);
 		}
 
 		fbr_dindex_release(fs, &root);
@@ -123,7 +123,7 @@ _op_mkdir_thread(void *arg)
 		}
 	}
 
-	fbr_atomic_add(&_CONFLICTS, fs->stats.flush_conflicts);
+	fbr_stat_add_count(&_CONFLICTS, fs->stats.flush_conflicts);
 
 	fbr_test_cstore_wait(fs->cstore);
 	_assert_fs(fs);

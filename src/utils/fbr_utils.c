@@ -49,22 +49,10 @@ fbr_stat_add_count(fbr_stats_t *stat, fbr_stats_t value)
 }
 
 void
-fbr_stat_add(fbr_stats_t *stat)
-{
-	fbr_stat_add_count(stat, 1);
-}
-
-void
 fbr_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value)
 {
 	assert(stat);
 	fbr_atomic_sub_relaxed(stat, value);
-}
-
-void
-fbr_stat_sub(fbr_stats_t *stat)
-{
-	fbr_stat_sub_count(stat, 1);
 }
 
 double

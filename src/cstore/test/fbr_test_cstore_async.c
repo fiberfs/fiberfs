@@ -30,7 +30,7 @@ _test_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 
 	fbr_test_sleep_ms(random() % 2);
 
-	fbr_atomic_add(&_ASYNC_TEST_CALLED, 1);
+	fbr_stat_add(&_ASYNC_TEST_CALLED);
 }
 
 static void *
@@ -47,10 +47,10 @@ _cstore_state_thread(void *arg)
 		int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_TEST, NULL, NULL, NULL, NULL,
 			NULL, NULL, NULL);
 		if (ret) {
-			fbr_atomic_add(&_ASYNC_TEST_ERROR, 1);
+			fbr_stat_add(&_ASYNC_TEST_ERROR);
 			fbr_test_sleep_ms(1);
 		} else {
-			fbr_atomic_add(&_ASYNC_TEST_QUEUED, 1);
+			fbr_stat_add(&_ASYNC_TEST_QUEUED);
 		}
 	}
 

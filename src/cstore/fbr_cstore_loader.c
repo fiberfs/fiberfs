@@ -141,7 +141,7 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *hpath, unsigned char h1,
 			fbr_cstore_entry_ok(centry);
 			assert_dev(centry->state == FBR_CSTORE_OK);
 
-			fbr_atomic_add(&cstore->stats.loaded, 1);
+			fbr_stat_add(&cstore->stats.loaded);
 			insertions++;
 
 			fbr_cstore_release(cstore, &centry);

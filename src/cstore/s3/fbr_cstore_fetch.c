@@ -74,7 +74,7 @@ _s3_request_url(struct fbr_cstore_fetch_context *fetch, const char *method,
 	}
 
 	if (fetch->attempts > 1) {
-		fbr_atomic_add(&fetch->cstore->stats.retries, 1);
+		fbr_stat_add(&fetch->cstore->stats.retries);
 		fetch->http->new_conn = 1;
 	}
 

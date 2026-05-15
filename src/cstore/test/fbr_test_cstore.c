@@ -527,7 +527,7 @@ _cstore_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
 	fbr_cstore_ok(cstore);
 	fbr_cstore_entry_ok(entry);
 
-	fbr_atomic_sub(&_CSTORE_BYTES_COUNTER, entry->bytes);
+	fbr_stat_sub_count(&_CSTORE_BYTES_COUNTER, entry->bytes);
 }
 
 static void *
@@ -580,9 +580,9 @@ _cstore_thread(void *arg)
 				if (delay) {
 					fbr_cstore_set_size(cstore, entry, bytes);
 				}
-				fbr_atomic_add(&_CSTORE_BYTES_COUNTER, bytes);
-				fbr_atomic_add(&_CSTORE_ENTRY_COUNTER, 1);
-				fbr_atomic_add(&_CSTORE_DELAY_COUNTER, delay);
+				fbr_stat_add_count(&_CSTORE_BYTES_COUNTER, bytes);
+				fbr_stat_add(&_CSTORE_ENTRY_COUNTER);
+				fbr_stat_add_count(&_CSTORE_DELAY_COUNTER, delay);
 				fbr_cstore_set_ok(entry);
 				fbr_cstore_release(cstore, &entry);
 				assert_zero(entry);
@@ -596,7 +596,7 @@ _cstore_thread(void *arg)
 			}
 		} else {
 			fbr_cstore_entry_ok(entry);
-			fbr_atomic_add(&_CSTORE_READ_COUNTER, 1);
+			fbr_stat_add(&_CSTORE_READ_COUNTER);
 
 			if (random() % 10 == 0) {
 				fbr_cstore_remove(cstore, &entry);
@@ -764,7 +764,7 @@ _cstore_state_thread(void *arg)
 			}
 			enum fbr_cstore_state state = fbr_cstore_wait_loading(entry);
 			assert(state == FBR_CSTORE_NONE || state == FBR_CSTORE_OK);
-			fbr_atomic_add(&_CSTORE_ST_WAITING, 1);
+			fbr_stat_add(&_CSTORE_ST_WAITING);
 			fbr_test_sleep_ms(10);
 		} else if (state == 4) {
 			fbr_test_sleep_ms(random() % 50);
@@ -775,7 +775,7 @@ _cstore_state_thread(void *arg)
 			fbr_ASSERT(entry->state == FBR_CSTORE_LOADING,
 				"found final state %d", entry->state);
 			fbr_cstore_set_ok(entry);
-			fbr_atomic_add(&_CSTORE_ST_COMPLETED, 1);
+			fbr_stat_add(&_CSTORE_ST_COMPLETED);
 		} else {
 			assert(state > 0 && state < 4);
 			if (!loading) {
@@ -878,7 +878,7 @@ _cstore_wait_thread(void *arg)
 				assert(entry->state == FBR_CSTORE_LOADING);
 
 				fbr_test_logs("Initial loading hit!");
-				fbr_atomic_add(&_CSTORE_WAIT_FIRST_LOAD, 1);
+				fbr_stat_add(&_CSTORE_WAIT_FIRST_LOAD);
 
 				fbr_cstore_set_ok(entry);
 				fbr_cstore_release(cstore, &entry);
