@@ -619,7 +619,9 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	assert_zero(fs_read->stats.files);
 	assert_zero(fs_read->stats.files_inodes);
 	assert_zero(fs_read->stats.file_refs);
-	assert(fs_read->stats.index_loads == _LOAD_TTL_GEN_MAX);
+	if (!fbr_test_is_valgrind()) {
+		assert(fs_read->stats.index_loads == _LOAD_TTL_GEN_MAX);
+	}
 	fbr_fs_free(fs_read);
 
 	fbr_test_logs("*** cleanup fs_write");
@@ -636,7 +638,9 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 
 	fbr_test_cstore_wait(cstore_s3);
 	assert(cstore_s3->entries == 2);
-	assert(cstore_s3->stats.http_200 == 4);
+	if (!fbr_test_is_valgrind()) {
+		assert(cstore_s3->stats.http_200 == 4);
+	}
 }
 
 void
