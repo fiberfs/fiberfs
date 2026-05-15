@@ -224,6 +224,6 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "time1=%lu", time1.value);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "time1_string=%s:%zu", time_string, time_len);
 
-	assert(time1.value == (time0.value * 2) + 1)
+	assert(time1.value == (time0.value * 2) + 1);
 	_id_cast(time1.value);
 }

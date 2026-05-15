@@ -1,3 +1,3 @@
-fiber_test "Directory load TTL none"
+fiber_test "Directory load TTL"
 
-fs_test_directory_load_ttl_none
+fs_test_directory_load_ttl

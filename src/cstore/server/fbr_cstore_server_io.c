@@ -645,7 +645,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 					FBR_CSTORE_ROOT_TTL_MIN);
 
 			if (root_time < now) {
-				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR root expired");
+				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
+					"URL_READ ERROR root expired");
 				_cstore_url_entry_release(cstore, entry, file_type, 0);
 				assert_zero(close(fd));
 				continue;
