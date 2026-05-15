@@ -978,7 +978,8 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	if (cstore->config.async_write) {
 		fbr_cstore_async_root_write(cstore, root_json, root_path, version, timestamp);
 	} else {
-		fbr_cstore_io_root_write(cstore, root_json, root_path, version, 0, 0, timestamp);
+		fbr_cstore_io_root_write(cstore, root_json, root_path, version, 0, 0, timestamp,
+			NULL);
 	}
 
 	return 0;
@@ -986,7 +987,7 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 
 fbr_id_t
 fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
-    struct fbr_cstore_path *root_path, int route_s3)
+    struct fbr_cstore_path *root_path, int route_s3, struct fbr_cstore_entry **entry_ref)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_path_ok(root_path);
@@ -1047,7 +1048,8 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	if (cstore->config.async_write) {
 		fbr_cstore_async_root_write(cstore, json_writer, root_path, version, timestamp);
 	} else {
-		fbr_cstore_io_root_write(cstore, json_writer, root_path, version, 0, 0, timestamp);
+		fbr_cstore_io_root_write(cstore, json_writer, root_path, version, 0, 0, timestamp,
+			entry_ref);
 	}
 
 	return version;

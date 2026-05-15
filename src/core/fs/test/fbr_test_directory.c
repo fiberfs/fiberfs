@@ -646,8 +646,8 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	assert_zero(fs_read->stats.file_refs);
 	if (!fbr_test_is_valgrind()) {
 		assert(fs_read->stats.index_loads == _LOAD_TTL_GEN_STOP);
-		assert(fs_read->stats.directories_total - fs_read->stats.dir_alloc_hit ==
-			_LOAD_TTL_GEN_STOP)
+		assert(fs_read->stats.directories_total - fs_read->stats.dir_alloc_hit -
+			fs_read->stats.index_matches == _LOAD_TTL_GEN_STOP)
 	}
 	fbr_fs_free(fs_read);
 

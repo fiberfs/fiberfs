@@ -961,7 +961,7 @@ fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 int
 fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
     struct fbr_cstore_path *root_path, fbr_id_t version, fbr_id_t existing, int enforce,
-    double timestamp)
+    double timestamp, struct fbr_cstore_entry **entry_ref)
 {
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
@@ -1080,6 +1080,14 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 
 	fbr_stat_add_count(&cstore->stats.wr_root_bytes, root_json->bytes);
 	fbr_stat_add(&cstore->stats.wr_root_updates);
+
+	if (entry_ref) {
+		assert_zero_dev(*entry_ref);
+
+		*entry_ref = fbr_cstore_get(cstore, hash);
+		fbr_cstore_entry_ok(*entry_ref);
+		assert_dev((*entry_ref)->state == FBR_CSTORE_LOADING);
+	}
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, &entry);

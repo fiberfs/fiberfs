@@ -104,7 +104,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	} else {
 		double now = fbr_get_time();
 		fail = fbr_cstore_io_root_write(cstore, root_json, &root_path, directory->version,
-			previous_version, 1, now);
+			previous_version, 1, now, NULL);
 	}
 
 	if (fail) {
@@ -147,14 +147,12 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int route
 	fbr_id_t version = 0;
 	int has_backend = fbr_cstore_backend_enabled(cstore);
 
-	// TODO if fresh, read local and attempt a conditional?
-
 	if (!route_s3 || !has_backend) {
 		version = fbr_cstore_io_root_read(cstore, &path);
 	}
 
 	if (!version && has_backend) {
-		version = fbr_cstore_s3_root_get(fs, cstore, &path, route_s3);
+		version = fbr_cstore_s3_root_get(fs, cstore, &path, route_s3, NULL);
 	}
 
 	char id_str[FBR_ID_STRING_MAX] = "";

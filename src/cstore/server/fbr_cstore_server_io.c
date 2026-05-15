@@ -567,8 +567,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			struct fbr_cstore_path file_path;
 			fbr_cstore_path_url(cstore, url_encoded, &file_path);
 
-			// TODO we might need an entry_ref here
-			fbr_cstore_s3_root_get(NULL, cstore, &file_path, FBR_CSTORE_ROUTE_CDN);
+			fbr_cstore_s3_root_get(NULL, cstore, &file_path, FBR_CSTORE_ROUTE_CDN,
+				&entry_ref);
 		} else if (retry == 1) {
 			if (!backend) {
 				fbr_cstore_http_respond(cstore, http, 500, "Error");
