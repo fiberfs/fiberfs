@@ -554,10 +554,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s (retry: %d)",
 			fbr_cstore_type_name(file_type), hashpath.value, retry);
 
-		if (entry_ref) {
-			fbr_cstore_release(cstore, &entry_ref);
-			assert_zero_dev(entry_ref);
-		}
+		assert_zero_dev(entry_ref);
 
 		if (retry == 1 && file_type == FBR_CSTORE_FILE_ROOT) {
 			if (!backend) {
@@ -596,30 +593,40 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		retry++;
 
 		if (file_type == FBR_CSTORE_FILE_ROOT) {
-			entry = fbr_cstore_get(cstore, hash);
-			if (!entry) {
-				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ NO entry");
-				continue;
+			if (entry_ref) {
+				entry = entry_ref;
+				fbr_cstore_entry_ok(entry);
+
+				entry_ref = NULL;
+			} else {
+				entry = fbr_cstore_get(cstore, hash);
+				if (!entry) {
+					fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ NO entry");
+					continue;
+				}
 			}
 
 			fbr_cstore_reset_loading(entry);
 			assert_dev(entry->state == FBR_CSTORE_LOADING);
 		} else {
-			entry = fbr_cstore_io_get_ok(cstore, hash);
-			if (!entry) {
-				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ NO ok state");
-				continue;
+			if (entry_ref) {
+				entry = entry_ref;
+				fbr_cstore_entry_ok(entry);
+				assert(entry->state == FBR_CSTORE_OK);
+
+				entry_ref = NULL;
+			} else {
+				entry = fbr_cstore_io_get_ok(cstore, hash);
+				if (!entry) {
+					fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ NO ok state");
+					continue;
+				}
+				assert_dev(entry->state == FBR_CSTORE_OK);
 			}
-
-			assert_dev(entry->state == FBR_CSTORE_OK);
-		}
-
-		if (entry_ref) {
-			fbr_cstore_release(cstore, &entry_ref);
-			assert_zero_dev(entry_ref);
 		}
 
 		fbr_cstore_entry_ok(entry);
+		assert_zero_dev(entry_ref);
 
 		fd = open(hashpath.value, O_RDONLY);
 		if (fd < 0) {
@@ -675,8 +682,6 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		break;
 	}
-
-	assert_zero(entry_ref);
 
 	// TODO do we care about accept-encoding gzip?
 

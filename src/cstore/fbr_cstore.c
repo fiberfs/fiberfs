@@ -568,6 +568,31 @@ fbr_cstore_set_error(struct fbr_cstore_entry *entry)
 	_cstore_set_state(entry, FBR_CSTORE_NONE);
 }
 
+void
+fbr_cstore_ref(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
+{
+	fbr_cstore_ok(cstore);
+	fbr_cstore_entry_ok(entry);
+	assert(entry->alloc == FBR_CSTORE_ENTRY_USED);
+
+	struct fbr_cstore_head *head = _cstore_get_head(cstore, entry->hash);
+	pt_assert(pthread_mutex_lock(&head->lock));
+	fbr_cstore_head_ok(head);
+	assert(entry->refcount);
+
+	entry->refcount++;
+	assert(entry->refcount);
+
+	if (entry->in_lru) {
+		if (TAILQ_FIRST(&head->lru_list) != entry) {
+			TAILQ_REMOVE(&head->lru_list, entry, list_entry);
+			TAILQ_INSERT_HEAD(&head->lru_list, entry, list_entry);
+		}
+	}
+
+	pt_assert(pthread_mutex_unlock(&head->lock));
+}
+
 static void
 _cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref, int prune_lru)
 {

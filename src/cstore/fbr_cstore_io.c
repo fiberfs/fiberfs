@@ -1084,9 +1084,8 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	if (entry_ref) {
 		assert_zero_dev(*entry_ref);
 
-		*entry_ref = fbr_cstore_get(cstore, hash);
-		fbr_cstore_entry_ok(*entry_ref);
-		assert_dev((*entry_ref)->state == FBR_CSTORE_LOADING);
+		fbr_cstore_ref(cstore, entry);
+		*entry_ref = entry;
 	}
 
 	fbr_cstore_set_ok(entry);
