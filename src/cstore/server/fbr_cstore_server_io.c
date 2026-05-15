@@ -528,6 +528,12 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
+	} else if (file_type == FBR_CSTORE_FILE_ROOT) {
+		if (etag_match) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR root etag");
+			fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+			return;
+		}
 	}
 
 	int backend = fbr_cstore_backend_enabled(cstore);
@@ -563,8 +569,6 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 			// TODO we might need an entry_ref here
 			fbr_cstore_s3_root_get(NULL, cstore, &file_path, FBR_CSTORE_ROUTE_CDN);
-
-			etag_match = 0;
 		} else if (retry == 1) {
 			if (!backend) {
 				fbr_cstore_http_respond(cstore, http, 500, "Error");
@@ -638,7 +642,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		ret = fbr_cstore_metadata_read(&hashpath, &metadata);
 
 		// root requests dont If-Match
-		if (file_type == FBR_CSTORE_FILE_ROOT && !etag_match) {
+		if (file_type == FBR_CSTORE_FILE_ROOT) {
 			etag_match = metadata.etag;
 		}
 
