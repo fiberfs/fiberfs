@@ -282,11 +282,14 @@ fbr_test_fs_root_alloc(struct fbr_fs *fs)
 	struct fbr_directory *root = fbr_directory_root_alloc(fs);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_LOADING);
+	assert_zero(root->previous);
 	assert_zero(root->generation);
 
 	root->generation = 1;
 
 	fbr_test_fs_write_index(fs, root);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_OK);
 
 	fbr_dindex_release(fs, &root);
 }
