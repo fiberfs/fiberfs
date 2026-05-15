@@ -565,20 +565,26 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 
 	fbr_test_logs("*** init fs_read fs_write");
 
+	struct fbr_cstore *cstore_proxy = fbr_test_cstore_init(ctx);
+	fbr_cstore_ok(cstore_proxy);
+	assert(fbr_test_cstore_get(ctx, 0) == cstore_proxy);
+
 	struct fbr_cstore *cstore_s3 = fbr_test_cstore_init(ctx);
 	fbr_cstore_ok(cstore_s3);
 	fbr_test_cstore_s3_mock(cstore_s3, NULL, "region", "key", "secret");
-	assert(fbr_test_cstore_get(ctx, 0) == cstore_s3);
+	assert(fbr_test_cstore_get(ctx, 1) == cstore_s3);
+	fbr_test_cstore_backend_add(cstore_proxy, cstore_s3, FBR_CSTORE_ROUTE_S3);
 
 	struct fbr_fs *fs_read = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_read);
 	fbr_test_cstore_bind_new(fs_read);
 	fbr_fs_set_store(fs_read, FBR_CSTORE_DEFAULT_CALLBACKS);
+	fbr_test_cstore_backend_add(fs_read->cstore, cstore_proxy, FBR_CSTORE_ROUTE_CDN);
 	fbr_test_cstore_backend_add(fs_read->cstore, cstore_s3, FBR_CSTORE_ROUTE_S3);
 
 	struct fbr_fs *fs_write = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_write);
-	fbr_test_cstore_bind(fs_write, 0);
+	fbr_test_cstore_bind(fs_write, 1);
 	fbr_fs_set_store(fs_write, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	fbr_test_logs("*** init root");
@@ -657,10 +663,23 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	assert_zero(fs_write->stats.file_refs);
 	fbr_fs_free(fs_write);
 
-	fbr_test_cstore_wait(cstore_s3);
+	fbr_test_logs("CSTORE_DEBUG cstore_proxy");
+	fbr_test_cstore_debug(cstore_proxy);
+	if (!fbr_test_is_valgrind()) {
+		assert(cstore_proxy->stats.http_200 == _LOAD_TTL_GEN_STOP * 2);
+		assert_zero(cstore_proxy->stats.http_400);
+		assert_zero(cstore_proxy->stats.http_500);
+		assert_zero(cstore_proxy->stats.http_other);
+	}
+
+	fbr_test_logs("CSTORE_DEBUG cstore_s3");
+	fbr_test_cstore_debug(cstore_s3);
 	assert(cstore_s3->entries == 2);
 	if (!fbr_test_is_valgrind()) {
 		assert(cstore_s3->stats.http_200 == _LOAD_TTL_GEN_STOP * 2);
+		assert_zero(cstore_s3->stats.http_400);
+		assert_zero(cstore_s3->stats.http_500);
+		assert_zero(cstore_s3->stats.http_other);
 	}
 }
 

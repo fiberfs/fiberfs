@@ -552,7 +552,21 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			assert_zero_dev(entry_ref);
 		}
 
-		if (retry == 1) {
+		if (retry == 1 && file_type == FBR_CSTORE_FILE_ROOT) {
+			if (!backend) {
+				fbr_cstore_http_respond(cstore, http, 500, "Error");
+				return;
+			}
+
+			struct fbr_cstore_path file_path;
+			fbr_cstore_path_url(cstore, url_encoded, &file_path);
+
+			// TODO we might need an entry_ref here
+			(void)fbr_cstore_s3_root_get(NULL, cstore, &file_path,
+				FBR_CSTORE_ROUTE_CDN);
+
+			etag_match = 0;
+		} else if (retry == 1) {
 			if (!backend) {
 				fbr_cstore_http_respond(cstore, http, 500, "Error");
 				return;
