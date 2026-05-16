@@ -644,11 +644,9 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	assert_zero(fs_read->stats.files);
 	assert_zero(fs_read->stats.files_inodes);
 	assert_zero(fs_read->stats.file_refs);
-	if (!fbr_test_is_valgrind()) {
-		assert(fs_read->stats.index_loads == _LOAD_TTL_GEN_STOP);
-		assert(fs_read->stats.directories_total - fs_read->stats.dir_alloc_hit -
-			fs_read->stats.index_matches == _LOAD_TTL_GEN_STOP)
-	}
+	assert(fs_read->stats.index_loads == _LOAD_TTL_GEN_STOP);
+	assert(fs_read->stats.directories_total - fs_read->stats.dir_alloc_hit -
+		fs_read->stats.index_matches == _LOAD_TTL_GEN_STOP)
 	fbr_fs_free(fs_read);
 
 	fbr_test_logs("*** cleanup fs_write");
@@ -665,22 +663,18 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 
 	fbr_test_logs("CSTORE_DEBUG cstore_proxy");
 	fbr_test_cstore_debug(cstore_proxy);
-	if (!fbr_test_is_valgrind()) {
-		assert(cstore_proxy->stats.http_200 >= _LOAD_TTL_GEN_STOP * 2);
-		assert_zero(cstore_proxy->stats.http_400);
-		assert_zero(cstore_proxy->stats.http_500);
-		assert_zero(cstore_proxy->stats.http_other);
-	}
+	assert(cstore_proxy->stats.http_200 >= _LOAD_TTL_GEN_STOP * 2);
+	assert_zero(cstore_proxy->stats.http_400);
+	assert_zero(cstore_proxy->stats.http_500);
+	assert_zero(cstore_proxy->stats.http_other);
 
 	fbr_test_logs("CSTORE_DEBUG cstore_s3");
 	fbr_test_cstore_debug(cstore_s3);
 	assert(cstore_s3->entries == 2);
-	if (!fbr_test_is_valgrind()) {
-		assert(cstore_s3->stats.http_200 >= _LOAD_TTL_GEN_STOP * 2);
-		assert_zero(cstore_s3->stats.http_400);
-		assert_zero(cstore_s3->stats.http_500);
-		assert_zero(cstore_s3->stats.http_other);
-	}
+	assert(cstore_s3->stats.http_200 >= _LOAD_TTL_GEN_STOP * 2);
+	assert_zero(cstore_s3->stats.http_400);
+	assert_zero(cstore_s3->stats.http_500);
+	assert_zero(cstore_s3->stats.http_other);
 }
 
 void

@@ -567,6 +567,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 			fbr_cstore_s3_root_get(NULL, cstore, &file_path, FBR_CSTORE_ROUTE_CDN,
 				&entry_ref);
+
+			skip_ttl = 1;
 		} else if (retry == 1) {
 			if (!backend) {
 				fbr_cstore_http_respond(cstore, http, 500, "Error");
@@ -673,8 +675,6 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 					"URL_READ ERROR root expired");
 				_cstore_url_entry_release(cstore, entry, file_type, 0);
 				assert_zero(close(fd));
-
-				skip_ttl = 1;
 
 				continue;
 			}
