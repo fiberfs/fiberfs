@@ -12,6 +12,8 @@
 #include <sys/stat.h>
 
 #include "fiberfs.h"
+#include "core/fs/fbr_fs.h"
+#include "core/fs/fbr_fs_inline.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 #include "core/operations/fbr_operations.h"
 #include "core/request/fbr_rlog.h"
@@ -38,7 +40,7 @@ static size_t _MKDIR_MISSING;
 static size_t _APPEND_OPEN;
 static size_t _APPEND_CREATE;
 static size_t _CONFLICTS;
-//static size_t _APPEND_COUNTS[_OP_THREADS + 1];
+static size_t _APPEND_COUNT;
 
 static void
 _assert_fs(struct fbr_fs *fs)
@@ -56,6 +58,14 @@ _assert_fs(struct fbr_fs *fs)
 	assert_zero(fs->stats.file_refs);
 }
 
+static size_t
+_write_count(char *buffer, size_t buffer_len)
+{
+	size_t count = fbr_atomic_add(&_APPEND_COUNT, 1);
+	size_t count_len = fbr_snprintf(buffer, buffer_len, "%zu ", count);
+	return count_len;
+}
+
 void
 _op_mkdir_append(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode_t parent_inode)
 {
@@ -65,7 +75,10 @@ _op_mkdir_append(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode
 
 	fbr_rlog(FBR_LOG_TEST, "OP_append %s:%lu", parent_path->name, parent_inode);
 
-	struct fbr_directory *directory = fbr_directory_load(fs, parent_path, parent_inode, 0);
+	struct fbr_directory *directory = fbr_dindex_take(fs, parent_path, 0);
+	if (!directory) {
+		directory = fbr_directory_load(fs, parent_path, parent_inode, 0);
+	}
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
 
@@ -90,7 +103,16 @@ _op_mkdir_append(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode
 
 		fbr_ops_open(request, file->inode, &fi);
 		assert_zero(request->error);
-		assert(fi.fh);
+
+		struct fbr_fio *fio = fbr_fh_fio(fi.fh);
+		fbr_file_ok(fio->file);
+		assert(fio->file == file);
+
+		char buffer[32];
+		size_t buffer_len = _write_count(buffer, sizeof(buffer));
+
+		fbr_ops_write(request, fio->file->inode, buffer, buffer_len, 0, &fi);
+		assert_zero(request->error);
 
 		fbr_ops_release(request, file->inode, &fi);
 		assert_zero(request->error);
@@ -104,9 +126,17 @@ _op_mkdir_append(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode
 
 		fbr_ops_create(request, parent_inode, filename.name, S_IFREG, &fi);
 		assert_zero(request->error);
-		assert(fi.fh);
 
-		fbr_ops_release(request, 0, &fi);
+		struct fbr_fio *fio = fbr_fh_fio(fi.fh);
+		fbr_file_ok(fio->file);
+
+		char buffer[32];
+		size_t buffer_len = _write_count(buffer, sizeof(buffer));
+
+		fbr_ops_write(request, fio->file->inode, buffer, buffer_len, 0, &fi);
+		assert_zero(request->error);
+
+		fbr_ops_release(request, fio->file->inode, &fi);
 		assert_zero(request->error);
 
 		fbr_stat_add(&_APPEND_CREATE);
@@ -249,7 +279,6 @@ _op_mkdir_thread(void *arg)
 			fbr_dindex_release(fs, &root);
 			fbr_request_free(request);
 			fbr_stat_add(&_MKDIR_MISSING);
-			fbr_test_sleep_ms(1);
 			continue;
 		}
 		fbr_file_ok(file);
@@ -480,6 +509,7 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	if (_MKDIR_APPEND) {
 		fbr_test_logs("APPEND OPEN: %zu", _APPEND_OPEN);
 		fbr_test_logs("APPEND CREATE: %zu", _APPEND_CREATE);
+		fbr_test_logs("APPEND COUNT: %zu", _APPEND_COUNT);
 	}
 
 	size_t dir_count = _OP_THREADS;
@@ -488,7 +518,9 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	}
 
 	assert(fbr_test_cstore_count(ctx) == 2 + 1 + _OP_THREADS);
-	assert(_CSTORE_C1_S3->entries == 2 + (dir_count * 2));
+	if (!_MKDIR_APPEND) {
+		assert(_CSTORE_C1_S3->entries == 2 + (dir_count * 2));
+	}
 	assert(_CSTORE_C1_S3->stats.wr_indexes == 1 + dir_count);
 	assert(_CSTORE_C1_S3->stats.wr_roots == 1 + dir_count);
 
