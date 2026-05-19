@@ -69,6 +69,23 @@ _fuse_init(struct fbr_test_context *test_ctx)
 	return &test_ctx->test_fuse->fuse_ctx;
 }
 
+static void
+_fuse_init_valgrind(void)
+{
+	if (fbr_test_is_valgrind()) {
+		unsigned long lru_sleep = fbr_conf_get_ulong("LRU_SLEEP_MS", 1);
+		if (!lru_sleep) {
+			fbr_test_conf_add_long("LRU_SLEEP_MS", 1);
+		} else if (lru_sleep < 500) {
+			fbr_test_conf_add_long("LRU_SLEEP_MS", 500);
+		}
+
+		fbr_test_conf_add_long("FS_FLUSH_TIMEOUT_SEC", 60);
+
+		fbr_test_logs("valgrind detected, bumping settings");
+	}
+}
+
 static const struct fbr_fuse_callbacks _TEST_FUSE_CALLBACKS_EMPTY;
 
 int
@@ -90,16 +107,7 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 		ctx->debug = 1;
 	}
 
-	if (fbr_test_is_valgrind()) {
-		unsigned long lru_sleep = fbr_conf_get_ulong("LRU_SLEEP_MS", 1);
-		if (!lru_sleep) {
-			fbr_test_conf_add_long("LRU_SLEEP_MS", 1);
-		} else if (lru_sleep < 500) {
-			fbr_test_conf_add_long("LRU_SLEEP_MS", 500);
-		}
-
-		fbr_test_conf_add_long("FS_FLUSH_TIMEOUT_SEC", 60);
-	}
+	_fuse_init_valgrind();
 
 	int ret = fbr_fuse_mount(ctx, path);
 
@@ -147,6 +155,8 @@ fbr_test_fuse_mock(struct fbr_test_context *test_ctx)
 	struct fbr_fuse_context *fuse_ctx = _fuse_init(test_ctx);
 	if (!fuse_ctx->init) {
 		fbr_object_empty(fuse_ctx);
+
+		_fuse_init_valgrind();
 
 		fbr_fuse_init(fuse_ctx);
 		fuse_ctx->detached = 1;
