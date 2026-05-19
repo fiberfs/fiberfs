@@ -27,10 +27,12 @@
 
 static struct fbr_cstore *_CSTORE_C0_SHARED;
 static struct fbr_cstore *_CSTORE_C1_S3;
+static int _MKDIR_SUBDIR;
 static size_t _THREADS;
 static size_t _MKDIR_SUCCESS;
 static size_t _MKDIR_EXIST;
 static size_t _MKDIR_ERROR;
+static size_t _MKDIR_MISSING;
 static size_t _CONFLICTS;
 
 static void
@@ -47,6 +49,44 @@ _assert_fs(struct fbr_fs *fs)
 	assert_zero(fs->stats.files);
 	assert_zero(fs->stats.files_inodes);
 	assert_zero(fs->stats.file_refs);
+}
+
+void
+_op_mkdir_subdir(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode_t parent_inode)
+{
+	fbr_fs_ok(fs);
+	assert(parent_path);
+	assert(parent_inode);
+
+	fbr_rlog(FBR_LOG_TEST, "OP_subdir %s:%lu", parent_path->name, parent_inode);
+
+	struct fbr_directory *parent = fbr_directory_load(fs, parent_path, parent_inode, 0);
+	fbr_directory_ok(parent);
+	assert(parent->state == FBR_DIRSTATE_OK);
+
+	long subdir_id = fbr_test_gen_random(1, _OP_THREADS);
+	char subdir_name[32];
+	fbr_bprintf(subdir_name, "subdir_%zu", subdir_id);
+
+	fbr_rlog(FBR_LOG_TEST, "OP_subdir mkdir(%s/%s)", parent_path->name, subdir_name);
+
+	struct fbr_request *request = fbr_request_get();
+	fbr_request_ok(request);
+	request->error = 0;
+
+	fbr_ops_mkdir(request, parent_inode, subdir_name, 0);
+
+	fbr_rlog(FBR_LOG_TEST, "OP_subdir mkdir() ret: %d", request->error);
+
+	if (request->error == EEXIST) {
+		fbr_stat_add(&_MKDIR_EXIST);
+	} else if (request->error) {
+		fbr_stat_add(&_MKDIR_ERROR);
+	} else {
+		fbr_stat_add(&_MKDIR_SUCCESS);
+	}
+
+	fbr_dindex_release(fs, &parent);
 }
 
 static void *
@@ -80,7 +120,12 @@ _op_mkdir_thread(void *arg)
 	}
 	assert(_THREADS == _OP_THREADS);
 
-	while (_MKDIR_SUCCESS < _OP_THREADS) {
+	size_t dir_count = _OP_THREADS;
+	if (_MKDIR_SUBDIR) {
+		dir_count += _OP_THREADS * _OP_THREADS;
+	}
+
+	while (_MKDIR_SUCCESS < dir_count) {
 		struct fbr_request *request = fbr_test_request_mock();
 		fbr_fuse_detached(request->fuse_ctx);
 		request->fs = fs;
@@ -99,6 +144,8 @@ _op_mkdir_thread(void *arg)
 		long dir_id = fbr_test_gen_random(1, _OP_THREADS);
 		char dirname[32];
 		fbr_bprintf(dirname, "directory_%zu", dir_id);
+		struct fbr_path_name dirpath;
+		fbr_path_name_init(&dirpath, dirname);
 
 		fbr_rlog(FBR_LOG_TEST, "OP_thread %zu calling mkdir(%s)", id, dirname);
 
@@ -116,10 +163,44 @@ _op_mkdir_thread(void *arg)
 
 		fbr_dindex_release(fs, &root);
 
+		if (!_MKDIR_SUBDIR) {
+			fbr_request_free(request);
+
+			if (_MKDIR_EXIST > 16) {
+				fbr_test_sleep_ms(10);
+			}
+
+			continue;
+		}
+
+		root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0);
+		fbr_directory_ok(root);
+		assert(root->state == FBR_DIRSTATE_OK);
+
+		struct fbr_file *file = fbr_directory_find_file(root, dirpath.name, dirpath.length);
+		if (!file) {
+			fbr_dindex_release(fs, &root);
+			fbr_request_free(request);
+			fbr_stat_add(&_MKDIR_MISSING);
+			fbr_test_sleep_ms(1);
+			continue;
+		}
+		fbr_file_ok(file);
+		assert(file->state == FBR_FILE_OK);
+		assert(file->mode & S_IFDIR);
+
+		fbr_inode_add(fs, file);
+
+		fbr_dindex_release(fs, &root);
+
+		_op_mkdir_subdir(fs, &dirpath, file->inode);
+
+		fbr_inode_release(fs, &file);
+
 		fbr_request_free(request);
 
-		if (_MKDIR_EXIST > 10) {
-			fbr_test_sleep_ms(_MKDIR_EXIST);
+		if (_MKDIR_EXIST > 100) {
+			fbr_test_sleep_ms(1);
 		}
 	}
 
@@ -142,12 +223,36 @@ _debug_cstores(void)
 }
 
 static void
-_validate_root(struct fbr_directory *root)
+_validate_subdir(struct fbr_fs *fs, struct fbr_directory *subdir)
 {
+	fbr_fs_ok(fs);
+	fbr_directory_ok(subdir);
+	assert(subdir->state == FBR_DIRSTATE_OK);
+
+	for (size_t i = 1; i < _OP_THREADS; i++) {
+		char subdir_name[32];
+		size_t len = fbr_bprintf(subdir_name, "subdir_%zu", i);
+
+		struct fbr_file *file = fbr_directory_find_file(subdir, subdir_name, len);
+		fbr_ASSERT(file, "ERROR directory missing: %s", subdir_name);
+		fbr_file_ok(file);
+		assert(file->state == FBR_FILE_OK);
+		assert(file->mode | S_IFDIR);
+	}
+
+	assert(subdir->file_count == _OP_THREADS);
+
+	fbr_test_logs("  subdir passed all directories found");
+}
+
+static void
+_validate_root(struct fbr_fs *fs, struct fbr_directory *root)
+{
+	fbr_fs_ok(fs);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
 
-	for (size_t i = 1; i < _OP_THREADS; i++) {
+	for (size_t i = 1; i <= _OP_THREADS; i++) {
 		char dirname[32];
 		size_t len = fbr_bprintf(dirname, "directory_%zu", i);
 
@@ -156,6 +261,24 @@ _validate_root(struct fbr_directory *root)
 		fbr_file_ok(file);
 		assert(file->state == FBR_FILE_OK);
 		assert(file->mode | S_IFDIR);
+
+		if (!_MKDIR_SUBDIR) {
+			continue;
+		}
+
+		struct fbr_path_name subdir_path;
+		fbr_path_name_init(&subdir_path, dirname);
+
+		fbr_inode_add(fs, file);
+
+		struct fbr_directory *subdir = fbr_directory_load(fs, &subdir_path, file->inode, 0);
+		fbr_directory_ok(subdir);
+		assert(subdir->state == FBR_DIRSTATE_OK);
+
+		_validate_subdir(fs, subdir);
+
+		fbr_inode_release(fs, &file);
+		fbr_dindex_release(fs, &subdir);
 	}
 
 	assert(root->file_count == _OP_THREADS);
@@ -163,15 +286,13 @@ _validate_root(struct fbr_directory *root)
 	fbr_test_logs("root passed all directories found");
 }
 
-void
-fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+static void
+_cluster_mkdir(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
 
 	fbr_test_random_seed();
 
-	fbr_test_conf_add("LOG_SIZE", "1000000");
 	fbr_test_conf_add("LOG_ALWAYS_FLUSH", "true");
 	fbr_test_conf_add("ASYNC_WRITE", "false");
 	fbr_test_conf_add("CSTORE_SERVER", "true");
@@ -265,6 +386,14 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	fbr_directory_ok(root_s3);
 	assert(root_s3->state == FBR_DIRSTATE_OK);
 
+	_validate_root(fs, root);
+	_validate_root(fs, root_d3);
+	_validate_root(fs_s3, root_s3);
+
+	fbr_dindex_release(fs, &root);
+	fbr_dindex_release(fs, &root_d3);
+	fbr_dindex_release(fs_s3, &root_s3);
+
 	fbr_test_sleep_ms(20);
 
 	_debug_cstores();
@@ -272,25 +401,24 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	fbr_test_logs("FLUSH_CONFLICTS: %zu", _CONFLICTS);
 	fbr_test_logs("MKDIR SUCCESS: %zu", _MKDIR_SUCCESS);
 	fbr_test_logs("MKDIR EXIST: %zu", _MKDIR_EXIST);
+	fbr_test_logs("MKDIR MISSING: %zu", _MKDIR_MISSING);
 	fbr_test_logs("MKDIR ERROR: %zu", _MKDIR_ERROR);
 
-	assert(fbr_test_cstore_count(ctx) == 2 + 1 + _OP_THREADS);
-	assert(_CSTORE_C1_S3->entries == 2 + (_OP_THREADS * 2));
-	assert(_CSTORE_C1_S3->stats.wr_indexes == 1 + _OP_THREADS);
-	assert(_CSTORE_C1_S3->stats.wr_roots == 1 + _OP_THREADS);
+	size_t dir_count = _OP_THREADS;
+	if (_MKDIR_SUBDIR) {
+		dir_count += _OP_THREADS * _OP_THREADS;
+	}
 
-	assert(_MKDIR_SUCCESS == _OP_THREADS);
+	assert(fbr_test_cstore_count(ctx) == 2 + 1 + _OP_THREADS);
+	assert(_CSTORE_C1_S3->entries == 2 + (dir_count * 2));
+	assert(_CSTORE_C1_S3->stats.wr_indexes == 1 + dir_count);
+	assert(_CSTORE_C1_S3->stats.wr_roots == 1 + dir_count);
+
+	assert(_MKDIR_SUCCESS == dir_count);
+	assert_zero(_MKDIR_ERROR);
 
 	assert_zero(_CSTORE_C1_S3->stats.http_500);
 	assert_zero(_CSTORE_C0_SHARED->stats.http_500);
-
-	_validate_root(root);
-	_validate_root(root_d3);
-	_validate_root(root_s3);
-
-	fbr_dindex_release(fs, &root);
-	fbr_dindex_release(fs, &root_d3);
-	fbr_dindex_release(fs_s3, &root_s3);
 
 	_assert_fs(fs);
 	_assert_fs(fs_s3);
@@ -303,4 +431,30 @@ fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	_CSTORE_C1_S3 = NULL;
 
 	fbr_test_logs("cstore_cluster_mkdir done");
+}
+
+void
+fbr_cmd_cstore_cluster_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	assert_zero(_MKDIR_SUBDIR);
+
+	fbr_test_conf_add("LOG_SIZE", "1000000");
+
+	_cluster_mkdir(ctx);
+}
+
+void
+fbr_cmd_cstore_cluster_subdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_MKDIR_SUBDIR = 1;
+
+	fbr_test_conf_add("LOG_SIZE", "5000000");
+
+	_cluster_mkdir(ctx);
 }
