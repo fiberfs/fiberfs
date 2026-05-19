@@ -114,6 +114,8 @@ const struct fuse_ctx *fbr_fuse_req_ctx(struct fbr_request *request, struct fuse
 	fbr_request_ok(request);					\
 	fbr_fuse_mounted((request)->fuse_ctx);				\
 }
+#define fbr_request_is_fuse(request)					\
+	(!((request)->not_fuse))
 #define fbr_fuse_reply_err(request, error)				\
 	fbr_fuse_reply__err(request, error, #error)
 

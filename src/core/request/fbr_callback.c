@@ -20,7 +20,7 @@ _fuse_exists(struct fbr_request *request)
 {
 	fbr_request_ok(request);
 
-	return !(request->not_fuse);
+	return fbr_request_is_fuse(request);
 }
 
 static inline fuse_req_t

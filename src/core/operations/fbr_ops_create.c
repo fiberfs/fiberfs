@@ -101,9 +101,11 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	entry.ino = file->inode;
 	fbr_file_attr(fs, file, &entry.attr);
 
-	// Dentry reference
-	struct fbr_file *dref = fbr_inode_take(fs, file->inode);
-	assert(dref == file);
+	if (fbr_request_is_fuse(request)) {
+		// Dentry reference
+		struct fbr_file *dref = fbr_inode_take(fs, file->inode);
+		assert(dref == file);
+	}
 
 	fbr_fuse_reply_create(request, &entry, fi);
 

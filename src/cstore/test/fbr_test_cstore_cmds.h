@@ -88,3 +88,4 @@ FBR_TEST_CMD(cstore_url_test)
 
 FBR_TEST_CMD(cstore_cluster_mkdir)
 FBR_TEST_CMD(cstore_cluster_subdir)
+FBR_TEST_CMD(cstore_cluster_append)

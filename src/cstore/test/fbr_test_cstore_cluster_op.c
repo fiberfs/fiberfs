@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 
 #include "fiberfs.h"
+#include "core/fuse/fbr_fuse_lowlevel.h"
 #include "core/operations/fbr_operations.h"
 #include "core/request/fbr_rlog.h"
 #include "cstore/fbr_cstore_api.h"
@@ -28,12 +29,16 @@
 static struct fbr_cstore *_CSTORE_C0_SHARED;
 static struct fbr_cstore *_CSTORE_C1_S3;
 static int _MKDIR_SUBDIR;
+static int _MKDIR_APPEND;
 static size_t _THREADS;
 static size_t _MKDIR_SUCCESS;
 static size_t _MKDIR_EXIST;
 static size_t _MKDIR_ERROR;
 static size_t _MKDIR_MISSING;
+static size_t _APPEND_OPEN;
+static size_t _APPEND_CREATE;
 static size_t _CONFLICTS;
+//static size_t _APPEND_COUNTS[_OP_THREADS + 1];
 
 static void
 _assert_fs(struct fbr_fs *fs)
@@ -49,6 +54,65 @@ _assert_fs(struct fbr_fs *fs)
 	assert_zero(fs->stats.files);
 	assert_zero(fs->stats.files_inodes);
 	assert_zero(fs->stats.file_refs);
+}
+
+void
+_op_mkdir_append(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode_t parent_inode)
+{
+	fbr_fs_ok(fs);
+	assert(parent_path);
+	assert(parent_inode);
+
+	fbr_rlog(FBR_LOG_TEST, "OP_append %s:%lu", parent_path->name, parent_inode);
+
+	struct fbr_directory *directory = fbr_directory_load(fs, parent_path, parent_inode, 0);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+
+	struct fbr_path_name filename;
+	fbr_path_name_init(&filename, "append");
+
+	struct fuse_file_info fi;
+
+	struct fbr_request *request = fbr_request_get();
+	fbr_request_ok(request);
+	request->error = 0;
+
+	struct fbr_file *file = fbr_directory_find_file(directory, filename.name, filename.length);
+	if (file) {
+		fbr_file_ok(file);
+		assert(file->state == FBR_FILE_OK);
+
+		fbr_inode_add(fs, file);
+
+		fbr_zero(&fi);
+		fi.flags = O_WRONLY | O_APPEND;
+
+		fbr_ops_open(request, file->inode, &fi);
+		assert_zero(request->error);
+		assert(fi.fh);
+
+		fbr_ops_release(request, file->inode, &fi);
+		assert_zero(request->error);
+
+		fbr_inode_release(fs, &file);
+
+		fbr_stat_add(&_APPEND_OPEN);
+	} else {
+		fbr_zero(&fi);
+		fi.flags = O_CREAT | O_WRONLY | O_APPEND;
+
+		fbr_ops_create(request, parent_inode, filename.name, S_IFREG, &fi);
+		assert_zero(request->error);
+		assert(fi.fh);
+
+		fbr_ops_release(request, 0, &fi);
+		assert_zero(request->error);
+
+		fbr_stat_add(&_APPEND_CREATE);
+	}
+
+	fbr_dindex_release(fs, &directory);
 }
 
 void
@@ -158,12 +222,15 @@ _op_mkdir_thread(void *arg)
 		} else if (request->error) {
 			fbr_stat_add(&_MKDIR_ERROR);
 		} else {
+			if (_MKDIR_APPEND) {
+				fbr_sleep_ms(5);
+			}
 			fbr_stat_add(&_MKDIR_SUCCESS);
 		}
 
 		fbr_dindex_release(fs, &root);
 
-		if (!_MKDIR_SUBDIR) {
+		if (!_MKDIR_SUBDIR && !_MKDIR_APPEND) {
 			fbr_request_free(request);
 
 			if (_MKDIR_EXIST > 16) {
@@ -193,7 +260,11 @@ _op_mkdir_thread(void *arg)
 
 		fbr_dindex_release(fs, &root);
 
-		_op_mkdir_subdir(fs, &dirpath, file->inode);
+		if (_MKDIR_SUBDIR) {
+			_op_mkdir_subdir(fs, &dirpath, file->inode);
+		} else {
+			_op_mkdir_append(fs, &dirpath, file->inode);
+		}
 
 		fbr_inode_release(fs, &file);
 
@@ -290,6 +361,8 @@ static void
 _cluster_mkdir(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
+
+	assert(_MKDIR_SUBDIR + _MKDIR_APPEND <= 1);
 
 	fbr_test_random_seed();
 
@@ -404,6 +477,11 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	fbr_test_logs("MKDIR MISSING: %zu", _MKDIR_MISSING);
 	fbr_test_logs("MKDIR ERROR: %zu", _MKDIR_ERROR);
 
+	if (_MKDIR_APPEND) {
+		fbr_test_logs("APPEND OPEN: %zu", _APPEND_OPEN);
+		fbr_test_logs("APPEND CREATE: %zu", _APPEND_CREATE);
+	}
+
 	size_t dir_count = _OP_THREADS;
 	if (_MKDIR_SUBDIR) {
 		dir_count += _OP_THREADS * _OP_THREADS;
@@ -455,6 +533,21 @@ fbr_cmd_cstore_cluster_subdir(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	_MKDIR_SUBDIR = 1;
 
 	fbr_test_conf_add("LOG_SIZE", "5000000");
+
+	_cluster_mkdir(ctx);
+}
+
+void
+fbr_cmd_cstore_cluster_append(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	assert_zero(_MKDIR_SUBDIR);
+
+	_MKDIR_APPEND = 1;
+
+	fbr_test_conf_add("LOG_SIZE", "1000000");
 
 	_cluster_mkdir(ctx);
 }
