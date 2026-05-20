@@ -70,6 +70,10 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	int fail = fbr_cstore_io_index_write(fs, directory, writer);
 	if (fail) {
+		if (_cstore_write_conflict(fail)) {
+			return EAGAIN;
+		}
+
 		return EIO;
 	}
 
