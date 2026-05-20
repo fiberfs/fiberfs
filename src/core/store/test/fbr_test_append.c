@@ -440,11 +440,11 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		assert(end && *end == ' ');
 		assert(value > 0 && value <= _APPEND_COUNTER_MAX);
 		check_pos = end + 1;
-		checks[value] = 1;
+		checks[value]++;
 	}
 
 	for (size_t i = 1; i <= _APPEND_COUNTER_MAX; i++) {
-		fbr_test_ASSERT(checks[i], "%zu missing from check", i);
+		fbr_test_ASSERT(checks[i] == 1, "%zu missing from check", i);
 	}
 
 	struct fbr_cstore *cstore = fs->cstore;

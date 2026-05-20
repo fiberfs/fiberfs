@@ -307,6 +307,7 @@ _op_mkdir_thread(void *arg)
 	fbr_stat_add_count(&_CONFLICTS, fs->stats.flush_conflicts);
 
 	fbr_test_cstore_wait(fs->cstore);
+	assert_zero(fs->cstore->stats.http_500);
 	_assert_fs(fs);
 	fbr_fs_free(fs);
 
@@ -320,6 +321,42 @@ _debug_cstores(void)
 	fbr_test_cstore_debug(_CSTORE_C0_SHARED);
 	fbr_test_logs("CSTORE_DEBUG OBJECT: cstore_c1_s3");
 	fbr_test_cstore_debug(_CSTORE_C1_S3);
+}
+
+static void
+_validate_append(struct fbr_fs *fs, struct fbr_directory *subdir, char *append_counts)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(subdir);
+	assert(subdir->state == FBR_DIRSTATE_OK);
+	assert(append_counts);
+
+	struct fbr_file *file = fbr_directory_find_file(subdir, "append", 6);
+	if (!file) {
+		return;
+	}
+
+	fbr_file_ok(file);
+	assert(file->state == FBR_FILE_OK);
+	assert(file->mode & S_IFREG);
+
+	fbr_test_logs("  append found: %zu bytes", file->size);
+
+	char buffer[4096];
+	assert(sizeof(buffer) > file->size);
+	size_t bytes = fbr_test_fs_read(fs, file, 0, buffer, sizeof(buffer));
+	assert(bytes == file->size);
+	buffer[file->size] = '\0';
+
+	char *check_pos = buffer;
+	while (*check_pos) {
+		char *end = NULL;
+		long value = strtol(check_pos, &end, 10);
+		assert(end && *end == ' ');
+		assert(value > 0 && (size_t)value <= _APPEND_COUNT);
+		check_pos = end + 1;
+		append_counts[value]++;
+	}
 }
 
 static void
@@ -352,6 +389,12 @@ _validate_root(struct fbr_fs *fs, struct fbr_directory *root)
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
 
+	char *append_counts = NULL;
+	if (_APPEND_COUNT) {
+		append_counts = calloc(1, _APPEND_COUNT + 1);
+		assert(append_counts);
+	}
+
 	for (size_t i = 1; i <= _OP_THREADS; i++) {
 		char dirname[32];
 		size_t len = fbr_bprintf(dirname, "directory_%zu", i);
@@ -362,7 +405,7 @@ _validate_root(struct fbr_fs *fs, struct fbr_directory *root)
 		assert(file->state == FBR_FILE_OK);
 		assert(file->mode | S_IFDIR);
 
-		if (!_MKDIR_SUBDIR) {
+		if (!_MKDIR_SUBDIR && !_MKDIR_APPEND) {
 			continue;
 		}
 
@@ -375,13 +418,25 @@ _validate_root(struct fbr_fs *fs, struct fbr_directory *root)
 		fbr_directory_ok(subdir);
 		assert(subdir->state == FBR_DIRSTATE_OK);
 
-		_validate_subdir(fs, subdir);
+		if (_MKDIR_SUBDIR) {
+			_validate_subdir(fs, subdir);
+		} else if (append_counts) {
+			_validate_append(fs, subdir, append_counts);
+		}
 
 		fbr_inode_release(fs, &file);
 		fbr_dindex_release(fs, &subdir);
 	}
 
 	assert(root->file_count == _OP_THREADS);
+
+	if (_APPEND_COUNT) {
+		for (size_t i = 1; i <= _APPEND_COUNT; i++) {
+			fbr_ASSERT(append_counts[i] == 1, "append missing: %zu", i);
+		}
+		fbr_test_logs("  append all counts found: %zu", _APPEND_COUNT);
+		free(append_counts);
+	}
 
 	fbr_test_logs("root passed all directories found");
 }
@@ -520,6 +575,9 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	assert(fbr_test_cstore_count(ctx) == 2 + 1 + _OP_THREADS);
 	if (!_MKDIR_APPEND) {
 		assert(_CSTORE_C1_S3->entries == 2 + (dir_count * 2));
+		assert_zero(_CSTORE_C1_S3->stats.wr_chunks);
+	} else {
+		assert(_CSTORE_C1_S3->stats.wr_chunks == _APPEND_COUNT);
 	}
 	assert(_CSTORE_C1_S3->stats.wr_indexes == 1 + dir_count);
 	assert(_CSTORE_C1_S3->stats.wr_roots == 1 + dir_count);
@@ -579,7 +637,7 @@ fbr_cmd_cstore_cluster_append(struct fbr_test_context *ctx, struct fbr_test_cmd 
 
 	_MKDIR_APPEND = 1;
 
-	fbr_test_conf_add("LOG_SIZE", "1000000");
+	fbr_test_conf_add("LOG_SIZE", "5000000");
 
 	_cluster_mkdir(ctx);
 }
