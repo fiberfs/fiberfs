@@ -179,3 +179,43 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	fbr_test_logs("mkdir_test_remote: %s", dirname.name);
 }
+
+void
+fbr_cmd_mkdir_test_remote_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+	assert(fbr_test_cstore_count(ctx) == 1);
+
+	struct fbr_path_name filename;
+	fbr_path_name_init(&filename, cmd->params[0].value);
+
+	struct fbr_fs *fs_remote = fbr_test_fs_alloc();
+	fbr_fs_ok(fs_remote);
+	fbr_test_cstore_bind(fs_remote, 0);
+	fbr_fs_set_store(fs_remote, &_TEST_MKDIR_CALLBACKS);
+
+	struct fbr_directory *root = fbr_directory_load(fs_remote, FBR_DIRNAME_ROOT,
+		FBR_INODE_ROOT, 0);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_OK);
+
+	// add file on parent (non directory)
+	struct fbr_file *file = fbr_file_alloc_new(fs_remote, root, &filename);
+	assert(file->state == FBR_FILE_INIT);
+	assert_zero(file->size);
+	file->mode = S_IFREG;
+
+	// flush parent
+	assert(fs_remote->store);
+	assert(fs_remote->store->optional.directory_flush_f);
+	int ret = fs_remote->store->optional.directory_flush_f(fs_remote, file, NULL,
+		FBR_FLUSH_WBUFFER);
+	assert_zero(ret);
+	assert(file->state == FBR_FILE_OK);
+
+	fbr_dindex_release(fs_remote, &root);
+	fbr_fs_free(fs_remote);
+
+	fbr_test_logs("mkdir_test_remote_file: %s", filename.name);
+}

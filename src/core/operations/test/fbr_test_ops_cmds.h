@@ -9,3 +9,4 @@
 FBR_TEST_CMD(mkdir_op_test_mount)
 FBR_TEST_CMD(mkdir_test_fail)
 FBR_TEST_CMD(mkdir_test_remote)
+FBR_TEST_CMD(mkdir_test_remote_file)

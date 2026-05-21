@@ -91,7 +91,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file
 
 	if (fbr_is_flag(flags, FBR_FLUSH_WBUFFER)) {
 		assert_zero_dev(fbr_is_flag(flags, FBR_FLUSH_MKDIR));
-		assert(fbr_file_has_wbuffer(file));
+		assert(!file->size || fbr_file_has_wbuffer(file));
 
 		if (merge) {
 			assert_zero(fbr_file_has_wbuffer(latest));
@@ -197,6 +197,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 				fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
 				if (ret) {
+					fbr_dindex_release(fs, &directory);
 					return ret;
 				}
 
@@ -264,7 +265,14 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			file->generation);
 
 		if (!merged) {
-			_flush_merge(fs, new_directory, file, flags);
+			ret = _flush_merge(fs, new_directory, file, flags);
+			if (ret) {
+				fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
+				fbr_dindex_release(fs, &new_directory);
+				fbr_dindex_release(fs, &directory);
+				break;
+			}
+
 			merged = 1;
 		} else {
 			assert_dev(file == fbr_directory_find_file(new_directory, filename.name,
@@ -298,8 +306,8 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		fbr_file_UNLOCK(file);
 
 		fbr_index_data_free(&index_data);
-		fbr_dindex_release(fs, &directory);
 		fbr_dindex_release(fs, &new_directory);
+		fbr_dindex_release(fs, &directory);
 
 		if (!ret || !retry) {
 			break;
@@ -333,6 +341,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
 		if (ret) {
+			fbr_dindex_release(fs, &directory);
 			break;
 		}
 	}

@@ -5,43 +5,62 @@ set_timeout_sec 20
 config_add LOG_ALWAYS_FLUSH 1
 config_add LOG_SHOW_DEBUG true
 
+# Mount
 sys_mkdir_tmp
 mkdir_op_test_mount $sys_tmpdir
 
 equal $fs_test_stat_directories 1
 
+# mkdir success
 set_var1 $sys_tmpdir "/test_start"
 sys_mkdir $var1
 sleep_ms 10
 
 equal $fs_test_stat_directories 2
 
+# mkdir again, exists
 mkdir_test_fail $var1
-sleep_ms 10
-
-set_var2 "test_remote_conflict"
-mkdir_test_remote $var2
 sleep_ms 10
 
 equal $fs_test_stat_directories 2
 
+# Simulate a remote mkdir
+set_var2 "test_remote_conflict"
+mkdir_test_remote $var2
+sleep_ms 10
+
+# Attempt local mkdir, exists
 set_var3 $sys_tmpdir "/" $var2
 mkdir_test_fail $var3
 sleep_ms 10
 
 equal $fs_test_stat_directories 2
 
-set_var4 $sys_tmpdir "/test_flush_error"
-mkdir_test_fail $var4
+# Simulate a remote file conflict
+set_var2 "test_remote_file_conflict"
+mkdir_test_remote_file $var2
+sleep_ms 10
+
+# Attempt local mkdir, exists (directory exists in dindex only)
+set_var3 $sys_tmpdir "/" $var2
+mkdir_test_fail $var3
 sleep_ms 10
 
 equal $fs_test_stat_directories 3
 
+# mkdir with a flush failure (directory exists in the dindex only)
+set_var4 $sys_tmpdir "/test_flush_error"
+mkdir_test_fail $var4
+sleep_ms 10
+
+equal $fs_test_stat_directories 4
+
+# mkdir and force sync
 set_var5 $sys_tmpdir "/test_sync"
 sys_mkdir $var5
 sleep_ms 10
 
-equal $fs_test_stat_directories 4
+equal $fs_test_stat_directories 5
 
 # Cleanup
 

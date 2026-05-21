@@ -308,8 +308,11 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 	if (fbr_is_flag(flags, FBR_FLUSH_WBUFFER)) {
 		fbr_file_ok(file);
-		fbr_wbuffer_ok(wbuffers);
 		assert_zero(fbr_is_flag(flags, FBR_FLUSH_MKDIR));
+
+		if (file->size) {
+			fbr_wbuffer_ok(wbuffers);
+		}
 
 		if (fbr_is_flag(flags, FBR_FLUSH_TRUNCATE)) {
 			fbr_rlog(FBR_LOG_INDEX, "TRUNCATE flagged");
