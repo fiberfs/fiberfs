@@ -524,7 +524,7 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	fbr_fs_release_all(fs, 0);
 	fbr_cstore_clear(fs->cstore);
 	fbr_test_fs_wait(fs);
-
+	assert(fs->stats.files == 1);
 
 	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0);
 	fbr_directory_ok(root);
