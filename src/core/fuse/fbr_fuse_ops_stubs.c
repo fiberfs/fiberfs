@@ -110,6 +110,17 @@ _fuse_ops_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 }
 
 static void
+_fuse_ops_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
+    struct fuse_file_info *fi)
+{
+	struct fbr_request *request = _fuse_setup(req, __func__);
+
+	_fuse_ops_callback(request, setattr, ino, attr, to_set, fi);
+
+	_fuse_finish_error(request, ENOSYS);
+}
+
+static void
 _fuse_ops_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode)
 {
 	struct fbr_request *request = _fuse_setup(req, __func__);
@@ -248,6 +259,7 @@ static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.destroy = _fuse_ops_destroy,
 	.lookup = _fuse_ops_lookup,
 	.getattr = _fuse_ops_getattr,
+	.setattr = _fuse_ops_setattr,
 	.mkdir = _fuse_ops_mkdir,
 	.opendir = _fuse_ops_opendir,
 	.readdir = _fuse_ops_readdir,

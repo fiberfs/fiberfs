@@ -159,6 +159,10 @@ struct fbr_file {
 	uid_t					uid;
 	gid_t					gid;
 
+	double					ctime;
+	double					mtime;
+	double					atime;
+
 	struct {
 		struct fbr_file_ptr		ptrs[FBR_FILE_DEFAULT_PTRS];
 		struct fbr_file_ptr_slab	*next;
@@ -245,7 +249,8 @@ enum fbr_flush_flags {
 	FBR_FLUSH_TRUNCATE = (1 << 1),
 	FBR_FLUSH_APPEND = (1 << 2),
 	FBR_FLUSH_DELAY_WRITE = (1 << 3),
-	FBR_FLUSH_MKDIR = (1 << 4)
+	FBR_FLUSH_MKDIR = (1 << 4),
+	FBR_FLUSH_ATTR = (1 << 5)
 };
 
 enum fbr_wbuffer_state {

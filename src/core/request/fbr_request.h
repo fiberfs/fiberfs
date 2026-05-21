@@ -55,6 +55,8 @@ struct fbr_fuse_callbacks {
 	void (*destroy)(struct fbr_fuse_context *ctx);
 	void (*lookup)(struct fbr_request *request, fuse_ino_t parent, const char *name);
 	void (*getattr)(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
+	void (*setattr)(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, int to_set,
+		struct fuse_file_info *fi);
 	void (*mkdir)(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		mode_t mode);
 	void (*opendir)(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);

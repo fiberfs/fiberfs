@@ -308,7 +308,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 	if (fbr_is_flag(flags, FBR_FLUSH_WBUFFER)) {
 		fbr_file_ok(file);
-		assert_zero(fbr_is_flag(flags, FBR_FLUSH_MKDIR));
+		assert_zero(fbr_is_flag(flags, FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR));
 
 		if (fbr_is_flag(flags, FBR_FLUSH_TRUNCATE)) {
 			fbr_rlog(FBR_LOG_INDEX, "TRUNCATE flagged");
@@ -357,6 +357,10 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	} else if (fbr_is_flag(flags, FBR_FLUSH_MKDIR)) {
 		assert(flags == FBR_FLUSH_MKDIR);
 		assert_zero(wbuffers);
+	} else if (fbr_is_flag(flags, FBR_FLUSH_ATTR)) {
+		assert(flags == FBR_FLUSH_ATTR);
+		assert_zero(wbuffers);
+		fbr_ABORT("TODO");
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
 		assert_zero(wbuffers);
