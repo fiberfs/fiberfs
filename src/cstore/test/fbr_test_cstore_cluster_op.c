@@ -43,12 +43,17 @@ static size_t _CONFLICTS;
 static size_t _APPEND_COUNT;
 
 static void
-_assert_fs(struct fbr_fs *fs)
+_assert_fs(struct fbr_fs *fs, int print)
 {
 	fbr_fs_ok(fs);
 
 	fbr_fs_release_all(fs, 1);
-	fbr_test_fs_wait(fs);
+
+	if (print) {
+		fbr_test_fs_stats(fs);
+	} else {
+		fbr_test_fs_wait(fs);
+	}
 
 	assert_zero(fs->stats.directories);
 	assert_zero(fs->stats.directories_dindex);
@@ -308,7 +313,7 @@ _op_mkdir_thread(void *arg)
 
 	fbr_test_cstore_wait(fs->cstore);
 	assert_zero(fs->cstore->stats.http_500);
-	_assert_fs(fs);
+	_assert_fs(fs, 0);
 	fbr_fs_free(fs);
 
 	return NULL;
@@ -520,6 +525,7 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	fbr_cstore_clear(fs->cstore);
 	fbr_test_fs_wait(fs);
 
+
 	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
@@ -546,6 +552,11 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	_validate_root(fs, root);
 	_validate_root(fs, root_d3);
 	_validate_root(fs_s3, root_s3);
+
+	assert(root->generation == root_d3->generation);
+	assert(root->generation == root_s3->generation);
+	assert(root->version == root_d3->version);
+	assert(root->version == root_s3->version);
 
 	fbr_dindex_release(fs, &root);
 	fbr_dindex_release(fs, &root_d3);
@@ -588,8 +599,8 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	assert_zero(_CSTORE_C1_S3->stats.http_500);
 	assert_zero(_CSTORE_C0_SHARED->stats.http_500);
 
-	_assert_fs(fs);
-	_assert_fs(fs_s3);
+	_assert_fs(fs, 1);
+	_assert_fs(fs_s3, 0);
 
 	fbr_request_pool_shutdown();
 	fbr_fs_free(fs);
