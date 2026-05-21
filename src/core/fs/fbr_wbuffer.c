@@ -589,17 +589,25 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	_wbuffer_LOCK(fs, fio);
 
-	if (!fio->wbuffers) {
+	int create = 0;
+	if (fio->truncate || fio->file->state == FBR_FILE_INIT) {
+		create = 1;
+	}
+
+	if (!fio->wbuffers && !create) {
 		_wbuffer_UNLOCK(fio);
 		return 0;
 	}
 
 	fbr_stat_add(&fs->stats.flushes);
 
-	fbr_wbuffer_ok(fio->wbuffers);
 	assert(fio->write);
 	assert_zero_dev(fio->read_only);
-	assert_dev(fbr_file_has_wbuffer(fio->file));
+
+	if (fio->wbuffers) {
+		fbr_wbuffer_ok(fio->wbuffers);
+		assert_dev(fbr_file_has_wbuffer(fio->file));
+	}
 
 	struct fbr_file *file = fio->file;
 	enum fbr_flush_flags flags = FBR_FLUSH_WBUFFER;
@@ -614,7 +622,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	int error = 0;
-	if (!fbr_is_flag(flags, FBR_FLUSH_DELAY_WRITE)) {
+	if (!fbr_is_flag(flags, FBR_FLUSH_DELAY_WRITE) && fio->wbuffers) {
 		error = fbr_wbuffer_flush_store(fs, file, fio->wbuffers, 0, 0);
 	}
 

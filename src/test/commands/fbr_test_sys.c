@@ -510,6 +510,10 @@ _sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append)
 		const char *text = cmd->params[i].value;
 		size_t text_len = cmd->params[i].len;
 
+		if (!text_len) {
+			continue;
+		}
+
 		size_t size = fbr_sys_write(fd, text, text_len);
 		assert(size == text_len);
 
@@ -561,6 +565,10 @@ fbr_cmd_sys_write_seek(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	for (size_t i = 2; i < cmd->param_count; i++) {
 		const char *text = cmd->params[i].value;
 		size_t text_len = cmd->params[i].len;
+
+		if (!text_len) {
+			continue;
+		}
 
 		size_t size = fbr_sys_write(fd, text, text_len);
 		assert(size == text_len);

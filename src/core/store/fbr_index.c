@@ -310,10 +310,6 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		fbr_file_ok(file);
 		assert_zero(fbr_is_flag(flags, FBR_FLUSH_MKDIR));
 
-		if (file->size) {
-			fbr_wbuffer_ok(wbuffers);
-		}
-
 		if (fbr_is_flag(flags, FBR_FLUSH_TRUNCATE)) {
 			fbr_rlog(FBR_LOG_INDEX, "TRUNCATE flagged");
 
@@ -404,7 +400,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 		do_append = 1;
 	}
 
-	if (fbr_is_flag(index_data->flags, FBR_FLUSH_DELAY_WRITE)) {
+	if (fbr_is_flag(index_data->flags, FBR_FLUSH_DELAY_WRITE) && index_data->wbuffers) {
 		int ret = fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers,
 			do_append, 1);
 		if (ret) {
