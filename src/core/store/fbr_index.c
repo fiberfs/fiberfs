@@ -687,6 +687,7 @@ fbr_index_parser_free(struct fbr_index_parser *parser)
 {
 	fbr_index_parser_ok(parser);
 	assert_dev(parser->json);
+	assert_zero_dev(parser->file);
 
 	fjson_context_free(parser->json);
 
