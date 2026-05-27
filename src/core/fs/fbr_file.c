@@ -572,3 +572,21 @@ fbr_file_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st)
 
 	st->st_nlink = 1;
 }
+
+void
+fbr_file_set_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	assert(st);
+
+	fbr_file_LOCK(fs, file);
+
+	file->mode = st->st_mode;
+	file->uid = st->st_uid;
+	file->gid = st->st_gid;
+	file->ctime = fbr_convert_timespec(&st->st_ctim);
+	file->mtime = fbr_convert_timespec(&st->st_mtim);
+
+	fbr_file_UNLOCK(file);
+}

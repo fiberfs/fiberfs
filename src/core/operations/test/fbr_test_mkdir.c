@@ -171,7 +171,7 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert(fs_remote->store);
 	assert(fs_remote->store->optional.directory_flush_f == _test_mkdir_flush);
 	struct fbr_flush_data flush_data;
-	fbr_flush_data_init(&flush_data, file, NULL, FBR_FLUSH_MKDIR);
+	fbr_flush_data_init(&flush_data, file, NULL, NULL, FBR_FLUSH_MKDIR);
 	ret = fbr_fs_flush(fs_remote, &flush_data);
 	assert_zero(ret);
 	assert(file->state == FBR_FILE_OK);
@@ -214,7 +214,7 @@ fbr_cmd_mkdir_test_remote_file(struct fbr_test_context *ctx, struct fbr_test_cmd
 	assert(fs_remote->store);
 	assert(fs_remote->store->optional.directory_flush_f == _test_mkdir_flush);
 	struct fbr_flush_data flush_data;
-	fbr_flush_data_init(&flush_data, file, NULL, FBR_FLUSH_WBUFFER);
+	fbr_flush_data_init(&flush_data, file, NULL, NULL, FBR_FLUSH_WBUFFER);
 	int ret = fbr_fs_flush(fs_remote, &flush_data);
 	assert_zero(ret);
 	assert(file->state == FBR_FILE_OK);

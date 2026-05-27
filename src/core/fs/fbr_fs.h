@@ -306,6 +306,7 @@ struct fbr_fio {
 
 struct fbr_flush_data {
 	struct fbr_file				*file;
+	struct stat				*attr;
 	struct fbr_wbuffer			*wbuffers;
 	enum fbr_flush_flags			flags;
 };
@@ -444,13 +445,14 @@ struct fbr_file_ptr *fbr_file_ptr_get(struct fbr_fs *fs, struct fbr_directory *d
 void fbr_file_ptr_free(struct fbr_file_ptr *file_ptr);
 void fbr_file_ptrs_free(struct fbr_file *file);
 void fbr_file_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st);
-void fbr_chunk_take(struct fbr_chunk *chunk);
-void fbr_chunk_release(struct fbr_chunk *chunk);
-int fbr_chunk_in_offset(struct fbr_chunk *chunk, size_t offset, size_t size);
+void fbr_file_set_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st);
 
 #include "utils/fbr_enum_string_declare.h"
 FBR_ENUM_CHUNK_STATE
 
+void fbr_chunk_take(struct fbr_chunk *chunk);
+void fbr_chunk_release(struct fbr_chunk *chunk);
+int fbr_chunk_in_offset(struct fbr_chunk *chunk, size_t offset, size_t size);
 struct fbr_chunk_list *fbr_chunk_list_alloc(void);
 struct fbr_chunk_list *fbr_chunk_list_expand(struct fbr_chunk_list *chunks);
 void fbr_chunk_list_debug(struct fbr_fs *fs, struct fbr_chunk_list *chunks, const char *name);
@@ -503,7 +505,7 @@ int fbr_directory_stale(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode);
 
 void fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,
-	struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
+	struct stat *attr, struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
 void fbr_flush_data_free(struct fbr_flush_data *flush_data);
 int fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data);
 

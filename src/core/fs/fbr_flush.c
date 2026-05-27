@@ -9,19 +9,25 @@
 #include "core/store/fbr_store.h"
 
 void
-fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,
+fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, struct stat *attr,
     struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags)
 {
 	assert(flush_data);
 	fbr_file_ok(file);
-	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR));
+	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR));
 
 	fbr_zero(flush_data);
 	flush_data->file = file;
 	flush_data->flags = flags;
 
+	if (attr) {
+		assert(fbr_is_flag(flags, FBR_FLUSH_ATTR));
+		flush_data->attr = attr;
+	}
+
 	if (wbuffers) {
 		fbr_wbuffer_ok(wbuffers);
+		assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER));
 		flush_data->wbuffers = wbuffers;
 	}
 
@@ -88,14 +94,16 @@ _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_ino
 }
 
 static int
-_flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file *file,
-    int flags)
+_flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flush_data *flush_data)
 {
 	assert_dev(fs);
 	assert_dev(directory);
 	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
-	assert_dev(file);
-	assert_dev(flags);
+	assert_dev(flush_data);
+	assert_dev(flush_data->file);
+	assert_dev(flush_data->flags);
+
+	struct fbr_file *file = flush_data->file;
 
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
@@ -117,8 +125,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file
 		assert(latest == file);
 	}
 
-	if (fbr_is_flag(flags, FBR_FLUSH_WBUFFER)) {
-		assert_zero_dev(fbr_is_flag(flags, FBR_FLUSH_MKDIR));
+	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_WBUFFER)) {
+		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_MKDIR));
 		assert(!file->size || fbr_file_has_wbuffer(file));
 
 		if (merge) {
@@ -132,8 +140,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file
 		}
 
 		file->generation++;
-	} else if (fbr_is_flag(flags, FBR_FLUSH_MKDIR)) {
-		assert_dev(flags == FBR_FLUSH_MKDIR);
+	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_MKDIR)) {
+		assert_dev(flush_data->flags == FBR_FLUSH_MKDIR);
 		if (latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "mkdir EEXIST detected");
 			return EEXIST;
@@ -142,6 +150,16 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file
 		fbr_directory_add_file(fs, directory, file);
 
 		file->generation = 1;
+	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_ATTR)) {
+		assert_dev(flush_data->attr);
+		if (!latest) {
+			fbr_rlog(FBR_LOG_FLUSH, "attr ENOENT detected");
+			return ENOENT;
+		}
+
+		if (merge) {
+			fbr_file_set_attr(fs, latest, flush_data->attr);
+		}
 	} else {
 		fbr_ABORT("Bad flags");
 	}
@@ -220,7 +238,7 @@ _fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 					return EIO;
 				}
 
-				ret = _flush_merge(fs, directory, file, flush_data->flags);
+				ret = _flush_merge(fs, directory, flush_data);
 
 				fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
@@ -293,7 +311,7 @@ _fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 			file->generation);
 
 		if (!merged) {
-			ret = _flush_merge(fs, new_directory, file, flush_data->flags);
+			ret = _flush_merge(fs, new_directory, flush_data);
 			if (ret) {
 				fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
 				fbr_dindex_release(fs, &new_directory);
@@ -363,7 +381,7 @@ _fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 			break;
 		}
 
-		ret = _flush_merge(fs, directory, file, flush_data->flags);
+		ret = _flush_merge(fs, directory, flush_data);
 		assert_dev(merged);
 
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);

@@ -49,51 +49,52 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 	// TODO we need to lock this entire transaction pass flush its own copy of attr
 	// Set the file times during init and writing
 
-	struct stat st_before;
+	struct stat st_before, st_after;
 	fbr_file_attr(fs, file, &st_before);
-	int attr_changed = 0;
-	int size_changed = 0;
+	memcpy(&st_after, &st_before, sizeof(st_after));
 
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_MODE)) {
-		file->mode = attr->st_mode;
+		st_after.st_mode = attr->st_mode;
 	}
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_UID)) {
-		file->uid = attr->st_uid;
+		st_after.st_uid = attr->st_uid;
 	}
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_GID)) {
-		file->gid = attr->st_gid;
+		st_after.st_gid = attr->st_gid;
 	}
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_SIZE)) {
-		if (attr->st_size >= 0 && file->size != (unsigned long)attr->st_size) {
-			file->size = attr->st_size;
-			size_changed = 1;
+		if (attr->st_size >= 0) {
+			st_after.st_size = attr->st_size;
 		}
 	}
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_CTIME)) {
-		file->ctime = fbr_convert_timespec(&attr->st_ctim);
+		st_after.st_ctim = attr->st_ctim;
 	}
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_MTIME)) {
-		file->mtime = fbr_convert_timespec(&attr->st_mtim);
-	}
-	if (fbr_is_flag(to_set, FUSE_SET_ATTR_ATIME)) {
-		file->atime = fbr_convert_timespec(&attr->st_atim);
+		st_after.st_mtim = attr->st_mtim;
 	}
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_MTIME_NOW)) {
-		file->mtime = fbr_get_time();
-	}
-	if (fbr_is_flag(to_set, FUSE_SET_ATTR_ATIME_NOW)) {
-		file->atime = fbr_get_time();
+		double now = fbr_get_time();
+		fbr_convert_time(now, &st_after.st_mtim);
 	}
 
-	struct stat st_after;
-	fbr_file_attr(fs, file, &st_after);
-	st_after.st_size = st_before.st_size;
+	int attr_changed = 0;
+	int size_truncated = 0;
+	int size_extended = 0;
+
+	if (st_after.st_size > st_before.st_size) {
+		size_extended = 1;
+		st_before.st_size = st_after.st_size;
+	} else if (st_after.st_size < st_before.st_size) {
+		size_truncated = 1;
+		st_before.st_size = st_after.st_size;
+	}
 
 	if (memcmp(&st_before, &st_after, sizeof(st_before))) {
 		attr_changed = 1;
 	}
 
-	if (!attr_changed && !size_changed) {
+	if (!attr_changed && !size_truncated && !size_extended) {
 		fbr_inode_release(fs, &file);
 		fbr_fuse_reply_attr(request, &st_after, fbr_fs_dentry_ttl(fs));
 
@@ -102,9 +103,9 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		return;
 	}
 
-	if (attr_changed) {
+	if (attr_changed || size_extended) {
 		struct fbr_flush_data flush_data;
-		fbr_flush_data_init(&flush_data, file, NULL, FBR_FLUSH_ATTR);
+		fbr_flush_data_init(&flush_data, file, &st_after, NULL, FBR_FLUSH_ATTR);
 		int ret = fbr_fs_flush(fs, &flush_data);
 		fbr_flush_data_free(&flush_data);
 
@@ -113,9 +114,11 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 			fbr_fuse_reply_err(request, ret);
 			return;
 		}
+
+		fbr_file_set_attr(fs, file, &st_after);
 	}
 
-	fbr_ASSERT(!size_changed, "TODO implement size_changed");
+	fbr_ASSERT(!size_truncated, "TODO implement size_truncated");
 
 	fbr_inode_release(fs, &file);
 

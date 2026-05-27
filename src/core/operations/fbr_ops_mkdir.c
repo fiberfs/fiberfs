@@ -106,7 +106,7 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 
 	// Flush changes to parent
 	struct fbr_flush_data flush_data;
-	fbr_flush_data_init(&flush_data, file, NULL, FBR_FLUSH_MKDIR);
+	fbr_flush_data_init(&flush_data, file, NULL, NULL, FBR_FLUSH_MKDIR);
 	ret = fbr_fs_flush(fs, &flush_data);
 	fbr_flush_data_free(&flush_data);
 
