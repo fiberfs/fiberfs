@@ -57,6 +57,8 @@ _assert_fs(struct fbr_fs *fs, int print)
 		fbr_test_fs_wait(fs);
 	}
 
+	fbr_test_cstore_wait(fs->cstore);
+
 	assert_zero(fs->stats.directories);
 	assert_zero(fs->stats.directories_dindex);
 	assert_zero(fs->stats.directory_refs);
@@ -372,6 +374,9 @@ _validate_append(struct fbr_fs *fs, struct fbr_directory *subdir, char *append_c
 		check_pos = end + 1;
 		append_counts[value]++;
 	}
+
+	fbr_test_logs("  append done %s refs: %u+%u", dirname.name,
+		file->refcounts.dindex, file->refcounts.inode);
 }
 
 static void
