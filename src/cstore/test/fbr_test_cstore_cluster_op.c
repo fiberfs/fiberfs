@@ -337,6 +337,7 @@ _validate_append(struct fbr_fs *fs, struct fbr_directory *subdir, char *append_c
 	fbr_directory_ok(subdir);
 	assert(subdir->state == FBR_DIRSTATE_OK);
 	assert(append_counts);
+	assert(_MKDIR_APPEND);
 
 	struct fbr_file *file = fbr_directory_find_file(subdir, "append", 6);
 	if (!file) {
@@ -347,7 +348,14 @@ _validate_append(struct fbr_fs *fs, struct fbr_directory *subdir, char *append_c
 	assert(file->state == FBR_FILE_OK);
 	assert(file->mode & S_IFREG);
 
-	fbr_test_logs("  append found: %zu bytes", file->size);
+	struct fbr_path_name dirname;
+	fbr_directory_name(subdir, &dirname);
+
+	fbr_test_logs("  append found subdir: %s (%lu,%lu) inode: %lu,%lu size: %zu bytes "
+		"refs: %u+%u",
+		dirname.name, subdir->inode, subdir->generation,
+		file->inode, file->generation, file->size,
+		file->refcounts.dindex, file->refcounts.inode);
 
 	char buffer[4096];
 	assert(sizeof(buffer) > file->size);
@@ -526,15 +534,26 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	fbr_fs_release_all(fs, 0);
 	fbr_cstore_clear(fs->cstore);
 	fbr_test_fs_wait(fs);
+	assert_zero(fs->stats.directories);
 	assert(fs->stats.files == 1);
 
 	struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
 
+	fbr_test_fs_wait(fs);
+	assert(fs->stats.directories == 1);
+	assert(root->file_count == 4);
+	assert(fs->stats.files == 5);
+
 	struct fbr_directory *root_d3 = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 1);
 	fbr_directory_ok(root_d3);
 	assert(root_d3->state == FBR_DIRSTATE_OK);
+
+	fbr_test_fs_wait(fs);
+	assert(fs->stats.directories == 1);
+	assert(root_d3->file_count == 4);
+	assert(fs->stats.files == 5);
 
 	fbr_test_sleep_ms(20);
 
