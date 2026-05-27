@@ -35,6 +35,7 @@ static int _MKDIR_APPEND;
 static size_t _THREADS;
 static size_t _MKDIR_SUCCESS;
 static size_t _MKDIR_EXIST;
+static size_t _MKDIR_NOTSYNC;
 static size_t _MKDIR_ERROR;
 static size_t _MKDIR_MISSING;
 static size_t _APPEND_OPEN;
@@ -183,6 +184,8 @@ _op_mkdir_subdir(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode
 
 	if (request->error == EEXIST) {
 		fbr_stat_add(&_MKDIR_EXIST);
+	} else if (request->error == ENOTDIR) {
+		fbr_stat_add(&_MKDIR_NOTSYNC);
 	} else if (request->error) {
 		fbr_stat_add(&_MKDIR_ERROR);
 	} else {
@@ -258,6 +261,8 @@ _op_mkdir_thread(void *arg)
 
 		if (request->error == EEXIST) {
 			fbr_stat_add(&_MKDIR_EXIST);
+		} else if (request->error == ENOTDIR) {
+			fbr_stat_add(&_MKDIR_NOTSYNC);
 		} else if (request->error) {
 			fbr_stat_add(&_MKDIR_ERROR);
 		} else {
@@ -519,6 +524,7 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	assert_zero(_THREADS);
 	assert_zero(_MKDIR_SUCCESS);
 	assert_zero(_MKDIR_EXIST);
+	assert_zero(_MKDIR_NOTSYNC);
 	assert_zero(_MKDIR_ERROR);
 
 	fbr_test_logs("*** starting %d threads", _OP_THREADS);
@@ -595,6 +601,7 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	fbr_test_logs("FLUSH_CONFLICTS: %zu", _CONFLICTS);
 	fbr_test_logs("MKDIR SUCCESS: %zu", _MKDIR_SUCCESS);
 	fbr_test_logs("MKDIR EXIST: %zu", _MKDIR_EXIST);
+	fbr_test_logs("MKDIR NOT SYNC: %zu", _MKDIR_NOTSYNC);
 	fbr_test_logs("MKDIR MISSING: %zu", _MKDIR_MISSING);
 	fbr_test_logs("MKDIR ERROR: %zu", _MKDIR_ERROR);
 

@@ -611,7 +611,14 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
-	assert_dev(directory->inode == inode);
+	assert_dev(directory->inode >= inode);
+
+	if (directory->inode > inode) {
+		fbr_rlog(FBR_LOG_FS, "directory inode: %lu found newer inode: %lu (return error)",
+			inode, directory->inode);
+		fbr_dindex_release(fs, &directory);
+		return NULL;
+	}
 
 	return directory;
 }
