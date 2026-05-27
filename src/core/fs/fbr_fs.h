@@ -304,6 +304,12 @@ struct fbr_fio {
 	pthread_cond_t				wbuffer_update;
 };
 
+struct fbr_flush_data {
+	struct fbr_file				*file;
+	struct fbr_wbuffer			*wbuffers;
+	enum fbr_flush_flags			flags;
+};
+
 struct fbr_fs_stats {
 	fbr_stats_t				directories;
 	fbr_stats_t				directories_dindex;
@@ -495,8 +501,11 @@ void fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest,
 	struct fbr_directory *source);
 int fbr_directory_stale(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode);
-int fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-	enum fbr_flush_flags flags);
+
+void fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,
+	struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
+void fbr_flush_data_free(struct fbr_flush_data *flush_data);
+int fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);
@@ -562,6 +571,11 @@ void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 {								\
 	assert(file_ptr);					\
 	fbr_file_ok((file_ptr)->file);				\
+}
+#define fbr_flush_data_ok(flush_data)				\
+{								\
+	assert(flush_data);					\
+	fbr_file_ok((flush_data)->file);			\
 }
 #define fbr_fs_int64(obj)					\
 	((uint64_t)(obj))

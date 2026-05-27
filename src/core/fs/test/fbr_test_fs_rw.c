@@ -25,12 +25,12 @@
 #include "log/test/fbr_test_log_cmds.h"
 
 static int
-_test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
-    struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags)
+_test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 {
 	fbr_fs_ok(fs);
-	fbr_file_ok(file);
+	fbr_flush_data_ok(flush_data);
 
+	struct fbr_file *file = flush_data->file;
 	struct fbr_file *parent = fbr_inode_take(fs, file->parent_inode);
 	fbr_ASSERT(parent, "parent %lu missing", file->parent_inode);
 	fbr_file_ok(parent);
@@ -48,7 +48,8 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 	fbr_test_logs("RW_FLUSH directory: '%s' (%lu) file: '%s' (%lu)", dirpath.path.name,
 		directory->generation, filename, file->generation);
 
-	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirpath.path, directory->inode);
+	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirpath.path,
+		directory->inode);
 	fbr_directory_ok(new_directory);
 	fbr_ASSERT(new_directory->state == FBR_DIRSTATE_LOADING, "new_directory isnt LOADING");
 
@@ -72,7 +73,8 @@ _test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_file *file,
 	}
 
 	struct fbr_index_data index_data;
-	fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers, flags);
+	fbr_index_data_init(fs, &index_data, new_directory, previous, file, flush_data->wbuffers,
+		flush_data->flags);
 
 	int ret = fbr_index_write(fs, &index_data);
 	if (ret) {

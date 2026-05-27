@@ -529,8 +529,8 @@ int
 fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
     int revert_on_error, int have_file_lock)
 {
-	int error = 0;
-
+	fbr_fs_ok(fs);
+	assert_dev(fs->store);
 	fbr_wbuffer_ok(wbuffers);
 	struct fbr_fio *fio = wbuffers->fio;
 	fbr_fio_ok(fio);
@@ -556,6 +556,8 @@ fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 
 	// TODO we can check for ready later in the write pipeline
 	// see: fbr_cstore_index_root_write()
+
+	int error = 0;
 
 	while (!_wbuffer_ready(wbuffers)) {
 		if (_wbuffer_ready_error(wbuffers)) {
@@ -583,7 +585,6 @@ int
 fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 {
 	fbr_fs_ok(fs);
-	assert_dev(fs->store);
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
@@ -631,11 +632,10 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 		return error;
 	}
 
-	if (fs->store->optional.directory_flush_f) {
-		error = fs->store->optional.directory_flush_f(fs, file, fio->wbuffers, flags);
-	} else {
-		error = fbr_directory_flush(fs, file, fio->wbuffers, flags);
-	}
+	struct fbr_flush_data flush_data;
+	fbr_flush_data_init(&flush_data, file, fio->wbuffers, flags);
+	error = fbr_fs_flush(fs, &flush_data);
+	fbr_flush_data_free(&flush_data);
 
 	if (!error) {
 		fbr_wbuffers_reset(fs, fio);

@@ -36,7 +36,6 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
     struct fuse_file_info *fi)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
-	assert_dev(fs->store);
 	(void)fi;
 
 	fbr_rlog(FBR_LOG_OP, "SETATTR req: %lu ino: %lu to_set: %d", request->id, ino, to_set);
@@ -104,13 +103,10 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 	}
 
 	if (attr_changed) {
-		int ret = EIO;
-
-		if (fs->store->optional.directory_flush_f) {
-			ret = fs->store->optional.directory_flush_f(fs, file, NULL, FBR_FLUSH_ATTR);
-		} else {
-			ret = fbr_directory_flush(fs, file, NULL, FBR_FLUSH_ATTR);
-		}
+		struct fbr_flush_data flush_data;
+		fbr_flush_data_init(&flush_data, file, NULL, FBR_FLUSH_ATTR);
+		int ret = fbr_fs_flush(fs, &flush_data);
+		fbr_flush_data_free(&flush_data);
 
 		if (ret) {
 			fbr_inode_release(fs, &file);

@@ -18,20 +18,21 @@
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
+int _fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data);
+
 static int
-_test_mkdir_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-    enum fbr_flush_flags flags)
+_test_mkdir_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 {
 	fbr_fs_ok(fs);
-	fbr_file_ok(file);
+	fbr_flush_data_ok(flush_data);
 
-	const char *filename = fbr_path_get_file(&file->path, NULL);
+	const char *filename = fbr_path_get_file(&flush_data->file->path, NULL);
 	if (!strcmp(filename, "test_flush_error")) {
 		fbr_test_logs("FLUSH forcing error (EBUSY)");
 		return EBUSY;
 	}
 
-	return fbr_directory_flush(fs, file, wbuffers, flags);
+	return _fs_flush(fs, flush_data);
 }
 
 static const struct fbr_store_callbacks _TEST_MKDIR_CALLBACKS = {
@@ -168,11 +169,14 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	// flush parent
 	assert(fs_remote->store);
-	assert(fs_remote->store->optional.directory_flush_f);
-	ret = fs_remote->store->optional.directory_flush_f(fs_remote, file, NULL, FBR_FLUSH_MKDIR);
+	assert(fs_remote->store->optional.directory_flush_f == _test_mkdir_flush);
+	struct fbr_flush_data flush_data;
+	fbr_flush_data_init(&flush_data, file, NULL, FBR_FLUSH_MKDIR);
+	ret = fbr_fs_flush(fs_remote, &flush_data);
 	assert_zero(ret);
 	assert(file->state == FBR_FILE_OK);
 
+	fbr_flush_data_free(&flush_data);
 	fbr_inode_release(fs_remote, &file);
 	fbr_dindex_release(fs_remote, &root);
 	fbr_fs_free(fs_remote);
@@ -208,12 +212,14 @@ fbr_cmd_mkdir_test_remote_file(struct fbr_test_context *ctx, struct fbr_test_cmd
 
 	// flush parent
 	assert(fs_remote->store);
-	assert(fs_remote->store->optional.directory_flush_f);
-	int ret = fs_remote->store->optional.directory_flush_f(fs_remote, file, NULL,
-		FBR_FLUSH_WBUFFER);
+	assert(fs_remote->store->optional.directory_flush_f == _test_mkdir_flush);
+	struct fbr_flush_data flush_data;
+	fbr_flush_data_init(&flush_data, file, NULL, FBR_FLUSH_WBUFFER);
+	int ret = fbr_fs_flush(fs_remote, &flush_data);
 	assert_zero(ret);
 	assert(file->state == FBR_FILE_OK);
 
+	fbr_flush_data_free(&flush_data);
 	fbr_dindex_release(fs_remote, &root);
 	fbr_fs_free(fs_remote);
 

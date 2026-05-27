@@ -8,6 +8,34 @@
 #include "fbr_fs.h"
 #include "core/store/fbr_store.h"
 
+void
+fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,
+    struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags)
+{
+	assert(flush_data);
+	fbr_file_ok(file);
+	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR));
+
+	fbr_zero(flush_data);
+	flush_data->file = file;
+	flush_data->flags = flags;
+
+	if (wbuffers) {
+		fbr_wbuffer_ok(wbuffers);
+		flush_data->wbuffers = wbuffers;
+	}
+
+	fbr_flush_data_ok(flush_data);
+}
+
+void
+fbr_flush_data_free(struct fbr_flush_data *flush_data)
+{
+	fbr_flush_data_ok(flush_data);
+
+	fbr_zero(flush_data);
+}
+
 static struct fbr_directory *
 _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_inode_t inode,
     struct fbr_directory **previous, struct fbr_fs_timeout *timeout)
@@ -67,7 +95,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file
 	assert_dev(directory);
 	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 	assert_dev(file);
-	assert_dev(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR));
+	assert_dev(flags);
 
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
@@ -122,13 +150,13 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file
 }
 
 int
-fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-    enum fbr_flush_flags flags)
+_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 {
 	fbr_fs_ok(fs);
-	fbr_file_ok(file);
-	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR));
+	fbr_flush_data_ok(flush_data);
+	assert_dev(flush_data->flags);
 
+	struct fbr_file *file = flush_data->file;
 	fbr_inode_t inode = file->parent_inode;
 	struct fbr_file *parent = fbr_inode_take(fs, inode);
 	if (!parent) {
@@ -192,7 +220,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 					return EIO;
 				}
 
-				ret = _flush_merge(fs, directory, file, flags);
+				ret = _flush_merge(fs, directory, file, flush_data->flags);
 
 				fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
@@ -265,7 +293,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			file->generation);
 
 		if (!merged) {
-			ret = _flush_merge(fs, new_directory, file, flags);
+			ret = _flush_merge(fs, new_directory, file, flush_data->flags);
 			if (ret) {
 				fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
 				fbr_dindex_release(fs, &new_directory);
@@ -282,8 +310,8 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 
 		fbr_file_LOCK(fs, file);
 
-		fbr_index_data_init(fs, &index_data, new_directory, previous, file, wbuffers,
-			flags);
+		fbr_index_data_init(fs, &index_data, new_directory, previous, file,
+			flush_data->wbuffers, flush_data->flags);
 
 		int retry = 0;
 
@@ -335,7 +363,7 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 			break;
 		}
 
-		ret = _flush_merge(fs, directory, file, flags);
+		ret = _flush_merge(fs, directory, file, flush_data->flags);
 		assert_dev(merged);
 
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
@@ -351,4 +379,21 @@ fbr_directory_flush(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer
 	}
 
 	return ret;
+}
+
+int
+fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
+{
+	fbr_fs_ok(fs);
+	assert_dev(fs->store);
+	fbr_flush_data_ok(flush_data);
+
+	if (fs->store->optional.directory_flush_f) {
+		assert_dev(fs->store->optional.directory_flush_f != fbr_fs_flush);
+		assert_dev(fs->store->optional.directory_flush_f != _fs_flush);
+
+		return fs->store->optional.directory_flush_f(fs, flush_data);
+	}
+
+	return _fs_flush(fs, flush_data);
 }

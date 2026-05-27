@@ -159,10 +159,13 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	// Flush root
 	assert(fs->store);
 	assert_zero(fs->store->optional.directory_flush_f);
-	ret = fbr_directory_flush(fs, dir2file, NULL, FBR_FLUSH_MKDIR);
+	struct fbr_flush_data flush_data;
+	fbr_flush_data_init(&flush_data, dir2file, NULL, FBR_FLUSH_MKDIR);
+	ret = fbr_fs_flush(fs, &flush_data);
 	assert_zero(ret);
 	assert(dir2file->state == FBR_FILE_OK);
 
+	fbr_flush_data_free(&flush_data);
 	fbr_inode_release(fs, &dir2file);
 	fbr_dindex_release(fs, &root);
 

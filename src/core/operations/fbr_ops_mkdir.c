@@ -105,11 +105,11 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	fbr_index_data_free(&index_data);
 
 	// Flush changes to parent
-	if (fs->store->optional.directory_flush_f) {
-		ret = fs->store->optional.directory_flush_f(fs, file, NULL, FBR_FLUSH_MKDIR);
-	} else {
-		ret = fbr_directory_flush(fs, file, NULL, FBR_FLUSH_MKDIR);
-	}
+	struct fbr_flush_data flush_data;
+	fbr_flush_data_init(&flush_data, file, NULL, FBR_FLUSH_MKDIR);
+	ret = fbr_fs_flush(fs, &flush_data);
+	fbr_flush_data_free(&flush_data);
+
 	if (ret) {
 		if (fs->store->index_delete_f) {
 			int delete_ret = fs->store->index_delete_f(fs, new_directory);

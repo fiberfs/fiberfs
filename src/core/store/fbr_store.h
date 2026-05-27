@@ -130,8 +130,7 @@ struct fbr_store_callbacks {
 	fbr_id_t (*root_read_f)(struct fbr_fs *fs, struct fbr_path_name *dirpath, int route_s3);
 
 	struct {
-		int (*directory_flush_f)(struct fbr_fs *fs, struct fbr_file *file,
-			struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
+		int (*directory_flush_f)(struct fbr_fs *fs, struct fbr_flush_data *flush_data);
 	} optional;
 };
 
