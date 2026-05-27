@@ -51,6 +51,8 @@ _assert_fs(struct fbr_fs *fs, int print)
 
 	if (print) {
 		fbr_test_fs_stats(fs);
+		fbr_test_fs_dindex_debug(fs);
+		fbr_test_fs_inodes_debug(fs);
 	} else {
 		fbr_test_fs_wait(fs);
 	}
