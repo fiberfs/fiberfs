@@ -46,9 +46,6 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		return;
 	}
 
-	// TODO we need to lock this entire transaction pass flush its own copy of attr
-	// Set the file times during init and writing
-
 	struct stat st_before, st_after;
 	fbr_file_attr(fs, file, &st_before);
 	memcpy(&st_after, &st_before, sizeof(st_after));
@@ -79,14 +76,10 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 	}
 
 	int attr_changed = 0;
-	int size_truncated = 0;
-	int size_extended = 0;
+	int size_changed = 0;
 
-	if (st_after.st_size > st_before.st_size) {
-		size_extended = 1;
-		st_before.st_size = st_after.st_size;
-	} else if (st_after.st_size < st_before.st_size) {
-		size_truncated = 1;
+	if (st_after.st_size != st_before.st_size) {
+		size_changed = 1;
 		st_before.st_size = st_after.st_size;
 	}
 
@@ -94,7 +87,7 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		attr_changed = 1;
 	}
 
-	if (!attr_changed && !size_truncated && !size_extended) {
+	if (!attr_changed && !size_changed) {
 		fbr_inode_release(fs, &file);
 		fbr_fuse_reply_attr(request, &st_after, fbr_fs_dentry_ttl(fs));
 
@@ -105,11 +98,11 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 
 	enum fbr_flush_flags flags = 0;
 
-	if (size_truncated) {
-		fbr_ABORT("TODO");
+	if (size_changed) {
+		flags |= FBR_FLUSH_RESIZE;
 	}
-	if (attr_changed || size_extended) {
-		flags = FBR_FLUSH_ATTR;
+	if (attr_changed) {
+		flags |= FBR_FLUSH_ATTR;
 	}
 
 	assert_dev(flags);

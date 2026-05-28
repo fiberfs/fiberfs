@@ -160,6 +160,7 @@ _json_body_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	assert_dev(fs);
 	assert_dev(json);
 	assert_dev(file);
+	assert_dev(file->body.chunks);
 
 	fbr_file_LOCK(fs, file);
 
@@ -198,9 +199,14 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	assert_dev(index_data);
 
 	int modified = 0;
+	int resize = 0;
+
 	if (file == index_data->file && fbr_is_flag(index_data->flags, FBR_FLUSH_WBUFFER)) {
 		assert_dev(index_data->chunks);
 		modified = 1;
+	} else if (file == index_data->file && fbr_is_flag(index_data->flags, FBR_FLUSH_RESIZE) &&
+	    index_data->chunks) {
+		resize = 1;
 	}
 
 	// n: filename
@@ -237,11 +243,11 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 
 	// TODO times...
 
-	if (file->body.chunks || modified) {
+	if (file->body.chunks || modified || resize) {
 		// b: body chunks
 		fbr_writer_add(fs, json, ",\"b\":[", 6);
 
-		if (modified) {
+		if (modified || resize) {
 			_json_body_modified_gen(fs, json, index_data);
 		} else {
 			_json_body_gen(fs, json, file);
@@ -365,8 +371,18 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	} else if (fbr_is_flag(flags, FBR_FLUSH_MKDIR)) {
 		assert(flags == FBR_FLUSH_MKDIR);
 		assert_zero(wbuffers);
+	} else if (fbr_is_flag(flags, FBR_FLUSH_RESIZE)) {
+		assert_zero(wbuffers);
+
+		// TODO we ignore extra size and downsize based on chunks
+
+		size_t current_size = fbr_body_length(file, NULL);
+
+		if (file->size < current_size) {
+			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
+				&index_data->removed, NULL);
+		}
 	} else if (fbr_is_flag(flags, FBR_FLUSH_ATTR)) {
-		assert(flags == FBR_FLUSH_ATTR);
 		assert_zero(wbuffers);
 	} else {
 		assert(flags == FBR_FLUSH_NONE);

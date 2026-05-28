@@ -250,7 +250,8 @@ enum fbr_flush_flags {
 	FBR_FLUSH_APPEND = (1 << 2),
 	FBR_FLUSH_DELAY_WRITE = (1 << 3),
 	FBR_FLUSH_MKDIR = (1 << 4),
-	FBR_FLUSH_ATTR = (1 << 5)
+	FBR_FLUSH_ATTR = (1 << 5),
+	FBR_FLUSH_RESIZE = (1 << 6)
 };
 
 enum fbr_wbuffer_state {

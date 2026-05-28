@@ -69,8 +69,7 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	// TODO implement .write_buf
 	conn->want &= ~FUSE_CAP_SPLICE_READ;
 
-	// This is ok, reading local appended data will produce the same result
-	// TODO requires SETATTR
+	// This will make reading local appends undefined
 	conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
 
 	struct fbr_request *request = fbr_request_alloc(NULL, __func__);
