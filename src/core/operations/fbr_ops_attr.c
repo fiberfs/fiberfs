@@ -107,7 +107,6 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		struct fbr_flush_data flush_data;
 		fbr_flush_data_init(&flush_data, file, &st_after, NULL, FBR_FLUSH_ATTR);
 		int ret = fbr_fs_flush(fs, &flush_data);
-		fbr_flush_data_free(&flush_data);
 
 		if (ret) {
 			fbr_inode_release(fs, &file);

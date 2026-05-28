@@ -34,8 +34,8 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 	fbr_flush_data_ok(flush_data);
 }
 
-void
-fbr_flush_data_free(struct fbr_flush_data *flush_data)
+static void
+_flush_data_free(struct fbr_flush_data *flush_data)
 {
 	fbr_flush_data_ok(flush_data);
 
@@ -168,7 +168,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 }
 
 int
-_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
+fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 {
 	fbr_fs_ok(fs);
 	fbr_flush_data_ok(flush_data);
@@ -406,12 +406,18 @@ fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 	assert_dev(fs->store);
 	fbr_flush_data_ok(flush_data);
 
+	int ret = EIO;
+
 	if (fs->store->optional.directory_flush_f) {
 		assert_dev(fs->store->optional.directory_flush_f != fbr_fs_flush);
-		assert_dev(fs->store->optional.directory_flush_f != _fs_flush);
+		assert_dev(fs->store->optional.directory_flush_f != fbr_flush);
 
-		return fs->store->optional.directory_flush_f(fs, flush_data);
+		ret = fs->store->optional.directory_flush_f(fs, flush_data);
+	} else {
+		ret = fbr_flush(fs, flush_data);
 	}
 
-	return _fs_flush(fs, flush_data);
+	_flush_data_free(flush_data);
+
+	return ret;
 }

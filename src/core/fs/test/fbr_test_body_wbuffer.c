@@ -327,7 +327,6 @@ _test_fio_thread(void *arg)
 			fbr_flush_data_init(&flush_data, file, NULL, fio->wbuffers,
 				FBR_FLUSH_WBUFFER);
 			_test_flush_directory(fs, &flush_data);
-			fbr_flush_data_free(&flush_data);
 			fbr_wbuffers_reset_lock(fs, fio);
 		} else {
 			assert_zero(ret);
@@ -472,7 +471,6 @@ _test_concurrent_fio(void)
 			fbr_flush_data_init(&flush_data, file, NULL, fio->wbuffers,
 				FBR_FLUSH_WBUFFER);
 			_test_flush_directory(fs, &flush_data);
-			fbr_flush_data_free(&flush_data);
 			fbr_wbuffers_reset_lock(fs, fio);
 		} else {
 			assert_zero(ret);

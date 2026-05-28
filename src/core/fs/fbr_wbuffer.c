@@ -634,8 +634,8 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	struct fbr_flush_data flush_data;
 	fbr_flush_data_init(&flush_data, file, NULL, fio->wbuffers, flags);
+
 	error = fbr_fs_flush(fs, &flush_data);
-	fbr_flush_data_free(&flush_data);
 
 	if (!error) {
 		fbr_wbuffers_reset(fs, fio);

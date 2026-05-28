@@ -165,7 +165,6 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert_zero(ret);
 	assert(dir2file->state == FBR_FILE_OK);
 
-	fbr_flush_data_free(&flush_data);
 	fbr_inode_release(fs, &dir2file);
 	fbr_dindex_release(fs, &root);
 

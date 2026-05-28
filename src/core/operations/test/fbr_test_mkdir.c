@@ -18,7 +18,7 @@
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
-int _fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data);
+int fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data);
 
 static int
 _test_mkdir_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
@@ -32,7 +32,7 @@ _test_mkdir_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 		return EBUSY;
 	}
 
-	return _fs_flush(fs, flush_data);
+	return fbr_flush(fs, flush_data);
 }
 
 static const struct fbr_store_callbacks _TEST_MKDIR_CALLBACKS = {
@@ -176,7 +176,6 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert_zero(ret);
 	assert(file->state == FBR_FILE_OK);
 
-	fbr_flush_data_free(&flush_data);
 	fbr_inode_release(fs_remote, &file);
 	fbr_dindex_release(fs_remote, &root);
 	fbr_fs_free(fs_remote);
@@ -219,7 +218,6 @@ fbr_cmd_mkdir_test_remote_file(struct fbr_test_context *ctx, struct fbr_test_cmd
 	assert_zero(ret);
 	assert(file->state == FBR_FILE_OK);
 
-	fbr_flush_data_free(&flush_data);
 	fbr_dindex_release(fs_remote, &root);
 	fbr_fs_free(fs_remote);
 

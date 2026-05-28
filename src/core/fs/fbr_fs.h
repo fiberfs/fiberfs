@@ -506,7 +506,6 @@ struct fbr_directory *fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t in
 
 void fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,
 	struct stat *attr, struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
-void fbr_flush_data_free(struct fbr_flush_data *flush_data);
 int fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
