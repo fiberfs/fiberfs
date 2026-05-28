@@ -198,7 +198,8 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	assert_dev(index_data);
 
 	int modified = 0;
-	if (file == index_data->file && index_data->chunks) {
+	if (file == index_data->file && fbr_is_flag(index_data->flags, FBR_FLUSH_WBUFFER)) {
+		assert_dev(index_data->chunks);
 		modified = 1;
 	}
 
@@ -310,6 +311,13 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		fbr_file_ok(file);
 		assert_zero(fbr_is_flag(flags, FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR));
 
+		if (fbr_is_dev()) {
+			struct fbr_path_name filename;
+			fbr_path_get_file(&file->path, &filename);
+			assert_dev(file == fbr_directory_find_file(directory, filename.name,
+				filename.length));
+		}
+
 		if (fbr_is_flag(flags, FBR_FLUSH_TRUNCATE)) {
 			fbr_rlog(FBR_LOG_INDEX, "TRUNCATE flagged");
 
@@ -360,7 +368,6 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	} else if (fbr_is_flag(flags, FBR_FLUSH_ATTR)) {
 		assert(flags == FBR_FLUSH_ATTR);
 		assert_zero(wbuffers);
-		fbr_ABORT("TODO");
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
 		assert_zero(wbuffers);

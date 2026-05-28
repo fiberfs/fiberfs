@@ -103,21 +103,28 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		return;
 	}
 
+	enum fbr_flush_flags flags = 0;
+
+	if (size_truncated) {
+		fbr_ABORT("TODO");
+	}
 	if (attr_changed || size_extended) {
-		struct fbr_flush_data flush_data;
-		fbr_flush_data_init(&flush_data, file, &st_after, NULL, FBR_FLUSH_ATTR);
-		int ret = fbr_fs_flush(fs, &flush_data);
-
-		if (ret) {
-			fbr_inode_release(fs, &file);
-			fbr_fuse_reply_err(request, ret);
-			return;
-		}
-
-		fbr_file_set_attr(fs, file, &st_after);
+		flags = FBR_FLUSH_ATTR;
 	}
 
-	fbr_ASSERT(!size_truncated, "TODO implement size_truncated");
+	assert_dev(flags);
+
+	struct fbr_flush_data flush_data;
+	fbr_flush_data_init(&flush_data, file, &st_after, NULL, flags);
+	int ret = fbr_fs_flush(fs, &flush_data);
+
+	if (ret) {
+		fbr_inode_release(fs, &file);
+		fbr_fuse_reply_err(request, ret);
+		return;
+	}
+
+	fbr_file_set_attr(fs, file, &st_after);
 
 	fbr_inode_release(fs, &file);
 

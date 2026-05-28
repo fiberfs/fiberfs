@@ -155,19 +155,30 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			return EEXIST;
 		}
 
-		fbr_directory_add_file(fs, directory, file);
-
 		assert_dev(file->generation == 1);
+
+		fbr_directory_add_file(fs, directory, file);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_ATTR)) {
 		assert_dev(flush_data->attr);
 		if (!latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "attr ENOENT detected");
 			return ENOENT;
-		} else if (remote_merge || local_update) {
-			// TODO we need a new inode here
-			fbr_file_set_attr(fs, latest, flush_data->attr);
-			latest->generation = file->generation;
 		}
+
+		struct fbr_file *clone = fbr_file_clone(fs, directory, latest);
+		fbr_file_ok(clone);
+		assert_dev(clone->state == FBR_FILE_INIT);
+		assert_dev(clone->inode > latest->inode);
+		assert_dev(clone->inode > file->inode);
+
+		fbr_file_set_attr(fs, clone, flush_data->attr);
+
+		clone->generation++;
+		clone->state = FBR_FILE_OK;
+
+		ret = fbr_directory_remove_file(fs, directory, latest);
+		assert(ret);
+		fbr_directory_add_file(fs, directory, clone);
 	} else {
 		fbr_ABORT("Bad flags");
 	}

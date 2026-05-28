@@ -112,7 +112,6 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 	fbr_fs_ok(fs);
 	fbr_file_ok(source);
 	assert(source->state == FBR_FILE_OK);
-	assert_zero(fbr_file_has_wbuffer(source));
 
 	struct fbr_path_name filename;
 	fbr_path_get_file(&source->path, &filename);
@@ -150,6 +149,7 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	dest->gid = source->gid;
 
 	// Start zipper merge
+	// TODO source is a live file, logic below assumes all EMPTY chunks
 
 	struct fbr_chunk *chunk_source = source->body.chunks;
 	struct fbr_chunk *chunk_dest = dest->body.chunks;
