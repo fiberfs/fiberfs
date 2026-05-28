@@ -535,15 +535,20 @@ fbr_root_json_parse(const char *json_buf, size_t json_buf_len)
 }
 
 void
-fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory,
-    struct fbr_fs_timeout *timeout, int route_s3)
+fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs_timeout *timeout,
+    int route_s3)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
 	fbr_directory_ok(directory);
 	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 	assert_zero_dev(directory->generation);
-	assert(timeout);
+
+	struct fbr_fs_timeout _timeout;
+	if (!timeout) {
+		fbr_fs_timeout_init(&_timeout);
+		timeout = &_timeout;
+	}
 
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
@@ -623,37 +628,15 @@ fbr_index_read_merge(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	if (ret) {
 		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+
 		fbr_stat_add(&fs->stats.index_errors);
+
 		return;
 	}
 
-	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
+	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
 	fbr_stat_add(&fs->stats.index_loads);
-}
-
-void
-fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs_timeout *timeout,
-    int route_s3)
-{
-	assert_dev(fs);
-	assert_dev(directory);
-
-	struct fbr_fs_timeout _timeout;
-	if (!timeout) {
-		fbr_fs_timeout_init(&_timeout);
-		timeout = &_timeout;
-	}
-
-	fbr_index_read_merge(fs, directory, timeout, route_s3);
-
-	fbr_directory_ok(directory);
-
-	if (directory->state == FBR_DIRSTATE_LOADING) {
-		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
-	}
-
-	assert(directory->state >= FBR_DIRSTATE_OK);
 }
 
 void

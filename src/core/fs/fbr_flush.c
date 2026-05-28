@@ -117,23 +117,23 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	struct fbr_file *latest = fbr_directory_find_file(directory, filename.name,
 		filename.length);
 
-	int merge = 0;
+	int remote_merge = 0;
+	int local_update = 0;
 	if (latest && latest->generation > file->generation) {
 		assert(latest != file);
-		merge = 1;
-	} else if (latest) {
-		assert(latest == file);
+		remote_merge = 1;
+	} else if (latest && latest != file) {
+		local_update = 1;
 	}
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_WBUFFER)) {
 		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_MKDIR));
 		assert(!file->size || fbr_file_has_wbuffer(file));
 
-		if (merge) {
-			assert_zero(fbr_file_has_wbuffer(latest));
-
+		if (remote_merge) {
 			fbr_file_merge(fs, latest, file);
-			fbr_directory_remove_file(fs, directory, latest);
+			int ret = fbr_directory_remove_file(fs, directory, latest);
+			assert(ret);
 			fbr_directory_add_file(fs, directory, file);
 		} else if (!latest) {
 			fbr_directory_add_file(fs, directory, file);
@@ -157,7 +157,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			return ENOENT;
 		}
 
-		if (merge) {
+		if (remote_merge || local_update) {
 			fbr_file_set_attr(fs, latest, flush_data->attr);
 		}
 	} else {
@@ -215,7 +215,6 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 		wait_for_new = 0;
 	} while (!directory);
 
-	int merged = 0;
 	int ret;
 
 	// dindex empty, read from index store
@@ -231,23 +230,14 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 			case FBR_DIRSTATE_OK:
 				break;
 			case FBR_DIRSTATE_LOADING:
-				fbr_index_read_merge(fs, directory, &timeout, 0);
+				fbr_index_read(fs, directory, &timeout, 0);
 
 				if (directory->state == FBR_DIRSTATE_ERROR) {
 					fbr_dindex_release(fs, &directory);
 					return EIO;
 				}
 
-				ret = _flush_merge(fs, directory, flush_data);
-
-				fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
-
-				if (ret) {
-					fbr_dindex_release(fs, &directory);
-					return ret;
-				}
-
-				merged = 1;
+				assert_dev(directory->state == FBR_DIRSTATE_OK);
 
 				break;
 			default:
@@ -310,20 +300,12 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 		fbr_rlog(FBR_LOG_FLUSH, "file: '%s' generation: %lu", filename.name,
 			file->generation);
 
-		if (!merged) {
-			ret = _flush_merge(fs, new_directory, flush_data);
-			if (ret) {
-				fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
-				fbr_dindex_release(fs, &new_directory);
-				fbr_dindex_release(fs, &directory);
-				break;
-			}
-
-			merged = 1;
-		} else {
-			assert_dev(file == fbr_directory_find_file(new_directory, filename.name,
-				filename.length));
-			assert_dev(file->generation);
+		ret = _flush_merge(fs, new_directory, flush_data);
+		if (ret) {
+			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
+			fbr_dindex_release(fs, &new_directory);
+			fbr_dindex_release(fs, &directory);
+			break;
 		}
 
 		fbr_file_LOCK(fs, file);
@@ -365,31 +347,14 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 			break;
 		}
 
-		// Retry, lock on LOADING state
-		directory = _directory_get_loading(fs, &dirpath.path, inode, NULL, &timeout);
+		// Retry, load from S3
+		directory = fbr_directory_load(fs, &dirpath.path, inode, 1);
 		if (!directory) {
 			ret = EIO;
 			break;
 		}
-		assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 
-		fbr_index_read_merge(fs, directory, &timeout, 1);
-
-		if (directory->state == FBR_DIRSTATE_ERROR) {
-			fbr_dindex_release(fs, &directory);
-			ret = EIO;
-			break;
-		}
-
-		ret = _flush_merge(fs, directory, flush_data);
-		assert_dev(merged);
-
-		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
-
-		if (ret) {
-			fbr_dindex_release(fs, &directory);
-			break;
-		}
+		assert_dev(directory->state == FBR_DIRSTATE_OK);
 	}
 
 	if (ret) {

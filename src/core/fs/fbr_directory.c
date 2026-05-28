@@ -200,6 +200,7 @@ fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname, fbr_i
 	if (directory->state == FBR_DIRSTATE_LOADING) {
 		previous = directory->previous;
 		if (previous) {
+			assert_dev(previous->state == FBR_DIRSTATE_OK);
 			fbr_dindex_ref(fs, previous);
 		}
 
@@ -322,36 +323,33 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory, struc
 	directory->file_count++;
 }
 
-void
+int
 fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_file_ok(file);
-	assert(file->refcounts.dindex == 1);
-	assert_zero(file->refcounts.inode);
-	assert_zero(file->refcounts.wbuffer);
 
-	struct fbr_file_ptr *file_ptr = &file->ptr_head.ptrs[0];
-	fbr_file_ptr_ok(file_ptr);
-	assert_dev(file_ptr->file == file);
+	struct fbr_file_ptr *file_ptr, *temp;
+	RB_FOREACH_SAFE(file_ptr, fbr_filename_tree, &directory->filename_tree, temp) {
+		fbr_file_ptr_ok(file_ptr);
 
-	if (fbr_is_dev()) {
-		struct fbr_file_ptr find_ptr;
-		find_ptr.file = file;
+		if (file_ptr->file != file) {
+			continue;
+		}
 
-		struct fbr_file_ptr *found_ptr = RB_FIND(fbr_filename_tree,
-			&directory->filename_tree, &find_ptr);
-		assert(found_ptr == file_ptr);
+		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file_ptr);
+		fbr_file_ptr_free(file_ptr);
+
+		fbr_file_release_dindex(fs, &file);
+
+		directory->file_count--;
+
+		return 1;
 	}
 
-	(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file_ptr);
-	fbr_file_ptr_free(file_ptr);
-
-	fbr_file_release_dindex(fs, &file);
-
-	directory->file_count--;
+	return 0;
 }
 
 struct fbr_file *
