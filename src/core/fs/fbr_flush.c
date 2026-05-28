@@ -119,6 +119,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 	int remote_merge = 0;
 	int local_update = 0;
+	int ret;
+
 	if (latest && latest->generation > file->generation) {
 		assert(latest != file);
 		remote_merge = 1;
@@ -126,20 +128,26 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		local_update = 1;
 	}
 
+	file->generation++;
+
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_WBUFFER)) {
 		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_MKDIR));
 		assert(!file->size || fbr_file_has_wbuffer(file));
 
 		if (remote_merge) {
 			fbr_file_merge(fs, latest, file);
-			int ret = fbr_directory_remove_file(fs, directory, latest);
+			ret = fbr_directory_remove_file(fs, directory, latest);
+			assert(ret);
+			fbr_directory_add_file(fs, directory, file);
+
+			file->generation++;
+		} if (local_update) {
+			ret = fbr_directory_remove_file(fs, directory, latest);
 			assert(ret);
 			fbr_directory_add_file(fs, directory, file);
 		} else if (!latest) {
 			fbr_directory_add_file(fs, directory, file);
 		}
-
-		file->generation++;
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_MKDIR)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_MKDIR);
 		if (latest) {
@@ -149,16 +157,16 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_directory_add_file(fs, directory, file);
 
-		file->generation = 1;
+		assert_dev(file->generation == 1);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_ATTR)) {
 		assert_dev(flush_data->attr);
 		if (!latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "attr ENOENT detected");
 			return ENOENT;
-		}
-
-		if (remote_merge || local_update) {
+		} else if (remote_merge || local_update) {
+			// TODO we need a new inode here
 			fbr_file_set_attr(fs, latest, flush_data->attr);
+			latest->generation = file->generation;
 		}
 	} else {
 		fbr_ABORT("Bad flags");
