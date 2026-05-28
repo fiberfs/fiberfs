@@ -170,6 +170,7 @@ _FS_TEST_STAT(files_total)
 _FS_TEST_STAT(file_refs)
 _FS_TEST_STAT(read_bytes)
 _FS_TEST_STAT(write_bytes)
+_FS_TEST_STAT(index_loads)
 _FS_TEST_STAT(appends)
 _FS_TEST_STAT(flushes)
 

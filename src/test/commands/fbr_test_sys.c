@@ -679,3 +679,27 @@ fbr_cmd_sys_mkdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_mkdir '%s'", dirname);
 }
+
+void
+fbr_cmd_sys_chmod(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 2);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+	long lmode = fbr_test_parse_long(cmd->params[1].value);
+	assert(lmode >= 0);
+
+	mode_t omode = fbr_ulong2octal(lmode);
+	omode &= 07777;
+
+	int ret = chmod(filename, omode);
+	fbr_ASSERT(!ret, "chmod failed %s (%d)", strerror(errno), ret);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_chmod '%s' %u (%ld)", filename, omode, lmode);
+}

@@ -57,6 +57,7 @@ FBR_TEST_VAR(fs_test_stat_files_total)
 FBR_TEST_VAR(fs_test_stat_file_refs)
 FBR_TEST_VAR(fs_test_stat_read_bytes)
 FBR_TEST_VAR(fs_test_stat_write_bytes)
+FBR_TEST_VAR(fs_test_stat_index_loads)
 FBR_TEST_VAR(fs_test_stat_appends)
 FBR_TEST_VAR(fs_test_stat_flushes)
 

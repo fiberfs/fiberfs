@@ -24,79 +24,6 @@
 #include "cstore/test/fbr_test_cstore_cmds.h"
 #include "log/test/fbr_test_log_cmds.h"
 
-static int
-_test_fs_rw_directory_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
-{
-	fbr_fs_ok(fs);
-	fbr_flush_data_ok(flush_data);
-
-	struct fbr_file *file = flush_data->file;
-	struct fbr_file *parent = fbr_inode_take(fs, file->parent_inode);
-	fbr_ASSERT(parent, "parent %lu missing", file->parent_inode);
-	fbr_file_ok(parent);
-
-	struct fbr_fullpath_name dirpath;
-	fbr_path_get_full(&parent->path, &dirpath);
-
-	const char *filename = fbr_path_get_file(&file->path, NULL);
-
-	struct fbr_directory *directory = fbr_dindex_take(fs, &dirpath.path, 1);
-	fbr_ASSERT(directory, "directory '%s' missing", dirpath.path.name);
-	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_OK);
-
-	fbr_test_logs("RW_FLUSH directory: '%s' (%lu) file: '%s' (%lu)", dirpath.path.name,
-		directory->generation, filename, file->generation);
-
-	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirpath.path,
-		directory->inode);
-	fbr_directory_ok(new_directory);
-	fbr_ASSERT(new_directory->state == FBR_DIRSTATE_LOADING, "new_directory isnt LOADING");
-
-	fbr_directory_copy(fs, new_directory, directory);
-
-	new_directory->generation++;
-
-	struct fbr_directory *previous = new_directory->previous;
-	if (!previous) {
-		previous = directory;
-	}
-
-	fbr_file_LOCK(fs, file);
-
-	if (file->state == FBR_FILE_INIT) {
-		file->state = FBR_FILE_OK;
-		file->generation = 1;
-		fbr_directory_add_file(fs, new_directory, file);
-	} else {
-		file->generation++;
-	}
-
-	struct fbr_index_data index_data;
-	fbr_index_data_init(fs, &index_data, new_directory, previous, file, flush_data->wbuffers,
-		flush_data->flags);
-
-	int ret = fbr_index_write(fs, &index_data);
-	if (ret) {
-		fbr_test_logs("RW_FLUSH fbr_index_write(new_directory) failed (%d %s)",
-			ret, strerror(ret));
-		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
-	} else {
-		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
-	}
-
-	fbr_file_UNLOCK(file);
-
-	fbr_index_data_free(&index_data);
-
-	// Safe to call within flush
-	fbr_dindex_release(fs, &directory);
-	fbr_dindex_release(fs, &new_directory);
-	fbr_inode_release(fs, &parent);
-
-	return ret;
-}
-
 static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
 	.chunk_read_f = fbr_cstore_async_chunk_read,
 	.chunk_delete_f = fbr_cstore_async_chunk_delete,
@@ -105,7 +32,6 @@ static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
 	.index_read_f = fbr_cstore_index_read,
 	.index_delete_f = fbr_cstore_index_delete,
 	.root_read_f = fbr_cstore_root_read,
-	.optional.directory_flush_f = _test_fs_rw_directory_flush,
 };
 
 static void
@@ -175,6 +101,7 @@ static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 	.init = _test_fs_rw_init,
 
 	.getattr = fbr_ops_getattr,
+	.setattr = fbr_ops_setattr,
 	.lookup = fbr_ops_lookup,
 
 	.mkdir = fbr_ops_mkdir,

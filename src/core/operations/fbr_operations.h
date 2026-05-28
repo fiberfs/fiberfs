@@ -10,6 +10,8 @@
 #include "core/request/fbr_request.h"
 
 void fbr_ops_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
+void fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, int to_set,
+	struct fuse_file_info *fi);
 void fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name);
 void fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, mode_t mode);
 void fbr_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);

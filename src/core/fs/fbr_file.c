@@ -123,7 +123,7 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 	fbr_file_merge(fs, source, clone);
 	assert_dev(source->size == clone->size);
 
-	return NULL;
+	return clone;
 }
 
 void
