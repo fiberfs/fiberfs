@@ -155,6 +155,11 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	struct fbr_chunk *clone;
 
 	while (chunk_source) {
+		if (chunk_source->state == FBR_CHUNK_WBUFFER) {
+			chunk_source = chunk_source->next;
+			continue;
+		}
+
 		size_t chunk_source_end = chunk_source->offset + chunk_source->length;
 		if (dest->size < chunk_source_end) {
 			dest->size = chunk_source_end;
