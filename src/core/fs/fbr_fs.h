@@ -496,7 +496,7 @@ int fbr_directory_new_cmp(const struct fbr_directory *left,
 	const struct fbr_directory *right);
 void fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);
-int fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory,
+void fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);
 struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
 	size_t filename_len);

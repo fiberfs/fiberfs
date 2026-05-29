@@ -120,7 +120,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 	int remote_merge = 0;
 	int local_update = 0;
-	int ret;
 
 	if (latest && latest->generation > file->generation) {
 		assert(latest != file);
@@ -138,14 +137,12 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		if (remote_merge) {
 			fbr_file_merge(fs, latest, file);
-			ret = fbr_directory_remove_file(fs, directory, latest);
-			assert(ret);
+			fbr_directory_remove_file(fs, directory, latest);
 			fbr_directory_add_file(fs, directory, file);
 
 			file->generation++;
 		} else if (local_update) {
-			ret = fbr_directory_remove_file(fs, directory, latest);
-			assert(ret);
+			fbr_directory_remove_file(fs, directory, latest);
 			fbr_directory_add_file(fs, directory, file);
 		} else if (!latest) {
 			fbr_directory_add_file(fs, directory, file);
@@ -180,12 +177,13 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		clone->generation++;
 		clone->state = FBR_FILE_OK;
 
-		ret = fbr_directory_remove_file(fs, directory, latest);
-		assert(ret);
+		fbr_directory_remove_file(fs, directory, latest);
 		fbr_directory_add_file(fs, directory, clone);
 	}
+
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RESIZE)) {
 		assert_dev(flush_data->attr);
+
 		if (!latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "attr ENOENT detected");
 			return ENOENT;
