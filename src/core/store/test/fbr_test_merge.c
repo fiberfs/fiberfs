@@ -475,9 +475,12 @@ fbr_cmd_merge_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	file2 = fbr_file_alloc_new(fs, root, &name);
 	fbr_body_chunk_add(fs, file2, 3, 0, 300);
 	fbr_body_chunk_add(fs, file2, 4, 300, 100);
-	assert(fbr_test_fs_count_chunks(file2) == 2);
-	assert(file2->size == 400);
+	fbr_body_chunk_add(fs, file2, 5, 400, 100);
+	fbr_test_fs_get_chunk(file2, 2)->state = FBR_CHUNK_WBUFFER;
+	assert(fbr_test_fs_count_chunks(file2) == 3);
+	assert(file2->size == 500);
 	fbr_file_merge(fs, file2, file1);
+	fbr_test_fs_get_chunk(file2, 2)->state = FBR_CHUNK_EMPTY;
 	fbr_file_free(fs, file2);
 	assert(fbr_test_fs_count_chunks(file1) == 4);
 	assert(file1->body.chunk_last == fbr_test_fs_get_chunk(file1, 3));
