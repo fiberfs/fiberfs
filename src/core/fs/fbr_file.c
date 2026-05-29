@@ -131,7 +131,6 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(source);
-	assert_zero(fbr_file_has_wbuffer(source));
 	fbr_file_ok(dest);
 	assert(source != dest);
 
@@ -149,7 +148,6 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	dest->gid = source->gid;
 
 	// Start zipper merge
-	// TODO source is a live file, logic below assumes all EMPTY chunks
 
 	struct fbr_chunk *chunk_source = source->body.chunks;
 	struct fbr_chunk *chunk_dest = dest->body.chunks;

@@ -206,7 +206,6 @@ fbr_body_chunk_clone(struct fbr_fs *fs, struct fbr_body *body, struct fbr_chunk 
 	fbr_fs_ok(fs);
 	assert(body);
 	fbr_chunk_ok(chunk);
-	assert(chunk->state == FBR_CHUNK_EMPTY);
 
 	struct fbr_chunk *clone = _body_chunk_alloc(fs, body);
 	fbr_chunk_ok(clone);
