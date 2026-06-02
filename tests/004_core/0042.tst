@@ -23,8 +23,7 @@ sys_stat_mode $var1 33060
 
 # Read from index
 
-fs_test_release_all
-sleep_ms 200
+fs_test_release_all_wait
 
 print "### LOAD INDEX"
 
@@ -38,9 +37,9 @@ equal $fs_test_stat_index_loads 1
 
 print "### CLEANUP"
 
-fs_test_release_all 1
+fs_test_release_all_wait 1
 
-sleep_ms 200
+sleep_ms 20
 fs_test_stats
 fs_test_debug
 cstore_debug

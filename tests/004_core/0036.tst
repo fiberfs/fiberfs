@@ -64,9 +64,9 @@ equal $fs_test_stat_directories 5
 
 # Cleanup
 
-fs_test_release_all 1
+fs_test_release_all_wait 1
 
-sleep_ms 200
+sleep_ms 10
 
 fs_test_stats
 fs_test_debug

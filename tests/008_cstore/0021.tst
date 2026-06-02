@@ -41,7 +41,7 @@ print "### WRITE"
 set_var1 $sys_tmpdir "/test_big1.txt"
 sys_write_random_md5 $var1 2000000
 
-fs_test_release_all
+fs_test_release_all_wait
 
 print "### READ"
 
@@ -60,9 +60,9 @@ equal $cstore_stat_roots:3 1
 greater_equal $cstore_stat_chunk_read_bytes:0 2000000
 equal $cstore_stat_chunk_write_bytes:3 2000000
 
-fs_test_release_all 1
+fs_test_release_all_wait 1
 
-sleep_ms 200
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

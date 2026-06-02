@@ -17,8 +17,8 @@ sleep_ms 100
 
 # release
 
-fs_test_release_all
-sleep_ms 100
+fs_test_release_all_wait
+sleep_ms 10
 
 # re-read
 
@@ -26,9 +26,9 @@ sys_ls $sys_tmpdir "..:dir .:dir test1:dir"
 
 # Cleanup
 
-fs_test_release_all 1
+fs_test_release_all_wait 1
 
-sleep_ms 200
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

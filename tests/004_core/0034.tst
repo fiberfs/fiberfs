@@ -28,16 +28,16 @@ sleep_ms 100
 
 print "### READ (cstore)"
 
-fs_test_release_all
-sleep_ms 100
+fs_test_release_all_wait
+sleep_ms 10
 
 sys_cat $var1 "ONETWOoOTHREE"
 
 # Cleanup
 
-fs_test_release_all 1
+fs_test_release_all_wait 1
 
-sleep_ms 200
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

@@ -15,8 +15,8 @@ sys_write_seek $var1 0 ""
 
 equal $fs_test_stat_flushes 1
 
-fs_test_release_all
-sleep_ms 200
+fs_test_release_all_wait
+sleep_ms 10
 
 print "### VERIFY"
 
@@ -29,8 +29,8 @@ sys_write $var1 "123"
 
 equal $fs_test_stat_flushes 2
 
-fs_test_release_all
-sleep_ms 200
+fs_test_release_all_wait
+sleep_ms 10
 
 print "### VERIFY 2"
 
@@ -55,8 +55,8 @@ sys_write $var1 ""
 
 equal $fs_test_stat_flushes 3
 
-fs_test_release_all
-sleep_ms 200
+fs_test_release_all_wait
+sleep_ms 10
 
 print "### VERIFY 3"
 
@@ -67,9 +67,9 @@ sys_cat $var1 ""
 
 print "### CLEANUP"
 
-fs_test_release_all 1
+fs_test_release_all_wait 1
 
-sleep_ms 200
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

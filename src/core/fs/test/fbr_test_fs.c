@@ -34,8 +34,39 @@ fbr_cmd_fs_test_release_all(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 
 	fbr_fs_release_all(fs, release_root_inode);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs root released (release_root_inode=%d)",
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_test_release_all done (release_root_inode=%d)",
 		release_root_inode);
+}
+
+void
+fbr_cmd_fs_test_release_all_wait(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_cmd_fs_test_release_all(ctx, cmd);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_fuse_mounted(fuse_ctx);
+	assert_zero(fuse_ctx->detached);
+	struct fbr_fs *fs = fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	fbr_test_fs_wait(fs);
+
+	int max = 40;
+	int count = 0;
+
+	if (fbr_test_is_valgrind()) {
+		max = 100;
+	}
+
+	while (fs->stats.directories && max) {
+		fbr_test_sleep_ms(count);
+		max--;
+		count++;
+	}
+
+	assert_zero(fs->stats.directories);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_test_release_all wait done");
 }
 
 void

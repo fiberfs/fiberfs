@@ -21,7 +21,7 @@ equal $fs_test_stat_files_inodes 1
 
 fs_test_assert_root
 
-fs_test_release_all 1
+fs_test_release_all_wait 1
 
 fs_test_stats
 fs_test_debug

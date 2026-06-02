@@ -15,21 +15,20 @@ sys_write $var1 "test11" "1one"
 set_var2 $sys_tmpdir "/test2.txt"
 sys_write $var2 "tes" "t22" "2two" "444" "TWO"
 
-fs_test_release_all
-sleep_ms 100
+fs_test_release_all_wait
 
 sys_cat $var1 "test111one"
 sys_cat $var2 "test222two444TWO"
 
 # Cleanup
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
-fs_test_release_all 1
+fs_test_release_all_wait 1
 
-sleep_ms 200
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

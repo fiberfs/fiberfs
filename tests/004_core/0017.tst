@@ -30,9 +30,9 @@ sleep_ms 100
 
 print "### Done, doing cleanup"
 
-fs_test_release_all 1
+fs_test_release_all_wait 1
 
-sleep_ms 250
+sleep_ms 20
 fs_test_stats
 fs_test_debug
 
