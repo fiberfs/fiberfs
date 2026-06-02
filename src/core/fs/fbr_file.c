@@ -161,9 +161,7 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 		}
 
 		size_t chunk_source_end = chunk_source->offset + chunk_source->length;
-		if (dest->size < chunk_source_end) {
-			dest->size = chunk_source_end;
-		}
+		fbr_file_extend(dest, chunk_source_end);
 
 		if (!chunk_dest) {
 			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
@@ -245,6 +243,20 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 
 	fbr_file_UNLOCK(source);
 	fbr_file_UNLOCK(dest);
+}
+
+void
+fbr_file_extend(struct fbr_file *file, size_t size)
+{
+	fbr_file_ok(file);
+
+	if (size <= file->size) {
+		return;
+	}
+
+	fbr_rlog(FBR_LOG_BODY, "new file->size: %zu (was: %zu)", size, file->size);
+
+	file->size = size;
 }
 
 int

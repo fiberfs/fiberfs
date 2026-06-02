@@ -426,6 +426,7 @@ struct fbr_file * fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *pa
 	const struct fbr_path_name *filename);
 void fbr_file_LOCK(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_UNLOCK(struct fbr_file *file);
+void fbr_file_extend(struct fbr_file *file, size_t size);
 struct fbr_file * fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent,
 	struct fbr_file *source);
 void fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest);

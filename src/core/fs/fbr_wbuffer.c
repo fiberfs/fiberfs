@@ -398,10 +398,8 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 	}
 
 
-	if (fio->file->size < offset_end && !fio->append) {
-		fbr_rlog(FBR_LOG_WBUFFER, "new file->size: %zu (was: %zu)", offset_end,
-			fio->file->size);
-		fio->file->size = offset_end;
+	if (!fio->append) {
+		fbr_file_extend(fio->file, offset_end);
 	}
 
 	assert_dev(written == size);

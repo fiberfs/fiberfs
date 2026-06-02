@@ -167,10 +167,7 @@ _body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id, size_t of
 	fbr_chunk_ok(chunk);
 
 	size_t chunk_end = chunk->offset + chunk->length;
-	if (file->size < chunk_end) {
-		fbr_rlog(FBR_LOG_CHUNK, "new file->size: %zu (was: %zu)", chunk_end, file->size);
-		file->size = chunk_end;
-	}
+	fbr_file_extend(file, chunk_end);
 
 	return chunk;
 }
@@ -237,7 +234,6 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 
 	struct fbr_chunk *chunk = file->body.chunks;
 	struct fbr_chunk *prev = NULL;
-	size_t size = 0;
 
 	while (chunk) {
 		fbr_chunk_ok(chunk);
@@ -254,21 +250,11 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 			continue;
 		}
 
-		size_t chunk_end = chunk->offset + chunk->length;
-		if (chunk_end > size) {
-			size = chunk_end;
-		}
-
 		prev = chunk;
 		chunk = chunk->next;
 	}
 
 	file->body.chunk_last = prev;
-
-	if (file->size != size) {
-		fbr_rlog(FBR_LOG_BODY, "new file->size: %zu (was: %zu)", size, file->size);
-		file->size = size;
-	}
 
 	for (size_t i = 0; i < remove->length; i++) {
 		struct fbr_chunk *chunk = remove->list[i];
