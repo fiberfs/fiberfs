@@ -36,8 +36,8 @@ equal $cstore_stat_roots:1 1
 
 cstore_clear 0
 equal $cstore_entries:0 0
-fs_test_release_all
-sleep_ms 100
+fs_test_release_all_wait
+sleep_ms 10
 
 print "### READ 2 CHUNKS FROM CSTORE_1"
 

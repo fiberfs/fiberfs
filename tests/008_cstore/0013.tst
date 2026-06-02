@@ -57,9 +57,9 @@ cstore_clear 1
 equal $cstore_entries:0 0
 equal $cstore_entries:1 0
 equal $cstore_entries:2 3
-fs_test_release_all
+fs_test_release_all_wait
 
-sleep_ms 250
+sleep_ms 10
 
 print "### READ"
 
@@ -78,9 +78,9 @@ equal $cstore_entries:2 3
 cstore_clear 0
 equal $cstore_entries:0 0
 equal $cstore_entries:1 3
-fs_test_release_all
+fs_test_release_all_wait
 
-sleep_ms 100
+sleep_ms 10
 
 print "### READ AGAIN"
 

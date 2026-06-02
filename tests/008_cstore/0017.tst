@@ -37,9 +37,9 @@ print "### DROP CSTORE_0 CACHE"
 
 cstore_clear 0
 equal $cstore_entries:0 0
-fs_test_release_all
+fs_test_release_all_wait
 
-sleep_ms 100
+sleep_ms 10
 
 print "### READ INDEX AND FILE"
 

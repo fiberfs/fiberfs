@@ -63,9 +63,9 @@ equal $cstore_entries:1 0
 equal $cstore_entries:2 0
 equal $cstore_entries:3 4
 
-fs_test_release_all
+fs_test_release_all_wait
 
-sleep_ms 100
+sleep_ms 10
 
 print "### READ"
 

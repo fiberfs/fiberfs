@@ -47,9 +47,9 @@ equal $cstore_stat_chunks:1 2
 equal $cstore_stat_indexes:1 1
 equal $cstore_stat_roots:1 1
 
-fs_test_release_all
+fs_test_release_all_wait
 
-sleep_ms 100
+sleep_ms 10
 
 print "### READ"
 
