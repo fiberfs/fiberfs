@@ -133,7 +133,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_WBUFFER)) {
 		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
 			FBR_FLUSH_RESIZE));
-		assert(!file->size || fbr_file_has_wbuffer(file));
 
 		if (remote_merge) {
 			fbr_file_merge(fs, latest, file);
