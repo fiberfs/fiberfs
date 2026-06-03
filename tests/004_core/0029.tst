@@ -22,11 +22,11 @@ sleep_ms 100
 
 print "### WRITE"
 
-sys_write_seek $var1 0 "ABC" "DE" "FG"
+sys_write_seek $var1 2 "ABC" "DE" "FG"
 
 print "### READ (memory)"
 
-sys_cat $var1 "ABCDEFG8901234567890"
+sys_cat $var1 "12ABCDEFG01234567890"
 
 sleep_ms 100
 
@@ -35,7 +35,7 @@ print "### READ (cstore)"
 fs_test_release_all_wait
 sleep_ms 10
 
-sys_cat $var1 "ABCDEFG8901234567890"
+sys_cat $var1 "12ABCDEFG01234567890"
 
 # Cleanup
 

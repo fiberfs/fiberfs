@@ -41,7 +41,7 @@ sleep_ms 100
 cstore_debug
 cstore_debug 1
 
-equal $cstore_entries:0 6
+equal $cstore_entries:0 8
 equal $cstore_entries:1 4
 
 cstore_clear 0

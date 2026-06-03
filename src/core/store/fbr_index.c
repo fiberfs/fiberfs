@@ -657,6 +657,8 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 		return;
 	}
 
+	directory->remote = 1;
+
 	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
 
 	fbr_stat_add(&fs->stats.index_loads);

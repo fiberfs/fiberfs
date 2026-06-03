@@ -109,7 +109,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
 
-	fbr_rlog(FBR_LOG_FLUSH, "Starting merge on %s", filename.name);
+	fbr_rlog(FBR_LOG_FLUSH, "starting merge on %s", filename.name);
 
 	if (file->state == FBR_FILE_INIT) {
 		file->state = FBR_FILE_OK;
@@ -391,6 +391,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 
 	if (ret) {
 		fbr_rlog(FBR_LOG_ERROR, "flush failed %s (%d)", strerror(ret), ret);
+	} else {
+		fbr_stat_add(&fs->stats.flushes);
 	}
 
 	return ret;

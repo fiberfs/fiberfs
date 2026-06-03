@@ -703,3 +703,36 @@ fbr_cmd_sys_chmod(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_chmod '%s' %u (%ld)", filename, omode, lmode);
 }
+
+void
+fbr_cmd_sys_truncate(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 2);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+	long size = fbr_test_parse_long(cmd->params[1].value);
+	assert(size >= 0);
+
+	int ret;
+
+	if (fbr_sys_exists(filename)) {
+		ret = truncate(filename, size);
+		fbr_ASSERT(!ret, "truncate failed %s (%d)", strerror(errno), ret);
+	} else {
+		int fd = open(filename, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+		assert(fd >= 0);
+
+		ret = ftruncate(fd, size);
+		fbr_ASSERT(!ret, "ftruncate failed %s (%d)", strerror(errno), ret);
+
+		assert_zero(close(fd));
+	}
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_truncate '%s' %zu", filename, size);
+}

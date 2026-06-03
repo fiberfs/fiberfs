@@ -218,6 +218,7 @@ struct fbr_directory {
 
 	size_t					file_count;
 
+	fbr_bitflag_t				remote:1;
 	fbr_bitflag_t				expired:1;
 };
 
@@ -350,7 +351,10 @@ struct fbr_fs_config {
 	struct fbr_config_reader		reader;
 
 	fbr_bitflag_t				gzip_index:1;
+	fbr_bitflag_t				flush_on_create:1;
+
 	double					dentry_ttl;
+
 	unsigned long				flush_attempts;
 	unsigned long				flush_timeout_sec;
 	unsigned long				lru_dindex_max;

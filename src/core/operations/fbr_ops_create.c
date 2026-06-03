@@ -45,6 +45,8 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	assert_zero_dev(file->size);
 	assert_zero_dev(file->generation);
 
+	fbr_inode_add(fs, file);
+
 	struct fuse_ctx fusectx;
 	const struct fuse_ctx *fctx = fbr_fuse_req_ctx(request, &fusectx);
 	assert(fctx);
@@ -52,9 +54,6 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	file->uid = fctx->uid;
 	file->gid = fctx->gid;
 	file->mode = mode;
-
-	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 0);
-	fbr_fio_ok(fio);
 
 	if (fi->flags & O_RDONLY) {
 		fbr_ABORT("O_RDONLY used in CREATE?");
@@ -64,15 +63,6 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	}
 
 	assert(fi->flags & O_CREAT);
-
-	if (fi->flags & O_APPEND) {
-		fio->append = 1;
-		fbr_rlog(FBR_LOG_OP_CREATE, "flags: append");
-	}
-	if (fi->flags & O_TRUNC) {
-		fio->truncate = 1;
-		fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
-	}
 
 	if (S_ISREG(mode)) {
 		fbr_rlog(FBR_LOG_OP_CREATE, "mode: file");
@@ -84,9 +74,53 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		}
 
 		fbr_fuse_reply_err(request, EIO);
+
+		fbr_inode_release(fs, &file);
 		fbr_dindex_release(fs, &directory);
 
 		return;
+	}
+
+	if (fs->config.flush_on_create) {
+		enum fbr_flush_flags flags = FBR_FLUSH_WBUFFER;
+
+		if (fi->flags & O_TRUNC) {
+			flags |= FBR_FLUSH_TRUNCATE;
+			fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
+		}
+
+		fbr_rlog(FBR_LOG_OP_CREATE, "flush_on_create: true");
+
+		// Flush empty file
+		struct fbr_flush_data flush_data;
+		fbr_flush_data_init(&flush_data, file, NULL, NULL, flags);
+		int ret = fbr_fs_flush(fs, &flush_data);
+
+		if (ret) {
+			fbr_fuse_reply_err(request, ret);
+
+			fbr_inode_release(fs, &file);
+			fbr_dindex_release(fs, &directory);
+
+			return;
+		}
+
+		assert_dev(file->state == FBR_FILE_OK);
+		assert_dev(file->generation);
+	} else {
+		fbr_rlog(FBR_LOG_OP_CREATE, "flush_on_create: false");
+	}
+
+	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 0);
+	fbr_fio_ok(fio);
+
+	if (fi->flags & O_APPEND) {
+		fio->append = 1;
+		fbr_rlog(FBR_LOG_OP_CREATE, "flags: append");
+	}
+	if (fi->flags & O_TRUNC && !fs->config.flush_on_create) {
+		fio->truncate = 1;
+		fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
 	}
 
 	assert_zero_dev(fi->fh);
@@ -109,5 +143,6 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 	fbr_fuse_reply_create(request, &entry, fi);
 
+	fbr_inode_release(fs, &file);
 	fbr_dindex_release(fs, &directory);
 }

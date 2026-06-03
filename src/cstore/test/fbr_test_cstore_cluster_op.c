@@ -511,6 +511,7 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 
 	fbr_test_sleep_ms(20);
 
+	fbr_test_fs_wait(fs);
 	_debug_cstores();
 
 	assert(_CSTORE_C0_SHARED->entries == 2);

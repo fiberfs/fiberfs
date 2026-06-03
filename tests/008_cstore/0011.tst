@@ -22,6 +22,7 @@ server_body_submatch '{"fiberfs":1,'
 server_send_response
 
 config_add LOG_ALWAYS_FLUSH 1
+config_add FS_FLUSH_ON_CREATE 0
 
 cstore_init 0
 cstore_set_s3 0 $server_host $server_port region access_key secret_key

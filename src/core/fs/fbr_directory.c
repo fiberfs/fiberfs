@@ -445,9 +445,12 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_fuse_context_ok(fs->fuse_ctx);
 	assert(fs->fuse_ctx->session);
 
-	fbr_rlog(FBR_LOG_DIR_EXP, "INVAL inode: %lu (directory)", directory->inode);
-	int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, directory->inode, 0, 0);
-	assert_dev(ret != -ENOSYS);
+	if (next && next->remote) {
+		fbr_rlog(FBR_LOG_DIR_EXP, "INVAL inode: %lu (directory)", directory->inode);
+		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, directory->inode,
+			0, 0);
+		assert_dev(ret != -ENOSYS);
+	}
 
 	struct fbr_file_ptr *file_ptr;
 	RB_FOREACH(file_ptr, fbr_filename_tree, &directory->filename_tree) {
@@ -465,6 +468,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 		int file_deleted = 0;
 		int file_expired = 0;
 		int file_inval = 0;
+		int ret;
 
 		if (next) {
 			new_file = fbr_directory_find_file(next, filename.name, filename.length);

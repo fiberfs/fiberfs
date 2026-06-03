@@ -37,6 +37,8 @@ fbr_fs_config_load(struct fbr_fs *fs)
 		assert_zero_dev(fs->config.gzip_index);
 	}
 
+	fs->config.flush_on_create = fbr_conf_get_bool("FS_FLUSH_ON_CREATE", FBR_CONFIG_TRUE);
+
 	long dentry_ttl_msec = fbr_conf_get_long("FS_DENTRY_TTL_MSEC", 0);
 	if (dentry_ttl_msec > 0) {
 		fs->config.dentry_ttl = (double)dentry_ttl_msec / 1000;
@@ -102,6 +104,8 @@ void
 fbr_fs_release_all(struct fbr_fs *fs, int release_root_inode)
 {
 	fbr_fs_ok(fs);
+
+	fbr_rlog(FBR_LOG_FS, "fs_release_all called (release root: %d)", release_root_inode);
 
 	fbr_dindex_lru_purge(fs, 0);
 

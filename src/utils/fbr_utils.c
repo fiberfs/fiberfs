@@ -19,7 +19,7 @@
 #include "fbr_xxhash.h"
 #include "cstore/fbr_cstore_path.h"
 
-#define FBR_SLEEP_FLAG_INTERVAL_MS			25
+#define FBR_SLEEP_FLAG_MAX_MS			25
 
 int _IS_FIBERFS_TEST;
 
@@ -132,10 +132,18 @@ fbr_sleep_flag(double ms, volatile int *exit, volatile size_t *count)
 		count = &_count;
 	}
 
+	size_t attempts = 0;
+
 	while (ms > 0 && !*exit && !*count) {
 		double sleep_ms = ms;
-		if (sleep_ms > FBR_SLEEP_FLAG_INTERVAL_MS) {
-			sleep_ms = FBR_SLEEP_FLAG_INTERVAL_MS;
+
+		double max_sleep = attempts;
+		if (max_sleep > FBR_SLEEP_FLAG_MAX_MS) {
+			max_sleep = FBR_SLEEP_FLAG_MAX_MS;
+		}
+
+		if (sleep_ms > max_sleep) {
+			sleep_ms = max_sleep;
 		}
 
 		fbr_sleep_ms(sleep_ms);

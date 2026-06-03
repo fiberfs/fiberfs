@@ -41,6 +41,9 @@ fbr_cmd_fs_test_release_all(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 void
 fbr_cmd_fs_test_release_all_wait(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
+	// TODO allow for delayed page cache operations to happen
+	fbr_test_sleep_ms(10);
+
 	fbr_cmd_fs_test_release_all(ctx, cmd);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
@@ -64,7 +67,8 @@ fbr_cmd_fs_test_release_all_wait(struct fbr_test_context *ctx, struct fbr_test_c
 		count++;
 	}
 
-	assert_zero(fs->stats.directories);
+	fbr_ASSERT(!fs->stats.directories, "fs->stats.directories=%lu count: %d",
+		fs->stats.directories, count);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_test_release_all wait done");
 }
