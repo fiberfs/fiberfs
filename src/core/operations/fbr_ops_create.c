@@ -47,6 +47,8 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 	fbr_inode_add(fs, file);
 
+	fbr_dindex_release(fs, &directory);
+
 	struct fuse_ctx fusectx;
 	const struct fuse_ctx *fctx = fbr_fuse_req_ctx(request, &fusectx);
 	assert(fctx);
@@ -74,9 +76,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		}
 
 		fbr_fuse_reply_err(request, EIO);
-
 		fbr_inode_release(fs, &file);
-		fbr_dindex_release(fs, &directory);
 
 		return;
 	}
@@ -98,9 +98,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 		if (ret) {
 			fbr_fuse_reply_err(request, ret);
-
 			fbr_inode_release(fs, &file);
-			fbr_dindex_release(fs, &directory);
 
 			return;
 		}
@@ -135,14 +133,9 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	entry.ino = file->inode;
 	fbr_file_attr(fs, file, &entry.attr);
 
-	if (fbr_request_is_fuse(request)) {
-		// Dentry reference
-		struct fbr_file *dref = fbr_inode_take(fs, file->inode);
-		assert(dref == file);
+	if (request->not_fuse) {
+		fbr_inode_release(fs, &file);
 	}
 
 	fbr_fuse_reply_create(request, &entry, fi);
-
-	fbr_inode_release(fs, &file);
-	fbr_dindex_release(fs, &directory);
 }
