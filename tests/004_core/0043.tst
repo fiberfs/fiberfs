@@ -27,6 +27,18 @@ sleep_ms 20
 
 sys_cat_md5 $var1 ca9c491ac66b2c62500882e93f3719a8
 
+print "### Write"
+
+sleep_ms 20
+
+sys_write_seek $var1 3 "ABC" "123" "ZZZ"
+sys_truncate $var1 15
+
+fs_test_release_all_wait
+sleep_ms 20
+
+sys_cat_md5 $var1 808a50a8621d968b9b69e97af4eaaf9b
+
 # Cleanup
 
 print "### CLEANUP"

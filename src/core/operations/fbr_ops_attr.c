@@ -100,9 +100,11 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 
 	if (size_changed) {
 		flags |= FBR_FLUSH_RESIZE;
+		fbr_rlog(FBR_LOG_OP_ATTR, "SETATTR resizing");
 	}
 	if (attr_changed) {
 		flags |= FBR_FLUSH_ATTR;
+		fbr_rlog(FBR_LOG_OP_ATTR, "SETATTR changing attributes");
 	}
 
 	assert_dev(flags);

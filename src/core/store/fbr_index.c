@@ -155,14 +155,16 @@ _json_body_modified_gen(struct fbr_fs *fs, struct fbr_writer *json,
 }
 
 static void
-_json_body_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file)
+_json_body_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file, int lock)
 {
 	assert_dev(fs);
 	assert_dev(json);
 	assert_dev(file);
 	assert_dev(file->body.chunks);
 
-	fbr_file_LOCK(fs, file);
+	if (lock) {
+		fbr_file_LOCK(fs, file);
+	}
 
 	struct fbr_chunk *chunk = file->body.chunks;
 	int first = 0;
@@ -185,7 +187,9 @@ _json_body_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 		first = 1;
 	}
 
-	fbr_file_UNLOCK(file);
+	if (lock) {
+		fbr_file_UNLOCK(file);
+	}
 }
 
 static void
@@ -200,6 +204,7 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 
 	int modified = 0;
 	int resize = 0;
+	int lock = 1;
 
 	if (file == index_data->file && fbr_is_flag(index_data->flags, FBR_FLUSH_WBUFFER)) {
 		assert_dev(index_data->chunks);
@@ -207,6 +212,9 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	} else if (file == index_data->file && fbr_is_flag(index_data->flags, FBR_FLUSH_RESIZE) &&
 	    index_data->chunks) {
 		resize = 1;
+	}
+	if (file == index_data->file) {
+		lock = 0;
 	}
 
 	// n: filename
@@ -250,7 +258,7 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 		if (modified || resize) {
 			_json_body_modified_gen(fs, json, index_data);
 		} else {
-			_json_body_gen(fs, json, file);
+			_json_body_gen(fs, json, file, lock);
 		}
 
 		fbr_writer_add(fs, json, "]}", 2);
