@@ -385,7 +385,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		size_t current_size = fbr_body_length(file, NULL);
 
 		if (file->size < current_size) {
-			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
+			index_data->chunks = fbr_body_chunk_range(file, 0, file->size,
 				&index_data->removed, NULL);
 		}
 	} else if (fbr_is_flag(flags, FBR_FLUSH_ATTR)) {
@@ -800,7 +800,7 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 					assert_dev(_file_editable(file));
 					fbr_body_chunk_append(fs, file, parser->chunk.id,
 						parser->chunk.offset, parser->chunk.length,
-						(parser->chunk.external > 0) ? 1 : 0);
+						(parser->chunk.external > 0) ? 1 : 0, 0);
 				}
 				fbr_zero(&parser->chunk);
 			}

@@ -1,6 +1,8 @@
 fiber_test "Resizing"
 
 # Init
+config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 3
+
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 
@@ -38,6 +40,21 @@ fs_test_release_all_wait
 sleep_ms 20
 
 sys_cat_md5 $var1 808a50a8621d968b9b69e97af4eaaf9b
+
+equal $cstore_stat_chunks:0 3
+
+print "### Truncate 2"
+
+sleep_ms 20
+
+sys_truncate $var1 5
+
+fs_test_release_all_wait
+sleep_ms 20
+
+sys_cat_md5 $var1 536629b0ae03b922650462e857fc90e1
+
+equal $cstore_stat_chunks:0 1
 
 # Cleanup
 
