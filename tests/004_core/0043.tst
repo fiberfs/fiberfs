@@ -11,6 +11,22 @@ print "### Extend"
 set_var1 $sys_tmpdir "/somefile"
 sys_truncate $var1 16
 
+fs_test_release_all_wait
+sleep_ms 20
+
+sys_cat_md5 $var1 4ae71336e44bf9bf79d2752e234818a5
+
+print "### Truncate"
+
+sleep_ms 20
+
+sys_truncate $var1 5
+
+fs_test_release_all_wait
+sleep_ms 20
+
+sys_cat_md5 $var1 ca9c491ac66b2c62500882e93f3719a8
+
 # Cleanup
 
 print "### CLEANUP"

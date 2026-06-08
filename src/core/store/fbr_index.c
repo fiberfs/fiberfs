@@ -374,8 +374,6 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RESIZE)) {
 		assert_zero(wbuffers);
 
-		// TODO we ignore extra size and downsize based on chunks
-
 		size_t current_size = fbr_body_length(file, NULL);
 
 		if (file->size < current_size) {
