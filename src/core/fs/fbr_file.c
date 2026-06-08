@@ -121,7 +121,8 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 	assert_dev(clone->state == FBR_FILE_INIT);
 
 	fbr_file_merge(fs, source, clone);
-	assert_dev(source->size == clone->size);
+
+	clone->size = source->size;
 
 	return clone;
 }
