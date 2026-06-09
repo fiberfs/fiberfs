@@ -647,7 +647,6 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	assert(fs_read->stats.index_loads == _LOAD_TTL_GEN_STOP);
 	assert(fs_read->stats.directories_total - fs_read->stats.dir_alloc_hit -
 		fs_read->stats.index_matches == _LOAD_TTL_GEN_STOP)
-	fbr_fs_free(fs_read);
 
 	fbr_test_logs("*** cleanup fs_write");
 
@@ -659,7 +658,6 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	assert_zero(fs_write->stats.files);
 	assert_zero(fs_write->stats.files_inodes);
 	assert_zero(fs_write->stats.file_refs);
-	fbr_fs_free(fs_write);
 
 	fbr_test_logs("CSTORE_DEBUG cstore_proxy");
 	fbr_test_cstore_debug(cstore_proxy);
@@ -675,6 +673,9 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	assert_zero(cstore_s3->stats.http_400);
 	assert_zero(cstore_s3->stats.http_500);
 	assert_zero(cstore_s3->stats.http_other);
+
+	fbr_fs_free(fs_read);
+	fbr_fs_free(fs_write);
 }
 
 void
