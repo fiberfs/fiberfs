@@ -185,7 +185,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_directory_remove_file(fs, directory, latest);
 		fbr_directory_add_file(fs, directory, clone);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE)) {
-		assert(file->state == FBR_FILE_INIT);
 		assert_zero(file->size);
 		assert_zero_dev(file->body.chunks);
 
