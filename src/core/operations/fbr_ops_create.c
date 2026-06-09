@@ -97,7 +97,6 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 		fbr_rlog(FBR_LOG_OP_CREATE, "flush_on_create: true");
 	} else {
-		// TODO this is not LRU safe, need to at least write to local cache?
 		flags |= FBR_FLUSH_MEM_ONLY;
 
 		fbr_rlog(FBR_LOG_OP_CREATE, "flush_on_create: false");
