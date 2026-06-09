@@ -323,7 +323,8 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 	if (fbr_is_flag(flags, FBR_FLUSH_WBUFFER)) {
 		fbr_file_ok(file);
-		assert_zero(fbr_is_flag(flags, FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR));
+		assert_zero(fbr_is_flag(flags, FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
+			FBR_FLUSH_MEM_ONLY));
 
 		if (fbr_is_dev()) {
 			struct fbr_path_name filename;
@@ -378,9 +379,9 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		}
 	} else if (fbr_is_flag(flags, FBR_FLUSH_MKDIR)) {
 		assert(flags == FBR_FLUSH_MKDIR);
-		assert_zero(wbuffers);
+		assert_zero_dev(wbuffers);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RESIZE)) {
-		assert_zero(wbuffers);
+		assert_zero_dev(wbuffers);
 
 		size_t current_size = fbr_body_length(file, NULL);
 
@@ -389,10 +390,12 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 				&index_data->removed, NULL);
 		}
 	} else if (fbr_is_flag(flags, FBR_FLUSH_ATTR)) {
-		assert_zero(wbuffers);
+		assert_zero_dev(wbuffers);
+	} else if (fbr_is_flag(flags, FBR_FLUSH_NEW_FILE)) {
+		assert_zero_dev(wbuffers);
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
-		assert_zero(wbuffers);
+		assert_zero_dev(wbuffers);
 	}
 }
 
@@ -424,6 +427,26 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	assert_dev(directory->version);
 	assert_dev(directory->generation);
+
+	if (fbr_is_flag(index_data->flags, FBR_FLUSH_MEM_ONLY)) {
+		assert_zero_dev(index_data->wbuffers);
+		assert_zero_dev(index_data->chunks);
+		assert_zero_dev(index_data->removed);
+
+		struct fbr_directory *previous = index_data->previous;
+		fbr_directory_ok(previous);
+		assert(previous->state == FBR_DIRSTATE_OK);
+		assert_dev(previous->version);
+		assert_dev(previous->generation);
+
+		directory->version = previous->version;
+		directory->generation--;
+		assert_dev(directory->generation == previous->generation);
+
+		fbr_rlog(FBR_LOG_INDEX, "skipping fbr_index_write() memory only");
+
+		return 0;
+	}
 
 	fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_write()");
 

@@ -15,7 +15,7 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 	assert(flush_data);
 	fbr_file_ok(file);
 	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
-		FBR_FLUSH_RESIZE));
+		FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE));
 
 	fbr_zero(flush_data);
 	flush_data->file = file;
@@ -29,6 +29,7 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 	if (wbuffers) {
 		fbr_wbuffer_ok(wbuffers);
 		assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER));
+		assert_zero(fbr_is_flag(flags, FBR_FLUSH_MEM_ONLY));
 		flush_data->wbuffers = wbuffers;
 	}
 
@@ -132,7 +133,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_WBUFFER)) {
 		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
-			FBR_FLUSH_RESIZE));
+			FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_MEM_ONLY));
 
 		if (remote_merge) {
 			fbr_file_merge(fs, latest, file);
@@ -150,6 +151,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		}
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_MKDIR)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_MKDIR);
+
 		if (latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "mkdir EEXIST detected");
 			return EEXIST;
@@ -159,7 +161,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_directory_add_file(fs, directory, file);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_ATTR)) {
+		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE));
 		assert_dev(flush_data->attr);
+
 		if (!latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "attr ENOENT detected");
 			return ENOENT;
@@ -178,9 +182,18 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_directory_remove_file(fs, directory, latest);
 		fbr_directory_add_file(fs, directory, clone);
+	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE)) {
+		assert_zero(file->size);
+		assert_zero_dev(file->body.chunks);
+
+		if (!latest) {
+			fbr_directory_add_file(fs, directory, file);
+		}
 	}
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RESIZE)) {
+		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_WBUFFER |
+			FBR_FLUSH_MKDIR));
 		assert_dev(flush_data->attr);
 
 		if (!latest) {

@@ -57,14 +57,14 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	file->gid = fctx->gid;
 	file->mode = mode;
 
-	if (fi->flags & O_RDONLY) {
+	if (fbr_is_flag(fi->flags, O_RDONLY)) {
 		fbr_ABORT("O_RDONLY used in CREATE?");
 	} else {
-		assert_dev(fi->flags & O_WRONLY || fi->flags & O_RDWR);
+		assert_dev(fbr_is_flag(fi->flags, O_WRONLY | O_RDWR));
 		fbr_rlog(FBR_LOG_OP_CREATE, "flags: read+write");
 	}
 
-	assert(fi->flags & O_CREAT);
+	assert(fbr_is_flag(fi->flags, O_CREAT));
 
 	if (S_ISREG(mode)) {
 		fbr_rlog(FBR_LOG_OP_CREATE, "mode: file");
@@ -81,42 +81,49 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		return;
 	}
 
-	if (fs->config.flush_on_create) {
-		enum fbr_flush_flags flags = FBR_FLUSH_WBUFFER;
+	if (fbr_is_flag(fi->flags, O_EXCL)) {
+		fbr_ABORT("TODO O_EXCL");
+	}
 
-		if (fi->flags & O_TRUNC) {
-			flags |= FBR_FLUSH_TRUNCATE;
+	enum fbr_flush_flags flags = FBR_FLUSH_NEW_FILE;
+
+	if (fs->config.flush_on_create) {
+		if (fbr_is_flag(fi->flags, O_TRUNC)) {
+			flags = FBR_FLUSH_WBUFFER | FBR_FLUSH_TRUNCATE;
 			fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
 		}
 
 		fbr_rlog(FBR_LOG_OP_CREATE, "flush_on_create: true");
-
-		// Flush empty file
-		struct fbr_flush_data flush_data;
-		fbr_flush_data_init(&flush_data, file, NULL, NULL, flags);
-		int ret = fbr_fs_flush(fs, &flush_data);
-
-		if (ret) {
-			fbr_fuse_reply_err(request, ret);
-			fbr_inode_release(fs, &file);
-
-			return;
-		}
-
-		assert_dev(file->state == FBR_FILE_OK);
-		assert_dev(file->generation);
 	} else {
+		// TODO this is not LRU safe, need to at least write to local cache?
+		flags |= FBR_FLUSH_MEM_ONLY;
+
 		fbr_rlog(FBR_LOG_OP_CREATE, "flush_on_create: false");
 	}
+
+	// Flush empty file
+	struct fbr_flush_data flush_data;
+	fbr_flush_data_init(&flush_data, file, NULL, NULL, flags);
+	int ret = fbr_fs_flush(fs, &flush_data);
+
+	if (ret) {
+		fbr_fuse_reply_err(request, ret);
+		fbr_inode_release(fs, &file);
+
+		return;
+	}
+
+	assert_dev(file->state == FBR_FILE_OK);
+	assert_dev(file->generation);
 
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 0);
 	fbr_fio_ok(fio);
 
-	if (fi->flags & O_APPEND) {
+	if (fbr_is_flag(fi->flags, O_APPEND)) {
 		fio->append = 1;
 		fbr_rlog(FBR_LOG_OP_CREATE, "flags: append");
 	}
-	if (fi->flags & O_TRUNC && !fs->config.flush_on_create) {
+	if (fbr_is_flag(fi->flags, O_TRUNC) && !fs->config.flush_on_create) {
 		fio->truncate = 1;
 		fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
 	}

@@ -29,7 +29,7 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 
 	int read_only = 0;
 
-	if (fi->flags & O_WRONLY || fi->flags & O_RDWR) {
+	if (fbr_is_flag(fi->flags, O_WRONLY |O_RDWR)) {
 		fbr_rlog(FBR_LOG_OP_OPEN, "flags: read+write");
 	} else {
 		read_only = 1;
@@ -39,16 +39,16 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file, read_only);
 	fbr_fio_ok(fio);
 
-	if (fi->flags & O_APPEND) {
+	if (fbr_is_flag(fi->flags, O_APPEND)) {
 		fio->append = 1;
 		fbr_rlog(FBR_LOG_OP_OPEN, "flags: append");
 	}
-	if (fi->flags & O_TRUNC) {
+	if (fbr_is_flag(fi->flags, O_TRUNC)) {
 		// TODO should we zero out file->size here?
 		fio->truncate = 1;
 		fbr_rlog(FBR_LOG_OP_OPEN, "flags: truncate");
 	}
-	if (fi->flags & O_CREAT) {
+	if (fbr_is_flag(fi->flags, O_CREAT)) {
 		fbr_ABORT("O_CREAT used in OPEN?");
 	}
 
