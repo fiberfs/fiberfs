@@ -584,12 +584,14 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 {
 	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
-	fbr_file_ok(fio->file);
 
 	_wbuffer_LOCK(fs, fio);
 
+	struct fbr_file *file = fio->file;
+	fbr_file_ok(file);
+
 	int create = 0;
-	if (fio->truncate || fio->file->state == FBR_FILE_INIT) {
+	if (fio->truncate || file->local_only || file->state == FBR_FILE_INIT) {
 		create = 1;
 	}
 
@@ -603,10 +605,9 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	if (fio->wbuffers) {
 		fbr_wbuffer_ok(fio->wbuffers);
-		assert_dev(fbr_file_has_wbuffer(fio->file));
+		assert_dev(fbr_file_has_wbuffer(file));
 	}
 
-	struct fbr_file *file = fio->file;
 	enum fbr_flush_flags flags = FBR_FLUSH_WBUFFER;
 
 	if (fio->append) {
@@ -634,6 +635,8 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	error = fbr_fs_flush(fs, &flush_data);
 
 	if (!error) {
+		assert_zero_dev(file->local_only);
+
 		fbr_wbuffers_reset(fs, fio);
 		fio->truncate = 0;
 	} else {

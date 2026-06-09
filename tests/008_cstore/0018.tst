@@ -49,7 +49,7 @@ cstore_debug 1
 cstore_debug 2
 cstore_debug 3
 
-equal $cstore_stat_indexes:0 5
+equal $cstore_stat_indexes:0 3
 equal $cstore_stat_roots:0 1
 
 equal $cstore_entries:3 4

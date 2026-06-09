@@ -81,11 +81,12 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		return;
 	}
 
+	enum fbr_flush_flags flags = FBR_FLUSH_NEW_FILE;
+
 	if (fbr_is_flag(fi->flags, O_EXCL)) {
+		//flags |= FBR_FLUSH_NEW_FILE_EXCL;
 		fbr_ABORT("TODO O_EXCL");
 	}
-
-	enum fbr_flush_flags flags = FBR_FLUSH_NEW_FILE;
 
 	if (fs->config.flush_on_create) {
 		if (fbr_is_flag(fi->flags, O_TRUNC)) {

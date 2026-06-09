@@ -142,6 +142,7 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(write_bytes);
 	_FS_TEST_STAT_PRINT(appends);
 	_FS_TEST_STAT_PRINT(flushes);
+	_FS_TEST_STAT_PRINT(flush_memory);
 	_FS_TEST_STAT_PRINT(flush_errors);
 	_FS_TEST_STAT_PRINT(flush_conflicts);
 	_FS_TEST_STAT_PRINT(merges);

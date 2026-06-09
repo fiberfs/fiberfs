@@ -443,7 +443,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 		directory->generation--;
 		assert_dev(directory->generation == previous->generation);
 
-		fbr_rlog(FBR_LOG_INDEX, "skipping fbr_index_write() memory only");
+		fbr_rlog(FBR_LOG_INDEX, "skipping write, doing memory only");
 
 		return 0;
 	}
@@ -497,6 +497,10 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 
 	if (!ret && index_data->wbuffers) {
 		fbr_wbuffers_ready(fs, index_data->file, index_data->wbuffers, do_append);
+	}
+
+	if (!ret && index_data->file) {
+		index_data->file->local_only = 0;
 	}
 
 	fbr_writer_free(&json_gen);

@@ -112,10 +112,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 	fbr_rlog(FBR_LOG_FLUSH, "starting merge on %s", filename.name);
 
-	if (file->state == FBR_FILE_INIT) {
-		file->state = FBR_FILE_OK;
-	}
-
 	struct fbr_file *latest = fbr_directory_find_file(directory, filename.name,
 		filename.length);
 
@@ -135,6 +131,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
 			FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_MEM_ONLY));
 
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_WBUFFER");
+
 		if (remote_merge) {
 			fbr_file_merge(fs, latest, file);
 			fbr_directory_remove_file(fs, directory, latest);
@@ -152,6 +150,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_MKDIR)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_MKDIR);
 
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_MKDIR");
+
 		if (latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "mkdir EEXIST detected");
 			return EEXIST;
@@ -163,6 +163,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_ATTR)) {
 		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE));
 		assert_dev(flush_data->attr);
+
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_ATTR");
 
 		if (!latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "attr ENOENT detected");
@@ -183,8 +185,11 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_directory_remove_file(fs, directory, latest);
 		fbr_directory_add_file(fs, directory, clone);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE)) {
+		assert(file->state == FBR_FILE_INIT);
 		assert_zero(file->size);
 		assert_zero_dev(file->body.chunks);
+
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_NEW_FILE");
 
 		if (!latest) {
 			fbr_directory_add_file(fs, directory, file);
@@ -196,6 +201,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			FBR_FLUSH_MKDIR));
 		assert_dev(flush_data->attr);
 
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_RESIZE");
+
 		if (!latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "attr ENOENT detected");
 			return ENOENT;
@@ -206,6 +213,11 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		}
 
 		latest->size = flush_data->attr->st_size;
+	}
+
+	if (file->state == FBR_FILE_INIT) {
+		file->local_only = 1;
+		file->state = FBR_FILE_OK;
 	}
 
 	return 0;
@@ -403,6 +415,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 
 	if (ret) {
 		fbr_rlog(FBR_LOG_ERROR, "flush failed %s (%d)", strerror(ret), ret);
+	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_MEM_ONLY)) {
+		fbr_stat_add(&fs->stats.flush_memory);
 	} else {
 		fbr_stat_add(&fs->stats.flushes);
 	}

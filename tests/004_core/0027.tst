@@ -3,7 +3,7 @@ fiber_test "Directory read test"
 # Init
 
 config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 3
-config_add FS_FLUSH_ON_CREATE false
+config_add FS_FLUSH_ON_CREATE true
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir

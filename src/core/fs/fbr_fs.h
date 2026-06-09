@@ -163,6 +163,8 @@ struct fbr_file {
 	double					mtime;
 	double					atime;
 
+	fbr_bitflag_t				local_only:1;
+
 	struct {
 		struct fbr_file_ptr		ptrs[FBR_FILE_DEFAULT_PTRS];
 		struct fbr_file_ptr_slab	*next;
@@ -254,7 +256,8 @@ enum fbr_flush_flags {
 	FBR_FLUSH_ATTR = (1 << 5),
 	FBR_FLUSH_RESIZE = (1 << 6),
 	FBR_FLUSH_NEW_FILE = (1 << 7),
-	FBR_FLUSH_MEM_ONLY = (1 << 8)
+	FBR_FLUSH_NEW_FILE_EXCL = (1 << 8),
+	FBR_FLUSH_MEM_ONLY = (1 << 9),
 };
 
 enum fbr_wbuffer_state {
@@ -336,6 +339,7 @@ struct fbr_fs_stats {
 	fbr_stats_t				write_bytes;
 	fbr_stats_t				appends;
 	fbr_stats_t				flushes;
+	fbr_stats_t				flush_memory;
 	fbr_stats_t				flush_errors;
 	fbr_stats_t				flush_conflicts;
 	fbr_stats_t				merges;
