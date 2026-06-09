@@ -513,6 +513,8 @@ struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const 
 	size_t filename_len);
 void fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest,
 	struct fbr_directory *source);
+void fbr_directory_clone(struct fbr_fs *fs, struct fbr_directory *dest,
+	struct fbr_directory *source);
 int fbr_directory_stale(struct fbr_fs *fs, struct fbr_directory *directory);
 struct fbr_directory *fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode);
 

@@ -533,6 +533,21 @@ fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_dir
 	assert_dev(dest->file_count == source->file_count);
 }
 
+void
+fbr_directory_clone(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_directory *source)
+{
+	fbr_fs_ok(fs);
+	fbr_directory_ok(dest);
+	assert(dest->state == FBR_DIRSTATE_LOADING);
+	fbr_directory_ok(source);
+	assert(source->state == FBR_DIRSTATE_OK);
+	assert_dev(source->version);
+	assert_dev(source->generation);
+
+	dest->version = source->version;
+	dest->generation = source->generation;
+}
+
 int
 fbr_directory_stale(struct fbr_fs *fs, struct fbr_directory *directory)
 {

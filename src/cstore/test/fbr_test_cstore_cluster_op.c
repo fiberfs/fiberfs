@@ -212,10 +212,14 @@ _op_mkdir_thread(void *arg)
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 	fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C1_S3, FBR_CSTORE_ROUTE_S3);
 
-	if (!(random() % 4) && 0) {
+	if (!(random() % 4)) {
 		fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CLUSTER);
 	} else {
 		fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CDN);
+	}
+
+	if (!(random() % 2)) {
+		fs->config.flush_on_create = 1;
 	}
 
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();

@@ -432,16 +432,10 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 		assert_zero_dev(index_data->wbuffers);
 		assert_zero_dev(index_data->chunks);
 		assert_zero_dev(index_data->removed);
+		assert_dev(index_data->previous);
+		assert_dev(directory->generation == index_data->previous->generation + 1);
 
-		struct fbr_directory *previous = index_data->previous;
-		fbr_directory_ok(previous);
-		assert(previous->state == FBR_DIRSTATE_OK);
-		assert_dev(previous->version);
-		assert_dev(previous->generation);
-
-		directory->version = previous->version;
-		directory->generation--;
-		assert_dev(directory->generation == previous->generation);
+		fbr_directory_clone(fs, directory, index_data->previous);
 
 		fbr_rlog(FBR_LOG_INDEX, "skipping write, doing memory only");
 
