@@ -56,6 +56,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	file->uid = fctx->uid;
 	file->gid = fctx->gid;
 	file->mode = mode;
+	file->local_only = 1;
 
 	if (fbr_is_flag(fi->flags, O_RDONLY)) {
 		fbr_ABORT("O_RDONLY used in CREATE?");

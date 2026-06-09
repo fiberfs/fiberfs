@@ -105,6 +105,7 @@ _op_mkdir_append(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode
 	if (file) {
 		fbr_file_ok(file);
 		assert(file->state == FBR_FILE_OK);
+		assert_zero(file->local_only);
 
 		fbr_inode_add(fs, file);
 

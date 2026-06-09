@@ -320,6 +320,8 @@ fbr_request_pool_shutdown(void)
 {
 	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
 
+	fbr_stat_add(&_REQUEST_POOL->stats.shutdowns);
+
 	int max_ms = 500;
 	int wait_ms = 0;
 	int sleep_ms = 25;

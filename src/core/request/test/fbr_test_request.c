@@ -47,6 +47,7 @@ _debug_request_stats(void)
 	fbr_test_logs("  stats.requests_alloc=%lu", stats->requests_alloc);
 	fbr_test_logs("  stats.requests_recycled=%lu", stats->requests_recycled);
 	fbr_test_logs("  stats.requests_freed=%lu", stats->requests_freed);
+	fbr_test_logs("  stats.shutdowns=%lu", stats->shutdowns);
 }
 
 void

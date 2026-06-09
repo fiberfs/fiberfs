@@ -534,7 +534,7 @@ fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_dir
 }
 
 void
-fbr_directory_clone(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_directory *source)
+fbr_directory_clone_id(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_directory *source)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(dest);

@@ -674,6 +674,7 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	assert_zero(cstore_s3->stats.http_500);
 	assert_zero(cstore_s3->stats.http_other);
 
+	fbr_request_pool_shutdown();
 	fbr_fs_free(fs_read);
 	fbr_fs_free(fs_write);
 }

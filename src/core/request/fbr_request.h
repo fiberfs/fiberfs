@@ -48,6 +48,7 @@ struct fbr_request_stats {
 	fbr_stats_t				requests_freed;
 	fbr_stats_t				requests_recycled;
 	fbr_stats_t				requests_pooled;
+	fbr_stats_t				shutdowns;
 };
 
 struct fbr_fuse_callbacks {

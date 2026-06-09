@@ -435,7 +435,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 		assert_dev(index_data->previous);
 		assert_dev(directory->generation == index_data->previous->generation + 1);
 
-		fbr_directory_clone(fs, directory, index_data->previous);
+		fbr_directory_clone_id(fs, directory, index_data->previous);
 
 		fbr_rlog(FBR_LOG_INDEX, "skipping write, doing memory only");
 

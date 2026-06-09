@@ -215,7 +215,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	}
 
 	if (file->state == FBR_FILE_INIT) {
-		file->local_only = 1;
 		file->state = FBR_FILE_OK;
 	}
 
