@@ -86,11 +86,14 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 	if (fbr_is_flag(fi->flags, O_EXCL)) {
 		//flags |= FBR_FLUSH_NEW_FILE_EXCL;
+		fbr_rlog(FBR_LOG_OP_CREATE, "flags: exclusive");
+
+		// TODO this is ready, it just needs tests
 		fbr_ABORT("TODO O_EXCL");
 	}
 
-	if (fs->config.flush_on_create) {
-		if (fbr_is_flag(fi->flags, O_TRUNC)) {
+	if (fs->config.flush_on_create || fbr_is_flag(fi->flags, O_EXCL)) {
+		if (fbr_is_flag(fi->flags, O_TRUNC) && !fbr_is_flag(fi->flags, O_EXCL)) {
 			flags = FBR_FLUSH_WBUFFER | FBR_FLUSH_TRUNCATE;
 			fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
 		}
@@ -124,7 +127,8 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		fio->append = 1;
 		fbr_rlog(FBR_LOG_OP_CREATE, "flags: append");
 	}
-	if (fbr_is_flag(fi->flags, O_TRUNC) && !fs->config.flush_on_create) {
+	if (fbr_is_flag(fi->flags, O_TRUNC) && !fs->config.flush_on_create &&
+	    !fbr_is_flag(fi->flags, O_EXCL)) {
 		fio->truncate = 1;
 		fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
 	}

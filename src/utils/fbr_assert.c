@@ -87,6 +87,8 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
 
 	fbr_context_abort(1);
 
+	// TODO join these lines
+
 	fprintf(stderr, "%s:%d %s(): ", file, line, function);
 
 	if (assertion) {

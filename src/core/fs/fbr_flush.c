@@ -192,6 +192,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		if (!latest) {
 			fbr_directory_add_file(fs, directory, file);
+		} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE_EXCL)) {
+			fbr_rlog(FBR_LOG_FLUSH, "EEXIST detected (want exclusive)");
+			return EEXIST;
 		}
 	}
 
@@ -370,6 +373,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 		int retry = 0;
 
 		ret = fbr_index_write(fs, &index_data);
+
 		if (!ret) {
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 		} else {

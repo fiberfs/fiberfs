@@ -349,6 +349,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 			fbr_rlog(FBR_LOG_INDEX, "APPEND flagged");
 
 			assert(fbr_is_flag(flags, FBR_FLUSH_DELAY_WRITE));
+			assert(wbuffers);
 
 			index_data->size = fbr_body_length(file, NULL);
 			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
