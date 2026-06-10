@@ -47,6 +47,11 @@ _file_alloc(struct fbr_fs *fs, struct fbr_directory *parent,
 		fbr_path_shared_release(dirname);
 	}
 
+	double now = fbr_get_time();
+	file->ctime = now;
+	file->mtime = now;
+	file->atime = now;
+
 	pt_assert(pthread_mutex_init(&file->refcount_lock, NULL));
 	pt_assert(pthread_mutex_init(&file->lock, NULL));
 	pt_assert(pthread_cond_init(&file->update, NULL));
@@ -578,11 +583,9 @@ fbr_file_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st)
 	st->st_uid = file->uid;
 	st->st_gid = file->gid;
 
-	// TODO pull from file and wire this into the index
-	double now = fbr_get_time();
-	fbr_convert_time(now, &st->st_atim);
-	fbr_convert_time(now, &st->st_mtim);
-	fbr_convert_time(now, &st->st_ctim);
+	fbr_convert_time(file->ctime, &st->st_ctim);
+	fbr_convert_time(file->mtime, &st->st_mtim);
+	fbr_convert_time(file->atime, &st->st_atim);
 
 	fbr_file_UNLOCK(file);
 

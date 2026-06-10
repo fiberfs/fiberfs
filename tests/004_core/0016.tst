@@ -16,13 +16,13 @@ set_var1 $sys_tmpdir "/fiber_big"
 sys_stat_size $var1 1048576
 sys_cat_md5 $var1 4cf30131c206e004d37e694a53733f70
 
-sleep_ms 100
+sleep_ms 50
 
 greater_equal $fs_test_stat_read_bytes 1048576
 
 print "### READ 2"
 
-sleep_ms 100
+sleep_ms 50
 
 sys_cat_md5 $var1 4cf30131c206e004d37e694a53733f70
 
@@ -33,6 +33,10 @@ greater_equal $fs_test_stat_read_bytes 1048576
 print "### SLEEP PAST TTL"
 
 sleep_ms 250
+
+# We need new attributes to trigger a page cache eviction
+fs_test_release_all_wait
+
 fs_test_stats
 fs_test_debug
 
@@ -46,7 +50,7 @@ greater_equal $fs_test_stat_read_bytes 2097152
 
 # Cleanup
 
-sleep_ms 100
+sleep_ms 50
 fs_test_stats
 fs_test_debug
 

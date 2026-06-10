@@ -50,6 +50,8 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 	fbr_file_attr(fs, file, &st_before);
 	memcpy(&st_after, &st_before, sizeof(st_after));
 
+	int mtime = 0;
+
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_MODE)) {
 		st_after.st_mode = attr->st_mode;
 	}
@@ -69,10 +71,12 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 	}
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_MTIME)) {
 		st_after.st_mtim = attr->st_mtim;
+		mtime = 1;
 	}
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_MTIME_NOW)) {
 		double now = fbr_get_time();
 		fbr_convert_time(now, &st_after.st_mtim);
+		mtime = 1;
 	}
 
 	int attr_changed = 0;
@@ -94,6 +98,11 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		fbr_rlog(FBR_LOG_OP_ATTR, "SETATTR no change, skipping");
 
 		return;
+	}
+
+	if (!mtime) {
+		int ret = clock_gettime(CLOCK_REALTIME, &st_after.st_mtim);
+		assert_zero(ret);
 	}
 
 	enum fbr_flush_flags flags = 0;

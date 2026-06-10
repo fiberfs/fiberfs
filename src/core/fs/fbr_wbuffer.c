@@ -404,6 +404,9 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 
 	assert_dev(written == size);
 
+	double now = fbr_get_time();
+	fio->file->mtime = now;
+
 	fbr_file_UNLOCK(fio->file);
 	_wbuffer_UNLOCK(fio);
 }
