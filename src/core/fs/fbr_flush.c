@@ -136,15 +136,12 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		if (latest && S_ISDIR(latest->mode)) {
 			fbr_rlog(FBR_LOG_FLUSH, "wbuffer EISDIR detected");
 			return EISDIR;
-		} else if (remote_merge) {
+		} else if (remote_merge || local_update) {
 			fbr_file_merge(fs, latest, file);
 			fbr_directory_remove_file(fs, directory, latest);
 			fbr_directory_add_file(fs, directory, file);
 
 			file->generation++;
-		} else if (local_update) {
-			fbr_directory_remove_file(fs, directory, latest);
-			fbr_directory_add_file(fs, directory, file);
 		} else if (!latest) {
 			fbr_directory_add_file(fs, directory, file);
 		} else {
