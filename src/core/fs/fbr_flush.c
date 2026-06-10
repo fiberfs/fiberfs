@@ -192,7 +192,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		if (!latest) {
 			fbr_directory_add_file(fs, directory, file);
-		} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE_EXCL)) {
+		} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_EXCLUSIVE)) {
 			fbr_rlog(FBR_LOG_FLUSH, "EEXIST detected (want exclusive)");
 			return EEXIST;
 		}

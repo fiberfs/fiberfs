@@ -256,7 +256,7 @@ enum fbr_flush_flags {
 	FBR_FLUSH_ATTR = (1 << 5),
 	FBR_FLUSH_RESIZE = (1 << 6),
 	FBR_FLUSH_NEW_FILE = (1 << 7),
-	FBR_FLUSH_NEW_FILE_EXCL = (1 << 8),
+	FBR_FLUSH_NEW_EXCLUSIVE = (1 << 8),
 	FBR_FLUSH_MEM_ONLY = (1 << 9),
 };
 

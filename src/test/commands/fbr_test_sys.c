@@ -481,7 +481,7 @@ fbr_cmd_sys_stat_uid(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 static void
-_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append)
+_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append, int exclusive)
 {
 	_sys_init(ctx);
 	fbr_test_ERROR(cmd->param_count < 2, "Need 2 params");
@@ -496,8 +496,13 @@ _sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append)
 	char *name = "write";
 	int write_flag = O_TRUNC;
 	if (append) {
+		assert_zero(exclusive);
 		name = "append";
 		write_flag = O_APPEND;
+	} else if (exclusive) {
+		assert_zero(append);
+		name = "write_exclusive";
+		write_flag = O_EXCL;
 	}
 
 	int fd = open(filename, write_flag | O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
@@ -529,13 +534,19 @@ _sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append)
 void
 fbr_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	_sys_write(ctx, cmd, 0);
+	_sys_write(ctx, cmd, 0, 0);
+}
+
+void
+fbr_cmd_sys_write_exclusive(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_write(ctx, cmd, 0, 1);
 }
 
 void
 fbr_cmd_sys_append(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	_sys_write(ctx, cmd, 1);
+	_sys_write(ctx, cmd, 1, 0);
 }
 
 void
@@ -735,4 +746,24 @@ fbr_cmd_sys_truncate(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_truncate '%s' %zu", filename, size);
+}
+
+void
+fbr_cmd_sys_open_exclusive_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+
+	int fd = open(filename, O_CREAT | O_EXCL | O_WRONLY, S_IRUSR | S_IWUSR);
+	fbr_test_ASSERT(fd < 0, "sys_open_exclusive_error open() didnt fail");
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_open_exclusive_error passed %s (%d %s)",
+		filename, fd, strerror(errno));
 }

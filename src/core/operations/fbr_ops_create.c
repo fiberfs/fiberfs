@@ -85,11 +85,8 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	enum fbr_flush_flags flags = FBR_FLUSH_NEW_FILE;
 
 	if (fbr_is_flag(fi->flags, O_EXCL)) {
-		//flags |= FBR_FLUSH_NEW_FILE_EXCL;
+		flags |= FBR_FLUSH_NEW_EXCLUSIVE;
 		fbr_rlog(FBR_LOG_OP_CREATE, "flags: exclusive");
-
-		// TODO this is ready, it just needs tests
-		fbr_ABORT("TODO O_EXCL");
 	}
 
 	if (fs->config.flush_on_create || fbr_is_flag(fi->flags, O_EXCL)) {
