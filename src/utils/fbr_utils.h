@@ -36,6 +36,7 @@ int fbr_is_test(void);
 fbr_hash_t fbr_hash(const void *buffer, size_t buffer_len);
 size_t fbr_strcpy(char *dest, size_t dest_len, const char *source);
 size_t __fbr_attr_printf(3) fbr_snprintf(char *buffer, size_t size, const char *format, ...);
+size_t __fbr_attr_printf(4) fbr_snaprintf(char *buffer, size_t size, size_t len, const char *format, ...);
 size_t fbr_bin2hex(const void *input, size_t input_len, char *output, size_t output_len);
 size_t fbr_hex2bin(const char *input, size_t input_len, void* output, size_t output_len);
 size_t fbr_urlencode(const char *input, size_t input_len, char *output, size_t output_len);
@@ -53,6 +54,8 @@ unsigned long fbr_ulong2octal(unsigned long value);
 	fbr_strcpy(dest, sizeof(dest), source)
 #define fbr_bprintf(buf, fmt, ...)					\
 	fbr_snprintf(buf, sizeof(buf), fmt, ##__VA_ARGS__)
+#define fbr_baprintf(buf, len, fmt, ...)				\
+	fbr_snaprintf(buf, sizeof(buf), len, fmt, ##__VA_ARGS__)
 #define fbr_stat_add(stat)						\
 	fbr_stat_add_count(stat, 1)
 #define fbr_stat_sub(stat)						\

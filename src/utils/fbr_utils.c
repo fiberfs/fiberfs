@@ -253,6 +253,28 @@ fbr_snprintf(char *buffer, size_t size, const char *format, ...)
 	return (size_t)ret;
 }
 
+size_t __fbr_attr_printf(4)
+fbr_snaprintf(char *buffer, size_t size, size_t len, const char *format, ...)
+{
+	assert(buffer);
+	assert(size);
+	assert(len < size);
+	assert(format);
+
+	buffer += len;
+	size -= len;
+
+	va_list ap;
+	va_start(ap, format);
+
+	int ret = vsnprintf(buffer, size, format, ap);
+	assert(ret >= 0 && (size_t)ret < size);
+
+	va_end(ap);
+
+	return (size_t)ret;
+}
+
 static inline void
 _util_char2hex(unsigned char c, char *output, int upper)
 {

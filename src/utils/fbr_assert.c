@@ -87,23 +87,28 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
 
 	fbr_context_abort(1);
 
-	// TODO join these lines
+	char buffer[4096];
+	size_t len;
 
-	fprintf(stderr, "%s:%d %s(): ", file, line, function);
+	len = fbr_bprintf(buffer, "%s:%d %s(): ", file, line, function);
 
 	if (assertion) {
-		fprintf(stderr, "Assertion '%s' triggered\n", assertion);
+		len += fbr_baprintf(buffer, len, "Assertion '%s' triggered\n", assertion);
 	} else {
-		fprintf(stderr, "Aborted\n");
+		len += fbr_baprintf(buffer, len, "Aborted\n");
 	}
 
 	if (fmt) {
 		va_list ap;
 		va_start(ap, fmt);
-		vfprintf(stderr, fmt, ap);
+		assert(len < sizeof(buffer));
+		len += vsnprintf(buffer + len, sizeof(buffer) - len, fmt, ap);
 		va_end(ap);
-		fprintf(stderr, "\n");
+		len += fbr_baprintf(buffer, len, "\n");
 	}
+
+	(void)len;
+	fprintf(stderr, "%s", buffer);
 
 	if (count <= 3) {
 		_dump_backtrace();
