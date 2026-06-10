@@ -128,8 +128,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	file->generation++;
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_WBUFFER)) {
-		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
-			FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_MEM_ONLY));
+		assert_dev(flush_data->flags < FBR_FLUSH_MKDIR);
 
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_WBUFFER");
 
@@ -161,7 +160,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_directory_add_file(fs, directory, file);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_ATTR)) {
-		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE));
+		assert_dev(flush_data->flags < FBR_FLUSH_NEW_FILE);
 		assert_dev(flush_data->attr);
 
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_ATTR");
@@ -185,6 +184,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_directory_remove_file(fs, directory, latest);
 		fbr_directory_add_file(fs, directory, clone);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE)) {
+		assert_dev(flush_data->flags < FBR_FLUSH_UNLINK);
 		assert_zero(file->size);
 		assert_zero_dev(file->body.chunks);
 
@@ -212,8 +212,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	}
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RESIZE)) {
-		assert_zero_dev(fbr_is_flag(flush_data->flags, FBR_FLUSH_WBUFFER |
-			FBR_FLUSH_MKDIR));
 		assert_dev(flush_data->attr);
 
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_RESIZE");
