@@ -388,6 +388,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		assert(flags == FBR_FLUSH_MKDIR);
 		assert_zero_dev(wbuffers);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RESIZE)) {
+		fbr_file_ok(file);
 		assert_zero_dev(wbuffers);
 
 		size_t current_size = fbr_body_length(file, NULL);
@@ -400,6 +401,14 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		assert_zero_dev(wbuffers);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_NEW_FILE)) {
 		assert_zero_dev(wbuffers);
+	} else if (fbr_is_flag(flags, FBR_FLUSH_UNLINK)) {
+		fbr_file_ok(file);
+		assert_zero_dev(wbuffers);
+
+		file->size = 0;
+
+		index_data->chunks = fbr_body_chunk_range(file, 0, 0, &index_data->removed, NULL);
+		assert_zero_dev(index_data->chunks->length);
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
 		assert_zero_dev(wbuffers);

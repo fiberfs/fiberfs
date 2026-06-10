@@ -104,6 +104,7 @@ static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
 	.lookup = fbr_ops_lookup,
 
 	.mkdir = fbr_ops_mkdir,
+	.unlink = fbr_ops_unlink,
 
 	.opendir = fbr_ops_opendir,
 	.readdir = fbr_ops_readdir,

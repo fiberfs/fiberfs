@@ -767,3 +767,22 @@ fbr_cmd_sys_open_exclusive_error(struct fbr_test_context *ctx, struct fbr_test_c
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_open_exclusive_error passed %s (%d %s)",
 		filename, fd, strerror(errno));
 }
+
+void
+fbr_cmd_sys_unlink(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+
+	int ret = unlink(filename);
+	fbr_ASSERT(!ret, "unlink() failed %s (%d)", strerror(errno), ret);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_unlink passed %s", filename);
+}

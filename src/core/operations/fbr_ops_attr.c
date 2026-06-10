@@ -53,7 +53,7 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 	int mtime = 0;
 
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_MODE)) {
-		st_after.st_mode = attr->st_mode;
+		st_after.st_mode = (st_before.st_mode & S_IFMT) | (attr->st_mode & 07777);
 	}
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_UID)) {
 		st_after.st_uid = attr->st_uid;
@@ -62,6 +62,12 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		st_after.st_gid = attr->st_gid;
 	}
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_SIZE)) {
+		if (S_ISDIR(file->mode)) {
+			fbr_inode_release(fs, &file);
+			fbr_fuse_reply_err(request, EISDIR);
+			return;
+		}
+
 		if (attr->st_size >= 0) {
 			st_after.st_size = attr->st_size;
 		}

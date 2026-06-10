@@ -258,6 +258,7 @@ enum fbr_flush_flags {
 	FBR_FLUSH_NEW_FILE = (1 << 7),
 	FBR_FLUSH_NEW_EXCLUSIVE = (1 << 8),
 	FBR_FLUSH_MEM_ONLY = (1 << 9),
+	FBR_FLUSH_UNLINK = (1 << 10)
 };
 
 enum fbr_wbuffer_state {

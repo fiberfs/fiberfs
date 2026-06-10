@@ -15,7 +15,7 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 	assert(flush_data);
 	fbr_file_ok(file);
 	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
-		FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE));
+		FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_UNLINK));
 
 	fbr_zero(flush_data);
 	flush_data->file = file;
@@ -133,7 +133,10 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_WBUFFER");
 
-		if (remote_merge) {
+		if (latest && S_ISDIR(latest->mode)) {
+			fbr_rlog(FBR_LOG_FLUSH, "wbuffer EISDIR detected");
+			return EISDIR;
+		} else if (remote_merge) {
 			fbr_file_merge(fs, latest, file);
 			fbr_directory_remove_file(fs, directory, latest);
 			fbr_directory_add_file(fs, directory, file);
@@ -196,6 +199,19 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_rlog(FBR_LOG_FLUSH, "EEXIST detected (want exclusive)");
 			return EEXIST;
 		}
+	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_UNLINK)) {
+		assert_dev(flush_data->flags == FBR_FLUSH_UNLINK);
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_UNLINK");
+
+		if (!latest) {
+			fbr_rlog(FBR_LOG_FLUSH, "unlink ENOENT detected");
+			return ENOENT;
+		} else if (S_ISDIR(latest->mode)) {
+			fbr_rlog(FBR_LOG_FLUSH, "unlink EISDIR detected");
+			return EISDIR;
+		}
+
+		fbr_directory_remove_file(fs, directory, latest);
 	}
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RESIZE)) {
@@ -206,8 +222,11 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_RESIZE");
 
 		if (!latest) {
-			fbr_rlog(FBR_LOG_FLUSH, "attr ENOENT detected");
+			fbr_rlog(FBR_LOG_FLUSH, "resize ENOENT detected");
 			return ENOENT;
+		} else if (S_ISDIR(latest->mode)) {
+			fbr_rlog(FBR_LOG_FLUSH, "resize EISDIR detected");
+			return EISDIR;
 		} else if (remote_merge || local_update) {
 			latest->generation++;
 		} else {

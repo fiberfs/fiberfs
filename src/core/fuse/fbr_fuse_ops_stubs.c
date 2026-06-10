@@ -131,6 +131,16 @@ _fuse_ops_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode
 }
 
 static void
+_fuse_ops_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
+{
+	struct fbr_request *request = _fuse_setup(req, __func__);
+
+	_fuse_ops_callback(request, unlink, parent, name);
+
+	_fuse_finish_error(request, ENOSYS);
+}
+
+static void
 _fuse_ops_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
 	struct fbr_request *request = _fuse_setup(req, __func__);
@@ -264,6 +274,7 @@ static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.opendir = _fuse_ops_opendir,
 	.readdir = _fuse_ops_readdir,
 	.releasedir = _fuse_ops_releasedir,
+	.unlink = _fuse_ops_unlink,
 	.open = _fuse_ops_open,
 	.create = _fuse_ops_create,
 	.read = _fuse_ops_read,

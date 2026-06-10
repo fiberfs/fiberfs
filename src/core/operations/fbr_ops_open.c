@@ -29,7 +29,7 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 
 	int read_only = 0;
 
-	if (fbr_is_flag(fi->flags, O_WRONLY |O_RDWR)) {
+	if (fbr_is_flag(fi->flags, O_WRONLY | O_RDWR)) {
 		fbr_rlog(FBR_LOG_OP_OPEN, "flags: read+write");
 	} else {
 		read_only = 1;
