@@ -249,7 +249,13 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	fbr_writer_add(fs, json, ",\"p\":", 5);
 	fbr_writer_add_ulong(fs, json, file->gid);
 
-	// TODO times...
+	// c: ctime
+	fbr_writer_add(fs, json, ",\"c\":", 5);
+	fbr_writer_add_ulong(fs, json, file->ctime);
+
+	// d: mtime
+	fbr_writer_add(fs, json, ",\"d\":", 5);
+	fbr_writer_add_ulong(fs, json, file->mtime);
 
 	if (file->body.chunks || modified || resize) {
 		// b: body chunks
@@ -1026,6 +1032,14 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'p')) {
 				if (_file_editable(file)) {
 					file->gid = (uid_t)token->dvalue;
+				}
+			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'c')) {
+				if (_file_editable(file)) {
+					file->ctime = token->dvalue;
+				}
+			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'd')) {
+				if (_file_editable(file)) {
+					file->mtime = token->dvalue;
 				}
 			}
 			break;

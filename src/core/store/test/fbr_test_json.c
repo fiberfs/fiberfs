@@ -468,11 +468,11 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_fs_wait(fs);
 
 	json = "{\"fiberfs\":1,\"g\":1,\"f\":[{\"n\":\"file_1\",\"j\":1,\"s\":2048,\"m\":33060,"
-		"\"u\":1000,\"p\":1000,\"b\":[{\"i\":\"17775679553136982062\",\"o\":0,\"l\":1024},"
-		"{\"i\":\"17775679550948149444\",\"o\":1024,\"l\":1024}]},{\"n\":\"file_XYZ\","
-		"\"j\":1,\"s\":200,\"m\":33060,\"u\":1000,\"p\":1000,\"b\":[{\"i\":"
-		"\"17775679552912043528\",\"o\":0,\"l\":150},{\"i\":\"17775679552326286274\","
-		"\"o\":150,\"l\":50}]}]}";
+		"\"u\":1000,\"p\":1000,\"c\":0,\"b\":[{\"i\":\"17775679553136982062\",\"o\":0,"
+		"\"l\":1024},{\"i\":\"17775679550948149444\",\"o\":1024,\"l\":1024}]},"
+		"{\"n\":\"file_XYZ\",\"j\":1,\"s\":200,\"m\":33060,\"u\":1000,\"p\":1000,"
+		"\"c\":1781114443,\"d\":-4321,\"b\":[{\"i\":\"17775679552912043528\",\"o\":0,"
+		"\"l\":150},{\"i\":\"17775679552326286274\",\"o\":150,\"l\":50}]}]}";
 	directory = _parse_directory(fs, json);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
@@ -487,6 +487,9 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fbr_test_fs_get_chunk(file, 1)->offset == 1024);
 	assert(fbr_test_fs_get_chunk(file, 1)->length == 1024);
 	assert(file->size == 2048);
+	assert_zero(file->ctime);
+	assert(file->mtime);
+	assert(file->atime);
 	file = fbr_directory_find_file(directory, "file_XYZ", 8);
 	fbr_file_ok(file);
 	assert(fbr_test_fs_count_chunks(file) == 2);
@@ -495,6 +498,9 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fbr_test_fs_get_chunk(file, 1)->offset == 150);
 	assert(fbr_test_fs_get_chunk(file, 1)->length == 50);
 	assert(file->size == 200);
+	assert(file->ctime == 1781114443);
+	assert(file->mtime == -4321);
+	assert(file->atime);
 	fbr_dindex_release(fs, &directory);
 
 	// 1 new file, 1 unchanged/inherited

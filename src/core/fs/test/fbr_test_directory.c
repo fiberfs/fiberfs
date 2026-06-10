@@ -541,7 +541,7 @@ _directory_load_bump(struct fbr_fs *fs, unsigned long generation)
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	assert(directory->previous->generation);
 	fbr_directory_copy(fs, directory, directory->previous);
-	assert(directory->generation = generation);
+	assert(directory->generation == generation);
 
 	generation++;
 	directory->generation = generation;
