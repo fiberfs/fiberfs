@@ -42,10 +42,8 @@ FBR_TEST_VAR(md5_write)
 FBR_TEST_CMD(sys_mkdir)
 FBR_TEST_CMD(sys_chmod)
 FBR_TEST_CMD(sys_truncate)
-FBR_TEST_CMD(sys_open_exclusive_error)
 FBR_TEST_CMD(sys_unlink)
 FBR_TEST_CMD(sys_rmdir)
-FBR_TEST_CMD(sys_rmdir_error)
 
 // TODO use a varf for this?
 FBR_TEST_CMD(set_var1)

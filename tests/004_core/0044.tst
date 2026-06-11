@@ -19,13 +19,13 @@ set_var2 "2file"
 mkdir_test_remote_file $var2
 
 set_var3 $sys_tmpdir "/" $var2
-sys_open_exclusive_error $var3
+open_exclusive_error $var3
 
 sleep_ms 20
 
 print "### CREATE 3 (local exists)"
 
-sys_open_exclusive_error $var3
+open_exclusive_error $var3
 
 sleep_ms 20
 
@@ -35,7 +35,7 @@ fs_test_release_all_wait
 
 sleep_ms 20
 
-sys_open_exclusive_error $var3
+open_exclusive_error $var3
 
 # Cleanup
 

@@ -29,7 +29,7 @@ print "### RMDIRs"
 
 fs_test_release_all_wait
 
-sys_rmdir_error $var2
+rmdir_error $var2
 
 sleep_ms 20
 
