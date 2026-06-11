@@ -409,6 +409,8 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 		index_data->chunks = fbr_body_chunk_range(file, 0, 0, &index_data->removed, NULL);
 		assert_zero_dev(index_data->chunks->length);
+	} else if (fbr_is_flag(flags, FBR_FLUSH_RMDIR)) {
+		assert_zero_dev(wbuffers);
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
 		assert_zero_dev(wbuffers);
@@ -677,7 +679,7 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 			fbr_rlog(FBR_LOG_INDEX, "warning index hasn't changed (%u)",
 				version_matches);
 
-			if (version_matches > 3) {
+			if (version_matches > FBR_MAX_VERSION_ERRORS) {
 				ret = EIO;
 			} else {
 				fbr_sleep_backoff(timeout->attempts);

@@ -839,10 +839,16 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 			struct fbr_cstore_metadata metadata;
 			int ret = fbr_cstore_metadata_read(&hashpath, &metadata);
-			if (ret || metadata.etag != etag_match) {
+			if (ret) {
+				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
+					"URL_DELETE ERROR metadata");
+				fbr_cstore_remove(cstore, &entry);
+				fbr_cstore_http_respond(cstore, http, 500, "Error");
+				return;
+			} else if (metadata.etag != etag_match) {
 				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR etag");
 				fbr_cstore_release(cstore, &entry);
-				fbr_cstore_http_respond(cstore, http, 500, "Error");
+				fbr_cstore_http_respond(cstore, http, 412, "Mismatch");
 				return;
 			}
 		}

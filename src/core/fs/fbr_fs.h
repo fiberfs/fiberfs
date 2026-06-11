@@ -32,6 +32,7 @@
 #define FBR_TTL_MAX				INT32_MAX
 #define FBR_ROOT_TTL_DEFAULT			60
 #define FBR_ROOT_TTL_MIN			0.2
+#define FBR_MAX_VERSION_ERRORS			3
 
 #define FBR_ENUM_CHUNK_STATE						\
 	FBR_ENUM_NAME(fbr_chunk_state)					\
@@ -258,7 +259,8 @@ enum fbr_flush_flags {
 	FBR_FLUSH_NEW_FILE = (1 << 7),
 	FBR_FLUSH_NEW_EXCLUSIVE = (1 << 8),
 	FBR_FLUSH_MEM_ONLY = (1 << 9),
-	FBR_FLUSH_UNLINK = (1 << 10)
+	FBR_FLUSH_UNLINK = (1 << 10),
+	FBR_FLUSH_RMDIR = (1 << 11)
 };
 
 enum fbr_wbuffer_state {

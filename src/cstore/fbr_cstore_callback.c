@@ -129,7 +129,15 @@ fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 int
 fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 {
-	return fbr_cstore_io_index_delete(fs, directory);
+	int ret = fbr_cstore_io_index_delete(fs, directory);
+
+	if (_cstore_write_conflict(ret) || ret == EAGAIN) {
+		return EAGAIN;
+	} else if (ret) {
+		return EIO;
+	}
+
+	return 0;
 }
 
 fbr_id_t

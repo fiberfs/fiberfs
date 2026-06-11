@@ -1224,21 +1224,31 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	fbr_cstore_set_ok(entry);
 
-	if (!ret && metadata.etag != directory->version && !backend) {
-		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR version etag");
-		fbr_cstore_release(cstore, &entry);
-	} else {
+	if (!backend) {
+		if (ret) {
+			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR metadata");
+			fbr_cstore_remove(cstore, &entry);
+			fbr_stat_sub(&cstore->stats.wr_roots);
+			return 1;
+		} else if (metadata.etag != directory->version) {
+			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR version etag");
+			fbr_cstore_release(cstore, &entry);
+			return EAGAIN;
+		}
+
 		fbr_cstore_remove(cstore, &entry);
 		fbr_stat_sub(&cstore->stats.wr_roots);
+
+		return 0;
 	}
 
-	if (backend) {
-		struct fbr_cstore_url url;
-		fbr_cstore_s3_root_url(cstore, &dirpath, &url);
+	fbr_cstore_remove(cstore, &entry);
+	fbr_stat_sub(&cstore->stats.wr_roots);
 
-		fbr_cstore_s3_send_delete(cstore, &url, directory->version,
-			FBR_CSTORE_ROUTE_CLUSTER);
-	}
+	struct fbr_cstore_url url;
+	fbr_cstore_s3_root_url(cstore, &dirpath, &url);
 
-	return 0;
+	ret = fbr_cstore_s3_send_delete(cstore, &url, directory->version, FBR_CSTORE_ROUTE_CLUSTER);
+
+	return ret;
 }

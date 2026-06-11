@@ -15,7 +15,7 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 	assert(flush_data);
 	fbr_file_ok(file);
 	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
-		FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_UNLINK));
+		FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_UNLINK | FBR_FLUSH_RMDIR));
 
 	fbr_zero(flush_data);
 	flush_data->file = file;
@@ -198,6 +198,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		}
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_UNLINK)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_UNLINK);
+
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_UNLINK");
 
 		if (!latest) {
@@ -206,6 +207,20 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		} else if (S_ISDIR(latest->mode)) {
 			fbr_rlog(FBR_LOG_FLUSH, "unlink EISDIR detected");
 			return EISDIR;
+		}
+
+		fbr_directory_remove_file(fs, directory, latest);
+	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RMDIR)) {
+		assert_dev(flush_data->flags == FBR_FLUSH_RMDIR);
+
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_RMDIR");
+
+		if (!latest) {
+			fbr_rlog(FBR_LOG_FLUSH, "unlink ENOENT detected");
+			return ENOENT;
+		} else if (!S_ISDIR(latest->mode)) {
+			fbr_rlog(FBR_LOG_FLUSH, "unlink EISDIR detected");
+			return ENOTDIR;
 		}
 
 		fbr_directory_remove_file(fs, directory, latest);
@@ -320,8 +335,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 	// Start sync/write loop
 
 	struct fbr_index_data index_data;
-	unsigned int generation_matches = 0;
-	unsigned long last_generation = 0;
+	unsigned int version_matches = 0;
+	fbr_id_t last_version = 0;
 
 	ret = EIO;
 
@@ -331,12 +346,13 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 		fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' found generation: %lu attempts: %u",
 			dirpath.path.name, directory->generation, timeout.attempts);
 
-		if (timeout.attempts && directory->generation == last_generation) {
-			generation_matches++;
-			fbr_rlog(FBR_LOG_FLUSH, "warning generation hasn't changed (%u)",
-				generation_matches);
+		if (timeout.attempts && directory->version == last_version) {
+			version_matches++;
 
-			if (generation_matches > 3) {
+			fbr_rlog(FBR_LOG_FLUSH, "warning version hasn't changed (%u)",
+				version_matches);
+
+			if (version_matches > FBR_MAX_VERSION_ERRORS) {
 				fbr_dindex_release(fs, &directory);
 				ret = EIO;
 				break;
@@ -344,8 +360,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 				fbr_sleep_backoff(timeout.attempts);
 			}
 		} else {
-			last_generation = directory->generation;
-			generation_matches = 0;
+			last_version = directory->version;
+			version_matches = 0;
 		}
 
 		// Lock on LOADING state
