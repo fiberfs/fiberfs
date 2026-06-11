@@ -85,10 +85,7 @@ _op_mkdir_append(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode
 
 	fbr_rlog(FBR_LOG_TEST, "OP_append %s:%lu", parent_path->name, parent_inode);
 
-	struct fbr_directory *directory = fbr_dindex_take(fs, parent_path, 0);
-	if (!directory) {
-		directory = fbr_directory_load(fs, parent_path, parent_inode, 0);
-	}
+	struct fbr_directory *directory = fbr_directory_get(fs, parent_path, parent_inode);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
 
@@ -245,10 +242,8 @@ _op_mkdir_thread(void *arg)
 
 		fbr_rlog(FBR_LOG_TEST, "OP_thread %zu cstore: %s", id, tcstore->prefix);
 
-		struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
-		if (!root) {
-			root = fbr_directory_load(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0);
-		}
+		struct fbr_directory *root = fbr_directory_get(fs, FBR_DIRNAME_ROOT,
+			FBR_INODE_ROOT);
 		fbr_directory_ok(root);
 		assert(root->state == FBR_DIRSTATE_OK);
 

@@ -37,7 +37,7 @@ fbr_ops_unlink(struct fbr_request *request, fuse_ino_t parent, const char *name)
 
 	fbr_dindex_release(fs, &directory);
 
-	// We delete the file immediately, all previous references are stable
+	// We delete the file immediately, all previous and existing references are stable
 	struct fbr_flush_data flush_data;
 	fbr_flush_data_init(&flush_data, file, NULL, NULL, FBR_FLUSH_UNLINK);
 	int ret = fbr_fs_flush(fs, &flush_data);

@@ -517,6 +517,8 @@ void fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest,
 void fbr_directory_clone_id(struct fbr_fs *fs, struct fbr_directory *dest,
 	struct fbr_directory *source);
 int fbr_directory_stale(struct fbr_fs *fs, struct fbr_directory *directory);
+struct fbr_directory *fbr_directory_get(struct fbr_fs *fs, const struct fbr_path_name *dirpath,
+	fbr_inode_t inode);
 struct fbr_directory *fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode);
 
 void fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,

@@ -568,6 +568,43 @@ fbr_directory_stale(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 struct fbr_directory *
+fbr_directory_get(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_inode_t inode)
+{
+	fbr_fs_ok(fs);
+	assert(dirpath);
+	assert(inode);
+
+	struct fbr_directory *directory = fbr_dindex_take(fs, dirpath, 0);
+
+	if (directory) {
+		fbr_directory_ok(directory);
+
+		if (directory->state == FBR_DIRSTATE_ERROR) {
+			fbr_dindex_release(fs, &directory);
+		} else if (fbr_directory_stale(fs, directory)) {
+			fbr_rlog(FBR_LOG_FS, "stale directory found");
+			fbr_dindex_release(fs, &directory);
+		} else if (directory->inode < inode) {
+			fbr_rlog(FBR_LOG_FS, "directory inode too old (%lu < %lu)",
+				directory->inode, inode);
+			fbr_dindex_release(fs, &directory);
+		}
+	}
+
+	if (!directory) {
+		directory = fbr_directory_load(fs, dirpath, inode, 0);
+		if (!directory) {
+			return NULL;
+		}
+	}
+
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+
+	return directory;
+}
+
+struct fbr_directory *
 fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 {
 	fbr_fs_ok(fs);
@@ -598,44 +635,17 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 	fbr_rlog(FBR_LOG_FS, "directory found: '%s':%zu (inode: %lu)", dirpath.path.name,
 		dirpath.path.length, inode);
 
-	struct fbr_directory *directory = fbr_dindex_take(fs, &dirpath.path, 0);
-
+	struct fbr_directory *directory = fbr_directory_get(fs, &dirpath.path, inode);
 	if (!directory) {
-		// Do nothing
+		return NULL;
 	} else if (directory->inode > inode) {
-		fbr_rlog(FBR_LOG_FS, "directory inode: %lu found newer inode: %lu (return error)",
-			inode, directory->inode);
-		fbr_dindex_release(fs, &directory);
-		return NULL;
-	} else if (directory->inode < inode) {
-		fbr_rlog(FBR_LOG_FS, "directory inode: %lu mismatch inode: %lu (will make new)",
-			inode, directory->inode);
-		fbr_dindex_release(fs, &directory);
-	} else if (directory->state == FBR_DIRSTATE_ERROR) {
-		fbr_rlog(FBR_LOG_FS, "directory error state (will make new)");
-		fbr_dindex_release(fs, &directory);
-	} else if (fbr_directory_stale(fs, directory)) {
-		fbr_rlog(FBR_LOG_FS, "directory stale (will fetch new)");
-		fbr_dindex_release(fs, &directory);
-	}
-
-	if (!directory) {
-		directory = fbr_directory_load(fs, &dirpath.path, inode, 0);
-		if (!directory) {
-			return NULL;
-		}
-	}
-
-	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_OK);
-	assert_dev(directory->inode >= inode);
-
-	if (directory->inode > inode) {
-		fbr_rlog(FBR_LOG_FS, "directory inode: %lu found newer inode: %lu (return error)",
-			inode, directory->inode);
+		fbr_rlog(FBR_LOG_FS, "directory inode too new (%lu < %lu) return ERROR",
+			directory->inode, inode);
 		fbr_dindex_release(fs, &directory);
 		return NULL;
 	}
+
+	assert_dev(directory->inode == inode);
 
 	return directory;
 }
