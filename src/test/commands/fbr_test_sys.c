@@ -786,3 +786,42 @@ fbr_cmd_sys_unlink(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_unlink passed %s", filename);
 }
+
+void
+fbr_cmd_sys_rmdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+
+	int ret = rmdir(filename);
+	fbr_ASSERT(!ret, "rmdir() failed %s (%d)", strerror(errno), ret);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_rmdir passed %s", filename);
+}
+
+void
+fbr_cmd_sys_rmdir_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+
+	int ret = rmdir(filename);
+	fbr_ASSERT(ret, "rmdir() didnt fail");
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_rmdir_error() passed %s (%d)",
+		strerror(errno), ret);
+}

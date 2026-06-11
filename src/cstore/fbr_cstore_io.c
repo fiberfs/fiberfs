@@ -1204,27 +1204,28 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
+	fbr_rlog(FBR_LOG_CS_ROOT, "DELETE ROOT %s %lu (%s)", hashpath.value, directory->version,
+		dirpath.name);
+
 	int backend = fbr_cstore_backend_enabled(cstore);
 
-	fbr_rlog(FBR_LOG_CS_ROOT, "DELETE %s %lu", hashpath.value, directory->version);
-
-	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
-	if (!entry) {
-		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR no entry");
-		return 1;
-	}
-
-	fbr_cstore_reset_loading(entry);
-	fbr_cstore_entry_ok(entry);
-	assert_dev(entry->state == FBR_CSTORE_LOADING);
-
-	struct fbr_cstore_metadata metadata;
-	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
-	int ret = fbr_cstore_metadata_read(&hashpath, &metadata);
-
-	fbr_cstore_set_ok(entry);
-
 	if (!backend) {
+		struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+		if (!entry) {
+			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR no entry");
+			return 1;
+		}
+
+		fbr_cstore_reset_loading(entry);
+		fbr_cstore_entry_ok(entry);
+		assert_dev(entry->state == FBR_CSTORE_LOADING);
+
+		struct fbr_cstore_metadata metadata;
+		fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
+		int ret = fbr_cstore_metadata_read(&hashpath, &metadata);
+
+		fbr_cstore_set_ok(entry);
+
 		if (ret) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR metadata");
 			fbr_cstore_remove(cstore, &entry);
@@ -1242,13 +1243,17 @@ fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory)
 		return 0;
 	}
 
-	fbr_cstore_remove(cstore, &entry);
-	fbr_stat_sub(&cstore->stats.wr_roots);
+	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+	if (entry) {
+		fbr_cstore_remove(cstore, &entry);
+		fbr_stat_sub(&cstore->stats.wr_roots);
+	}
 
 	struct fbr_cstore_url url;
 	fbr_cstore_s3_root_url(cstore, &dirpath, &url);
 
-	ret = fbr_cstore_s3_send_delete(cstore, &url, directory->version, FBR_CSTORE_ROUTE_CLUSTER);
+	int ret = fbr_cstore_s3_send_delete(cstore, &url, directory->version,
+		FBR_CSTORE_ROUTE_CLUSTER);
 
 	return ret;
 }

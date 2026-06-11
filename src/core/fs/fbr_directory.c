@@ -601,6 +601,8 @@ fbr_directory_get(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_in
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
 
+	fbr_rlog(FBR_LOG_FS, "directory found: '%s' (inode: %lu)", dirpath->name, inode);
+
 	return directory;
 }
 
@@ -631,9 +633,6 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 	fbr_path_get_full(&file->path, &dirpath);
 
 	fbr_inode_release(fs, &file);
-
-	fbr_rlog(FBR_LOG_FS, "directory found: '%s':%zu (inode: %lu)", dirpath.path.name,
-		dirpath.path.length, inode);
 
 	struct fbr_directory *directory = fbr_directory_get(fs, &dirpath.path, inode);
 	if (!directory) {
