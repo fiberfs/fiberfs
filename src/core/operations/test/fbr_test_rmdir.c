@@ -15,6 +15,7 @@
 #include "core/operations/fbr_operations.h"
 #include "core/request/fbr_request.h"
 #include "cstore/fbr_cstore_api.h"
+#include "log/fbr_log_types.h"
 
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
@@ -80,8 +81,10 @@ fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_path_name_init(&dirpath, "test_dir");
 	struct fbr_path_name testfile;
 	fbr_path_name_init(&testfile, "SomeFile.txt");
+	struct fbr_path_name testfile2;
+	fbr_path_name_init(&testfile2, "OTHERFile2.txt");
 
-	fbr_test_logs("*** Setup test_dir on fs_1");
+	fbr_rlog(FBR_LOG_TEST, "*** Setup test_dir on fs_1");
 
 	fbr_test_fs_root_alloc(fs_1);
 
@@ -90,7 +93,7 @@ fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(request->error);
 	fbr_request_free(request);
 
-	fbr_test_logs("*** Read test_dir on fs_2");
+	fbr_rlog(FBR_LOG_TEST, "*** Read test_dir on fs_2");
 
 	fbr_directory_root_inode_init(fs_2);
 
@@ -99,7 +102,7 @@ fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(request->error);
 	fbr_request_free(request);
 
-	fbr_test_logs("*** Make file on test_dir on fs_2");
+	fbr_rlog(FBR_LOG_TEST, "*** Make file on test_dir on fs_2");
 
 	struct fbr_directory *root_fs2 = fbr_dindex_take(fs_2, FBR_DIRNAME_ROOT, 0);
 	fbr_directory_ok(root_fs2);
@@ -114,30 +117,136 @@ fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_directory *dir_fs2 = fbr_directory_get(fs_2, &dirpath, dirfile_fs2->inode);
 	fbr_directory_ok(dir_fs2);
 	assert(dir_fs2->state == FBR_DIRSTATE_OK);
-
-	struct fuse_file_info fi;
-	fbr_zero(&fi);
-	fi.flags = O_CREAT | O_WRONLY | O_APPEND;
+	assert_zero(dir_fs2->file_count);
 
 	request = _rmdir_2fs_request_mock(fs_2);
 
+	struct fuse_file_info fi;
+	fbr_zero(&fi);
+	fi.flags = O_CREAT | O_WRONLY;
 	fbr_ops_create(request, dir_fs2->inode, testfile.name, S_IFREG, &fi);
 	assert_zero(request->error);
+
 	struct fbr_fio *fio = fbr_fh_fio(fi.fh);
 	fbr_file_ok(fio->file);
 	fbr_ops_write(request, fio->file->inode, "rmdir!", 7, 0, &fi);
 	assert_zero(request->error);
+
 	fbr_ops_release(request, fio->file->inode, &fi);
 	assert_zero(request->error);
 
 	fbr_request_free(request);
-	fbr_dindex_release(fs_2, &root_fs2);
-	fbr_dindex_release(fs_2, &dir_fs2);
-	fbr_inode_release(fs_2, &dirfile_fs2);
 
-	fbr_test_logs("*** Cleanup fs_1");
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
+	fbr_cstore_ok(cstore);
+	fbr_test_cstore_wait(cstore);
+	assert(cstore->stats.wr_roots == 2);
+	assert(cstore->stats.wr_indexes == 2);
+	assert(cstore->stats.wr_chunks == 1);
+
+	fbr_rlog(FBR_LOG_TEST, "*** rmdir test_dir on fs_1 (ENOTEMPTY)");
+
+	request = _rmdir_2fs_request_mock(fs_1);
+	fbr_ops_rmdir(request, FBR_INODE_ROOT, dirpath.name);
+	assert(request->error == ENOTEMPTY);
+	fbr_request_free(request);
+
+	fbr_rlog(FBR_LOG_TEST, "*** unlink file on fs_2");
+
+	request = _rmdir_2fs_request_mock(fs_2);
+	fbr_ops_unlink(request, dirfile_fs2->inode, testfile.name);
+	assert_zero(request->error);
+	fbr_request_free(request);
+
+	fbr_rlog(FBR_LOG_TEST, "*** unlink file on fs_1");
+
+	struct fbr_directory *root_fs1 = fbr_dindex_take(fs_1, FBR_DIRNAME_ROOT, 0);
+	fbr_directory_ok(root_fs1);
+	assert(root_fs1->state == FBR_DIRSTATE_OK);
+
+	struct fbr_file *dirfile_fs1 = fbr_directory_find_file(root_fs1, dirpath.name,
+		dirpath.length);
+	fbr_file_ok(dirfile_fs1);
+	assert(dirfile_fs1->state == FBR_FILE_OK);
+	fbr_inode_add(fs_1, dirfile_fs1);
+
+	request = _rmdir_2fs_request_mock(fs_1);
+	fbr_ops_unlink(request, dirfile_fs1->inode, testfile.name);
+	assert(request->error == ENOENT);
+	fbr_request_free(request);
+
+	fbr_rlog(FBR_LOG_TEST, "*** rmdir test_dir on fs_1");
+
+	request = _rmdir_2fs_request_mock(fs_1);
+	fbr_ops_rmdir(request, FBR_INODE_ROOT, dirpath.name);
+	assert_zero(request->error);
+	fbr_request_free(request);
+
+	fbr_test_cstore_wait(cstore);
+	assert(cstore->stats.wr_roots == 1);
+	assert(cstore->stats.wr_indexes == 1);
+	assert(cstore->stats.wr_chunks == 0);
+
+	fbr_rlog(FBR_LOG_TEST, "*** rmdir test_dir on fs_2 (EIO)");
+
+	request = _rmdir_2fs_request_mock(fs_2);
+	fbr_ops_rmdir(request, FBR_INODE_ROOT, dirpath.name);
+	assert(request->error == EIO);
+	fbr_request_free(request);
+
+	fbr_rlog(FBR_LOG_TEST, "*** Load test_dir on fs_2 (missing, get previous)");
+
+	fbr_dindex_release(fs_2, &dir_fs2);
+
+	dir_fs2 = fbr_directory_load(fs_2, &dirpath, dirfile_fs2->inode, 1);
+	fbr_directory_ok(dir_fs2);
+	assert(dir_fs2->state == FBR_DIRSTATE_OK);
+	assert_zero(dir_fs2->file_count);
+
+	fbr_rlog(FBR_LOG_TEST, "*** Operate 1 on test_dir on fs_2 (EIO)");
+
+	request = _rmdir_2fs_request_mock(fs_2);
+	fbr_zero(&fi);
+	fi.flags = O_CREAT | O_EXCL | O_WRONLY;
+	fbr_ops_create(request, dir_fs2->inode, testfile2.name, S_IFREG, &fi);
+	assert(request->error == EIO);
+	fbr_request_free(request);
+
+	assert_zero(dir_fs2->file_count);
+
+	fbr_rlog(FBR_LOG_TEST, "*** Operate 2 on test_dir on fs_2 (EIO)");
+
+	request = _rmdir_2fs_request_mock(fs_2);
+	fbr_zero(&fi);
+	fi.flags = O_CREAT | O_WRONLY;
+	fbr_ops_create(request, dir_fs2->inode, testfile.name, S_IFREG, &fi);
+	assert_zero(request->error);
+
+	fio = fbr_fh_fio(fi.fh);
+	fbr_file_ok(fio->file);
+	fbr_ops_write(request, fio->file->inode, "rmdir!", 7, 0, &fi);
+	assert_zero(request->error);
+	fbr_ops_flush(request, fio->file->inode, &fi);
+	assert(request->error == EIO);
+	assert(fio->wbuffers);
+	assert(fio->file->local_only);
+	assert(fio->file->state == FBR_FILE_OK);
+
+	request->error = 0;
+	fio->file->local_only = 0;
+	fbr_wbuffers_reset(fs_2, fio);
+
+	fbr_ops_release(request, fio->file->inode, &fi);
+	assert_zero(request->error);
+
+	fbr_request_free(request);
+
+	fbr_rlog(FBR_LOG_TEST, "*** Cleanup fs_1");
 
 	fbr_test_sleep_ms(20);
+
+	fbr_dindex_release(fs_1, &root_fs1);
+	fbr_inode_release(fs_1, &dirfile_fs1);
 
 	fbr_fs_release_all(fs_1, 1);
 
@@ -154,7 +263,11 @@ fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_fs_free(fs_1);
 
-	fbr_test_logs("*** Cleanup fs_2");
+	fbr_rlog(FBR_LOG_TEST, "*** Cleanup fs_2");
+
+	fbr_dindex_release(fs_2, &root_fs2);
+	fbr_dindex_release(fs_2, &dir_fs2);
+	fbr_inode_release(fs_2, &dirfile_fs2);
 
 	fbr_fs_release_all(fs_2, 1);
 
@@ -173,5 +286,5 @@ fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_fs_free(fs_2);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "merge_2fs_test done");
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "rmdir_2fs_test done");
 }
