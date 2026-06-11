@@ -14,3 +14,4 @@ FBR_TEST_CMD(mkdir_test_remote_file)
 FBR_TEST_CMD(open_exclusive_error)
 
 FBR_TEST_CMD(rmdir_error)
+FBR_TEST_CMD(rmdir_2fs_test)
