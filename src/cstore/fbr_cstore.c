@@ -12,6 +12,7 @@
 #include "fbr_cstore_api.h"
 #include "server/fbr_cstore_server.h"
 #include "config/fbr_config.h"
+#include "core/request/fbr_request.h"
 #include "log/fbr_log.h"
 #include "network/chttp_tcp_pool.h"
 #include "tls/chttp_tls.h"
@@ -66,6 +67,7 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 
 	cstore->magic = FBR_CSTORE_MAGIC;
 
+	fbr_context_request_init();
 	fbr_config_reader_init(&cstore->config.reader);
 	fbr_cstore_config_load(cstore);
 	fbr_cstore_cluster_init(&cstore->cluster);
@@ -753,4 +755,5 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 
 	chttp_tcp_pool_close();
 	chttp_tls_free();
+	fbr_context_request_finish();
 }
