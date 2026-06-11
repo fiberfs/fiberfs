@@ -498,6 +498,7 @@ void fbr_body_free(struct fbr_body *body);
 
 RB_PROTOTYPE(fbr_filename_tree, fbr_file_ptr, filename_entry, fbr_file_ptr_cmp)
 
+void fbr_directory_root_inode_init(struct fbr_fs *fs);
 struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	fbr_inode_t inode);

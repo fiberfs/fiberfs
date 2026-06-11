@@ -621,6 +621,8 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
+	fbr_rlog(FBR_LOG_INDEX, "fbr_index_read: '%s'", dirpath.name);
+
 	struct fbr_directory *previous = directory->previous;
 
 	unsigned int version_matches = 0;

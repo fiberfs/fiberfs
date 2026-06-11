@@ -57,7 +57,9 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 	entry.ino = file->inode;
 	fbr_file_attr(fs, file, &entry.attr);
 
-	fbr_inode_add(fs, file);
+	if (fbr_request_is_fuse(request)) {
+		fbr_inode_add(fs, file);
+	}
 
 	fbr_fuse_reply_entry(request, &entry);
 

@@ -22,8 +22,8 @@ RB_GENERATE(fbr_filename_tree, fbr_file_ptr, filename_entry, fbr_file_ptr_cmp)
 
 static void _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory);
 
-static void
-_directory_root_init(struct fbr_fs *fs)
+void
+fbr_directory_root_inode_init(struct fbr_fs *fs)
 {
 	assert_dev(fs);
 
@@ -55,7 +55,7 @@ _directory_root_init(struct fbr_fs *fs)
 			fbr_inode_add(fs, root_file);
 
 			fs->root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
-			fbr_file_ok(root_file);
+			fbr_file_ok(fs->root_file);
 		}
 
 		fbr_fs_UNLOCK(fs);
@@ -94,7 +94,7 @@ fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_
 
 	if (inode == FBR_INODE_ROOT) {
 		assert_zero_dev(dirpath->length);
-		_directory_root_init(fs);
+		fbr_directory_root_inode_init(fs);
 	} else {
 		assert_dev(dirpath->length);
 	}
