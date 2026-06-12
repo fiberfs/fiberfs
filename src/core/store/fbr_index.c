@@ -673,6 +673,8 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 			}
 		}
 
+		fbr_rlog(FBR_LOG_INDEX, "index_read_f %d (%s)", ret, strerror(ret));
+
 		if (fbr_fs_is_timeout(fs, timeout)) {
 			ret = EIO;
 		} else if (directory->version == last_version) {

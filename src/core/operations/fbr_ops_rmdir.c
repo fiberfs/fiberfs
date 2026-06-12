@@ -4,6 +4,8 @@
  *
  */
 
+#include <string.h>
+
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
@@ -41,7 +43,7 @@ fbr_ops_rmdir(struct fbr_request *request, fuse_ino_t parent_inode, const char *
 	struct fbr_fullpath_name dirpath;
 	fbr_path_get_full(&file->path, &dirpath);
 
-	struct fbr_directory *directory = fbr_directory_get(fs, &dirpath.path, file->inode);
+	struct fbr_directory *directory = fbr_directory_get(fs, &dirpath.path, file->inode, 0, 0);
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOENT);
 		fbr_dindex_release(fs, &parent);
@@ -81,6 +83,8 @@ fbr_ops_rmdir(struct fbr_request *request, fuse_ino_t parent_inode, const char *
 		if (fs->store->index_delete_f) {
 			ret = fs->store->index_delete_f(fs, directory);
 		}
+
+		fbr_rlog(FBR_LOG_OP_RMDIR, "index_delete_f %d (%s)", ret, strerror(ret));
 
 		if (!ret) {
 			// Do nothing

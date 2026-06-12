@@ -152,7 +152,7 @@ _rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 	assert(dirfile_fs2->state == FBR_FILE_OK);
 	fbr_inode_add(fs_2, dirfile_fs2);
 
-	struct fbr_directory *dir_fs2 = fbr_directory_get(fs_2, &dirpath, dirfile_fs2->inode);
+	struct fbr_directory *dir_fs2 = fbr_directory_get(fs_2, &dirpath, dirfile_fs2->inode, 0, 0);
 	fbr_directory_ok(dir_fs2);
 	assert(dir_fs2->state == FBR_DIRSTATE_OK);
 	assert_zero(dir_fs2->file_count);

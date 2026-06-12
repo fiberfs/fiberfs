@@ -502,8 +502,6 @@ void fbr_directory_root_inode_init(struct fbr_fs *fs);
 struct fbr_directory *fbr_directory_root_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_directory_alloc(struct fbr_fs *fs, const struct fbr_path_name *dirname,
 	fbr_inode_t inode);
-struct fbr_directory *fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname,
-	fbr_inode_t inode, int route_s3);
 void fbr_directory_free(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_directory_name(const struct fbr_directory *directory, struct fbr_path_name *result);
 int fbr_directory_cmp(const struct fbr_directory *d1, const struct fbr_directory *d2);
@@ -520,8 +518,10 @@ void fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest,
 void fbr_directory_clone_id(struct fbr_fs *fs, struct fbr_directory *dest,
 	struct fbr_directory *source);
 int fbr_directory_stale(struct fbr_fs *fs, struct fbr_directory *directory);
+struct fbr_directory *fbr_directory_load(struct fbr_fs *fs, const struct fbr_path_name *dirname,
+	fbr_inode_t inode, int route_s3);
 struct fbr_directory *fbr_directory_get(struct fbr_fs *fs, const struct fbr_path_name *dirpath,
-	fbr_inode_t inode);
+	fbr_inode_t inode, int wait_for_new, int route_s3);
 struct fbr_directory *fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode);
 
 void fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,

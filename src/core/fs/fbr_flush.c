@@ -280,89 +280,23 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 
 	fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' file: '%s'", dirpath.path.name, filename.name);
 
-	// Read from dindex
-	struct fbr_directory *directory = NULL;
-	int wait_for_new = 1;
-
-	do {
-		directory = fbr_dindex_take(fs, &dirpath.path, wait_for_new);
-		if (directory) {
-			fbr_directory_ok(directory);
-			assert_dev(directory->state >= FBR_DIRSTATE_OK);
-			if (directory->state == FBR_DIRSTATE_ERROR) {
-				assert_dev(wait_for_new);
-				fbr_dindex_release(fs, &directory);
-			}
-		}
-
-		if (!wait_for_new) {
-			break;
-		}
-		wait_for_new = 0;
-	} while (!directory);
-
-	int ret;
-
-	// dindex empty, read from index store
+	struct fbr_directory *directory = fbr_directory_get(fs, &dirpath.path, inode, 1, 0);
 	if (!directory) {
-		directory = fbr_directory_alloc(fs, &dirpath.path, inode);
-		fbr_directory_ok(directory);
-
-		switch (directory->state) {
-			case FBR_DIRSTATE_ERROR:
-				// inode is stale, a top level change was made
-				fbr_dindex_release(fs, &directory);
-				return ENOENT;
-			case FBR_DIRSTATE_OK:
-				break;
-			case FBR_DIRSTATE_LOADING:
-				fbr_index_read(fs, directory, &timeout, 0);
-
-				if (directory->state == FBR_DIRSTATE_ERROR) {
-					fbr_dindex_release(fs, &directory);
-					return EIO;
-				}
-
-				assert_dev(directory->state == FBR_DIRSTATE_OK);
-
-				break;
-			default:
-				fbr_ABORT("FLUSH bad directory allocation state: %d",
-					directory->state);
-		}
+		return ENOENT;
 	}
 
 	// Start sync/write loop
 
 	struct fbr_index_data index_data;
 	unsigned int version_matches = 0;
-	fbr_id_t last_version = 0;
-
-	ret = EIO;
+	fbr_id_t last_version = 0, directory_version;
+	int ret = EIO;
 
 	while (directory) {
 		assert_dev(directory->state == FBR_DIRSTATE_OK);
 
 		fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' found generation: %lu attempts: %u",
 			dirpath.path.name, directory->generation, timeout.attempts);
-
-		if (timeout.attempts && directory->version == last_version) {
-			version_matches++;
-
-			fbr_rlog(FBR_LOG_FLUSH, "warning version hasn't changed (%u)",
-				version_matches);
-
-			if (version_matches >= FBR_MAX_VERSION_ERRORS) {
-				fbr_dindex_release(fs, &directory);
-				ret = EIO;
-				break;
-			} else {
-				fbr_sleep_backoff(timeout.attempts);
-			}
-		} else {
-			last_version = directory->version;
-			version_matches = 0;
-		}
 
 		// Lock on LOADING state
 		struct fbr_directory *new_directory = _directory_get_loading(fs, &dirpath.path,
@@ -415,11 +349,13 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 				retry = 1;
 			}
 
-			fbr_rlog(FBR_LOG_ERROR, "flush fbr_index_write(new_directory) failed"
-				" (%d %s) retry: %d", ret, strerror(ret), retry);
+			fbr_rlog(FBR_LOG_ERROR, "flush fbr_index_write failed (%d %s) retry: %d",
+				ret, strerror(ret), retry);
 		}
 
 		fbr_file_UNLOCK(file);
+
+		directory_version = directory->version;
 
 		fbr_index_data_free(&index_data);
 		fbr_dindex_release(fs, &new_directory);
@@ -433,6 +369,21 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 
 		if (fbr_fs_is_timeout(fs, &timeout)) {
 			break;
+		} else if (directory_version == last_version) {
+			version_matches++;
+
+			fbr_rlog(FBR_LOG_FLUSH, "warning version hasn't changed (%u)",
+				version_matches);
+
+			if (version_matches >= FBR_MAX_VERSION_ERRORS) {
+				ret = EIO;
+				break;
+			} else {
+				fbr_sleep_backoff(timeout.attempts);
+			}
+		} else {
+			last_version = directory_version;
+			version_matches = 0;
 		}
 
 		// Retry, load from S3
