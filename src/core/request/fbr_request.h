@@ -98,7 +98,7 @@ struct fbr_request_stats *fbr_request_get_stats(void);
 void fbr_request_pool_shutdown(void);
 
 void fbr_fuse_reply_none(struct fbr_request *request);
-void fbr_fuse_reply__err(struct fbr_request *request, int error, const char *error_str);
+void fbr_fuse_reply_err(struct fbr_request *request, int error);
 void fbr_fuse_reply_buf(struct fbr_request *request, const char *buf, size_t size);
 void fbr_fuse_reply_iov(struct fbr_request *request, const struct iovec *iov, int count);
 void fbr_fuse_reply_data(struct fbr_request *request, struct fuse_bufvec *bufv,
@@ -121,7 +121,5 @@ const struct fuse_ctx *fbr_fuse_req_ctx(struct fbr_request *request, struct fuse
 }
 #define fbr_request_is_fuse(request)					\
 	(!((request)->not_fuse))
-#define fbr_fuse_reply_err(request, error)				\
-	fbr_fuse_reply__err(request, error, #error)
 
 #endif /* _FBR_FUSE_REQUEST_H_INCLUDED_ */

@@ -57,25 +57,35 @@ _rmdir_2fs_request_mock(struct fbr_fs *fs)
 	return request;
 }
 
-void
-fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+static void
+_rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 {
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
+	assert(ctx);
 
 	fbr_test_fuse_mock(ctx);
+	fbr_test_request_pool_register(ctx);
+
+	struct fbr_cstore *cstore_s3 = NULL;
 
 	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_1);
-	fbr_test_cstore_bind_new(fs_1);
 	fbr_fs_set_store(fs_1, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	struct fbr_fs *fs_2 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_2);
-	fbr_test_cstore_bind(fs_2, 0);
 	fbr_fs_set_store(fs_2, FBR_CSTORE_DEFAULT_CALLBACKS);
 
-	assert(fbr_test_cstore_count(ctx) == 1);
+	if (cluster) {
+		fbr_ABORT("TODO");
+	} else {
+		fbr_test_cstore_bind_new(fs_1);
+		fbr_test_cstore_bind(fs_2, 0);
+
+		assert(fbr_test_cstore_count(ctx) == 1);
+
+		cstore_s3 = fbr_test_cstore_get(ctx, 0);
+		fbr_cstore_ok(cstore_s3);
+	}
 
 	struct fbr_path_name dirpath;
 	fbr_path_name_init(&dirpath, "test_dir");
@@ -137,12 +147,10 @@ fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_request_free(request);
 
-	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, 0);
-	fbr_cstore_ok(cstore);
-	fbr_test_cstore_wait(cstore);
-	assert(cstore->stats.wr_roots == 2);
-	assert(cstore->stats.wr_indexes == 2);
-	assert(cstore->stats.wr_chunks == 1);
+	fbr_test_cstore_wait(cstore_s3);
+	assert(cstore_s3->stats.wr_roots == 2);
+	assert(cstore_s3->stats.wr_indexes == 2);
+	assert(cstore_s3->stats.wr_chunks == 1);
 
 	fbr_rlog(FBR_LOG_TEST, "*** rmdir test_dir on fs_1 (ENOTEMPTY)");
 
@@ -182,10 +190,10 @@ fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(request->error);
 	fbr_request_free(request);
 
-	fbr_test_cstore_wait(cstore);
-	assert(cstore->stats.wr_roots == 1);
-	assert(cstore->stats.wr_indexes == 1);
-	assert(cstore->stats.wr_chunks == 0);
+	fbr_test_cstore_wait(cstore_s3);
+	assert(cstore_s3->stats.wr_roots == 1);
+	assert(cstore_s3->stats.wr_indexes == 1);
+	assert(cstore_s3->stats.wr_chunks == 0);
 
 	fbr_rlog(FBR_LOG_TEST, "*** rmdir test_dir on fs_2 (EIO)");
 
@@ -287,4 +295,13 @@ fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_fs_free(fs_2);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "rmdir_2fs_test done");
+}
+
+void
+fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_rmdir_2fs_test(ctx, 0);
 }

@@ -384,6 +384,8 @@ fbr_request_pool_shutdown(void)
 			pthread_kill(request->thread, SIGQUIT);
 			fbr_zero(&request->thread);
 		}
+
+		fbr_rlog_flush(request->rlog);
 	}
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));

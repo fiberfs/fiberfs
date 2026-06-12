@@ -92,7 +92,7 @@ fbr_ops_rmdir(struct fbr_request *request, fuse_ino_t parent_inode, const char *
 			fbr_rlog(FBR_LOG_OP_RMDIR, "warning index hasn't changed (%u)",
 				version_matches);
 
-			if (version_matches > FBR_MAX_VERSION_ERRORS) {
+			if (version_matches >= FBR_MAX_VERSION_ERRORS) {
 				ret = EIO;
 			} else {
 				fbr_sleep_backoff(timeout.attempts);

@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
@@ -51,7 +52,7 @@ fbr_fuse_reply_none(struct fbr_request *request)
 }
 
 void
-fbr_fuse_reply__err(struct fbr_request *request, int error, const char *error_str)
+fbr_fuse_reply_err(struct fbr_request *request, int error)
 {
 	if (_fuse_exists(request)) {
 		fuse_req_t fuse_req = _fuse_reply_init(request);
@@ -62,7 +63,7 @@ fbr_fuse_reply__err(struct fbr_request *request, int error, const char *error_st
 
 	request->error = error;
 
-	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_err %s (%d)", error_str, error);
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_err %d (%s)", error, strerror(error));
 }
 
 void

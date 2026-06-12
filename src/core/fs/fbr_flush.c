@@ -352,7 +352,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 			fbr_rlog(FBR_LOG_FLUSH, "warning version hasn't changed (%u)",
 				version_matches);
 
-			if (version_matches > FBR_MAX_VERSION_ERRORS) {
+			if (version_matches >= FBR_MAX_VERSION_ERRORS) {
 				fbr_dindex_release(fs, &directory);
 				ret = EIO;
 				break;

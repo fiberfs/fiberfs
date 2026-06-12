@@ -9,6 +9,7 @@
 
 #include "test/fbr_test_cmd_declare.h"
 
+void fbr_test_request_pool_register(struct fbr_test_context *test_ctx);
 struct fbr_request *fbr__test_request_mock(const char *function);
 
 #define fbr_test_request_mock()		\

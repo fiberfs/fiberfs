@@ -18,6 +18,20 @@
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
+static void
+_request_pool_finish(struct fbr_test_context *test_ctx)
+{
+	fbr_test_context_ok(test_ctx);
+
+	fbr_request_pool_shutdown();
+}
+
+void
+fbr_test_request_pool_register(struct fbr_test_context *test_ctx)
+{
+	fbr_test_register_finish(test_ctx, "test_request_pool", _request_pool_finish);
+}
+
 struct fbr_request *
 fbr__test_request_mock(const char *function)
 {
