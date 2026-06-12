@@ -446,7 +446,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 	}
 
 	if (ret) {
-		fbr_rlog(FBR_LOG_ERROR, "flush failed %s (%d)", strerror(ret), ret);
+		fbr_rlog(FBR_LOG_ERROR, "flush failed %d (%s)", ret, strerror(ret));
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_MEM_ONLY)) {
 		fbr_stat_add(&fs->stats.flush_memory);
 	} else {

@@ -284,7 +284,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		} else {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
 				"URL_WRITE ERROR loading state 2");
-			fbr_cstore_http_respond(cstore, http, 500, "Error");
+			fbr_cstore_http_respond(cstore, http, 412, "Missing");
 			return;
 		}
 	}
@@ -558,7 +558,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		if (retry == 1 && file_type == FBR_CSTORE_FILE_ROOT) {
 			if (!backend) {
-				fbr_cstore_http_respond(cstore, http, 500, "Error");
+				fbr_cstore_http_respond(cstore, http, 404, "Not found");
 				return;
 			}
 
@@ -571,7 +571,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			skip_ttl = 1;
 		} else if (retry == 1) {
 			if (!backend) {
-				fbr_cstore_http_respond(cstore, http, 500, "Error");
+				fbr_cstore_http_respond(cstore, http, 404, "Not found");
 				return;
 			}
 
@@ -603,7 +603,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			} else {
 				entry = fbr_cstore_get(cstore, hash);
 				if (!entry) {
-					fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ NO entry");
+					fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
+						"URL_READ NO entry");
 					continue;
 				}
 			}
@@ -620,7 +621,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			} else {
 				entry = fbr_cstore_io_get_ok(cstore, hash);
 				if (!entry) {
-					fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ NO ok state");
+					fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
+						"URL_READ NO ok state");
 					continue;
 				}
 				assert_dev(entry->state == FBR_CSTORE_OK);
@@ -819,6 +821,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		} else {
 			fbr_cstore_http_respond(cstore, http, 200, "OK");
 		}
+
 		return;
 	}
 
@@ -859,7 +862,23 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE success");
 	} else {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE NO ok state");
-		error = 1;
+		error = 404;
+	}
+
+	if (!error) {
+		switch (file_type) {
+			case FBR_CSTORE_FILE_CHUNK:
+				fbr_stat_sub(&cstore->stats.wr_chunks);
+				break;
+			case FBR_CSTORE_FILE_INDEX:
+				fbr_stat_sub(&cstore->stats.wr_indexes);
+				break;
+			case FBR_CSTORE_FILE_ROOT:
+				fbr_stat_sub(&cstore->stats.wr_roots);
+				break;
+			default:
+				break;
+		}
 	}
 
 	if (backend) {
@@ -868,20 +887,6 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 		error = fbr_cstore_s3_send_delete(cstore, &url_enc, etag_match,
 			FBR_CSTORE_ROUTE_CDN);
-	}
-
-	switch (file_type) {
-		case FBR_CSTORE_FILE_CHUNK:
-			fbr_stat_sub(&cstore->stats.wr_chunks);
-			break;
-		case FBR_CSTORE_FILE_INDEX:
-			fbr_stat_sub(&cstore->stats.wr_indexes);
-			break;
-		case FBR_CSTORE_FILE_ROOT:
-			fbr_stat_sub(&cstore->stats.wr_roots);
-			break;
-		default:
-			break;
 	}
 
 	if (error) {

@@ -18,6 +18,7 @@
 #include "log/fbr_log_types.h"
 
 #include "test/fbr_test.h"
+#include "config/test/fbr_test_config_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
@@ -66,6 +67,7 @@ _rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 	fbr_test_request_pool_register(ctx);
 
 	struct fbr_cstore *cstore_s3 = NULL;
+	struct fbr_cstore *cstore_proxy = NULL;
 
 	struct fbr_fs *fs_1 = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_1);
@@ -76,7 +78,31 @@ _rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 	fbr_fs_set_store(fs_2, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	if (cluster) {
-		fbr_ABORT("TODO");
+		fbr_test_conf_add("ASYNC_WRITE", "false");
+		fbr_test_conf_add("CSTORE_SERVER", "true");
+		fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
+		fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
+
+		cstore_proxy = fbr_test_cstore_init(ctx);
+		fbr_cstore_ok(cstore_proxy);
+
+		cstore_s3 = fbr_test_cstore_init(ctx);
+		fbr_cstore_ok(cstore_s3);
+		fbr_test_cstore_s3_mock(cstore_s3, NULL, "rmdir", "somekey", "someauth");
+
+		fbr_test_cstore_backend_add(cstore_proxy, cstore_s3, FBR_CSTORE_ROUTE_S3);
+
+		assert(fbr_test_cstore_get(ctx, 0) == cstore_proxy);
+		assert(fbr_test_cstore_get(ctx, 1) == cstore_s3);
+		assert(fbr_test_cstore_count(ctx) == 2);
+
+		fbr_test_cstore_bind_new(fs_1);
+		fbr_test_cstore_backend_add(fs_1->cstore, cstore_proxy, FBR_CSTORE_ROUTE_CDN);
+		fbr_test_cstore_backend_add(fs_1->cstore, cstore_s3, FBR_CSTORE_ROUTE_S3);
+
+		fbr_test_cstore_bind_new(fs_2);
+		fbr_test_cstore_backend_add(fs_2->cstore, cstore_proxy, FBR_CSTORE_ROUTE_CDN);
+		fbr_test_cstore_backend_add(fs_2->cstore, cstore_s3, FBR_CSTORE_ROUTE_S3);
 	} else {
 		fbr_test_cstore_bind_new(fs_1);
 		fbr_test_cstore_bind(fs_2, 0);
@@ -85,6 +111,8 @@ _rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 
 		cstore_s3 = fbr_test_cstore_get(ctx, 0);
 		fbr_cstore_ok(cstore_s3);
+
+		cstore_proxy = cstore_s3;
 	}
 
 	struct fbr_path_name dirpath;
@@ -147,6 +175,9 @@ _rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 
 	fbr_request_free(request);
 
+	fbr_test_cstore_wait(fs_1->cstore);
+	fbr_test_cstore_wait(fs_2->cstore);
+	fbr_test_cstore_wait(cstore_proxy);
 	fbr_test_cstore_wait(cstore_s3);
 	assert(cstore_s3->stats.wr_roots == 2);
 	assert(cstore_s3->stats.wr_indexes == 2);
@@ -190,6 +221,9 @@ _rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 	assert_zero(request->error);
 	fbr_request_free(request);
 
+	fbr_test_cstore_wait(fs_1->cstore);
+	fbr_test_cstore_wait(fs_2->cstore);
+	fbr_test_cstore_wait(cstore_proxy);
 	fbr_test_cstore_wait(cstore_s3);
 	assert(cstore_s3->stats.wr_roots == 1);
 	assert(cstore_s3->stats.wr_indexes == 1);
@@ -258,6 +292,7 @@ _rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 
 	fbr_fs_release_all(fs_1, 1);
 
+	fbr_test_cstore_wait(fs_1->cstore);
 	fbr_test_fs_stats(fs_1);
 	fbr_test_fs_inodes_debug(fs_1);
 	fbr_test_fs_dindex_debug(fs_1);
@@ -283,7 +318,12 @@ _rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 	fbr_test_fs_inodes_debug(fs_2);
 	fbr_test_fs_dindex_debug(fs_2);
 
-	fbr_test_cstore_debug(fs_2->cstore);
+	fbr_test_cstore_wait(fs_2->cstore);
+	fbr_test_cstore_wait(cstore_proxy);
+	fbr_test_cstore_debug(cstore_s3);
+	assert(cstore_s3->stats.wr_roots == 1);
+	assert(cstore_s3->stats.wr_indexes == 1);
+	assert(cstore_s3->stats.wr_chunks == 1);
 
 	fbr_test_ERROR(fs_2->stats.directories, "non zero");
 	fbr_test_ERROR(fs_2->stats.directories_dindex, "non zero");
@@ -304,4 +344,13 @@ fbr_cmd_rmdir_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	_rmdir_2fs_test(ctx, 0);
+}
+
+void
+fbr_cmd_rmdir_2fs_test_cluster(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_rmdir_2fs_test(ctx, 1);
 }
