@@ -130,7 +130,8 @@ endif
 GCOV=gcov
 GCOVFLAGS=-fprofile-arcs -ftest-coverage --coverage
 GCOVLIBFLAGS=-lgcov
-LCOV=lcov --capture --no-external --directory ./
+LCOV=lcov
+LCOVFLAGS=--capture --no-external --directory ./
 LCOVHTML=genhtml
 GCOV_FILE=$(BUILD)/coverage.info
 GCOV_REPORT=gcov_report
@@ -210,8 +211,9 @@ gcov:		clean
 		$(MAKE) all CFLAGS_EXTRA="$(CFLAGS_EXTRA)" LIBFLAGS="$(LIBFLAGS)"
 		$(MAKE) -C ../tests all error FLAGS=-vv
 		$(GCOV) -r $(ALL_SOURCE)
-		$(LCOV) --output-file $(GCOV_FILE)
-		$(LCOVHTML) $(GCOV_FILE) --output-directory $(GCOV_REPORT)
+		$(LCOV) $(LCOVFLAGS) --output-file $(GCOV_FILE)
+		$(LCOV) --remove $(GCOV_FILE) '*/xxhash.h' --output-file $(GCOV_FILE).filter
+		$(LCOVHTML) $(GCOV_FILE).filter --output-directory $(GCOV_REPORT)
 
 gcovclean:
 		$(RMDIR) $(GCOV_REPORT)
