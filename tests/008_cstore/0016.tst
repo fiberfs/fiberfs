@@ -51,3 +51,5 @@ cstore_debug
 cstore_debug 1
 
 equal $cstore_entries:0 3
+
+fs_test_release_all_wait

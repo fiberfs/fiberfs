@@ -65,4 +65,6 @@ equal $cstore_entries:1 4
 
 fs_test_stats
 
+fs_test_release_all_wait
+
 fuse_test_unmount

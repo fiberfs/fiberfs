@@ -86,4 +86,6 @@ equal $cstore_stat_roots:3 1
 
 fs_test_stats
 
+fs_test_release_all_wait
+
 fuse_test_unmount
