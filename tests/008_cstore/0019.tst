@@ -51,6 +51,8 @@ fs_test_release_all_wait
 
 sleep_ms 10
 
+equal $fs_test_stat_files_inodes 1
+
 print "### READ"
 
 sys_cat $var1 "test CLUSTER"

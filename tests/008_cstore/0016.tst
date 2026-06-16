@@ -41,6 +41,8 @@ fs_test_release_all_wait
 
 sleep_ms 10
 
+equal $fs_test_stat_files_inodes 1
+
 print "### READ INDEX AND FILE"
 
 sys_cat $var1 "testing 123"
@@ -51,5 +53,3 @@ cstore_debug
 cstore_debug 1
 
 equal $cstore_entries:0 3
-
-fs_test_release_all_wait
