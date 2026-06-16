@@ -65,14 +65,14 @@ fbr_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 			break;
 		} else if (!v1_var && !v2_var) {
 			break;
-		} else if (retries >= 3) {
+		} else if (retries >= 20) {
 			break;
 		}
 
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "not equal '%s' != '%s', retry...", v1, v2);
 
 		retries++;
-		fbr_test_sleep_ms(200 * retries);
+		fbr_test_sleep_ms(10 * retries);
 
 		if (v1_var) {
 			v1 = fbr_test_read_var(ctx->test, v1_var);
