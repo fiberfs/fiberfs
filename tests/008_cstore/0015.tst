@@ -41,6 +41,8 @@ sleep_ms 10
 
 fs_test_stats
 
+equal $fs_test_stat_files_inodes 1
+
 print "### READ INDEX AND FILE"
 
 sys_cat $var1 "testing 123"
