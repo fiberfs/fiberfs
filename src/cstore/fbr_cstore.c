@@ -646,7 +646,7 @@ void
 fbr_cstore_clear(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
-	assert(fbr_cstore_backend_enabled(cstore));
+	assert(fbr_is_test() || fbr_cstore_backend_enabled(cstore));
 
 	size_t entries = 0;
 	size_t heads = 0;

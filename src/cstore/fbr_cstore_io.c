@@ -1096,7 +1096,8 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 }
 
 fbr_id_t
-fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_path)
+fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_path,
+    unsigned int attempts)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_path_ok(root_path);
@@ -1104,7 +1105,7 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s", root_path->value);
 
 	int skip_ttl = 0;
-	if (!fbr_cstore_backend_enabled(cstore)) {
+	if (!fbr_cstore_backend_enabled(cstore) || attempts) {
 		skip_ttl = 1;
 	}
 

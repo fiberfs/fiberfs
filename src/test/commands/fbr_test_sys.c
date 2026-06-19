@@ -273,6 +273,25 @@ fbr_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 void
+fbr_cmd_sys_ls_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+
+	DIR *dir = opendir(filename);
+	fbr_test_ASSERT(!dir, "opendir didnt fail");
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_ls_error passed (%d %s)", errno, strerror(errno));
+}
+
+void
 fbr_cmd_sys_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_sys_init(ctx);
@@ -322,7 +341,7 @@ fbr_cmd_sys_cat(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		} else if (!bytes) {
 			fbr_test_log(ctx, FBR_LOG_VERBOSE, "cat: EOF");
 		} else {
-			fbr_test_ABORT("cat: ERROR %zd", bytes);
+			fbr_test_ABORT("cat: ERROR %zd (%d %s)", bytes, errno, strerror(errno));
 		}
 	} while (bytes > 0);
 
@@ -385,6 +404,33 @@ fbr_cmd_sys_cat_md5(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		md5_str, md5_result);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_cat_md5 passed (bytes %zu)", size);
+}
+
+void
+fbr_cmd_sys_cat_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+
+	int fd = open(filename, O_RDONLY);
+	fbr_test_ASSERT(fd >= 0, "open() failed %s %d", filename, fd);
+
+	char buf[1];
+	ssize_t bytes = read(fd, buf, sizeof(buf));
+	fbr_test_ASSERT(bytes < 0, "read() didn't fail");
+
+	int ret = close(fd);
+	fbr_test_ERROR(ret, "sys_cat close() failed");
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_cat_error passed (%zu %d %s)",
+		bytes, errno, strerror(errno));
 }
 
 void

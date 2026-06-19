@@ -160,11 +160,19 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int route
 	int has_backend = fbr_cstore_backend_enabled(cstore);
 
 	if (!route_s3 || !has_backend) {
-		version = fbr_cstore_io_root_read(cstore, &path);
+		version = fbr_cstore_io_root_read(cstore, &path, 0);
 	}
 
 	if (!version && has_backend) {
-		version = fbr_cstore_s3_root_get(fs, cstore, &path, route_s3, NULL);
+		version = fbr_cstore_s3_root_get(fs, cstore, &path, route_s3, NULL, NULL);
+
+		if (!version && !route_s3) {
+			version = fbr_cstore_s3_root_get(fs, cstore, &path, 1, NULL, NULL);
+		}
+	}
+
+	if (!version) {
+		version = fbr_cstore_io_root_read(cstore, &path, 1);
 	}
 
 	char id_str[FBR_ID_STRING_MAX] = "";

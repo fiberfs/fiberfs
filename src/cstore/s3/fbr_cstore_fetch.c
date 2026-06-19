@@ -986,10 +986,15 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 
 fbr_id_t
 fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
-    struct fbr_cstore_path *root_path, int route_s3, struct fbr_cstore_entry **entry_ref)
+    struct fbr_cstore_path *root_path, int route_s3, struct fbr_cstore_entry **entry_ref,
+    int *http_error)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_path_ok(root_path);
+
+	if (http_error) {
+		*http_error = 0;
+	}
 
 	enum fbr_cstore_route route = FBR_CSTORE_ROUTE_CLUSTER;
 	if (route_s3) {
@@ -1009,7 +1014,13 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 
 	if (http.error || http.status != 200) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR S3: %d %d", http.error, http.status);
+
+		if (http_error && http.status != 200) {
+			*http_error = http.status;
+		}
+
 		chttp_context_free(&http);
+
 		return 0;
 	}
 

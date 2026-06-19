@@ -160,7 +160,8 @@ int fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *director
 int fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	struct fbr_cstore_path *root_path, fbr_id_t version, fbr_id_t existing, int enforce,
 	double timestamp, struct fbr_cstore_entry **entry_ref);
-fbr_id_t fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_path);
+fbr_id_t fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_path,
+	unsigned int attempts);
 int fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 
 void fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http);

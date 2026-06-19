@@ -546,6 +546,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	size_t size;
 	int retry = 0;
 	int skip_ttl = 0;
+	int last_error = 0;
 
 	while (1) {
 		struct fbr_cstore_hashpath hashpath;
@@ -566,7 +567,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			fbr_cstore_path_url(cstore, url_encoded, &file_path);
 
 			fbr_cstore_s3_root_get(NULL, cstore, &file_path, FBR_CSTORE_ROUTE_CDN,
-				&entry_ref);
+				&entry_ref, &last_error);
 
 			skip_ttl = 1;
 		} else if (retry == 1) {
@@ -585,9 +586,13 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			fbr_cstore_fetch_init(&fetch, cstore, &http, file_type,
 				&file_path, etag_match, 0, offset, 0, 0, FBR_CSTORE_ROUTE_CDN);
 
-			fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
+			last_error = fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
 			assert_dev(http.state == CHTTP_STATE_NONE);
 		} else if (retry > 1) {
+			if (last_error && last_error != 200) {
+				fbr_cstore_http_respond(cstore, http, last_error, "Error");
+			}
+
 			fbr_cstore_http_respond(cstore, http, 500, "Error");
 			return;
 		}
@@ -631,6 +636,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		fbr_cstore_entry_ok(entry);
 		assert_zero_dev(entry_ref);
+
+		last_error = 0;
 
 		fd = open(hashpath.value, O_RDONLY);
 		if (fd < 0) {

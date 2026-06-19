@@ -477,6 +477,9 @@ _CSTORE_TEST_STAT(chunk_write_bytes, wr_chunk_bytes)
 _CSTORE_TEST_STAT(index_write_bytes, wr_index_bytes)
 _CSTORE_TEST_STAT(root_write_bytes, wr_root_bytes)
 _CSTORE_TEST_STAT(chunk_read_bytes, rd_chunk_bytes)
+_CSTORE_TEST_STAT(http_200, http_200)
+_CSTORE_TEST_STAT(http_400, http_400)
+_CSTORE_TEST_STAT(http_500, http_500)
 
 void
 fbr_cmd_cstore_set_lru(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
