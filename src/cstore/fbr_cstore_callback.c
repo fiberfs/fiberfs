@@ -171,7 +171,7 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int route
 		}
 	}
 
-	if (!version) {
+	if (!route_s3 && has_backend && !version) {
 		version = fbr_cstore_io_root_read(cstore, &path, 1);
 	}
 
