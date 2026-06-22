@@ -56,4 +56,6 @@ equal $cstore_entries:0 3
 
 fs_test_release_all_wait
 
+equal $fs_test_stat_files_inodes 1
+
 fuse_test_unmount
