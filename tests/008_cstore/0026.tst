@@ -49,8 +49,6 @@ sleep_ms 250
 sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
 sys_cat $var1 "test_ABC"
 
-sleep_ms 50
-
 greater_equal $cstore_stat_http_400:2 1
 
 print "### Delete cluster and READ"
@@ -62,8 +60,6 @@ fs_test_release_all_wait
 sleep_ms 250
 
 sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
-
-sleep_ms 50
 
 greater_equal $cstore_stat_http_400:1 1
 

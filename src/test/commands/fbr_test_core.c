@@ -52,27 +52,27 @@ fbr_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	int ret;
 	size_t retries = 0;
+	const size_t max_retries = 20;
+	const size_t retry_sleep_ms = 10;
 
 	const char *v1 = cmd->params[0].value;
 	const char *v2 = cmd->params[1].value;
 	const char *v1_var = cmd->params[0].variable;
 	const char *v2_var = cmd->params[1].variable;
 
-	while (1) {
+	while (retries < max_retries) {
 		ret = strcmp(v1, v2);
 
 		if (!ret) {
 			break;
 		} else if (!v1_var && !v2_var) {
 			break;
-		} else if (retries >= 20) {
-			break;
 		}
 
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "not equal '%s' != '%s', retry...", v1, v2);
 
 		retries++;
-		fbr_test_sleep_ms(10 * retries);
+		fbr_test_sleep_ms(retry_sleep_ms * retries);
 
 		if (v1_var) {
 			v1 = fbr_test_read_var(ctx->test, v1_var);
@@ -104,65 +104,87 @@ fbr_cmd_not_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 static void
-_compare_values(struct fbr_test_context *ctx, const char *s1, const char *s2,
-    const char *cmd)
+_compare_values(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	fbr_test_ERROR_string(cmd);
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 2);
+	fbr_test_ERROR_string(cmd->name);
 
+	const char *command = cmd->name;
+	const char *s1 = cmd->params[0].value;
+	const char *s2 = cmd->params[1].value;
 	long l1 = fbr_test_parse_long(s1);
 	long l2 = fbr_test_parse_long(s2);
+	const char *l1_var = cmd->params[0].variable;
+	const char *l2_var = cmd->params[1].variable;
 
+	size_t retries = 0;
+	const size_t max_retries = 20;
+	const size_t retry_sleep_ms = 10;
 	int passed = 0;
 
-	if (!strcmp(cmd, "greater_than")) {
-		passed = (l1 > l2);
-	} else if (!strcmp(cmd, "greater_equal")) {
-		passed = (l1 >= l2);
-	} else if (!strcmp(cmd, "less_than")) {
-		passed = (l1 < l2);
-	} else if (!strcmp(cmd, "less_equal")) {
-		passed = (l1 <= l2);
+	while (retries < max_retries) {
+		if (!strcmp(command, "greater_than")) {
+			passed = (l1 > l2);
+		} else if (!strcmp(command, "greater_equal")) {
+			passed = (l1 >= l2);
+		} else if (!strcmp(command, "less_than")) {
+			passed = (l1 < l2);
+		} else if (!strcmp(command, "less_equal")) {
+			passed = (l1 <= l2);
+		}
+
+		if (passed) {
+			break;
+		} else if (!l1_var && !l2_var) {
+			break;
+		}
+
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "not %s '%ld' != '%ld', retry...",
+			command, l1, l2);
+
+		retries++;
+		fbr_test_sleep_ms(retry_sleep_ms * retries);
+
+		if (l1_var) {
+			s1 = fbr_test_read_var(ctx->test, l1_var);
+			assert(s1);
+			l1 = fbr_test_parse_long(s1);
+		}
+		if (l2_var) {
+			s2 = fbr_test_read_var(ctx->test, l2_var);
+			assert(s2);
+			l2 = fbr_test_parse_long(s2);
+		}
 	}
 
-	fbr_test_ASSERT(passed, "%s: '%s','%s' FAILED", cmd, s1, s2);
+	fbr_test_ASSERT(passed, "%s: '%s','%s' FAILED", command, s1, s2);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s %s,%s", cmd, s1, s2);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s %s,%s", command, s1, s2);
 }
 
 void
 fbr_cmd_greater_than(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 2);
-
-	_compare_values(ctx, cmd->params[0].value, cmd->params[1].value, cmd->name);
+	_compare_values(ctx, cmd);
 }
 
 void
 fbr_cmd_greater_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 2);
-
-	_compare_values(ctx, cmd->params[0].value, cmd->params[1].value, cmd->name);
+	_compare_values(ctx, cmd);
 }
 
 void
 fbr_cmd_less_than(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 2);
-
-	_compare_values(ctx, cmd->params[0].value, cmd->params[1].value, cmd->name);
+	_compare_values(ctx, cmd);
 }
 
 void
 fbr_cmd_less_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 2);
-
-	_compare_values(ctx, cmd->params[0].value, cmd->params[1].value, cmd->name);
+	_compare_values(ctx, cmd);
 }
 
 void
