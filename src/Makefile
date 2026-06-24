@@ -224,7 +224,7 @@ include $(wildcard $(DEPS))
 clean:		gcovclean
 		$(RMDIR) $(BUILD)
 		$(RM) *.so *.a
-		$(RM) chttp_client fjson_client fiberfs_test
+		$(RM) chttp_client fjson_client fiberfs_test fiberfs_log fiberfs
 
 gcov:		CFLAGS_EXTRA+=$(GCOVFLAGS)
 gcov:		LIBFLAGS+=$(GCOVLIBFLAGS)
