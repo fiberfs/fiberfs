@@ -952,6 +952,7 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 
 	if (changed) {
 		if (file->state == FBR_FILE_INIT) {
+			assert_zero_dev(file->generation);
 			file->generation = generation;
 		} else  {
 			assert_dev(file->state >= FBR_FILE_OK);
