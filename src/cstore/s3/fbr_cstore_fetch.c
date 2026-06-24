@@ -996,6 +996,8 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 		*http_error = 0;
 	}
 
+	// TODO need to support CDN routing here
+
 	enum fbr_cstore_route route = FBR_CSTORE_ROUTE_CLUSTER;
 	if (route_s3) {
 		route = FBR_CSTORE_ROUTE_S3;
