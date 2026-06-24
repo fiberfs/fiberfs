@@ -987,7 +987,7 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 fbr_id_t
 fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
     struct fbr_cstore_path *root_path, int route_s3, struct fbr_cstore_entry **entry_ref,
-    int *http_error)
+    int *http_error, int write_sync)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_path_ok(root_path);
@@ -1057,7 +1057,7 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	fbr_writer_flush(fs, json_writer);
 	assert_zero(json_writer->error);
 
-	if (cstore->config.async_write) {
+	if (cstore->config.async_write && !write_sync) {
 		fbr_cstore_async_root_write(cstore, json_writer, root_path, version, timestamp);
 	} else {
 		fbr_cstore_io_root_write(cstore, json_writer, root_path, version, 0, 0, timestamp,

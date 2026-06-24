@@ -164,10 +164,10 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int route
 	}
 
 	if (!version && has_backend) {
-		version = fbr_cstore_s3_root_get(fs, cstore, &path, route_s3, NULL, NULL);
+		version = fbr_cstore_s3_root_get(fs, cstore, &path, route_s3, NULL, NULL, 0);
 
 		if (!version && !route_s3) {
-			version = fbr_cstore_s3_root_get(fs, cstore, &path, 1, NULL, NULL);
+			version = fbr_cstore_s3_root_get(fs, cstore, &path, 1, NULL, NULL, 0);
 		}
 	}
 
