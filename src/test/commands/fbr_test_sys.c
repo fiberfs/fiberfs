@@ -527,7 +527,8 @@ fbr_cmd_sys_stat_uid(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 static void
-_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append, int exclusive)
+_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append, int exclusive,
+    int sync)
 {
 	_sys_init(ctx);
 	fbr_test_ERROR(cmd->param_count < 2, "Need 2 params");
@@ -542,13 +543,16 @@ _sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append, i
 	char *name = "write";
 	int write_flag = O_TRUNC;
 	if (append) {
-		assert_zero(exclusive);
+		assert_zero(exclusive || sync);
 		name = "append";
 		write_flag = O_APPEND;
 	} else if (exclusive) {
-		assert_zero(append);
+		assert_zero(sync);
 		name = "write_exclusive";
 		write_flag = O_EXCL;
+	} else if (sync) {
+		write_flag |= O_SYNC;
+		name = "write_sync";
 	}
 
 	int fd = open(filename, write_flag | O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
@@ -580,19 +584,25 @@ _sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int append, i
 void
 fbr_cmd_sys_write(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	_sys_write(ctx, cmd, 0, 0);
-}
-
-void
-fbr_cmd_sys_write_exclusive(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	_sys_write(ctx, cmd, 0, 1);
+	_sys_write(ctx, cmd, 0, 0, 0);
 }
 
 void
 fbr_cmd_sys_append(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	_sys_write(ctx, cmd, 1, 0);
+	_sys_write(ctx, cmd, 1, 0, 0);
+}
+
+void
+fbr_cmd_sys_write_exclusive(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_write(ctx, cmd, 0, 1, 0);
+}
+
+void
+fbr_cmd_sys_write_sync(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_write(ctx, cmd, 0, 0, 1);
 }
 
 void

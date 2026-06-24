@@ -209,6 +209,7 @@ _FS_TEST_STAT(write_bytes)
 _FS_TEST_STAT(index_loads)
 _FS_TEST_STAT(appends)
 _FS_TEST_STAT(flushes)
+_FS_TEST_STAT(flush_memory)
 
 static void
 _test_fs_inodes_debug_print(struct fbr_fs *fs, struct fbr_file *file)

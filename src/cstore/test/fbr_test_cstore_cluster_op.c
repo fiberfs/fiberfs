@@ -109,6 +109,10 @@ _op_mkdir_append(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode
 		fbr_zero(&fi);
 		fi.flags = O_WRONLY | O_APPEND;
 
+		if (!(random() % 2)) {
+			fi.flags |= O_SYNC;
+		}
+
 		fbr_ops_open(request, file->inode, &fi);
 		assert_zero(request->error);
 
@@ -214,10 +218,6 @@ _op_mkdir_thread(void *arg)
 		fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CLUSTER);
 	} else {
 		fbr_test_cstore_backend_add(fs->cstore, _CSTORE_C0_SHARED, FBR_CSTORE_ROUTE_CDN);
-	}
-
-	if (!(random() % 2)) {
-		fs->config.flush_on_create = 1;
 	}
 
 	struct fbr_test_context *test_ctx = fbr_test_get_ctx();

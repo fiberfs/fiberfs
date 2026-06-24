@@ -33,6 +33,10 @@ equal $cstore_stat_chunk_write_bytes:0 25
 equal $cstore_stat_chunk_read_bytes:0 25
 greater_than $cstore_stat_index_write_bytes:0 0
 greater_than $cstore_stat_root_write_bytes:0 0
+equal $cstore_stat_roots:0 1
+equal $cstore_stat_indexes:0 1
+equal $cstore_stat_chunks:0 5
+equal $cstore_stat_root_updates:0 2
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0
@@ -40,5 +44,8 @@ equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
+
+equal $fs_test_stat_flushes 1
+equal $fs_test_stat_flush_memory 1
 
 fuse_test_unmount

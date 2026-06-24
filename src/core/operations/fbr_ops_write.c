@@ -29,7 +29,7 @@ fbr_ops_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, size
 	fbr_stat_add_count(&fs->stats.write_bytes, size);
 
 	int ret = 0;
-	if (fio->append) {
+	if (fio->append || fio->sync) {
 		ret = fbr_wbuffer_flush_fio(fs, fio);
 	}
 

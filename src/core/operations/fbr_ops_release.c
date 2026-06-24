@@ -21,6 +21,7 @@ fbr_ops_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 	int ret = fbr_wbuffer_flush_fio(fs, fio);
 
 	fbr_fio_release(fs, fio);
+	fi->fh = 0;
 
 	fbr_fuse_reply_err(request, ret);
 }

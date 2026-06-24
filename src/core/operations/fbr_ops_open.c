@@ -22,15 +22,17 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 		fbr_fuse_reply_err(request, ENOENT);
 		return;
 	} else if (!S_ISREG(file->mode)) {
-		fbr_inode_release(fs, &file);
 		fbr_fuse_reply_err(request, EISDIR);
+		fbr_inode_release(fs, &file);
 		return;
 	}
 
 	int read_only = 0;
 
-	if (fbr_is_flag(fi->flags, O_WRONLY | O_RDWR)) {
+	if (fbr_is_flag(fi->flags, O_RDWR)) {
 		fbr_rlog(FBR_LOG_OP_OPEN, "flags: read+write");
+	} else if (fbr_is_flag(fi->flags, O_WRONLY)) {
+		fbr_rlog(FBR_LOG_OP_OPEN, "flags: write only");
 	} else {
 		read_only = 1;
 		fbr_rlog(FBR_LOG_OP_OPEN, "flags: read only");
@@ -44,12 +46,32 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 		fbr_rlog(FBR_LOG_OP_OPEN, "flags: append");
 	}
 	if (fbr_is_flag(fi->flags, O_TRUNC)) {
-		// TODO should we zero out file->size here?
 		fio->truncate = 1;
 		fbr_rlog(FBR_LOG_OP_OPEN, "flags: truncate");
 	}
+	if (fbr_is_flag(fi->flags, O_SYNC)) {
+		fio->sync = 1;
+		fbr_rlog(FBR_LOG_OP_OPEN, "flags: sync");
+	}
 	if (fbr_is_flag(fi->flags, O_CREAT)) {
 		fbr_ABORT("O_CREAT used in OPEN?");
+	}
+
+	if (fio->sync && fio->truncate) {
+		struct fbr_flush_data flush_data;
+		enum fbr_flush_flags flags = FBR_FLUSH_WBUFFER | FBR_FLUSH_TRUNCATE;
+		fbr_flush_data_init(&flush_data, file, NULL, NULL, flags);
+
+		int ret = fbr_fs_flush(fs, &flush_data);
+
+		if (ret) {
+			fbr_fuse_reply_err(request, ret);
+			fbr_inode_release(fs, &file);
+			fbr_fio_release(fs, fio);
+			return;
+		}
+
+		fio->truncate = 0;
 	}
 
 	assert_zero_dev(fi->fh);

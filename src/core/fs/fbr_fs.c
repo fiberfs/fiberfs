@@ -37,8 +37,6 @@ fbr_fs_config_load(struct fbr_fs *fs)
 		assert_zero_dev(fs->config.gzip_index);
 	}
 
-	fs->config.flush_on_create = fbr_conf_get_bool("FS_FLUSH_ON_CREATE", FBR_CONFIG_FALSE);
-
 	long dentry_ttl_msec = fbr_conf_get_long("FS_DENTRY_TTL_MSEC", 0);
 	if (dentry_ttl_msec > 0) {
 		fs->config.dentry_ttl = (double)dentry_ttl_msec / 1000;

@@ -61,6 +61,7 @@ FBR_TEST_VAR(fs_test_stat_write_bytes)
 FBR_TEST_VAR(fs_test_stat_index_loads)
 FBR_TEST_VAR(fs_test_stat_appends)
 FBR_TEST_VAR(fs_test_stat_flushes)
+FBR_TEST_VAR(fs_test_stat_flush_memory)
 
 FBR_TEST_CMD(fs_test_path_assert)
 FBR_TEST_CMD(fs_test_path)

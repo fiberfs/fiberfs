@@ -69,7 +69,10 @@ fbr_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 			break;
 		}
 
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "not equal '%s' != '%s', retry...", v1, v2);
+		if ((retries % 5) == 0) {
+			fbr_test_log(ctx, FBR_LOG_VERBOSE, "not equal '%s' != '%s', retry...",
+				v1, v2);
+		}
 
 		retries++;
 		fbr_test_sleep_ms(retry_sleep_ms * retries);
@@ -140,8 +143,10 @@ _compare_values(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 			break;
 		}
 
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "not %s '%ld' != '%ld', retry...",
-			command, l1, l2);
+		if ((retries % 5) == 0) {
+			fbr_test_log(ctx, FBR_LOG_VERBOSE, "not %s '%ld' != '%ld', retry...",
+				command, l1, l2);
+		}
 
 		retries++;
 		fbr_test_sleep_ms(retry_sleep_ms * retries);

@@ -50,6 +50,8 @@ equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
 equal $fs_test_stat_appends 5
+equal $fs_test_stat_flushes 5
+equal $fs_test_stat_flush_memory 1
 equal $cstore_stat_chunks:0 5
 
 fuse_test_unmount

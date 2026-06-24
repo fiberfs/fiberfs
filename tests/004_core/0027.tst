@@ -3,7 +3,6 @@ fiber_test "Directory read test"
 # Init
 
 config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 3
-config_add FS_FLUSH_ON_CREATE true
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
@@ -41,6 +40,13 @@ equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
+
+equal $fs_test_stat_flushes 2
+equal $fs_test_stat_flush_memory 2
+
+equal $cstore_stat_roots:0 1
+equal $cstore_stat_indexes:0 1
 equal $cstore_stat_chunks:0 7
+equal $cstore_stat_root_updates:0 3
 
 fuse_test_unmount

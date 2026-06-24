@@ -58,14 +58,18 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	file->mode = mode;
 	file->local_only = 1;
 
+	assert(fbr_is_flag(fi->flags, O_CREAT));
+
 	if (fbr_is_flag(fi->flags, O_RDONLY)) {
 		fbr_ABORT("O_RDONLY used in CREATE?");
 	} else {
 		assert_dev(fbr_is_flag(fi->flags, O_WRONLY | O_RDWR));
-		fbr_rlog(FBR_LOG_OP_CREATE, "flags: read+write");
+		if (fbr_is_flag(fi->flags, O_WRONLY)) {
+			fbr_rlog(FBR_LOG_OP_CREATE, "flags: write only");
+		} else if (fbr_is_flag(fi->flags, O_RDWR)) {
+			fbr_rlog(FBR_LOG_OP_CREATE, "flags: read+write");
+		}
 	}
-
-	assert(fbr_is_flag(fi->flags, O_CREAT));
 
 	if (S_ISREG(mode)) {
 		fbr_rlog(FBR_LOG_OP_CREATE, "mode: file");
@@ -89,7 +93,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		fbr_rlog(FBR_LOG_OP_CREATE, "flags: exclusive");
 	}
 
-	if (fs->config.flush_on_create || fbr_is_flag(fi->flags, O_EXCL)) {
+	if (fbr_is_flag(fi->flags, O_SYNC) || fbr_is_flag(fi->flags, O_EXCL)) {
 		if (fbr_is_flag(fi->flags, O_TRUNC) && !fbr_is_flag(fi->flags, O_EXCL)) {
 			flags = FBR_FLUSH_WBUFFER | FBR_FLUSH_TRUNCATE;
 			fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
@@ -124,8 +128,11 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		fio->append = 1;
 		fbr_rlog(FBR_LOG_OP_CREATE, "flags: append");
 	}
-	if (fbr_is_flag(fi->flags, O_TRUNC) && !fs->config.flush_on_create &&
-	    !fbr_is_flag(fi->flags, O_EXCL)) {
+	if (fbr_is_flag(fi->flags, O_SYNC)) {
+		fio->sync = 1;
+		fbr_rlog(FBR_LOG_OP_CREATE, "flags: sync");
+	}
+	if (fbr_is_flag(fi->flags, O_TRUNC) && !fio->sync && !fbr_is_flag(fi->flags, O_EXCL)) {
 		fio->truncate = 1;
 		fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
 	}

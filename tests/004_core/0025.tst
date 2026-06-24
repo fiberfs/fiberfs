@@ -37,6 +37,13 @@ cstore_debug
 
 equal $cstore_stat_chunk_write_bytes:0 15
 equal $cstore_stat_chunk_read_bytes:0 15
+equal $cstore_stat_roots:0 1
+equal $cstore_stat_indexes:0 1
+equal $cstore_stat_chunks:0 1
+equal $cstore_stat_root_updates:0 2
+
+equal $fs_test_stat_flushes 1
+equal $fs_test_stat_flush_memory 1
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0
