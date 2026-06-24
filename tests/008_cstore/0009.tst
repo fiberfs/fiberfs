@@ -1,5 +1,7 @@
 fiber_test "cstore server"
 
+skip_if_not $tls_enabled
+
 config_add CSTORE_SERVER true
 config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
 config_add CSTORE_SERVER_PORT 0

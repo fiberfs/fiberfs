@@ -56,6 +56,11 @@ ifneq ($(CC_OK),true)
 $(error CC=$(CC) compiler error, cannot compile)
 endif
 
+# Allow clean to bypass rules
+ifeq ($(MAKECMDGOALS),clean)
+	CC_REUSE=true
+endif
+
 # Detect fuse3 (required)
 FUSE3_PKG=fuse3
 define FUSE3_C=
@@ -75,26 +80,32 @@ else
 $(error fuse3 not found. Required for compiling)
 endif
 
-# Detect openssl (OPENSSL=false to disable)
+# Detect openssl (OPENSSL=skip to disable)
 OPENSSL_PKG=openssl
 OPENSSL_C='\#include <openssl/ssl.h>\n int main() {SSL *ssl;}'
 OPENSSL_CFLAGS=-DCHTTP_OPENSSL
 OPENSSL_LIB=-lssl -lcrypto
 OPENSSL=$(shell printf $(OPENSSL_C) | $(TCC) $(OPENSSL_LIB) $(TEST_TRUE))
-ifeq ($(OPENSSL),true)
+ifeq ($(CC_REUSE),true)
+else ifeq ($(OPENSSL),true)
 	CFLAGS_BUILD+=$(OPENSSL_CFLAGS)
 	LIBFLAGS+=$(OPENSSL_LIB)
+else ifneq ($(OPENSSL),skip)
+$(error openssl not found. Use 'OPENSSL=skip' to bypass)
 endif
 
-# Detect zlib (ZLIB=false to disable)
+# Detect zlib (ZLIB=skip to disable)
 ZLIB_PKG=zlib
 ZLIB_C='\#include <zlib.h>\n int main() {zlibVersion();}'
 ZLIB_CFLAGS=-DFBR_ZLIB
 ZLIB_LIB=-lz
 ZLIB=$(shell printf $(ZLIB_C) | $(TCC) $(ZLIB_LIB) $(TEST_TRUE))
-ifeq ($(ZLIB),true)
+ifeq ($(CC_REUSE),true)
+else ifeq ($(ZLIB),true)
 	CFLAGS_BUILD+=$(ZLIB_CFLAGS)
 	LIBFLAGS+=$(ZLIB_LIB)
+else ifneq ($(ZLIB),skip)
+$(error zlib not found. Use 'ZLIB=skip' to bypass)
 endif
 
 # Detect libunwind (LIBUNWIND=false to disable)
@@ -103,7 +114,8 @@ LIBUNWIND_C='\#include <libunwind.h>\n int main() {unw_context_t uc;}'
 LIBUNWIND_CFLAGS=-DFBR_LIBUNWIND
 LIBUNWIND_LIB=-lunwind
 LIBUNWIND=$(shell printf $(LIBUNWIND_C) | $(TCC) $(LIBUNWIND_LIB) $(TEST_TRUE))
-ifeq ($(LIBUNWIND),true)
+ifeq ($(CC_REUSE),true)
+else ifeq ($(LIBUNWIND),true)
 	CFLAGS_BUILD+=$(LIBUNWIND_CFLAGS)
 	LIBFLAGS+=$(LIBUNWIND_LIB)
 endif
@@ -147,7 +159,7 @@ ifeq ($(_CC_ALL),)
 else ifeq ($(findstring clean,$(MAKECMDGOALS)),clean)
 else ifeq ($(findstring gcov,$(MAKECMDGOALS)),gcov)
 else ifeq ($(CC_REUSE),true)
-CC_ALL=$(_CC_ALL)
+	CC_ALL=$(_CC_ALL)
 else ifneq ($(_CC_ALL),$(CC_ALL))
 $(error Compiler flags changed, please run 'make clean' or use 'CC_REUSE=true')
 endif
