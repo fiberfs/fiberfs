@@ -9,7 +9,7 @@ cstore_mock_s3 0 region access_key secret_key
 
 chttp_init
 chttp_method PUT
-chttp_url /file.txt.17592574420817011762.55.fiberfschunk
+chttp_url /file.txt.fiberfschunk.17592574420817011762.55
 chttp_add_header "if-none-match" '*'
 chttp_add_header "etag" '"17592574420817011762"'
 chttp_add_header "content-length" "10"
@@ -25,7 +25,7 @@ cstore_debug
 
 chttp_reset
 chttp_method GET
-chttp_url /file.txt.17592574420817011762.55.fiberfschunk
+chttp_url /file.txt.fiberfschunk.17592574420817011762.55
 chttp_add_header "if-match" "17592574420817011762"
 chttp_add_header "host" "hostname"
 chttp_s3_sign hostname region access_key secret_key

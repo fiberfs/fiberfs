@@ -97,11 +97,11 @@ fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset,
 	fbr_id_string(id, chunk_id, sizeof(chunk_id));
 
 	path->magic = FBR_CSTORE_PATH_MAGIC;
-	path->length = fbr_bprintf(path->value, "%s.%s.%zu%s",
+	path->length = fbr_bprintf(path->value, "%s%s.%s.%zu",
 		filepath.path.name,
+		FBR_FIBERFS_CHUNK_NAME,
 		chunk_id,
-		offset,
-		FBR_FIBERFS_CHUNK_NAME);
+		offset);
 
 	fbr_cstore_path_ok(path);
 }
@@ -506,7 +506,8 @@ fbr_cstore_s3_url_parse(const char *url, size_t url_len, const char *etag, size_
 				return FBR_CSTORE_FILE_ROOT;
 			} else if (!strncmp(&url[i], FBR_FIBERFS_INDEX_NAME ".",
 			    sizeof(FBR_FIBERFS_INDEX_NAME))) {
-				i += 14;
+				i += sizeof(FBR_FIBERFS_INDEX_NAME);
+
 				if (i >= url_len || !etag_len) {
 					return FBR_CSTORE_FILE_NONE;
 				} else if (i + etag_len != url_len) {
@@ -523,40 +524,45 @@ fbr_cstore_s3_url_parse(const char *url, size_t url_len, const char *etag, size_
 			    sizeof(FBR_FIBERFS_NAME) - 1)) {
 				return FBR_CSTORE_FILE_NONE;
 			}
-		} else if (url[i] == '.') {
+		} else if (url[i] == '.' && !strncmp(&url[i], FBR_FIBERFS_CHUNK_NAME ".",
+		    sizeof(FBR_FIBERFS_CHUNK_NAME))) {
+			i += sizeof(FBR_FIBERFS_CHUNK_NAME);
+
 			if (!etag_len) {
-				continue;
-			} else if (i + etag_len + 2 >= url_len) {
+				return FBR_CSTORE_FILE_NONE;
+			} else if (i + etag_len + 2 > url_len) {
 				return FBR_CSTORE_FILE_NONE;
 			}
 
-			if (!strncmp(&url[i + 1], etag, etag_len)) {
-				i += 2 + etag_len;
+			if (!strncmp(&url[i], etag, etag_len)) {
+				i += etag_len + 1;
 				assert_dev(i < url_len);
 
 				if (url[i - 1] != '.') {
-					continue;
+					return FBR_CSTORE_FILE_NONE;
 				}
 
 				size_t end = i;
 				while (url[end] >= '0' && url[end] <= '9') {
 					end++;
 				}
-
-				if (url[end] != '.' || end == i || end == url_len) {
-					continue;
-				} else if (strcmp(&url[end], FBR_FIBERFS_CHUNK_NAME)) {
-					continue;
+				if (end != url_len) {
+					return FBR_CSTORE_FILE_NONE;
 				}
 
 				int error;
 				*offset = fbr_parse_ulong(&url[i], end - i, &error);
 				if (error) {
-					continue;
+					return FBR_CSTORE_FILE_NONE;
 				}
 
 				return FBR_CSTORE_FILE_CHUNK;
 			}
+
+			return FBR_CSTORE_FILE_NONE;
+		} else if (url[i] == '.' && !strncmp(&url[i], FBR_FIBERFS_NAME,
+		    sizeof(FBR_FIBERFS_NAME) - 1)) {
+			return FBR_CSTORE_FILE_NONE;
 		}
 	}
 
