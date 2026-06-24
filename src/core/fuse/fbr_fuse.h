@@ -43,8 +43,11 @@ struct fbr_fuse_context {
 	int					exit_value;
 };
 
+typedef void (*fbr_fuse_abort_hook_f)(void);
+
 struct fuse_conn_info;
 
+extern fbr_fuse_abort_hook_f FBR_FUSE_ABORT_HOOK;
 extern const struct fuse_lowlevel_ops *FBR_FUSE_OPS;
 
 void fbr_fuse_init(struct fbr_fuse_context *ctx);

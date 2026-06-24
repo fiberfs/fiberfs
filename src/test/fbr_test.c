@@ -12,10 +12,11 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "test/fbr_test.h"
-#include "test/chttp_test_cmds.h"
+#include "fbr_test.h"
+#include "core/fuse/fbr_fuse.h"
 #include "core/request/fbr_rlog.h"
 #include "log/fbr_log.h"
+#include "test/chttp_test_cmds.h"
 
 extern int _IS_FIBERFS_TEST;
 static struct fbr_test *_TEST;
@@ -173,7 +174,7 @@ fbr_test_main(int argc, char **argv)
 	// TODO we need to change current directory
 
 	_IS_FIBERFS_TEST = 1;
-
+	FBR_FUSE_ABORT_HOOK = fbr_test_context_abort;
 	fbr_setup_crash_signals();
 
 	_init_test(&test);

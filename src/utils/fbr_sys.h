@@ -17,6 +17,7 @@ typedef int (*fbr_nftw_f)(const char *filename, const struct stat *stat, int fla
 	struct FTW *info);
 
 int fbr_sys_exists(const char *path);
+int fbr_sys_isfile(const char *path);
 int fbr_sys_isdir(const char *path);
 void fbr_sys_rmdir(const char *path);
 int fbr_sys_nftw(const char *path, fbr_nftw_f func);

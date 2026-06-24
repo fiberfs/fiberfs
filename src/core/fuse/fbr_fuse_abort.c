@@ -11,8 +11,6 @@
 #include "core/request/fbr_request.h"
 #include "log/fbr_log.h"
 
-extern void fbr_test_context_abort(void);
-
 /*
  * The abort processs is meant to gracefully exit all Fiber threads/processes which will
  * then allow for a clean fuse unmount.
@@ -48,6 +46,8 @@ extern void fbr_test_context_abort(void);
  * 4. If not a fiber_test context, abort() is called. (See fbr_assert.c)
  */
 
+fbr_fuse_abort_hook_f FBR_FUSE_ABORT_HOOK;
+
 void
 fbr_context_abort(int pre_abort)
 {
@@ -60,7 +60,11 @@ fbr_context_abort(int pre_abort)
 
 	if (!request || request->not_fuse) {
 		fbr_fuse_unmount_signal();
-		fbr_test_context_abort();
+
+		if (FBR_FUSE_ABORT_HOOK) {
+			FBR_FUSE_ABORT_HOOK();
+		}
+
 		return;
 	}
 

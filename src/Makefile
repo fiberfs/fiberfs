@@ -166,7 +166,7 @@ endif
 
 .PHONY:		all lib clean gcov gcovclean afl
 
-all:		fiberfs_test lib
+all:		fiberfs_test fiberfs lib
 lib:		libfiberfs.so libfiberfs.a libchttp.a libfjson.a libcstore.a libfibertest.a
 
 chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
@@ -176,7 +176,10 @@ fjson_client:	libfjson.a $(FJSON_CLIENT_OBJS)
 		$(CC) -o $@ $(FJSON_CLIENT_OBJS) libfjson.a $(LIBFLAGS)
 
 fiberfs_test:	libfiberfs.a libchttp.a libfjson.a libcstore.a libfibertest.a
-		$(CC) -o $@ libfibertest.a libfiberfs.a libchttp.a libfjson.a libcstore.a $(LIBFLAGS)
+		$(CC) -o $@ libfibertest.a libfiberfs.a libcstore.a libchttp.a libfjson.a $(LIBFLAGS)
+
+fiberfs:	libfiberfs.a libchttp.a libfjson.a libcstore.a
+		$(CC) -o $@ libfiberfs.a libcstore.a libfiberfs.a libchttp.a libfjson.a $(LIBFLAGS)
 
 libfiberfs.so:	libfiberfs.a libchttp.a libfjson.a libcstore.a
 		$(CC) $(LDFLAGS) -o $@ libfiberfs.a libchttp.a libfjson.a libcstore.a

@@ -44,6 +44,18 @@ fbr_sys_exists(const char *path)
 }
 
 int
+fbr_sys_isfile(const char *path)
+{
+	mode_t st_mode = _sys_mode(path);
+
+	if (S_ISREG(st_mode)) {
+		return 1;
+	}
+
+	return 0;
+}
+
+int
 fbr_sys_isdir(const char *path)
 {
 	mode_t st_mode = _sys_mode(path);
