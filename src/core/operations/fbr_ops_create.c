@@ -87,15 +87,19 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	}
 
 	enum fbr_flush_flags flags = FBR_FLUSH_NEW_FILE;
+	int truncated = 0;
 
 	if (fbr_is_flag(fi->flags, O_EXCL)) {
 		flags |= FBR_FLUSH_NEW_EXCLUSIVE;
-		fbr_rlog(FBR_LOG_OP_CREATE, "flags: exclusive");
-	}
+		truncated = 1;
 
-	if (fbr_is_flag(fi->flags, O_SYNC) || fbr_is_flag(fi->flags, O_EXCL)) {
-		if (fbr_is_flag(fi->flags, O_TRUNC) && !fbr_is_flag(fi->flags, O_EXCL)) {
+		fbr_rlog(FBR_LOG_OP_CREATE, "flags: exclusive");
+		fbr_rlog(FBR_LOG_OP_CREATE, "flush_on_create: true");
+	} else if (fbr_is_flag(fi->flags, O_SYNC)) {
+		if (fbr_is_flag(fi->flags, O_TRUNC)) {
 			flags = FBR_FLUSH_WBUFFER | FBR_FLUSH_TRUNCATE;
+			truncated = 1;
+
 			fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
 		}
 
@@ -103,7 +107,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	} else {
 		flags |= FBR_FLUSH_MEM_ONLY;
 
-		fbr_rlog(FBR_LOG_OP_CREATE, "flush_on_create: false");
+		fbr_rlog(FBR_LOG_OP_CREATE, "flush_on_create: memory only");
 	}
 
 	// Flush empty file
@@ -132,7 +136,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		fio->sync = 1;
 		fbr_rlog(FBR_LOG_OP_CREATE, "flags: sync");
 	}
-	if (fbr_is_flag(fi->flags, O_TRUNC) && !fio->sync && !fbr_is_flag(fi->flags, O_EXCL)) {
+	if (fbr_is_flag(fi->flags, O_TRUNC) && !truncated) {
 		fio->truncate = 1;
 		fbr_rlog(FBR_LOG_OP_CREATE, "flags: truncate");
 	}
