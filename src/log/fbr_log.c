@@ -23,7 +23,6 @@
 
 #include "fiberfs.h"
 #include "fbr_log.h"
-#include "core/request/fbr_request.h"
 #include "config/fbr_config.h"
 
 size_t
