@@ -176,6 +176,7 @@ fbr_test_main(int argc, char **argv)
 	_IS_FIBERFS_TEST = 1;
 	FBR_FUSE_ABORT_HOOK = fbr_test_context_abort;
 	fbr_setup_crash_signals();
+	fbr_setup_stop_signals(NULL);
 
 	_init_test(&test);
 	fbr_test_cmds_init(&test);

@@ -11,12 +11,17 @@
 #define	_ASSERT_H
 #endif
 
+#include <signal.h>
+
 #define __fbr_attr_printf(fpos)							\
 	__attribute__((__format__(__printf__, (fpos), ((fpos) + 1))))
 #define __fbr_noreturn								\
 	__attribute__ ((__noreturn__))
 
+typedef void (*fbr_sigaction_f)(int signal, siginfo_t *info, void *ucontext);
+
 void fbr_setup_crash_signals(void);
+void fbr_setup_stop_signals(fbr_sigaction_f func);
 void __fbr_attr_printf(5) __fbr_noreturn fbr_do_abort(const char *assertion,
 	const char *function, const char *file, int line, const char *fmt, ...);
 int fbr_libunwind_enabled(void);

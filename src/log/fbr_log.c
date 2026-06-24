@@ -9,6 +9,7 @@
  *
  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <stdarg.h>
@@ -145,7 +146,8 @@ _log_shared_init(struct fbr_log *log, const char *name, size_t size)
 
 	_log_shared_name(name, log->shm_name, sizeof(log->shm_name));
 	log->shm_fd = shm_open(log->shm_name, shm_flags, S_IRUSR | S_IWUSR);
-	assert(log->shm_fd >= 0);
+	fbr_ASSERT(log->shm_fd >= 0, "shm_open(%s) failed: %s (%d)",
+		log->shm_name, strerror(errno), errno);
 
 	if (size) {
 		log->mmap_size = size;

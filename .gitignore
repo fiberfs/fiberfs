@@ -5,6 +5,7 @@ src/build
 src/chttp_client
 src/fjson_client
 src/fiberfs_test
+src/fiberfs_log
 src/fiberfs
 src/gcov_report
 tests/afl_json/results

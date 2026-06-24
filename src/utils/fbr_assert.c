@@ -20,9 +20,10 @@ extern void fbr_context_abort(int pre_abort);
 
 static unsigned long _ASSERT_LOOP;
 static int _ASSERT_SPLIT_TRACE;
+int _ABORT_CORE;
 
-void
-fbr_signal_catcher(int signal, siginfo_t *info, void *ucontext)
+static void
+_signal_abort(int signal, siginfo_t *info, void *ucontext)
 {
 	(void)info;
 	(void)ucontext;
@@ -36,12 +37,10 @@ fbr_setup_crash_signals(void)
 {
 	struct sigaction sa;
 	fbr_zero(&sa);
-	sa.sa_sigaction = fbr_signal_catcher;
+	sa.sa_sigaction = _signal_abort;
 	sa.sa_flags = SA_SIGINFO;
 
 	assert_zero(sigaction(SIGSEGV, &sa, NULL));
-	assert_zero(sigaction(SIGTERM, &sa, NULL));
-	assert_zero(sigaction(SIGINT, &sa, NULL));
 	assert_zero(sigaction(SIGBUS, &sa, NULL));
 	assert_zero(sigaction(SIGILL, &sa, NULL));
 
@@ -50,6 +49,23 @@ fbr_setup_crash_signals(void)
 	sigemptyset(&sa.sa_mask);
 
 	assert_zero(sigaction(SIGPIPE, &sa, NULL));
+}
+
+void
+fbr_setup_stop_signals(fbr_sigaction_f func)
+{
+	struct sigaction sa;
+	fbr_zero(&sa);
+	sa.sa_flags = SA_SIGINFO;
+
+	if (func) {
+		sa.sa_sigaction = func;
+	} else {
+		sa.sa_sigaction = _signal_abort;
+	}
+
+	assert_zero(sigaction(SIGTERM, &sa, NULL));
+	assert_zero(sigaction(SIGINT, &sa, NULL));
 }
 
 static void
@@ -123,5 +139,9 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
 
 	fbr_context_abort(0);
 
-	abort();
+	if (_ABORT_CORE) {
+		abort();
+	}
+
+	_exit(1);
 }

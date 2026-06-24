@@ -5,15 +5,19 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/operations/fbr_operations.h"
 #include "core/request/fbr_request.h"
+#include "log/fbr_log.h"
 #include "utils/fbr_sys.h"
 
 static void _mount_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);
+
+static int _STOP;
 
 static const struct fbr_fuse_callbacks _FIBERFS_FUSE_CALLBACKS = {
 	.init = _mount_fuse_init,
@@ -41,6 +45,17 @@ static const struct fbr_fuse_callbacks _FIBERFS_FUSE_CALLBACKS = {
 	.forget = fbr_ops_forget,
 	.forget_multi = fbr_ops_forget_multi
 };
+
+static void
+_mount_signal_stop(int signal, siginfo_t *info, void *ucontext)
+{
+	(void)info;
+	(void)ucontext;
+
+	printf("Caught signal: %s (%d)\n", strsignal(signal), signal);
+
+	_STOP = 1;
+}
 
 static void
 _mount_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
@@ -82,21 +97,33 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	struct fbr_fuse_context fuse_ctx;
-	fbr_fuse_init(&fuse_ctx);
-	fuse_ctx.fuse_callbacks = &_FIBERFS_FUSE_CALLBACKS;
+	fbr_setup_crash_signals();
+	fbr_setup_stop_signals(_mount_signal_stop);
 
-	int ret = fbr_fuse_mount(&fuse_ctx, mount_path);
+	struct fbr_fuse_context _fuse_ctx;
+	struct fbr_fuse_context *fuse_ctx = &_fuse_ctx;
+	fbr_fuse_init(fuse_ctx);
+	fuse_ctx->fuse_callbacks = &_FIBERFS_FUSE_CALLBACKS;
+
+	int ret = fbr_fuse_mount(fuse_ctx, mount_path);
 	if (ret) {
 		return 2;
 	}
 
-	printf("Unmounting\n");
+	fbr_fuse_mounted(fuse_ctx);
+	fbr_log_ok(fuse_ctx->log);
 
-	fbr_fuse_unmount(&fuse_ctx);
-	assert(fuse_ctx.state == FBR_FUSE_NONE);
+	while (!_STOP) {
+		fbr_fuse_mounted(fuse_ctx);
+		fbr_sleep_ms(25);
 
-	fbr_fuse_free(&fuse_ctx);
+		fbr_log_print(fuse_ctx->log, FBR_LOG_TEST, FBR_REQID_TEST, "Mount loop...");
+	}
+
+	fbr_fuse_unmount(fuse_ctx);
+	assert(fuse_ctx->state == FBR_FUSE_NONE);
+
+	fbr_fuse_free(fuse_ctx);
 
 	printf("Done\n");
 

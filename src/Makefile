@@ -35,9 +35,12 @@ CSTORE_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(CSTORE_SRC)))
 UTILS_SRC=$(wildcard utils/*.c compress/*.c config/*.c)
 UTILS_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(UTILS_SRC)))
 
+LOG_CLIENT:=$(wildcard log/client/*.c)
+LOG_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(LOG_CLIENT)))
+
 ALL_SOURCE:=$(shell find * -type f -name '*.c')
 SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(FJSON_SRC) \
-	$(CSTORE_SRC), $(ALL_SOURCE))
+	$(CSTORE_SRC) $(LOG_CLIENT), $(ALL_SOURCE))
 OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(SOURCE)))
 DEPS:=$(patsubst %,$(BUILD)/%.d,$(basename $(ALL_SOURCE)))
 BUILD_DIRS:=$(sort $(dir $(DEPS)))
@@ -166,7 +169,7 @@ endif
 
 .PHONY:		all lib clean gcov gcovclean afl
 
-all:		fiberfs_test fiberfs lib
+all:		fiberfs_test fiberfs fiberfs_log lib
 lib:		libfiberfs.so libfiberfs.a libchttp.a libfjson.a libcstore.a libfibertest.a
 
 chttp_client:	libchttp.a $(CHTTP_CLIENT_OBJS)
@@ -180,6 +183,9 @@ fiberfs_test:	libfiberfs.a libchttp.a libfjson.a libcstore.a libfibertest.a
 
 fiberfs:	libfiberfs.a libchttp.a libfjson.a libcstore.a
 		$(CC) -o $@ libfiberfs.a libcstore.a libfiberfs.a libchttp.a libfjson.a $(LIBFLAGS)
+
+fiberfs_log:	libfiberfs.a libchttp.a libfjson.a libcstore.a $(LOG_CLIENT_OBJS)
+		$(CC) -o $@ $(LOG_CLIENT_OBJS) libfiberfs.a libcstore.a libfiberfs.a libchttp.a libfjson.a $(LIBFLAGS)
 
 libfiberfs.so:	libfiberfs.a libchttp.a libfjson.a libcstore.a
 		$(CC) $(LDFLAGS) -o $@ libfiberfs.a libchttp.a libfjson.a libcstore.a
