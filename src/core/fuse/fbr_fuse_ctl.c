@@ -119,6 +119,8 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	ctx->path = strdup(path);
 	assert(ctx->path);
+	size_t path_len = fbr_unslash(ctx->path, 0);
+	assert(path_len);
 
 	assert_zero(_FUSE_CTX);
 	_FUSE_CTX = ctx;

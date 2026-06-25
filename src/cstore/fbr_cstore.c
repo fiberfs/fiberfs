@@ -60,11 +60,6 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 
 	fbr_zero(cstore);
 
-	struct statfs fs;
-	int ret = statfs(root_path, &fs);
-	assert_zero(ret);
-	// TODO check f_fsid and make sure its not fiberfs (via fuse->statfs)
-
 	cstore->magic = FBR_CSTORE_MAGIC;
 
 	fbr_context_request_init();
@@ -90,9 +85,8 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 		fbr_cstore_head_ok(head);
 	}
 
-	size_t path_len = strlen(root_path);
-	assert(path_len < sizeof(cstore->root));
-	memcpy(cstore->root, root_path, path_len + 1);
+	size_t root_len = fbr_strbcpy(cstore->root, root_path);
+	fbr_unslash(cstore->root, root_len);
 
 	cstore->log = fbr_log_alloc(cstore->root, fbr_log_default_size());
 	fbr_log_ok(cstore->log);

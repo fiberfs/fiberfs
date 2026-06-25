@@ -505,3 +505,20 @@ fbr_ulong2octal(unsigned long value)
 
 	return octal;
 }
+
+size_t
+fbr_unslash(char *buffer, size_t len)
+{
+	assert(buffer);
+
+	if (!len) {
+		len = strlen(buffer);
+	}
+
+	while (len && buffer[len - 1] == '/') {
+		buffer[len - 1] = '\0';
+		len--;
+	}
+
+	return len;
+}

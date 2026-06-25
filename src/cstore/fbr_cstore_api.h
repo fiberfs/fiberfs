@@ -224,6 +224,8 @@ void fbr_cstore_loader_free(struct fbr_cstore *cstore);
 void fbr_cstore_config_load(struct fbr_cstore *cstore);
 size_t fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len);
 void fbr_cstore_request_id(char *buffer, size_t buffer_len);
+void fbr_cstore_make_root(struct fbr_cstore_hashpath *cache_hashroot, const char *cache_root,
+	const char *mount_path);
 
 #include "utils/fbr_enum_string_declare.h"
 FBR_ENUM_CSTORE_FILE_TYPE

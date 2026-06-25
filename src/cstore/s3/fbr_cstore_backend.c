@@ -95,11 +95,9 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 		s3->prefix_len = strlen(prefix);
 		if (s3->prefix_len >= 2 && prefix[0] == '/' && prefix[1] != '/') {
 			s3->prefix = strdup(prefix);
-			while (s3->prefix[s3->prefix_len - 1] == '/') {
-				s3->prefix[s3->prefix_len - 1] = '\0';
-				s3->prefix_len --;
-				assert(s3->prefix_len);
-			}
+			assert(s3->prefix);
+			s3->prefix_len = fbr_unslash(s3->prefix, s3->prefix_len);
+			assert(s3->prefix_len);
 		} else {
 			s3->prefix_len = 0;
 		}

@@ -75,12 +75,14 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 
 	fbr_fuse_setup(fuse_ctx, conn);
 
-	// TODO we need a subdir for this
+	struct fbr_cstore_hashpath cache_hashroot;
 	const char *cache_root = fbr_conf_get("CACHE_ROOT", FBR_CSTORE_DEFAULT_ROOT);
-	(void)mkdir(cache_root, S_IRWXU);
+	fbr_cstore_make_root(&cache_hashroot, cache_root, fuse_ctx->path);
+
+	fbr_rlog(FBR_LOG_MOUNT, "cache root: %s", cache_hashroot.value);
 
 	// Init cstore
-	struct fbr_cstore *cstore = fbr_cstore_alloc(cache_root);
+	struct fbr_cstore *cstore = fbr_cstore_alloc(cache_hashroot.value);
 	fbr_cstore_ok(cstore);
 
 	unsigned int cache_size = fbr_conf_get_ulong("CACHE_SIZE_MB", FBR_CSTORE_DEFAULT_SIZE_MB);
