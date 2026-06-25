@@ -269,9 +269,12 @@ _cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, int r
 
 struct fbr_cstore_entry *
 fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t bytes,
-    struct fbr_cstore_hashpath *hashpath, int remove_on_error)
+    struct fbr_cstore_hashpath *hashpath)
 {
 	assert(cstore);
+
+	int backend = fbr_cstore_backend_enabled(cstore);
+	int remove_on_error = backend;
 
 	struct fbr_cstore_entry *entry = fbr_cstore_insert(cstore, hash, bytes, 1);
 	if (!entry) {
@@ -303,13 +306,13 @@ fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t byt
 	int ret = fbr_sys_mkdirs(hashpath->value);
 	if (ret) {
 		fbr_cstore_set_error(entry);
-		_cstore_release(cstore, entry, remove_on_error);
+		_cstore_release(cstore, entry, 1);
 		return NULL;
 	}
 
-	if (fbr_sys_exists(hashpath->value) && !fbr_cstore_backend_enabled(cstore)) {
+	if (fbr_sys_exists(hashpath->value) && !backend) {
 		fbr_cstore_set_error(entry);
-		_cstore_release(cstore, entry, remove_on_error);
+		_cstore_release(cstore, entry, 1);
 		return NULL;
 	}
 
@@ -402,7 +405,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	}
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, wbuf_bytes,
-		&hashpath, 1);
+		&hashpath);
 	if (!entry) {
 		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR loading state");
 		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &http, wbuffer, 1);
@@ -638,7 +641,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	int ret;
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, writer->bytes,
-		&hashpath, 1);
+		&hashpath);
 	if (!entry) {
 		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR loading state");
 		ret = fbr_cstore_s3_send_finish(cstore, &sync, &http, 1);
@@ -986,7 +989,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 			return EAGAIN;
 		}
 
-		entry = fbr_cstore_io_get_loading(cstore, hash, FBR_CSTORE_ROOT_SIZE, &hashpath, 0);
+		entry = fbr_cstore_io_get_loading(cstore, hash, FBR_CSTORE_ROOT_SIZE, &hashpath);
 		if (!entry) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR loading state");
 			fbr_writer_free(root_json);

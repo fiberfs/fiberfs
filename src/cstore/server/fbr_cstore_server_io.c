@@ -264,7 +264,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	struct fbr_cstore_entry *entry = NULL;
 	if (unique) {
-		entry = fbr_cstore_io_get_loading(cstore, hash, cstore_len, &hashpath, backend);
+		entry = fbr_cstore_io_get_loading(cstore, hash, cstore_len, &hashpath);
 		if (!entry) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR loading state");
 			if (backend) {

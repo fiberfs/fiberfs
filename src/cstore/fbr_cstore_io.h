@@ -139,7 +139,7 @@ int fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
 int fbr_cstore_metadata_read(struct fbr_cstore_hashpath *hashpath,
 	struct fbr_cstore_metadata *metadata);
 struct fbr_cstore_entry *fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash,
-	size_t bytes, struct fbr_cstore_hashpath *hashpath, int remove_on_error);
+	size_t bytes, struct fbr_cstore_hashpath *hashpath);
 struct fbr_cstore_entry *fbr_cstore_io_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash);
 void fbr_cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 	enum fbr_wbuffer_state state);

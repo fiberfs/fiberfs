@@ -426,7 +426,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 	fbr_rlog(FBR_LOG_CS_S3, "S3_GET %s", fetch->file_path->value);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, fetch->length,
-		&hashpath, 1);
+		&hashpath);
 	if (!entry) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET loading state");
 		return 1;
@@ -746,7 +746,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset);
 
-	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, 0, NULL, 1);
+	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, 0, NULL);
 	if (!entry) {
 		// TODO we can just read the chunk and not write back if this is a problem
 		fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
