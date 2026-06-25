@@ -9,6 +9,19 @@
 #include "log/fbr_log.h"
 #include "utils/fbr_sys.h"
 
+static int _STOP;
+
+static void
+_log_signal_stop(int signal, siginfo_t *info, void *ucontext)
+{
+	(void)info;
+	(void)ucontext;
+
+	printf("Caught signal: %s (%d)\n", strsignal(signal), signal);
+
+	_STOP = 1;
+}
+
 static void
 _usage(void)
 {
@@ -24,7 +37,7 @@ main(int argc, char **argv)
 	}
 
 	fbr_setup_crash_signals();
-	fbr_setup_stop_signals(NULL);
+	fbr_setup_stop_signals(_log_signal_stop);
 
 	const char *mount_path = argv[1];
 
@@ -44,8 +57,10 @@ main(int argc, char **argv)
 	fbr_log_ok(&reader->log);
 	fbr_log_header_ok(reader->log.header);
 
-	while (1) {
-		char log_buffer[FBR_LOGLINE_MAX_LENGTH];
+	char log_buffer[FBR_LOGLINE_MAX_LENGTH];
+	unsigned long sleep_ms = 0;
+
+	while (!_STOP) {
 		struct fbr_log_line *log_line;
 
 		log_line = fbr_log_reader_get(reader, log_buffer, sizeof(log_buffer));
@@ -59,15 +74,18 @@ main(int argc, char **argv)
 			fbr_ASSERT(reader->cursor.status == FBR_LOG_CURSOR_EOF,
 				"cursor.status=%d", reader->cursor.status);
 
-			// TODO check for clean exit here
-			// TODO better sleep count
+			fbr_sleep_ms(sleep_ms);
 
-			fbr_sleep_ms(5);
+			if (sleep_ms < 100) {
+				sleep_ms++;
+			}
 
 			continue;
 		}
 
 		assert(reader->cursor.status == FBR_LOG_CURSOR_OK);
+
+		sleep_ms = 0;
 
 		char reqid_str[32];
 		fbr_log_reqid_str(log_line->request_id, reqid_str, sizeof(reqid_str));

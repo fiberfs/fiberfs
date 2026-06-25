@@ -115,7 +115,7 @@ main(int argc, char **argv)
 
 	while (!_STOP) {
 		fbr_fuse_mounted(fuse_ctx);
-		fbr_sleep_ms(25);
+		fbr_sleep_ms(FBR_FUSE_MOUNT_LOOP_MS);
 
 		fbr_log_print(fuse_ctx->log, FBR_LOG_TEST, FBR_REQID_TEST, "Mount loop...");
 	}

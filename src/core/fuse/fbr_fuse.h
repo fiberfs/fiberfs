@@ -10,6 +10,8 @@
 #include <errno.h>
 #include <pthread.h>
 
+#define FBR_FUSE_MOUNT_LOOP_MS			25
+
 enum fbr_fuse_state {
 	FBR_FUSE_NONE = 0,
 	FBR_FUSE_MOUNTED
