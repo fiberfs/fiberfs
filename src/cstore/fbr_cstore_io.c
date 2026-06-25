@@ -307,12 +307,6 @@ fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t byt
 		return NULL;
 	}
 
-	if (fbr_sys_exists(hashpath->value)) {
-		fbr_cstore_set_error(entry);
-		_cstore_release(cstore, entry, remove_on_error);
-		return NULL;
-	}
-
 	return entry;
 }
 
@@ -411,7 +405,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
-	int fd = open(hashpath.value, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	int fd = open(hashpath.value, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR open()");
 		fbr_cstore_set_error(entry);
@@ -647,7 +641,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
-	int fd = open(hashpath.value, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	int fd = open(hashpath.value, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR open()");
 		fbr_cstore_set_error(entry);
@@ -750,8 +744,6 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 			if (ret == 400 || ret == 404) {
 				return EAGAIN;
-			} else if (ret) {
-				return 1;
 			}
 		} else if (retry > 1) {
 			return 1;

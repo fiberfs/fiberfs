@@ -173,6 +173,7 @@ _cstore_exists(struct fbr_cstore *cstore, fbr_hash_t hash)
 
 	assert_dev(cstore->loader.start_time);
 	double modified = fbr_convert_timespec(&st.st_mtim);
+
 	if (modified > cstore->loader.start_time) {
 		return 0;
 	}
