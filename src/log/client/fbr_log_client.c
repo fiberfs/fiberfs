@@ -82,3 +82,9 @@ main(int argc, char **argv)
 
 	return 0;
 }
+
+void
+fbr_context_abort(int pre_abort)
+{
+	(void)pre_abort;
+}

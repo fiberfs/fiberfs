@@ -37,6 +37,8 @@ UTILS_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(UTILS_SRC)))
 
 LOG_CLIENT:=$(wildcard log/client/*.c)
 LOG_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(LOG_CLIENT)))
+LOG_SRC:=$(wildcard log/fbr_log.c)
+LOG_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(LOG_SRC)))
 
 ALL_SOURCE:=$(shell find * -type f -name '*.c')
 SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(FJSON_SRC) \
@@ -184,8 +186,8 @@ fiberfs_test:	libfiberfs.a libchttp.a libfjson.a libcstore.a libfibertest.a
 fiberfs:	libfiberfs.a libchttp.a libfjson.a libcstore.a
 		$(CC) -o $@ libfiberfs.a libcstore.a libfiberfs.a libchttp.a libfjson.a $(LIBFLAGS)
 
-fiberfs_log:	libfiberfs.a libchttp.a libfjson.a libcstore.a $(LOG_CLIENT_OBJS)
-		$(CC) -o $@ $(LOG_CLIENT_OBJS) libfiberfs.a libcstore.a libfiberfs.a libchttp.a libfjson.a $(LIBFLAGS)
+fiberfs_log:	$(LOG_OBJS) $(UTILS_OBJS) $(LOG_CLIENT_OBJS)
+		$(CC) -o $@ $(LOG_CLIENT_OBJS) $(LOG_OBJS) $(UTILS_OBJS) $(LIBFLAGS)
 
 libfiberfs.so:	libfiberfs.a libchttp.a libfjson.a libcstore.a
 		$(CC) $(LDFLAGS) -o $@ libfiberfs.a libchttp.a libfjson.a libcstore.a
