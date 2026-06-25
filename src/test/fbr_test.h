@@ -27,7 +27,7 @@ enum fbr_test_verbocity {
 	FBR_LOG_VERY_VERBOSE
 };
 
-#define FBR_TEST_MAX_PARAMS			16
+#define FBR_TEST_MAX_PARAMS			48
 
 struct fbr_test;
 struct fbr_test_sys;

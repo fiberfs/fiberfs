@@ -89,8 +89,8 @@ fbr_cmd_shell(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_atomic_sub(&_FBR_LOG_REDIRECTOR_HAS_FORK, 1);
 
-	fbr_test_ASSERT(WIFEXITED(ret), "shell cmd failed");
-	fbr_test_ERROR(WEXITSTATUS(ret), "shell cmd returned an error");
+	fbr_test_ASSERT(WIFEXITED(ret), "shell cmd failed: %d (%s)", ret, shell_cmd);
+	fbr_test_ERROR(WEXITSTATUS(ret), "shell cmd returned an error: %d (%s)", ret, shell_cmd);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "shell cmd passed");
 }
@@ -135,6 +135,7 @@ _test_shell_bg(void *arg)
 
 	if (!WIFEXITED(ret) || WEXITSTATUS(ret)) {
 		*error = 1;
+		fbr_test_logs("shell_bg ret: %d", ret);
 	}
 
 	return (void*)error;
@@ -144,16 +145,37 @@ void
 fbr_cmd_shell_bg(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	_shell_init(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
+	fbr_test_ASSERT(cmd->param_count >= 1, "Missing parameter");
 
 	ctx->shell->thread_count++;
-	fbr_test_ERROR(ctx->shell->thread_count > 1000, "Too many shell_bg calls");
+	fbr_test_ERROR(ctx->shell->thread_count > 100, "Too many shell_bg calls");
 
 	ctx->shell->threads = realloc(ctx->shell->threads,
 		ctx->shell->thread_count * sizeof(*ctx->shell->threads));
 
-	char *shell_cmd = strdup(cmd->params[0].value);
-	assert(shell_cmd);
+	char *shell_cmd = NULL;
+
+	if (cmd->param_count == 1) {
+		shell_cmd = strdup(cmd->params[0].value);
+		assert(shell_cmd);
+	} else {
+		const size_t buffer_size = 4096;
+		char *buffer = malloc(buffer_size);
+		assert(buffer);
+
+		size_t buffer_len = 0;
+		for (size_t i = 0; i < cmd->param_count; i++) {
+			buffer_len += fbr_snprintf(buffer + buffer_len,
+				buffer_size - buffer_len, "%s ", cmd->params[i].value);
+			assert(buffer_len < buffer_size);
+		}
+
+		if (buffer_len) {
+			buffer[buffer_len - 1] = '\0';
+		}
+
+		shell_cmd = buffer;
+	}
 
 	fbr_atomic_add(&_FBR_LOG_REDIRECTOR_HAS_FORK, 1);
 
@@ -186,6 +208,8 @@ _test_shell_waitall(struct fbr_test_shell *shell)
 		fbr_atomic_sub(&_FBR_LOG_REDIRECTOR_HAS_FORK, 1);
 	}
 
+	free(shell->threads);
+	shell->threads = NULL;
 	shell->thread_count = 0;
 
 	return error;

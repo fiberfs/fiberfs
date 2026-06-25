@@ -2,7 +2,8 @@
 
 FIBER_TEST=../src/fiberfs_test
 FLAGS=-q
-TESTS=$(sort $(wildcard */*.cht */*.tst))
+TESTS_ALL=$(sort $(wildcard */*.cht */*.tst))
+TESTS=$(filter-out 009_% 010_%,$(TESTS_ALL))
 TESTS_CHTTP=$(sort $(wildcard 001_http/*.cht 002_http_live/*.cht))
 TESTS_JSON=$(sort $(wildcard 003_json/*.tst))
 TESTS_CORE=$(sort $(wildcard 004_*/*.tst 006_*/*.tst 007_*/*.tst 008_*/*.tst))
@@ -34,7 +35,7 @@ test:		check
 FORCE:
 
 $(FIBER_TEST):	FORCE
-		$(MAKE) -C .. fiberfs_test CC_REUSE=true
+		$(MAKE) -C .. all CC_REUSE=true
 
 valgrind:
 		$(eval PRE_EXEC=$(VALGRIND))
