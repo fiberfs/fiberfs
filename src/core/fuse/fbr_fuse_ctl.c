@@ -303,6 +303,8 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 	fbr_fs_free(ctx->fs);
 	ctx->fs = NULL;
 
+	fbr_log_restore_stderr();
+
 	if (ctx->log) {
 		fbr_log_free(ctx->log);
 		ctx->log = NULL;
@@ -327,8 +329,6 @@ fbr_fuse_free(struct fbr_fuse_context *ctx)
 {
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
-
-	fbr_log_restore_stderr();
 
 	_FUSE_CTX = NULL;
 
