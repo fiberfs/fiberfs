@@ -150,11 +150,8 @@ fbr_sys_mkdirs(const char *path)
 {
 	assert(path);
 
-	size_t path_len = strlen(path);
-	assert(path_len < FBR_PATH_MAX);
-
 	char path_buf[FBR_PATH_MAX];
-	memcpy(path_buf, path, path_len + 1);
+	size_t path_len = fbr_strbcpy(path_buf, path);
 
 	for (size_t i = 1; i < path_len; i++) {
 		if (path_buf[i] == '/') {

@@ -32,6 +32,8 @@
 #define FBR_CSTORE_RETRIES_DEFAULT		2
 #define FBR_CSTORE_ROOT_SIZE			100
 #define FBR_CSTORE_ROOT_TTL_MIN			0.1
+#define FBR_CSTORE_DEFAULT_ROOT			"/tmp/fiberfs_cache"
+#define FBR_CSTORE_DEFAULT_SIZE_MB		25
 
 enum fbr_cstore_alloc_state {
 	FBR_CSTORE_ENTRY_NONE = 0,

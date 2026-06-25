@@ -6,12 +6,15 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/operations/fbr_operations.h"
 #include "core/request/fbr_request.h"
+#include "cstore/fbr_cstore_api.h"
 #include "log/fbr_log.h"
 #include "utils/fbr_sys.h"
 
@@ -58,34 +61,43 @@ _mount_signal_stop(int signal, siginfo_t *info, void *ucontext)
 }
 
 static void
-_mount_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
-{
-	fbr_fuse_mounted(ctx);
-	assert_zero(ctx->detached);
-	fbr_fs_ok(ctx->fs);
-	assert(conn);
-
-	printf("Fuse init\n");
-}
-
-static void
 _usage(void)
 {
 	printf("Usage: fiberfs CONFIG MOUNT_PATH\n");
 }
 
-int
-main(int argc, char **argv)
+static void
+_mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 {
+	fbr_fuse_mounted(fuse_ctx);
+	fbr_fs_ok(fuse_ctx->fs);
+	assert(conn);
+
+	fbr_fuse_setup(fuse_ctx, conn);
+
+	const char *cache_root = fbr_conf_get("CACHE_ROOT", FBR_CSTORE_DEFAULT_ROOT);
+	(void)mkdir(cache_root, S_IRWXU);
+
+	// Init cstore
+	struct fbr_cstore *cstore = fbr_cstore_alloc(cache_root);
+	fbr_cstore_ok(cstore);
+
+	unsigned int cache_size = fbr_conf_get_ulong("CACHE_SIZE_MB", FBR_CSTORE_DEFAULT_SIZE_MB);
+	cache_size *= 1024 * 1024;
+	fbr_cstore_max_size(cstore, cache_size, 1);
+
+	assert_zero(fuse_ctx->fs->cstore);
+	fuse_ctx->fs->cstore = cstore;
+	fbr_fs_set_store(fuse_ctx->fs, FBR_CSTORE_DEFAULT_CALLBACKS);
+}
+
+static int
+_fiberfs_setup_mount(const char *fiberfs_conf, const char *mount_path)
+{
+	assert_dev(fiberfs_conf);
+	assert_dev(mount_path);
+
 	printf("FiberFS %s\n", FIBERFS_VERSION);
-
-	if (argc != 3) {
-		_usage();
-		return 1;
-	}
-
-	const char *fiberfs_conf = argv[1];
-	const char *mount_path = argv[2];
 
 	if (!fbr_sys_isfile(fiberfs_conf)) {
 		_usage();
@@ -100,6 +112,10 @@ main(int argc, char **argv)
 	fbr_setup_crash_signals();
 	fbr_setup_stop_signals(_mount_signal_stop);
 
+	fbr_conf_parse(fiberfs_conf);
+	assert_zero(_CONFIG->stats.errors);
+
+	// Init fuse
 	struct fbr_fuse_context _fuse_ctx;
 	struct fbr_fuse_context *fuse_ctx = &_fuse_ctx;
 	fbr_fuse_init(fuse_ctx);
@@ -110,14 +126,9 @@ main(int argc, char **argv)
 		return 2;
 	}
 
-	fbr_fuse_mounted(fuse_ctx);
-	fbr_log_ok(fuse_ctx->log);
-
 	while (!_STOP) {
 		fbr_fuse_mounted(fuse_ctx);
 		fbr_sleep_ms(FBR_FUSE_MOUNT_LOOP_MS);
-
-		fbr_log_print(fuse_ctx->log, FBR_LOG_TEST, FBR_REQID_TEST, "Mount loop...");
 	}
 
 	fbr_fuse_unmount(fuse_ctx);
@@ -125,7 +136,18 @@ main(int argc, char **argv)
 
 	fbr_fuse_free(fuse_ctx);
 
-	printf("Done\n");
+	printf("Exiting\n");
 
 	return 0;
+}
+
+int
+main(int argc, char **argv)
+{
+	if (argc != 3) {
+		_usage();
+		return 1;
+	}
+
+	return _fiberfs_setup_mount(argv[1], argv[2]);
 }

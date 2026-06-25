@@ -160,12 +160,17 @@ AFL_CFLAGS_CC=$(CFLAGS_CLANG)
 # Check if CC/FLAGS changed (CC_REUSE=true to reuse)
 CC_FILE=$(BUILD)/_cc_flags
 _CC_ALL=$(file < $(CC_FILE))
+LIB_FILE=$(BUILD)/_lib_flags
+_LIB_ALL=$(file < $(LIB_FILE))
 ifeq ($(_CC_ALL),)
 else ifeq ($(findstring clean,$(MAKECMDGOALS)),clean)
 else ifeq ($(findstring gcov,$(MAKECMDGOALS)),gcov)
 else ifeq ($(CC_REUSE),true)
 	CC_ALL=$(_CC_ALL)
+	LIBFLAGS=$(_LIB_ALL)
 else ifneq ($(_CC_ALL),$(CC_ALL))
+$(error Compiler flags changed, please run 'make clean' or use 'CC_REUSE=true')
+else ifneq ($(_LIB_ALL),$(LIBFLAGS))
 $(error Compiler flags changed, please run 'make clean' or use 'CC_REUSE=true')
 endif
 
@@ -216,11 +221,14 @@ libcstore.a:	$(CSTORE_OBJS)
 		$(RM) $@
 		$(AR) $@ $(CSTORE_OBJS)
 
-$(BUILD)/%.o:	%.c | $(BUILD_DIRS) $(CC_FILE)
+$(BUILD)/%.o:	%.c | $(BUILD_DIRS) $(CC_FILE) $(LIB_FILE)
 		$(CC_ALL) -c $< -o $@
 
 $(CC_FILE):
 		$(file > $(CC_FILE),$(CC_ALL))
+
+$(LIB_FILE):
+		$(file > $(LIB_FILE),$(LIBFLAGS))
 
 $(BUILD_DIRS):
 		@mkdir -p $@

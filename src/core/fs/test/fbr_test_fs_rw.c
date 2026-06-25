@@ -54,23 +54,13 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	//ctx->log->always_flush = 1;
 
+	// TODO these
 	//conn->max_readahead
 	//conn->max_background
 	//FUSE_CAP_POSIX_ACL
 	//FUSE_CAP_HANDLE_KILLPRIV
 
-	conn->want |= FUSE_CAP_ASYNC_READ;
-	conn->want |= FUSE_CAP_ATOMIC_O_TRUNC;
-	conn->want |= FUSE_CAP_SPLICE_WRITE;
-	conn->want |= FUSE_CAP_SPLICE_MOVE;
-	conn->want |= FUSE_CAP_ASYNC_DIO;
-	conn->want |= FUSE_CAP_PARALLEL_DIROPS;
-
-	// TODO implement .write_buf
-	conn->want &= ~FUSE_CAP_SPLICE_READ;
-
-	// This will make reading local appends undefined
-	conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
+	fbr_fuse_setup(ctx, conn);
 
 	struct fbr_request *request = fbr_request_alloc(NULL, __func__);
 	fbr_request_ok(request);

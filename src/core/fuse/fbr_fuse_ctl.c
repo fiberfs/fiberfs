@@ -207,6 +207,29 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 }
 
 void
+fbr_fuse_setup(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
+{
+	fbr_fuse_mounted(ctx);
+	assert_zero(ctx->detached);
+	fbr_fs_ok(ctx->fs);
+	assert_zero(ctx->running);
+	assert(conn);
+
+	conn->want |= FUSE_CAP_ASYNC_READ;
+	conn->want |= FUSE_CAP_ATOMIC_O_TRUNC;
+	conn->want |= FUSE_CAP_SPLICE_WRITE;
+	conn->want |= FUSE_CAP_SPLICE_MOVE;
+	conn->want |= FUSE_CAP_ASYNC_DIO;
+	conn->want |= FUSE_CAP_PARALLEL_DIROPS;
+
+	// TODO implement .write_buf
+	conn->want &= ~FUSE_CAP_SPLICE_READ;
+
+	// TODO test this
+	conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
+}
+
+void
 fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
 	fbr_fuse_mounted(ctx);
