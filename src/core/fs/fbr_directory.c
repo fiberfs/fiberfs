@@ -652,3 +652,40 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 
 	return directory;
 }
+
+struct fbr_directory *
+fbr_directory_make(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_inode_t inode)
+{
+	fbr_fs_ok(fs);
+	assert(dirpath);
+	assert(inode);
+
+	struct fbr_directory *directory = fbr_directory_alloc(fs, dirpath, inode);
+	fbr_directory_ok(directory);
+
+	if (directory->state != FBR_DIRSTATE_LOADING) {
+		fbr_dindex_release(fs, &directory);
+		return NULL;
+	}
+
+	assert_zero_dev(directory->generation);
+	directory->generation = 1;
+
+	struct fbr_index_data index_data;
+	fbr_index_data_init(fs, &index_data, directory, NULL, NULL, NULL, FBR_FLUSH_MKDIR);
+
+	int ret = fbr_index_write(fs, &index_data);
+	if (ret) {
+		fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
+		fbr_dindex_release(fs, &directory);
+		return NULL;
+	}
+
+	fbr_directory_set_state(fs, directory, FBR_DIRSTATE_OK);
+	fbr_directory_ok(directory);
+	assert_dev(directory->state == FBR_DIRSTATE_OK);
+
+	fbr_index_data_free(&index_data);
+
+	return directory;
+}

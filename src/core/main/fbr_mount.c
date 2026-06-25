@@ -92,6 +92,34 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 
 	// Init fs
 	fbr_directory_root_inode_init(fuse_ctx->fs);
+
+	// Try and read the root index
+	struct fbr_directory *root = fbr_directory_from_inode(fuse_ctx->fs, FBR_INODE_ROOT);
+	if (root) {
+		fbr_directory_ok(root);
+		assert(root->state == FBR_DIRSTATE_OK);
+
+		fbr_rlog(FBR_LOG_MOUNT, "root loaded OK");
+
+		fbr_dindex_release(fuse_ctx->fs, &root);
+
+		return;
+	}
+
+	// Create a new root
+	root = fbr_directory_make(fuse_ctx->fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT);
+	if (!root) {
+		fbr_rlog(FBR_LOG_MOUNT, "root creation ERROR");
+
+		fuse_ctx->error = 1;
+
+		return;
+	}
+
+	fbr_rlog(FBR_LOG_MOUNT, "root creation SUCCESS");
+
+	fbr_dindex_release(fuse_ctx->fs, &root);
+
 }
 
 static int
@@ -126,6 +154,7 @@ _fiberfs_setup_mount(const char *fiberfs_conf, const char *mount_path)
 
 	int ret = fbr_fuse_mount(fuse_ctx, mount_path);
 	if (ret) {
+		fprintf(stderr, "ERROR: cannot mount '%s'\n", mount_path);
 		return 2;
 	}
 

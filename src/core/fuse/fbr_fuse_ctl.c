@@ -233,7 +233,12 @@ void
 fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
 	fbr_fuse_mounted(ctx);
+	assert_zero(ctx->running);
 	assert(conn);
+
+	if (ctx->error) {
+		return;
+	}
 
 	ctx->running = 1;
 }

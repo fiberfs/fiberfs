@@ -523,6 +523,8 @@ struct fbr_directory *fbr_directory_load(struct fbr_fs *fs, const struct fbr_pat
 struct fbr_directory *fbr_directory_get(struct fbr_fs *fs, const struct fbr_path_name *dirpath,
 	fbr_inode_t inode, int wait_for_new, int route_s3);
 struct fbr_directory *fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode);
+struct fbr_directory *fbr_directory_make(struct fbr_fs *fs, const struct fbr_path_name *dirpath,
+	fbr_inode_t inode);
 
 void fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,
 	struct stat *attr, struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);

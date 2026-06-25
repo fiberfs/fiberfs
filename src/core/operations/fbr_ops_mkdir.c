@@ -66,50 +66,25 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	fbr_rlog(FBR_LOG_OP_MKDIR, "new directory: inode: %lu path: '%s'", file->inode,
 		dirname.name);
 
-	// Create a new root on the store
-	struct fbr_directory *new_directory = fbr_directory_alloc(fs, &dirname, file->inode);
+	// Create a new root
+	struct fbr_directory *new_directory = fbr_directory_make(fs, &dirname, file->inode);
+	if (!new_directory) {
+		fbr_fuse_reply_err(request, EEXIST);
+
+		fbr_inode_release(fs, &file);
+		fbr_dindex_release(fs, &directory);
+
+		return;
+	}
+
 	fbr_directory_ok(new_directory);
-	if (new_directory->state != FBR_DIRSTATE_LOADING) {
-		fbr_fuse_reply_err(request, EEXIST);
-
-		fbr_inode_release(fs, &file);
-		fbr_dindex_release(fs, &directory);
-		fbr_dindex_release(fs, &new_directory);
-
-		return;
-	}
-
-	assert_dev(new_directory->state == FBR_DIRSTATE_LOADING);
-	assert_zero_dev(new_directory->generation);
-	new_directory->generation = 1;
-
-	struct fbr_index_data index_data;
-	fbr_index_data_init(fs, &index_data, new_directory, NULL, NULL, NULL, FBR_FLUSH_MKDIR);
-
-	int ret = fbr_index_write(fs, &index_data);
-	if (ret) {
-		fbr_rlog(FBR_LOG_ERROR, "mkdir fbr_index_write(%s) failed", dirname.name);
-		fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
-
-		fbr_fuse_reply_err(request, EEXIST);
-
-		fbr_inode_release(fs, &file);
-		fbr_dindex_release(fs, &directory);
-		fbr_dindex_release(fs, &new_directory);
-
-		return;
-	}
-
-	fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
-
-	fbr_index_data_free(&index_data);
+	assert(new_directory->state == FBR_DIRSTATE_OK);
 
 	// Flush changes to parent
 	struct fbr_flush_data flush_data;
 	fbr_flush_data_init(&flush_data, file, NULL, NULL, FBR_FLUSH_MKDIR);
 
-	ret = fbr_fs_flush(fs, &flush_data);
-
+	int ret = fbr_fs_flush(fs, &flush_data);
 	if (ret) {
 		if (fs->store->index_delete_f) {
 			int delete_ret = fs->store->index_delete_f(fs, new_directory);
