@@ -307,6 +307,12 @@ fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t byt
 		return NULL;
 	}
 
+	if (fbr_sys_exists(hashpath->value) && !fbr_cstore_backend_enabled(cstore)) {
+		fbr_cstore_set_error(entry);
+		_cstore_release(cstore, entry, remove_on_error);
+		return NULL;
+	}
+
 	return entry;
 }
 

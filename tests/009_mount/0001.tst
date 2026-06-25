@@ -39,15 +39,17 @@ equal $cstore_stat_http_500:0 0
 
 #shell_bg ../src/fiberfs_log $sys_tmpdir
 
+sys_ls $sys_tmpdir
+
 shell ps -ef | grep "[f]iberfs\ " | grep -v '" sh "' | grep $sys_tmpdir | awk "'{print $2}'" | xargs kill
 
 shell_waitall
 
 cstore_debug
 
-# Remount fiberfs
+# Remount fiberfs (loader has a 1.1s buffer)
 
-sleep_ms 200
+sleep_ms 1500
 
 print "### SECOND MOUNT"
 
@@ -60,7 +62,7 @@ sys_ls $sys_tmpdir
 equal $cstore_stat_roots:0 1
 equal $cstore_stat_indexes:0 1
 equal $cstore_stat_root_updates:0 1
-greater_equal $cstore_stat_http_200:0 2
+equal $cstore_stat_http_200:0 2
 equal $cstore_stat_http_500:0 0
 
 #shell_bg ../src/fiberfs_log $sys_tmpdir

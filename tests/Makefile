@@ -3,7 +3,7 @@
 FIBER_TEST=../src/fiberfs_test
 FLAGS=-q
 TESTS_ALL=$(sort $(wildcard */*.cht */*.tst))
-TESTS=$(filter-out 009_% 010_%,$(TESTS_ALL))
+TESTS=$(filter-out 010_%,$(TESTS_ALL))
 TESTS_CHTTP=$(sort $(wildcard 001_http/*.cht 002_http_live/*.cht))
 TESTS_JSON=$(sort $(wildcard 003_json/*.tst))
 TESTS_CORE=$(sort $(wildcard 004_*/*.tst 006_*/*.tst 007_*/*.tst 008_*/*.tst))
