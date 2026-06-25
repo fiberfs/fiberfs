@@ -41,13 +41,11 @@ main(int argc, char **argv)
 
 	const char *mount_path = argv[1];
 
-	/*
 	if (!fbr_sys_isdir(mount_path)) {
 		_usage();
 		fprintf(stderr, "ERROR: mount not found '%s'\n", mount_path);
 		return 1;
 	}
-	*/
 
 	struct fbr_log_reader _reader;
 	struct fbr_log_reader *reader = &_reader;
@@ -67,16 +65,19 @@ main(int argc, char **argv)
 
 		if (!log_line) {
 			if (reader->cursor.status == FBR_LOG_CURSOR_EXIT) {
+				printf("Shutdown detected\n");
+				break;
+			} else if (reader->cursor.status == FBR_LOG_CURSOR_OVERFLOW) {
+				printf("ERROR overflow, cannot read or print fast enough\n");
 				break;
 			}
-			fbr_ASSERT(reader->cursor.status != FBR_LOG_CURSOR_OVERFLOW,
-				"### LOG OVERFLOW ###");
+
 			fbr_ASSERT(reader->cursor.status == FBR_LOG_CURSOR_EOF,
 				"cursor.status=%d", reader->cursor.status);
 
 			fbr_sleep_ms(sleep_ms);
 
-			if (sleep_ms < 100) {
+			if (sleep_ms < 25) {
 				sleep_ms++;
 			}
 

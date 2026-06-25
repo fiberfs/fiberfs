@@ -89,6 +89,9 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 	assert_zero(fuse_ctx->fs->cstore);
 	fuse_ctx->fs->cstore = cstore;
 	fbr_fs_set_store(fuse_ctx->fs, FBR_CSTORE_DEFAULT_CALLBACKS);
+
+	// Init fs
+	fbr_directory_root_inode_init(fuse_ctx->fs);
 }
 
 static int

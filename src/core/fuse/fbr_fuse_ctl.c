@@ -179,7 +179,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	ctx->fs->fuse_ctx = ctx;
 
-	fbr_log_print(ctx->log, FBR_LOG_FUSE, FBR_REQID_CORE, "initialized");
+	fbr_log_print(ctx->log, FBR_LOG_FS, FBR_REQID_CORE, "initialized");
 
 	pt_assert(pthread_create(&ctx->loop_thread, NULL, _fuse_mount_thread, ctx));
 
