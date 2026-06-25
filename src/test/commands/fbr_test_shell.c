@@ -117,16 +117,29 @@ fbr_cmd_skip_shell_failure(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	}
 }
 
+struct _shell_bg_ctl
+{
+	int		status;
+	char		shell_cmd[4096];
+};
+
 static void *
 _test_shell_bg(void *arg)
 {
-	char *shell_cmd = (char*)arg;
+	struct _shell_bg_ctl *shell_bg = arg;
+	assert(shell_bg->status == -1);
 
-	fbr_test_logs("shell_bg cmd: '%s'", shell_cmd);
+	fbr_test_logs("shell_bg cmd: '%s'", shell_bg->shell_cmd);
 
-	int ret = system(shell_cmd);
+	shell_bg->status = 1;
 
-	free(shell_cmd);
+	int ret = system(shell_bg->shell_cmd);
+
+	while (shell_bg->status != 2) {
+		fbr_test_sleep_ms(5);
+	}
+
+	free(shell_bg);
 
 	int *error = malloc(sizeof(*error));
 	assert(error);
@@ -153,34 +166,38 @@ fbr_cmd_shell_bg(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	ctx->shell->threads = realloc(ctx->shell->threads,
 		ctx->shell->thread_count * sizeof(*ctx->shell->threads));
 
-	char *shell_cmd = NULL;
+	struct _shell_bg_ctl *shell_bg = malloc(sizeof(*shell_bg));
+	assert(shell_bg);
+	shell_bg->status = -1;
 
 	if (cmd->param_count == 1) {
-		shell_cmd = strdup(cmd->params[0].value);
-		assert(shell_cmd);
+		fbr_strbcpy(shell_bg->shell_cmd, cmd->params[0].value);
 	} else {
-		const size_t buffer_size = 4096;
-		char *buffer = malloc(buffer_size);
-		assert(buffer);
-
+		char *buffer = shell_bg->shell_cmd;
 		size_t buffer_len = 0;
+
 		for (size_t i = 0; i < cmd->param_count; i++) {
 			buffer_len += fbr_snprintf(buffer + buffer_len,
-				buffer_size - buffer_len, "%s ", cmd->params[i].value);
-			assert(buffer_len < buffer_size);
+				sizeof(shell_bg->shell_cmd) - buffer_len, "%s ",
+				cmd->params[i].value);
+			assert(buffer_len < sizeof(shell_bg->shell_cmd));
 		}
 
 		if (buffer_len) {
 			buffer[buffer_len - 1] = '\0';
 		}
-
-		shell_cmd = buffer;
 	}
 
 	fbr_atomic_add(&_FBR_LOG_REDIRECTOR_HAS_FORK, 1);
 
 	pt_assert(pthread_create(&ctx->shell->threads[ctx->shell->thread_count - 1], NULL,
-		_test_shell_bg, shell_cmd));
+		_test_shell_bg, shell_bg));
+
+	while (shell_bg->status != 1) {
+		fbr_test_sleep_ms(1);
+	}
+
+	shell_bg->status = 2;
 }
 
 static int

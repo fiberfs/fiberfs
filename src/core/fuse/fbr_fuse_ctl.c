@@ -156,6 +156,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	fuse_opt_free_args(&fargs);
 
 	if (!ctx->session) {
+		fbr_log_restore_stderr();
 		pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 		_fuse_error(ctx);
 		return 1;
@@ -169,6 +170,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	ret = fuse_session_mount(ctx->session, path);
 
 	if (ret) {
+		fbr_log_restore_stderr();
 		pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 		_fuse_error(ctx);
 		return 1;
