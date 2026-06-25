@@ -50,12 +50,13 @@ fbr_cstore_hashpath(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata,
 	const char *sub_path = _cstore_sub_path(metadata);
 
 	hashpath->magic = FBR_CSTORE_HASHPATH_MAGIC;
-	hashpath->length = fbr_bprintf(hashpath->value, "%s/%s/%.2s/%.2s/%s",
+	hashpath->length = fbr_bprintf(hashpath->value, "%s/%s/%.2s/%.2s/%s%s",
 		cstore->root,
 		sub_path,
 		hash_str,
 		hash_str + 2,
-		hash_str + 4);
+		hash_str + 4,
+		FBR_FIBERFS_CACHE_NAME);
 
 	fbr_cstore_hashpath_ok(hashpath);
 }

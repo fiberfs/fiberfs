@@ -111,7 +111,8 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *hpath, unsigned char h1,
 			continue;
 		}
 
-		if (dentry->d_type != DT_REG || strlen(dentry->d_name) != 12) {
+		if (dentry->d_type != DT_REG || strlen(dentry->d_name) != 12 +
+		    sizeof(FBR_FIBERFS_CACHE_NAME) - 1) {
 			_cstore_remove(hpath, dentry->d_name);
 			continue;
 		}

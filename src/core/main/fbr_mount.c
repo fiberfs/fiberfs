@@ -75,6 +75,7 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 
 	fbr_fuse_setup(fuse_ctx, conn);
 
+	// TODO we need a subdir for this
 	const char *cache_root = fbr_conf_get("CACHE_ROOT", FBR_CSTORE_DEFAULT_ROOT);
 	(void)mkdir(cache_root, S_IRWXU);
 
