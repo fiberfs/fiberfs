@@ -72,6 +72,7 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 	fbr_fuse_mounted(fuse_ctx);
 	fbr_fs_ok(fuse_ctx->fs);
 	assert(conn);
+	assert_zero(fbr_is_test());
 
 	fbr_fuse_setup(fuse_ctx, conn);
 
@@ -92,6 +93,11 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 	assert_zero(fuse_ctx->fs->cstore);
 	fuse_ctx->fs->cstore = cstore;
 	fbr_fs_set_store(fuse_ctx->fs, FBR_CSTORE_DEFAULT_CALLBACKS);
+
+	/*
+	int ret = fbr_cstore_s3_autoinit(cstore);
+	assert_zero(ret);
+	*/
 
 	// Init fs
 	fbr_directory_root_inode_init(fuse_ctx->fs);
@@ -149,15 +155,26 @@ _fiberfs_setup_mount(const char *fiberfs_conf, const char *mount_path)
 	fbr_conf_parse(fiberfs_conf);
 	assert_zero(_CONFIG->stats.errors);
 
+	int ret = fbr_cstore_s3_autoinit(NULL);
+	if (ret) {
+		/*
+		fprintf(stderr, "ERROR: no S3 config in '%s'\n", fiberfs_conf);
+		return 1;
+		*/
+	}
+
 	// Init fuse
 	struct fbr_fuse_context _fuse_ctx;
 	struct fbr_fuse_context *fuse_ctx = &_fuse_ctx;
 	fbr_fuse_init(fuse_ctx);
 	fuse_ctx->fuse_callbacks = &_FIBERFS_FUSE_CALLBACKS;
 
-	int ret = fbr_fuse_mount(fuse_ctx, mount_path);
+	ret = fbr_fuse_mount(fuse_ctx, mount_path);
 	if (ret) {
 		fprintf(stderr, "ERROR: cannot mount '%s'\n", mount_path);
+
+		fbr_fuse_unmount(fuse_ctx);
+
 		return 2;
 	}
 

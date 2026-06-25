@@ -104,6 +104,36 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 	}
 }
 
+int
+fbr_cstore_s3_autoinit(struct fbr_cstore *cstore)
+{
+	int error = 0;
+	const char *s3_host = fbr_conf_get("S3_HOST", NULL);
+	const char *s3_region = fbr_conf_get("S3_REGION", NULL);
+	const char *s3_access_key = fbr_conf_get("S3_ACCESS_KEY", NULL);
+	const char *s3_secret_key = fbr_conf_get("S3_SECRET_KEY", NULL);
+	const char *s3_prefix = fbr_conf_get("S3_PREFIX", NULL);
+	int s3_tls = fbr_conf_get_bool("S3_TLS", FBR_CSTORE_S3_DEFAULT_TLS);
+
+	int s3_port = fbr_conf_get_ulong("S3_PORT", FBR_CSTORE_S3_DEFAULT_PORT);
+	if (s3_port > USHRT_MAX) {
+		s3_port = FBR_CSTORE_S3_DEFAULT_PORT;
+	}
+
+	if (!s3_host || !s3_region || !s3_access_key || !s3_secret_key) {
+		error = 1;
+	}
+
+	if (!cstore || error) {
+		return error;
+	}
+
+	fbr_cstore_s3_init(cstore, s3_host, s3_port, s3_tls, s3_prefix, s3_region, s3_access_key,
+		s3_secret_key);
+
+	return 0;
+}
+
 void
 fbr_cstore_s3_host_hash(struct fbr_cstore *cstore, const char *host_hash)
 {

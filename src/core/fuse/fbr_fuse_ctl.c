@@ -185,23 +185,21 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	pt_assert(pthread_create(&ctx->loop_thread, NULL, _fuse_mount_thread, ctx));
 
-	while (!ctx->running) {
+	while (!ctx->running && !ctx->exited && !ctx->error) {
 		fbr_sleep_ms(5);
 		fbr_fuse_context_ok(ctx);
-
-		if (ctx->error) {
-			pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
-			fbr_rlog(FBR_LOG_ERROR, "session mount error");
-			return 1;
-		} else if (ctx->exited) {
-			pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
-			_fuse_error(ctx);
-			fbr_rlog(FBR_LOG_ERROR, "session mount exit error");
-			return 1;
-		}
 	}
 
 	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
+
+	if (ctx->error) {
+		fbr_rlog(FBR_LOG_ERROR, "session mount error");
+		return 1;
+	} else if (ctx->exited) {
+		_fuse_error(ctx);
+		fbr_rlog(FBR_LOG_ERROR, "session mount exit error");
+		return 1;
+	}
 
 	fbr_log_print(ctx->log, FBR_LOG_FUSE, FBR_REQID_CORE, "session mounted");
 
@@ -237,10 +235,6 @@ fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fuse_mounted(ctx);
 	assert_zero(ctx->running);
 	assert(conn);
-
-	if (ctx->error) {
-		return;
-	}
 
 	ctx->running = 1;
 }
@@ -305,12 +299,16 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 	ctx->state = FBR_FUSE_NONE;
 
 	fbr_rlog(FBR_LOG_FUSE, "umount complete");
-	// TODO we need to push some kind of special log message to bounce log readers
-
-	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 
 	fbr_fs_free(ctx->fs);
 	ctx->fs = NULL;
+
+	if (ctx->log) {
+		fbr_log_free(ctx->log);
+		ctx->log = NULL;
+	}
+
+	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 }
 
 void

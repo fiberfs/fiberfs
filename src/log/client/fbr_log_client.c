@@ -41,12 +41,6 @@ main(int argc, char **argv)
 
 	const char *mount_path = argv[1];
 
-	if (!fbr_sys_isdir(mount_path)) {
-		_usage();
-		fprintf(stderr, "ERROR: mount not found '%s'\n", mount_path);
-		return 1;
-	}
-
 	struct fbr_log_reader _reader;
 	struct fbr_log_reader *reader = &_reader;
 

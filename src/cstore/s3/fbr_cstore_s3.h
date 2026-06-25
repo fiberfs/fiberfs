@@ -19,6 +19,8 @@
 #define FBR_CSTORE_CHTTP_SIZE			4096
 #define FBR_CSTORE_TIMEOUT_CONNECT_MS		3000
 #define FBR_CSTORE_TIMEOUT_TRANSFER_MS		5000
+#define FBR_CSTORE_S3_DEFAULT_PORT		443
+#define FBR_CSTORE_S3_DEFAULT_TLS		"true"
 
 #define FBR_ENUM_CSTORE_ROUTE						\
 	FBR_ENUM_NAMES(fbr_cstore_route, _cstore_route_string)		\
@@ -94,6 +96,7 @@ struct fbr_cstore;
 
 void fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tls,
 	const char *prefix, const char *region, const char *access_key, const char *secret_key);
+int fbr_cstore_s3_autoinit(struct fbr_cstore *cstore);
 void fbr_cstore_s3_host_hash(struct fbr_cstore *cstore, const char *host_hash);
 void fbr_cstore_s3_free(struct fbr_cstore *cstore);
 void fbr_cstore_cluster_init(struct fbr_cstore_cluster *cluster);

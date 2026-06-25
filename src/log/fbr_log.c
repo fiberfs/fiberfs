@@ -496,7 +496,6 @@ _log_close(struct fbr_log *log)
 
 	if (log->writer.valid) {
 		fbr_log_header_ok(log->header);
-		assert_zero_dev(log->header->exit);
 		log->header->exit = 1;
 	}
 

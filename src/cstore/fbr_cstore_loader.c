@@ -204,7 +204,8 @@ _cstore_load_thread(void *arg)
 		assert_dev(loader->state == FBR_CSTORE_LOADER_READING);
 		loader->state = FBR_CSTORE_LOADER_DONE;
 
-		double time_spent = fbr_get_time() - loader->start_time;
+		double time_spent = fbr_get_time() - loader->start_time -
+			FBR_CSTORE_LOAD_TIME_BUFFER;
 		fbr_log_print(cstore->log, FBR_LOG_CS_LOADER, thread_id, "COMPLETED "
 			"loaded: %zu lazy: %lu time: %.3fs",
 			cstore->stats.loaded, cstore->stats.lazy_loaded, time_spent);
