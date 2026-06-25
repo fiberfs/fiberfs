@@ -118,7 +118,11 @@ _log_shared_name(const char *name, char *buffer, size_t buffer_len)
 
 	for (size_t i = 1; buffer[i]; i++) {
 		if (buffer[i] == '/') {
-			buffer[i] = '_';
+			if (!buffer[i + 1]) {
+				buffer[i] = '\0';
+			} else {
+				buffer[i] = '_';
+			}
 		}
 	}
 }
