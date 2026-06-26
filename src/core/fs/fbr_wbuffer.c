@@ -752,8 +752,11 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 	if (fio->wbuffers) {
 		fbr_rlog(FBR_LOG_WBUFFER, "WARNING unflushed wbuffers exist");
 	}
-	// TODO get rid of this
-	assert_zero_dev(fio->wbuffers);
+
+	// TODO
+	if (fbr_is_test()) {
+		assert_zero(fio->wbuffers);
+	}
 
 	fbr_wbuffers_reset(fs, fio);
 }

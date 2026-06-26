@@ -72,7 +72,7 @@ _tcp_pool_cmp(const struct chttp_tcp_pool_entry *k1, const struct chttp_tcp_pool
 }
 
 static struct chttp_tcp_pool_entry *
-_tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry)
+_tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry, int close)
 {
 	chttp_tcp_pool_ok();
 	chttp_pool_entry_ok(entry);
@@ -104,14 +104,16 @@ _tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry)
 			chttp_pool_entry_ok(head->next);
 
 			if (head->next == entry) {
-				head->next = head->next->next;
+				head->next = entry->next;
 				found++;
+			} else {
+				head = head->next;
 			}
 		}
-		assert (found == 1);
+		assert(found == 1);
 	}
 
-	if (entry->addr.state == CHTTP_ADDR_CONNECTED) {
+	if (entry->addr.state == CHTTP_ADDR_CONNECTED && close) {
 		chttp_tcp_close(&entry->addr);
 	}
 
@@ -164,14 +166,15 @@ chttp_tcp_pool_lookup(struct chttp_addr *addr)
 			chttp_pool_entry_ok(head);
 
 			if (head->expiration < fbr_get_time()) {
-				head = _tcp_pool_remove_entry(head);
+				head = _tcp_pool_remove_entry(head, 1);
 				_TCP_POOL.stats.expired++;
 
 				continue;
 			}
 
-			chttp_addr_move(addr, &head->addr);
-			_tcp_pool_remove_entry(head);
+			chttp_addr_clone(addr, &head->addr);
+
+			_tcp_pool_remove_entry(head, 0);
 
 			addr->reused = 1;
 
@@ -217,7 +220,7 @@ _tcp_pool_get_entry(void)
 		entry = TAILQ_LAST(&_TCP_POOL.lru_list, chttp_tcp_pool_list);
 		chttp_pool_entry_ok(entry);
 
-		_tcp_pool_remove_entry(entry);
+		_tcp_pool_remove_entry(entry, 1);
 
 		assert_zero(TAILQ_EMPTY(&_TCP_POOL.free_list));
 		TAILQ_REMOVE(&_TCP_POOL.free_list, entry, list_entry);
@@ -279,7 +282,7 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 	if (head) {
 		while (head && head->expiration < now) {
 			chttp_pool_entry_ok(head);
-			head = _tcp_pool_remove_entry(head);
+			head = _tcp_pool_remove_entry(head, 1);
 			_TCP_POOL.stats.expired++;
 		}
 
@@ -292,14 +295,6 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 			// Add entry to the back
 			while (head->next) {
 				chttp_pool_entry_ok(head->next);
-
-				if (head->next->expiration < now) {
-					_tcp_pool_remove_entry(head->next);
-					_TCP_POOL.stats.expired++;
-
-					continue;
-				}
-
 				head = head->next;
 			}
 
@@ -331,7 +326,7 @@ chttp_tcp_pool_close(void)
 	TAILQ_FOREACH_SAFE(entry, &_TCP_POOL.lru_list, list_entry, temp) {
 		while (entry) {
 			chttp_pool_entry_ok(entry);
-			entry = _tcp_pool_remove_entry(entry);
+			entry = _tcp_pool_remove_entry(entry, 1);
 		}
 	}
 
