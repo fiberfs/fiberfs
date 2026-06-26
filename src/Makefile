@@ -244,7 +244,7 @@ gcov:		CFLAGS_EXTRA+=$(GCOVFLAGS)
 gcov:		LIBFLAGS+=$(GCOVLIBFLAGS)
 gcov:		clean
 		$(MAKE) all CFLAGS_EXTRA="$(CFLAGS_EXTRA)" LIBFLAGS="$(LIBFLAGS)"
-		$(MAKE) -C ../tests all error FLAGS=-vv
+		$(MAKE) -C ../tests all error mount FLAGS=-vv
 		$(GCOV) -r $(ALL_SOURCE)
 		$(LCOV) $(LCOVFLAGS) --output-file $(GCOV_FILE)
 		$(LCOV) --remove $(GCOV_FILE) '*/xxhash.h' --output-file $(GCOV_FILE).filter

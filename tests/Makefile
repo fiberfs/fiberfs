@@ -3,13 +3,14 @@
 FIBER_TEST=../src/fiberfs_test
 FLAGS=-q
 TESTS_ALL=$(sort $(wildcard */*.cht */*.tst))
-TESTS=$(filter-out 010_%,$(TESTS_ALL))
+TESTS=$(filter-out 090_% 010_%,$(TESTS_ALL))
 TESTS_CHTTP=$(sort $(wildcard 001_http/*.cht 002_http_live/*.cht))
 TESTS_JSON=$(sort $(wildcard 003_json/*.tst))
-TESTS_CORE=$(sort $(wildcard 004_*/*.tst 006_*/*.tst 007_*/*.tst 008_*/*.tst 009_*/*.tst))
+TESTS_CORE=$(sort $(wildcard 004_*/*.tst 006_*/*.tst 007_*/*.tst 008_*/*.tst))
 TESTS_COREX=$(sort $(wildcard 004_core/*.tstx))
 TESTS_CSTORE=$(sort $(wildcard 008_cstore/*.tst))
 TESTS_ERROR=$(sort $(wildcard */*.tstf 005_*/*.tst))
+TESTS_MOUNT=$(sort $(wildcard 009_*/*.tst))
 PRE_EXEC=
 VALGRIND=valgrind --error-exitcode=1 --leak-check=full -q
 #VALGRIND=valgrind --error-exitcode=1 --leak-check=full --track-fds=yes -q
@@ -60,6 +61,8 @@ core:		$(TESTS_CORE)
 corex:		$(TESTS_COREX)
 
 cstore:		$(TESTS_CSTORE)
+
+mount:		$(TESTS_MOUNT)
 
 error:		$(TESTS_ERROR)
 
