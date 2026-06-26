@@ -26,6 +26,7 @@ shell printf '"S3_REGION=region\n"' >> $var1
 shell printf '"S3_ACCESS_KEY=access_key\n"' >> $var1
 shell printf '"S3_SECRET_KEY=secret_key\n"' >> $var1
 shell printf '"CACHE_ROOT=%s\n"' $sys_tmpdir >> $var1
+shell printf '"LOG_ALWAYS_FLUSH = true\n"' >> $var1
 
 print "### CONFIG"
 

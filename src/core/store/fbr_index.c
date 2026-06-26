@@ -174,6 +174,7 @@ _json_body_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 		assert_dev(chunk->state >= FBR_CHUNK_EMPTY);
 
 		if (chunk->state == FBR_CHUNK_WBUFFER) {
+			chunk = chunk->next;
 			continue;
 		}
 
