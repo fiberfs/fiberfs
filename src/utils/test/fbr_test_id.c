@@ -61,6 +61,10 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sizeof(fbr_id_part_t)=%zu",
 		sizeof(fbr_id_part_t));
 
+	struct fbr_etag etag;
+	static_ASSERT(sizeof(etag.length) == sizeof(char));
+	static_ASSERT(FBR_ETAG_MAX_LEN <= UCHAR_MAX);
+
 	fbr_id_t id1 = fbr_id_gen();
 	fbr_id_t id2 = fbr_id_gen();
 	fbr_id_t id3 = fbr_id_gen();

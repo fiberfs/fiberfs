@@ -20,6 +20,7 @@
 #define FBR_ID_PART_CHAR_MAX			10
 #define FBR_ID_STRING_MAX			((FBR_ID_PART_CHAR_MAX * 2) + 1)
 #define FBR_ID_PRINTF_FMT			"%u%0" FBR_STRINGIFY(FBR_ID_PART_CHAR_MAX) "u"
+#define FBR_ETAG_MAX_LEN			80
 
 typedef unsigned long fbr_id_t;
 typedef unsigned int fbr_id_part_t;
@@ -40,6 +41,11 @@ struct fbr_id {
 		fbr_id_t			value;
 		struct fbr_id_parts		parts;
 	};
+};
+
+struct fbr_etag {
+	unsigned char				length;
+	char					value[FBR_ETAG_MAX_LEN];
 };
 
 fbr_id_t fbr_id_gen(void);

@@ -211,6 +211,7 @@ struct fbr_directory {
 
 	fbr_id_t				version;
 	unsigned long				generation;
+	struct fbr_etag				etag;
 
 	struct fbr_file				*file;
 	struct fbr_directory			*previous;
