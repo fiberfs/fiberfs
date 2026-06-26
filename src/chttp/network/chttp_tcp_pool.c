@@ -86,6 +86,8 @@ _tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry, int close)
 			// Single head
 			assert(RB_REMOVE(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
 			TAILQ_REMOVE(&_TCP_POOL.lru_list, entry, list_entry);
+
+			head = NULL;
 		} else {
 			// Move up the next entry
 			struct chttp_tcp_pool_entry *next = entry->next;
@@ -96,20 +98,25 @@ _tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry, int close)
 
 			assert(RB_REMOVE(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
 			assert_zero(RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, next));
+
+			head = next;
 		}
 	} else {
 		// Find the entry and cut it out
+		struct chttp_tcp_pool_entry *ptr = head;
 		int found = 0;
-		while (head->next) {
-			chttp_pool_entry_ok(head->next);
 
-			if (head->next == entry) {
-				head->next = entry->next;
+		while (ptr->next) {
+			chttp_pool_entry_ok(ptr->next);
+
+			if (ptr->next == entry) {
+				ptr->next = entry->next;
 				found++;
 			} else {
-				head = head->next;
+				ptr = ptr->next;
 			}
 		}
+
 		assert(found == 1);
 	}
 
@@ -117,15 +124,13 @@ _tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry, int close)
 		chttp_tcp_close(&entry->addr);
 	}
 
-	struct chttp_tcp_pool_entry *next = entry->next;
-
 	chttp_addr_reset(&entry->addr);
 	fbr_zero(entry);
 	TAILQ_INSERT_TAIL(&_TCP_POOL.free_list, entry, list_entry);
 
 	_TCP_POOL.stats.deleted++;
 
-	return next;
+	return head;
 }
 
 int

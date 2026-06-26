@@ -37,10 +37,12 @@ equal $cstore_stat_http_200:0 2
 greater_than $cstore_stat_http_400:0 0
 equal $cstore_stat_http_500:0 0
 
+# TODO make sell be quiet if there is no verbose
 #shell_bg ../src/fiberfs_log $sys_tmpdir
 
 sys_ls $sys_tmpdir
 
+# TODO add this feature to shell
 shell ps -ef | grep "[f]iberfs\ " | grep -v '" sh "' | grep $sys_tmpdir | awk "'{print $2}'" | xargs kill
 
 shell_waitall

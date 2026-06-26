@@ -12,6 +12,8 @@
 #include "test/fbr_test.h"
 #include "log/fbr_log.h"
 
+// TODO this needs to be overhauled, need PID, kill support, and verbose supression
+
 struct fbr_test_shell {
 	unsigned int				magic;
 #define _SHELL_MAGIC				0x80CD260D

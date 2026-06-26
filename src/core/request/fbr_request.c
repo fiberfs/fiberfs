@@ -358,14 +358,6 @@ fbr_request_pool_shutdown(void)
 	assert(TAILQ_EMPTY(&_REQUEST_POOL->free_list));
 	assert_zero_dev(_REQUEST_POOL->stats.requests_pooled);
 
-	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
-		// We will no longer have a nice exit if requests are still inflight
-		if (fbr_fuse_has_context()) {
-			struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
-			fuse_ctx->error = 1;
-		}
-	}
-
 	TAILQ_FOREACH_SAFE(request, &_REQUEST_POOL->active_list, entry, temp) {
 		fbr_request_ok(request);
 
@@ -381,6 +373,7 @@ fbr_request_pool_shutdown(void)
 
 		assert_zero_dev(request->fuse_req);
 
+		// This does practically nothing. Hung threads will block a fuse unmount.
 		if (request->thread) {
 			fbr_rlog(FBR_LOG_REQUEST, "id: %lu sending SIGQUIT", request->id);
 			pthread_kill(request->thread, SIGQUIT);
@@ -388,6 +381,14 @@ fbr_request_pool_shutdown(void)
 		}
 
 		fbr_rlog_flush(request->rlog);
+	}
+
+	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
+		// We will no longer have a nice exit if requests are still inflight
+		if (fbr_fuse_has_context()) {
+			struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
+			fuse_ctx->error = 1;
+		}
 	}
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
