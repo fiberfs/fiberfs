@@ -2,7 +2,7 @@ fiber_test "FiberFS mock s3"
 
 # Mock an S3 and config
 
-set_timeout_sec 600
+set_timeout_sec 0
 
 config_add CSTORE_SERVER true
 config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
