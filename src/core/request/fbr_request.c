@@ -322,9 +322,9 @@ fbr_request_pool_shutdown(void)
 
 	fbr_stat_add(&_REQUEST_POOL->stats.shutdowns);
 
-	int max_ms = 500;
-	int wait_ms = 0;
-	int sleep_ms = 25;
+	static unsigned int max_ms = 3000;
+	static unsigned int wait_ms = 0;
+	static unsigned int sleep_ms = 25;
 	while (wait_ms < max_ms && !TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
 		if (fbr_fuse_has_context()) {
 			struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
@@ -334,6 +334,7 @@ fbr_request_pool_shutdown(void)
 		}
 
 		fbr_sleep_ms(sleep_ms);
+
 		wait_ms += sleep_ms;
 	}
 
@@ -358,6 +359,7 @@ fbr_request_pool_shutdown(void)
 	assert_zero_dev(_REQUEST_POOL->stats.requests_pooled);
 
 	if (!TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
+		// We will no longer have a nice exit if requests are still inflight
 		if (fbr_fuse_has_context()) {
 			struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 			fuse_ctx->error = 1;
