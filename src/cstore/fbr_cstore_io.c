@@ -736,7 +736,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 			assert_zero_dev(entry_ref);
 		}
 
-		if (retry == 1) {
+		if (retry == 1 || retry == 2) {
 			if (!fbr_cstore_backend_enabled(cstore)) {
 				return 1;
 			}
@@ -754,7 +754,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 			if (ret == 400 || ret == 404) {
 				return EAGAIN;
 			}
-		} else if (retry > 1) {
+		} else if (retry > 2) {
 			return 1;
 		}
 
