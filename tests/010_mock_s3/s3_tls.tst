@@ -1,4 +1,4 @@
-fiber_test "FiberFS mock s3"
+fiber_test "FiberFS mock s3 with TLS"
 
 # Mock an S3 and config
 
@@ -7,11 +7,12 @@ set_timeout_sec 600
 config_add CSTORE_SERVER true
 config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
 config_add CSTORE_SERVER_PORT 0
+config_add CSTORE_SERVER_TLS true
 
 cstore_init 0
 cstore_mock_s3 0 region access_key secret_key
 
-equal $cstore_server_tls:0 0
+equal $cstore_server_tls:0 1
 
 sys_mkdir_tmp
 set_var1 $sys_tmpdir "/config"
@@ -20,7 +21,7 @@ sys_mkdir_tmp
 
 shell printf '"S3_HOST=%s\n"' $cstore_server_host:0 > $var1
 shell printf '"S3_PORT=%s\n"' $cstore_server_port:0 >> $var1
-shell printf '"S3_TLS=false\n"' >> $var1
+shell printf '"S3_TLS=true\n"' >> $var1
 shell printf '"S3_REGION=region\n"' >> $var1
 shell printf '"S3_ACCESS_KEY=access_key\n"' >> $var1
 shell printf '"S3_SECRET_KEY=secret_key\n"' >> $var1
