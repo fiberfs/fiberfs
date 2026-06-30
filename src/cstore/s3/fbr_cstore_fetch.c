@@ -593,7 +593,7 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
 		break;
 	}
 
-	fbr_rlog(FBR_LOG_CS_S3, "S3 DELETE %d %d", http.error, http.status);
+	fbr_rlog(FBR_LOG_CS_S3, "S3 DELETE %d", http.status);
 
 	if (http.error || !fbr_cstore_http_success(http.status)) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp: %d %d", http.error, http.status);
