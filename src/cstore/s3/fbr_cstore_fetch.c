@@ -381,7 +381,7 @@ fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *
 	fbr_rlog(FBR_LOG_CS_S3, "S3 response: %d (%d %d %s)", http->status, http->state,
 		http->error, chttp_error_msg(http));
 
-	if (http->error || http->status != 200) {
+	if (http->error || !fbr_cstore_http_success(http->status)) {
 		error = http->status ? http->status : 1;
 		assert_dev(error > 0);
 	} else {
@@ -426,7 +426,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 	struct chttp_context *http = fetch->http;
 	chttp_context_ok(http);
 
-	if (http->error || http->status != 200) {
+	if (http->error || !fbr_cstore_http_success(http->status)) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET: %d %d", http->error, http->status);
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, &entry);
@@ -595,7 +595,7 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
 
 	fbr_rlog(FBR_LOG_CS_S3, "S3 DELETE %d %d", http.error, http.status);
 
-	if (http.error || http.status != 200) {
+	if (http.error || !fbr_cstore_http_success(http.status)) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp: %d %d", http.error, http.status);
 
 		int error = http.status ? http.status : 1;
@@ -727,7 +727,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	fbr_cstore_s3_send_get(&fetch);
 
-	if (http.error || http.status != 200) {
+	if (http.error || !fbr_cstore_http_success(http.status)) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp: %d %d", http.error, http.status);
 		_s3_chunk_read_error(fs, cstore, entry, file, chunk, &http);
 		return;
@@ -981,10 +981,10 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 
 	fbr_cstore_s3_send_get(&fetch);
 
-	if (http.error || http.status != 200) {
+	if (http.error || !fbr_cstore_http_success(http.status)) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR S3: %d %d", http.error, http.status);
 
-		if (http_error && http.status != 200) {
+		if (http_error && !fbr_cstore_http_success(http.status)) {
 			*http_error = http.status;
 		}
 

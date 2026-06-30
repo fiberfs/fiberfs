@@ -42,16 +42,6 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	fbr_cstore_io_wbuffer_write(fs, file, wbuffer);
 }
 
-static int
-_cstore_write_conflict(int error_code)
-{
-	if (error_code == 409 || error_code == 412) {
-		return 1;
-	}
-
-	return 0;
-}
-
 int
 fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
     struct fbr_writer *writer, struct fbr_directory *previous)
@@ -70,7 +60,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	int fail = fbr_cstore_io_index_write(fs, directory, writer);
 	if (fail) {
-		if (_cstore_write_conflict(fail)) {
+		if (fbr_cstore_http_conflict(fail)) {
 			return EAGAIN;
 		}
 
@@ -100,7 +90,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		fail = fbr_cstore_s3_root_put(cstore, root_json, &root_path, &directory->etag,
 			etag_match, FBR_CSTORE_ROUTE_CLUSTER);
 
-		if (_cstore_write_conflict(fail)) {
+		if (fbr_cstore_http_conflict(fail)) {
 			fail = EAGAIN;
 		} else if (fail) {
 			fail = EIO;
@@ -131,7 +121,7 @@ fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 {
 	int ret = fbr_cstore_io_index_delete(fs, directory);
 
-	if (_cstore_write_conflict(ret) || ret == EAGAIN) {
+	if (fbr_cstore_http_conflict(ret) || ret == EAGAIN) {
 		return EAGAIN;
 	} else if (ret) {
 		return EIO;

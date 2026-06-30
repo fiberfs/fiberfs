@@ -103,7 +103,7 @@ _cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const 
 	int error = fbr_cstore_s3_root_put(cstore, root_json, &root_path, &etag, etag_match,
 		FBR_CSTORE_ROUTE_S3);
 	if (error) {
-		assert_dev(error != 200);
+		assert_zero_dev(fbr_cstore_http_success(error));
 		fbr_cstore_http_respond(cstore, http, error, "Error");
 		return;
 	}
@@ -377,7 +377,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 		fbr_s3_send_put(&fetch);
 
-		if (http_backend.error || http_backend.status != 200) {
+		if (http_backend.error || !fbr_cstore_http_success(http_backend.status)) {
 			fbr_cstore_release(cstore, &entry);
 			chttp_context_free(&http_backend);
 			fbr_cstore_http_respond(cstore, http, http_backend.status, "Error");
@@ -542,7 +542,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			last_error = fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
 			assert_dev(http.state == CHTTP_STATE_NONE);
 		} else if (retry > 1) {
-			if (last_error && last_error != 200) {
+			if (last_error && !fbr_cstore_http_success(last_error)) {
 				fbr_cstore_http_respond(cstore, http, last_error, "Error");
 			}
 
@@ -758,7 +758,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		int error = fbr_cstore_s3_send_delete(cstore, &url_enc, etag_match,
 			FBR_CSTORE_ROUTE_CDN);
 		if (error) {
-			assert_dev(error != 200);
+			assert_zero_dev(fbr_cstore_http_success(error));
 			fbr_cstore_http_respond(cstore, http, error, "Error");
 		} else {
 			fbr_cstore_http_respond(cstore, http, 200, "OK");
@@ -832,7 +832,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 	}
 
 	if (error) {
-		assert_dev(error != 200);
+		assert_zero_dev(fbr_cstore_http_success(error));
 		fbr_cstore_http_respond(cstore, http, error, "Error");
 	} else {
 		fbr_cstore_http_respond(cstore, http, 200, "OK");

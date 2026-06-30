@@ -74,12 +74,10 @@ fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
 	fbr_sys_write(fd, buf, length);
 
 	// g: gzipped
-	fbr_sys_write(fd, ",\"g\":", 5);
-
 	if (metadata->gzipped) {
-		fbr_sys_write(fd, "1}", 2);
+		fbr_sys_write(fd, ",\"g\":1}", 7);
 	} else {
-		fbr_sys_write(fd, "0}", 2);
+		fbr_sys_write(fd, "}", 1);
 	}
 
 	assert_zero(close(fd));

@@ -14,6 +14,26 @@
 #include "core/request/fbr_workspace.h"
 #include "cstore/fbr_cstore_api.h"
 
+int
+fbr_cstore_http_conflict(int error_code)
+{
+	if (error_code == 409 || error_code == 412) {
+		return 1;
+	}
+
+	return 0;
+}
+
+int
+fbr_cstore_http_success(int error_code)
+{
+	if (error_code >= 200 && error_code <= 299) {
+		return 1;
+	}
+
+	return 0;
+}
+
 void
 fbr_cstore_http_resp_etag(struct fbr_cstore *cstore, struct chttp_context *http, int status,
     const char *reason, const char *etag)
