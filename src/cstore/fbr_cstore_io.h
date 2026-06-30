@@ -120,11 +120,10 @@ void fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_conte
 	struct fbr_cstore_path *path, struct fbr_wbuffer *wbuffer,
 	struct fbr_cstore_op_sync *sync);
 void fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
-	struct fbr_cstore_path *path, struct fbr_writer *writer, fbr_id_t id,
-	struct fbr_cstore_op_sync *sync);
+	struct fbr_cstore_path *path, struct fbr_writer *writer, struct fbr_cstore_op_sync *sync);
 void fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-	struct fbr_cstore_path *root_path, fbr_id_t version, double timestamp);
+	struct fbr_cstore_path *root_path, const char *etag, double timestamp);
 
 void fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync);
 void fbr_cstore_op_sync_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker);
@@ -150,7 +149,7 @@ void fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
 void fbr_cstore_io_delete_entry(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
 void fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url *url,
-	fbr_id_t id, enum fbr_cstore_file_type type);
+	const char *etag_match, enum fbr_cstore_file_type type);
 void fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk);
 int fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_writer *writer);
@@ -158,10 +157,10 @@ int fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 void fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-	struct fbr_cstore_path *root_path, fbr_id_t version, fbr_id_t existing, int enforce,
-	double timestamp, struct fbr_cstore_entry **entry_ref);
+	struct fbr_cstore_path *root_path, struct fbr_etag *etag, const char *etag_match,
+	int enforce, double timestamp, struct fbr_cstore_entry **entry_ref);
 fbr_id_t fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_path,
-	unsigned int attempts);
+	struct fbr_etag *etag, unsigned int attempts);
 int fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 
 void fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http);

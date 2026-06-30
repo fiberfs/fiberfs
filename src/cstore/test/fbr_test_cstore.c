@@ -341,8 +341,8 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 			_cstore_debug_meta(filename, &metadata);
 			switch (metadata.type) {
 			case FBR_CSTORE_FILE_CHUNK:
-				fbr_test_logs("CSTORE_DEBUG file: %s (CHUNK %s size: %lu [%lu])",
-					filename, metadata.path, metadata.size, metadata.offset);
+				fbr_test_logs("CSTORE_DEBUG file: %s (CHUNK %s size: %lu)",
+					filename, metadata.path, metadata.size);
 				fbr_cstore_is_path(metadata.path);
 				assert(strstr(metadata.path, FBR_FIBERFS_CHUNK_NAME));
 				assert((unsigned long)stat->st_size == metadata.size);
@@ -354,8 +354,9 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 				assert(strstr(metadata.path, FBR_FIBERFS_INDEX_NAME));
 				break;
 			case FBR_CSTORE_FILE_ROOT:
-				fbr_test_logs("CSTORE_DEBUG file: %s (ROOT %s version: %lu)",
-					filename, metadata.path, metadata.etag);
+				fbr_test_logs("CSTORE_DEBUG file: %s (ROOT %s etag: %s:%u)",
+					filename, metadata.path, metadata.etag.value,
+					metadata.etag.length);
 				fbr_cstore_is_path(metadata.path);
 				assert(strstr(metadata.path, FBR_FIBERFS_ROOT_NAME));
 				assert_zero(metadata.gzipped);

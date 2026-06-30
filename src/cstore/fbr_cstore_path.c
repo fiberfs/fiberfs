@@ -486,13 +486,10 @@ fbr_cstore_s3_url_clone(struct fbr_cstore_url *dest, const struct fbr_cstore_url
 }
 
 enum fbr_cstore_file_type
-fbr_cstore_s3_url_parse(const char *url, size_t url_len, const char *etag, size_t etag_len,
-    size_t *offset)
+fbr_cstore_s3_url_parse(const char *url, size_t url_len)
 {
-	assert(url && url_len);
-	assert_dev(offset);
-
-	*offset = 0;
+	assert(url)
+	assert(url_len);
 
 	if (url_len <= sizeof(FBR_FIBERFS_NAME) || url[0] != '/') {
 		return FBR_CSTORE_FILE_NONE;
@@ -509,18 +506,18 @@ fbr_cstore_s3_url_parse(const char *url, size_t url_len, const char *etag, size_
 			    sizeof(FBR_FIBERFS_INDEX_NAME))) {
 				i += sizeof(FBR_FIBERFS_INDEX_NAME);
 
-				if (i >= url_len || !etag_len) {
-					return FBR_CSTORE_FILE_NONE;
-				} else if (i + etag_len != url_len) {
+				if (i >= url_len) {
 					return FBR_CSTORE_FILE_NONE;
 				}
 
-				if (!strncmp(&url[i], etag, etag_len)) {
-					assert_dev(i + etag_len == url_len);
-					return FBR_CSTORE_FILE_INDEX;
+				while (i < url_len) {
+					if (url[i] < '0' || url[i] > '9') {
+						return FBR_CSTORE_FILE_NONE;
+					}
+					i++;
 				}
 
-				return FBR_CSTORE_FILE_NONE;
+				return FBR_CSTORE_FILE_INDEX;
 			} else if (!strncmp(&url[i], FBR_FIBERFS_NAME,
 			    sizeof(FBR_FIBERFS_NAME) - 1)) {
 				return FBR_CSTORE_FILE_NONE;
@@ -529,38 +526,24 @@ fbr_cstore_s3_url_parse(const char *url, size_t url_len, const char *etag, size_
 		    sizeof(FBR_FIBERFS_CHUNK_NAME))) {
 			i += sizeof(FBR_FIBERFS_CHUNK_NAME);
 
-			if (!etag_len) {
-				return FBR_CSTORE_FILE_NONE;
-			} else if (i + etag_len + 2 > url_len) {
+			while (url[i] >= '0' && url[i] <= '9') {
+				i++;
+			}
+
+			if (i >= url_len - 1 || url[i] != '.' || url[i - 1] == '.') {
 				return FBR_CSTORE_FILE_NONE;
 			}
 
-			if (!strncmp(&url[i], etag, etag_len)) {
-				i += etag_len + 1;
-				assert_dev(i < url_len);
+			i++;
 
-				if (url[i - 1] != '.') {
-					return FBR_CSTORE_FILE_NONE;
-				}
-
-				size_t end = i;
-				while (url[end] >= '0' && url[end] <= '9') {
-					end++;
-				}
-				if (end != url_len) {
-					return FBR_CSTORE_FILE_NONE;
-				}
-
-				int error;
-				*offset = fbr_parse_ulong(&url[i], end - i, &error);
-				if (error) {
-					return FBR_CSTORE_FILE_NONE;
-				}
-
-				return FBR_CSTORE_FILE_CHUNK;
+			while (url[i] >= '0' && url[i] <= '9') {
+				i++;
+			}
+			if (i != url_len) {
+				return FBR_CSTORE_FILE_NONE;
 			}
 
-			return FBR_CSTORE_FILE_NONE;
+			return FBR_CSTORE_FILE_CHUNK;
 		} else if (url[i] == '.' && !strncmp(&url[i], FBR_FIBERFS_NAME,
 		    sizeof(FBR_FIBERFS_NAME) - 1)) {
 			return FBR_CSTORE_FILE_NONE;

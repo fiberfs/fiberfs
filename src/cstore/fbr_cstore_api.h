@@ -190,10 +190,9 @@ struct fbr_cstore {
 
 struct fbr_cstore_metadata {
 	char					path[FBR_PATH_MAX];
-	fbr_id_t				etag;
+	struct fbr_etag				etag;
 	double					timestamp;
 	unsigned long				size;
-	size_t					offset;
 	enum fbr_cstore_file_type		type;
 	int					gzipped;
 	int					error;
@@ -222,7 +221,8 @@ void fbr_cstore_loader_init(struct fbr_cstore *cstore);
 void fbr_cstore_loader_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_config_load(struct fbr_cstore *cstore);
-size_t fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len);
+void fbr_cstore_gen_etag(struct fbr_etag *etag);
+void fbr_cstore_etag_init(struct fbr_etag *etag, const char *etag_hdr);
 void fbr_cstore_request_id(char *buffer, size_t buffer_len);
 void fbr_cstore_make_root(struct fbr_cstore_hashpath *cache_hashroot, const char *cache_root,
 	const char *mount_path);

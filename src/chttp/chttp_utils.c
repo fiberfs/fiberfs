@@ -15,6 +15,7 @@ void
 chttp_context_debug(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
+	chttp_addr_ok(&ctx->addr);
 
 	printf("chttp_ctx state=%d (%s) error=%d (%s) version=%d data_last=%p\n"
 		"\tdata_start=%p:%zu:%zu data_end=%p:%zu:%zu\n"

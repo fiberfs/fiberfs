@@ -10,8 +10,8 @@
 
 #include "test/fbr_test.h"
 
-#define _url_parse(url, etag, offset)	\
-	fbr_cstore_s3_url_parse(url, sizeof(url) - 1, etag, sizeof(etag) - 1, offset)
+#define _url_parse(url)		\
+	fbr_cstore_s3_url_parse(url, strlen(url))
 
 void
 fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
@@ -19,136 +19,131 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	size_t offset;
 	enum fbr_cstore_file_type type;
 
-	type = _url_parse("/", "", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-	assert_zero(offset);
-
-	type = _url_parse("/abc", "", &offset);
+	type = _url_parse("/");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/.fiberfs", "", &offset);
+	type = _url_parse("/abc");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/.fiberfsRoot", "", &offset);
+	type = _url_parse("/.fiberfs");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/.fiberfsroot", "", &offset);
-	assert(type == FBR_CSTORE_FILE_ROOT);
-	assert_zero(offset);
-
-	type = _url_parse(".fiberfsroot", "", &offset);
+	type = _url_parse("/.fiberfsRoot");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/.fiberfsroots", "", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/.fiberfsroot.", "", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/.fiberfsroot/abc", "", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/abc/.fiberfsroot", "", &offset);
-	assert(type == FBR_CSTORE_FILE_ROOT);
-	assert_zero(offset);
-
-	type = _url_parse("/abc/안녕하세요/zzz/.fiberfsroot", "", &offset);
+	type = _url_parse("/.fiberfsroot");
 	assert(type == FBR_CSTORE_FILE_ROOT);
 
-	type = _url_parse("/ab?q=/.fiberfsroot", "", &offset);
+	type = _url_parse(".fiberfsroot");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/.fiberfsindex", "", &offset);
+	type = _url_parse("/.fiberfsroots");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/.fiberfsindex.", "", &offset);
+	type = _url_parse("/.fiberfsroot.");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/.fiberfsindex.1", "1", &offset);
+	type = _url_parse("/.fiberfsroot/abc");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/abc/.fiberfsroot");
+	assert(type == FBR_CSTORE_FILE_ROOT);
+
+	type = _url_parse("/abc/안녕하세요/zzz/.fiberfsroot");
+	assert(type == FBR_CSTORE_FILE_ROOT);
+
+	type = _url_parse("/ab?q=/.fiberfsroot");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/.fiberfsindex");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/.fiberfsindex.");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/.fiberfsindex.1");
 	assert(type == FBR_CSTORE_FILE_INDEX);
-	assert_zero(offset);
 
-	type = _url_parse("/.fiberfsindex_1", "1", &offset);
+	type = _url_parse("/.fiberfsindex_1");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/abc/.fiberfsindex.zzz", "zzz", &offset);
+	type = _url_parse("/abc/.fiberfsindex.zzz");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/.fiberfsindex.17648613712223107868");
 	assert(type == FBR_CSTORE_FILE_INDEX);
 
-	type = _url_parse("/.fiberfsindex.17648613712223107868", "17648613712223107868", &offset);
+	type = _url_parse("/.fiberfsindex.17648613712.2231078680");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/.fiberfsindex.17648613712223107868");
 	assert(type == FBR_CSTORE_FILE_INDEX);
-	assert_zero(offset);
 
-	type = _url_parse("/.fiberfsindex.176486137122231078680", "17648613712223107868", &offset);
+	type = _url_parse("/abc.6.1.fiberfschunk");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/.fiberfsindex.17648613712223107868", "176486137122231078680", &offset);
+	type = _url_parse("/abc.fiberfschunk.6");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/abc.6.1.fiberfschunk", "6", &offset);
+	type = _url_parse("/abc.fiberfschunk.6.");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/abc.fiberfschunk.6", "6", &offset);
+	type = _url_parse("/abc.fiberfschunk.6.1a");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/abc.fiberfschunk.6.", "6", &offset);
+	type = _url_parse("/abc.fiberfschunk.6.a");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/abc.fiberfschunk.6.1a", "6", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/abc.fiberfschunk.6.a", "6", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/abc.fiberfschunk.6.1", "6", &offset);
+	type = _url_parse("/abc.fiberfschunk.6.1");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
-	assert(offset == 1);
 
-	type = _url_parse("/abc.fiberfschunk.62.1", "6", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/abc.98", "987654321", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/abc.fiberfschunk.6.1", "63", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/abc.fiberfschunk.6.+00", "6", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/abc.fiberfschunks.6.1", "6", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/abc.fiberfschunk.6.-1", "6", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/abc.fiberfschunk.6.a0", "6", &offset);
-	assert(type == FBR_CSTORE_FILE_NONE);
-
-	type = _url_parse("/file.fiberfschunk.abc.0", "abc", &offset);
+	type = _url_parse("/abc.fiberfschunk.6.11");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
-	assert(offset == 0);
 
-	type = _url_parse("/abc/file.abc.txt.fiberfschunk.abc.123456", "abc", &offset);
+	type = _url_parse("/abc.fiberfschunk.62.1");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
-	assert(offset == 123456);
 
-	type = _url_parse("/abc/file.abc.123.fiberfschunk.abc.444", "abc", &offset);
+	type = _url_parse("/abc.fiberfschunk.62.11");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
-	assert(offset == 444);
 
-	type = _url_parse("/test/안녕하세요.txt.fiberfschunk.17648630080413561840.102400",
-		"17648630080413561840", &offset);
+	type = _url_parse("/abc.98");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/abc.fiberfschunk..1");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/abc.fiberfschunk.6.+00");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/abc.fiberfschunks.6.1");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/abc.fiberfschunk.6.-1");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/abc.fiberfschunk.6.a0");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/file.fiberfschunk.abc.0");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/abc/file.abc.txt.fiberfschunk.123.123456");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
-	assert(offset == 102400);
+
+	type = _url_parse("/abc/file.abc.123.fiberfschunk.456.0");
+	assert(type == FBR_CSTORE_FILE_CHUNK);
+
+	type = _url_parse("/test/안녕하세요.txt.fiberfschunk.17648630080413561840.102400");
+	assert(type == FBR_CSTORE_FILE_CHUNK);
 
 	type = _url_parse("/test/%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94.txt"
-		".fiberfschunk.17648630080413561840.102400",
-		"17648630080413561840", &offset);
+		".fiberfschunk.17648630080413561840.102400");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
-	assert(offset == 102400);
+
+	type = _url_parse("/test_dir/SomeFile.txt.fiberfschunk.17828368500534773756.0");
+	assert(type == FBR_CSTORE_FILE_CHUNK);
 
 	fbr_test_logs("cstore_url_test done");
 }

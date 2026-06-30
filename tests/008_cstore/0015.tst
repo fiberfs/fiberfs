@@ -54,6 +54,9 @@ cstore_debug 1
 
 equal $cstore_entries:0 3
 
+equal $cstore_stat_http_400:1 0
+equal $cstore_stat_http_500:1 0
+
 fs_test_release_all_wait
 
 equal $fs_test_stat_files_inodes 1

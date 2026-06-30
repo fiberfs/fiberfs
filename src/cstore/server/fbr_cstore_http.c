@@ -15,8 +15,8 @@
 #include "cstore/fbr_cstore_api.h"
 
 void
-fbr_cstore_http_respond(struct fbr_cstore *cstore, struct chttp_context *http, int status,
-    const char *reason)
+fbr_cstore_http_resp_etag(struct fbr_cstore *cstore, struct chttp_context *http, int status,
+    const char *reason, const char *etag)
 {
 	fbr_cstore_ok(cstore);
 	chttp_context_ok(http);
@@ -48,7 +48,9 @@ fbr_cstore_http_respond(struct fbr_cstore *cstore, struct chttp_context *http, i
 		"Server: fiberfs cstore %s\r\n"
 		"%s"
 		"FiberFS-ID: %s\r\n"
-		"Content-Length: 0\r\n\r\n", status, reason, FIBERFS_VERSION, close, fiber_id);
+		"%s%s%s"
+		"Content-Length: 0\r\n\r\n", status, reason, FIBERFS_VERSION, close, fiber_id,
+		etag ? "ETag: " : "", etag ? etag : "", etag ? "\r\n" : "");
 
 	chttp_tcp_send(&http->addr, buffer, bytes);
 	chttp_tcp_error_check(http);
@@ -64,6 +66,13 @@ fbr_cstore_http_respond(struct fbr_cstore *cstore, struct chttp_context *http, i
 	} else {
 		fbr_stat_add(&cstore->stats.http_other);
 	}
+}
+
+void
+fbr_cstore_http_respond(struct fbr_cstore *cstore, struct chttp_context *http, int status,
+    const char *reason)
+{
+	fbr_cstore_http_resp_etag(cstore, http, status, reason, NULL);
 }
 
 void

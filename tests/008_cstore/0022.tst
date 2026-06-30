@@ -66,6 +66,13 @@ equal $cstore_stat_roots:3 1
 greater_equal $cstore_stat_chunk_read_bytes:0 2000000
 equal $cstore_stat_chunk_write_bytes:3 2000000
 
+equal $cstore_stat_http_400:1 0
+equal $cstore_stat_http_500:1 0
+equal $cstore_stat_http_400:2 0
+equal $cstore_stat_http_500:2 0
+equal $cstore_stat_http_400:3 0
+equal $cstore_stat_http_500:3 0
+
 fs_test_release_all_wait 1
 
 sleep_ms 10

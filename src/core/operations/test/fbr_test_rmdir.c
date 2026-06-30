@@ -63,6 +63,8 @@ _rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 {
 	assert(ctx);
 
+	fbr_test_conf_add("LOG_ALWAYS_FLUSH", "true");
+
 	fbr_test_fuse_mock(ctx);
 	fbr_test_request_pool_register(ctx);
 
@@ -95,6 +97,8 @@ _rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 		assert(fbr_test_cstore_get(ctx, 0) == cstore_proxy);
 		assert(fbr_test_cstore_get(ctx, 1) == cstore_s3);
 		assert(fbr_test_cstore_count(ctx) == 2);
+
+		fbr_test_conf_add("CSTORE_SERVER", "false");
 
 		fbr_test_cstore_bind_new(fs_1);
 		fbr_test_cstore_backend_add(fs_1->cstore, cstore_proxy, FBR_CSTORE_ROUTE_CDN);

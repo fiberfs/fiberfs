@@ -137,15 +137,11 @@ _index_metadata(struct fbr_cstore_hashpath *hashpath, struct fbr_cstore_metadata
 	assert_zero(ret);
 	assert(ret == metadata->error);
 
-	char etag[FBR_ID_STRING_MAX];
-	fbr_id_string(metadata->etag, etag, sizeof(etag));
-
 	fbr_test_logs(" *** hashpath: %s", hashpath->value);
 	fbr_test_logs(" *** metadata.type: %s", fbr_cstore_type_name(metadata->type));
 	fbr_test_logs(" *** metadata.path: '%s'", metadata->path);
-	fbr_test_logs(" *** metadata.etag: '%s' (%lu)", etag, metadata->etag);
+	fbr_test_logs(" *** metadata.etag: '%s':%u", metadata->etag.value, metadata->etag.length);
 	fbr_test_logs(" *** metadata.size: %lu", metadata->size);
-	fbr_test_logs(" *** metadata.offset: %lu", metadata->offset);
 	fbr_test_logs(" *** metadata.timestamp: %lf", metadata->timestamp);
 	fbr_test_logs(" *** metadata.gzip: %d", metadata->gzipped);
 }

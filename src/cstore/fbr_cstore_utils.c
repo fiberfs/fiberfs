@@ -61,18 +61,39 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 	fbr_config_reader_ready(reader);
 }
 
-size_t
-fbr_cstore_etag(fbr_id_t id, char *buffer, size_t buffer_len)
+void
+fbr_cstore_gen_etag(struct fbr_etag *etag)
 {
-	assert(buffer);
-	assert(buffer_len >= FBR_ID_STRING_MAX + 2);
+	assert(etag);
 
-	buffer[0] = '\"';
-	size_t len = 1 + fbr_id_string(id, buffer + 1, buffer_len - 2);
-	buffer[len++] = '\"';
-	buffer[len] = '\0';
+	fbr_id_t etag_id = fbr_id_gen();
+	fbr_hash_t hash = fbr_hash(&etag_id, sizeof(etag_id));
 
-	return len;
+	char hash_buf[FBR_HEX_LEN(sizeof(hash))];
+	fbr_bin2hex(&hash, sizeof(hash), hash_buf, sizeof(hash_buf));
+
+	etag->length = fbr_bprintf(etag->value, "\"%s\"", hash_buf);
+	assert_dev(etag->length == strlen(etag->value));
+}
+
+void
+fbr_cstore_etag_init(struct fbr_etag *etag, const char *etag_hdr)
+{
+	assert(etag);
+
+	etag->length = 0;
+	etag->value[0] = '\0';
+
+	if (!etag_hdr) {
+		return;
+	}
+
+	size_t etag_len = strlen(etag_hdr);
+	if (etag_len >= sizeof(etag->value)) {
+		return;
+	}
+
+	etag->length = fbr_strbcpy(etag->value, etag_hdr);
 }
 
 #include "utils/fbr_enum_string.h"

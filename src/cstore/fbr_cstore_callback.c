@@ -32,7 +32,7 @@ fbr_cstore_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chu
 	struct fbr_cstore_url url;
 	fbr_cstore_s3_chunk_url(cstore, file, chunk, &url);
 
-	fbr_cstore_io_delete_url(cstore, &url, chunk->id, FBR_CSTORE_FILE_CHUNK);
+	fbr_cstore_io_delete_url(cstore, &url, NULL, FBR_CSTORE_FILE_CHUNK);
 }
 
 void
@@ -80,11 +80,11 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	// TODO we can delay wbuffer upload completion to here
 	// see: fbr_wbuffer_flush_store()
 
-	fbr_id_t previous_version = 0;
+	char *etag_match = NULL;
 	if (previous) {
 		fbr_directory_ok(previous);
-		assert(previous->version);
-		previous_version = previous->version;
+		assert(previous->etag.length);
+		etag_match = previous->etag.value;
 	}
 
 	struct fbr_cstore_path root_path;
@@ -97,8 +97,8 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	assert_zero(root_json->error);
 
 	if (fbr_cstore_backend_enabled(cstore)) {
-		fail = fbr_cstore_s3_root_put(cstore, root_json, &root_path, directory->version,
-			previous_version, FBR_CSTORE_ROUTE_CLUSTER);
+		fail = fbr_cstore_s3_root_put(cstore, root_json, &root_path, &directory->etag,
+			etag_match, FBR_CSTORE_ROUTE_CLUSTER);
 
 		if (_cstore_write_conflict(fail)) {
 			fail = EAGAIN;
@@ -107,8 +107,8 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		}
 	} else {
 		double now = fbr_get_time();
-		fail = fbr_cstore_io_root_write(cstore, root_json, &root_path, directory->version,
-			previous_version, 1, now, NULL);
+		fail = fbr_cstore_io_root_write(cstore, root_json, &root_path, &directory->etag,
+			etag_match, 1, now, NULL);
 	}
 
 	if (fail) {
@@ -141,10 +141,10 @@ fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 }
 
 fbr_id_t
-fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int route_s3)
+fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_directory *directory, int route_s3)
 {
 	fbr_fs_ok(fs);
-	assert(dirpath);
+	fbr_directory_ok(directory);
 
 	if (!fs->cstore) {
 		return 0;
@@ -153,33 +153,39 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_path_name *dirpath, int route
 	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
 
+	struct fbr_path_name dirpath;
+	fbr_directory_name(directory, &dirpath);
+
 	struct fbr_cstore_path path;
-	fbr_cstore_path_root(dirpath, &path);
+	fbr_cstore_path_root(&dirpath, &path);
 
 	fbr_id_t version = 0;
 	int has_backend = fbr_cstore_backend_enabled(cstore);
 
 	if (!route_s3 || !has_backend) {
-		version = fbr_cstore_io_root_read(cstore, &path, 0);
+		version = fbr_cstore_io_root_read(cstore, &path, &directory->etag, 0);
 	}
 
 	if (!version && has_backend) {
-		version = fbr_cstore_s3_root_get(fs, cstore, &path, route_s3, NULL, NULL, 0);
+		version = fbr_cstore_s3_root_get(fs, cstore, &path, &directory->etag, route_s3,
+			NULL, NULL, 0);
 
 		if (!version && !route_s3) {
-			version = fbr_cstore_s3_root_get(fs, cstore, &path, 1, NULL, NULL, 0);
+			version = fbr_cstore_s3_root_get(fs, cstore, &path, &directory->etag, 1,
+				NULL, NULL, 0);
 		}
 	}
 
 	if (!route_s3 && has_backend && !version) {
-		version = fbr_cstore_io_root_read(cstore, &path, 1);
+		version = fbr_cstore_io_root_read(cstore, &path, &directory->etag, 1);
 	}
 
 	char id_str[FBR_ID_STRING_MAX] = "";
 	if (version) {
 		fbr_id_string(version, id_str, sizeof(id_str));
 	}
-	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s version=%ld (%s)", path.value, version, id_str);
+	fbr_rlog(FBR_LOG_CS_ROOT, "READ %s version=%ld (%s) [%s]", path.value, version, id_str,
+		directory->etag.value);
 
 	return version;
 }

@@ -149,16 +149,15 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 			fbr_cstore_io_chunk_read(op->param0, op->param1, op->param2);
 			return;
 		case FBR_CSOP_URL_DELETE:
-			fbr_cstore_io_delete_url(op->param0, op->param1, (fbr_id_t)op->param2,
+			fbr_cstore_io_delete_url(op->param0, op->param1, op->param2,
 				(intptr_t)op->param3);
 			return;
 		case FBR_CSOP_INDEX_SEND:
-			fbr_cstore_s3_index_send(op->param0, op->param1, op->param2, op->param3,
-				(fbr_id_t)op->param4);
+			fbr_cstore_s3_index_send(op->param0, op->param1, op->param2, op->param3);
 			return;
 		case FBR_CSOP_ROOT_WRITE:
 			fbr_cstore_io_root_write(op->param0, op->param1, op->param2,
-				(fbr_id_t)op->param3, 0, 0, *((double*)op->param4), NULL);
+				op->param3, NULL, 0, *((double*)op->param4), NULL);
 			return;
 		case FBR_CSOP_NONE:
 		case __FBR_CSOP_END:
@@ -346,8 +345,8 @@ _async_chunk_url_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker
 }
 
 static void
-_async_url_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url, fbr_id_t id,
-    enum fbr_cstore_file_type type)
+_async_url_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url,
+    const char *etag_match, enum fbr_cstore_file_type type)
 {
 	assert_dev(cstore);
 	fbr_cstore_url_ok(url);
@@ -356,18 +355,17 @@ _async_url_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url, f
 	assert(url_async);
 	fbr_cstore_s3_url_clone(url_async, url);
 
-	static_ASSERT(sizeof(void*) >= sizeof(id));
 	static_ASSERT(sizeof(void*) >= sizeof(type));
 
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_URL_DELETE, cstore, url_async,
-		(void*)id, (void*)type, NULL, _async_chunk_url_done, NULL);
+		(void*)etag_match, (void*)type, NULL, _async_chunk_url_done, NULL);
 	if (ret) {
 		fbr_rlog(FBR_LOG_CS_ASYNC, "synchronous fallback");
 
 		fbr_zero_magic(url_async);
 		free(url_async);
 
-		fbr_cstore_io_delete_url(cstore, url, id, type);
+		fbr_cstore_io_delete_url(cstore, url, etag_match, type);
 
 		return;
 	}
@@ -390,7 +388,7 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 	struct fbr_cstore_url url;
 	fbr_cstore_s3_chunk_url(cstore, file, chunk, &url);
 
-	_async_url_delete(cstore, &url, chunk->id, FBR_CSTORE_FILE_CHUNK);
+	_async_url_delete(cstore, &url, NULL, FBR_CSTORE_FILE_CHUNK);
 }
 
 void
@@ -420,8 +418,7 @@ fbr_cstore_async_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *h
 
 void
 fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
-    struct fbr_cstore_path *path, struct fbr_writer *writer, fbr_id_t id,
-    struct fbr_cstore_op_sync *sync)
+    struct fbr_cstore_path *path, struct fbr_writer *writer, struct fbr_cstore_op_sync *sync)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_path_ok(path);
@@ -432,14 +429,12 @@ fbr_cstore_async_index_send(struct fbr_cstore *cstore, struct chttp_context *htt
 		return;
 	}
 
-	static_ASSERT(sizeof(void*) >= sizeof(id));
-
 	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_INDEX_SEND, cstore, http, path,
-		writer, (void*)id, fbr_cstore_op_sync_done, sync);
+		writer, NULL, fbr_cstore_op_sync_done, sync);
 	if (ret) {
 		fbr_rlog(FBR_LOG_CS_ASYNC, "synchronous fallback");
 
-		fbr_cstore_s3_index_send(cstore, http, path, writer, id);
+		fbr_cstore_s3_index_send(cstore, http, path, writer);
 		sync->done = 1;
 
 		return;
@@ -462,58 +457,61 @@ fbr_cstore_async_index_remove(struct fbr_fs *fs, struct fbr_directory *directory
 	struct fbr_cstore_url url;
 	fbr_cstore_s3_index_url(cstore, directory, &url);
 
-	_async_url_delete(cstore, &url, directory->version, FBR_CSTORE_FILE_INDEX);
+	_async_url_delete(cstore, &url, NULL, FBR_CSTORE_FILE_INDEX);
 }
 
+struct _async_root_data {
+	struct fbr_cstore_path		path;
+	struct fbr_etag			etag;
+	double				timestamp;
+	double				*timestamp_p;
+};
+
 static void
-_async_root_path_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker)
+_async_root_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker)
 {
 	fbr_cstore_op_ok(op);
 	assert(op->type == FBR_CSOP_ROOT_WRITE);
 	fbr_cstore_worker_ok(worker);
 
-	struct fbr_cstore_path *path = op->param2;
-	fbr_cstore_path_ok(path);
-	fbr_zero_magic(path);
-	op->param2 = NULL;
+	struct _async_root_data *root_data = op->done_arg;
+	assert(root_data);
+	fbr_cstore_path_ok(&root_data->path);
+	assert(root_data->timestamp_p == &root_data->timestamp);
 
-	double *timestamp = op->param4;
-	free(timestamp);
-	op->param4 = NULL;
+	fbr_zero(root_data);
+	free(root_data);
 }
 
 void
 fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-    struct fbr_cstore_path *root_path, fbr_id_t version, double timestamp)
+    struct fbr_cstore_path *root_path, const char *etag, double timestamp)
 {
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
 	assert(root_json->bytes);
 	fbr_cstore_path_ok(root_path);
-	assert(version);
 	assert(fbr_cstore_backend_enabled(cstore));
 
-	struct fbr_cstore_path *path_async;
+	struct _async_root_data *root_data = malloc(sizeof(*root_data));
+	assert(root_data);
 
-	double *timestamp_p = malloc(sizeof(*timestamp_p) + sizeof(*path_async));
-	assert(timestamp_p);
-	*timestamp_p = timestamp;
+	fbr_cstore_s3_path_clone(&root_data->path, root_path);
+	root_data->etag.length = fbr_strbcpy(root_data->etag.value, etag);
+	root_data->timestamp = timestamp;
+	root_data->timestamp_p = &root_data->timestamp;
 
-	path_async = (struct fbr_cstore_path*)(timestamp_p + 1);
-	fbr_cstore_s3_path_clone(path_async, root_path);
-
-	static_ASSERT(sizeof(void*) >= sizeof(version));
-
-	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_ROOT_WRITE, cstore, root_json, path_async,
-		(void*)version, timestamp_p, _async_root_path_done, NULL);
+	int ret = fbr_cstore_async_queue(cstore, FBR_CSOP_ROOT_WRITE, cstore, root_json,
+		&root_data->path, &root_data->etag, root_data->timestamp_p,
+		_async_root_done, root_data);
 	if (ret) {
 		fbr_rlog(FBR_LOG_CS_ASYNC, "synchronous fallback");
 
-		fbr_cstore_io_root_write(cstore, root_json, root_path, version, 0, 0, timestamp,
-			NULL);
+		fbr_cstore_io_root_write(cstore, root_json, root_path, &root_data->etag, NULL, 0,
+			timestamp, NULL);
 
-		fbr_zero_magic(path_async);
-		free(timestamp_p);
+		fbr_zero(root_data);
+		free(root_data);
 
 		return;
 	}
@@ -560,6 +558,8 @@ fbr_cstore_op_sync_wait(struct fbr_cstore_op_sync *sync)
 	fbr_cstore_op_sync_ok(sync);
 
 	pt_assert(pthread_mutex_lock(&sync->lock));
+
+	// TODO we need to periodically check if we are still mounted
 
 	if (!sync->done) {
 		pt_assert(pthread_cond_wait(&sync->cond, &sync->lock));

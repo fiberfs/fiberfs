@@ -18,8 +18,12 @@ server_method_match PUT
 server_url_submatch ".fiberfsroot"
 server_header_exists "Content-Length"
 server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
+server_header_match "If-None-Match" "*"
 server_body_submatch '{"fiberfs":1,'
-server_send_response
+server_send_response_partial
+server_send_header "ETag: 1234"
+server_send_header "Content-Length: 0"
+server_send_header_done
 
 config_add LOG_ALWAYS_FLUSH 1
 
@@ -58,8 +62,12 @@ server_method_match PUT
 server_url_submatch ".fiberfsroot"
 server_header_exists "Content-Length"
 server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
+server_header_match "If-Match" "1234"
 server_body_submatch '{"fiberfs":1,'
-server_send_response
+server_send_response_partial
+server_send_header "ETag: 5678"
+server_send_header "Content-Length: 0"
+server_send_header_done
 
 # DELETE fiberfsindex
 server_read_request

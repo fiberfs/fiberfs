@@ -498,6 +498,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	int ret = EINVAL;
 	if (fs->store->index_write_f && !json_gen.error) {
 		ret = fs->store->index_write_f(fs, directory, &json_gen, index_data->previous);
+		assert(ret || directory->etag.length);
 	}
 
 	if (ret && do_append) {
@@ -635,7 +636,7 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 			timeout->attempts, route_s3);
 
 		if (fs->store->root_read_f) {
-			fbr_id_t version = fs->store->root_read_f(fs, &dirpath, route_s3);
+			fbr_id_t version = fs->store->root_read_f(fs, directory, route_s3);
 
 			if (version == 0) {
 				fbr_directory_set_state(fs, directory, FBR_DIRSTATE_ERROR);
@@ -645,6 +646,8 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 
 			directory->version = version;
 			directory->written = fbr_id_timestamp(version);
+
+			assert(directory->etag.length);
 
 			if (previous) {
 				fbr_directory_ok(previous);

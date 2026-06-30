@@ -466,6 +466,7 @@ fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr_dir
 	assert(dest->state == FBR_DIRSTATE_LOADING);
 	assert_zero(dest->file_count);
 	assert_dev(RB_EMPTY(&dest->filename_tree));
+	assert_zero_dev(dest->etag.length);
 	fbr_directory_ok(source);
 	assert(source->state == FBR_DIRSTATE_OK);
 	assert_zero_dev(source->expired);
@@ -493,9 +494,11 @@ fbr_directory_clone_id(struct fbr_fs *fs, struct fbr_directory *dest, struct fbr
 	assert(source->state == FBR_DIRSTATE_OK);
 	assert_dev(source->version);
 	assert_dev(source->generation);
+	assert_dev(source->etag.length);
 
 	dest->version = source->version;
 	dest->generation = source->generation;
+	dest->etag.length = fbr_strbcpy(dest->etag.value, source->etag.value);
 }
 
 int
