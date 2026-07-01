@@ -14,7 +14,7 @@ Note: all Makefile commands support parallelism, ex: `make -j4`.
 
 ## Running
 
-First make a fiberfs.conf file. At minimum, it just needs to define your S3 endpoint:
+First make a `fiberfs.conf` file. At minimum, it just needs to define your S3 endpoint:
 
 ```
 S3_HOST = my-bucket.s3.region123.cloud-provider.com
