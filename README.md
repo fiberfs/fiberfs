@@ -12,6 +12,31 @@ make
 
 Note: all Makefile commands support parallelism, ex: `make -j4`.
 
+## Running
+
+First make a fiberfs.conf file. At minimum, it just needs to define your S3 endpoint:
+
+```
+S3_HOST = my-bucket.s3.region123.cloud-provider.com
+S3_REGION = region123
+S3_ACCESS_KEY = ACCESS_KEY_STRING
+S3_SECRET_KEY = SECRET_KEY_STRING
+```
+
+Next run the FiberFS binary to mount the S3 endpoint:
+
+```
+./fiberfs [fiberfs.conf] [mount_point]
+```
+
+After FiberFS is up and running, you can view the internal logs with:
+
+```
+./fiberfs_log [mount_point]
+```
+
+For more information, please visit [Building and Running FiberFS](https://fiberfs.io/content/building_and_running_fiberfs).
+
 ## Testing and Safety
 
 ```
