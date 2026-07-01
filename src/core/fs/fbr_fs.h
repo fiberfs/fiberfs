@@ -205,8 +205,8 @@ struct fbr_directory {
 
 	struct fbr_path_shared			*path;
 
-	double					written;
 	double					creation;
+	double					written;
 	double					updated;
 
 	fbr_id_t				version;

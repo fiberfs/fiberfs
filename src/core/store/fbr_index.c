@@ -646,6 +646,7 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 
 			directory->version = version;
 			directory->written = fbr_id_timestamp(version);
+			directory->updated = fbr_get_time();
 
 			assert(directory->etag.length);
 

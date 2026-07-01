@@ -37,6 +37,8 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 		return;
 	}
 
+	int is_test = fbr_is_test();
+
 	cstore->config.delete_cache = fbr_conf_get_bool("CSTORE_DELETE_CACHE", FBR_CONFIG_FALSE);
 	cstore->config.allow_cdn_put = fbr_conf_get_bool("ALLOW_CDN_PUT", FBR_CONFIG_FALSE);
 	cstore->config.allow_cdn_delete = fbr_conf_get_bool("ALLOW_CDN_DELETE", FBR_CONFIG_FALSE);
@@ -56,7 +58,8 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 	cstore->config.retries = fbr_conf_get_ulong("HTTP_RETRIES", FBR_CSTORE_RETRIES_DEFAULT);
 	cstore->config.cluster_retries = fbr_conf_get_ulong("HTTP_CLUSTER_RETRIES", 1);
 
-	cstore->config.root_ttl_sec = fbr_conf_get_ulong("ROOT_FILE_TTL_SEC", FBR_ROOT_TTL_DEFAULT);
+	cstore->config.root_ttl_sec = fbr_conf_get_ulong("ROOT_FILE_TTL_SEC",
+		is_test ? FBR_ROOT_TTL_DEFAULT_TEST: FBR_ROOT_TTL_DEFAULT);
 
 	fbr_config_reader_ready(reader);
 }
