@@ -959,6 +959,8 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	int backend = fbr_cstore_backend_enabled(cstore);
 	if (backend) {
 		assert(etag->length);
+		// TODO remove this as a param
+		assert_zero(enforce);
 	} else {
 		assert_zero(etag->length);
 		assert(enforce);
