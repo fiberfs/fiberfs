@@ -611,9 +611,10 @@ fbr_directory_get(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_in
 
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
-	assert_dev(directory->inode == inode);
 
 	fbr_rlog(FBR_LOG_FS, "directory found: '%s' (inode: %lu)", dirpath->name, inode);
+
+	fbr_ASSERT(directory->inode == inode, "Found: %lu expected: %lu", directory->inode, inode);
 
 	return directory;
 }
