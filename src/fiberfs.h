@@ -7,7 +7,7 @@
 #ifndef _FIBERFS_H_INCLUDED_
 #define _FIBERFS_H_INCLUDED_
 
-#define FIBERFS_VERSION				"0.9.0"
+#define FIBERFS_VERSION				"0.9.1-dev"
 
 typedef unsigned int fbr_refcount_t;
 typedef unsigned int fbr_bitflag_t;

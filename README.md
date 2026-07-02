@@ -55,6 +55,6 @@ Note: all Makefile commands support parallelism, ex: `make test -j8`.
 
 ## Releases
 
-### FiberFS 0.9.0 (2026-07-01)
+### FiberFS 0.9.0 (2026-07-02)
 
 * Initial FiberFS release. See our [release announcement](https://fiberfs.io/blog/fiberfs_0.9_is_available).
