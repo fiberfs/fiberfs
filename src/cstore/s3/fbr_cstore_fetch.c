@@ -84,7 +84,7 @@ _s3_request_url(struct fbr_cstore_fetch_context *fetch, const char *method,
 
 	fbr_rlog(FBR_LOG_CS_S3, "S3 %s %s (attempts: %d)", method, url->value, fetch->attempts);
 
-	if (!strcmp(method, "GET")) {
+	if (!strcmp(method, "GET") && fbr_gzip_enabled()) {
 		chttp_header_add(fetch->http, "Accept-Encoding", "gzip");
 	}
 
