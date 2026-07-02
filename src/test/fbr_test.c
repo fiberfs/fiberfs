@@ -151,6 +151,8 @@ _test_run_test_file(void *arg)
 		}
 	}
 
+	fbr_test_ASSERT(test->cmd_count, "No commands found");
+
 	test->stopped = 1;
 
 	return NULL;
