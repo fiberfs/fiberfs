@@ -269,6 +269,12 @@ _fuse_touch(struct fbr_fuse_context *ctx)
 		return;
 	}
 
+	fbr_sleep_ms(250);
+
+	if (ctx->exited) {
+		return;
+	}
+
 	char path[FBR_PATH_MAX];
 	fbr_bprintf(path, "%s/umount", ctx->path);
 
