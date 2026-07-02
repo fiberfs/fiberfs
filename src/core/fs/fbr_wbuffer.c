@@ -588,6 +588,10 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
 
+	if (fio->read_only) {
+		return 0;
+	}
+
 	_wbuffer_LOCK(fs, fio);
 
 	struct fbr_file *file = fio->file;
@@ -604,7 +608,6 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	assert(fio->write);
-	assert_zero_dev(fio->read_only);
 
 	if (fio->wbuffers) {
 		fbr_wbuffer_ok(fio->wbuffers);
