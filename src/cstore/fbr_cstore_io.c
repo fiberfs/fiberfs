@@ -12,6 +12,7 @@
 
 #include "fiberfs.h"
 #include "chttp.h"
+#include "compress/chttp_gzip.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
 #include "fbr_cstore_api.h"
@@ -746,7 +747,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 				return EAGAIN;
 			}
 		} else if (retry > 2) {
-			return 1;
+			return EIO;
 		}
 
 		retry++;
@@ -795,6 +796,17 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	assert_zero(entry_ref);
 
+	struct fbr_gzip gzip;
+	if (metadata.gzipped) {
+		if (!fbr_gzip_enabled()) {
+			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR no gzip support");
+			fbr_cstore_release(cstore, &entry);
+			return EIO;
+		}
+		fbr_gzip_inflate_init(&gzip);
+		assert_dev(gzip.status == FBR_GZIP_DONE);
+	}
+
 	struct fbr_request *request = fbr_request_get();
 
 	struct fbr_reader reader;
@@ -805,12 +817,6 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	struct fbr_index_parser parser;
 	struct fjson_context json;
 	fbr_index_parser_init(fs, &parser, directory, &json);
-
-	struct fbr_gzip gzip;
-	if (metadata.gzipped) {
-		fbr_gzip_inflate_init(&gzip);
-		assert_dev(gzip.status == FBR_GZIP_DONE);
-	}
 
 	ssize_t read_bytes = 0;
 	size_t bytes_in = 0, bytes_out = 0;
