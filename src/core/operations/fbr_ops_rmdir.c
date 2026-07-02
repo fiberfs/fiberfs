@@ -70,6 +70,7 @@ fbr_ops_rmdir(struct fbr_request *request, fuse_ino_t parent_inode, const char *
 	unsigned int version_matches = 0;
 	fbr_id_t last_version = 0;
 	int ret = EIO;
+	char errbuf[FBR_STRERROR_LEN];
 
 	do {
 		if (!directory) {
@@ -88,7 +89,7 @@ fbr_ops_rmdir(struct fbr_request *request, fuse_ino_t parent_inode, const char *
 			ret = fs->store->index_delete_f(fs, directory);
 		}
 
-		fbr_rlog(FBR_LOG_OP_RMDIR, "index_delete_f %d (%s)", ret, strerror(ret));
+		fbr_rlog(FBR_LOG_OP_RMDIR, "index_delete_f %d (%s)", ret, fbr_berror(ret, errbuf));
 
 		if (!ret) {
 			// Do nothing

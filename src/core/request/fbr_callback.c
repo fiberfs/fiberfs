@@ -63,7 +63,8 @@ fbr_fuse_reply_err(struct fbr_request *request, int error)
 
 	request->error = error;
 
-	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_err %d (%s)", error, strerror(error));
+	char errbuf[FBR_STRERROR_LEN];
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_err %d (%s)", error, fbr_berror(error, errbuf));
 }
 
 void

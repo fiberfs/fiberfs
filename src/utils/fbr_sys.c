@@ -94,6 +94,7 @@ fbr_sys_rmdir(const char *path)
 	(void)nftw(path, _sys_rmdir_cb, 64, FTW_DEPTH | FTW_MOUNT | FTW_PHYS);
 }
 
+// TODO use something other than nftw...
 int
 fbr_sys_nftw(const char *path, fbr_nftw_f func)
 {

@@ -291,6 +291,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 	unsigned int version_matches = 0;
 	fbr_id_t last_version = 0, directory_version;
 	int ret = EIO;
+	char errbuf[FBR_STRERROR_LEN];
 
 	while (directory) {
 		assert_dev(directory->state == FBR_DIRSTATE_OK);
@@ -350,7 +351,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 			}
 
 			fbr_rlog(FBR_LOG_ERROR, "flush fbr_index_write failed (%d %s) retry: %d",
-				ret, strerror(ret), retry);
+				ret, fbr_berror(ret, errbuf), retry);
 		}
 
 		fbr_file_UNLOCK(file);
@@ -397,7 +398,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 	}
 
 	if (ret) {
-		fbr_rlog(FBR_LOG_ERROR, "flush failed %d (%s)", ret, strerror(ret));
+		fbr_rlog(FBR_LOG_ERROR, "flush failed %d (%s)", ret, fbr_berror(ret, errbuf));
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_MEM_ONLY)) {
 		fbr_stat_add(&fs->stats.flush_memory);
 	} else {

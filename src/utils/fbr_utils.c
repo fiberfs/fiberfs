@@ -522,3 +522,12 @@ fbr_unslash(char *buffer, size_t len)
 
 	return len;
 }
+
+char *
+fbr_strerror(int errnum, char *buf, size_t buflen)
+{
+	assert(buf);
+	assert(buflen);
+
+	return strerror_r(errnum, buf, buflen);
+}

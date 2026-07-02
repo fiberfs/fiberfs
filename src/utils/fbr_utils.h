@@ -16,6 +16,7 @@
 #define FBR_URL_MAX				(PATH_MAX * 3)
 #define FBR_HEX_LEN(len)			(((len) * 2) + 1)
 #define FBR_HASH_SLEN				FBR_HEX_LEN(sizeof(fbr_hash_t))
+#define FBR_STRERROR_LEN			32
 
 typedef unsigned long fbr_stats_t;
 typedef uint64_t fbr_hash_t;
@@ -47,6 +48,7 @@ int fbr_is_false(const char *string);
 int fbr_is_true(const char *string);
 unsigned long fbr_ulong2octal(unsigned long value);
 size_t fbr_unslash(char *buffer, size_t len);
+char *fbr_strerror(int errnum, char *buf, size_t buflen);
 
 #define _FBR_STRINGIFY(_value)			#_value
 #define FBR_STRINGIFY(value)			_FBR_STRINGIFY(value)
@@ -82,6 +84,8 @@ size_t fbr_unslash(char *buffer, size_t len);
 	((flags) & (bits))
 #define fbr_array_len(array)						\
 	(sizeof(array) / sizeof(*(array)))
+#define fbr_berror(err, buf)						\
+	fbr_strerror(err, buf, sizeof(buf))
 
 #define FBR_TRIM_STR_LEFT(s, len)					\
 	while ((len) > 0 && (s)[0] <= ' ') {				\

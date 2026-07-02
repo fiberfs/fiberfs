@@ -632,6 +632,7 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 	unsigned int version_matches = 0;
 	fbr_id_t last_version = 0;
 	int ret;
+	char errbuf[FBR_STRERROR_LEN];
 
 	do {
 		fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_read() attempts: %u route_s3: %d",
@@ -681,7 +682,7 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 			}
 		}
 
-		fbr_rlog(FBR_LOG_INDEX, "index_read_f %d (%s)", ret, strerror(ret));
+		fbr_rlog(FBR_LOG_INDEX, "index_read_f %d (%s)", ret, fbr_berror(ret, errbuf));
 
 		if (fbr_fs_is_timeout(fs, timeout)) {
 			ret = EIO;
