@@ -97,6 +97,10 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 	int ret = fbr_cstore_s3_autoinit(cstore);
 	assert_zero(ret);
 
+	struct fbr_request *request = fbr_request_alloc(NULL, __func__);
+	fbr_request_ok(request);
+	assert_zero(request->not_fuse);
+
 	// Init fs
 	fbr_directory_root_inode_init(fuse_ctx->fs);
 
@@ -111,6 +115,7 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 		fbr_rlog(FBR_LOG_MOUNT, "root loaded OK");
 
 		fbr_dindex_release(fuse_ctx->fs, &root);
+		fbr_request_free(request);
 
 		return;
 	}
@@ -122,12 +127,15 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 
 		fuse_ctx->error = 1;
 
+		fbr_request_free(request);
+
 		return;
 	}
 
 	fbr_rlog(FBR_LOG_MOUNT, "root creation SUCCESS");
 
 	fbr_dindex_release(fuse_ctx->fs, &root);
+	fbr_request_free(request);
 
 }
 
