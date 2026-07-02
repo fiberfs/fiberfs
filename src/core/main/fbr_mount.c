@@ -100,6 +100,8 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 	// Init fs
 	fbr_directory_root_inode_init(fuse_ctx->fs);
 
+	// TODO we need the status from fbr_index_read()
+
 	// Try and read the root index
 	struct fbr_directory *root = fbr_directory_from_inode(fuse_ctx->fs, FBR_INODE_ROOT);
 	if (root) {

@@ -222,11 +222,16 @@ fbr_fuse_setup(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 void
 fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
-	fbr_fuse_mounted(ctx);
+	fbr_fuse_context_ok(ctx);
 	assert_zero(ctx->running);
+	assert_dev(ctx->session);
 	assert(conn);
 
 	ctx->running = 1;
+
+	if (ctx->error) {
+		fuse_session_exit(ctx->session);
+	}
 }
 
 static void
@@ -240,19 +245,37 @@ _fuse_abort(struct fbr_fuse_context *ctx)
 		return;
 	}
 
+	fbr_rlog(FBR_LOG_FUSE, "calling fuse_session_exit");
+
 	fuse_session_exit(ctx->session);
 
 	char cmd[FBR_PATH_MAX + 32];
 	fbr_bprintf(cmd, "fusermount -u %s%s",
 		ctx->path, ctx->debug ? "" : " >/dev/null 2>&1");
 
+	fbr_rlog(FBR_LOG_FUSE, "calling fusermount");
+
 	int ret = system(cmd);
 	(void)ret;
+}
 
-	fbr_bprintf(cmd, "%s/umount", ctx->path);
+static void
+_fuse_touch(struct fbr_fuse_context *ctx)
+{
+	assert_dev(ctx);
+	assert_dev(ctx->state == FBR_FUSE_MOUNTED);
+
+	if (!ctx->running || ctx->exited) {
+		return;
+	}
+
+	char path[FBR_PATH_MAX];
+	fbr_bprintf(path, "%s/umount", ctx->path);
+
+	fbr_rlog(FBR_LOG_FUSE, "touching mount");
 
 	struct stat st;
-	(void)stat(cmd, &st);
+	(void)stat(path, &st);
 }
 
 void
@@ -271,11 +294,18 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 	fbr_rlog(FBR_LOG_FUSE, "unmount starting");
 
 	_fuse_abort(ctx);
+
+	fbr_rlog(FBR_LOG_FUSE, "request pool shutdown");
+
 	fbr_request_pool_shutdown();
+
+	_fuse_touch(ctx);
 
 	assert_dev(ctx->session);
 
 	if (ctx->running) {
+		fbr_rlog(FBR_LOG_FUSE, "joining mount thread");
+
 		pt_assert(pthread_join(ctx->loop_thread, NULL));
 		assert(ctx->exited);
 	} else {
