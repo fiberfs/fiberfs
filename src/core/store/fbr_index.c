@@ -1102,7 +1102,6 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 	_index_parse_debug(parser, token, depth);
 
 	struct fbr_directory *directory = parser->directory;
-	struct fbr_directory *previous = directory->previous;
 
 	switch (token->type) {
 		case FJSON_TOKEN_ARRAY:
@@ -1119,13 +1118,6 @@ _index_parse_directory(struct fbr_index_parser *parser, struct fjson_token *toke
 				int error;
 
 				directory->generation = fbr_parse_ulong(val, val_len, &error);
-
-				if (previous && (previous->generation >= directory->generation ||
-				    previous->version == directory->version) && !error) {
-					fbr_rlog(FBR_LOG_CS_INDEX,
-						"ERROR PARSER directory matches prev");
-					return 1;
-				}
 			} else if (_parser_match(parser, FBR_INDEX_LOC_DIRECTORY, 'v')) {
 				const char *val = token->svalue;
 				size_t val_len = token->svalue_len;

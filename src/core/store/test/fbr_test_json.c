@@ -449,18 +449,6 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(directory->generation == 665);
 	fbr_dindex_release(fs, &directory);
 
-	json = "{\"fiberfs\":6,\"g\":663}";
-	directory = _parse_directory(fs, json);
-	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_ERROR);
-	fbr_dindex_release(fs, &directory);
-
-	json = "{\"fiberfs\":6,\"g\":665}";
-	directory = _parse_directory(fs, json);
-	fbr_directory_ok(directory);
-	assert(directory->state == FBR_DIRSTATE_ERROR);
-	fbr_dindex_release(fs, &directory);
-
 	fbr_fs_release_all(fs, 0);
 	fbr_test_fs_wait(fs);
 
