@@ -98,18 +98,23 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 			parent = directory->file;
 			do_release = 0;
 		}
-		fbr_file_ok(parent);
 
-		struct stat st;
-		fbr_file_attr(fs, parent, &st);
+		if (parent) {
+			fbr_file_ok(parent);
 
-		if (do_release) {
-			fbr_inode_release(fs, &parent);
-		}
+			struct stat st;
+			fbr_file_attr(fs, parent, &st);
 
-		fbr_dirbuffer_add(request, &dbuf, "..", &st);
+			if (do_release) {
+				fbr_inode_release(fs, &parent);
+			}
 
-		if (!dbuf.full) {
+			fbr_dirbuffer_add(request, &dbuf, "..", &st);
+
+			if (!dbuf.full) {
+				reader->read_dotdot = 1;
+			}
+		} else {
 			reader->read_dotdot = 1;
 		}
 	}
