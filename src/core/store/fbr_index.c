@@ -499,6 +499,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	if (fs->store->index_write_f && !json_gen.error) {
 		ret = fs->store->index_write_f(fs, directory, &json_gen, index_data->previous);
 		assert(ret || directory->etag.length);
+
+		directory->updated = fbr_get_time();
 	}
 
 	if (ret && do_append) {
