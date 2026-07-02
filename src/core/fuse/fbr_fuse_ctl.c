@@ -6,6 +6,7 @@
 
 #include <limits.h>
 #include <pthread.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -247,6 +248,11 @@ _fuse_abort(struct fbr_fuse_context *ctx)
 
 	int ret = system(cmd);
 	(void)ret;
+
+	fbr_bprintf(cmd, "%s/umount", ctx->path);
+
+	struct stat st;
+	(void)stat(cmd, &st);
 }
 
 void
