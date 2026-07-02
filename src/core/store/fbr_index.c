@@ -652,7 +652,8 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 
 			if (previous) {
 				fbr_directory_ok(previous);
-				if (previous->version == version) {
+				if (previous->version == version &&
+				    directory->inode == previous->inode) {
 					fbr_rlog(FBR_LOG_INDEX, "root version matches previous, "
 						"aborting");
 
