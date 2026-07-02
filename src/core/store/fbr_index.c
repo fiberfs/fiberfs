@@ -916,7 +916,7 @@ _index_parse_file_start(struct fbr_index_parser *parser, const char *filename, s
 		return;
 	}
 
-	if (previous) {
+	if (previous && previous->inode == directory->inode) {
 		parser->file = fbr_directory_find_file(previous, filename, filename_len);
 	}
 

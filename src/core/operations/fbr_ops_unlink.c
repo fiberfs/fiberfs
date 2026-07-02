@@ -27,9 +27,15 @@ fbr_ops_unlink(struct fbr_request *request, fuse_ino_t parent, const char *name)
 	struct fbr_file *file = fbr_directory_find_file(directory, filename.name, filename.length);
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
+		fbr_dindex_release(fs, &directory);
 		return;
 	} else if (S_ISDIR(file->mode)) {
 		fbr_fuse_reply_err(request, EISDIR);
+		fbr_dindex_release(fs, &directory);
+		return;
+	} else if (file->parent_inode != parent) {
+		fbr_fuse_reply_err(request, EACCES);
+		fbr_dindex_release(fs, &directory);
 		return;
 	}
 

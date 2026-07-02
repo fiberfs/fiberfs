@@ -38,6 +38,10 @@ fbr_ops_rmdir(struct fbr_request *request, fuse_ino_t parent_inode, const char *
 		fbr_fuse_reply_err(request, ENOTDIR);
 		fbr_dindex_release(fs, &parent);
 		return;
+	} else if (file->parent_inode != parent_inode) {
+		fbr_fuse_reply_err(request, EACCES);
+		fbr_dindex_release(fs, &parent);
+		return;
 	}
 
 	struct fbr_fullpath_name dirpath;
