@@ -94,7 +94,7 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 	fuse_ctx->fs->cstore = cstore;
 	fbr_fs_set_store(fuse_ctx->fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
-	int ret = fbr_cstore_s3_autoinit(cstore);
+	int ret = fbr_cstore_autoinit(cstore);
 	assert_zero(ret);
 
 	struct fbr_request *request = fbr_request_alloc(NULL, __func__);
@@ -163,7 +163,7 @@ _fiberfs_setup_mount(const char *fiberfs_conf, const char *mount_path)
 	fbr_conf_parse(fiberfs_conf);
 	assert_zero(_CONFIG->stats.errors);
 
-	int ret = fbr_cstore_s3_autoinit(NULL);
+	int ret = fbr_cstore_autoinit(NULL);
 	if (ret) {
 		fprintf(stderr, "ERROR: no S3 config in '%s'\n", fiberfs_conf);
 		return 1;

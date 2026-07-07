@@ -96,7 +96,6 @@ struct fbr_cstore;
 
 void fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tls,
 	const char *prefix, const char *region, const char *access_key, const char *secret_key);
-int fbr_cstore_s3_autoinit(struct fbr_cstore *cstore);
 void fbr_cstore_s3_host_hash(struct fbr_cstore *cstore, const char *host_hash);
 void fbr_cstore_s3_free(struct fbr_cstore *cstore);
 void fbr_cstore_cluster_init(struct fbr_cstore_cluster *cluster);

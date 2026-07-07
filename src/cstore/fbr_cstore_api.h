@@ -221,9 +221,11 @@ void fbr_cstore_clear(struct fbr_cstore *cstore);
 void fbr_cstore_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_loader_init(struct fbr_cstore *cstore);
+int fbr_cstore_loader_is_fresh(struct fbr_cstore *cstore, double time_modified);
 void fbr_cstore_loader_free(struct fbr_cstore *cstore);
 
 void fbr_cstore_config_load(struct fbr_cstore *cstore);
+int fbr_cstore_autoinit(struct fbr_cstore *cstore);
 void fbr_cstore_gen_etag(struct fbr_etag *etag);
 void fbr_cstore_etag_init(struct fbr_etag *etag, const char *etag_hdr);
 void fbr_cstore_request_id(char *buffer, size_t buffer_len);

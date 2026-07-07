@@ -37,7 +37,7 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 	}
 
 	loader->state = FBR_CSTORE_LOADER_READING;
-	loader->start_time = fbr_get_time() - FBR_CSTORE_LOAD_TIME_BUFFER;
+	loader->start_time = fbr_get_time();
 	loader->thread_count = fbr_conf_get_ulong("LOADER_THREADS", FBR_CSTORE_LOAD_THREAD_DEFAULT);
 	assert(loader->thread_count);
 
@@ -71,6 +71,19 @@ _cstore_remove(const char *hpath, const char *file)
 	fbr_bprintf(filepath, "%s/%s", hpath, file);
 
 	(void)unlink(filepath);
+}
+
+int
+fbr_cstore_loader_is_fresh(struct fbr_cstore *cstore, double time_modified)
+{
+	fbr_cstore_ok(cstore);
+	assert(cstore->loader.start_time);
+
+	if (time_modified > cstore->loader.start_time - FBR_CSTORE_LOAD_TIME_BUFFER) {
+		return 1;
+	}
+
+	return 0;
 }
 
 static size_t
@@ -159,9 +172,8 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *hpath, unsigned char h1,
 			continue;
 		}
 
-		assert_dev(cstore->loader.start_time);
 		double modified = fbr_convert_timespec(&st.st_mtim);
-		if (modified > cstore->loader.start_time) {
+		if (fbr_cstore_loader_is_fresh(cstore, modified)) {
 			continue;
 		}
 
@@ -254,8 +266,7 @@ _cstore_load_thread(void *arg)
 		assert_dev(loader->state == FBR_CSTORE_LOADER_READING);
 		loader->state = FBR_CSTORE_LOADER_DONE;
 
-		double time_spent = fbr_get_time() - loader->start_time -
-			FBR_CSTORE_LOAD_TIME_BUFFER;
+		double time_spent = fbr_get_time() - loader->start_time;
 		fbr_log_print(cstore->log, FBR_LOG_CS_LOADER, thread_id, "COMPLETED "
 			"loaded: %zu lazy: %lu time: %.3fs",
 			cstore->stats.loaded, cstore->stats.lazy_loaded, time_spent);
