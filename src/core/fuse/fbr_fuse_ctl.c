@@ -331,8 +331,12 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	fbr_rlog(FBR_LOG_FUSE, "umount complete");
 
+	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
+
 	fbr_fs_free(ctx->fs);
 	ctx->fs = NULL;
+
+	fbr_rlog(FBR_LOG_FS, "done");
 
 	fbr_log_restore_stderr();
 
@@ -340,8 +344,6 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 		fbr_log_free(ctx->log);
 		ctx->log = NULL;
 	}
-
-	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 }
 
 void
