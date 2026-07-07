@@ -583,6 +583,8 @@ fbr_file_attr(struct fbr_fs *fs, struct fbr_file *file, struct stat *st)
 	st->st_uid = file->uid;
 	st->st_gid = file->gid;
 
+	st->st_blocks = (file->size + FBR_BLOCK_SIZE_CALC - 1) / FBR_BLOCK_SIZE_CALC;
+
 	fbr_convert_time(file->ctime, &st->st_ctim);
 	fbr_convert_time(file->mtime, &st->st_mtim);
 	fbr_convert_time(file->atime, &st->st_atim);
