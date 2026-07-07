@@ -48,6 +48,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_writer_ok(writer);
 	assert_dev(writer->output);
 
@@ -135,6 +136,7 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_directory *directory, int rou
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_LOADING);
 
 	if (!fs->cstore) {
 		return 0;
@@ -151,6 +153,8 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_directory *directory, int rou
 
 	fbr_id_t version = 0;
 	int has_backend = fbr_cstore_backend_enabled(cstore);
+
+	fbr_cstore_etag_init(&directory->etag, NULL);
 
 	if (!route_s3 || !has_backend) {
 		version = fbr_cstore_io_root_read(cstore, &path, &directory->etag, 0);

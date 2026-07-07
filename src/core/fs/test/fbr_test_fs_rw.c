@@ -74,12 +74,24 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	fbr_test_cstore_wait(ctx->fs->cstore);
 
-	fbr_id_t root_id = fbr_cstore_root_read(ctx->fs, root, 0);
+	struct fbr_directory *root_new = fbr_directory_alloc(ctx->fs, FBR_DIRNAME_ROOT,
+		FBR_INODE_ROOT);
+	fbr_directory_ok(root_new);
+	assert(root_new->state == FBR_DIRSTATE_LOADING);
+
+	fbr_id_t root_id = fbr_cstore_root_read(ctx->fs, root_new, 0);
 
 	fbr_test_logs("INIT fbr_cstore_root_read(): %lu", root_id);
 	fbr_ASSERT(root_id == root->version, "root version mismatch, found %lu, expected %lu",
 		root_id, root->version);
+	fbr_ASSERT(root->etag.length == root_new->etag.length &&
+		!strcmp(root->etag.value, root_new->etag.value),
+		"root etag mismatch, found '%s', expected '%s'",
+		root_new->etag.value, root->etag.value);
 
+	fbr_directory_set_state(ctx->fs, root_new, FBR_DIRSTATE_ERROR);
+
+	fbr_dindex_release(ctx->fs, &root_new);
 	fbr_dindex_release(ctx->fs, &root);
 	fbr_request_free(request);
 }

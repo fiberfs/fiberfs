@@ -1143,6 +1143,9 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 
 	assert_dev(metadata.type == FBR_CSTORE_FILE_ROOT);
 
+	etag->length = fbr_strbcpy(etag->value, metadata.etag.value);
+	assert(etag->length);
+
 	if (!skip_ttl) {
 		double now = fbr_get_time();
 		double root_time = metadata.timestamp +
@@ -1156,9 +1159,6 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 			return 0;
 		}
 	}
-
-	etag->length = fbr_strbcpy(etag->value, metadata.etag.value);
-	assert(etag->length);
 
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 	int fd = open(hashpath.value, O_RDONLY);
