@@ -367,7 +367,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		struct chttp_context http_backend;
 
 		chttp_context_init(&http_backend);
-		fbr_cstore_fetch_init(&fetch, cstore, &http_backend, file_type, &file_path,
+		fbr_cstore_fetch_init(&fetch, cstore, &http_backend, file_type, &file_path, NULL,
 			NULL, length, metadata.gzipped, FBR_CSTORE_ROUTE_CDN);
 
 		struct _cstore_entry_pair pair;
@@ -539,7 +539,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 			chttp_context_init(&http);
 			fbr_cstore_fetch_init(&fetch, cstore, &http, file_type,
-				&file_path, NULL, 0, 0, FBR_CSTORE_ROUTE_CDN);
+				&file_path, NULL, NULL, 0, 0, FBR_CSTORE_ROUTE_CDN);
 
 			last_error = fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
 			assert_dev(http.state == CHTTP_STATE_NONE);
@@ -623,6 +623,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		}
 
 		if (backend && file_type == FBR_CSTORE_FILE_ROOT && !skip_ttl) {
+			// TODO read etag here so we can potentially get a 304...
+
 			double now = fbr_get_time();
 			double root_time = metadata.timestamp +
 				(cstore->config.root_ttl_sec ? cstore->config.root_ttl_sec :
@@ -642,6 +644,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	}
 
 	// TODO do we care about accept-encoding gzip?
+	// TODO check if request If-None-Match matches etag
+	// TODO is last_error is 304, write back metadata
 
 	const char *etag = NULL;
 	if (file_type == FBR_CSTORE_FILE_ROOT) {

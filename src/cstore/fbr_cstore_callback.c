@@ -156,6 +156,8 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_directory *directory, int rou
 
 	fbr_cstore_etag_init(&directory->etag, NULL);
 
+	// TODO if we are attempting a etag_304, we need to hold the cstore entry while we do it
+
 	if (!route_s3 || !has_backend) {
 		version = fbr_cstore_io_root_read(cstore, &path, &directory->etag, 0);
 	}

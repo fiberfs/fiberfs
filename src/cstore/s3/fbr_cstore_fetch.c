@@ -36,7 +36,8 @@ _fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
 void
 fbr_cstore_fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
     struct chttp_context *http, enum fbr_cstore_file_type type, struct fbr_cstore_path *file_path,
-    const char *etag_match, size_t length, int gzip, enum fbr_cstore_route route)
+    const char *etag_304, const char *etag_match, size_t length, int gzip,
+    enum fbr_cstore_route route)
 {
 	_fetch_init(fetch, cstore, http);
 
@@ -50,6 +51,7 @@ fbr_cstore_fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore 
 	fetch->gzip = gzip;
 	fetch->route = route;
 
+	fbr_cstore_etag_init(&fetch->etag_304, etag_304);
 	fbr_cstore_etag_init(&fetch->etag_match, etag_match);
 }
 
@@ -86,6 +88,10 @@ _s3_request_url(struct fbr_cstore_fetch_context *fetch, const char *method,
 
 	if (!strcmp(method, "GET") && fbr_gzip_enabled()) {
 		chttp_header_add(fetch->http, "Accept-Encoding", "gzip");
+	}
+
+	if (fetch->etag_304.length) {
+		chttp_header_add(fetch->http, "If-None-Match", fetch->etag_304.value);
 	}
 
 	char fiber_id[32];
@@ -230,6 +236,7 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 	assert_dev(fetch->data_callback);
 	assert_dev(fetch->route);
 	assert_dev(fetch->attempts);
+	assert_zero_dev(fetch->etag_304.length);
 
 	struct fbr_cstore *cstore = fetch->cstore;
 	struct chttp_context *http = fetch->http;
@@ -402,6 +409,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 	assert_dev(fetch->type);
 	assert(fetch->type != FBR_CSTORE_FILE_ROOT);
 	assert_dev(fetch->route);
+	assert_zero_dev(fetch->etag_304.length);
 	assert_zero_dev(fetch->etag_match.length);
 
 	struct fbr_cstore *cstore = fetch->cstore;
@@ -630,7 +638,7 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http
 {
 	struct fbr_cstore_fetch_context fetch;
 
-	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_CHUNK, path, NULL,
+	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_CHUNK, path, NULL, NULL,
 		wbuffer->end, 0, FBR_CSTORE_ROUTE_CLUSTER);
 
 	fetch.data_callback = _s3_wbuffer_data_cb;
@@ -722,7 +730,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	struct chttp_context http;
 
 	chttp_context_init(&http);
-	fbr_cstore_fetch_init(&fetch, cstore, &http, FBR_CSTORE_FILE_CHUNK, &path, NULL,
+	fbr_cstore_fetch_init(&fetch, cstore, &http, FBR_CSTORE_FILE_CHUNK, &path, NULL, NULL,
 		chunk->length, 0, FBR_CSTORE_ROUTE_CLUSTER);
 
 	fbr_cstore_s3_send_get(&fetch);
@@ -890,7 +898,7 @@ fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
 {
 	struct fbr_cstore_fetch_context fetch;
 
-	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_INDEX, path, NULL,
+	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_INDEX, path, NULL, NULL,
 		writer->bytes, writer->is_gzip, FBR_CSTORE_ROUTE_CLUSTER);
 
 	fetch.data_callback = _s3_writer_data_cb;
@@ -918,8 +926,8 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	struct chttp_context http;
 
 	chttp_context_init(&http);
-	fbr_cstore_fetch_init(&fetch, cstore, &http, FBR_CSTORE_FILE_ROOT, root_path, etag_match,
-		root_json->bytes, root_json->is_gzip, route);
+	fbr_cstore_fetch_init(&fetch, cstore, &http, FBR_CSTORE_FILE_ROOT, root_path, NULL,
+		etag_match, root_json->bytes, root_json->is_gzip, route);
 
 	fetch.data_callback = _s3_writer_data_cb;
 	fetch.data_arg = root_json;
@@ -975,12 +983,29 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 
 	double timestamp = fbr_get_time();
 
+	const char *etag_304 = NULL;
+	/*
+	if (etag->length) {
+		etag_304 = etag->value;
+	}
+	*/
+
 	chttp_context_init(&http);
-	fbr_cstore_fetch_init(&fetch, cstore, &http, FBR_CSTORE_FILE_ROOT, root_path,
+	fbr_cstore_fetch_init(&fetch, cstore, &http, FBR_CSTORE_FILE_ROOT, root_path, etag_304,
 		NULL, 0, 0, route);
 
 	fbr_cstore_s3_send_get(&fetch);
 
+	/*
+	if (http.status == 304 && !http.error) {
+		if (http_error) {
+			*http_error = 304;
+		}
+
+		chttp_context_free(&http);
+
+		return 0;
+	} else */
 	if (http.error || !fbr_cstore_http_success(http.status)) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR S3: %d %d", http.error, http.status);
 
