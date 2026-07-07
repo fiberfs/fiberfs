@@ -301,8 +301,6 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	_fuse_abort(ctx);
 
-	fbr_rlog(FBR_LOG_FUSE, "request pool shutdown");
-
 	fbr_request_pool_shutdown();
 
 	_fuse_touch(ctx);
