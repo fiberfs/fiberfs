@@ -88,6 +88,8 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	size_t root_len = fbr_strbcpy(cstore->root, root_path);
 	fbr_unslash(cstore->root, root_len);
 
+	cstore->deep_tree = fbr_conf_get_bool("CSTORE_DEEP_TREE", FBR_CONFIG_FALSE);
+
 	cstore->log = fbr_log_alloc(cstore->root, fbr_log_default_size());
 	fbr_log_ok(cstore->log);
 

@@ -3,6 +3,7 @@ fiber_test "Directory read test"
 # Init
 
 config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 3
+config_add CSTORE_DEEP_TREE true
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir

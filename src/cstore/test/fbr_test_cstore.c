@@ -224,11 +224,13 @@ fbr_test_cstore_init_loader(struct fbr_test_context *ctx, struct fbr_fs *fs)
 	const char *root = fbr_test_mkdir_tmp(ctx, NULL);
 
 	char data_path[FBR_PATH_MAX];
-	fbr_bprintf(data_path, "%s/%s/", root, FBR_CSTORE_DATA_DIR);
+	fbr_bprintf(data_path, "%s/%s/", root, FBR_CSTORE_CACHE_DIR);
 	fbr_sys_mkdirs(data_path);
 
 	fs->cstore = _test_cstore_init_pos(ctx, root);
 	fs->cstore_managed = 1;
+
+	assert_zero(fs->cstore->deep_tree);
 }
 
 void
@@ -300,20 +302,26 @@ static void
 _cstore_debug_meta(const char *filename, struct fbr_cstore_metadata *metadata)
 {
 	assert_dev(filename);
+	assert(fbr_string_suffix(filename, FBR_FIBERFS_CACHE_NAME));
 	assert_dev(metadata);
 	static_ASSERT(sizeof(FBR_CSTORE_DATA_DIR) == sizeof(FBR_CSTORE_META_DIR));
-
-	fbr_zero(metadata);
 
 	struct fbr_cstore_hashpath hashpath;
 	hashpath.magic = FBR_CSTORE_HASHPATH_MAGIC;
 	hashpath.length = fbr_bprintf(hashpath.value, "%s", filename);
 
 	size_t len = hashpath.length;
+	size_t data_len = sizeof(FBR_CSTORE_DATA_DIR) - 1;
+	size_t cache_len = sizeof(FBR_CSTORE_CACHE_DIR) - 1;
 	while (len > 0) {
-		size_t s = sizeof(FBR_CSTORE_DATA_DIR) - 1;
-		if (!strncmp(hashpath.value + len, FBR_CSTORE_DATA_DIR, s)) {
-			memcpy(hashpath.value + len, FBR_CSTORE_META_DIR, s);
+		if (!strcmp(hashpath.value + len, FBR_FIBERFS_CACHE_NAME)) {
+			memcpy(hashpath.value + len, FBR_FIBERFS_META_NAME,
+				sizeof(FBR_FIBERFS_META_NAME));
+		} else if (!strncmp(hashpath.value + len, FBR_CSTORE_CACHE_DIR "/",
+		    cache_len + 1)) {
+			break;
+		} else if (!strncmp(hashpath.value + len, FBR_CSTORE_DATA_DIR "/", data_len + 1)) {
+			memcpy(hashpath.value + len, FBR_CSTORE_META_DIR, data_len);
 			break;
 		}
 		len--;
@@ -321,7 +329,6 @@ _cstore_debug_meta(const char *filename, struct fbr_cstore_metadata *metadata)
 	assert(len);
 
 	int ret = fbr_cstore_metadata_read(&hashpath, metadata);
-	//assert_zero(ret);
 	if (ret) {
 		metadata->type = FBR_CSTORE_FILE_NONE;
 	}
@@ -330,6 +337,7 @@ _cstore_debug_meta(const char *filename, struct fbr_cstore_metadata *metadata)
 static int
 _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct FTW *info)
 {
+	assert_dev(filename);
 	(void)stat;
 	(void)info;
 
@@ -338,7 +346,15 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 	switch (flag) {
 		case FTW_F:
 		case FTW_SL:
+			if (!fbr_string_suffix(filename, FBR_FIBERFS_CACHE_NAME) &&
+			    !fbr_string_suffix(filename, FBR_FIBERFS_META_NAME)) {
+				fbr_ABORT("CSTORE_DEBUG file: %s (UNKNOWN file)", filename);
+			} else if (fbr_string_suffix(filename, FBR_FIBERFS_META_NAME)) {
+				break;
+			}
+
 			_cstore_debug_meta(filename, &metadata);
+
 			switch (metadata.type) {
 			case FBR_CSTORE_FILE_CHUNK:
 				fbr_test_logs("CSTORE_DEBUG file: %s (CHUNK %s size: %lu)",
@@ -412,10 +428,10 @@ fbr_test_cstore_debug(struct fbr_cstore *cstore)
 	fbr_test_logs("CSTORE_DEBUG http_500: %lu", cstore->stats.http_500);
 	fbr_test_logs("CSTORE_DEBUG http_other: %lu", cstore->stats.http_other);
 
-	char path[FBR_PATH_MAX];
-	fbr_bprintf(path, "%s/%s", cstore->root, FBR_CSTORE_DATA_DIR);
+	struct fbr_cstore_hashpath hashpath;
+	fbr_cstore_hashpath_data(cstore, 0, &hashpath);
 
-	fbr_sys_nftw(path, _cstore_debug_cb);
+	fbr_sys_nftw(hashpath.value, _cstore_debug_cb);
 }
 
 void

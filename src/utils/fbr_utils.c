@@ -277,6 +277,22 @@ fbr_snaprintf(char *buffer, size_t size, size_t len, const char *format, ...)
 	return (size_t)ret;
 }
 
+int
+fbr_string_suffix(const char *string, const char *suffix)
+{
+	assert(string);
+	assert(suffix);
+
+	size_t string_len = strlen(string);
+	size_t suffix_len = strlen(suffix);
+
+	if (string_len < suffix_len) {
+		return 0;
+	}
+
+	return !strcmp(string + string_len - suffix_len, suffix);
+}
+
 static inline void
 _util_char2hex(unsigned char c, char *output, int upper)
 {

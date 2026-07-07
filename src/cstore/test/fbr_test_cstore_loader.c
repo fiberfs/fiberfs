@@ -24,6 +24,8 @@ fbr_cmd_cstore_loader_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	fbr_test_logs("*** Allocating fs, root, and file");
 
+	fbr_test_random_seed();
+
 	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs);
 	fbr_test_cstore_bind_new(fs);

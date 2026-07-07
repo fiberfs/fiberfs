@@ -29,6 +29,8 @@
 size_t
 fbr_log_default_size(void)
 {
+	// TODO non-test should have a bigger log
+
 	size_t log_size = fbr_conf_get_ulong("LOG_SIZE", FBR_LOG_MIN_SIZE);
 	if (log_size < FBR_LOG_MIN_SIZE) {
 		log_size = FBR_LOG_MIN_SIZE;

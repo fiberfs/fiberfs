@@ -12,9 +12,11 @@
 #include "utils/fbr_xxhash.h"
 
 static inline const char *
-_cstore_sub_path(int metadata)
+_cstore_sub_path(int deep_tree, int metadata)
 {
-	if (metadata) {
+	if (!deep_tree) {
+		return FBR_CSTORE_CACHE_DIR;
+	} else if (metadata) {
 		return FBR_CSTORE_META_DIR;
 	}
 
@@ -28,7 +30,7 @@ fbr_cstore_hashpath_data(struct fbr_cstore *cstore, int metadata,
 	fbr_cstore_ok(cstore);
 	assert(hashpath);
 
-	const char *sub_path = _cstore_sub_path(metadata);
+	const char *sub_path = _cstore_sub_path(cstore->deep_tree, metadata);
 
 	hashpath->magic = FBR_CSTORE_HASHPATH_MAGIC;
 	hashpath->length = fbr_bprintf(hashpath->value, "%s/%s/", cstore->root, sub_path);
@@ -47,16 +49,35 @@ fbr_cstore_hashpath(struct fbr_cstore *cstore, fbr_hash_t hash, int metadata,
 	fbr_bin2hex(&hash, sizeof(hash), hash_str, sizeof(hash_str));
 	assert_dev(strlen(hash_str) > 4);
 
-	const char *sub_path = _cstore_sub_path(metadata);
+	const char *sub_path = _cstore_sub_path(cstore->deep_tree, metadata);
+
+	char hash_part1[3] = {0};
+	char hash_part2[3] = {0};
+	size_t offset = 0;
+
+	if (cstore->deep_tree) {
+		offset = fbr_bprintf(hash_part1, "%.2s", hash_str);
+		offset += fbr_bprintf(hash_part2, "%.2s", hash_str + offset);
+		assert(offset == 4);
+	} else {
+		offset = fbr_bprintf(hash_part1, "%.1s", hash_str);
+		offset += fbr_bprintf(hash_part2, "%.1s", hash_str + offset);
+		assert(offset == 2);
+	}
+
+	const char *suffix = FBR_FIBERFS_CACHE_NAME;
+	if (metadata) {
+		suffix = FBR_FIBERFS_META_NAME;
+	}
 
 	hashpath->magic = FBR_CSTORE_HASHPATH_MAGIC;
-	hashpath->length = fbr_bprintf(hashpath->value, "%s/%s/%.2s/%.2s/%s%s",
+	hashpath->length = fbr_bprintf(hashpath->value, "%s/%s/%s/%s/%s%s",
 		cstore->root,
 		sub_path,
-		hash_str,
-		hash_str + 2,
-		hash_str + 4,
-		FBR_FIBERFS_CACHE_NAME);
+		hash_part1,
+		hash_part2,
+		hash_str + offset,
+		suffix);
 
 	fbr_cstore_hashpath_ok(hashpath);
 }
@@ -72,7 +93,14 @@ fbr_cstore_hashpath_loader(struct fbr_cstore *cstore, unsigned char dir, int met
 	size_t hash_len = fbr_bin2hex(&dir, sizeof(dir), hash_str, sizeof(hash_str));
 	assert_dev(hash_len + 1 == sizeof(hash_str));
 
-	const char *sub_path = _cstore_sub_path(metadata);
+	if (!cstore->deep_tree) {
+		assert(hash_str[0] == '0');
+		hash_str[0] = hash_str[1];
+		hash_str[1] = hash_str[2];
+		hash_len--;
+	}
+
+	const char *sub_path = _cstore_sub_path(cstore->deep_tree, metadata);
 
 	hashpath->magic = FBR_CSTORE_HASHPATH_MAGIC;
 	hashpath->length = fbr_bprintf(hashpath->value, "%s/%s/%s",

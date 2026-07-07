@@ -26,7 +26,9 @@
 #define FBR_CSTORE_PRUNE_ATTEMPTS		5
 #define FBR_CSTORE_DATA_DIR			"data"
 #define FBR_CSTORE_META_DIR			"meta"
+#define FBR_CSTORE_CACHE_DIR			"cache"
 #define FBR_CSTORE_LOAD_THREAD_MAX		32
+#define FBR_CSTORE_LOAD_THREAD_ND_MAX		8
 #define FBR_CSTORE_LOAD_THREAD_DEFAULT		4
 #define FBR_CSTORE_LOAD_TIME_BUFFER		1.1
 #define FBR_CSTORE_RETRIES_DEFAULT		2
@@ -141,6 +143,7 @@ struct fbr_cstore {
 	fbr_bitflag_t				delete_cache:1;
 	fbr_bitflag_t				skip_content_hash:1;
 	fbr_bitflag_t				debug_allow_loop:1;
+	fbr_bitflag_t				deep_tree:1;
 
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 

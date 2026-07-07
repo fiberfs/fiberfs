@@ -44,9 +44,13 @@ fbr_cstore_loader_init(struct fbr_cstore *cstore)
 	if (loader->thread_count > FBR_CSTORE_LOAD_THREAD_MAX) {
 		loader->thread_count = FBR_CSTORE_LOAD_THREAD_MAX;
 	}
+	if (!cstore->deep_tree && loader->thread_count > FBR_CSTORE_LOAD_THREAD_ND_MAX) {
+		loader->thread_count = FBR_CSTORE_LOAD_THREAD_ND_MAX;
+	}
 	while (256 % loader->thread_count) {
 		loader->thread_count--;
 	}
+	assert_dev(loader->thread_count);
 
 	for (size_t i = 0; i < loader->thread_count; i++) {
 		pt_assert(pthread_create(&loader->threads[i], NULL, _cstore_load_thread,
@@ -83,9 +87,18 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *hpath, unsigned char h1,
 	struct dirent *dentry;
 	char subpath[FBR_PATH_MAX];
 	size_t insertions = 0;
+
+	unsigned long max_dirs = 256;
+	size_t dir_len = 2;
+	if (!cstore->deep_tree) {
+		max_dirs = 16;
+		dir_len = 1;
+		assert(h1 < max_dirs);
+	}
+
 	int subdir = 1;
 	if (h2 >= 0) {
-		assert(h2 < 256);
+		assert((unsigned int)h2 < max_dirs);
 		subdir = 0;
 	}
 
@@ -95,14 +108,24 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *hpath, unsigned char h1,
 		}
 
 		if (subdir == 1) {
-			if (dentry->d_type != DT_DIR || strlen(dentry->d_name) != 2) {
+			if (dentry->d_type != DT_DIR || strlen(dentry->d_name) != dir_len) {
 				_cstore_remove(hpath, dentry->d_name);
 				continue;
 			}
 
 			unsigned char hash;
-			size_t hash_len = fbr_hex2bin(dentry->d_name, 2, &hash, sizeof(hash));
-			assert(hash_len == 1);
+			if (cstore->deep_tree) {
+				size_t hash_len = fbr_hex2bin(dentry->d_name, 2, &hash,
+					sizeof(hash));
+				assert(hash_len == 1);
+			} else {
+				char hash_str[3];
+				size_t hash_len = fbr_bprintf(hash_str, "0%s", dentry->d_name);
+				assert(hash_len == 2);
+				hash_len = fbr_hex2bin(hash_str, hash_len, &hash, sizeof(hash));
+				assert(hash_len == 1);
+				assert(hash < max_dirs);
+			}
 
 			fbr_bprintf(subpath, "%s/%s", hpath, dentry->d_name);
 
@@ -111,9 +134,21 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *hpath, unsigned char h1,
 			continue;
 		}
 
-		if (dentry->d_type != DT_REG || strlen(dentry->d_name) != 12 +
-		    sizeof(FBR_FIBERFS_CACHE_NAME) - 1) {
+		size_t name_len = strlen(dentry->d_name);
+		size_t name_offset = 12;
+		if (!cstore->deep_tree) {
+			name_offset = 14;
+		}
+
+		if (dentry->d_type != DT_REG ||
+		    (!fbr_string_suffix(dentry->d_name, FBR_FIBERFS_CACHE_NAME) &&
+		    !fbr_string_suffix(dentry->d_name, FBR_FIBERFS_META_NAME)) ||
+		    name_len <= name_offset || dentry->d_name[name_offset] != '.') {
 			_cstore_remove(hpath, dentry->d_name);
+			continue;
+		}
+
+		if (fbr_string_suffix(dentry->d_name, FBR_FIBERFS_META_NAME)) {
 			continue;
 		}
 
@@ -131,11 +166,20 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *hpath, unsigned char h1,
 		}
 
 		fbr_hash_t hash;
-		char *hash_buf = (char*)&hash;
-		size_t hash_len = fbr_hex2bin(dentry->d_name, 12, hash_buf + 2, sizeof(hash) - 2);
-		assert(hash_len + 2 == sizeof(hash));
-		hash_buf[0] = h1;
-		hash_buf[1] = (unsigned char)h2;
+		unsigned char *hash_buf = (unsigned char*)&hash;
+		if (cstore->deep_tree) {
+			hash_buf[0] = h1;
+			hash_buf[1] = (unsigned char)h2;
+			size_t hash_len = fbr_hex2bin(dentry->d_name, name_offset, hash_buf + 2,
+				sizeof(hash) - 2);
+			assert(hash_len + 2 == sizeof(hash));
+		} else {
+			unsigned char hash_byte = (h1 << 4) + h2;
+			hash_buf[0] = hash_byte;
+			size_t hash_len = fbr_hex2bin(dentry->d_name, name_offset, hash_buf + 1,
+				sizeof(hash) - 1);
+			assert(hash_len + 1 == sizeof(hash));
+		}
 
 		struct fbr_cstore_entry *centry = fbr_cstore_insert(cstore, hash, st.st_size, 0);
 		if (centry) {
@@ -168,10 +212,16 @@ _cstore_load_thread(void *arg)
 	assert_dev(loader->thread_count);
 	size_t pos = fbr_atomic_add(&loader->thread_pos, 1);
 	size_t thread_id = fbr_request_id_thread_gen();
-	size_t dir_count = 256 / loader->thread_count;
+
+	size_t max_dirs = 256;
+	if (!cstore->deep_tree) {
+		max_dirs = 16;
+	}
+
+	size_t dir_count = max_dirs / loader->thread_count;
 	size_t dir_start = (pos - 1) * dir_count;
 	size_t dir_end = dir_start + dir_count - 1;
-	assert_dev(dir_end < 256);
+	assert_dev(dir_end < max_dirs);
 
 	size_t insertions = 0;
 
@@ -183,7 +233,7 @@ _cstore_load_thread(void *arg)
 	}
 
 	while (!loader->stop && dir_start <= dir_end) {
-		assert_dev(dir_start < 256);
+		assert_dev(dir_start < max_dirs);
 		unsigned char dir = dir_start;
 
 		struct fbr_cstore_hashpath hashpath;
