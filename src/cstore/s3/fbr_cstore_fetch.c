@@ -402,7 +402,7 @@ fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *
 
 int
 fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
-    struct fbr_cstore_entry **entry_ref)
+    struct fbr_cstore_entry_ref *entry_ref)
 {
 	fbr_cstore_fetch_ok(fetch);
 	fbr_cstore_path_ok(fetch->file_path);
@@ -514,10 +514,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 	fbr_rlog(FBR_LOG_CS_S3, "S3_GET done %zu bytes", bytes);
 
 	if (entry_ref) {
-		assert_zero_dev(*entry_ref);
-
-		fbr_cstore_ref(cstore, entry);
-		*entry_ref = entry;
+		fbr_cstore_entry_ref_init(cstore, entry_ref, entry, &metadata, 0);
 	}
 
 	fbr_cstore_set_ok(entry);
@@ -950,8 +947,7 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	if (cstore->config.async_write) {
 		fbr_cstore_async_root_write(cstore, root_json, root_path, etag->value, timestamp);
 	} else {
-		fbr_cstore_io_root_write(cstore, root_json, root_path, etag, NULL, 0, timestamp,
-			NULL);
+		fbr_cstore_io_root_write(cstore, root_json, root_path, etag, NULL, timestamp, NULL);
 	}
 
 	return 0;
@@ -960,7 +956,7 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 fbr_id_t
 fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
     struct fbr_cstore_path *root_path, struct fbr_etag *etag, int route_s3,
-    struct fbr_cstore_entry **entry_ref, int *http_error, int write_sync)
+    struct fbr_cstore_entry_ref *entry_ref, int *http_error, int write_sync)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_path_ok(root_path);
@@ -1062,7 +1058,7 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	if (cstore->config.async_write && !write_sync) {
 		fbr_cstore_async_root_write(cstore, json_writer, root_path, etag->value, timestamp);
 	} else {
-		fbr_cstore_io_root_write(cstore, json_writer, root_path, etag, NULL, 0, timestamp,
+		fbr_cstore_io_root_write(cstore, json_writer, root_path, etag, NULL, timestamp,
 			entry_ref);
 	}
 

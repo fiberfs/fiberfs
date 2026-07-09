@@ -565,7 +565,7 @@ fbr_cstore_set_error(struct fbr_cstore_entry *entry)
 	_cstore_set_state(entry, FBR_CSTORE_NONE);
 }
 
-void
+struct fbr_cstore_entry *
 fbr_cstore_ref(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
 {
 	fbr_cstore_ok(cstore);
@@ -588,6 +588,8 @@ fbr_cstore_ref(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry)
 	}
 
 	pt_assert(pthread_mutex_unlock(&head->lock));
+
+	return entry;
 }
 
 static void

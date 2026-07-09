@@ -202,6 +202,12 @@ struct fbr_cstore_metadata {
 	char					_context;
 };
 
+struct fbr_cstore_entry_ref {
+	struct fbr_cstore_entry			*entry;
+	struct fbr_cstore_metadata		metadata;
+	fbr_id_t				version;
+};
+
 struct fbr_cstore *fbr_cstore_alloc(const char *root_path);
 void fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path);
 void fbr_cstore_max_size(struct fbr_cstore *cstore, size_t max_bytes, int lru);
@@ -214,7 +220,7 @@ enum fbr_cstore_state fbr_cstore_wait_loading(struct fbr_cstore_entry *entry);
 void fbr_cstore_reset_loading(struct fbr_cstore_entry *entry);
 void fbr_cstore_set_ok(struct fbr_cstore_entry *entry);
 void fbr_cstore_set_error(struct fbr_cstore_entry *entry);
-void fbr_cstore_ref(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
+struct fbr_cstore_entry *fbr_cstore_ref(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry);
 void fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref);
 void fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref);
 void fbr_cstore_clear(struct fbr_cstore *cstore);

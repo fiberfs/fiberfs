@@ -343,6 +343,21 @@ fbr_cstore_io_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash)
 }
 
 void
+fbr_cstore_entry_ref_init(struct fbr_cstore *cstore, struct fbr_cstore_entry_ref *entry_ref,
+    struct fbr_cstore_entry *entry, struct fbr_cstore_metadata *metadata, fbr_id_t version)
+{
+	fbr_cstore_ok(cstore);
+	assert(entry_ref);
+	fbr_cstore_entry_ok(entry);
+	assert(metadata);
+
+	entry_ref->entry = fbr_cstore_ref(cstore, entry);
+	entry_ref->version = version;
+
+	memcpy(&entry_ref->metadata, metadata, sizeof(*metadata));
+}
+
+void
 fbr_cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
     enum fbr_wbuffer_state state)
 {
@@ -712,9 +727,11 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_cstore_metadata metadata;
 	struct fbr_cstore_entry *entry;
-	struct fbr_cstore_entry *entry_ref = NULL;
+	struct fbr_cstore_entry_ref entry_ref;
 	int fd;
 	int retry = 0;
+
+	entry_ref.entry = NULL;
 
 	while (1) {
 		struct fbr_cstore_path path;
@@ -723,10 +740,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_rlog(FBR_LOG_CS_INDEX, "READ %s %lu (retry: %d)", path.value,
 			directory->version, retry);
 
-		if (entry_ref) {
-			fbr_cstore_release(cstore, &entry_ref);
-			assert_zero_dev(entry_ref);
-		}
+		assert_zero_dev(entry_ref.entry);
 
 		if (retry == 1 || retry == 2) {
 			if (!fbr_cstore_backend_enabled(cstore)) {
@@ -752,22 +766,25 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		retry++;
 
-		entry = fbr_cstore_io_get_ok(cstore, hash);
-		if (!entry) {
-			fbr_rlog(FBR_LOG_CS_INDEX, "NO ok state");
+		if (entry_ref.entry) {
+			entry = entry_ref.entry;
+			fbr_cstore_entry_ok(entry);
 
-			if (!fbr_cstore_backend_enabled(cstore)) {
-				assert_zero(entry_ref);
-				return EAGAIN;
+			entry_ref.entry = NULL;
+		} else {
+			entry = fbr_cstore_io_get_ok(cstore, hash);
+			if (!entry) {
+				fbr_rlog(FBR_LOG_CS_INDEX, "NO ok state");
+
+				if (!fbr_cstore_backend_enabled(cstore)) {
+					return EAGAIN;
+				}
+
+				continue;
 			}
-
-			continue;
 		}
 
-		if (entry_ref) {
-			fbr_cstore_release(cstore, &entry_ref);
-			assert_zero_dev(entry_ref);
-		}
+		assert_zero_dev(entry_ref.entry);
 
 		fbr_cstore_entry_ok(entry);
 		assert_dev(entry->state == FBR_CSTORE_OK);
@@ -794,7 +811,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		break;
 	}
 
-	assert_zero(entry_ref);
+	assert_zero(entry_ref.entry);
 
 	struct fbr_gzip gzip;
 	if (metadata.gzipped) {
@@ -952,8 +969,8 @@ fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory)
 
 int
 fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
-    struct fbr_cstore_path *root_path, struct fbr_etag *etag, const char *etag_match, int enforce,
-    double timestamp, struct fbr_cstore_entry **entry_ref)
+    struct fbr_cstore_path *root_path, struct fbr_etag *etag, const char *etag_match,
+    double timestamp, struct fbr_cstore_entry_ref *entry_ref)
 {
 	fbr_cstore_ok(cstore);
 	fbr_writer_ok(root_json);
@@ -962,14 +979,14 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	assert(etag);
 	assert(timestamp);
 
+	int enforce = 0;
+
 	int backend = fbr_cstore_backend_enabled(cstore);
 	if (backend) {
 		assert(etag->length);
-		// TODO remove this as a param
-		assert_zero(enforce);
 	} else {
 		assert_zero(etag->length);
-		assert(enforce);
+		enforce = 1;
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path->value, root_path->length);
@@ -1088,10 +1105,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	fbr_stat_add(&cstore->stats.wr_root_updates);
 
 	if (entry_ref) {
-		assert_zero_dev(*entry_ref);
-
-		fbr_cstore_ref(cstore, entry);
-		*entry_ref = entry;
+		fbr_cstore_entry_ref_init(cstore, entry_ref, entry, &metadata, 0);
 	}
 
 	fbr_cstore_set_ok(entry);

@@ -493,12 +493,14 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
 	struct fbr_cstore_metadata metadata;
 	struct fbr_cstore_entry *entry;
-	struct fbr_cstore_entry *entry_ref = NULL;
+	struct fbr_cstore_entry_ref entry_ref;
 	int fd;
 	size_t size;
 	int retry = 0;
 	int skip_ttl = 0;
 	int last_error = 0;
+
+	entry_ref.entry = NULL;
 
 	while (1) {
 		struct fbr_cstore_hashpath hashpath;
@@ -507,7 +509,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s (retry: %d)",
 			fbr_cstore_type_name(file_type), hashpath.value, retry);
 
-		assert_zero_dev(entry_ref);
+		assert_zero_dev(entry_ref.entry);
 
 		if (retry == 1 && file_type == FBR_CSTORE_FILE_ROOT) {
 			if (!backend) {
@@ -555,11 +557,11 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		retry++;
 
 		if (file_type == FBR_CSTORE_FILE_ROOT) {
-			if (entry_ref) {
-				entry = entry_ref;
+			if (entry_ref.entry) {
+				entry = entry_ref.entry;
 				fbr_cstore_entry_ok(entry);
 
-				entry_ref = NULL;
+				entry_ref.entry = NULL;
 			} else {
 				entry = fbr_cstore_get(cstore, hash);
 				if (!entry) {
@@ -572,12 +574,12 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			fbr_cstore_reset_loading(entry);
 			assert_dev(entry->state == FBR_CSTORE_LOADING);
 		} else {
-			if (entry_ref) {
-				entry = entry_ref;
+			if (entry_ref.entry) {
+				entry = entry_ref.entry;
 				fbr_cstore_entry_ok(entry);
 				assert(entry->state == FBR_CSTORE_OK);
 
-				entry_ref = NULL;
+				entry_ref.entry = NULL;
 			} else {
 				entry = fbr_cstore_io_get_ok(cstore, hash);
 				if (!entry) {
@@ -590,7 +592,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		}
 
 		fbr_cstore_entry_ok(entry);
-		assert_zero_dev(entry_ref);
+		assert_zero_dev(entry_ref.entry);
 
 		last_error = 0;
 

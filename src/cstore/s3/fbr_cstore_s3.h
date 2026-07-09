@@ -94,6 +94,7 @@ struct fbr_cstore_fetch_context {
 };
 
 struct fbr_cstore;
+struct fbr_cstore_entry_ref;
 
 void fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tls,
 	const char *prefix, const char *region, const char *access_key, const char *secret_key);
@@ -121,7 +122,7 @@ void fbr_s3_send_put(struct fbr_cstore_fetch_context *fetch);
 int fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,
 	struct chttp_context *http, int error);
 int fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
-	struct fbr_cstore_entry **entry_ref);
+	struct fbr_cstore_entry_ref *entry_ref);
 int fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url,
 	const char *etag_match, enum fbr_cstore_route route);
 void fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,
@@ -138,7 +139,7 @@ int fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_js
 	enum fbr_cstore_route route);
 fbr_id_t fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct fbr_cstore_path *root_path, struct fbr_etag *etag, int route_s3,
-	struct fbr_cstore_entry **entry_ref, int *http_error, int write_sync);
+	struct fbr_cstore_entry_ref *entry_ref, int *http_error, int write_sync);
 
 typedef size_t (*fbr_cstore_s3_hash_f)(void *priv, void *hash, size_t hash_len);
 

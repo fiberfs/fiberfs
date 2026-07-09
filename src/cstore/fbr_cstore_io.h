@@ -97,6 +97,7 @@ struct fbr_cstore_async {
 
 struct fbr_cstore;
 struct fbr_cstore_entry;
+struct fbr_cstore_entry_ref;
 struct fbr_cstore_metadata;
 struct fbr_cstore_path;
 struct fbr_cstore_hashpath;
@@ -140,6 +141,8 @@ int fbr_cstore_metadata_read(struct fbr_cstore_hashpath *hashpath,
 struct fbr_cstore_entry *fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash,
 	size_t bytes, struct fbr_cstore_hashpath *hashpath);
 struct fbr_cstore_entry *fbr_cstore_io_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash);
+void fbr_cstore_entry_ref_init(struct fbr_cstore *cstore, struct fbr_cstore_entry_ref *entry_ref,
+	struct fbr_cstore_entry *entry, struct fbr_cstore_metadata *metadata, fbr_id_t version);
 void fbr_cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 	enum fbr_wbuffer_state state);
 void fbr_cstore_chunk_update(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk,
@@ -158,7 +161,7 @@ void fbr_cstore_io_index_remove(struct fbr_fs *fs, struct fbr_directory *directo
 int fbr_cstore_io_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 	struct fbr_cstore_path *root_path, struct fbr_etag *etag, const char *etag_match,
-	int enforce, double timestamp, struct fbr_cstore_entry **entry_ref);
+	double timestamp, struct fbr_cstore_entry_ref *entry_ref);
 fbr_id_t fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_path,
 	struct fbr_etag *etag, unsigned int attempts);
 int fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);

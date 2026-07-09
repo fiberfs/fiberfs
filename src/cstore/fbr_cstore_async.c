@@ -157,7 +157,7 @@ _cstore_async_op(struct fbr_cstore *cstore, struct fbr_cstore_op *op)
 			return;
 		case FBR_CSOP_ROOT_WRITE:
 			fbr_cstore_io_root_write(op->param0, op->param1, op->param2,
-				op->param3, NULL, 0, *((double*)op->param4), NULL);
+				op->param3, NULL, *((double*)op->param4), NULL);
 			return;
 		case FBR_CSOP_NONE:
 		case __FBR_CSOP_END:
@@ -507,7 +507,7 @@ fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_j
 	if (ret) {
 		fbr_rlog(FBR_LOG_CS_ASYNC, "synchronous fallback");
 
-		fbr_cstore_io_root_write(cstore, root_json, root_path, &root_data->etag, NULL, 0,
+		fbr_cstore_io_root_write(cstore, root_json, root_path, &root_data->etag, NULL,
 			timestamp, NULL);
 
 		fbr_zero(root_data);

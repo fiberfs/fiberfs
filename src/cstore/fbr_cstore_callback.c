@@ -99,7 +99,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	} else {
 		double now = fbr_get_time();
 		fail = fbr_cstore_io_root_write(cstore, root_json, &root_path, &directory->etag,
-			etag_match, 1, now, NULL);
+			etag_match, now, NULL);
 	}
 
 	if (fail) {
