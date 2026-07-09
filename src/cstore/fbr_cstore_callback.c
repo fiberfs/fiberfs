@@ -157,9 +157,11 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_directory *directory, int rou
 	fbr_cstore_etag_init(&directory->etag, NULL);
 
 	int http_error = 0;
+
 	struct fbr_cstore_entry_ref _entry_ref;
 	struct fbr_cstore_entry_ref *entry_ref = &_entry_ref;
 	entry_ref->entry = NULL;
+	entry_ref->keep = 0;
 
 	if (!route_s3 || !has_backend) {
 		version = fbr_cstore_io_root_read(cstore, &path, &directory->etag, 0, entry_ref);

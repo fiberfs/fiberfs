@@ -424,6 +424,7 @@ fbr_test_cstore_debug(struct fbr_cstore *cstore)
 	fbr_test_logs("CSTORE_DEBUG retries: %lu", cstore->stats.retries);
 	fbr_test_logs("CSTORE_DEBUG epool.waiting: %lu", cstore->epool.waiting);
 	fbr_test_logs("CSTORE_DEBUG http_200: %lu", cstore->stats.http_200);
+	fbr_test_logs("CSTORE_DEBUG http_304: %lu", cstore->stats.http_304);
 	fbr_test_logs("CSTORE_DEBUG http_400: %lu", cstore->stats.http_400);
 	fbr_test_logs("CSTORE_DEBUG http_500: %lu", cstore->stats.http_500);
 	fbr_test_logs("CSTORE_DEBUG http_other: %lu", cstore->stats.http_other);

@@ -995,9 +995,6 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	fbr_cstore_s3_send_get(&fetch);
 
 	if (http.status == 304 && !http.error) {
-		assert(entry_ref);
-		assert(entry_ref->entry);
-
 		fbr_rlog(FBR_LOG_CS_ROOT, "S3 304 detected");
 
 		if (http_error) {

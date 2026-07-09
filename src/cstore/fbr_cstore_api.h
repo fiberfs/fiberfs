@@ -185,6 +185,7 @@ struct fbr_cstore {
 		fbr_stats_t			workers_active;
 		fbr_stats_t			retries;
 		fbr_stats_t			http_200;
+		fbr_stats_t			http_304;
 		fbr_stats_t			http_400;
 		fbr_stats_t			http_500;
 		fbr_stats_t			http_other;
@@ -205,7 +206,10 @@ struct fbr_cstore_metadata {
 struct fbr_cstore_entry_ref {
 	struct fbr_cstore_entry			*entry;
 	struct fbr_cstore_metadata		metadata;
+
 	fbr_id_t				version;
+
+	fbr_bitflag_t				keep:1;
 };
 
 struct fbr_cstore *fbr_cstore_alloc(const char *root_path);

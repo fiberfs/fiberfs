@@ -489,6 +489,7 @@ fbr_cmd_fs_test_directory_release_ttl(struct fbr_test_context *ctx, struct fbr_t
 
 #define _LOAD_TTL_THREADS	4
 static size_t _LOAD_TTL_THREAD_COUNT;
+static size_t _LOAD_TTL_MODE_RANDOM;
 static size_t _LOAD_TTL_GEN_STOP;
 static fbr_stats_t _LOAD_TTL_GEN_HITS[32];
 
@@ -499,6 +500,25 @@ _directory_load_thread(void *arg)
 
 	struct fbr_fs *fs = arg;
 	fbr_fs_ok(fs);
+
+	if (_LOAD_TTL_MODE_RANDOM) {
+		fs = fbr_test_fs_alloc();
+		fbr_fs_ok(fs);
+		fbr_test_cstore_bind_new(fs);
+		fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
+
+		struct fbr_cstore *cstore_proxy = fbr_test_cstore_get(NULL, 0);
+		struct fbr_cstore *cstore_s3 = fbr_test_cstore_get(NULL, 1);
+
+		fbr_test_cstore_backend_add(fs->cstore, cstore_proxy, FBR_CSTORE_ROUTE_CDN);
+		fbr_test_cstore_backend_add(fs->cstore, cstore_s3, FBR_CSTORE_ROUTE_S3);
+
+		struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT,
+			FBR_INODE_ROOT, 0);
+		fbr_directory_ok(root);
+		assert(root->generation == 1);
+		fbr_dindex_release(fs, &root);
+	}
 
 	size_t thread_id = fbr_atomic_add(&_LOAD_TTL_THREAD_COUNT, 1);
 
@@ -525,6 +545,19 @@ _directory_load_thread(void *arg)
 		long sleep = fbr_test_gen_random(0, 20);
 		fbr_test_sleep_ms(sleep);
 	} while (generation < _LOAD_TTL_GEN_STOP);
+
+	if (fs != arg) {
+		fbr_fs_release_all(fs, 1);
+		fbr_test_fs_wait(fs);
+		assert_zero(fs->stats.directories);
+		assert_zero(fs->stats.directories_dindex);
+		assert_zero(fs->stats.directory_refs);
+		assert_zero(fs->stats.files);
+		assert_zero(fs->stats.files_inodes);
+		assert_zero(fs->stats.file_refs);
+
+		fbr_fs_free(fs);
+	}
 
 	return NULL;
 }
@@ -599,6 +632,9 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	assert(generation == 1);
 	fbr_dindex_release(fs_read, &root);
 
+	fbr_test_fs_wait(fs_write);
+	fbr_test_cstore_wait(cstore_s3);
+
 	fbr_test_logs("*** creating threads");
 
 	pthread_t threads[_LOAD_TTL_THREADS];
@@ -607,15 +643,32 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 		pt_assert(pthread_create(&threads[i], NULL, _directory_load_thread, fs_read));
 	}
 
+	while (_LOAD_TTL_THREAD_COUNT < _LOAD_TTL_THREADS) {
+		fbr_sleep_ms(0.1);
+	}
+	assert(_LOAD_TTL_THREAD_COUNT == _LOAD_TTL_THREADS);
+
 	fbr_test_logs("*** threads created: %d", _LOAD_TTL_THREADS);
 
-	while (generation < _LOAD_TTL_GEN_STOP) {
-		if (!_LOAD_TTL_GEN_HITS[generation - 1]) {
-			fbr_test_sleep_ms(1);
-			continue;
-		}
+	if (_LOAD_TTL_MODE_RANDOM) {
+		while (generation < _LOAD_TTL_GEN_STOP) {
+			long random_ms = fbr_test_gen_random(0, 100);
+			long r2 = fbr_test_gen_random(1, 2);
+			long min_ms = ((FBR_ROOT_TTL_MIN * 1000) - 10) * r2;
 
-		generation = _directory_load_bump(fs_write, generation);
+			fbr_test_sleep_ms(min_ms + random_ms);
+
+			generation = _directory_load_bump(fs_write, generation);
+		}
+	} else {
+		while (generation < _LOAD_TTL_GEN_STOP) {
+			if (!_LOAD_TTL_GEN_HITS[generation - 1]) {
+				fbr_test_sleep_ms(1);
+				continue;
+			}
+
+			generation = _directory_load_bump(fs_write, generation);
+		}
 	}
 
 	fbr_test_logs("*** joining threads....");
@@ -644,9 +697,12 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	assert_zero(fs_read->stats.files);
 	assert_zero(fs_read->stats.files_inodes);
 	assert_zero(fs_read->stats.file_refs);
-	assert(fs_read->stats.index_loads == _LOAD_TTL_GEN_STOP);
-	assert(fs_read->stats.directories_total - fs_read->stats.dir_alloc_hit -
-		fs_read->stats.index_matches == _LOAD_TTL_GEN_STOP)
+
+	if (!_LOAD_TTL_MODE_RANDOM) {
+		assert(fs_read->stats.index_loads == _LOAD_TTL_GEN_STOP);
+		assert(fs_read->stats.directories_total - fs_read->stats.dir_alloc_hit -
+			fs_read->stats.index_matches == _LOAD_TTL_GEN_STOP);
+	}
 
 	fbr_test_logs("*** cleanup fs_write");
 
@@ -661,7 +717,6 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 
 	fbr_test_logs("CSTORE_DEBUG cstore_proxy");
 	fbr_test_cstore_debug(cstore_proxy);
-	assert(cstore_proxy->stats.http_200 >= _LOAD_TTL_GEN_STOP * 2);
 	assert_zero(cstore_proxy->stats.http_400);
 	assert_zero(cstore_proxy->stats.http_500);
 	assert_zero(cstore_proxy->stats.http_other);
@@ -669,10 +724,14 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	fbr_test_logs("CSTORE_DEBUG cstore_s3");
 	fbr_test_cstore_debug(cstore_s3);
 	assert(cstore_s3->entries == 2);
-	assert(cstore_s3->stats.http_200 >= _LOAD_TTL_GEN_STOP * 2);
 	assert_zero(cstore_s3->stats.http_400);
 	assert_zero(cstore_s3->stats.http_500);
 	assert_zero(cstore_s3->stats.http_other);
+
+	if (!_LOAD_TTL_MODE_RANDOM) {
+		assert(cstore_proxy->stats.http_200 >= _LOAD_TTL_GEN_STOP * 2);
+		assert(cstore_s3->stats.http_200 >= _LOAD_TTL_GEN_STOP * 2);
+	}
 
 	fbr_request_pool_shutdown();
 	fbr_fs_free(fs_read);
@@ -701,4 +760,29 @@ fbr_cmd_fs_test_directory_load_ttl(struct fbr_test_context *ctx, struct fbr_test
 	_directory_load_ttl(ctx);
 
 	fbr_test_logs("directory_load_ttl done");
+}
+
+void
+fbr_cmd_fs_test_directory_load_304(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	assert(FBR_CSTORE_ROOT_TTL_MIN < FBR_ROOT_TTL_MIN);
+
+	fbr_test_conf_add("LOG_SIZE", "200000");
+	fbr_test_conf_add("ASYNC_WRITE", "false");
+	fbr_test_conf_add("CSTORE_SERVER", "true");
+	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
+	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
+	fbr_test_conf_add("ROOT_FILE_TTL_SEC", "0");
+
+	_LOAD_TTL_MODE_RANDOM = 1;
+	_LOAD_TTL_GEN_STOP = 4;
+
+	fbr_test_random_seed();
+
+	_directory_load_ttl(ctx);
+
+	fbr_test_logs("directory_load_304 done");
 }

@@ -1005,7 +1005,10 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		fbr_cstore_entry_ok(entry);
 
 		entry_ref->entry = NULL;
-		entry_ref = NULL;
+
+		if (!entry_ref->keep) {
+			entry_ref = NULL;
+		}
 	} else {
 		entry = fbr_cstore_get(cstore, hash);
 		if (entry) {
@@ -1121,7 +1124,10 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		fbr_cstore_entry_ref_init(cstore, entry_ref, entry, &metadata, 0);
 	}
 
-	fbr_cstore_set_ok(entry);
+	if (!entry_ref || !entry_ref->keep) {
+		fbr_cstore_set_ok(entry);
+	}
+
 	fbr_cstore_release(cstore, &entry);
 	fbr_writer_free(root_json);
 

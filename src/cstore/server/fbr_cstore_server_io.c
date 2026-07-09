@@ -491,28 +491,32 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	int backend = fbr_cstore_backend_enabled(cstore);
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
+	struct fbr_cstore_hashpath hashpath;
 	struct fbr_cstore_metadata metadata;
 	struct fbr_cstore_entry *entry;
 	struct fbr_cstore_entry_ref entry_ref;
+	struct fbr_etag server_etag;
 	int fd;
 	size_t size;
 	int retry = 0;
 	int skip_ttl = 0;
-	int last_error = 0;
+	int http_error = 0;
+	int was_304 = 0;
 
 	entry_ref.entry = NULL;
+	entry_ref.keep = 0;
+
+	fbr_cstore_etag_init(&server_etag, NULL);
 
 	while (1) {
-		struct fbr_cstore_hashpath hashpath;
 		fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ %s %s (retry: %d)",
 			fbr_cstore_type_name(file_type), hashpath.value, retry);
 
-		assert_zero_dev(entry_ref.entry);
-
 		if (retry == 1 && file_type == FBR_CSTORE_FILE_ROOT) {
 			if (!backend) {
+				assert_zero_dev(entry_ref.entry);
 				fbr_cstore_http_respond(cstore, http, 404, "Not found");
 				return;
 			}
@@ -520,14 +524,13 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			struct fbr_cstore_path file_path;
 			fbr_cstore_path_url(cstore, url_encoded, &file_path);
 
-			struct fbr_etag etag;
-			fbr_cstore_etag_init(&etag, NULL);
-
-			fbr_cstore_s3_root_get(NULL, cstore, &file_path, &etag, 1, &entry_ref,
-				&last_error, 1);
+			fbr_cstore_s3_root_get(NULL, cstore, &file_path, &server_etag, 1,
+				&entry_ref, &http_error, 1);
 
 			skip_ttl = 1;
 		} else if (retry == 1) {
+			assert_zero_dev(entry_ref.entry);
+
 			if (!backend) {
 				fbr_cstore_http_respond(cstore, http, 404, "Not found");
 				return;
@@ -543,18 +546,27 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			fbr_cstore_fetch_init(&fetch, cstore, &http, file_type,
 				&file_path, NULL, NULL, 0, 0, FBR_CSTORE_ROUTE_CDN);
 
-			last_error = fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
+			http_error = fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
 			assert_dev(http.state == CHTTP_STATE_NONE);
 		} else if (retry > 1) {
-			if (last_error && !fbr_cstore_http_success(last_error)) {
-				fbr_cstore_http_respond(cstore, http, last_error, "Error");
+			assert_zero_dev(entry_ref.entry);
+
+			if (http_error && !fbr_cstore_http_success(http_error)) {
+				fbr_cstore_http_respond(cstore, http, http_error, "Error");
+			} else {
+				fbr_cstore_http_respond(cstore, http, 500, "Error");
 			}
 
-			fbr_cstore_http_respond(cstore, http, 500, "Error");
 			return;
 		}
 
 		retry++;
+
+		if (http_error == 304) {
+			assert(file_type == FBR_CSTORE_FILE_ROOT);
+			assert(entry_ref.entry);
+			was_304 = 1;
+		}
 
 		if (file_type == FBR_CSTORE_FILE_ROOT) {
 			if (entry_ref.entry) {
@@ -562,6 +574,10 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 				fbr_cstore_entry_ok(entry);
 
 				entry_ref.entry = NULL;
+
+				if (!entry_ref.keep) {
+					fbr_cstore_reset_loading(entry);
+				}
 			} else {
 				entry = fbr_cstore_get(cstore, hash);
 				if (!entry) {
@@ -569,10 +585,11 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 						"URL_READ NO entry");
 					continue;
 				}
+
+				fbr_cstore_reset_loading(entry);
 			}
 
-			fbr_cstore_reset_loading(entry);
-			assert_dev(entry->state == FBR_CSTORE_LOADING);
+			assert(entry->state == FBR_CSTORE_LOADING);
 		} else {
 			if (entry_ref.entry) {
 				entry = entry_ref.entry;
@@ -594,7 +611,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		fbr_cstore_entry_ok(entry);
 		assert_zero_dev(entry_ref.entry);
 
-		last_error = 0;
+		http_error = 0;
 
 		fd = open(hashpath.value, O_RDONLY);
 		if (fd < 0) {
@@ -625,7 +642,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		}
 
 		if (backend && file_type == FBR_CSTORE_FILE_ROOT && !skip_ttl) {
-			// TODO read etag here so we can potentially get a 304...
+			fbr_cstore_etag_init(&server_etag, metadata.etag.value);
 
 			double now = fbr_get_time();
 			double root_time = metadata.timestamp +
@@ -635,7 +652,11 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			if (root_time < now) {
 				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
 					"URL_READ ERROR root expired");
-				_cstore_url_entry_release(cstore, entry, file_type, 0);
+
+				assert_zero(entry_ref.entry);
+				entry_ref.entry = entry;
+				entry_ref.keep = 1;
+
 				assert_zero(close(fd));
 
 				continue;
@@ -646,8 +667,40 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	}
 
 	// TODO do we care about accept-encoding gzip?
-	// TODO check if request If-None-Match matches etag
-	// TODO is last_error is 304, write back metadata
+
+	if (was_304) {
+		assert_dev(file_type == FBR_CSTORE_FILE_ROOT);
+
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ROOT TOUCH %s",
+			hashpath.value);
+
+		double now = fbr_get_time();
+		metadata.timestamp = now;
+
+		int ret = fbr_cstore_metadata_write(&hashpath, &metadata);
+		if (ret) {
+			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR write metadata");
+
+			_cstore_url_entry_release(cstore, entry, file_type, 1);
+			assert_zero(close(fd));
+
+			fbr_cstore_http_respond(cstore, http, 500, "Error");
+
+			return;
+		}
+	}
+
+	const char *if_none_match = chttp_header_get(http, "If-None-Match");
+	if (if_none_match && !strcmp(if_none_match, metadata.etag.value)) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ 304 matched");
+
+		_cstore_url_entry_release(cstore, entry, file_type, 0);
+		assert_zero(close(fd));
+
+		fbr_cstore_http_respond(cstore, http, 304, "Not Modified");
+
+		return;
+	}
 
 	const char *etag = NULL;
 	if (file_type == FBR_CSTORE_FILE_ROOT) {

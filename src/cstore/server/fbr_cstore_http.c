@@ -79,6 +79,8 @@ fbr_cstore_http_resp_etag(struct fbr_cstore *cstore, struct chttp_context *http,
 
 	if (status >= 200 && status <= 299) {
 		fbr_stat_add(&cstore->stats.http_200);
+	} else if (status == 304) {
+		fbr_stat_add(&cstore->stats.http_304);
 	} else if (status >= 400 && status <= 499) {
 		fbr_stat_add(&cstore->stats.http_400);
 	} else if (status >= 500 && status <= 599) {
