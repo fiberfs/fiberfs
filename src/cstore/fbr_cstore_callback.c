@@ -156,25 +156,44 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_directory *directory, int rou
 
 	fbr_cstore_etag_init(&directory->etag, NULL);
 
-	// TODO if we are attempting a etag_304, we need to hold the cstore entry while we do it
+	int http_error = 0;
+	struct fbr_cstore_entry_ref _entry_ref;
+	struct fbr_cstore_entry_ref *entry_ref = &_entry_ref;
+	entry_ref->entry = NULL;
 
 	if (!route_s3 || !has_backend) {
-		version = fbr_cstore_io_root_read(cstore, &path, &directory->etag, 0);
+		version = fbr_cstore_io_root_read(cstore, &path, &directory->etag, 0, entry_ref);
 	}
 
 	if (!version && has_backend) {
-		version = fbr_cstore_s3_root_get(fs, cstore, &path, &directory->etag, route_s3,
-			NULL, NULL, 0);
+		if (!entry_ref->entry) {
+			fbr_cstore_etag_init(&directory->etag, NULL);
+			entry_ref = NULL;
+		}
 
-		if (!version && !route_s3) {
+		version = fbr_cstore_s3_root_get(fs, cstore, &path, &directory->etag, route_s3,
+			entry_ref, &http_error, 0);
+
+		if (!version && !route_s3 && http_error != 304) {
 			version = fbr_cstore_s3_root_get(fs, cstore, &path, &directory->etag, 1,
-				NULL, NULL, 0);
+				entry_ref, &http_error, 0);
 		}
 	}
 
-	if (!route_s3 && has_backend && !version) {
-		version = fbr_cstore_io_root_read(cstore, &path, &directory->etag, 1);
+	if (http_error == 304) {
+		assert_zero(version);
+		assert(entry_ref);
+		assert(entry_ref->entry);
+
+		fbr_cstore_io_root_touch(cstore, entry_ref, &path);
+
+		version = entry_ref->version;
+		assert(version);
+	} else if (!route_s3 && has_backend && !version) {
+		version = fbr_cstore_io_root_read(cstore, &path, &directory->etag, 1, entry_ref);
 	}
+
+	assert_zero(_entry_ref.entry);
 
 	char id_str[FBR_ID_STRING_MAX] = "";
 	if (version) {

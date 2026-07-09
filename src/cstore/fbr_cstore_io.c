@@ -998,7 +998,21 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		backend ? etag->value : "0",
 		etag_match ? etag_match : "0", enforce, hashpath.value);
 
-	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
+	struct fbr_cstore_entry *entry = NULL;
+
+	if (entry_ref && entry_ref->entry) {
+		entry = entry_ref->entry;
+		fbr_cstore_entry_ok(entry);
+
+		entry_ref->entry = NULL;
+		entry_ref = NULL;
+	} else {
+		entry = fbr_cstore_get(cstore, hash);
+		if (entry) {
+			fbr_cstore_reset_loading(entry);
+		}
+	}
+
 	if (!entry) {
 		if (etag_match && enforce) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR bad version want: [%s] got: no entry",
@@ -1016,7 +1030,6 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		fbr_cstore_entry_ok(entry);
 		assert_dev(entry->state == FBR_CSTORE_LOADING);
 	} else {
-		fbr_cstore_reset_loading(entry);
 		fbr_cstore_entry_ok(entry);
 		assert_dev(entry->state == FBR_CSTORE_LOADING);
 
@@ -1119,7 +1132,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 
 fbr_id_t
 fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_path,
-    struct fbr_etag *etag, unsigned int attempts)
+    struct fbr_etag *etag, unsigned int attempts, struct fbr_cstore_entry_ref *entry_ref)
 {
 	fbr_cstore_ok(cstore);
 	fbr_cstore_path_ok(root_path);
@@ -1133,13 +1146,24 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path->value, root_path->length);
-	struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
-	if (!entry) {
-		fbr_rlog(FBR_LOG_CS_ROOT, "NO ok state");
-		return 0;
+	struct fbr_cstore_entry *entry = NULL;
+
+	if (entry_ref && entry_ref->entry) {
+		assert(skip_ttl);
+
+		entry = entry_ref->entry;
+
+		entry_ref->entry = NULL;
+	} else {
+		entry = fbr_cstore_get(cstore, hash);
+		if (!entry) {
+			fbr_rlog(FBR_LOG_CS_ROOT, "NO ok state");
+			return 0;
+		}
+
+		fbr_cstore_reset_loading(entry);
 	}
 
-	fbr_cstore_reset_loading(entry);
 	fbr_cstore_entry_ok(entry);
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
@@ -1159,20 +1183,6 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 
 	etag->length = fbr_strbcpy(etag->value, metadata.etag.value);
 	assert(etag->length);
-
-	if (!skip_ttl) {
-		double now = fbr_get_time();
-		double root_time = metadata.timestamp +
-			(cstore->config.root_ttl_sec ? cstore->config.root_ttl_sec :
-				FBR_CSTORE_ROOT_TTL_MIN);
-
-		if (root_time < now) {
-			fbr_rlog(FBR_LOG_CS_ROOT, "expired");
-			fbr_cstore_set_ok(entry);
-			fbr_cstore_release(cstore, &entry);
-			return 0;
-		}
-	}
 
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 	int fd = open(hashpath.value, O_RDONLY);
@@ -1194,13 +1204,67 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 		return 0;
 	}
 
-	fbr_cstore_set_ok(entry);
-
 	fbr_id_t version = fbr_root_json_parse(json_buf, bytes);
 
+	if (!skip_ttl) {
+		double now = fbr_get_time();
+		double root_time = metadata.timestamp +
+			(cstore->config.root_ttl_sec ? cstore->config.root_ttl_sec :
+				FBR_CSTORE_ROOT_TTL_MIN);
+
+		if (root_time < now) {
+			fbr_rlog(FBR_LOG_CS_ROOT, "expired");
+
+			if (entry_ref) {
+				fbr_cstore_entry_ref_init(cstore, entry_ref, entry, &metadata,
+					version);
+			} else {
+				fbr_cstore_set_ok(entry);
+			}
+
+			fbr_cstore_release(cstore, &entry);
+			return 0;
+		}
+	}
+
+	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, &entry);
 
 	return version;
+}
+
+void
+fbr_cstore_io_root_touch(struct fbr_cstore *cstore, struct fbr_cstore_entry_ref *entry_ref,
+    struct fbr_cstore_path *root_path)
+{
+	fbr_cstore_ok(cstore);
+	assert(entry_ref);
+	fbr_cstore_entry_ok(entry_ref->entry);
+	assert(entry_ref->metadata.type == FBR_CSTORE_FILE_ROOT);
+	fbr_cstore_path_ok(root_path);
+
+	fbr_rlog(FBR_LOG_CS_ROOT, "TOUCH %s", root_path->value);
+
+	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path->value, root_path->length);
+
+	struct fbr_cstore_hashpath hashpath;
+	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
+
+	double now = fbr_get_time();
+	entry_ref->metadata.timestamp = now;
+
+	int ret = fbr_cstore_metadata_write(&hashpath, &entry_ref->metadata);
+	if (ret) {
+		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR write metadata");
+		fbr_cstore_set_error(entry_ref->entry);
+		fbr_cstore_remove(cstore, &entry_ref->entry);
+		return;
+	}
+
+	fbr_stat_add(&cstore->stats.wr_root_updates);
+
+	fbr_cstore_set_ok(entry_ref->entry);
+	fbr_cstore_release(cstore, &entry_ref->entry);
 }
 
 int

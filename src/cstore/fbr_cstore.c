@@ -518,6 +518,8 @@ fbr_cstore_reset_loading(struct fbr_cstore_entry *entry)
 
 	pt_assert(pthread_mutex_lock(&entry->state_lock));
 
+	// TODO we need a timed wait here incase we deadlock?
+
 	while (1) {
 		switch (entry->state) {
 		case FBR_CSTORE_NULL:

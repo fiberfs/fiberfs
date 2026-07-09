@@ -966,6 +966,10 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	if (http_error) {
 		*http_error = 0;
 	}
+	if (entry_ref && entry_ref->entry) {
+		fbr_cstore_entry_ok(entry_ref->entry);
+		write_sync = 1;
+	}
 
 	// TODO need to support CDN routing here (called from fbr_cstore_server_io.c)
 
@@ -980,11 +984,9 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	double timestamp = fbr_get_time();
 
 	const char *etag_304 = NULL;
-	/*
 	if (etag->length) {
 		etag_304 = etag->value;
 	}
-	*/
 
 	chttp_context_init(&http);
 	fbr_cstore_fetch_init(&fetch, cstore, &http, FBR_CSTORE_FILE_ROOT, root_path, etag_304,
@@ -992,8 +994,12 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 
 	fbr_cstore_s3_send_get(&fetch);
 
-	/*
 	if (http.status == 304 && !http.error) {
+		assert(entry_ref);
+		assert(entry_ref->entry);
+
+		fbr_rlog(FBR_LOG_CS_ROOT, "S3 304 detected");
+
 		if (http_error) {
 			*http_error = 304;
 		}
@@ -1001,8 +1007,7 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 		chttp_context_free(&http);
 
 		return 0;
-	} else */
-	if (http.error || !fbr_cstore_http_success(http.status)) {
+	} else if (http.error || !fbr_cstore_http_success(http.status)) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR S3: %d %d", http.error, http.status);
 
 		if (http_error && !fbr_cstore_http_success(http.status)) {
