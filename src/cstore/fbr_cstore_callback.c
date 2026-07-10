@@ -154,6 +154,11 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_directory *directory, int rou
 	fbr_id_t version = 0;
 	int has_backend = fbr_cstore_backend_enabled(cstore);
 
+	enum fbr_cstore_route route = FBR_CSTORE_ROUTE_CLUSTER;
+	if (route_s3) {
+		route = FBR_CSTORE_ROUTE_S3;
+	}
+
 	fbr_cstore_etag_init(&directory->etag, NULL);
 
 	int http_error = 0;
@@ -175,12 +180,12 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_directory *directory, int rou
 			entry_ref = NULL;
 		}
 
-		version = fbr_cstore_s3_root_get(fs, cstore, &path, &directory->etag, route_s3,
+		version = fbr_cstore_s3_root_get(fs, cstore, &path, &directory->etag, route,
 			entry_ref, &http_error, 0);
 
 		if (!version && !route_s3 && http_error != 304) {
-			version = fbr_cstore_s3_root_get(fs, cstore, &path, &directory->etag, 1,
-				entry_ref, &http_error, 0);
+			version = fbr_cstore_s3_root_get(fs, cstore, &path, &directory->etag,
+				FBR_CSTORE_ROUTE_S3, entry_ref, &http_error, 0);
 		}
 	}
 

@@ -524,8 +524,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			struct fbr_cstore_path file_path;
 			fbr_cstore_path_url(cstore, url_encoded, &file_path);
 
-			fbr_cstore_s3_root_get(NULL, cstore, &file_path, &server_etag, 1,
-				&entry_ref, &http_error, 1);
+			fbr_cstore_s3_root_get(NULL, cstore, &file_path, &server_etag,
+				FBR_CSTORE_ROUTE_CDN, &entry_ref, &http_error, 1);
 
 			skip_ttl = 1;
 		} else if (retry == 1) {

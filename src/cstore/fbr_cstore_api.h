@@ -115,6 +115,7 @@ struct fbr_cstore_config {
 	int					delete_cache;
 	int					allow_cdn_put;
 	int					allow_cdn_delete;
+	int					allow_cdn_root_get;
 	int					force_chunk_write;
 	int					async_write;
 	unsigned long				prune_attempts;

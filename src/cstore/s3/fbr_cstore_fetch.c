@@ -159,10 +159,16 @@ _s3_send_get(struct fbr_cstore_fetch_context *fetch)
 
 	int ret = fbr_cstore_servers_contains(cstore, backend);
 	if (ret && !cstore->debug_allow_loop) {
-		fbr_rlog(FBR_LOG_CS_S3, "BACKEND self detected");
 		assert(fetch->route == FBR_CSTORE_ROUTE_CLUSTER);
-		backend = fbr_cstore_backend_get(cstore, hash, FBR_CSTORE_ROUTE_CDN,
-			fetch->attempts - 1, 1);
+
+		fbr_rlog(FBR_LOG_CS_S3, "BACKEND self detected");
+
+		enum fbr_cstore_route next_route = FBR_CSTORE_ROUTE_CDN;
+		if (fetch->type == FBR_CSTORE_FILE_ROOT && !cstore->config.allow_cdn_root_get) {
+			next_route = FBR_CSTORE_ROUTE_S3;
+		}
+
+		backend = fbr_cstore_backend_get(cstore, hash, next_route, fetch->attempts - 1, 1);
 	}
 
 	fbr_cstore_backend_ok(backend);
@@ -962,7 +968,7 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 
 fbr_id_t
 fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
-    struct fbr_cstore_path *root_path, struct fbr_etag *etag, int route_s3,
+    struct fbr_cstore_path *root_path, struct fbr_etag *etag, enum fbr_cstore_route route,
     struct fbr_cstore_entry_ref *entry_ref, int *http_error, int write_sync)
 {
 	fbr_cstore_ok(cstore);
@@ -979,8 +985,7 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 
 	// TODO need to support CDN routing here (called from fbr_cstore_server_io.c)
 
-	enum fbr_cstore_route route = FBR_CSTORE_ROUTE_CLUSTER;
-	if (route_s3) {
+	if (route == FBR_CSTORE_ROUTE_CDN && !cstore->config.allow_cdn_root_get) {
 		route = FBR_CSTORE_ROUTE_S3;
 	}
 

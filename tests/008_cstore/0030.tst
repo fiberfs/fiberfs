@@ -6,6 +6,7 @@ config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
 config_add CSTORE_SERVER_PORT 0
 config_add ALLOW_CDN_PUT true
 config_add ALLOW_CDN_DELETE true
+config_add ALLOW_CDN_ROOT_GET true
 config_add CSTORE_DELETE_CACHE true
 
 # Self
@@ -55,6 +56,30 @@ less_equal $cstore_entries:0 3
 less_equal $cstore_entries:1 3
 equal $cstore_entries:2 2
 equal $cstore_entries:3 3
+
+print "### CLEAR and READ"
+
+cstore_clear 0
+cstore_clear 1
+cstore_clear 2
+fs_test_release_all_wait
+
+equal $cstore_entries:0 0
+equal $cstore_entries:1 0
+equal $cstore_entries:2 0
+
+sleep_ms 20
+
+sys_ls $sys_tmpdir
+
+sleep_ms 20
+
+cstore_debug 2
+
+equal $cstore_entries:2 2
+equal $cstore_stat_roots:2 1
+
+print "### CLEANUP"
 
 fs_test_stats
 

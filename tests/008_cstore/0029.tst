@@ -51,6 +51,29 @@ greater_than $cstore_entries:0 0
 equal $cstore_entries:2 0
 equal $cstore_entries:3 3
 
+print "### CLEAR and READ"
+
+cstore_clear 0
+cstore_clear 1
+fs_test_release_all_wait
+
+equal $cstore_entries:0 0
+equal $cstore_entries:1 0
+
+sleep_ms 20
+
+sys_ls $sys_tmpdir
+
+sleep_ms 20
+
+cstore_debug 2
+
+equal $cstore_entries:2 1
+equal $cstore_stat_roots:2 0
+equal $cstore_stat_indexes:2 1
+
+print "### CLEANUP"
+
 fs_test_stats
 
 fs_test_release_all_wait 1

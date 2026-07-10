@@ -138,7 +138,7 @@ int fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_js
 	struct fbr_cstore_path *root_path, struct fbr_etag *etag, const char *etag_match,
 	enum fbr_cstore_route route);
 fbr_id_t fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
-	struct fbr_cstore_path *root_path, struct fbr_etag *etag, int route_s3,
+	struct fbr_cstore_path *root_path, struct fbr_etag *etag, enum fbr_cstore_route route,
 	struct fbr_cstore_entry_ref *entry_ref, int *http_error, int write_sync);
 
 typedef size_t (*fbr_cstore_s3_hash_f)(void *priv, void *hash, size_t hash_len);

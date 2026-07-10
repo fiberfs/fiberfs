@@ -269,7 +269,7 @@ _fuse_touch(struct fbr_fuse_context *ctx)
 		return;
 	}
 
-	fbr_sleep_ms(250);
+	fbr_sleep_flag(250, &ctx->exited, NULL);
 
 	if (ctx->exited) {
 		return;
