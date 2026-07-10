@@ -34,6 +34,20 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 	fbr_fuse_context_ok(ctx);
 }
 
+void
+fbr_fuse_set_callbacks(struct fbr_fuse_context *ctx, fbr_fuse_init_f init_f,
+    const struct fbr_fuse_callbacks *callbacks)
+{
+	fbr_fuse_context_ok(ctx);
+	assert(ctx->state == FBR_FUSE_NONE);
+	assert(ctx->init);
+	assert_zero(ctx->init_f);
+	assert_zero(ctx->fuse_callbacks);
+
+	ctx->init_f = init_f;
+	ctx->fuse_callbacks = callbacks;
+}
+
 int
 fbr_fuse_has_context(void)
 {

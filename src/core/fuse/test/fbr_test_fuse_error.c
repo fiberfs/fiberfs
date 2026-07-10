@@ -408,8 +408,6 @@ _fuse_err_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup)
 }
 
 static const struct fbr_fuse_callbacks _TEST_ERROR_CALLBACKS = {
-	.init = _test_err_init,
-
 	.getattr = _fuse_err_getattr,
 	.lookup = _fuse_err_lookup,
 
@@ -442,7 +440,7 @@ fbr_cmd_fuse_error_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		_ERR_STATE = value;
 	}
 
-	int ret = fbr_fuse_test_mount(ctx, mount, &_TEST_ERROR_CALLBACKS);
+	int ret = fbr_fuse_test_mount(ctx, mount, _test_err_init, &_TEST_ERROR_CALLBACKS);
 	fbr_test_ERROR(ret, "Fuse error mount failed: %s", mount);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Fuse error mounted: %s", mount);

@@ -64,11 +64,10 @@ _fuse_ops_init(void *userdata, struct fuse_conn_info *conn)
 
 	fbr_fuse_mounted(ctx);
 	assert_zero(ctx->detached);
-	assert(ctx->fuse_callbacks);
 	assert(conn);
 
-	if (ctx->fuse_callbacks->init) {
-		ctx->fuse_callbacks->init(ctx, conn);
+	if (ctx->init_f) {
+		ctx->init_f(ctx, conn);
 	}
 
 	fbr_fuse_running(ctx, conn);

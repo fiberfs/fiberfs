@@ -317,8 +317,6 @@ _test_fs_fuse_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file
 }
 
 static const struct fbr_fuse_callbacks _TEST_FS_FUSE_CALLBACKS = {
-	.init = _test_fs_fuse_init,
-
 	.getattr = fbr_ops_getattr,
 	.lookup = _test_fs_fuse_lookup,
 
@@ -340,7 +338,8 @@ fbr_cmd_fs_test_fuse_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_FS_FUSE_CALLBACKS);
+	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, _test_fs_fuse_init,
+		&_TEST_FS_FUSE_CALLBACKS);
 	fbr_test_ERROR(ret, "fs fuse mount failed: %s", cmd->params[0].value);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", cmd->params[0].value);

@@ -12,7 +12,6 @@
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
-#include "core/operations/fbr_operations.h"
 #include "core/request/fbr_request.h"
 #include "cstore/fbr_cstore_api.h"
 #include "log/fbr_log.h"
@@ -21,33 +20,6 @@
 static void _mount_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);
 
 static int _STOP;
-
-static const struct fbr_fuse_callbacks _FIBERFS_FUSE_CALLBACKS = {
-	.init = _mount_fuse_init,
-
-	.getattr = fbr_ops_getattr,
-	.setattr = fbr_ops_setattr,
-	.lookup = fbr_ops_lookup,
-
-	.mkdir = fbr_ops_mkdir,
-	.unlink = fbr_ops_unlink,
-	.rmdir = fbr_ops_rmdir,
-
-	.opendir = fbr_ops_opendir,
-	.readdir = fbr_ops_readdir,
-	.releasedir = fbr_ops_releasedir,
-
-	.open = fbr_ops_open,
-	.create = fbr_ops_create,
-	.read = fbr_ops_read,
-	.write = fbr_ops_write,
-	.flush = fbr_ops_flush,
-	.release = fbr_ops_release,
-	.fsync = fbr_ops_fsync,
-
-	.forget = fbr_ops_forget,
-	.forget_multi = fbr_ops_forget_multi
-};
 
 static void
 _mount_signal_stop(int signal, siginfo_t *info, void *ucontext)
@@ -173,7 +145,7 @@ _fiberfs_setup_mount(const char *fiberfs_conf, const char *mount_path)
 	struct fbr_fuse_context _fuse_ctx;
 	struct fbr_fuse_context *fuse_ctx = &_fuse_ctx;
 	fbr_fuse_init(fuse_ctx);
-	fuse_ctx->fuse_callbacks = &_FIBERFS_FUSE_CALLBACKS;
+	fbr_fuse_set_callbacks(fuse_ctx, _mount_fuse_init, FBR_FUSE_DEFAULT_CALLBACKS);
 
 	ret = fbr_fuse_mount(fuse_ctx, mount_path);
 	if (ret) {

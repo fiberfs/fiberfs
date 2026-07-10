@@ -89,7 +89,7 @@ _fuse_init_valgrind(void)
 static const struct fbr_fuse_callbacks _TEST_FUSE_CALLBACKS_EMPTY;
 
 int
-fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
+fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path, fbr_fuse_init_f init_f,
     const struct fbr_fuse_callbacks *fuse_callbacks)
 {
 	struct fbr_fuse_context *ctx = _fuse_init(test_ctx);
@@ -98,9 +98,9 @@ fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
 	fbr_fuse_init(ctx);
 
 	if (fuse_callbacks) {
-		ctx->fuse_callbacks = fuse_callbacks;
+		fbr_fuse_set_callbacks(ctx, init_f, fuse_callbacks);
 	} else {
-		ctx->fuse_callbacks = &_TEST_FUSE_CALLBACKS_EMPTY;
+		fbr_fuse_set_callbacks(ctx, init_f, &_TEST_FUSE_CALLBACKS_EMPTY);
 	}
 
 	if (test->verbocity >= FBR_LOG_VERBOSE) {

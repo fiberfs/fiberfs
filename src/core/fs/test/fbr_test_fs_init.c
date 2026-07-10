@@ -65,17 +65,13 @@ _test_fs_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_dindex_release(fs, &root);
 }
 
-static const struct fbr_fuse_callbacks _TEST_FS_INIT_CALLBACKS = {
-	.init = _test_fs_init
-};
-
 void
 fbr_cmd_fs_test_init_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
 
-	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, &_TEST_FS_INIT_CALLBACKS);
+	int ret = fbr_fuse_test_mount(ctx, cmd->params[0].value, _test_fs_init, NULL);
 	fbr_test_ERROR(ret, "fs init fuse mount failed: %s", cmd->params[0].value);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);

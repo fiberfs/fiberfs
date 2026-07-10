@@ -83,7 +83,6 @@ _test_mkdir_lookup(struct fbr_request *request, fuse_ino_t parent, const char *n
 }
 
 static const struct fbr_fuse_callbacks _TEST_FS_MKDIR_CALLBACKS = {
-	.init = _test_mkdir_init,
 	.getattr = _test_mkdir_getattr,
 	.lookup = _test_mkdir_lookup,
 	.mkdir = fbr_ops_mkdir,
@@ -98,7 +97,7 @@ fbr_cmd_mkdir_op_test_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 
 	const char *mount = cmd->params[0].value;
 
-	int ret = fbr_fuse_test_mount(ctx, mount, &_TEST_FS_MKDIR_CALLBACKS);
+	int ret = fbr_fuse_test_mount(ctx, mount, _test_mkdir_init, &_TEST_FS_MKDIR_CALLBACKS);
 	assert_zero(ret);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "mkdir_op_test_mount done");

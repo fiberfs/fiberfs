@@ -19,7 +19,7 @@ fbr_cmd_fuse_test_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	const char *mount = cmd->params[0].value;
 
-	int ret = fbr_fuse_test_mount(ctx, mount, NULL);
+	int ret = fbr_fuse_test_mount(ctx, mount, NULL, NULL);
 	fbr_test_ERROR(ret, "Fuse mount failed: %s", mount);
 
 	struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();

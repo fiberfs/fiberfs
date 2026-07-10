@@ -406,7 +406,6 @@ _test_ops_forget_multi(struct fbr_request *request, size_t count, struct fuse_fo
 }
 
 static const struct fbr_fuse_callbacks _TEST_OPS_CALLBACKS = {
-	.init = _test_ops_init,
 	.destroy = _test_ops_destroy,
 	.lookup = _test_ops_lookup,
 	.getattr = _test_ops_getattr,
@@ -429,7 +428,7 @@ fbr_cmd_fuse_test_ops_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 
 	const char *mount = cmd->params[0].value;
 
-	int ret = fbr_fuse_test_mount(ctx, mount, &_TEST_OPS_CALLBACKS);
+	int ret = fbr_fuse_test_mount(ctx, mount, _test_ops_init, &_TEST_OPS_CALLBACKS);
 	fbr_test_ERROR(ret, "Fuse mount failed: %s", mount);
 	fbr_test_ASSERT(_TEST_OPS_FUSE_STATE == 1, "init callback failed")
 

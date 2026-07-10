@@ -17,6 +17,12 @@ enum fbr_fuse_state {
 	FBR_FUSE_MOUNTED
 };
 
+struct fbr_fuse_context;
+struct fuse_conn_info;
+
+typedef void (*fbr_fuse_init_f)(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);
+typedef void (*fbr_fuse_abort_hook_f)(void);
+
 struct fbr_fuse_context {
 	unsigned int				magic;
 #define FBR_FUSE_CTX_MAGIC			0xC07C5CCE
@@ -26,6 +32,7 @@ struct fbr_fuse_context {
 	char					*path;
 
 	struct fuse_session			*session;
+	fbr_fuse_init_f				init_f;
 	const struct fbr_fuse_callbacks		*fuse_callbacks;
 	pthread_t				loop_thread;
 	pthread_mutex_t				mount_lock;
@@ -45,14 +52,13 @@ struct fbr_fuse_context {
 	int					exit_value;
 };
 
-typedef void (*fbr_fuse_abort_hook_f)(void);
-
-struct fuse_conn_info;
-
 extern fbr_fuse_abort_hook_f FBR_FUSE_ABORT_HOOK;
 extern const struct fuse_lowlevel_ops *FBR_FUSE_OPS;
+extern const struct fbr_fuse_callbacks *FBR_FUSE_DEFAULT_CALLBACKS;
 
 void fbr_fuse_init(struct fbr_fuse_context *ctx);
+void fbr_fuse_set_callbacks(struct fbr_fuse_context *ctx, fbr_fuse_init_f init_f,
+	const struct fbr_fuse_callbacks *callbacks);
 int fbr_fuse_has_context(void);
 struct fbr_fuse_context *fbr_fuse_get_context(void);
 void fbr_fuse_free(struct fbr_fuse_context *ctx);

@@ -22,7 +22,7 @@ struct fbr_test_fuse {
 };
 
 int fbr_fuse_test_mount(struct fbr_test_context *test_ctx, const char *path,
-	const struct fbr_fuse_callbacks *fuse_callbacks);
+	fbr_fuse_init_f init_f, const struct fbr_fuse_callbacks *fuse_callbacks);
 void fbr_fuse_test_unmount(struct fbr_test_context *test_ctx);
 struct fbr_fuse_context *fbr_test_fuse_get_ctx(struct fbr_test_context *test_ctx);
 void fbr_test_fuse_mock(struct fbr_test_context *test_ctx);

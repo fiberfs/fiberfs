@@ -52,7 +52,6 @@ struct fbr_request_stats {
 };
 
 struct fbr_fuse_callbacks {
-	void (*init)(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);
 	void (*destroy)(struct fbr_fuse_context *ctx);
 	void (*lookup)(struct fbr_request *request, fuse_ino_t parent, const char *name);
 	void (*getattr)(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);

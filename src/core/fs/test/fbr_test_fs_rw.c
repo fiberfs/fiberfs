@@ -24,16 +24,6 @@
 #include "cstore/test/fbr_test_cstore_cmds.h"
 #include "log/test/fbr_test_log_cmds.h"
 
-static const struct fbr_store_callbacks _TEST_FS_RW_STORE_CALLBACKS = {
-	.chunk_read_f = fbr_cstore_async_chunk_read,
-	.chunk_delete_f = fbr_cstore_async_chunk_delete,
-	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,
-	.index_write_f = fbr_cstore_index_root_write,
-	.index_read_f = fbr_cstore_index_read,
-	.index_delete_f = fbr_cstore_index_delete,
-	.root_read_f = fbr_cstore_root_read,
-};
-
 static void
 _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 {
@@ -50,7 +40,7 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 		fbr_test_cstore_bind_new(ctx->fs);
 	}
 
-	fbr_fs_set_store(ctx->fs, &_TEST_FS_RW_STORE_CALLBACKS);
+	fbr_fs_set_store(ctx->fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	//ctx->log->always_flush = 1;
 
@@ -96,33 +86,6 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_request_free(request);
 }
 
-static const struct fbr_fuse_callbacks _TEST_FS_RW_CALLBACKS = {
-	.init = _test_fs_rw_init,
-
-	.getattr = fbr_ops_getattr,
-	.setattr = fbr_ops_setattr,
-	.lookup = fbr_ops_lookup,
-
-	.mkdir = fbr_ops_mkdir,
-	.unlink = fbr_ops_unlink,
-	.rmdir = fbr_ops_rmdir,
-
-	.opendir = fbr_ops_opendir,
-	.readdir = fbr_ops_readdir,
-	.releasedir = fbr_ops_releasedir,
-
-	.open = fbr_ops_open,
-	.create = fbr_ops_create,
-	.read = fbr_ops_read,
-	.write = fbr_ops_write,
-	.flush = fbr_ops_flush,
-	.release = fbr_ops_release,
-	.fsync = fbr_ops_fsync,
-
-	.forget = fbr_ops_forget,
-	.forget_multi = fbr_ops_forget_multi
-};
-
 void
 fbr_cmd_fs_test_rw_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -131,7 +94,7 @@ fbr_cmd_fs_test_rw_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	const char *mount = cmd->params[0].value;
 
-	int ret = fbr_fuse_test_mount(ctx, mount, &_TEST_FS_RW_CALLBACKS);
+	int ret = fbr_fuse_test_mount(ctx, mount, _test_fs_rw_init, FBR_FUSE_DEFAULT_CALLBACKS);
 	fbr_test_ERROR(ret, "fs fuse mount failed: %s", mount);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", mount);
