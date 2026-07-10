@@ -282,10 +282,17 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 
 	int ret = fbr_cstore_servers_contains(cstore, backend);
 	if (ret && !cstore->debug_allow_loop) {
-		fbr_rlog(FBR_LOG_CS_S3, "BACKEND self detected");
 		assert(fetch->route == FBR_CSTORE_ROUTE_CLUSTER);
-		backend = fbr_cstore_backend_get(cstore, hash, FBR_CSTORE_ROUTE_CDN,
-			fetch->attempts - 1, cstore->config.allow_cdn_put);
+
+		fbr_rlog(FBR_LOG_CS_S3, "BACKEND self detected");
+
+		enum fbr_cstore_route next_route = FBR_CSTORE_ROUTE_CDN;
+		if (fetch->type == FBR_CSTORE_FILE_ROOT) {
+			next_route = FBR_CSTORE_ROUTE_S3;
+		}
+
+		backend = fbr_cstore_backend_get(cstore, hash, next_route, fetch->attempts - 1,
+			cstore->config.allow_cdn_put);
 	}
 
 	fbr_cstore_backend_ok(backend);
@@ -561,8 +568,8 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
 			chttp_context_reset(&http);
 		}
 		if (fetch.attempts > (cstore->config.cluster_retries + 1) ||
-		    !cstore->delete_cache) {
-			route = FBR_CSTORE_ROUTE_S3;
+		    !cstore->config.delete_cache) {
+			route = FBR_CSTORE_ROUTE_CDN;
 		}
 
 		fbr_hash_t hash = _s3_request_url(&fetch, "DELETE", url);

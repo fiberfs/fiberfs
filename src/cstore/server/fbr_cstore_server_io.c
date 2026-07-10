@@ -812,7 +812,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	int backend = fbr_cstore_backend_enabled(cstore);
 
-	if (!cstore->delete_cache && backend) {
+	if (!cstore->config.delete_cache && backend) {
 		struct fbr_cstore_url url_enc;
 		fbr_cstore_s3_url_init(&url_enc, url_encoded, url_encoded_len);
 

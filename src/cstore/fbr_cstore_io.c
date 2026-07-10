@@ -207,7 +207,7 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 
 	int backend = fbr_cstore_backend_enabled(cstore);
 
-	if (cstore->delete_cache || !backend) {
+	if (cstore->config.delete_cache || !backend) {
 		char url_decoded[FBR_URL_MAX];
 		size_t url_decoded_len = fbr_urldecode(url->value, url->length, url_decoded,
 			sizeof(url_decoded));
