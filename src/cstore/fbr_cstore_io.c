@@ -343,21 +343,6 @@ fbr_cstore_io_get_ok(struct fbr_cstore *cstore, fbr_hash_t hash)
 }
 
 void
-fbr_cstore_entry_ref_init(struct fbr_cstore *cstore, struct fbr_cstore_entry_ref *entry_ref,
-    struct fbr_cstore_entry *entry, struct fbr_cstore_metadata *metadata, fbr_id_t version)
-{
-	fbr_cstore_ok(cstore);
-	assert(entry_ref);
-	fbr_cstore_entry_ok(entry);
-	assert(metadata);
-
-	entry_ref->entry = fbr_cstore_ref(cstore, entry);
-	entry_ref->version = version;
-
-	memcpy(&entry_ref->metadata, metadata, sizeof(*metadata));
-}
-
-void
 fbr_cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
     enum fbr_wbuffer_state state)
 {
@@ -727,11 +712,12 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_cstore_metadata metadata;
 	struct fbr_cstore_entry *entry;
-	struct fbr_cstore_entry_ref entry_ref;
 	int fd;
 	int retry = 0;
 
-	entry_ref.entry = NULL;
+	struct fbr_cstore_entry_ref entry_ref;
+	fbr_cstore_entry_ref_init(&entry_ref);
+	entry_ref.want_ref = 1;
 
 	while (1) {
 		struct fbr_cstore_path path;
@@ -740,7 +726,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		fbr_rlog(FBR_LOG_CS_INDEX, "READ %s %lu (retry: %d)", path.value,
 			directory->version, retry);
 
-		assert_zero_dev(entry_ref.entry);
+		assert(fbr_cstore_entry_want_ref(&entry_ref));
 
 		if (retry == 1 || retry == 2) {
 			if (!fbr_cstore_backend_enabled(cstore)) {
@@ -766,12 +752,8 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 		retry++;
 
-		if (entry_ref.entry) {
-			entry = entry_ref.entry;
-			fbr_cstore_entry_ok(entry);
-
-			entry_ref.entry = NULL;
-		} else {
+		entry = fbr_cstore_entry_ref_take(&entry_ref);
+		if (!entry) {
 			entry = fbr_cstore_io_get_ok(cstore, hash);
 			if (!entry) {
 				fbr_rlog(FBR_LOG_CS_INDEX, "NO ok state");
@@ -783,8 +765,6 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 				continue;
 			}
 		}
-
-		assert_zero_dev(entry_ref.entry);
 
 		fbr_cstore_entry_ok(entry);
 		assert_dev(entry->state == FBR_CSTORE_OK);
@@ -811,7 +791,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		break;
 	}
 
-	assert_zero(entry_ref.entry);
+	assert_zero(fbr_cstore_entry_has_ref(&entry_ref));
 
 	struct fbr_gzip gzip;
 	if (metadata.gzipped) {
@@ -998,18 +978,8 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 		backend ? etag->value : "0",
 		etag_match ? etag_match : "0", enforce, hashpath.value);
 
-	struct fbr_cstore_entry *entry = NULL;
-
-	if (entry_ref && entry_ref->entry) {
-		entry = entry_ref->entry;
-		fbr_cstore_entry_ok(entry);
-
-		entry_ref->entry = NULL;
-
-		if (!entry_ref->keep) {
-			entry_ref = NULL;
-		}
-	} else {
+	struct fbr_cstore_entry *entry = fbr_cstore_entry_ref_take(entry_ref);
+	if (!entry) {
 		entry = fbr_cstore_get(cstore, hash);
 		if (entry) {
 			fbr_cstore_reset_loading(entry);
@@ -1120,11 +1090,9 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	fbr_stat_add_count(&cstore->stats.wr_root_bytes, root_json->bytes);
 	fbr_stat_add(&cstore->stats.wr_root_updates);
 
-	if (entry_ref) {
-		fbr_cstore_entry_ref_init(cstore, entry_ref, entry, &metadata, 0);
-	}
-
-	if (!entry_ref || !entry_ref->keep) {
+	if (fbr_cstore_entry_want_ref(entry_ref)) {
+		fbr_cstore_entry_ref_set(cstore, entry_ref, entry, &metadata, 0);
+	} else {
 		fbr_cstore_set_ok(entry);
 	}
 
@@ -1152,15 +1120,9 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path->value, root_path->length);
-	struct fbr_cstore_entry *entry = NULL;
 
-	if (entry_ref && entry_ref->entry) {
-		assert(skip_ttl);
-
-		entry = entry_ref->entry;
-
-		entry_ref->entry = NULL;
-	} else {
+	struct fbr_cstore_entry *entry = fbr_cstore_entry_ref_take(entry_ref);
+	if (!entry) {
 		entry = fbr_cstore_get(cstore, hash);
 		if (!entry) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "NO ok state");
@@ -1221,8 +1183,8 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 		if (root_time < now) {
 			fbr_rlog(FBR_LOG_CS_ROOT, "expired");
 
-			if (entry_ref) {
-				fbr_cstore_entry_ref_init(cstore, entry_ref, entry, &metadata,
+			if (fbr_cstore_entry_want_ref(entry_ref)) {
+				fbr_cstore_entry_ref_set(cstore, entry_ref, entry, &metadata,
 					version);
 			} else {
 				fbr_cstore_set_ok(entry);
@@ -1244,12 +1206,15 @@ fbr_cstore_io_root_touch(struct fbr_cstore *cstore, struct fbr_cstore_entry_ref 
     struct fbr_cstore_path *root_path)
 {
 	fbr_cstore_ok(cstore);
-	assert(entry_ref);
-	fbr_cstore_entry_ok(entry_ref->entry);
+	assert(fbr_cstore_entry_has_ref(entry_ref));
 	assert(entry_ref->metadata.type == FBR_CSTORE_FILE_ROOT);
 	fbr_cstore_path_ok(root_path);
 
 	fbr_rlog(FBR_LOG_CS_ROOT, "TOUCH %s", root_path->value);
+
+	struct fbr_cstore_entry *entry = fbr_cstore_entry_ref_take(entry_ref);
+	fbr_cstore_entry_ok(entry);
+	assert(entry->state == FBR_CSTORE_LOADING);
 
 	fbr_hash_t hash = fbr_cstore_hash_path(cstore, root_path->value, root_path->length);
 
@@ -1262,15 +1227,15 @@ fbr_cstore_io_root_touch(struct fbr_cstore *cstore, struct fbr_cstore_entry_ref 
 	int ret = fbr_cstore_metadata_write(&hashpath, &entry_ref->metadata);
 	if (ret) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR write metadata");
-		fbr_cstore_set_error(entry_ref->entry);
-		fbr_cstore_remove(cstore, &entry_ref->entry);
+		fbr_cstore_set_error(entry);
+		fbr_cstore_remove(cstore, &entry);
 		return;
 	}
 
 	fbr_stat_add(&cstore->stats.wr_root_updates);
 
-	fbr_cstore_set_ok(entry_ref->entry);
-	fbr_cstore_release(cstore, &entry_ref->entry);
+	fbr_cstore_set_ok(entry);
+	fbr_cstore_release(cstore, &entry);
 }
 
 int

@@ -204,11 +204,12 @@ struct fbr_cstore_metadata {
 
 struct fbr_cstore_entry_ref {
 	struct fbr_cstore_entry			*entry;
-	struct fbr_cstore_metadata		metadata;
 
+	struct fbr_cstore_metadata		metadata;
 	fbr_id_t				version;
 
-	fbr_bitflag_t				keep:1;
+	fbr_bitflag_t				has_ref:1;
+	fbr_bitflag_t				want_ref:1;
 };
 
 struct fbr_cstore *fbr_cstore_alloc(const char *root_path);
@@ -228,6 +229,13 @@ void fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry **ent
 void fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref);
 void fbr_cstore_clear(struct fbr_cstore *cstore);
 void fbr_cstore_free(struct fbr_cstore *cstore);
+
+void fbr_cstore_entry_ref_init(struct fbr_cstore_entry_ref *entry_ref);
+int fbr_cstore_entry_has_ref(struct fbr_cstore_entry_ref *entry_ref);
+int fbr_cstore_entry_want_ref(struct fbr_cstore_entry_ref *entry_ref);
+struct fbr_cstore_entry *fbr_cstore_entry_ref_take(struct fbr_cstore_entry_ref *entry_ref);
+void fbr_cstore_entry_ref_set(struct fbr_cstore *cstore, struct fbr_cstore_entry_ref *entry_ref,
+	struct fbr_cstore_entry *entry, struct fbr_cstore_metadata *metadata, fbr_id_t version);
 
 void fbr_cstore_loader_init(struct fbr_cstore *cstore);
 int fbr_cstore_loader_is_fresh(struct fbr_cstore *cstore, double time_modified);

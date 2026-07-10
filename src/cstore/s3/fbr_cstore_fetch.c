@@ -520,8 +520,8 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 
 	fbr_rlog(FBR_LOG_CS_S3, "S3_GET done %zu bytes", bytes);
 
-	if (entry_ref) {
-		fbr_cstore_entry_ref_init(cstore, entry_ref, entry, &metadata, 0);
+	if (fbr_cstore_entry_want_ref(entry_ref)) {
+		fbr_cstore_entry_ref_set(cstore, entry_ref, entry, &metadata, 0);
 	}
 
 	fbr_cstore_set_ok(entry);
@@ -973,8 +973,7 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	if (http_error) {
 		*http_error = 0;
 	}
-	if (entry_ref && entry_ref->entry) {
-		fbr_cstore_entry_ok(entry_ref->entry);
+	if (fbr_cstore_entry_has_ref(entry_ref)) {
 		write_sync = 1;
 	}
 

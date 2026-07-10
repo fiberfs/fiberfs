@@ -494,7 +494,6 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	struct fbr_cstore_hashpath hashpath;
 	struct fbr_cstore_metadata metadata;
 	struct fbr_cstore_entry *entry;
-	struct fbr_cstore_entry_ref entry_ref;
 	struct fbr_etag server_etag;
 	int fd;
 	size_t size;
@@ -503,8 +502,9 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	int http_error = 0;
 	int was_304 = 0;
 
-	entry_ref.entry = NULL;
-	entry_ref.keep = 0;
+	struct fbr_cstore_entry_ref entry_ref;
+	fbr_cstore_entry_ref_init(&entry_ref);
+	entry_ref.want_ref = 1;
 
 	fbr_cstore_etag_init(&server_etag, NULL);
 
@@ -516,7 +516,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		if (retry == 1 && file_type == FBR_CSTORE_FILE_ROOT) {
 			if (!backend) {
-				assert_zero_dev(entry_ref.entry);
+				assert_zero(fbr_cstore_entry_has_ref(&entry_ref));
 				fbr_cstore_http_respond(cstore, http, 404, "Not found");
 				return;
 			}
@@ -529,7 +529,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 			skip_ttl = 1;
 		} else if (retry == 1) {
-			assert_zero_dev(entry_ref.entry);
+			assert_zero(fbr_cstore_entry_has_ref(&entry_ref));
 
 			if (!backend) {
 				fbr_cstore_http_respond(cstore, http, 404, "Not found");
@@ -549,7 +549,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			http_error = fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
 			assert_dev(http.state == CHTTP_STATE_NONE);
 		} else if (retry > 1) {
-			assert_zero_dev(entry_ref.entry);
+			assert_zero(fbr_cstore_entry_has_ref(&entry_ref));
 
 			if (http_error && !fbr_cstore_http_success(http_error)) {
 				fbr_cstore_http_respond(cstore, http, http_error, "Error");
@@ -564,21 +564,13 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		if (http_error == 304) {
 			assert(file_type == FBR_CSTORE_FILE_ROOT);
-			assert(entry_ref.entry);
+			assert(fbr_cstore_entry_has_ref(&entry_ref));
 			was_304 = 1;
 		}
 
 		if (file_type == FBR_CSTORE_FILE_ROOT) {
-			if (entry_ref.entry) {
-				entry = entry_ref.entry;
-				fbr_cstore_entry_ok(entry);
-
-				entry_ref.entry = NULL;
-
-				if (!entry_ref.keep) {
-					fbr_cstore_reset_loading(entry);
-				}
-			} else {
+			entry = fbr_cstore_entry_ref_take(&entry_ref);
+			if (!entry) {
 				entry = fbr_cstore_get(cstore, hash);
 				if (!entry) {
 					fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
@@ -591,25 +583,21 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 			assert(entry->state == FBR_CSTORE_LOADING);
 		} else {
-			if (entry_ref.entry) {
-				entry = entry_ref.entry;
-				fbr_cstore_entry_ok(entry);
-				assert(entry->state == FBR_CSTORE_OK);
-
-				entry_ref.entry = NULL;
-			} else {
+			entry = fbr_cstore_entry_ref_take(&entry_ref);
+			if (!entry) {
 				entry = fbr_cstore_io_get_ok(cstore, hash);
 				if (!entry) {
 					fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
 						"URL_READ NO ok state");
 					continue;
 				}
-				assert_dev(entry->state == FBR_CSTORE_OK);
 			}
+
+			assert(entry->state == FBR_CSTORE_OK);
 		}
 
 		fbr_cstore_entry_ok(entry);
-		assert_zero_dev(entry_ref.entry);
+		assert_zero(fbr_cstore_entry_has_ref(&entry_ref));
 
 		http_error = 0;
 
@@ -653,10 +641,11 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
 					"URL_READ ERROR root expired");
 
-				assert_zero(entry_ref.entry);
-				entry_ref.entry = entry;
-				entry_ref.keep = 1;
+				fbr_cstore_entry_ref_set(cstore, &entry_ref, entry, &metadata, 0);
+				assert_dev(entry_ref.has_ref);
+				assert_dev(entry_ref.want_ref);
 
+				fbr_cstore_release(cstore, &entry);
 				assert_zero(close(fd));
 
 				continue;
@@ -665,6 +654,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 		break;
 	}
+
+	assert_zero(fbr_cstore_entry_has_ref(&entry_ref));
 
 	// TODO do we care about accept-encoding gzip?
 
