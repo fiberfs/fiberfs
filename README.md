@@ -9,7 +9,7 @@ For more information, please visit [fiberfs.io](https://fiberfs.io/).
 ```
 make
 ```
-
+FiberFS has 2 optional but recommended package dependencies: `openssl` and `zlib`.
 Note: all Makefile commands support parallelism, ex: `make -j4`.
 
 ## Running
