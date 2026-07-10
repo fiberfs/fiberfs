@@ -658,6 +658,10 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 
 			fbr_test_sleep_ms(min_ms + random_ms);
 
+			if (!_LOAD_TTL_GEN_HITS[generation - 1]) {
+				continue;
+			}
+
 			generation = _directory_load_bump(fs_write, generation);
 		}
 	} else {
