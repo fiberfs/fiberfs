@@ -108,6 +108,31 @@ fbr_test_config_add_long(struct fbr_config *config, const char *name, long value
 }
 
 static void
+_test_parse_csv(struct fbr_config *config, const char *key)
+{
+	assert_dev(key);
+
+	fbr_test_logs("%s", key);
+
+	const char *csv = fbr_config_get(config, key, NULL);
+	assert(csv);
+
+	const char *item = NULL;
+	size_t item_len;
+	size_t items = 0;
+
+	while (fbr_csv_parser(csv, &item, &item_len)) {
+		assert_dev(item);
+		fbr_test_logs("  item %zu: '%.*s':%zu", items, (int)item_len, item, item_len);
+		items++;
+	}
+
+	if (!items) {
+		fbr_test_logs("  No items...");
+	}
+}
+
+static void
 _test_config_simple(struct fbr_config *config)
 {
 	fbr_config_ok(config);
@@ -124,14 +149,17 @@ _test_config_simple(struct fbr_config *config)
 	fbr_config_add(config, "long6", 5, "", 1);
 	fbr_test_config_add(config, "True", FBR_CONFIG_TRUE);
 	fbr_test_config_add(config, "False", FBR_CONFIG_FALSE);
+	fbr_test_config_add(config, "CSV", "ONE, 2, 333 , 456789, \"abc\", xyz ");
 
-	assert(config->stats.keys == 12);
+	const size_t _keys = 13;
+
+	assert(config->stats.keys == _keys);
 	assert(config->stats.deleted == 0);
 
 	fbr_test_config_add(config, "key_42", "zzz");
 	fbr_test_config_add(config, "key_555", "zzz");
 
-	assert(config->stats.keys == 14);
+	assert(config->stats.keys == _keys + 2);
 	assert(config->stats.deleted == 0);
 
 	for (size_t i = 0; i < 1000; i++) {
@@ -145,7 +173,7 @@ _test_config_simple(struct fbr_config *config)
 		fbr_config_add(config, key_buffer, key_len, value_buffer, sizeof(value_buffer) - 1);
 	}
 
-	assert(config->stats.keys == 1012);
+	assert(config->stats.keys == _keys + 1000);
 	assert(config->stats.deleted == 2);
 
 	const char *value = fbr_config_get(config, "test", NULL);
@@ -253,6 +281,26 @@ _test_config_simple(struct fbr_config *config)
 
 	ivalue = fbr_is_false(fbr_config_get(config, "_NONE", FBR_CONFIG_TRUE));
 	assert_zero(ivalue);
+
+	_test_parse_csv(config, "CSV");
+
+	fbr_test_config_add(config, "CSV1", "single");
+	_test_parse_csv(config, "CSV1");
+
+	fbr_test_config_add(config, "CSV2", "   element  ");
+	_test_parse_csv(config, "CSV2");
+
+	fbr_test_config_add(config, "CSV3", "  ");
+	_test_parse_csv(config, "CSV3");
+
+	fbr_test_config_add(config, "CSV4", "");
+	_test_parse_csv(config, "CSV4");
+
+	fbr_test_config_add(config, "CSV5", "  , ,, One  ,,   Two ,, ");
+	_test_parse_csv(config, "CSV5");
+
+	fbr_test_config_add(config, "CSV6", ",,Three,,, ,");
+	_test_parse_csv(config, "CSV6");
 
 	fbr_test_logs("_config_simple done");
 }

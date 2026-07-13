@@ -539,6 +539,65 @@ fbr_unslash(char *buffer, size_t len)
 	return len;
 }
 
+size_t
+_csv_next_pos(const char *csv)
+{
+	size_t len = 0;
+
+	while (*csv && *csv != ',') {
+		csv++;
+		len++;
+	}
+
+	return len;
+}
+
+size_t
+fbr_csv_parser(const char *csv, const char **item, size_t *item_len)
+{
+	assert(csv);
+	assert(item);
+	assert(item_len);
+
+	if (!*item) {
+		*item_len = _csv_next_pos(csv);
+
+		if (!*item_len) {
+			if (!*csv) {
+				return 0;
+			} else {
+				assert_zero_dev(*item);
+				return fbr_csv_parser(csv + 1, item, item_len);
+			}
+		}
+
+		*item = csv;
+		const char *next = csv + *item_len;
+
+		FBR_TRIM_STR_RO(*item, *item_len);
+
+		if (!*item_len) {
+			if (*next) {
+				*item = NULL;
+				return fbr_csv_parser(next + 1, item, item_len);
+			}
+		}
+
+		return *item_len;
+	}
+
+	*item_len = _csv_next_pos(*item);
+
+	if (!*item_len || !*(*item + *item_len)) {
+		return 0;
+	}
+
+	csv = *item + *item_len + 1;
+	*item = NULL;
+
+	return fbr_csv_parser(csv, item, item_len);
+}
+
 char *
 fbr_strerror(int errnum, char *buf, size_t buflen)
 {

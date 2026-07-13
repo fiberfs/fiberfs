@@ -50,6 +50,7 @@ int fbr_is_false(const char *string);
 int fbr_is_true(const char *string);
 unsigned long fbr_ulong2octal(unsigned long value);
 size_t fbr_unslash(char *buffer, size_t len);
+size_t fbr_csv_parser(const char *csv, const char **item, size_t *item_len);
 char *fbr_strerror(int errnum, char *buf, size_t buflen);
 
 #define _FBR_STRINGIFY(_value)			#_value
@@ -99,10 +100,19 @@ char *fbr_strerror(int errnum, char *buf, size_t buflen);
 		(len)--;						\
 		(s)[(len)] = '\0';					\
 	}
+#define FBR_TRIM_STR_RIGHT_RO(s, len)					\
+	while ((len) > 0 && (s)[(len) - 1] <= ' ') {			\
+		(len)--;						\
+	}
 #define	FBR_TRIM_STR(s, len)						\
 {									\
 	FBR_TRIM_STR_LEFT(s, len);					\
 	FBR_TRIM_STR_RIGHT(s, len);					\
+}
+#define	FBR_TRIM_STR_RO(s, len)						\
+{									\
+	FBR_TRIM_STR_LEFT(s, len);					\
+	FBR_TRIM_STR_RIGHT_RO(s, len);					\
 }
 
 #endif /* _FBR_UTILS_H_INCLUDED_ */
