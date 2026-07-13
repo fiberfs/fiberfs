@@ -66,10 +66,10 @@ mount:		$(TESTS_MOUNT)
 
 error:		$(TESTS_ERROR)
 
-%.cht %.tst:	$(FIBER_TEST_RULE) FORCE
+$(TESTS_ALL):	$(FIBER_TEST_RULE) FORCE
 		$(PRE_EXEC) $(FIBER_TEST) $(FLAGS) $@
 
-%tstx:		$(FIBER_TEST_RULE) FORCE | sudo
+%.tstx:		$(FIBER_TEST_RULE) FORCE | sudo
 		$(PRE_EXEC) $(FIBER_TEST) $(FLAGS) $@
 
 %.tstf:		$(FIBER_TEST_RULE) FORCE
