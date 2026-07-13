@@ -560,27 +560,15 @@ fbr_csv_parser(const char *csv, const char **item, size_t *item_len)
 	assert(item_len);
 
 	if (!*item) {
-		*item_len = _csv_next_pos(csv);
-
-		if (!*item_len) {
-			if (!*csv) {
-				return 0;
-			} else {
-				assert_zero_dev(*item);
-				return fbr_csv_parser(csv + 1, item, item_len);
-			}
-		}
-
 		*item = csv;
+		*item_len = _csv_next_pos(csv);
 		const char *next = csv + *item_len;
 
 		FBR_TRIM_STR_RO(*item, *item_len);
 
-		if (!*item_len) {
-			if (*next) {
-				*item = NULL;
-				return fbr_csv_parser(next + 1, item, item_len);
-			}
+		if (!*item_len && *next) {
+			*item = NULL;
+			return fbr_csv_parser(next + 1, item, item_len);
 		}
 
 		return *item_len;
