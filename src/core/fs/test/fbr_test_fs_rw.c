@@ -42,6 +42,11 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	fbr_fs_set_store(ctx->fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 
+	int autoinit = fbr_conf_get_bool("TEST_AUTOINIT", FBR_CONFIG_FALSE);
+	if (autoinit) {
+		fbr_cstore_autoinit(ctx->fs->cstore);
+	}
+
 	//ctx->log->always_flush = 1;
 
 	// TODO these
