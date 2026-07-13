@@ -67,6 +67,85 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 	fbr_config_reader_ready(reader);
 }
 
+static int
+_parse_port(char *host, size_t host_len)
+{
+	assert_dev(host);
+	assert_dev(host_len);
+
+	for (size_t i = 0; i < host_len; i++) {
+		if (host[i] == ':') {
+			host[i] = '\0';
+
+			const char *port_str = host + i + 1;
+			size_t port_len = host_len - i - 1;
+
+			if (!port_len) {
+				return -1;
+			}
+
+			int error;
+			long port = fbr_parse_long(port_str, port_len, &error);
+
+			if (error || port < 1 || port > USHRT_MAX) {
+				return -1;
+			}
+
+			return port;
+		}
+	}
+
+	return 0;
+}
+
+static void
+_cstore_parse_cluster(struct fbr_cstore *cstore, int cdn)
+{
+	assert_dev(cstore);
+
+	const char *endpoints = fbr_conf_get(cdn ? "CDN_ENDPOINT" : "CLUSTER", NULL);
+	const char *endpoint = NULL;
+	size_t len;
+	char host_buf[512];
+
+	int tls = 0;
+	if (cdn) {
+		tls = fbr_conf_get_bool("CDN_TLS", FBR_CONFIG_TRUE);
+	} else {
+		tls = fbr_conf_get_bool("CLUSTER_TLS", FBR_CONFIG_FALSE);
+	}
+
+	while (fbr_csv_parse(endpoints, &endpoint, &len)) {
+		assert_dev(endpoint);
+
+		if (len >= sizeof(host_buf)) {
+			fbr_rlog(FBR_LOG_MOUNT, "%s host too long: %.*s",
+				cdn ? "CDN" : "Cluster", (int)len, endpoint);
+			continue;
+		}
+
+		fbr_bprintf(host_buf, "%.*s", (int)len, endpoint);
+
+		int port = _parse_port(host_buf, len);
+		if (!port) {
+			if (tls) {
+				port = FBR_CSTORE_S3_DEFAULT_TLS_PORT;
+			} else {
+				port = FBR_CSTORE_S3_DEFAULT_PORT;
+			}
+		}
+
+		fbr_rlog(FBR_LOG_MOUNT, "%s endpoint: %s port: %d tls: %d",
+			cdn ? "CDN" : "Cluster", host_buf, port, tls);
+
+		if (cdn) {
+			fbr_cstore_cluster_add(&cstore->cdn, host_buf, port, tls);
+		} else {
+			fbr_cstore_cluster_add(&cstore->cluster, host_buf, port, tls);
+		}
+	}
+}
+
 int
 fbr_cstore_autoinit(struct fbr_cstore *cstore)
 {
@@ -105,6 +184,9 @@ fbr_cstore_autoinit(struct fbr_cstore *cstore)
 
 	fbr_cstore_s3_init(cstore, s3_host, s3_port, s3_tls, s3_prefix, s3_region, s3_access_key,
 		s3_secret_key);
+
+	_cstore_parse_cluster(cstore, 0);
+	_cstore_parse_cluster(cstore, 1);
 
 	return 0;
 }

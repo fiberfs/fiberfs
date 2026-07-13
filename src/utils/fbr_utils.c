@@ -149,6 +149,7 @@ fbr_sleep_flag(double ms, volatile int *exit, volatile size_t *count)
 		fbr_sleep_ms(sleep_ms);
 
 		ms -= sleep_ms;
+		attempts++;
 	}
 }
 
@@ -553,7 +554,7 @@ _csv_next_pos(const char *csv)
 }
 
 size_t
-fbr_csv_parser(const char *csv, const char **item, size_t *item_len)
+fbr_csv_parse(const char *csv, const char **item, size_t *item_len)
 {
 	assert(csv);
 	assert(item);
@@ -568,7 +569,7 @@ fbr_csv_parser(const char *csv, const char **item, size_t *item_len)
 
 		if (!*item_len && *next) {
 			*item = NULL;
-			return fbr_csv_parser(next + 1, item, item_len);
+			return fbr_csv_parse(next + 1, item, item_len);
 		}
 
 		return *item_len;
@@ -583,7 +584,7 @@ fbr_csv_parser(const char *csv, const char **item, size_t *item_len)
 	csv = *item + *item_len + 1;
 	*item = NULL;
 
-	return fbr_csv_parser(csv, item, item_len);
+	return fbr_csv_parse(csv, item, item_len);
 }
 
 char *

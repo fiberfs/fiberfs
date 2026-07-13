@@ -121,7 +121,7 @@ _test_parse_csv(struct fbr_config *config, const char *key)
 	size_t item_len;
 	size_t items = 0;
 
-	while (fbr_csv_parser(csv, &item, &item_len)) {
+	while (fbr_csv_parse(csv, &item, &item_len)) {
 		assert_dev(item);
 		fbr_test_logs("  item %zu: '%.*s':%zu", items, (int)item_len, item, item_len);
 		items++;
