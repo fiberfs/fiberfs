@@ -287,7 +287,7 @@ fbr_cstore_io_get_loading(struct fbr_cstore *cstore, fbr_hash_t hash, size_t byt
 
 		int loading = fbr_cstore_set_loading(entry);
 		if (!loading) {
-			_cstore_release(cstore, entry, remove_on_error);
+			_cstore_release(cstore, entry, 0);
 			return NULL;
 		}
 	}

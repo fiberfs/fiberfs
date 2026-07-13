@@ -10,12 +10,14 @@
 #include <stdlib.h>
 
 #include "core/fs/fbr_fs.h"
+#include "core/request/fbr_request.h"
 #include "cstore/fbr_cstore_api.h"
 
 #include "test/fbr_test.h"
 #include "fbr_test_fs_cmds.h"
 #include "config/test/fbr_test_config_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+#include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
 #define _TEST_DIR_THREADS_ALLOC		3
@@ -513,11 +515,16 @@ _directory_load_thread(void *arg)
 		fbr_test_cstore_backend_add(fs->cstore, cstore_proxy, FBR_CSTORE_ROUTE_CDN);
 		fbr_test_cstore_backend_add(fs->cstore, cstore_s3, FBR_CSTORE_ROUTE_S3);
 
+		struct fbr_request *request = fbr_test_request_mock();
+		fbr_request_valid(request);
+
 		struct fbr_directory *root = fbr_directory_load(fs, FBR_DIRNAME_ROOT,
 			FBR_INODE_ROOT, 0);
 		fbr_directory_ok(root);
 		assert(root->generation == 1);
 		fbr_dindex_release(fs, &root);
+
+		fbr_request_free(request);
 	}
 
 	size_t thread_id = fbr_atomic_add(&_LOAD_TTL_THREAD_COUNT, 1);
@@ -532,6 +539,9 @@ _directory_load_thread(void *arg)
 	unsigned long generation;
 
 	do {
+		struct fbr_request *request = fbr_test_request_mock();
+		fbr_request_valid(request);
+
 		struct fbr_directory *directory = fbr_directory_from_inode(fs, FBR_INODE_ROOT);
 		fbr_directory_ok(directory);
 		assert(directory->generation);
@@ -539,6 +549,8 @@ _directory_load_thread(void *arg)
 		generation = directory->generation;
 
 		fbr_dindex_release(fs, &directory);
+
+		fbr_request_free(request);
 
 		fbr_stat_add(&_LOAD_TTL_GEN_HITS[generation - 1]);
 

@@ -521,6 +521,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 				return;
 			}
 
+			assert(entry_ref.want_ref);
+
 			struct fbr_cstore_path file_path;
 			fbr_cstore_path_url(cstore, url_encoded, &file_path);
 
@@ -530,6 +532,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			skip_ttl = 1;
 		} else if (retry == 1) {
 			assert_zero(fbr_cstore_entry_has_ref(&entry_ref));
+			assert(fbr_cstore_entry_want_ref(&entry_ref));
 
 			if (!backend) {
 				fbr_cstore_http_respond(cstore, http, 404, "Not found");
@@ -642,7 +645,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 					"URL_READ ERROR root expired");
 
 				fbr_cstore_entry_ref_set(cstore, &entry_ref, entry, &metadata, 0);
-				assert_dev(entry_ref.has_ref);
+				assert_dev(fbr_cstore_entry_has_ref(&entry_ref));
 				assert_dev(entry_ref.want_ref);
 
 				fbr_cstore_release(cstore, &entry);
