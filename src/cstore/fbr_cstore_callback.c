@@ -182,11 +182,6 @@ fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_directory *directory, int rou
 
 		version = fbr_cstore_s3_root_get(fs, cstore, &path, &directory->etag, route,
 			entry_ref, &http_error, 0);
-
-		if (!version && !route_s3 && http_error != 304) {
-			version = fbr_cstore_s3_root_get(fs, cstore, &path, &directory->etag,
-				FBR_CSTORE_ROUTE_S3, entry_ref, &http_error, 0);
-		}
 	}
 
 	if (http_error == 304) {

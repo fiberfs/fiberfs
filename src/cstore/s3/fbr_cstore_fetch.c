@@ -49,7 +49,8 @@ fbr_cstore_fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore 
 	fetch->file_path = file_path;
 	fetch->length = length;
 	fetch->gzip = gzip;
-	fetch->route = route;
+	fetch->orig_route = route;
+	fetch->route = FBR_CSTORE_ROUTE_NONE;
 
 	fbr_cstore_etag_init(&fetch->etag_304, etag_304);
 	fbr_cstore_etag_init(&fetch->etag_match, etag_match);
@@ -68,23 +69,13 @@ _s3_request_url(struct fbr_cstore_fetch_context *fetch, const char *method,
 	fbr_cstore_url_ok(url);
 	assert(strstr(url->value, FBR_FIBERFS_NAME));
 
-	if (fetch->attempts > 3) {
-		fbr_rlog(FBR_LOG_CS_S3, "sleep_backoff");
-		fbr_sleep_backoff(fetch->attempts - 1);
-	}
-
-	if (fetch->attempts > 1) {
-		fbr_stat_add(&fetch->cstore->stats.retries);
-		fetch->http->new_conn = 1;
-	}
+	fbr_rlog(FBR_LOG_CS_S3, "S3 %s %s (attempt: %d)", method, url->value, fetch->attempts);
 
 	chttp_set_method(fetch->http, method);
 	chttp_set_url(fetch->http, url->value);
 
 	struct fbr_cstore_backend *s3_backend = fetch->cstore->s3.backend;
 	chttp_header_add(fetch->http, "Host", s3_backend->host);
-
-	fbr_rlog(FBR_LOG_CS_S3, "S3 %s %s (attempts: %d)", method, url->value, fetch->attempts);
 
 	if (!strcmp(method, "GET") && fbr_gzip_enabled()) {
 		chttp_header_add(fetch->http, "Accept-Encoding", "gzip");
@@ -140,6 +131,73 @@ _s3_connection(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore_backend
 	return 0;
 }
 
+static int
+_s3_get_route(struct fbr_cstore_fetch_context *fetch)
+{
+	fbr_cstore_fetch_ok(fetch);
+	assert(fetch->orig_route);
+
+	unsigned int retries = fetch->attempts;
+	fetch->attempts++;
+
+	if (retries) {
+		fbr_stat_add(&fetch->cstore->stats.retries);
+
+		chttp_context_reset(fetch->http);
+		fetch->http->new_conn = 1;
+	}
+
+	unsigned long cluster_retries = fetch->cstore->config.cluster_retries;
+	if (fetch->orig_route != FBR_CSTORE_ROUTE_CLUSTER) {
+		cluster_retries = 0;
+	}
+
+	unsigned long max_retries = cluster_retries + fetch->cstore->config.retries;
+
+	if (retries > max_retries) {
+		return 0;
+	} else if (fetch->attempts > 3) {
+		fbr_rlog(FBR_LOG_CS_S3, "sleep_backoff");
+		fbr_sleep_backoff(fetch->attempts - 2);
+	}
+
+	if (fetch->orig_route == FBR_CSTORE_ROUTE_S3 || fetch->route == FBR_CSTORE_ROUTE_S3) {
+		fetch->route = FBR_CSTORE_ROUTE_S3;
+		return 1;
+	} else if (fetch->orig_route == FBR_CSTORE_ROUTE_CLUSTER &&
+	    fetch->route <= FBR_CSTORE_ROUTE_CLUSTER && fetch->cstore->cluster.size) {
+		if (retries <= cluster_retries) {
+			fetch->route = FBR_CSTORE_ROUTE_CLUSTER;
+			return 1;
+		} else if (retries == cluster_retries + 1) {
+			fetch->route = FBR_CSTORE_ROUTE_CDN;
+			return 1;
+		}
+	}
+
+	if (!retries && fetch->cstore->cdn.size) {
+		fetch->route = FBR_CSTORE_ROUTE_CDN;
+		return 1;
+	}
+
+	fetch->route = FBR_CSTORE_ROUTE_S3;
+	return 1;
+}
+
+static int
+_s3_retry(struct fbr_cstore_fetch_context *fetch)
+{
+	fbr_cstore_fetch_ok(fetch);
+
+	if (fetch->http->error) {
+		return 1;
+	} else if (fetch->http->status >= 500) {
+		return 1;
+	}
+
+	return 0;
+}
+
 static void
 _s3_send_get(struct fbr_cstore_fetch_context *fetch)
 {
@@ -163,12 +221,13 @@ _s3_send_get(struct fbr_cstore_fetch_context *fetch)
 
 		fbr_rlog(FBR_LOG_CS_S3, "BACKEND self detected");
 
-		enum fbr_cstore_route next_route = FBR_CSTORE_ROUTE_CDN;
+		fetch->route = FBR_CSTORE_ROUTE_CDN;
 		if (fetch->type == FBR_CSTORE_FILE_ROOT && !cstore->config.allow_cdn_root_get) {
-			next_route = FBR_CSTORE_ROUTE_S3;
+			fetch->route = FBR_CSTORE_ROUTE_S3;
 		}
 
-		backend = fbr_cstore_backend_get(cstore, hash, next_route, fetch->attempts - 1, 1);
+		backend = fbr_cstore_backend_get(cstore, hash, fetch->route, fetch->attempts - 1,
+			1);
 	}
 
 	fbr_cstore_backend_ok(backend);
@@ -204,28 +263,15 @@ fbr_cstore_s3_send_get(struct fbr_cstore_fetch_context *fetch)
 	fbr_cstore_path_ok(fetch->file_path);
 	assert(fbr_cstore_backend_enabled(fetch->cstore));
 	assert_zero(fetch->existing);
-	assert(fetch->route);
 
 	fetch->attempts = 0;
-	enum fbr_cstore_route orig_route = fetch->route;
 
-	while (fetch->attempts <= (fetch->cstore->config.retries + 1)) {
-		fetch->attempts++;
-		if (fetch->attempts > 1) {
-			chttp_context_reset(fetch->http);
-		}
-		if (fetch->attempts > (fetch->cstore->config.cluster_retries + 1) &&
-		    orig_route != FBR_CSTORE_ROUTE_S3) {
-			if (fetch->route == orig_route) {
-				fetch->route = FBR_CSTORE_ROUTE_S3;
-			} else {
-				fetch->route = orig_route;
-			}
-		}
+	while (_s3_get_route(fetch)) {
+		assert_dev(fetch->route);
 
 		_s3_send_get(fetch);
 
-		if (fetch->http->error || fetch->http->status >= 500) {
+		if (_s3_retry(fetch)) {
 			continue;
 		}
 
@@ -292,12 +338,12 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 
 		fbr_rlog(FBR_LOG_CS_S3, "BACKEND self detected");
 
-		enum fbr_cstore_route next_route = FBR_CSTORE_ROUTE_CDN;
+		fetch->route = FBR_CSTORE_ROUTE_CDN;
 		if (fetch->type == FBR_CSTORE_FILE_ROOT) {
-			next_route = FBR_CSTORE_ROUTE_S3;
+			fetch->route = FBR_CSTORE_ROUTE_S3;
 		}
 
-		backend = fbr_cstore_backend_get(cstore, hash, next_route, fetch->attempts - 1,
+		backend = fbr_cstore_backend_get(cstore, hash, fetch->route, fetch->attempts - 1,
 			cstore->config.allow_cdn_put);
 	}
 
@@ -352,23 +398,16 @@ fbr_s3_send_put(struct fbr_cstore_fetch_context *fetch)
 	assert_dev(fetch->file_path);
 	assert_dev(fetch->length);
 	assert_dev(fetch->data_callback);
-	assert_dev(fetch->route);
 	assert_dev(fbr_cstore_backend_enabled(fetch->cstore));
 
 	fetch->attempts = 0;
 
-	while (fetch->attempts <= (fetch->cstore->config.retries + 1)) {
-		fetch->attempts++;
-		if (fetch->attempts > 1) {
-			chttp_context_reset(fetch->http);
-		}
-		if (fetch->attempts > (fetch->cstore->config.cluster_retries + 1)) {
-			fetch->route = FBR_CSTORE_ROUTE_S3;
-		}
+	while (_s3_get_route(fetch)) {
+		assert_dev(fetch->route);
 
 		_s3_send_put(fetch);
 
-		if (fetch->http->error || fetch->http->status >= 500) {
+		if (_s3_retry(fetch)) {
 			continue;
 		}
 
@@ -421,7 +460,6 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 	fbr_cstore_path_ok(fetch->file_path);
 	assert_dev(fetch->type);
 	assert(fetch->type != FBR_CSTORE_FILE_ROOT);
-	assert_dev(fetch->route);
 	assert_zero_dev(fetch->etag_304.length);
 	assert_zero_dev(fetch->etag_match.length);
 
@@ -566,17 +604,15 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
 	chttp_context_init(&http);
 	_fetch_init(&fetch, cstore, &http);
 
-	fetch.attempts = 0;
+	if (!cstore->config.delete_cache) {
+		route = FBR_CSTORE_ROUTE_CDN;
+	}
 
-	while (fetch.attempts <= (cstore->config.retries + 1)) {
-		fetch.attempts++;
-		if (fetch.attempts > 1) {
-			chttp_context_reset(&http);
-		}
-		if (fetch.attempts > (cstore->config.cluster_retries + 1) ||
-		    !cstore->config.delete_cache) {
-			route = FBR_CSTORE_ROUTE_CDN;
-		}
+	fetch.attempts = 0;
+	fetch.orig_route = route;
+
+	while (_s3_get_route(&fetch)) {
+		assert_dev(fetch.route);
 
 		fbr_hash_t hash = _s3_request_url(&fetch, "DELETE", url);
 
@@ -584,8 +620,8 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
 			chttp_header_add(&http, "If-Match", etag_match);
 		}
 
-		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, route,
-			fetch.attempts - 1, cstore->config.allow_cdn_delete);
+		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash,
+			fetch.route, fetch.attempts - 1, cstore->config.allow_cdn_delete);
 		fbr_cstore_backend_ok(backend);
 
 		int ret = _s3_connection(&fetch, backend, fbr_cstore_s3_hash_none, NULL);
@@ -600,7 +636,8 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
 		}
 
 		chttp_receive(&http);
-		if (http.error || http.status >= 500) {
+
+		if (_s3_retry(&fetch)) {
 			fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp recv: %s (%d)",
 				chttp_error_msg(&http), http.status);
 			continue;
@@ -982,8 +1019,6 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	if (fbr_cstore_entry_has_ref(entry_ref)) {
 		write_sync = 1;
 	}
-
-	// TODO need to support CDN routing here (called from fbr_cstore_server_io.c)
 
 	if (route == FBR_CSTORE_ROUTE_CDN && !cstore->config.allow_cdn_root_get) {
 		route = FBR_CSTORE_ROUTE_S3;

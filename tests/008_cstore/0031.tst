@@ -69,6 +69,14 @@ less_equal $cstore_entries:1 3
 equal $cstore_entries:2 2
 equal $cstore_entries:3 3
 
+equal $cstore_stat_http_400:1 0
+equal $cstore_stat_http_400:2 0
+equal $cstore_stat_http_400:3 0
+
+equal $cstore_stat_http_500:1 0
+equal $cstore_stat_http_500:2 0
+equal $cstore_stat_http_500:3 0
+
 print "### CLEANUP"
 
 fs_test_stats

@@ -313,7 +313,7 @@ fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, enum fbr_csto
 	if (route == FBR_CSTORE_ROUTE_CLUSTER && cstore->cluster.size) {
 		backend = _backend_rv_hash(cstore, &cstore->cluster, hash, retries);
 	} else if (route <= FBR_CSTORE_ROUTE_CDN && cdn_ok && cstore->cdn.size) {
-		backend = _backend_rv_hash(cstore, &cstore->cdn, hash, retries);
+		backend = _backend_rv_hash(cstore, &cstore->cdn, hash, 0);
 
 		if (route != FBR_CSTORE_ROUTE_CDN) {
 			route_type = " CDN_FALLBACK";

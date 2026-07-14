@@ -86,6 +86,7 @@ struct fbr_cstore_fetch_context {
 	fbr_id_t			existing;
 
 	int				gzip;
+	enum fbr_cstore_route		orig_route;
 	enum fbr_cstore_route		route;
 	unsigned int			attempts;
 

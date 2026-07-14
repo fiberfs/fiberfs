@@ -1,5 +1,7 @@
 chttp_test "Connection timeout"
 
+connect_or_skip nulltech.systems 80
+
 chttp_init
 chttp_url /
 chttp_connect nulltech.systems 9976
