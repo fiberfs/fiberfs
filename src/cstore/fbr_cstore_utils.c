@@ -105,6 +105,10 @@ _cstore_parse_cluster(struct fbr_cstore *cstore, int cdn)
 	assert_dev(cstore);
 
 	const char *endpoints = fbr_conf_get(cdn ? "CDN_ENDPOINT" : "CLUSTER", NULL);
+	if (!endpoints) {
+		return;
+	}
+
 	const char *endpoint = NULL;
 	size_t len;
 	char host_buf[512];
