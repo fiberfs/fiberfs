@@ -113,6 +113,7 @@ _s3_connection(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore_backend
 	assert_dev(fetch);
 	assert_dev(fetch->cstore);
 	assert_dev(fetch->http);
+	assert_dev(fetch->attempts == 1 || fetch->http->new_conn);
 	assert_dev(backend);
 
 	chttp_connect(fetch->http, backend->host, backend->host_len, backend->port, backend->tls);
