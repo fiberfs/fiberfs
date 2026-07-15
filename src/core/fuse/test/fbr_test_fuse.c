@@ -82,6 +82,9 @@ _fuse_init_valgrind(void)
 
 		fbr_test_conf_add_long("FS_FLUSH_TIMEOUT_SEC", 60);
 
+		fbr_test_conf_add_long("HTTP_CONNECT_TIMEOUT_MSEC", 60000);
+		fbr_test_conf_add_long("HTTP_TRANSFER_TIMEOUT_MSEC", 10000);
+
 		fbr_test_logs("valgrind detected, bumping settings");
 	}
 }
