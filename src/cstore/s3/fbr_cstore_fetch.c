@@ -137,45 +137,49 @@ _s3_get_route(struct fbr_cstore_fetch_context *fetch)
 	fbr_cstore_fetch_ok(fetch);
 	assert(fetch->orig_route);
 
-	unsigned int retries = fetch->attempts;
-	fetch->attempts++;
-
-	if (retries) {
-		fbr_stat_add(&fetch->cstore->stats.retries);
-
-		chttp_context_reset(fetch->http);
-		fetch->http->new_conn = 1;
-	}
-
 	unsigned long cluster_retries = fetch->cstore->config.cluster_retries;
 	if (fetch->orig_route != FBR_CSTORE_ROUTE_CLUSTER) {
 		cluster_retries = 0;
 	}
 
 	unsigned long max_retries = cluster_retries + fetch->cstore->config.retries;
+	unsigned int retries = fetch->attempts;
+	size_t has_cluster = fetch->cstore->cluster.size;
+	size_t has_cdn = fetch->cstore->cdn.size;
 
 	if (retries > max_retries) {
 		return 0;
-	} else if (fetch->attempts > 3) {
-		fbr_rlog(FBR_LOG_CS_S3, "sleep_backoff");
-		fbr_sleep_backoff(fetch->attempts - 2);
+	} else if (retries) {
+		fbr_stat_add(&fetch->cstore->stats.retries);
+
+		chttp_context_reset(fetch->http);
+		fetch->http->new_conn = 1;
 	}
 
-	if (fetch->orig_route == FBR_CSTORE_ROUTE_S3 || fetch->route == FBR_CSTORE_ROUTE_S3) {
+	fetch->attempts++;
+
+	if (fetch->route == FBR_CSTORE_ROUTE_S3) {
+		fbr_rlog(FBR_LOG_CS_S3, "sleep backoff (%u)", fetch->sleeps);
+
+		fbr_sleep_backoff(fetch->sleeps);
+		fetch->sleeps++;
+
+		return 1;
+	} else if (fetch->orig_route == FBR_CSTORE_ROUTE_S3) {
 		fetch->route = FBR_CSTORE_ROUTE_S3;
 		return 1;
 	} else if (fetch->orig_route == FBR_CSTORE_ROUTE_CLUSTER &&
-	    fetch->route <= FBR_CSTORE_ROUTE_CLUSTER && fetch->cstore->cluster.size) {
+	    fetch->route <= FBR_CSTORE_ROUTE_CLUSTER && has_cluster) {
 		if (retries <= cluster_retries) {
 			fetch->route = FBR_CSTORE_ROUTE_CLUSTER;
 			return 1;
-		} else if (retries == cluster_retries + 1) {
+		} else if (retries == cluster_retries + 1 && has_cdn) {
 			fetch->route = FBR_CSTORE_ROUTE_CDN;
 			return 1;
 		}
 	}
 
-	if (!retries && fetch->cstore->cdn.size) {
+	if (!retries && has_cdn) {
 		fetch->route = FBR_CSTORE_ROUTE_CDN;
 		return 1;
 	}
@@ -981,7 +985,10 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 
 	fbr_s3_send_put(&fetch);
 
-	const char *etag_hdr = chttp_header_get(&http, "ETag");
+	const char *etag_hdr = NULL;
+	if (!http.error) {
+		etag_hdr = chttp_header_get(&http, "ETag");
+	}
 	fbr_cstore_etag_init(etag, etag_hdr);
 
 	int error = fbr_cstore_s3_send_finish(cstore, NULL, &http, 0);

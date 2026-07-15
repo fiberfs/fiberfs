@@ -89,6 +89,7 @@ struct fbr_cstore_fetch_context {
 	enum fbr_cstore_route		orig_route;
 	enum fbr_cstore_route		route;
 	unsigned int			attempts;
+	unsigned int			sleeps;
 
 	fbr_cstore_fetch_f		data_callback;
 	void				*data_arg;
