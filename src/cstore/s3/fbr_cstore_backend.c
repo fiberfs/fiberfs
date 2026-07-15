@@ -307,6 +307,8 @@ fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, enum fbr_csto
 	assert(route && route <= FBR_CSTORE_ROUTE_S3);
 	assert(retries >= 0);
 
+	fbr_rlog(FBR_LOG_CS_S3, "BACKEND hash: %lu (%d)", hash, retries);
+
 	struct fbr_cstore_backend *backend = NULL;
 	const char *route_type = "";
 

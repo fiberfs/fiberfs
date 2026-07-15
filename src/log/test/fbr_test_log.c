@@ -257,6 +257,7 @@ fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	assert(sizeof(fbr_log_data_t) == sizeof(struct fbr_log_tag));
 	assert(__FBR_LOG_TAG_END <= UCHAR_MAX);
+	static_ASSERT(FBR_LOG_SIZE_DEFAULT >= FBR_LOG_MIN_SIZE);
 
 	struct fbr_log_tag tag;
 	tag.value = fbr_log_tag_gen(0, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
