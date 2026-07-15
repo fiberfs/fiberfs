@@ -11,6 +11,7 @@ cstore_init 1
 cstore_mock_s3 1 region access_key secret_key
 
 config_add CSTORE_SERVER_TLS true
+config_add HTTP_CONNECT_TIMEOUT_MSEC 9000
 cstore_init 2
 
 sleep_ms 100
