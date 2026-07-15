@@ -7,6 +7,7 @@ config_add CSTORE_SERVER_PORT 0
 config_add ALLOW_CDN_PUT true
 config_add ALLOW_CDN_DELETE true
 config_add ALLOW_CDN_ROOT_GET true
+config_add CSTORE_DELETE_CACHE true
 
 # Self
 cstore_init 0
@@ -50,8 +51,8 @@ cstore_debug 2
 cstore_debug 3
 
 greater_than $cstore_entries:0 0
-less_equal $cstore_entries:0 4
-less_equal $cstore_entries:1 4
+less_equal $cstore_entries:0 3
+less_equal $cstore_entries:1 3
 equal $cstore_entries:2 0
 equal $cstore_entries:3 3
 
