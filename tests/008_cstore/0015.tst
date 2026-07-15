@@ -4,6 +4,7 @@ skip_if_not $tls_enabled
 
 config_add LOG_ALWAYS_FLUSH true
 config_add CSTORE_SERVER_TLS true
+config_add HTTP_CONNECT_TIMEOUT_MSEC 3000
 
 cstore_init 0
 

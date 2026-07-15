@@ -16,26 +16,6 @@
 #include "config/test/fbr_test_config_cmds.h"
 
 void
-fbr_cmd_cstore_tls_timeout(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
-{
-	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 0);
-
-	int tls = fbr_conf_get_bool("CSTORE_SERVER_TLS", FBR_CONFIG_FALSE);
-
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "cstore_tls_timeout: %d", tls);
-
-	if (tls && fbr_test_is_valgrind()) {
-		fbr_test_conf_add_long("HTTP_CONNECT_TIMEOUT_MSEC", 60000);
-		fbr_test_conf_add_long("HTTP_TRANSFER_TIMEOUT_MSEC", 10000);
-		fbr_test_logs("cstore_tls_timeout timeout_connect_ms: %lu",
-			fbr_conf_get_ulong("HTTP_CONNECT_TIMEOUT_MSEC", 0));
-		fbr_test_logs("cstore_tls_timeout timeout_transfer_ms: %lu",
-			fbr_conf_get_ulong("HTTP_TRANSFER_TIMEOUT_MSEC", 0));
-	}
-}
-
-void
 fbr_cmd_cstore_debug_allow_loop(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
