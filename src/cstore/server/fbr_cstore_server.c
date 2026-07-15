@@ -4,7 +4,9 @@
  *
  */
 
+#include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 
 #include "fiberfs.h"
@@ -37,7 +39,7 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 
 	chttp_addr_init(&server->addr);
 	int ret = chttp_tcp_listen(&server->addr, address, server->port, 16);
-	fbr_ASSERT(!ret, "listen() error %d", ret);
+	fbr_ASSERT(!ret, "listen() error: %s (%d)", strerror(errno), ret);
 	chttp_addr_connected(&server->addr);
 	assert_zero_dev(server->addr.error);
 	assert_dev(server->addr.listen);
