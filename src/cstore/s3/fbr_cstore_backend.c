@@ -9,6 +9,7 @@
 
 #include "fiberfs.h"
 #include "cstore/fbr_cstore_api.h"
+#include "utils/fbr_xxhash.h"
 
 #define _BACKEND_HASH_STACK_SIZE	16
 
@@ -38,7 +39,17 @@ _backend_alloc(const char *host, int port, int tls)
 
 	fbr_strcpy(backend->host, host_len + 1, host);
 
-	backend->hash = fbr_hash(backend, sizeof(*backend) + host_len);
+	XXH3_state_t hash;
+	XXH3_INITSTATE(&hash);
+	XXH3_64bits_reset(&hash);
+
+	XXH3_64bits_update(&hash, host, host_len + 1);
+	XXH3_64bits_update(&hash, &port, sizeof(port));
+	XXH3_64bits_update(&hash, &tls, sizeof(tls));
+
+	XXH64_hash_t result = XXH3_64bits_digest(&hash);
+	backend->hash = result;
+	static_ASSERT(sizeof(result) == sizeof(backend->hash));
 
 	fbr_cstore_backend_ok(backend);
 
