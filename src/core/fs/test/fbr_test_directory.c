@@ -767,7 +767,7 @@ fbr_cmd_fs_test_directory_load_ttl(struct fbr_test_context *ctx, struct fbr_test
 	fbr_test_conf_add("CSTORE_SERVER", "true");
 	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
 	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
-	fbr_test_conf_add("ROOT_FILE_TTL_SEC", "0");
+	fbr_test_conf_add("DIRECTORY_TTL_SEC", "0");
 
 	_LOAD_TTL_GEN_STOP = 5;
 
@@ -791,7 +791,7 @@ fbr_cmd_fs_test_directory_load_304(struct fbr_test_context *ctx, struct fbr_test
 	fbr_test_conf_add("CSTORE_SERVER", "true");
 	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
 	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
-	fbr_test_conf_add("ROOT_FILE_TTL_SEC", "0");
+	fbr_test_conf_add("DIRECTORY_TTL_SEC", "0");
 
 	_LOAD_TTL_MODE_RANDOM = 1;
 	_LOAD_TTL_GEN_STOP = 4;

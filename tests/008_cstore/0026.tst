@@ -1,6 +1,6 @@
 fiber_test "cstore and deleted S3 files"
 
-config_add ROOT_FILE_TTL_SEC 0
+config_add DIRECTORY_TTL_SEC 0
 
 cstore_init 0
 
