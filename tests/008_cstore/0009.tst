@@ -34,5 +34,6 @@ equal $cstore_server_tls:2 1
 chttp_reset
 chttp_url /
 chttp_connect $cstore_server_host:2 $cstore_server_port:2 1
+chttp_timeout_connect_ms 9000
 chttp_send
 chttp_status_match 400

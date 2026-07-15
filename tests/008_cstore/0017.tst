@@ -6,7 +6,7 @@ dns_lookup_or_skip ::1
 config_add LOG_ALWAYS_FLUSH true
 config_add CSTORE_SERVER_TLS true
 config_add FS_GZIP_INDEX false
-config_add HTTP_CONNECT_TIMEOUT_MSEC 3000
+config_add HTTP_CONNECT_TIMEOUT_MSEC 9000
 
 cstore_init 0
 

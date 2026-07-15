@@ -9,7 +9,7 @@ config_add ALLOW_CDN_PUT true
 config_add ALLOW_CDN_DELETE true
 config_add ALLOW_CDN_ROOT_GET true
 config_add CSTORE_DELETE_CACHE true
-config_add HTTP_CONNECT_TIMEOUT_MSEC 3000
+config_add HTTP_CONNECT_TIMEOUT_MSEC 9000
 
 # Self
 cstore_init 0
