@@ -45,6 +45,7 @@ equal $cstore_entries:2 0
 fs_test_release_all_wait
 
 sleep_ms 250
+equal $fs_test_stat_files_inodes 1
 
 sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
 sys_cat $var1 "test_ABC"
@@ -58,6 +59,7 @@ equal $cstore_entries:1 0
 fs_test_release_all_wait
 
 sleep_ms 250
+equal $fs_test_stat_files_inodes 1
 
 sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
 
