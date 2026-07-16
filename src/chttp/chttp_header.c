@@ -413,7 +413,7 @@ _header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 
 		dpage->data[end - 1] = '\0';
 
-		for (size_t i = end - 2; i > start; i--) {
+		for (size_t i = end - 2; i > start && ctx->seen_first; i--) {
 			if (dpage->data[i] == ' ') {
 				dpage->data[i] = '\0';
 			} else {
