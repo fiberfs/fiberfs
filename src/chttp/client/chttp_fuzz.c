@@ -61,12 +61,12 @@ _server_thread(void *arg)
 int
 main(int argc, char **argv)
 {
-	printf("chttp_client FUZZ %s\n", CHTTP_VERSION);
+	printf("chttp_fuzz %s\n", CHTTP_VERSION);
 
 	fbr_setup_crash_signals();
 
 	if (argc != 2) {
-		printf("Usage: chttp_client [HTTP request file]\n");
+		printf("Usage: chttp_fuzz [HTTP request file]\n");
 		return 1;
 	}
 

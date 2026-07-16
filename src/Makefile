@@ -183,7 +183,7 @@ endif
 all:		fiberfs_test fiberfs fiberfs_log
 lib:		libfiberfs.so
 
-chttp_client:	libfibertest.a libfiberfs.a libcstore.a libchttp.a libfjson.a libfiberutil.a $(CHTTP_CLIENT_OBJS)
+chttp_fuzz:	libfibertest.a libfiberfs.a libcstore.a libchttp.a libfjson.a libfiberutil.a $(CHTTP_CLIENT_OBJS)
 		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libfibertest.a libfiberfs.a libcstore.a libchttp.a libfjson.a libfiberutil.a $(LIBFLAGS)
 
 fjson_client:	libfjson.a libfiberutil.a $(FJSON_CLIENT_OBJS)
@@ -242,7 +242,7 @@ include $(wildcard $(DEPS))
 clean:		gcovclean
 		$(RMDIR) $(BUILD)
 		$(RM) *.so *.a
-		$(RM) chttp_client fjson_client fiberfs_test fiberfs_log fiberfs
+		$(RM) chttp_fuzz fjson_client fiberfs_test fiberfs_log fiberfs
 
 gcov:		CFLAGS_EXTRA+=$(GCOVFLAGS)
 gcov:		LIBFLAGS+=$(GCOVLIBFLAGS)
@@ -260,4 +260,4 @@ gcovclean:
 #afl:		export AFL_USE_ASAN=1
 #afl:		export AFL_USE_MSAN=1
 afl:		clean
-		$(MAKE) all fjson_client chttp_client CC=$(AFL_CC) CFLAGS_CC="$(AFL_CFLAGS_CC)"
+		$(MAKE) all fjson_client chttp_fuzz CC=$(AFL_CC) CFLAGS_CC="$(AFL_CFLAGS_CC)"

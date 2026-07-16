@@ -2,7 +2,7 @@
 src/*.a
 src/*.so
 src/build
-src/chttp_client
+src/chttp_fuzz
 src/fjson_client
 src/fiberfs_test
 src/fiberfs_log
