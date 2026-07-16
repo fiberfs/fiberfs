@@ -1,0 +1,5 @@
+GET /largefile.bin HTTP/1.1
+Host: example.com
+Range: bytes=100-199
+User-Agent: TestClient/1.0
+

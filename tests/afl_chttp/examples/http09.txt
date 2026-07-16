@@ -1,0 +1,5 @@
+GET /image.png HTTP/1.1
+Host: example.com
+If-Modified-Since: Tue, 15 Nov 1994 12:45:26 GMT
+User-Agent: TestClient/1.0
+

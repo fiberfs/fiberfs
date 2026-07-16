@@ -1,0 +1,34 @@
+# AFL chttp
+
+space=" "
+colon=":"
+nl2="\x0d\x0a"
+nl3="\x0a"
+nl4="\x0d"
+
+verb1="GET "
+verb2="POST "
+verb3="DELETE "
+
+url1="/test "
+url2="/abc/132/456?xyz "
+
+proto1="HTTP/1.1\x0d\x0a"
+proto2="HTTP/1.0\x0d\x0a"
+proto3="HTTP/2.0\x0d\x0a"
+proto3="HTTP/0.9\x0d\x0a"
+
+header0="Something: is written right here\x0d\x0a"
+header1="Host: test.com\x0d\x0a"
+header2="Content-Length: 1234\x0d\x0a"
+header3="expect: 100-continue\x0d\x0a"
+header4="Connection: close\x0d\x0a"
+header5="Connection: keep-alive\x0d\x0a"
+header6="Content-Encoding: none\x0d\x0a"
+header7="content-encoding: gzip\x0d\x0a"
+header8="transfer-encoding: chunked\x0d\x0a"
+header9="Another-header: AAAA BBBB CCCC\x0d\x0a"
+
+body1="some thing here"
+body2="10\x0d\x0a0123456789"
+body3="0\x0d\x0a\x0d\x0a"

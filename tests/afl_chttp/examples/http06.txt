@@ -1,0 +1,5 @@
+GET /search?q=http&sort=date&page=2 HTTP/1.1
+Host: example.com
+User-Agent: TestClient/1.0
+Accept: application/json
+

@@ -34,8 +34,8 @@ _server_thread(void *arg)
 	chttp_addr_init(client_addr);
 	chttp_addr_closed(client_addr);
 
-	client_addr->timeout_connect_ms = 500;
-	client_addr->timeout_transfer_ms = 1000;
+	client_addr->timeout_connect_ms = 100;
+	client_addr->timeout_transfer_ms = 100;
 
 	_SERVER_READY = 1;
 
@@ -51,7 +51,7 @@ _server_thread(void *arg)
 
 	chttp_parse(&chttp, CHTTP_REQUEST);
 
-	printf("chttp final state: %s\n", chttp_state_string(chttp.state));
+	printf("  chttp final state: %s\n", chttp_state_string(chttp.state));
 
 	chttp_context_free(&chttp);
 
@@ -64,6 +64,7 @@ main(int argc, char **argv)
 	printf("chttp_fuzz %s\n", CHTTP_VERSION);
 
 	fbr_setup_crash_signals();
+	fbr_allow_abort();
 
 	if (argc != 2) {
 		printf("Usage: chttp_fuzz [HTTP request file]\n");
@@ -107,7 +108,7 @@ main(int argc, char **argv)
 	fbr_ASSERT(!ret, "client cant resolve server");
 	chttp_addr_resolved(addr);
 
-	addr->timeout_connect_ms = 500;
+	addr->timeout_connect_ms = 100;
 	addr->timeout_transfer_ms = 1000;
 
 	ret = chttp_tcp_connect(addr);

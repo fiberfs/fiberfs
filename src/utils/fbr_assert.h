@@ -20,6 +20,7 @@
 
 typedef void (*fbr_sigaction_f)(int signal, siginfo_t *info, void *ucontext);
 
+void fbr_allow_abort(void);
 void fbr_setup_crash_signals(void);
 void fbr_setup_stop_signals(fbr_sigaction_f func);
 void __fbr_attr_printf(5) __fbr_noreturn fbr_do_abort(const char *assertion,

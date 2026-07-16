@@ -87,6 +87,9 @@ main(int argc, char **argv)
 		return 1;
 	}
 
+	fbr_setup_crash_signals();
+	fbr_allow_abort();
+
 	fjson_context_init(&json);
 	json.callback = &_json_print;
 

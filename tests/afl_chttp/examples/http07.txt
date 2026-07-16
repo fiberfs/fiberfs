@@ -1,0 +1,5 @@
+GET /status HTTP/1.1
+Host: example.com
+Connection: keep-alive
+User-Agent: TestClient/1.0
+

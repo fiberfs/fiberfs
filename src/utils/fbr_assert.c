@@ -20,7 +20,7 @@ extern void fbr_context_abort(int pre_abort);
 
 static unsigned long _ASSERT_LOOP;
 static int _ASSERT_SPLIT_TRACE;
-int _ABORT_CORE;
+static int _ABORT_CORE;
 
 static void
 _signal_abort(int signal, siginfo_t *info, void *ucontext)
@@ -31,6 +31,11 @@ _signal_abort(int signal, siginfo_t *info, void *ucontext)
 	fbr_ABORT("Caught signal: %s (%d)", strsignal(signal), signal);
 }
 
+void
+fbr_allow_abort(void)
+{
+	_ABORT_CORE = 1;
+}
 
 void
 fbr_setup_crash_signals(void)
