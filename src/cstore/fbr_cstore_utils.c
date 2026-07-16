@@ -193,6 +193,17 @@ fbr_cstore_autoinit(struct fbr_cstore *cstore)
 	_cstore_parse_cluster(cstore, 0);
 	_cstore_parse_cluster(cstore, 1);
 
+	int server_contained = 0;
+
+	if (cstore->servers && cstore->cluster.size) {
+		for (size_t i = 0; i < cstore->cluster.size; i++) {
+			server_contained += fbr_cstore_servers_contains(cstore,
+				cstore->cluster.backends[i]);
+		}
+
+		fbr_ASSERT(server_contained, "ERROR server not part of cluster list");
+	}
+
 	return 0;
 }
 

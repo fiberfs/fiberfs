@@ -35,11 +35,9 @@ fbr_cstore_server_alloc(struct fbr_cstore *cstore, const char *address, int port
 	server->address = strdup(address);
 	assert(server->address);
 
-	// TODO we need to support binding on all addresses
-
 	chttp_addr_init(&server->addr);
 	int ret = chttp_tcp_listen(&server->addr, address, server->port, 16);
-	fbr_ASSERT(!ret, "listen() error: %s (%d)", strerror(errno), ret);
+	fbr_ASSERT(!ret, "listen(%s) error: %s (%d)", server->address, strerror(errno), ret);
 	chttp_addr_connected(&server->addr);
 	assert_zero_dev(server->addr.error);
 	assert_dev(server->addr.listen);

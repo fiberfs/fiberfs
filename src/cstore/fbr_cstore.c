@@ -108,6 +108,8 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 		int port = fbr_conf_get_long("CSTORE_SERVER_PORT", FBR_CSTORE_SERVER_PORT);
 		int tls = fbr_conf_get_bool("CSTORE_SERVER_TLS", FBR_CONFIG_FALSE);
 
+		// TODO iterate thru address CSV here
+
 		fbr_cstore_tasks_alloc(cstore);
 		fbr_cstore_server_alloc(cstore, address, port, tls);
 		fbr_cstore_epool_init(cstore);
