@@ -69,6 +69,9 @@ error:		$(TESTS_ERROR)
 $(TESTS_ALL):	$(FIBER_TEST_RULE) FORCE
 		$(PRE_EXEC) $(FIBER_TEST) $(FLAGS) $@
 
+%.tst:		FORCE
+		$(PRE_EXEC) $(FIBER_TEST) $(FLAGS) $@
+
 %.tstx:		$(FIBER_TEST_RULE) FORCE | sudo
 		$(PRE_EXEC) $(FIBER_TEST) $(FLAGS) $@
 
