@@ -221,7 +221,7 @@ fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url, struct fbr_cstor
 }
 
 static void
-_hash_s3(XXH3_state_t *hash, struct fbr_cstore *cstore)
+_hash_s3(fbr_xxhash_t *hash, struct fbr_cstore *cstore)
 {
 	assert_dev(hash);
 	assert_dev(cstore);
@@ -241,25 +241,25 @@ _hash_s3(XXH3_state_t *hash, struct fbr_cstore *cstore)
 	}
 
 	if (!host_len) {
-		XXH3_64bits_update(hash, "", 1);
-		XXH3_64bits_update(hash, "/", 1);
+		fbr_xxhash_update(hash, "", 1);
+		fbr_xxhash_update(hash, "/", 1);
 		return;
 	}
 
-	XXH3_64bits_update(hash, host, host_len + 1);
+	fbr_xxhash_update(hash, host, host_len + 1);
 
 	if (cstore->s3.prefix) {
 		assert_dev(cstore->s3.prefix_len);
 		assert_dev(cstore->s3.prefix[cstore->s3.prefix_len - 1] != '/');
-		XXH3_64bits_update(hash, cstore->s3.prefix, cstore->s3.prefix_len);
+		fbr_xxhash_update(hash, cstore->s3.prefix, cstore->s3.prefix_len);
 	}
 
-	XXH3_64bits_update(hash, "/", 1);
+	fbr_xxhash_update(hash, "/", 1);
 }
 
 /*
 static void
-_hash_external(XXH3_state_t *hash, fbr_id_t id)
+_hash_external(fbr_xxhash_t *hash, fbr_id_t id)
 {
 	assert_dev(hash);
 	assert_dev(id);
@@ -270,11 +270,11 @@ _hash_external(XXH3_state_t *hash, fbr_id_t id)
 
 	// TODO path?
 
-	XXH3_64bits_update(hash, buffer, buffer_len + 1);
+	fbr_xxhash_update(hash, buffer, buffer_len + 1);
 }
 
 static void
-_hash_range(XXH3_state_t *hash, size_t offset, size_t length)
+_hash_range(fbr_xxhash_t *hash, size_t offset, size_t length)
 {
 	assert_dev(hash);
 	assert_dev(length);
@@ -293,22 +293,20 @@ fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t
 	fbr_file_ok(file);
 	assert(id);
 
-	XXH3_state_t hash;
-	XXH3_INITSTATE(&hash);
-	XXH3_64bits_reset(&hash);
+	fbr_xxhash_t hash;
+	fbr_xxhash(&hash, NULL, 0);
 
 	_hash_s3(&hash, cstore);
 
 	struct fbr_cstore_path path;
 	fbr_cstore_path_chunk(file, id, offset, &path);
-	XXH3_64bits_update(&hash, path.value, path.length + 1);
-
-	XXH64_hash_t result = XXH3_64bits_digest(&hash);
-	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
+	fbr_xxhash_update(&hash, path.value, path.length + 1);
 
 	// TODO external
 
-	return (fbr_hash_t)result;
+	fbr_hash_t result = fbr_xxhash_result(&hash);
+
+	return result;
 }
 
 fbr_hash_t
@@ -317,20 +315,18 @@ fbr_cstore_hash_index(struct fbr_cstore *cstore, struct fbr_directory *directory
 	fbr_cstore_ok(cstore);
 	fbr_directory_ok(directory);
 
-	XXH3_state_t hash;
-	XXH3_INITSTATE(&hash);
-	XXH3_64bits_reset(&hash);
+	fbr_xxhash_t hash;
+	fbr_xxhash(&hash, NULL, 0);
 
 	_hash_s3(&hash, cstore);
 
 	struct fbr_cstore_path path;
 	fbr_cstore_path_index(directory, &path);
-	XXH3_64bits_update(&hash, path.value, path.length + 1);
+	fbr_xxhash_update(&hash, path.value, path.length + 1);
 
-	XXH64_hash_t result = XXH3_64bits_digest(&hash);
-	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
+	fbr_hash_t result = fbr_xxhash_result(&hash);
 
-	return (fbr_hash_t)result;
+	return result;
 }
 
 fbr_hash_t
@@ -339,20 +335,18 @@ fbr_cstore_hash_root(struct fbr_cstore *cstore, const struct fbr_path_name *dirp
 	fbr_cstore_ok(cstore);
 	assert(dirpath);
 
-	XXH3_state_t hash;
-	XXH3_INITSTATE(&hash);
-	XXH3_64bits_reset(&hash);
+	fbr_xxhash_t hash;
+	fbr_xxhash(&hash, NULL, 0);
 
 	_hash_s3(&hash, cstore);
 
 	struct fbr_cstore_path path;
 	fbr_cstore_path_root(dirpath, &path);
-	XXH3_64bits_update(&hash, path.value, path.length + 1);
+	fbr_xxhash_update(&hash, path.value, path.length + 1);
 
-	XXH64_hash_t result = XXH3_64bits_digest(&hash);
-	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
+	fbr_hash_t result = fbr_xxhash_result(&hash);
 
-	return (fbr_hash_t)result;
+	return result;
 }
 
 fbr_hash_t
@@ -362,18 +356,16 @@ fbr_cstore_hash_path(struct fbr_cstore *cstore, const char *path, size_t path_le
 	fbr_cstore_is_path(path);
 	assert(path_len);
 
-	XXH3_state_t hash;
-	XXH3_INITSTATE(&hash);
-	XXH3_64bits_reset(&hash);
+	fbr_xxhash_t hash;
+	fbr_xxhash(&hash, NULL, 0);
 
 	_hash_s3(&hash, cstore);
 
-	XXH3_64bits_update(&hash, path, path_len + 1);
+	fbr_xxhash_update(&hash, path, path_len + 1);
 
-	XXH64_hash_t result = XXH3_64bits_digest(&hash);
-	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
+	fbr_hash_t result = fbr_xxhash_result(&hash);
 
-	return (fbr_hash_t)result;
+	return result;
 }
 
 fbr_hash_t
@@ -383,23 +375,21 @@ fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t u
 	assert(url[0] == '/');
 	assert(url_len);
 
-	XXH3_state_t hash;
-	XXH3_INITSTATE(&hash);
-	XXH3_64bits_reset(&hash);
+	fbr_xxhash_t hash;
+	fbr_xxhash(&hash, NULL, 0);
 
 	if (host_len) {
-		XXH3_64bits_update(&hash, host, host_len);
+		fbr_xxhash_update(&hash, host, host_len);
 	}
-	XXH3_64bits_update(&hash, "", 1);
-	XXH3_64bits_update(&hash, url, url_len);
-	XXH3_64bits_update(&hash, "", 1);
-
-	XXH64_hash_t result = XXH3_64bits_digest(&hash);
-	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
+	fbr_xxhash_update(&hash, "", 1);
+	fbr_xxhash_update(&hash, url, url_len);
+	fbr_xxhash_update(&hash, "", 1);
 
 	// TODO external
 
-	return (fbr_hash_t)result;
+	fbr_hash_t result = fbr_xxhash_result(&hash);
+
+	return result;
 }
 
 void

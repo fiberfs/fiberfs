@@ -223,6 +223,37 @@ fbr_hash(const void *buffer, size_t buffer_len)
 	return (fbr_hash_t)hash;
 }
 
+void
+fbr_xxhash(fbr_xxhash_t *hash, const void *buffer, size_t buffer_len)
+{
+	assert(hash);
+
+	XXH3_INITSTATE(hash);
+	XXH3_64bits_reset(hash);
+
+	fbr_xxhash_update(hash, buffer, buffer_len);
+}
+
+void
+fbr_xxhash_update(fbr_xxhash_t *hash, const void *buffer, size_t buffer_len)
+{
+	assert(hash);
+
+	XXH_errorcode ret = XXH3_64bits_update(hash, buffer, buffer_len);
+	assert_dev(ret == XXH_OK);
+}
+
+fbr_hash_t
+fbr_xxhash_result(fbr_xxhash_t *hash)
+{
+	assert(hash);
+
+	XXH64_hash_t result = XXH3_64bits_digest(hash);
+	static_ASSERT(sizeof(result) == sizeof(fbr_hash_t));
+
+	return (fbr_hash_t)result;
+}
+
 size_t
 fbr_strcpy(char *dest, size_t dest_len, const char *source)
 {

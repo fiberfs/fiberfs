@@ -39,17 +39,11 @@ _backend_alloc(const char *host, int port, int tls)
 
 	fbr_strcpy(backend->host, host_len + 1, host);
 
-	XXH3_state_t hash;
-	XXH3_INITSTATE(&hash);
-	XXH3_64bits_reset(&hash);
-
-	XXH3_64bits_update(&hash, host, host_len + 1);
-	XXH3_64bits_update(&hash, &port, sizeof(port));
-	XXH3_64bits_update(&hash, &tls, sizeof(tls));
-
-	XXH64_hash_t result = XXH3_64bits_digest(&hash);
-	backend->hash = result;
-	static_ASSERT(sizeof(result) == sizeof(backend->hash));
+	fbr_xxhash_t hash;
+	fbr_xxhash(&hash, host, host_len + 1);
+	fbr_xxhash_update(&hash, &port, sizeof(port));
+	fbr_xxhash_update(&hash, &tls, sizeof(tls));
+	backend->hash = fbr_xxhash_result(&hash);
 
 	fbr_cstore_backend_ok(backend);
 
