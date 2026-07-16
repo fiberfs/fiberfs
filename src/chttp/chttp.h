@@ -2,6 +2,8 @@
  * Copyright (c) 2021-2026 FiberFS LLC
  * All rights reserved.
  *
+ * https://fiberfs.io/license/
+ *
  * A streaming splice friendly zero memory allocation HTTP library
  *
  */

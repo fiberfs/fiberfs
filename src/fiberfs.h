@@ -2,6 +2,8 @@
  * Copyright (c) 2024-2026 FiberFS LLC
  * All rights reserved.
  *
+ * https://fiberfs.io/license/
+ *
  */
 
 #ifndef _FIBERFS_H_INCLUDED_
