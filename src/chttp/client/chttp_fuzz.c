@@ -175,7 +175,9 @@ main(int argc, char **argv)
 
 	printf("Server done\n");
 
-	chttp_tcp_close(addr);
+	if (addr->state == CHTTP_ADDR_CONNECTED) {
+		chttp_tcp_close(addr);
+	}
 	chttp_addr_resolved(addr);
 
 	printf("Client sent %zu bytes\n", total);
