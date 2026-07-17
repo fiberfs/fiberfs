@@ -74,7 +74,14 @@ _server_thread(void *arg)
 
 	chttp_parse(&chttp, CHTTP_REQUEST);
 
-	printf("  chttp final state: %s\n", chttp_state_string(chttp.state));
+	if (chttp.state >= CHTTP_STATE_BODY && chttp.state <= CHTTP_STATE_IDLE) {
+		const char *method = chttp_header_get_method(&chttp);
+		assert(method);
+
+		printf("  chttp final state: %s (%s)\n", chttp_state_string(chttp.state), method);
+	} else {
+		printf("  chttp final state: %s\n", chttp_state_string(chttp.state));
+	}
 
 	chttp_context_free(&chttp);
 
