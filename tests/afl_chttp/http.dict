@@ -12,9 +12,9 @@ verb3="DELETE "
 verb4="HTTP/1.1 "
 verb4="HTTP/1.0 "
 
-code1="200 "
-code1="300 "
-code1="400 "
+code1="200 OK\x0d\x0a"
+code1="300 HMM\x0d\x0a"
+code1="400 WTF\x0d\x0a"
 
 url1="/test "
 url2="/abc/132/456?xyz "
