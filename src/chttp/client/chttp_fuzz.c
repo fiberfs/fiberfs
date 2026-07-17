@@ -7,7 +7,9 @@
 #define FBR_TEST_FILE
 
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -16,9 +18,30 @@
 #include "chttp.h"
 #include "dns/chttp_dns.h"
 
-#include "test/fbr_test.h"
-
 static int _SERVER_READY;
+
+static void
+_random_seed(void)
+{
+	struct timespec now;
+	assert_zero(clock_gettime(CLOCK_MONOTONIC, &now));
+
+	srandom(now.tv_sec + now.tv_nsec);
+}
+
+// Inclusive
+static long
+_gen_random(long low, long high)
+{
+	assert(low >= 0);
+	assert(high >= low);
+
+	long rval = random();
+	rval %= (high - low) + 1;
+	rval += low;
+
+	return rval;
+}
 
 static void *
 _server_thread(void *arg)
@@ -81,7 +104,7 @@ main(int argc, char **argv)
 
 	fbr_ASSERT(fd_input >= 0, "Cannot get input");
 
-	fbr_test_random_seed();
+	_random_seed();
 
 	struct chttp_addr _server_addr;
 	struct chttp_addr *server_addr = &_server_addr;
@@ -122,7 +145,7 @@ main(int argc, char **argv)
 	size_t total = 0;
 
 	do {
-		size_t size = fbr_test_gen_random(1, sizeof(buf));
+		size_t size = _gen_random(1, sizeof(buf));
 		len = read(fd_input, buf, size);
 		assert(len >= 0);
 
@@ -161,30 +184,4 @@ void
 fbr_context_abort(int pre_abort)
 {
 	(void)pre_abort;
-}
-
-// Test stubs
-// TODO clean this up so we can use the test lib and not define these
-struct fbr_test_context *
-fbr_test_get_ctx(void)
-{
-	fbr_ABORT("no test ctx");
-}
-
-int
-fbr_test_is_forked(void)
-{
-	fbr_ABORT("no test ctx");
-}
-
-void
-fbr_test_cleanup(void)
-{
-	fbr_ABORT("no test ctx");
-}
-
-void
-fbr_test_force_error(void)
-{
-	fbr_ABORT("no test ctx");
 }

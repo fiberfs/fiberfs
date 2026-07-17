@@ -14,10 +14,7 @@ LIBFLAGS=-lrt -lpthread
 AR=ar crs
 BUILD=build
 
-TEST_CLIENT:=test/fbr_test.c
-TEST_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(TEST_CLIENT)))
 TEST_SRC:=$(shell find * -type f -name '*.c' -path '*test/*')
-TEST_SRC:=$(filter-out $(TEST_CLIENT), $(TEST_SRC))
 TEST_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(TEST_SRC)))
 
 CHTTP_CLIENT:=$(wildcard chttp/client/*.c)
@@ -44,8 +41,8 @@ LOG_SRC:=$(wildcard log/fbr_log.c)
 LOG_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(LOG_SRC)))
 
 ALL_SOURCE:=$(shell find * -type f -name '*.c')
-SOURCE:=$(filter-out $(TEST_CLIENT) $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) \
-	$(FJSON_SRC) $(CSTORE_SRC) $(UTILS_SRC) $(LOG_CLIENT), $(ALL_SOURCE))
+SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(FJSON_SRC) \
+	$(CSTORE_SRC) $(UTILS_SRC) $(LOG_CLIENT), $(ALL_SOURCE))
 OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(SOURCE)))
 DEPS:=$(patsubst %,$(BUILD)/%.d,$(basename $(ALL_SOURCE)))
 BUILD_DIRS:=$(sort $(dir $(DEPS)))
@@ -183,14 +180,14 @@ endif
 all:		fiberfs_test fiberfs fiberfs_log
 lib:		libfiberfs.so
 
-chttp_fuzz:	libfibertest.a libfiberfs.a libcstore.a libchttp.a libfjson.a libfiberutil.a $(CHTTP_CLIENT_OBJS)
-		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libfibertest.a libfiberfs.a libcstore.a libchttp.a libfjson.a libfiberutil.a $(LIBFLAGS)
+chttp_fuzz:	libchttp.a libfiberutil.a $(CHTTP_CLIENT_OBJS)
+		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libchttp.a libfiberutil.a $(LIBFLAGS)
 
 fjson_client:	libfjson.a libfiberutil.a $(FJSON_CLIENT_OBJS)
 		$(CC) -o $@ $(FJSON_CLIENT_OBJS) libfjson.a libfiberutil.a $(LIBFLAGS)
 
-fiberfs_test:	libfiberfs.a libchttp.a libfjson.a libcstore.a libfibertest.a libfiberutil.a $(TEST_CLIENT_OBJS)
-		$(CC) -o $@ $(TEST_CLIENT_OBJS) libfibertest.a libfiberfs.a libcstore.a libchttp.a libfjson.a libfiberutil.a $(LIBFLAGS)
+fiberfs_test:	libfiberfs.a libchttp.a libfjson.a libcstore.a libfibertest.a libfiberutil.a
+		$(CC) -o $@ libfibertest.a libfiberfs.a libcstore.a libchttp.a libfjson.a libfiberutil.a $(LIBFLAGS)
 
 fiberfs:	libfiberfs.a libchttp.a libfjson.a libcstore.a libfiberutil.a
 		$(CC) -o $@ libfiberfs.a libcstore.a libfiberutil.a libfiberfs.a libchttp.a libfjson.a $(LIBFLAGS)
