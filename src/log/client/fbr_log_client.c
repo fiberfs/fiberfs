@@ -7,7 +7,6 @@
 #include <stdio.h>
 
 #include "log/fbr_log.h"
-#include "utils/fbr_sys.h"
 
 #define FBR_LOG_CLIENT_MAX_SLEEP_MS		25
 
