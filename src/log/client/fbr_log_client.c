@@ -9,6 +9,8 @@
 #include "log/fbr_log.h"
 #include "utils/fbr_sys.h"
 
+#define FBR_LOG_CLIENT_MAX_SLEEP_MS		25
+
 static int _STOP;
 
 static void
@@ -40,19 +42,14 @@ main(int argc, char **argv)
 	fbr_setup_stop_signals(_log_signal_stop);
 
 	const char *mount_path = argv[1];
-
 	struct fbr_log_reader _reader;
 	struct fbr_log_reader *reader = &_reader;
-
-	fbr_log_reader_init(reader, mount_path);
-	fbr_log_reader_ok(reader);
-	fbr_log_ok(&reader->log);
-	fbr_log_header_ok(reader->log.header);
-
-	char log_buffer[FBR_LOGLINE_MAX_LENGTH];
 	unsigned long sleep_ms = 0;
 
+	fbr_log_reader_init(reader, mount_path);
+
 	while (!_STOP) {
+		char log_buffer[FBR_LOGLINE_MAX_LENGTH];
 		struct fbr_log_line *log_line;
 
 		log_line = fbr_log_reader_get(reader, log_buffer, sizeof(log_buffer));
@@ -71,7 +68,7 @@ main(int argc, char **argv)
 
 			fbr_sleep_ms(sleep_ms);
 
-			if (sleep_ms < 25) {
+			if (sleep_ms < FBR_LOG_CLIENT_MAX_SLEEP_MS) {
 				sleep_ms++;
 			}
 
