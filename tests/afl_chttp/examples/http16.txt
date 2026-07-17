@@ -1,0 +1,6 @@
+HTTP/1.1 500 Internal Server Error
+Date: Fri, 17 Jul 2026 12:06:00 GMT
+Content-Type: application/json
+Content-Length: 78
+
+{"error":"Internal Error","message":"Database connection timed out."}

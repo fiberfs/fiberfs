@@ -1,0 +1,7 @@
+HTTP/1.1 304 Not Modified
+Date: Fri, 17 Jul 2026 12:15:00 GMT
+Server: nginx
+ETag: "612c-5b9e5d48"
+Cache-Control: max-age=3600
+Connection: keep-alive
+

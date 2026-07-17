@@ -9,6 +9,12 @@ nl4="\x0d"
 verb1="GET "
 verb2="POST "
 verb3="DELETE "
+verb4="HTTP/1.1 "
+verb4="HTTP/1.0 "
+
+code1="200 "
+code1="300 "
+code1="400 "
 
 url1="/test "
 url2="/abc/132/456?xyz "

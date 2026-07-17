@@ -1,0 +1,6 @@
+HTTP/1.1 400 Bad Request
+Date: Fri, 17 Jul 2026 12:03:00 GMT
+Content-Type: application/json
+Content-Length: 64
+
+{"error":"Bad Request","message":"Missing required 'email' field"}

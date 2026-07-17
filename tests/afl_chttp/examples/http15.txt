@@ -1,0 +1,7 @@
+HTTP/1.1 404 Not Found
+Date: Fri, 17 Jul 2026 12:05:00 GMT
+Server: AWS-CloudFront
+Content-Type: text/html
+Content-Length: 45
+
+<h1>404 Not Found</h1><p>Page does not exist.</p>

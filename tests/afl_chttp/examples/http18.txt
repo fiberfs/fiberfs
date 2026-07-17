@@ -1,0 +1,9 @@
+HTTP/1.1 206 Partial Content
+Date: Fri, 17 Jul 2026 12:16:00 GMT
+Server: Apache
+Content-Type: video/mp4
+Content-Range: bytes 0-1023/*
+Content-Length: 12
+Connection: keep-alive
+
+200alksjdlksajdlksajdlksajdlksajdalkdj

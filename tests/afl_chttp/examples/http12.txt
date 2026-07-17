@@ -1,0 +1,6 @@
+HTTP/1.1 301 Moved Permanently
+Date: Fri, 17 Jul 2026 12:02:00 GMT
+Location: https://example.com
+Content-Length: 0
+Connection: keep-alive
+

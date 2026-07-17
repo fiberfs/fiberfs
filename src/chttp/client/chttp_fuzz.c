@@ -19,6 +19,7 @@
 #include "dns/chttp_dns.h"
 
 static int _SERVER_READY;
+static int _IS_RESP;
 
 static void
 _random_seed(void)
@@ -72,16 +73,34 @@ _server_thread(void *arg)
 
 	chttp_addr_move(&chttp.addr, client_addr);
 
-	chttp_parse(&chttp, CHTTP_REQUEST);
+	if (_IS_RESP) {
+		printf("Server response\n");
+
+		chttp.state = CHTTP_STATE_SENT;
+
+		chttp_receive(&chttp);
+	} else {
+		printf("Server request\n");
+
+		chttp_parse(&chttp, CHTTP_REQUEST);
+	}
 
 	if (chttp.state >= CHTTP_STATE_BODY && chttp.state <= CHTTP_STATE_IDLE) {
-		const char *method = chttp_header_get_method(&chttp);
-		assert(method);
+		if (_IS_RESP) {
+			printf("  chttp final state: %s (%d)\n", chttp_state_string(chttp.state),
+				chttp.status);
+		} else {
+			const char *method = chttp_header_get_method(&chttp);
+			assert(method);
 
-		printf("  chttp final state: %s (%s)\n", chttp_state_string(chttp.state), method);
+			printf("  chttp final state: %s (%s)\n", chttp_state_string(chttp.state),
+				method);
+		}
 	} else {
 		printf("  chttp final state: %s\n", chttp_state_string(chttp.state));
 	}
+
+	chttp.close = 1;
 
 	chttp_context_free(&chttp);
 
@@ -147,6 +166,8 @@ main(int argc, char **argv)
 
 	printf("Client connected\n");
 
+	assert_zero(_IS_RESP);
+
 	char buf[1024];
 	ssize_t len;
 	size_t total = 0;
@@ -158,6 +179,12 @@ main(int argc, char **argv)
 
 		if (!len) {
 			break;
+		}
+
+		if (!total) {
+			if (len >= 4 && !strncmp(buf, "HTTP", 4)) {
+				_IS_RESP = 1;
+			}
 		}
 
 		chttp_tcp_send(addr, buf, len);

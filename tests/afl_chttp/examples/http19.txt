@@ -1,0 +1,6 @@
+HTTP/1.1 204 No Content
+Date: Fri, 17 Jul 2026 12:17:00 GMT
+Server: AWS-API-Gateway
+Cache-Control: no-cache
+Connection: close
+
