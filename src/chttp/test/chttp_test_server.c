@@ -821,6 +821,7 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 	const char *reason = "OK";
 	const char *body = "";
 	size_t body_len = 0;
+	char gzip_buf[1024];
 	int do_gzip = 0;
 
 	if (cmd->param_count >= 1) {
@@ -839,7 +840,6 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 	if (cmd->param_count >= 4) {
 		fbr_test_ERROR_string(cmd->params[3].value);
 		if (!strcmp(cmd->params[3].value, "1")) {
-			char gzip_buf[1024];
 			assert(body_len < sizeof(gzip_buf));
 
 			struct fbr_gzip gzip;

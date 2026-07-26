@@ -125,6 +125,13 @@ else ifeq ($(LIBUNWIND),true)
 	LIBFLAGS+=$(LIBUNWIND_LIB)
 endif
 
+# ASAN (ASAN=true)
+ASAN_FLAGS=-fsanitize=address
+ifeq ($(ASAN),true)
+	CFLAGS_BUILD+=$(ASAN_FLAGS)
+	LIBFLAGS+=$(ASAN_FLAGS)
+endif
+
 # Release build (RELEASE=true)
 RELEASE_CFLAGS=-flto -DFBR_NO_ASSERT_DEV -DFBR_RELEASE
 RELEASE_LIBFLAGS=-flto -O3
