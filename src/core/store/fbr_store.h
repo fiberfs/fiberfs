@@ -90,6 +90,7 @@ struct fbr_index_parser {
 	struct fjson_context 			*json;
 	struct fbr_fs				*fs;
 	struct fbr_directory			*directory;
+	struct fbr_file				*existing;
 	struct fbr_file				*file;
 
 	struct {

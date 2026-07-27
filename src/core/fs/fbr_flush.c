@@ -182,7 +182,10 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_file_set_attr(fs, clone, flush_data->attr);
 
-		clone->generation++;
+		if (remote_merge || local_update) {
+			clone->generation++;
+		}
+
 		clone->state = FBR_FILE_OK;
 
 		fbr_directory_remove_file(fs, directory, latest);

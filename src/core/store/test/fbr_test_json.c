@@ -490,7 +490,8 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	// 1 new file, 1 unchanged/inherited
 	json = "{\"fiberfs\":1,\"g\":2,\"f\":[{\"n\":\"file_ABC\",\"j\":1},"
-		"{\"n\":\"file_XYZ\",\"j\":1}]}";
+		"{\"n\":\"file_XYZ\",\"j\":1,\"s\":200,\"m\":33060,\"u\":1000,\"p\":1000,"
+		"\"c\":1781114443,\"d\":-4321}]}";
 	directory = _parse_directory(fs, json);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
@@ -499,6 +500,8 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	file = fbr_directory_find_file(directory, "file_ABC", 8);
 	fbr_file_ok(file);
 	assert_zero(fbr_test_fs_count_chunks(file));
+	assert(file->generation == 1);
+	assert_zero(file->size);
 	file = fbr_directory_find_file(directory, "file_XYZ", 8);
 	fbr_file_ok(file);
 	assert(fbr_test_fs_count_chunks(file) == 2);
@@ -513,7 +516,7 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_dindex_release(fs, &directory);
 
 	// 1 other new file, 1 unchanged/inherited
-	json = "{\"fiberfs\":1,\"g\":4,\"f\":[{\"n\":\"file_ABC\",\"j\":1},"
+	json = "{\"fiberfs\":1,\"g\":4,\"f\":[{\"n\":\"file_ABC\",\"j\":1,\"s\":2},"
 		"{\"n\":\"file_XYZ\",\"j\":2}]}";
 	directory = _parse_directory(fs, json);
 	fbr_directory_ok(directory);
@@ -524,6 +527,7 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_file_ok(file);
 	assert(file->generation == 1);
 	assert_zero(fbr_test_fs_count_chunks(file));
+	assert(file->size == 2);
 	file = fbr_directory_find_file(directory, "file_XYZ", 8);
 	fbr_file_ok(file);
 	assert(file->generation == 2);
