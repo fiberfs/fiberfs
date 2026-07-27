@@ -61,6 +61,7 @@ FBR_TEST_CMD(cstore_loader_test)
 FBR_TEST_CMD(cstore_backend_test)
 
 FBR_TEST_CMD(cstore_debug)
+FBR_TEST_CMD(cstore_wait)
 FBR_TEST_VARF(cstore_entries)
 FBR_TEST_VARF(cstore_stat_chunks)
 FBR_TEST_VARF(cstore_stat_indexes)

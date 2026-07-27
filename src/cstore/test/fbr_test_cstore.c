@@ -455,6 +455,26 @@ fbr_cmd_cstore_debug(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_cstore_debug(cstore);
 }
 
+void
+fbr_cmd_cstore_wait(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+	assert(cmd->param_count <= 1);
+
+	long index = 0;
+	if (cmd->param_count >= 1) {
+		index = fbr_test_parse_long(cmd->params[0].value);
+	}
+	assert(index >= 0);
+
+	fbr_test_logs("cstore_wait: %lu", index);
+
+	struct fbr_cstore *cstore = fbr_test_cstore_get(ctx, index);
+
+	fbr_test_cstore_wait(cstore);
+}
+
 const char *
 fbr_varf_cstore_entries(struct fbr_test_context *ctx, struct fbr_test_param *param)
 {

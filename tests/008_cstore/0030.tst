@@ -90,6 +90,10 @@ equal $cstore_stat_http_500:3 0
 print "### CLEANUP"
 
 fs_test_stats
+cstore_wait 0
+cstore_wait 1
+cstore_wait 2
+cstore_wait 3
 
 fs_test_release_all_wait 1
 equal $fs_test_stat_files_inodes 0
