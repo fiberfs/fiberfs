@@ -771,17 +771,6 @@ _parser_match(struct fbr_index_parser *parser, enum fbr_index_location location,
 	return 0;
 }
 
-static inline int
-_file_editable(struct fbr_file *file)
-{
-	if (file) {
-		assert_dev(file->state == FBR_FILE_INIT);
-		return 1;
-	}
-
-	return 0;
-}
-
 #include "utils/fbr_enum_string.h"
 static FBR_ENUM_INDEX_LOCATION
 
@@ -825,7 +814,6 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 	_index_parse_debug(parser, token, depth);
 
 	struct fbr_fs *fs = parser->fs;
-	struct fbr_file *file = parser->file;
 	const char *val = token->svalue;
 	size_t val_len = token->svalue_len;
 	int error;
@@ -833,7 +821,7 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 	switch (token->type) {
 		case FJSON_TOKEN_STRING:
 		case FJSON_TOKEN_NUMBER:
-			if (!_file_editable(file)) {
+			if (!parser->file) {
 				return 0;
 			}
 
@@ -851,8 +839,8 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 			if (token->closed && depth == 6 &&
 			    parser->context[FBR_INDEX_LOC_FILE] == 'b') {
 				if (parser->chunk.id && parser->chunk.length) {
-					assert_dev(_file_editable(file));
-					fbr_body_chunk_append(fs, file, parser->chunk.id,
+					assert_dev(parser->file);
+					fbr_body_chunk_append(fs, parser->file, parser->chunk.id,
 						parser->chunk.offset, parser->chunk.length,
 						(parser->chunk.external > 0) ? 1 : 0, 0);
 				}
@@ -897,17 +885,41 @@ _index_parse_file_alloc(struct fbr_index_parser *parser, const char *filename, s
 	assert_zero_dev(parser->file->generation);
 }
 
+static struct fbr_file *
+_parser_get_file(struct fbr_index_parser *parser)
+{
+	assert(parser->file_ready);
+
+	struct fbr_file *file = parser->file;
+
+	if (parser->file_match.magic) {
+		assert_zero_dev(file);
+		assert_dev(parser->existing);
+		file = &parser->file_match;
+	} else {
+		assert_zero_dev(parser->existing);
+	}
+
+	fbr_file_ok(file);
+	assert(file->state == FBR_FILE_INIT);
+
+	return file;
+}
+
 static void
 _index_parse_file_start(struct fbr_index_parser *parser, const char *filename, size_t filename_len)
 {
 	assert_dev(parser);
 	assert_dev(parser->fs);
 	assert_dev(parser->directory);
+	assert_zero_dev(parser->file_ready);
 	assert_zero_dev(parser->existing);
+	assert_zero_dev(parser->file_match.magic);
 	assert_zero_dev(parser->file);
 	assert_dev(filename);
 
-	if (!filename_len) {
+	if (!filename_len || filename_len >= FBR_PATH_MAX) {
+		parser->error = 1;
 		return;
 	}
 
@@ -922,11 +934,21 @@ _index_parse_file_start(struct fbr_index_parser *parser, const char *filename, s
 		return;
 	}
 
+	fbr_zero(&parser->file_match);
+
+	parser->file_ready = 1;
+
 	if (previous && previous->inode == directory->inode) {
 		parser->existing = fbr_directory_find_file(previous, filename, filename_len);
 	}
 
-	_index_parse_file_alloc(parser, filename, filename_len);
+	if (parser->existing) {
+		parser->file_match.magic = FBR_FILE_MAGIC;
+	} else {
+		_index_parse_file_alloc(parser, filename, filename_len);
+	}
+
+	assert_dev(_parser_get_file(parser));
 }
 
 static void
@@ -935,18 +957,15 @@ _index_parse_generation(struct fbr_index_parser *parser, struct fjson_token *tok
 	assert_dev(parser);
 	assert_dev(token);
 
-	if (!parser->file) {
+	int error;
+	unsigned long generation = fbr_parse_ulong(token->svalue, token->svalue_len, &error);
+	if (!generation || error) {
 		parser->error = 1;
 		return;
 	}
 
-	struct fbr_file *file = parser->file;
-	fbr_file_ok(file);
-	assert(file->state == FBR_FILE_INIT);
-
-	int error;
-	unsigned long generation = fbr_parse_ulong(token->svalue, token->svalue_len, &error);
-	if (!generation || error || file->generation) {
+	struct fbr_file *file = _parser_get_file(parser);
+	if (file->generation) {
 		parser->error = 1;
 		return;
 	}
@@ -962,6 +981,7 @@ _index_parse_file_match(struct fbr_index_parser *parser)
 	assert_dev(parser->directory);
 
 	if (!parser->existing) {
+		assert_zero_dev(parser->file_match.magic);
 		return;
 	}
 
@@ -972,9 +992,9 @@ _index_parse_file_match(struct fbr_index_parser *parser)
 	fbr_file_ok(existing);
 	assert(existing->state >= FBR_FILE_OK);
 
-	struct fbr_file *file = parser->file;
+	struct fbr_file *file = &parser->file_match;
 	fbr_file_ok(file);
-	assert(file->state == FBR_FILE_INIT);
+	assert_zero_dev(parser->file);
 
 	if (existing->generation == file->generation && existing->size == file->size &&
 	    existing->mode == file->mode && existing->uid == file->uid &&
@@ -984,13 +1004,26 @@ _index_parse_file_match(struct fbr_index_parser *parser)
 
 		fbr_directory_add_file(fs, directory, existing);
 
-		fbr_file_free(fs, file);
-		parser->file = NULL;
-
 		parser->files_existing++;
+	} else {
+		struct fbr_path_name filename;
+		fbr_path_get_file(&existing->path, &filename);
+		assert(filename.length);
+
+		_index_parse_file_alloc(parser, filename.name, filename.length);
+		assert_dev(parser->file);
+
+		parser->file->generation = file->generation;
+		parser->file->size = file->size;
+		parser->file->mode = file->mode;
+		parser->file->uid = file->uid;
+		parser->file->gid = file->gid;
+		parser->file->ctime = file->ctime;
+		parser->file->mtime = file->mtime;
 	}
 
 	parser->existing = NULL;
+	parser->file_match.magic = 0;
 
 }
 
@@ -1002,17 +1035,18 @@ _index_parse_file_end(struct fbr_index_parser *parser)
 	assert_dev(parser->directory);
 
 	_index_parse_file_match(parser);
-	assert_zero_dev(parser->existing);
 
 	struct fbr_fs *fs = parser->fs;
 	struct fbr_directory *directory = parser->directory;
 	struct fbr_file *file = parser->file;
 
 	if (!file) {
-		// Existing file successfully added
+		assert_dev(parser->files_existing);
 	} else if (!file->generation) {
 		assert_dev(file->state == FBR_FILE_INIT);
+
 		fbr_file_free(fs, file);
+
 		parser->error = 1;
 	} else {
 		assert_dev(file->state == FBR_FILE_INIT);
@@ -1027,6 +1061,10 @@ _index_parse_file_end(struct fbr_index_parser *parser)
 	}
 
 	parser->file = NULL;
+	parser->file_ready = 0;
+
+	assert_zero_dev(parser->existing);
+	assert_zero_dev(parser->file_match.magic);
 }
 
 static int
@@ -1040,42 +1078,35 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 
 	_index_parse_debug(parser, token, depth);
 
-	struct fbr_file *file = parser->file;
-	const char *val = token->svalue;
-	size_t val_len = token->svalue_len;
-
 	switch (token->type) {
 		case FJSON_TOKEN_STRING:
 		case FJSON_TOKEN_NUMBER:
 			if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'n')) {
-				_index_parse_file_start(parser, val, val_len);
+				_index_parse_file_start(parser, token->svalue, token->svalue_len);
+			} else if (!parser->file_ready) {
+				break;
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'j')) {
 				_index_parse_generation(parser, token);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 's')) {
-				if (_file_editable(file)) {
-					int error;
-					file->size = fbr_parse_ulong(val, val_len, &error);
-				}
+				struct fbr_file *file = _parser_get_file(parser);
+				int error;
+				file->size = fbr_parse_ulong(token->svalue, token->svalue_len,
+					&error);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'm')) {
-				if (_file_editable(file)) {
-					file->mode = (mode_t)token->dvalue;
-				}
+				struct fbr_file *file = _parser_get_file(parser);
+				file->mode = (mode_t)token->dvalue;
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'u')) {
-				if (_file_editable(file)) {
-					file->uid = (uid_t)token->dvalue;
-				}
+				struct fbr_file *file = _parser_get_file(parser);
+				file->uid = (uid_t)token->dvalue;
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'p')) {
-				if (_file_editable(file)) {
-					file->gid = (uid_t)token->dvalue;
-				}
+				struct fbr_file *file = _parser_get_file(parser);
+				file->gid = (uid_t)token->dvalue;
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'c')) {
-				if (_file_editable(file)) {
-					file->ctime = token->dvalue;
-				}
+				struct fbr_file *file = _parser_get_file(parser);
+				file->ctime = token->dvalue;
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'd')) {
-				if (_file_editable(file)) {
-					file->mtime = token->dvalue;
-				}
+				struct fbr_file *file = _parser_get_file(parser);
+				file->mtime = token->dvalue;
 			}
 			break;
 		case FJSON_TOKEN_OBJECT:

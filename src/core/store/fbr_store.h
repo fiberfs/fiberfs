@@ -91,6 +91,7 @@ struct fbr_index_parser {
 	struct fbr_fs				*fs;
 	struct fbr_directory			*directory;
 	struct fbr_file				*existing;
+	struct fbr_file				file_match;
 	struct fbr_file				*file;
 
 	struct {
@@ -103,6 +104,7 @@ struct fbr_index_parser {
 	unsigned int				files_new;
 	unsigned int				files_existing;
 
+	int					file_ready;
 	int					error;
 };
 
