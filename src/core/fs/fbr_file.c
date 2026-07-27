@@ -116,7 +116,7 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(source);
-	assert(source->state == FBR_FILE_OK);
+	fbr_ASSERT(source->state >= FBR_FILE_OK, "source->state=%d", source->state);
 
 	struct fbr_path_name filename;
 	fbr_path_get_file(&source->path, &filename);
@@ -124,6 +124,8 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 	struct fbr_file *clone = fbr_file_alloc_new(fs, parent, &filename);
 	assert_dev(clone);
 	assert_dev(clone->state == FBR_FILE_INIT);
+
+	fbr_rlog(FBR_LOG_CLONE, "cloned inode: %lu to %lu", source->inode, clone->inode);
 
 	fbr_file_merge(fs, source, clone);
 
@@ -141,7 +143,8 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	assert(source != dest);
 
 	const char *filename = fbr_path_get_file(&dest->path, NULL);
-	fbr_rlog(FBR_LOG_MERGE, "'%s' gen: %lu", filename, source->generation);
+	fbr_rlog(FBR_LOG_MERGE, "'%s' gen: %lu source inode: %lu dest inode: %lu",
+		filename, source->generation, source->inode, dest->inode);
 
 	fbr_stat_add(&fs->stats.merges);
 
@@ -152,6 +155,8 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	dest->mode = source->mode;
 	dest->uid = source->uid;
 	dest->gid = source->gid;
+	dest->ctime = source->ctime;
+	dest->mtime = source->mtime;
 
 	// Start zipper merge
 

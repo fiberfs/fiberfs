@@ -110,7 +110,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
 
-	fbr_rlog(FBR_LOG_FLUSH, "starting merge on %s", filename.name);
+	fbr_rlog(FBR_LOG_MERGE, "starting merge '%s' gen: %lu inode: %lu directory gen: %lu",
+		filename.name, file->generation, file->inode, directory->generation);
 
 	struct fbr_file *latest = fbr_directory_find_file(directory, filename.name,
 		filename.length);
@@ -119,9 +120,12 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	int local_update = 0;
 
 	if (latest && latest->generation > file->generation) {
-		assert(latest != file);
+		fbr_rlog(FBR_LOG_FLUSH, "new remote generation found (%lu > %lu)",
+			latest->generation, file->generation);
 		remote_merge = 1;
 	} else if (latest && latest != file) {
+		fbr_rlog(FBR_LOG_FLUSH, "local update found (%lu != %lu)",
+			latest->inode, file->inode);
 		local_update = 1;
 	}
 
@@ -178,7 +182,10 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_file_set_attr(fs, clone, flush_data->attr);
 
-		clone->generation++;
+		if (remote_merge || local_update) {
+			clone->generation++;
+		}
+
 		clone->state = FBR_FILE_OK;
 
 		fbr_directory_remove_file(fs, directory, latest);
@@ -318,9 +325,6 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 		fbr_directory_copy(fs, new_directory, previous);
 
 		new_directory->generation++;
-
-		fbr_rlog(FBR_LOG_FLUSH, "file: '%s' generation: %lu", filename.name,
-			file->generation);
 
 		ret = _flush_merge(fs, new_directory, flush_data);
 		if (ret) {

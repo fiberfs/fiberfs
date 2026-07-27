@@ -42,8 +42,12 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 	fbr_fio_ok(fio);
 
 	if (fbr_is_flag(fi->flags, O_APPEND)) {
-		fio->append = 1;
-		fbr_rlog(FBR_LOG_OP_OPEN, "flags: append");
+		if (fs->writeback_enabled) {
+			fbr_rlog(FBR_LOG_OP_OPEN, "flags: append (ignoring, writeback enabled)");
+		} else {
+			fio->append = 1;
+			fbr_rlog(FBR_LOG_OP_OPEN, "flags: append");
+		}
 	}
 	if (fbr_is_flag(fi->flags, O_TRUNC)) {
 		fio->truncate = 1;

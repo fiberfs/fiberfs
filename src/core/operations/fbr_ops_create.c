@@ -129,8 +129,12 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	fbr_fio_ok(fio);
 
 	if (fbr_is_flag(fi->flags, O_APPEND)) {
-		fio->append = 1;
-		fbr_rlog(FBR_LOG_OP_CREATE, "flags: append");
+		if (fs->writeback_enabled) {
+			fbr_rlog(FBR_LOG_OP_CREATE, "flags: append (ignoring, writeback enabled)");
+		} else {
+			fio->append = 1;
+			fbr_rlog(FBR_LOG_OP_CREATE, "flags: append");
+		}
 	}
 	if (fbr_is_flag(fi->flags, O_SYNC)) {
 		fio->sync = 1;

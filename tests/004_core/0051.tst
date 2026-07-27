@@ -1,8 +1,8 @@
-fiber_test "RW test"
+fiber_test "RW test with writeback"
 
 # Init
 
-config_add FUSE_WRITEBACK_CACHE false
+config_add FUSE_WRITEBACK_CACHE true
 
 set_timeout_sec 20
 sys_mkdir_tmp
@@ -21,7 +21,7 @@ sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
 sys_stat_size $var1 15
 sys_cat $var1 "test1test2test3"
 
-equal $fs_test_stat_read_bytes 15
+equal $fs_test_stat_read_bytes 0
 
 # Cleanup
 
@@ -38,13 +38,14 @@ fs_test_debug
 cstore_debug
 
 equal $cstore_stat_chunk_write_bytes:0 15
-equal $cstore_stat_chunk_read_bytes:0 15
+equal $cstore_stat_chunk_read_bytes:0 0
 equal $cstore_stat_roots:0 1
 equal $cstore_stat_indexes:0 1
 equal $cstore_stat_chunks:0 1
-equal $cstore_stat_root_updates:0 2
 
-equal $fs_test_stat_flushes 1
+greater_equal $cstore_stat_root_updates:0 2
+
+greater_equal $fs_test_stat_flushes 1
 equal $fs_test_stat_flush_memory 1
 
 equal $fs_test_stat_directories 0

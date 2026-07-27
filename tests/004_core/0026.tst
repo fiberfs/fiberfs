@@ -4,6 +4,7 @@ fiber_test "RW test small buffer"
 
 config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 3
 config_add LOG_ALWAYS_FLUSH 1
+config_add FUSE_WRITEBACK_CACHE false
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir

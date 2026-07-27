@@ -3,6 +3,7 @@ fiber_test "RW test nogzip"
 # Init
 
 config_add FS_GZIP_INDEX false
+config_add FUSE_WRITEBACK_CACHE false
 
 set_timeout_sec 20
 sys_mkdir_tmp

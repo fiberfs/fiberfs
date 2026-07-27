@@ -1,7 +1,7 @@
 fiber_test "Empty files"
 
 # Init
-config_add FUSE_WRITEBACK_CACHE false
+config_add FUSE_WRITEBACK_CACHE true
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
@@ -15,7 +15,7 @@ equal $fs_test_stat_flushes 0
 set_var1 $sys_tmpdir "/somefile"
 sys_write_seek $var1 0 ""
 
-equal $fs_test_stat_flushes 1
+greater_equal $fs_test_stat_flushes 1
 
 fs_test_release_all_wait
 sleep_ms 10
@@ -29,7 +29,7 @@ print "### WRITE"
 
 sys_write $var1 "123"
 
-equal $fs_test_stat_flushes 2
+greater_equal $fs_test_stat_flushes 2
 
 fs_test_release_all_wait
 sleep_ms 10
@@ -49,13 +49,13 @@ sys_write_seek $var1 0 ""
 
 sleep_ms 20
 
-equal $fs_test_stat_flushes 2
+greater_equal $fs_test_stat_flushes 2
 
 print "### WRITE TRUNCATE"
 
 sys_write $var1 ""
 
-equal $fs_test_stat_flushes 3
+greater_equal $fs_test_stat_flushes 3
 
 fs_test_release_all_wait
 sleep_ms 10

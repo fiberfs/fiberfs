@@ -37,6 +37,7 @@
 #define FBR_ROOT_TTL_MIN			0.2
 #define FBR_MAX_VERSION_ERRORS			3
 #define FBR_BLOCK_SIZE_CALC			512
+#define FBR_ATTR_TIME_CHANGE_MIN		1.2
 
 #define FBR_ENUM_CHUNK_STATE						\
 	FBR_ENUM_NAME(fbr_chunk_state)					\
@@ -401,6 +402,7 @@ struct fbr_fs {
 	struct fbr_fs_stats			stats;
 
 	fbr_bitflag_t				cstore_managed:1;
+	fbr_bitflag_t				writeback_enabled:1;
 };
 
 struct fbr_fs_timeout {

@@ -2,6 +2,8 @@ fiber_test "Write with O_SYNC"
 
 # Init
 
+config_add FUSE_WRITEBACK_CACHE false
+
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 

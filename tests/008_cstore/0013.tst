@@ -34,8 +34,8 @@ cstore_debug
 cstore_debug 1
 cstore_debug 2
 
-equal $cstore_entries:0 4
-equal $cstore_entries:1 4
+greater_equal $cstore_entries:0 4
+greater_equal $cstore_entries:1 4
 equal $cstore_entries:2 3
 
 print "### WRITE OVER"
@@ -48,8 +48,8 @@ cstore_debug
 cstore_debug 1
 cstore_debug 2
 
-equal $cstore_entries:0 6
-equal $cstore_entries:1 6
+greater_equal $cstore_entries:0 6
+greater_equal $cstore_entries:1 6
 equal $cstore_entries:2 3
 
 cstore_clear 0

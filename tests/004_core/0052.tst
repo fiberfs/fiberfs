@@ -1,8 +1,8 @@
-fiber_test "RW append"
+fiber_test "RW append with writeback caching"
 
 # Init
 
-config_add FUSE_WRITEBACK_CACHE false
+config_add FUSE_WRITEBACK_CACHE true
 
 set_timeout_sec 20
 sys_mkdir_tmp
@@ -51,9 +51,9 @@ equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
-equal $fs_test_stat_appends 5
-equal $fs_test_stat_flushes 5
+equal $fs_test_stat_appends 0
+greater_equal $fs_test_stat_flushes 3
 equal $fs_test_stat_flush_memory 1
-equal $cstore_stat_chunks:0 5
+equal $cstore_stat_chunks:0 1
 
 fuse_test_unmount

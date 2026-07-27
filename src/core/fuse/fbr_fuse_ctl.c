@@ -226,11 +226,16 @@ fbr_fuse_setup(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	conn->want |= FUSE_CAP_ASYNC_DIO;
 	conn->want |= FUSE_CAP_PARALLEL_DIROPS;
 
+	ctx->fs->writeback_enabled = fbr_conf_get_bool("FUSE_WRITEBACK_CACHE", FBR_CONFIG_TRUE);
+
+	if (ctx->fs->writeback_enabled) {
+		conn->want |= FUSE_CAP_WRITEBACK_CACHE;
+	} else {
+		conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
+	}
+
 	// TODO implement .write_buf
 	conn->want &= ~FUSE_CAP_SPLICE_READ;
-
-	// TODO test this
-	conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
 }
 
 void

@@ -1,5 +1,7 @@
 fiber_test "cstore server PUT/GET with s3"
 
+config_add FUSE_WRITEBACK_CACHE false
+
 cstore_init 0
 
 config_add CSTORE_SERVER true
