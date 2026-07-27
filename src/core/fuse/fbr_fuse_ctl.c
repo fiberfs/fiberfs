@@ -185,7 +185,7 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 
 	ctx->fs->fuse_ctx = ctx;
 
-	fbr_log_print(ctx->log, FBR_LOG_FS, FBR_REQID_CORE, "initialized");
+	fbr_log_print(ctx->log, FBR_LOG_FUSE, FBR_REQID_CORE, "initialized");
 
 	pt_assert(pthread_create(&ctx->loop_thread, NULL, _fuse_mount_thread, ctx));
 
@@ -226,13 +226,16 @@ fbr_fuse_setup(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	conn->want |= FUSE_CAP_ASYNC_DIO;
 	conn->want |= FUSE_CAP_PARALLEL_DIROPS;
 
-	ctx->fs->writeback_enabled = fbr_conf_get_bool("FUSE_WRITEBACK_CACHE", FBR_CONFIG_TRUE);
+	ctx->fs->writeback_enabled = fbr_conf_get_bool("FUSE_WRITEBACK_CACHE", FBR_CONFIG_FALSE);
 
 	if (ctx->fs->writeback_enabled) {
 		conn->want |= FUSE_CAP_WRITEBACK_CACHE;
 	} else {
 		conn->want &= ~FUSE_CAP_WRITEBACK_CACHE;
 	}
+
+	fbr_log_print(ctx->log, FBR_LOG_FUSE, FBR_REQID_CORE, "FUSE_CAP_WRITEBACK_CACHE %s",
+		fbr_is_flag(conn->want, FUSE_CAP_WRITEBACK_CACHE) ? "enabled" : "disabled");
 
 	// TODO implement .write_buf
 	conn->want &= ~FUSE_CAP_SPLICE_READ;
@@ -353,7 +356,7 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 	fbr_fs_free(ctx->fs);
 	ctx->fs = NULL;
 
-	fbr_rlog(FBR_LOG_FS, "done");
+	fbr_rlog(FBR_LOG_FUSE, "done");
 
 	fbr_log_restore_stderr();
 
