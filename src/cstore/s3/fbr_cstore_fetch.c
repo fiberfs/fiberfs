@@ -15,6 +15,7 @@
 #include "cstore/fbr_cstore_api.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
+#include "utils/fbr_chash.h"
 #include "utils/fbr_sys.h"
 
 static void
@@ -198,6 +199,8 @@ _s3_retry(struct fbr_cstore_fetch_context *fetch)
 		return 1;
 	} else if (fetch->http->status >= 500) {
 		return 1;
+	} else if (fetch->http->status == 400) {
+		return 1;
 	}
 
 	return 0;
@@ -210,6 +213,7 @@ _s3_send_get(struct fbr_cstore_fetch_context *fetch)
 	assert_dev(fetch->file_path);
 	assert_dev(fetch->route);
 	assert_dev(fetch->attempts);
+	assert_zero_dev(fetch->existing);
 
 	struct fbr_cstore *cstore = fetch->cstore;
 	struct chttp_context *http = fetch->http;
@@ -268,7 +272,6 @@ fbr_cstore_s3_send_get(struct fbr_cstore_fetch_context *fetch)
 	fbr_cstore_fetch_ok(fetch);
 	fbr_cstore_path_ok(fetch->file_path);
 	assert(fbr_cstore_backend_enabled(fetch->cstore));
-	assert_zero(fetch->existing);
 	assert_zero_dev(fetch->data_callback);
 	assert_zero_dev(fetch->hash_callback);
 	assert_zero_dev(fetch->data_arg);
@@ -294,9 +297,9 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 {
 	fbr_cstore_fetch_ok(fetch);
 	assert_dev(fetch->file_path);
-	assert(fetch->length);
+	assert_dev(fetch->length);
 	assert_dev(fetch->data_callback);
-	//assert_dev(fetch->hash_callback);
+	assert_dev(fetch->hash_callback);
 	assert_dev(fetch->route);
 	assert_dev(fetch->attempts);
 	assert_zero_dev(fetch->etag_304.length);
@@ -405,10 +408,7 @@ void
 fbr_s3_send_put(struct fbr_cstore_fetch_context *fetch)
 {
 	fbr_cstore_fetch_ok(fetch);
-	assert_dev(fetch->file_path);
-	assert_dev(fetch->length);
-	assert_dev(fetch->data_callback);
-	//assert_dev(fetch->hash_callback);
+	fbr_cstore_path_ok(fetch->file_path);
 	assert_dev(fbr_cstore_backend_enabled(fetch->cstore));
 
 	fetch->attempts = 0;
@@ -693,6 +693,26 @@ _s3_wbuffer_data_cb(struct chttp_context *http, void *arg)
 	assert_zero(http->length);
 }
 
+static size_t
+_s3_wbuffer_hash_cb(void *arg, void *hash, size_t hash_len)
+{
+	assert(arg);
+	assert(hash);
+	assert(hash_len >= FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE));
+
+	struct fbr_wbuffer *wbuffer = arg;
+	fbr_wbuffer_ok(wbuffer);
+
+	uint8_t bin_hash[FBR_SHA256_DIGEST_SIZE];
+	struct fbr_sha256_ctx wbuffer_hash;
+	fbr_sha256_init(&wbuffer_hash, 0);
+	fbr_sha256_update(&wbuffer_hash, wbuffer->buffer, wbuffer->end);
+	fbr_sha256_final(&wbuffer_hash, bin_hash, sizeof(bin_hash));
+	size_t ret = fbr_bin2hex(bin_hash, sizeof(bin_hash), hash, hash_len);
+
+	return ret;
+}
+
 void
 fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http,
     struct fbr_cstore_path *path, struct fbr_wbuffer *wbuffer)
@@ -703,9 +723,8 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http
 		wbuffer->end, 0, FBR_CSTORE_ROUTE_CLUSTER);
 
 	fetch.data_callback = _s3_wbuffer_data_cb;
+	fetch.hash_callback = _s3_wbuffer_hash_cb;
 	fetch.data_arg = wbuffer;
-
-	// TODO hash callback
 
 	fbr_s3_send_put(&fetch);
 }
@@ -956,6 +975,40 @@ _s3_writer_data_cb(struct chttp_context *http, void *arg)
 	assert_zero(http->length);
 }
 
+static size_t
+_s3_writer_hash_cb(void *arg, void *hash, size_t hash_len)
+{
+	assert(arg);
+	assert(hash);
+	assert(hash_len >= FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE));
+
+	struct fbr_writer *writer = arg;
+	fbr_writer_ok(writer);
+	assert_dev(writer->bytes);
+	assert_dev(writer->output);
+	assert_zero(writer->error);
+
+	uint8_t bin_hash[FBR_SHA256_DIGEST_SIZE];
+	struct fbr_sha256_ctx writer_hash;
+	fbr_sha256_init(&writer_hash, 0);
+
+	struct fbr_buffer *output = writer->output;
+	while (output) {
+		fbr_buffer_ok(output);
+
+		if (output->buffer_pos) {
+			fbr_sha256_update(&writer_hash, output->buffer, output->buffer_pos);
+		}
+
+		output = output->next;
+	}
+
+	fbr_sha256_final(&writer_hash, bin_hash, sizeof(bin_hash));
+	size_t ret = fbr_bin2hex(bin_hash, sizeof(bin_hash), hash, hash_len);
+
+	return ret;
+}
+
 void
 fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
     struct fbr_cstore_path *path, struct fbr_writer *writer)
@@ -966,9 +1019,8 @@ fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
 		writer->bytes, writer->is_gzip, FBR_CSTORE_ROUTE_CLUSTER);
 
 	fetch.data_callback = _s3_writer_data_cb;
+	fetch.hash_callback = _s3_writer_hash_cb;
 	fetch.data_arg = writer;
-
-	// TODO hash callback
 
 	fbr_s3_send_put(&fetch);
 }
@@ -996,9 +1048,8 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 		etag_match, root_json->bytes, root_json->is_gzip, route);
 
 	fetch.data_callback = _s3_writer_data_cb;
+	fetch.hash_callback = _s3_writer_hash_cb;
 	fetch.data_arg = root_json;
-
-	// TODO hash callback
 
 	fbr_s3_send_put(&fetch);
 
