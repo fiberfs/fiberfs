@@ -110,7 +110,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
 
-	fbr_rlog(FBR_LOG_MERGE, "starting merge '%s' gen: %lu inode: %lu directory gen: %lu",
+	fbr_rlog(FBR_LOG_MERGE, "starting merge '%s' curr gen: %lu inode: %lu dir new gen: %lu",
 		filename.name, file->generation, file->inode, directory->generation);
 
 	struct fbr_file *latest = fbr_directory_find_file(directory, filename.name,

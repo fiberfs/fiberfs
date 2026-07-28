@@ -397,6 +397,7 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	if (next && next->remote) {
 		fbr_rlog(FBR_LOG_DIR_EXP, "INVAL inode: %lu (directory)", directory->inode);
+
 		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, directory->inode,
 			0, 0);
 		assert_dev(ret != -ENOSYS);

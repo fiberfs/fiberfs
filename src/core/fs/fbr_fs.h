@@ -37,7 +37,7 @@
 #define FBR_ROOT_TTL_MIN			0.2
 #define FBR_MAX_VERSION_ERRORS			3
 #define FBR_BLOCK_SIZE_CALC			512
-#define FBR_ATTR_TIME_CHANGE_MIN		1.2
+#define FBR_ATTR_TIME_CHANGE_MIN_MSEC		1200
 
 #define FBR_ENUM_CHUNK_STATE						\
 	FBR_ENUM_NAME(fbr_chunk_state)					\
@@ -375,6 +375,7 @@ struct fbr_fs_config {
 	unsigned long				lru_dindex_max;
 	unsigned long				lru_sleep_ms;
 	unsigned long				root_ttl_sec;
+	unsigned long				attr_time_change_ms;
 
 	unsigned long				rlog_size;
 

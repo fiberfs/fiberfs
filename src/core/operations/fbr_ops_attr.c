@@ -76,10 +76,11 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		double ctime_before = fbr_convert_timespec(&st_before.st_ctim);
 		double ctime_after = fbr_convert_timespec(&attr->st_ctim);
 		double diff = ctime_before - ctime_after;
+		double threshold = fs->config.attr_time_change_ms / 1000;
 
 		st_after.st_ctim = attr->st_ctim;
 
-		if (diff < FBR_ATTR_TIME_CHANGE_MIN && diff > -FBR_ATTR_TIME_CHANGE_MIN) {
+		if (diff > -threshold && diff < threshold) {
 			st_before.st_ctim = attr->st_ctim;
 			fbr_file_set_attr(fs, file, &st_before);
 
@@ -90,11 +91,12 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		double mtime_before = fbr_convert_timespec(&st_before.st_mtim);
 		double mtime_after = fbr_convert_timespec(&attr->st_mtim);
 		double diff = mtime_before - mtime_after;
+		double threshold = fs->config.attr_time_change_ms / 1000;
 
 		st_after.st_mtim = attr->st_mtim;
 		mtime = 1;
 
-		if (diff < FBR_ATTR_TIME_CHANGE_MIN && diff > -FBR_ATTR_TIME_CHANGE_MIN) {
+		if (diff > -threshold && diff < threshold) {
 			st_before.st_mtim = attr->st_mtim;
 			mtime = 0;
 			fbr_file_set_attr(fs, file, &st_before);
@@ -106,11 +108,12 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		double mtime_before = fbr_convert_timespec(&st_before.st_mtim);
 		double now = fbr_get_time();
 		double diff = mtime_before - now;
+		double threshold = fs->config.attr_time_change_ms / 1000;
 
 		fbr_convert_time(now, &st_after.st_mtim);
 		mtime = 1;
 
-		if (diff < FBR_ATTR_TIME_CHANGE_MIN && diff > -FBR_ATTR_TIME_CHANGE_MIN) {
+		if (diff > -threshold && diff < threshold) {
 			st_before.st_mtim = st_after.st_mtim;
 			mtime = 0;
 			fbr_file_set_attr(fs, file, &st_before);

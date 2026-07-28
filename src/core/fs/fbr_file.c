@@ -247,6 +247,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	if (fs->fuse_ctx && dest->state == FBR_FILE_OK) {
 		fbr_fuse_mounted(fs->fuse_ctx);
 		assert(fs->fuse_ctx->session);
+
+		fbr_rlog(FBR_LOG_MERGE, "INVAL inode: %lu (file)", dest->inode);
+
 		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, dest->inode,
 			0, 0);
 		assert_dev(ret != -ENOSYS);

@@ -52,6 +52,8 @@ fbr_fs_config_load(struct fbr_fs *fs)
 	fs->config.lru_sleep_ms = fbr_conf_get_ulong("LRU_SLEEP_MS", 500);
 	fs->config.root_ttl_sec = fbr_conf_get_ulong("DIRECTORY_TTL_SEC",
 		is_test ? FBR_ROOT_TTL_DEFAULT_TEST: FBR_ROOT_TTL_DEFAULT);
+	fs->config.attr_time_change_ms = fbr_conf_get_ulong("ATTR_TIME_CHANGE_IGNORE",
+		FBR_ATTR_TIME_CHANGE_MIN_MSEC);
 	fs->config.rlog_size = fbr_conf_get_ulong("LOG_BUFFER_SIZE", FBR_RLOG_MIN_SIZE);
 	fs->config.debug_wbuffer_size = fbr_conf_get_ulong("DEBUG_FS_WBUFFER_ALLOC_SIZE", 0);
 
