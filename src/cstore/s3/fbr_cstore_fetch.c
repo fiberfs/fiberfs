@@ -155,6 +155,8 @@ _s3_get_route(struct fbr_cstore_fetch_context *fetch)
 
 		chttp_context_reset(fetch->http);
 		fetch->http->new_conn = 1;
+	} else if (fetch->cstore->config.sticky_dns) {
+		fetch->http->sticky_dns = 1;
 	}
 
 	fetch->attempts++;

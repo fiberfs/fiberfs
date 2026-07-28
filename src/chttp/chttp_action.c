@@ -69,9 +69,14 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 		fbr_ABORT("invalid state, connection must be setup before sending");
 	}
 
+	int flags = 0;
+	if (ctx->sticky_dns) {
+		flags = CHTTP_DNS_STICKY;
+	}
+
 	ctx->perf.start = fbr_get_time();
 
-	chttp_dns_lookup(ctx, host, host_len, port, 0);
+	chttp_dns_lookup(ctx, host, host_len, port, flags);
 
 	ctx->perf.lookup = chttp_perf_split(ctx);
 

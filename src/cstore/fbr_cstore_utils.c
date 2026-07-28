@@ -57,6 +57,7 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 		FBR_CSTORE_TIMEOUT_TRANSFER_MS);
 	cstore->config.keep_alive_sec = fbr_conf_get_ulong("HTTP_KEEP_ALIVE_SEC",
 		FBR_CSTORE_KEEP_ALIVE_DEFAULT);
+	cstore->config.sticky_dns = fbr_conf_get_bool("DNS_STICKY", FBR_CONFIG_TRUE);
 
 	cstore->config.retries = fbr_conf_get_ulong("HTTP_RETRIES", FBR_CSTORE_RETRIES_DEFAULT);
 	cstore->config.cluster_retries = fbr_conf_get_ulong("HTTP_CLUSTER_RETRIES",

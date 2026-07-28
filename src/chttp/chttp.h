@@ -112,6 +112,7 @@ struct chttp_context {
 	fbr_bitflag_t			chunked:1;
 	fbr_bitflag_t			seen_first:1;
 	fbr_bitflag_t			new_conn:1;
+	fbr_bitflag_t			sticky_dns:1;
 	fbr_bitflag_t			gzip:1;
 	fbr_bitflag_t			want_100:1;
 	fbr_bitflag_t			sent_100:1;
