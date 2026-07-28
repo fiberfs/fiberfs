@@ -62,7 +62,7 @@ chttp_test_cmd_dns_lookup_or_skip(struct fbr_test_context *ctx, struct fbr_test_
 	fbr_test_ERROR(cmd->param_count < 1 || cmd->param_count > 2,
 		"invalid parameter count");
 
-	long flags = 0;
+	int flags = 0;
 	if (cmd->param_count == 2) {
 		flags = fbr_test_parse_long(cmd->params[1].value);
 		fbr_test_ERROR(flags < 0, "flags needs to be a positive number");
@@ -86,7 +86,8 @@ chttp_test_cmd_dns_lookup_or_skip(struct fbr_test_context *ctx, struct fbr_test_
 		sizeof(ctx->chttp_test->dns->value), &ret);
 	assert(ret == 1);
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "DNS result %s", ctx->chttp_test->dns->value);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "DNS result %s (flags: %d)",
+		ctx->chttp_test->dns->value, flags);
 }
 
 void

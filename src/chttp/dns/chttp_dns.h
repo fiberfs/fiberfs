@@ -12,8 +12,9 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#define DNS_FRESH_LOOKUP			(1 << 0)
-#define DNS_DISABLE_RR				(1 << 1)
+#define CHTTP_DNS_FRESH_LOOKUP			(1 << 0)
+#define CHTTP_DNS_DISABLE_RR			(1 << 1)
+#define CHTTP_DNS_STICKY			(1 << 2)
 
 struct chttp_context;
 struct chttp_addr;

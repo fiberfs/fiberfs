@@ -153,7 +153,8 @@ main(int argc, char **argv)
 	struct chttp_addr _addr;
 	struct chttp_addr *addr = &_addr;
 
-	ret = chttp_dns_resolve(addr, "127.0.0.1", 9, server_addr->listen_port, DNS_FRESH_LOOKUP);
+	ret = chttp_dns_resolve(addr, "127.0.0.1", 9, server_addr->listen_port,
+		CHTTP_DNS_FRESH_LOOKUP);
 	fbr_ASSERT(!ret, "client cant resolve server");
 	chttp_addr_resolved(addr);
 

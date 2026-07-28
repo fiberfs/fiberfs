@@ -119,8 +119,12 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	struct chttp_dns_cache_entry *dns_entry = dns_head;
 	size_t pos = 0;
 
-	// Calculate next for RR
-	if (!fbr_is_flag(flags, DNS_DISABLE_RR)) {
+	// Calculate RR
+	if (fbr_is_flag(flags, CHTTP_DNS_DISABLE_RR)) {
+		pos = 0;
+	} else if (fbr_is_flag(flags, CHTTP_DNS_STICKY)) {
+		pos = dns_head->current;
+	} else {
 		pos = (dns_head->current + 1) % dns_head->length;
 		dns_head->current = pos;
 	}
