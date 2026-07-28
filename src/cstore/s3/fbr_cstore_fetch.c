@@ -296,6 +296,7 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 	assert_dev(fetch->file_path);
 	assert(fetch->length);
 	assert_dev(fetch->data_callback);
+	//assert_dev(fetch->hash_callback);
 	assert_dev(fetch->route);
 	assert_dev(fetch->attempts);
 	assert_zero_dev(fetch->etag_304.length);
@@ -407,6 +408,7 @@ fbr_s3_send_put(struct fbr_cstore_fetch_context *fetch)
 	assert_dev(fetch->file_path);
 	assert_dev(fetch->length);
 	assert_dev(fetch->data_callback);
+	//assert_dev(fetch->hash_callback);
 	assert_dev(fbr_cstore_backend_enabled(fetch->cstore));
 
 	fetch->attempts = 0;

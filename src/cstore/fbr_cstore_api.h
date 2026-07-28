@@ -121,6 +121,7 @@ struct fbr_cstore_config {
 	int					allow_cdn_root_get;
 	int					force_chunk_write;
 	int					async_write;
+	int					skip_content_hash;
 	unsigned long				prune_attempts;
 
 	unsigned long				timeout_connect_ms;
@@ -145,7 +146,6 @@ struct fbr_cstore {
 	fbr_bitflag_t				do_free:1;
 	fbr_bitflag_t				cant_splice_in:1;
 	fbr_bitflag_t				cant_splice_out:1;
-	fbr_bitflag_t				skip_content_hash:1;
 	fbr_bitflag_t				debug_allow_loop:1;
 	fbr_bitflag_t				deep_tree:1;
 

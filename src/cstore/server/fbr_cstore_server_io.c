@@ -17,11 +17,13 @@
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
 #include "cstore/fbr_cstore_api.h"
+#include "utils/fbr_chash.h"
 #include "utils/fbr_sys.h"
 
-struct _cstore_entry_pair {
+struct _cstore_entry_cb_data {
 	struct fbr_cstore		*cstore;
 	struct fbr_cstore_entry		*entry;
+	const char			*s3_checksum;
 };
 
 static void
@@ -30,12 +32,12 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 	chttp_context_ok(http);
 	assert(arg);
 
-	struct _cstore_entry_pair *pair = arg;
+	struct _cstore_entry_cb_data *cb_data = arg;
 
-	struct fbr_cstore *cstore = pair->cstore;
+	struct fbr_cstore *cstore = cb_data->cstore;
 	fbr_cstore_ok(cstore);
 
-	struct fbr_cstore_entry *entry = pair->entry;
+	struct fbr_cstore_entry *entry = cb_data->entry;
 	fbr_cstore_entry_ok(entry);
 	assert(entry->state == FBR_CSTORE_OK);
 	assert(entry->bytes == (size_t)http->length);
@@ -63,6 +65,21 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 	assert_zero(http->length);
 
 	http->perf.req_body = chttp_perf_split(http);
+}
+
+static size_t
+_cstore_entry_hash(void *arg, void *hash, size_t hash_len)
+{
+	assert(arg);
+	assert(hash);
+	assert(hash_len >= FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE));
+
+	struct _cstore_entry_cb_data *cb_data = arg;
+	assert(cb_data->s3_checksum)
+
+	size_t ret = fbr_strcpy(hash, hash_len, cb_data->s3_checksum);
+
+	return ret;
 }
 
 static void
@@ -162,7 +179,12 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		return;
 	}
 
-	// TODO get hash and write it to the metadata
+	const char *s3_checksum = chttp_header_get(http, "x-amz-content-sha256");
+	if (!s3_checksum) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR checksum");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
+	}
 
 	const char *host = chttp_header_get(http, "Host");
 	if (!host) {
@@ -374,14 +396,14 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		fbr_cstore_fetch_init(&fetch, cstore, &http_backend, file_type, &file_path, NULL,
 			NULL, length, metadata.gzipped, FBR_CSTORE_ROUTE_CDN);
 
-		struct _cstore_entry_pair pair;
-		pair.cstore = cstore;
-		pair.entry = entry;
+		struct _cstore_entry_cb_data cb_data;
+		cb_data.cstore = cstore;
+		cb_data.entry = entry;
+		cb_data.s3_checksum = s3_checksum;
 
 		fetch.data_callback = _cstore_entry_sendfile;
-		fetch.data_arg = &pair;
-
-		// TODO hash callback (from metadata)
+		fetch.hash_callback = _cstore_entry_hash;
+		fetch.data_arg = &cb_data;
 
 		fbr_s3_send_put(&fetch);
 

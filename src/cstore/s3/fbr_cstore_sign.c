@@ -85,7 +85,7 @@ fbr_cstore_s3_autosign(struct fbr_cstore *cstore, struct chttp_context *http,
 	fbr_cstore_ok(cstore);
 	fbr_cstore_backend_ok(cstore->s3.backend);
 
-	fbr_cstore_s3_sign(http, 0, cstore->skip_content_hash, hash_cb, hash_priv,
+	fbr_cstore_s3_sign(http, 0, cstore->config.skip_content_hash, hash_cb, hash_priv,
 		cstore->s3.backend->host, cstore->s3.backend->host_len, cstore->s3.region,
 		cstore->s3.region_len, cstore->s3.access_key, cstore->s3.access_key_len,
 		cstore->s3.secret_key);
