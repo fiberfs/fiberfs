@@ -2,7 +2,7 @@
  * Copyright (c) 2024-2026 FiberFS LLC
  * All rights reserved.
  *
- * https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
+ * https://docs.aws.amazon.com/AmazonS3/latest/developerguide/sigv4-auth-using-authorization-header.html
  *
  */
 
@@ -14,9 +14,9 @@
 #include "utils/fbr_chash.h"
 
 size_t
-fbr_cstore_s3_hash_none(void *priv, void *hash, size_t hash_len)
+fbr_cstore_s3_hash_none(void *arg, void *hash, size_t hash_len)
 {
-	assert_zero(priv);
+	assert_zero(arg);
 	assert(hash);
 	assert(hash_len >= FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE));
 

@@ -72,6 +72,7 @@ struct fbr_cstore_cluster {
 };
 
 typedef void (*fbr_cstore_fetch_f)(struct chttp_context *http, void *arg);
+typedef size_t (*fbr_cstore_s3_hash_f)(void *arg, void *hash, size_t hash_len);
 
 struct fbr_cstore_fetch_context {
 	struct fbr_cstore		*cstore;
@@ -92,6 +93,7 @@ struct fbr_cstore_fetch_context {
 	unsigned int			sleeps;
 
 	fbr_cstore_fetch_f		data_callback;
+	fbr_cstore_s3_hash_f		hash_callback;
 	void				*data_arg;
 };
 
@@ -142,8 +144,6 @@ int fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_js
 fbr_id_t fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct fbr_cstore_path *root_path, struct fbr_etag *etag, enum fbr_cstore_route route,
 	struct fbr_cstore_entry_ref *entry_ref, int *http_error, int write_sync);
-
-typedef size_t (*fbr_cstore_s3_hash_f)(void *priv, void *hash, size_t hash_len);
 
 size_t fbr_cstore_s3_hash_none(void *priv, void *hash, size_t hash_len);
 void fbr_cstore_s3_autosign(struct fbr_cstore *cstore, struct chttp_context *http,

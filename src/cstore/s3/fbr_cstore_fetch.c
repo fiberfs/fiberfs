@@ -107,8 +107,7 @@ _s3_request_path(struct fbr_cstore_fetch_context *fetch, const char *method)
 }
 
 static int
-_s3_connection(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore_backend *backend,
-    fbr_cstore_s3_hash_f hash_cb, void *hash_priv)
+_s3_connection(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore_backend *backend)
 {
 	assert_dev(fetch);
 	assert_dev(fetch->cstore);
@@ -116,8 +115,7 @@ _s3_connection(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore_backend
 	assert_dev(fetch->attempts == 1 || fetch->http->new_conn);
 	assert_dev(backend);
 
-	// TODO convert/merge fetch->data_callback to a hash_callback
-	fbr_cstore_s3_autosign(fetch->cstore, fetch->http, hash_cb, hash_priv);
+	fbr_cstore_s3_autosign(fetch->cstore, fetch->http, fetch->hash_callback, fetch->data_arg);
 
 	chttp_connect(fetch->http, backend->host, backend->host_len, backend->port, backend->tls);
 	if (fetch->http->error) {
@@ -240,7 +238,7 @@ _s3_send_get(struct fbr_cstore_fetch_context *fetch)
 	fbr_cstore_backend_ok(backend);
 	assert_zero_dev(http->error);
 
-	ret = _s3_connection(fetch, backend, &fbr_cstore_s3_hash_none, NULL);
+	ret = _s3_connection(fetch, backend);
 	if (ret) {
 		return;
 	}
@@ -271,8 +269,12 @@ fbr_cstore_s3_send_get(struct fbr_cstore_fetch_context *fetch)
 	fbr_cstore_path_ok(fetch->file_path);
 	assert(fbr_cstore_backend_enabled(fetch->cstore));
 	assert_zero(fetch->existing);
+	assert_zero_dev(fetch->data_callback);
+	assert_zero_dev(fetch->hash_callback);
+	assert_zero_dev(fetch->data_arg);
 
 	fetch->attempts = 0;
+	fetch->hash_callback = fbr_cstore_s3_hash_none;
 
 	while (_s3_get_route(fetch)) {
 		assert_dev(fetch->route);
@@ -358,8 +360,7 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 	fbr_cstore_backend_ok(backend);
 	assert_zero_dev(http->error);
 
-	// TODO data_callback for s3 signing hash
-	ret = _s3_connection(fetch, backend, NULL, NULL);
+	ret = _s3_connection(fetch, backend);
 	if (ret) {
 		return;
 	}
@@ -613,6 +614,8 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
 	chttp_context_init(&http);
 	_fetch_init(&fetch, cstore, &http);
 
+	fetch.hash_callback = fbr_cstore_s3_hash_none;
+
 	if (!cstore->config.delete_cache) {
 		route = FBR_CSTORE_ROUTE_CDN;
 	}
@@ -633,7 +636,7 @@ fbr_cstore_s3_send_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url
 			fetch.route, fetch.attempts - 1, cstore->config.allow_cdn_delete);
 		fbr_cstore_backend_ok(backend);
 
-		int ret = _s3_connection(&fetch, backend, fbr_cstore_s3_hash_none, NULL);
+		int ret = _s3_connection(&fetch, backend);
 		if (ret) {
 			continue;
 		}
@@ -699,6 +702,8 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http
 
 	fetch.data_callback = _s3_wbuffer_data_cb;
 	fetch.data_arg = wbuffer;
+
+	// TODO hash callback
 
 	fbr_s3_send_put(&fetch);
 }
@@ -961,6 +966,8 @@ fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
 	fetch.data_callback = _s3_writer_data_cb;
 	fetch.data_arg = writer;
 
+	// TODO hash callback
+
 	fbr_s3_send_put(&fetch);
 }
 
@@ -988,6 +995,8 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 
 	fetch.data_callback = _s3_writer_data_cb;
 	fetch.data_arg = root_json;
+
+	// TODO hash callback
 
 	fbr_s3_send_put(&fetch);
 

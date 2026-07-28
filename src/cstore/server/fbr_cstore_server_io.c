@@ -162,6 +162,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		return;
 	}
 
+	// TODO get hash and write it to the metadata
+
 	const char *host = chttp_header_get(http, "Host");
 	if (!host) {
 		host = "";
@@ -378,6 +380,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 		fetch.data_callback = _cstore_entry_sendfile;
 		fetch.data_arg = &pair;
+
+		// TODO hash callback (from metadata)
 
 		fbr_s3_send_put(&fetch);
 
