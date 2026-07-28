@@ -61,6 +61,8 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 
 	http->length -= bytes;
 	assert_zero(http->length);
+
+	http->perf.req_body = chttp_perf_split(http);
 }
 
 static void

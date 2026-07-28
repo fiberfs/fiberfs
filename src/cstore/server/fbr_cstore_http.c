@@ -109,6 +109,13 @@ fbr_cstore_http_log(struct chttp_context *http)
 		http->version, http->status, http->length, http->chunked,
 		http->gzip, http->addr.tls, http->request, http->pipeline);
 
+	if (http->perf.start) {
+		fbr_rlog(FBR_LOG_CS_HTTP_PERF,
+			"lookup: %d connect: %d (reuse: %d) request: %d  req_body: %d response: %d",
+			http->perf.lookup, http->perf.connect, http->addr.reused,
+			http->perf.request, http->perf.req_body, http->perf.response);
+	}
+
 	int first = 1;
 	struct chttp_dpage *dpage = http->dpage;
 	while (dpage) {

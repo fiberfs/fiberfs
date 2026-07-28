@@ -116,15 +116,15 @@ _s3_connection(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore_backend
 	assert_dev(fetch->attempts == 1 || fetch->http->new_conn);
 	assert_dev(backend);
 
+	// TODO convert/merge fetch->data_callback to a hash_callback
+	fbr_cstore_s3_autosign(fetch->cstore, fetch->http, hash_cb, hash_priv);
+
 	chttp_connect(fetch->http, backend->host, backend->host_len, backend->port, backend->tls);
 	if (fetch->http->error) {
 		fbr_rlog(FBR_LOG_CS_S3, "S3 ERROR %s (%s %d)", backend->host,
 			chttp_error_msg(fetch->http), fetch->http->error);
 		return 1;
 	}
-
-	// TODO convert/merge fetch->data_callback to a hash_callback
-	fbr_cstore_s3_autosign(fetch->cstore, fetch->http, hash_cb, hash_priv);
 
 	fetch->http->addr.timeout_connect_ms = fetch->cstore->config.timeout_connect_ms;
 	fetch->http->addr.timeout_transfer_ms = fetch->cstore->config.timeout_transfer_ms;
@@ -258,6 +258,7 @@ _s3_send_get(struct fbr_cstore_fetch_context *fetch)
 	}
 
 	fbr_rlog(FBR_LOG_CS_S3, "S3 response: %d", http->status);
+
 	fbr_cstore_http_log(http);
 }
 
@@ -382,13 +383,13 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 		return;
 	}
 
-	fbr_cstore_http_log(http);
-
 	size_t body_len;
 	do {
 		char buffer[FBR_CSTORE_IO_SIZE];
 		body_len = chttp_body_read(http, buffer, sizeof(buffer));
 	} while (body_len);
+
+	fbr_cstore_http_log(http);
 
 	if (http->error) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp rbody");
@@ -568,6 +569,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 	}
 
 	fbr_rlog(FBR_LOG_CS_S3, "S3_GET done %zu bytes", bytes);
+	fbr_rlog(FBR_LOG_CS_HTTP_PERF, "body: %d", http->perf.body);
 
 	if (fbr_cstore_entry_want_ref(entry_ref)) {
 		fbr_cstore_entry_ref_set(cstore, entry_ref, entry, &metadata, 0);
@@ -816,9 +818,10 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 		return;
 	}
 
-	chttp_context_free(&http);
-
 	fbr_rlog(FBR_LOG_CS_S3, "READ S3 %zu bytes", bytes);
+	fbr_rlog(FBR_LOG_CS_HTTP_PERF, "body: %d", http.perf.body);
+
+	chttp_context_free(&http);
 
 	fbr_stat_add_count(&cstore->stats.rd_chunk_bytes, bytes);
 	fbr_stat_add(&cstore->stats.fetch_chunks);
@@ -1097,6 +1100,8 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 		chttp_context_free(&http);
 		return 0;
 	}
+
+	fbr_rlog(FBR_LOG_CS_HTTP_PERF, "body: %d", http.perf.body);
 
 	chttp_context_free(&http);
 

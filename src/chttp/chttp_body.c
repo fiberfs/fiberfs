@@ -323,8 +323,10 @@ chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 				_body_chunk_parse(ctx);
 
 				if (ctx->error) {
+					ctx->perf.body = chttp_perf_split(ctx);
 					return 0;
 				} else if (ctx->state >= CHTTP_STATE_IDLE) {
+					ctx->perf.body = chttp_perf_split(ctx);
 					return ret_dpage;
 				}
 
@@ -340,6 +342,8 @@ chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 				if (!ctx->chunked && ctx->length == 0) {
 					ctx->state = CHTTP_STATE_IDLE;
 					ctx->pipeline = 1;
+
+					ctx->perf.body = chttp_perf_split(ctx);
 
 					return ret_dpage;
 				}
@@ -378,6 +382,7 @@ chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 		assert(ret <= buf_len);
 
 		if (ctx->error) {
+			ctx->perf.body = chttp_perf_split(ctx);
 			return 0;
 		}
 	}
@@ -391,6 +396,8 @@ chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 	}
 
 	if (ctx->state == CHTTP_STATE_CLOSED) {
+		ctx->perf.body = chttp_perf_split(ctx);
+
 		if (ctx->length > 0 || ctx->chunked) {
 			chttp_error(ctx, CHTTP_ERR_RESP_BODY);
 			return 0;
@@ -404,10 +411,12 @@ chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 		_body_chunk_parse(ctx);
 
 		if (ctx->error) {
+			ctx->perf.body = chttp_perf_split(ctx);
 			return 0;
 		}
 	} else if (ctx->length == 0) {
 		ctx->state = CHTTP_STATE_IDLE;
+		ctx->perf.body = chttp_perf_split(ctx);
 	}
 
 	if (ctx->length) {
@@ -451,4 +460,8 @@ chttp_body_send(struct chttp_context *ctx, const void *buf, size_t buf_len)
 
 	chttp_tcp_send(&ctx->addr, buf, buf_len);
 	chttp_tcp_error_check(ctx);
+
+	if (!ctx->length) {
+		ctx->perf.req_body = chttp_perf_split(ctx);
+	}
 }

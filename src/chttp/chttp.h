@@ -118,6 +118,16 @@ struct chttp_context {
 	fbr_bitflag_t			request:1;
 	fbr_bitflag_t			pipeline:1;
 
+	struct {
+		double			start;
+		unsigned short		lookup;
+		unsigned short		connect;
+		unsigned short		request;
+		unsigned short		req_body;
+		unsigned short		response;
+		unsigned short		body;
+	} perf;
+
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
 
@@ -183,6 +193,7 @@ void chttp_print_hex(void *buf, size_t buf_len);
 const char *chttp_error_msg(struct chttp_context *ctx);
 void chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port);
 size_t chttp_make_chunk(char *buffer, size_t buffer_len, unsigned int chunk_len);
+unsigned short chttp_perf_split(struct chttp_context *ctx);
 
 #include "utils/fbr_enum_string_declare.h"
 CHTTP_ENUM_STATE

@@ -69,7 +69,11 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 		fbr_ABORT("invalid state, connection must be setup before sending");
 	}
 
+	ctx->perf.start = fbr_get_time();
+
 	chttp_dns_lookup(ctx, host, host_len, port, 0);
+
+	ctx->perf.lookup = chttp_perf_split(ctx);
 
 	if (ctx->error) {
 		chttp_finish(ctx);
@@ -99,6 +103,8 @@ _make_connection(struct chttp_context *ctx)
 			assert(ctx->addr.reused);
 			assert_zero(ctx->addr.nonblocking);
 
+			ctx->perf.connect = chttp_perf_split(ctx);
+
 			return;
 		}
 	}
@@ -108,6 +114,8 @@ _make_connection(struct chttp_context *ctx)
 		assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
 		assert(ctx->addr.error);
 
+		ctx->perf.connect = chttp_perf_split(ctx);
+
 		chttp_error(ctx, ctx->addr.error);
 
 		return;
@@ -115,6 +123,8 @@ _make_connection(struct chttp_context *ctx)
 
 	chttp_addr_connected(&ctx->addr);
 	assert_zero(ctx->addr.nonblocking);
+
+	ctx->perf.connect = chttp_perf_split(ctx);
 }
 
 void
@@ -158,6 +168,7 @@ chttp_send(struct chttp_context *ctx)
 		chttp_tcp_error_check(ctx);
 
 		if (ctx->error) {
+			ctx->perf.request = chttp_perf_split(ctx);
 			return;
 		}
 
@@ -165,6 +176,8 @@ chttp_send(struct chttp_context *ctx)
 	}
 
 	ctx->state = CHTTP_STATE_SENT;
+
+	ctx->perf.request = chttp_perf_split(ctx);
 }
 
 void
@@ -214,8 +227,10 @@ chttp_parse(struct chttp_context *ctx, enum chttp_request_type type)
 
 		if (ctx->error) {
 			assert_dev(ctx->state >= CHTTP_STATE_CLOSED);
+			ctx->perf.response = chttp_perf_split(ctx);
 			return;
 		} else if (ctx->state >= CHTTP_STATE_CLOSED) {
+			ctx->perf.response = chttp_perf_split(ctx);
 			chttp_error(ctx, CHTTP_ERR_NETWORK);
 			return;
 		}
@@ -223,6 +238,7 @@ chttp_parse(struct chttp_context *ctx, enum chttp_request_type type)
 		chttp_header_parse(ctx, type);
 
 		if (ctx->error) {
+			ctx->perf.response = chttp_perf_split(ctx);
 			return;
 		}
 	} while (ctx->state == CHTTP_STATE_HEADERS);
@@ -237,6 +253,10 @@ chttp_parse(struct chttp_context *ctx, enum chttp_request_type type)
 			chttp_tcp_send(&ctx->addr, "HTTP/1.1 100 Continue\r\n\r\n", 25);
 			ctx->sent_100 = 1;
 		}
+	}
+
+	if (type == CHTTP_RESPONSE) {
+		ctx->perf.response = chttp_perf_split(ctx);
 	}
 
 	chttp_body_init(ctx, type);

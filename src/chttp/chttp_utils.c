@@ -4,6 +4,7 @@
  *
  */
 
+#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -152,4 +153,27 @@ chttp_make_chunk(char *buffer, size_t buffer_len, unsigned int chunk_len)
 	assert_dev(ret <= buffer_len);
 
 	return ret;
+}
+
+unsigned short
+chttp_perf_split(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+	assert_zero_dev(ctx->perf.body);
+
+	if (!ctx->perf.start) {
+		return 0;
+	}
+
+	double now = fbr_get_time();
+	unsigned long split_time = (now - ctx->perf.start) * 1000;
+
+	split_time -= ctx->perf.lookup + ctx->perf.connect + ctx->perf.request +
+		ctx->perf.req_body + ctx->perf.response;
+
+	if (split_time > USHRT_MAX) {
+		return USHRT_MAX;
+	}
+
+	return split_time;
 }
