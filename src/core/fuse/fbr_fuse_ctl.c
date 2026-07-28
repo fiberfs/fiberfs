@@ -134,18 +134,26 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 		fbr_log_redirect_stderr();
 	}
 
-	char *argv[6];
+	int allow_other = fbr_conf_get_bool("FUSE_ALLOW_OTHER", FBR_CONFIG_FALSE);
+	if (allow_other) {
+		allow_other = 2;
+	}
+
+	char *argv[8];
 	struct fuse_args fargs;
 	fargs.argv = argv;
-	// TODO allow_other?
 	fargs.argv[0] = "fiberfs";
 	fargs.argv[1] = "-o";
 	fargs.argv[2] = "fsname=fiberfs";
 	fargs.argv[3] = "-o";
 	fargs.argv[4] = "default_permissions";
-	fargs.argv[5] = "-d";
-	fargs.argc = fbr_array_len(argv);
-	assert(fargs.argc == 6);
+	if (allow_other) {
+		fargs.argv[5] = "-o";
+		fargs.argv[6] = "allow_other";
+	}
+	fargs.argv[5 + allow_other] = "-d";
+	fargs.argc = fbr_array_len(argv) - 2 + allow_other;
+	assert(fargs.argc == 6 + allow_other);
 	fargs.allocated = 0;
 
 	if (!ctx->debug) {
@@ -172,9 +180,13 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	ret = fuse_session_mount(ctx->session, path);
 
 	if (ret) {
+		fuse_remove_signal_handlers(ctx->session);
+		ctx->signals = 0;
+
 		fbr_log_restore_stderr();
 		pt_assert(pthread_mutex_unlock(&ctx->mount_lock));
 		_fuse_error(ctx);
+
 		return 1;
 	}
 
