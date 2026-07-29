@@ -28,6 +28,20 @@ _test_entry_cmp(const struct fbr_test_cmdentry *k1, const struct fbr_test_cmdent
 	return strcmp(k1->name, k2->name);
 }
 
+void
+_cmd_LOCK(struct fbr_test *test)
+{
+	assert_dev(test);
+	pt_assert(pthread_mutex_lock(&test->cmd_lock));
+}
+
+void
+_cmd_UNLOCK(struct fbr_test *test)
+{
+	assert_dev(test);
+	pt_assert(pthread_mutex_unlock(&test->cmd_lock));
+}
+
 static struct fbr_test_cmdentry *
 _test_cmd_alloc(struct fbr_test *test)
 {
@@ -56,6 +70,8 @@ _test_cmd_register(struct fbr_test *test, const char *name, fbr_test_cmd_f *func
 {
 	fbr_test_ok(test);
 
+	_cmd_LOCK(test);
+
 	struct fbr_test_cmdentry *entry = _test_cmd_alloc(test);
 	assert(entry);
 
@@ -65,12 +81,16 @@ _test_cmd_register(struct fbr_test *test, const char *name, fbr_test_cmd_f *func
 
 	struct fbr_test_cmdentry *ret = RB_INSERT(fbr_test_tree, &test->cmd_tree, entry);
 	assert_zero(ret);
+
+	_cmd_UNLOCK(test);
 }
 
 static void
 _test_var_register(struct fbr_test *test, const char *name, fbr_test_var_f *func)
 {
 	fbr_test_ok(test);
+
+	_cmd_LOCK(test);
 
 	struct fbr_test_cmdentry *entry = _test_cmd_alloc(test);
 	assert(entry);
@@ -81,12 +101,16 @@ _test_var_register(struct fbr_test *test, const char *name, fbr_test_var_f *func
 
 	struct fbr_test_cmdentry *ret = RB_INSERT(fbr_test_tree, &test->cmd_tree, entry);
 	assert_zero(ret);
+
+	_cmd_UNLOCK(test);
 }
 
 static void
 _test_varf_register(struct fbr_test *test, const char *name, fbr_test_varf_f *func)
 {
 	fbr_test_ok(test);
+
+	_cmd_LOCK(test);
 
 	struct fbr_test_cmdentry *entry = _test_cmd_alloc(test);
 	assert(entry);
@@ -97,6 +121,8 @@ _test_varf_register(struct fbr_test *test, const char *name, fbr_test_varf_f *fu
 
 	struct fbr_test_cmdentry *ret = RB_INSERT(fbr_test_tree, &test->cmd_tree, entry);
 	assert_zero(ret);
+
+	_cmd_UNLOCK(test);
 }
 
 static void
@@ -104,6 +130,8 @@ _test_cmds_free(struct fbr_test_context *ctx)
 {
 	struct fbr_test *test = fbr_test_convert(ctx);
 	fbr_test_ok(test);
+
+	pt_assert(pthread_mutex_destroy(&test->cmd_lock));
 
 	struct fbr_test_cmdentry *entry, *next;
 
@@ -151,7 +179,9 @@ void
 fbr_test_cmds_init(struct fbr_test *test)
 {
 	fbr_test_ok(test);
-	assert(RB_EMPTY(&test->cmd_tree));
+
+	RB_INIT(&test->cmd_tree);
+	pt_assert(pthread_mutex_init(&test->cmd_lock, NULL));
 
 #include "fbr_test_cmds_all.h"
 
@@ -167,7 +197,11 @@ fbr_test_cmds_get(struct fbr_test *test, const char *name)
 	struct fbr_test_cmdentry find;
 	find.name = name;
 
+	_cmd_LOCK(test);
+
 	struct fbr_test_cmdentry *result = RB_FIND(fbr_test_tree, &test->cmd_tree, &find);
+
+	_cmd_UNLOCK(test);
 
 	if (!result) {
 		return NULL;

@@ -86,7 +86,6 @@ _init_test(struct fbr_test *test)
 
 	test->cmd.magic = FBR_TEST_CMD_MAGIC;
 
-	RB_INIT(&test->cmd_tree);
 	TAILQ_INIT(&test->finish_list);
 
 	fbr_test_ok(test);

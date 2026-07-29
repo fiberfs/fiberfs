@@ -129,6 +129,7 @@ struct fbr_test {
 	size_t					cmds_size;
 	size_t					cmds_pos;
 	struct fbr_test_tree			cmd_tree;
+	pthread_mutex_t				cmd_lock;
 	TAILQ_HEAD(, fbr_test_finish)		finish_list;
 
 	const char				*prog_name;
