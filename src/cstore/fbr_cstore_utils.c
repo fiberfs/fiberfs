@@ -11,6 +11,7 @@
 #include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/store/fbr_store.h"
+#include "utils/fbr_chash.h"
 #include "utils/fbr_sys.h"
 
 static const struct fbr_store_callbacks _CSTORE_DEFAULT_CALLBACKS = {
@@ -49,7 +50,9 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 		FBR_CONFIG_FALSE);
 	cstore->config.async_write = fbr_conf_get_bool("ASYNC_WRITE", FBR_CONFIG_TRUE);
 	cstore->config.skip_content_hash = fbr_conf_get_bool("S3_SKIP_CONTENT_HASH",
-		is_test ? FBR_CONFIG_FALSE : FBR_CONFIG_FALSE);
+		is_test ? FBR_CONFIG_TRUE : FBR_CONFIG_FALSE);
+	cstore->config.validate_content_hash = fbr_conf_get_bool("CSTORE_VALIDATE_CONTENT_HASH",
+		FBR_CONFIG_FALSE);
 	cstore->config.prune_attempts = fbr_conf_get_ulong("PRUNE_ATTEMPTS",
 		FBR_CSTORE_PRUNE_ATTEMPTS);
 
@@ -299,4 +302,42 @@ fbr_cstore_make_root(struct fbr_cstore_hashpath *cache_hashroot, const char *cac
 
 	int fail = fbr_sys_mkdirs(cache_hashroot->value);
 	fbr_ASSERT(!fail, "mkdir() failed: %s", cache_hashroot->value);
+}
+
+int
+fbr_cstore_validate_file(const char *path, const char *hash)
+{
+	assert(path);
+	assert(hash);
+
+	if (!strcmp(hash, "UNSIGNED-PAYLOAD")) {
+		return 1;
+	}
+
+	int fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		return 0;
+	}
+
+	uint8_t bin_hash[FBR_SHA256_DIGEST_SIZE];
+	struct fbr_sha256_ctx file_hash;
+	fbr_sha256_init(&file_hash, 0);
+
+	char buffer[FBR_CSTORE_IO_SIZE];
+	ssize_t bytes;
+	while ((bytes = fbr_sys_read(fd, buffer, sizeof(buffer))) > 0) {
+		fbr_sha256_update(&file_hash, buffer, bytes);
+	}
+
+	assert_zero(close(fd));
+
+	char hex_hash[FBR_HEX_LEN(sizeof(bin_hash))];
+	fbr_sha256_final(&file_hash, bin_hash, sizeof(bin_hash));
+	fbr_bin2hex(bin_hash, sizeof(bin_hash), hex_hash, sizeof(hex_hash));
+
+	if (strcmp(hash, hex_hash)) {
+		return 0;
+	}
+
+	return 1;
 }

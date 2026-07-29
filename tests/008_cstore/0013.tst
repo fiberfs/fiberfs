@@ -2,6 +2,8 @@ fiber_test "cstore server PUT/GET with backend and s3"
 
 config_add CONFIG_UPDATE_INTERVAL 1
 config_add FORCE_CHUNK_WRITE true
+config_add S3_SKIP_CONTENT_HASH false
+config_add CSTORE_VALIDATE_CONTENT_HASH true
 
 cstore_init 0
 

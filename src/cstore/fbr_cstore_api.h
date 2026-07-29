@@ -122,6 +122,7 @@ struct fbr_cstore_config {
 	int					force_chunk_write;
 	int					async_write;
 	int					skip_content_hash;
+	int					validate_content_hash;
 	unsigned long				prune_attempts;
 
 	unsigned long				timeout_connect_ms;
@@ -253,6 +254,7 @@ void fbr_cstore_etag_init(struct fbr_etag *etag, const char *etag_hdr);
 void fbr_cstore_request_id(char *buffer, size_t buffer_len);
 void fbr_cstore_make_root(struct fbr_cstore_hashpath *cache_hashroot, const char *cache_root,
 	const char *mount_path);
+int fbr_cstore_validate_file(const char *path, const char *hash);
 
 #include "utils/fbr_enum_string_declare.h"
 FBR_ENUM_CSTORE_FILE_TYPE

@@ -181,7 +181,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	const char *s3_checksum = chttp_header_get(http, "x-amz-content-sha256");
 	if (!s3_checksum) {
-		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR checksum");
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR missing checksum");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
 	}
@@ -353,6 +353,19 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	}
 
 	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE wrote %zu bytes", bytes);
+
+	if (cstore->config.validate_content_hash) {
+		ret = fbr_cstore_validate_file(hashpath.value, s3_checksum);
+		if (!ret) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR checksum bad");
+			fbr_cstore_set_error(entry);
+			fbr_cstore_remove(cstore, &entry);
+			fbr_cstore_http_respond(cstore, http, 500, "Error");
+			return;
+		}
+
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE checksum passed");
+	}
 
 	struct fbr_cstore_path file_path;
 	fbr_cstore_path_url(cstore, url_encoded, &file_path);
