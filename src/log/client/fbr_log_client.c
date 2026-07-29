@@ -4,6 +4,7 @@
  *
  */
 
+#include <errno.h>
 #include <stdio.h>
 
 #include "log/fbr_log.h"
@@ -45,7 +46,11 @@ main(int argc, char **argv)
 	struct fbr_log_reader *reader = &_reader;
 	unsigned long sleep_ms = 0;
 
-	fbr_log_reader_init(reader, mount_path);
+	int ret = fbr_log_reader_init(reader, mount_path);
+	if (!ret) {
+		printf("Cannot open log for %s (errno %d)\n", mount_path, errno);
+		return 1;
+	}
 
 	while (!_STOP) {
 		char log_buffer[FBR_LOGLINE_MAX_LENGTH];

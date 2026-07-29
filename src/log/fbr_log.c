@@ -140,10 +140,15 @@ _log_shared_init(struct fbr_log *log, const char *name, size_t size)
 	assert_zero_dev(*log->shm_name);
 	assert_dev(name && *name);
 
+	int writer = 0;
+	if (size) {
+		writer = 1;
+	}
+
 	int shm_flags = O_RDONLY;
 	int mmap_flags = PROT_READ;
 
-	if (size) {
+	if (writer) {
 		assert_dev(size >= FBR_LOG_SEGMENT_MIN_SIZE * FBR_LOG_SEGMENTS);
 
 		_log_writer_init(log);
@@ -156,10 +161,15 @@ _log_shared_init(struct fbr_log *log, const char *name, size_t size)
 
 	_log_shared_name(name, log->shm_name, sizeof(log->shm_name));
 	log->shm_fd = shm_open(log->shm_name, shm_flags, S_IRUSR | S_IWUSR);
-	fbr_ASSERT(log->shm_fd >= 0, "shm_open(%s) failed: %s (%d)",
-		log->shm_name, fbr_berror(errno, errbuf), errno);
 
-	if (size) {
+	if (writer) {
+		fbr_ASSERT(log->shm_fd >= 0, "shm_open(%s) failed: %s (%d)",
+			log->shm_name, fbr_berror(errno, errbuf), errno);
+	} else if (log->shm_fd < 0) {
+		return;
+	}
+
+	if (writer) {
 		log->mmap_size = size;
 		int ret = ftruncate(log->shm_fd, (off_t)log->mmap_size);
 		assert_zero(ret);
@@ -170,7 +180,7 @@ _log_shared_init(struct fbr_log *log, const char *name, size_t size)
 	assert_zero(ret);
 	assert(st.st_size > 0);
 
-	if (size) {
+	if (writer) {
 		assert(log->mmap_size == (size_t)st.st_size);
 	} else {
 		log->mmap_size = st.st_size;
@@ -180,7 +190,7 @@ _log_shared_init(struct fbr_log *log, const char *name, size_t size)
 	assert(log->mmap_ptr != MAP_FAILED);
 	assert(log->mmap_ptr);
 
-	if (size) {
+	if (writer) {
 		_log_header_init(log, log->mmap_ptr, log->mmap_size);
 	}
 
@@ -202,6 +212,8 @@ fbr_log_alloc(const char *name, size_t size)
 	log->do_free = 1;
 
 	_log_shared_init(log, name, size);
+	assert_dev(log->shm_fd >= 0);
+	fbr_log_header_ok(log->header);
 
 	return log;
 }
@@ -611,7 +623,7 @@ fbr_log_cursor_init(struct fbr_log_cursor *cursor)
 	fbr_zero(cursor);
 }
 
-void
+int
 fbr_log_reader_init(struct fbr_log_reader *reader, const char *name)
 {
 	assert(reader);
@@ -623,6 +635,15 @@ fbr_log_reader_init(struct fbr_log_reader *reader, const char *name)
 	_log_init(&reader->log);
 	_log_shared_init(&reader->log, name, 0);
 
+	if (reader->log.shm_fd < 0) {
+		assert_zero_dev(reader->log.mmap_ptr);
+		assert_zero_dev(reader->log.header);
+
+		fbr_zero_magic(reader);
+
+		return 0;
+	}
+
 	fbr_log_reader_ok(reader);
 	fbr_log_ok(&reader->log);
 	fbr_log_header_ok(reader->log.header);
@@ -633,6 +654,8 @@ fbr_log_reader_init(struct fbr_log_reader *reader, const char *name)
 	reader->time_created = header->time_created;
 
 	fbr_log_cursor_init(&reader->cursor);
+
+	return 1;
 }
 
 struct fbr_log_line *

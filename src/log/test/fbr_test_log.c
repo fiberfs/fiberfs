@@ -181,7 +181,9 @@ fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname
 	fbr_test_log_printer_ok(printer);
 
 	if (fbr_test_can_log(NULL, FBR_LOG_VERBOSE)) {
-		fbr_log_reader_init(&printer->reader, logname);
+		int ret = fbr_log_reader_init(&printer->reader, printer->logname);
+		fbr_ASSERT(ret, "shm_open(%s) failed: %s (%d)",
+			printer->reader.log.shm_name, strerror(errno), errno);
 		fbr_log_reader_ok(&printer->reader);
 		fbr_log_ok(&printer->reader.log);
 		fbr_log_header_ok(printer->reader.log.header);
@@ -374,7 +376,8 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_test_log_debug(log);
 
 	struct fbr_log_reader reader;
-	fbr_log_reader_init(&reader, logname);
+	int ret = fbr_log_reader_init(&reader, logname);
+	assert(ret);
 
 	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "111");
 	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "TWO TWO TWO");
@@ -463,7 +466,8 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	log = fbr_log_alloc(logname, fbr_log_default_size());
 	fbr_log_ok(log);
 
-	fbr_log_reader_init(&reader, logname);
+	ret = fbr_log_reader_init(&reader, logname);
+	assert(ret);
 
 	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "one");
 	fbr_log_print(log, FBR_LOG_TEST, FBR_REQID_TEST, "222");
@@ -603,7 +607,8 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "*** Reader setup");
 
 	struct fbr_log_reader reader;
-	fbr_log_reader_init(&reader, fuse_ctx->path);
+	int ret = fbr_log_reader_init(&reader, fuse_ctx->path);
+	assert(ret);
 
 	char log_buffer[FBR_LOGLINE_MAX_LENGTH];
 	struct fbr_log_line *log_line;
