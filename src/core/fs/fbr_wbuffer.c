@@ -589,6 +589,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_fio_ok(fio);
 
 	if (fio->read_only) {
+		fbr_rlog(FBR_LOG_FLUSH, "read only, ignoring");
 		return 0;
 	}
 
@@ -597,13 +598,25 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	struct fbr_file *file = fio->file;
 	fbr_file_ok(file);
 
-	int create = 0;
+	int need_flush = 0;
+	int do_flush = 0;
+
 	if (fio->truncate || file->local_only || file->state == FBR_FILE_INIT) {
-		create = 1;
+		need_flush = 1;
+	}
+	if (fio->close && need_flush) {
+		do_flush = 1;
 	}
 
-	if (!fio->wbuffers && !create) {
+	if (!fio->wbuffers && !do_flush) {
 		_wbuffer_UNLOCK(fio);
+
+		if (need_flush) {
+			fbr_rlog(FBR_LOG_FLUSH, "delaying flush");
+		} else {
+			fbr_rlog(FBR_LOG_FLUSH, "nothing to flush, skipping");
+		}
+
 		return 0;
 	}
 

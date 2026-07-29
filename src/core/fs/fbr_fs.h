@@ -309,6 +309,7 @@ struct fbr_fio {
 	fbr_bitflag_t				append:1;
 	fbr_bitflag_t				truncate:1;
 	fbr_bitflag_t				sync:1;
+	fbr_bitflag_t				close:1;
 
 	fbr_refcount_t				refcount;
 

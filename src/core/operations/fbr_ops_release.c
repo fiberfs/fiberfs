@@ -17,6 +17,8 @@ fbr_ops_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 
+	fio->close = 1;
+
 	// Flush incase we hit a previous flush error
 	int ret = fbr_wbuffer_flush_fio(fs, fio);
 
