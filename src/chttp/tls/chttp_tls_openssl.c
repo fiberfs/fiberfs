@@ -95,7 +95,8 @@ _openssl_init(struct chttp_openssl_ctx *ctx)
 		return;
 	}
 
-	// TODO set various client TLS settings
+	int ret = SSL_CTX_set_default_verify_paths(ctx->ssl_ctx);
+	fbr_ASSERT(ret == 1, "openssl SSL_CTX_set_default_verify_paths() ret=%d", ret);
 
 	if (ctx->type == CHTTP_OPENSSL_SERVER) {
 		chttp_openssl_test_key(ctx->ssl_ctx);
@@ -185,7 +186,30 @@ _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 
 	switch (ctx->type) {
 		case CHTTP_OPENSSL_CLIENT:
-			SSL_set_verify(ssl, SSL_VERIFY_NONE, NULL); // TODO
+			if (addr->ssl_no_verify_peer) {
+				SSL_set_verify(ssl, SSL_VERIFY_NONE, NULL);
+			} else {
+				SSL_set_verify(ssl, SSL_VERIFY_PEER, NULL);
+
+				if (addr->tls_host) {
+					ret = SSL_set1_host(ssl, addr->tls_host);
+
+					if (ret != 1) {
+						chttp_tcp_error(addr, CHTTP_ERR_TLS_INIT);
+						return;
+					}
+				}
+			}
+
+			if (addr->tls_host) {
+				ret = SSL_set_tlsext_host_name(ssl, addr->tls_host);
+
+				if (ret != 1) {
+					chttp_tcp_error(addr, CHTTP_ERR_TLS_INIT);
+					return;
+				}
+			}
+
 			SSL_set_connect_state(ssl);
 
 			break;

@@ -53,6 +53,8 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 		is_test ? FBR_CONFIG_TRUE : FBR_CONFIG_FALSE);
 	cstore->config.validate_content_hash = fbr_conf_get_bool("CSTORE_VALIDATE_CONTENT_HASH",
 		FBR_CONFIG_FALSE);
+	cstore->config.ssl_verify_peer = fbr_conf_get_bool("SSL_VERIFY_PEER",
+		is_test ? FBR_CONFIG_FALSE : FBR_CONFIG_TRUE);
 	cstore->config.prune_attempts = fbr_conf_get_ulong("PRUNE_ATTEMPTS",
 		FBR_CSTORE_PRUNE_ATTEMPTS);
 

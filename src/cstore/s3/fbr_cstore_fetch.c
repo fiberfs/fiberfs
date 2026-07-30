@@ -125,8 +125,20 @@ _s3_connection(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore_backend
 		return 1;
 	}
 
+	chttp_addr_resolved(&fetch->http->addr);
+
 	fetch->http->addr.timeout_connect_ms = fetch->cstore->config.timeout_connect_ms;
 	fetch->http->addr.timeout_transfer_ms = fetch->cstore->config.timeout_transfer_ms;
+
+	if (backend->tls) {
+		assert(fetch->http->addr.tls);
+
+		fetch->http->addr.tls_host = backend->host;
+
+		if (!fetch->cstore->config.ssl_verify_peer) {
+			fetch->http->addr.ssl_no_verify_peer = 1;
+		}
+	}
 
 	return 0;
 }

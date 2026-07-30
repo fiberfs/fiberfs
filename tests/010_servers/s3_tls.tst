@@ -27,6 +27,7 @@ shell printf '"S3_ACCESS_KEY=access_key\n"' >> $conf
 shell printf '"S3_SECRET_KEY=secret_key\n"' >> $conf
 shell printf '"CACHE_ROOT=%s\n"' $sys_tmpdir >> $conf
 shell printf '"LOG_ALWAYS_FLUSH = true\n"' >> $conf
+shell printf '"SSL_VERIFY_PEER = false\n"' >> $conf
 
 print "### CONFIG"
 

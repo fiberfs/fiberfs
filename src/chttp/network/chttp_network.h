@@ -40,8 +40,10 @@ struct chttp_addr {
 	fbr_bitflag_t			nonblocking:1;
 	fbr_bitflag_t			reused:1;
 	fbr_bitflag_t			tls:1;
+	fbr_bitflag_t			ssl_no_verify_peer:1;
 
 	void				*tls_priv;
+	const char			*tls_host;
 
 	double				time_start;
 	int				timeout_connect_ms;

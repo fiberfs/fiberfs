@@ -228,6 +228,8 @@ chttp_test_cmd_chttp_connect(struct fbr_test_context *ctx, struct fbr_test_cmd *
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "lookup made to %s:%ld => %s:%d",
 		cmd->params[0].value, port, name, outport);
 
+	chttp->addr.ssl_no_verify_peer = 1;
+
 	if (fbr_test_is_valgrind()) {
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "valgrind detected, bumping timeouts");
 		chttp->addr.timeout_connect_ms = 60000;

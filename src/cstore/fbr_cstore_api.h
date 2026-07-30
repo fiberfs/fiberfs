@@ -123,6 +123,7 @@ struct fbr_cstore_config {
 	int					async_write;
 	int					skip_content_hash;
 	int					validate_content_hash;
+	int					ssl_verify_peer;
 	unsigned long				prune_attempts;
 
 	unsigned long				timeout_connect_ms;
