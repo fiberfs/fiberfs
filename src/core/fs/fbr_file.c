@@ -244,7 +244,7 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 
 	fbr_body_debug(fs, dest);
 
-	if (fs->fuse_ctx && dest->state == FBR_FILE_OK) {
+	if (fs->fuse_ctx && dest->state >= FBR_FILE_OK) {
 		fbr_fuse_mounted(fs->fuse_ctx);
 		assert(fs->fuse_ctx->session);
 
