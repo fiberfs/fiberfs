@@ -96,6 +96,10 @@ fbr_cstore_server_accept(struct fbr_cstore_task_worker *task_worker)
 	fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_ACCEPT, server);
 
 	if (ret) {
+		if (remote_addr->error) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "connection error");
+		}
+
 		return;
 	}
 

@@ -13,6 +13,7 @@
 #include "chttp.h"
 #include "chttp_tls_openssl.h"
 #include "chttp_tls_openssl_test_key.h"
+#include "config/fbr_config.h"
 
 enum chttp_openssl_type {
 	CHTTP_OPENSSL_NONE = 0,
@@ -96,10 +97,41 @@ _openssl_init(struct chttp_openssl_ctx *ctx)
 	}
 
 	int ret = SSL_CTX_set_default_verify_paths(ctx->ssl_ctx);
-	fbr_ASSERT(ret == 1, "openssl SSL_CTX_set_default_verify_paths() ret=%d", ret);
+
+	if (ret != 1) {
+		ctx->failed = 1;
+		return;
+	}
 
 	if (ctx->type == CHTTP_OPENSSL_SERVER) {
-		chttp_openssl_test_key(ctx->ssl_ctx);
+		const char *cert_file = fbr_conf_get("TLS_CERT_FILE", NULL);
+		const char *key_file = fbr_conf_get("TLS_PRIVATE_KEY_FILE", NULL);
+
+		if (cert_file && key_file) {
+			ret = SSL_CTX_use_certificate_chain_file(ctx->ssl_ctx, cert_file);
+
+			if (ret != 1) {
+				ctx->failed = 1;
+				return;
+			}
+
+			ret = SSL_CTX_use_PrivateKey_file(ctx->ssl_ctx, key_file,
+				SSL_FILETYPE_PEM);
+
+			if (ret != 1) {
+				ctx->failed = 1;
+				return;
+			}
+
+			ret = SSL_CTX_check_private_key(ctx->ssl_ctx);
+
+			if (ret != 1) {
+				ctx->failed = 1;
+				return;
+			}
+		} else {
+			chttp_openssl_test_key(ctx->ssl_ctx);
+		}
 	}
 
 	ctx->initialized = 1;
@@ -348,7 +380,7 @@ chttp_openssl_read(struct chttp_addr *addr, void *buf, size_t buf_len)
 	int ssl_ret = SSL_get_error(ssl, ret);
 
 	if (ssl_ret == SSL_ERROR_ZERO_RETURN) {
-		assert_zero(bytes);
+		bytes = 0;
 	} else if (ret <= 0) {
 		chttp_tcp_error(addr, CHTTP_ERR_NETWORK);
 
