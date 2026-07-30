@@ -8,24 +8,24 @@ fs_test_rw_mount $sys_tmpdir
 
 print "### CREATE 1"
 
-set_var1 $sys_tmpdir "/1file"
-sys_write_exclusive $var1 "one"
+set file $sys_tmpdir "/1file"
+sys_write_exclusive $file "one"
 
 sleep_ms 20
 
 print "### CREATE 2 (remote exists)"
 
-set_var2 "2file"
-mkdir_test_remote_file $var2
+set file2 "2file"
+mkdir_test_remote_file $file2
 
-set_var3 $sys_tmpdir "/" $var2
-open_exclusive_error $var3
+set file3 $sys_tmpdir "/" $file2
+open_exclusive_error $file3
 
 sleep_ms 20
 
 print "### CREATE 3 (local exists)"
 
-open_exclusive_error $var3
+open_exclusive_error $file3
 
 sleep_ms 20
 
@@ -35,7 +35,7 @@ fs_test_release_all_wait
 
 sleep_ms 20
 
-open_exclusive_error $var3
+open_exclusive_error $file3
 
 # Cleanup
 

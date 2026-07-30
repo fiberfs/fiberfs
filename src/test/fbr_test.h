@@ -146,6 +146,8 @@ struct fbr_test {
 	struct fbr_test_cmd			cmd;
 	size_t					cmd_count;
 
+	const char				*variable;
+
 	int					forked;
 	int					error;
 	int					skip;
@@ -167,6 +169,7 @@ void fbr_test_force_error(void);
 void fbr_finish_ERROR(int cond, const char *msg);
 struct fbr_test_context *fbr_test_get_ctx(void);
 
+void fbr_test_var_register(struct fbr_test *test, const char *name, fbr_test_var_f *func);
 void fbr_test_cmds_init(struct fbr_test *test);
 struct fbr_test_cmdentry *fbr_test_cmds_get(struct fbr_test *test, const char *name);
 

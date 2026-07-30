@@ -10,17 +10,17 @@ cstore_init 0
 cstore_mock_s3 0 region access_key secret_key
 
 sys_mkdir_tmp
-set_var1 $sys_tmpdir "/config"
+set conf $sys_tmpdir "/config"
 
 sys_mkdir_tmp
 
-shell printf '"S3_HOST=%s\n"' $cstore_server_host:0 > $var1
-shell printf '"S3_PORT=%s\n"' $cstore_server_port:0 >> $var1
-shell printf '"S3_TLS=false\n"' >> $var1
-shell printf '"S3_REGION=region\n"' >> $var1
-shell printf '"S3_ACCESS_KEY=access_key\n"' >> $var1
-shell printf '"S3_SECRET_KEY=secret_key\n"' >> $var1
-shell printf '"CACHE_ROOT=%s\n"' $sys_tmpdir >> $var1
+shell printf '"S3_HOST=%s\n"' $cstore_server_host:0 > $conf
+shell printf '"S3_PORT=%s\n"' $cstore_server_port:0 >> $conf
+shell printf '"S3_TLS=false\n"' >> $conf
+shell printf '"S3_REGION=region\n"' >> $conf
+shell printf '"S3_ACCESS_KEY=access_key\n"' >> $conf
+shell printf '"S3_SECRET_KEY=secret_key\n"' >> $conf
+shell printf '"CACHE_ROOT=%s\n"' $sys_tmpdir >> $conf
 
 sys_mkdir_tmp
 
@@ -28,7 +28,7 @@ sys_mkdir_tmp
 
 print "### FIRST MOUNT"
 
-shell_bg ../src/fiberfs $var1 $sys_tmpdir >/dev/null 2>&1
+shell_bg ../src/fiberfs $conf $sys_tmpdir >/dev/null 2>&1
 
 equal $cstore_stat_roots:0 1
 equal $cstore_stat_indexes:0 1
@@ -55,7 +55,7 @@ sleep_ms 1500
 
 print "### SECOND MOUNT"
 
-shell_bg ../src/fiberfs $var1 $sys_tmpdir >/dev/null 2>&1
+shell_bg ../src/fiberfs $conf $sys_tmpdir >/dev/null 2>&1
 
 sleep_ms 200
 

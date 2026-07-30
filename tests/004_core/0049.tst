@@ -9,13 +9,13 @@ fs_test_rw_mount $sys_tmpdir
 
 # Operations
 
-set_var1 $sys_tmpdir "/test_file.log"
-sys_write_sync $var1 "write 1" " and two"
-sys_write_sync $var1 "again" " and again"
+set file $sys_tmpdir "/test_file.log"
+sys_write_sync $file "write 1" " and two"
+sys_write_sync $file "again" " and again"
 
 fs_test_release_all_wait
 
-sys_cat $var1 "again and again"
+sys_cat $file "again and again"
 
 # Cleanup
 

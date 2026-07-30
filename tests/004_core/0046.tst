@@ -8,14 +8,14 @@ fs_test_rw_mount $sys_tmpdir
 
 print "### mkdirs and write"
 
-set_var1 $sys_tmpdir "/dir1"
-sys_mkdir $var1
+set dir1 $sys_tmpdir "/dir1"
+sys_mkdir $dir1
 
-set_var2 $var1 "/sub_directory"
-sys_mkdir $var2
+set dir2 $dir1 "/sub_directory"
+sys_mkdir $dir2
 
-set_var3 $var2 "/fav_abc"
-sys_write $var3 "Hello fav abc."
+set dir3 $dir2 "/fav_abc"
+sys_write $dir3 "Hello fav abc."
 
 sleep_ms 20
 
@@ -29,15 +29,15 @@ print "### RMDIRs"
 
 fs_test_release_all_wait
 
-rmdir_error $var2
+rmdir_error $dir2
 
 sleep_ms 20
 
-sys_unlink $var3
+sys_unlink $dir3
 
 sleep_ms 20
 
-sys_rmdir $var2
+sys_rmdir $dir2
 
 sleep_ms 20
 
@@ -45,7 +45,7 @@ equal $cstore_stat_roots:0 2
 equal $cstore_stat_indexes:0 2
 equal $cstore_stat_chunks:0 0
 
-sys_rmdir $var1
+sys_rmdir $dir1
 
 sleep_ms 20
 

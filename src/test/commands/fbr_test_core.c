@@ -207,7 +207,7 @@ void
 fbr_cmd_skip_if(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
-	fbr_test_ASSERT(cmd->param_count == 1, "Pass in a parameter")
+	fbr_test_ASSERT(cmd->param_count == 1, "Pass in a parameter");
 
 	int is_true = fbr_test_is_true(&cmd->params[0]);
 
@@ -223,7 +223,7 @@ void
 fbr_cmd_skip_if_not(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
-	fbr_test_ASSERT(cmd->param_count == 1, "Pass in a parameter")
+	fbr_test_ASSERT(cmd->param_count == 1, "Pass in a parameter");
 
 	int is_false = fbr_test_is_false(&cmd->params[0]);
 

@@ -40,11 +40,11 @@ config_add S3_ACCESS_KEY ACCESS_KEY
 config_add S3_SECRET_KEY SECRET_KEY
 config_add S3_PREFIX /ABC/123
 config_add CLUSTER_TLS true
-set_var2 $cstore_server_host:0 ":" $cstore_server_port:0 ", " \
+set cluster $cstore_server_host:0 ":" $cstore_server_port:0 ", " \
 	$cstore_server_host:1 ":" $cstore_server_port:1
-config_add CLUSTER $var2
-set_var2 $cstore_server_host:2 ":" $cstore_server_port:2
-config_add CDN_ENDPOINT $var2
+config_add CLUSTER $cluster
+set cdn $cstore_server_host:2 ":" $cstore_server_port:2
+config_add CDN_ENDPOINT $cdn
 
 # Mount
 sys_mkdir_tmp
@@ -54,8 +54,8 @@ sleep_ms 20
 
 print "### WRITE"
 
-set_var1 $sys_tmpdir "/testCDN_config.txt"
-sys_write $var1 "test_ABC config based"
+set file $sys_tmpdir "/testCDN_config.txt"
+sys_write $file "test_ABC config based"
 
 sleep_ms 20
 

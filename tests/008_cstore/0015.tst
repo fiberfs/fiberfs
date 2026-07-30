@@ -21,8 +21,8 @@ print "### WRITE INDEX AND FILE"
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 
-set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "testing 123"
+set file $sys_tmpdir "/test.txt"
+sys_write $file "testing 123"
 
 sleep_ms 100
 
@@ -45,7 +45,7 @@ equal $fs_test_stat_files_inodes 1
 
 print "### READ INDEX AND FILE"
 
-sys_cat $var1 "testing 123"
+sys_cat $file "testing 123"
 
 sleep_ms 100
 

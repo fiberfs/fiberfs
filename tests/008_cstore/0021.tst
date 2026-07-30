@@ -40,14 +40,14 @@ fs_test_rw_mount $sys_tmpdir
 
 print "### WRITE"
 
-set_var1 $sys_tmpdir "/test_big1.txt"
-sys_write_random_md5 $var1 2000000
+set file $sys_tmpdir "/test_big1.txt"
+sys_write_random_md5 $file 2000000
 
 fs_test_release_all_wait
 
 print "### READ"
 
-sys_cat_md5 $var1 $md5_write
+sys_cat_md5 $file $md5_write
 
 cstore_debug
 cstore_debug 1

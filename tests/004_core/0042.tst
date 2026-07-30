@@ -8,18 +8,18 @@ fs_test_rw_mount $sys_tmpdir
 
 print "### CREATE"
 
-set_var1 $sys_tmpdir "/afile"
-sys_write $var1 ""
+set file $sys_tmpdir "/afile"
+sys_write $file ""
 
 sleep_ms 20
 
 print "### CHMOD"
 
-sys_chmod $var1 444
+sys_chmod $file 444
 
 # File = 32768
 # 0444 =   292
-sys_stat_mode $var1 33060
+sys_stat_mode $file 33060
 
 # Read from index
 
@@ -29,7 +29,7 @@ print "### LOAD INDEX"
 
 equal $fs_test_stat_index_loads 0
 
-sys_stat_mode $var1 33060
+sys_stat_mode $file 33060
 
 equal $fs_test_stat_index_loads 1
 

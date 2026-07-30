@@ -10,8 +10,8 @@ fs_test_rw_mount $sys_tmpdir
 
 # mkdir
 
-set_var1 $sys_tmpdir "/test1"
-sys_mkdir $var1
+set file $sys_tmpdir "/test1"
+sys_mkdir $file
 
 sleep_ms 100
 

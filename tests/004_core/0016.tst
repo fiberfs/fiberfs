@@ -12,9 +12,9 @@ fs_test_fuse_init_root
 
 print "### READ 1"
 
-set_var1 $sys_tmpdir "/fiber_big"
-sys_stat_size $var1 1048576
-sys_cat_md5 $var1 4cf30131c206e004d37e694a53733f70
+set file $sys_tmpdir "/fiber_big"
+sys_stat_size $file 1048576
+sys_cat_md5 $file 4cf30131c206e004d37e694a53733f70
 
 sleep_ms 50
 
@@ -24,7 +24,7 @@ print "### READ 2"
 
 sleep_ms 50
 
-sys_cat_md5 $var1 4cf30131c206e004d37e694a53733f70
+sys_cat_md5 $file 4cf30131c206e004d37e694a53733f70
 
 greater_equal $fs_test_stat_read_bytes 1048576
 
@@ -44,7 +44,7 @@ fs_test_debug
 
 print "### READ 3"
 
-sys_cat_md5 $var1 4cf30131c206e004d37e694a53733f70
+sys_cat_md5 $file 4cf30131c206e004d37e694a53733f70
 
 greater_equal $fs_test_stat_read_bytes 2097152
 

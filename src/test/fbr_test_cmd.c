@@ -22,8 +22,8 @@ RB_GENERATE_STATIC(fbr_test_tree, fbr_test_cmdentry, entry, _test_entry_cmp)
 static int
 _test_entry_cmp(const struct fbr_test_cmdentry *k1, const struct fbr_test_cmdentry *k2)
 {
-	assert(k1);
-	assert(k2);
+	fbr_magic_check(k1, FBR_TEST_ENTRY_MAGIC);
+	fbr_magic_check(k2, FBR_TEST_ENTRY_MAGIC);
 
 	return strcmp(k1->name, k2->name);
 }
@@ -85,8 +85,8 @@ _test_cmd_register(struct fbr_test *test, const char *name, fbr_test_cmd_f *func
 	_cmd_UNLOCK(test);
 }
 
-static void
-_test_var_register(struct fbr_test *test, const char *name, fbr_test_var_f *func)
+void
+fbr_test_var_register(struct fbr_test *test, const char *name, fbr_test_var_f *func)
 {
 	fbr_test_ok(test);
 
@@ -157,7 +157,7 @@ _test_cmds_free(struct fbr_test_context *ctx)
 #define FBR_TEST_CMD(cmd)					\
 	_test_cmd_register(test, #cmd, &fbr_cmd_##cmd);
 #define FBR_TEST_VAR(var)					\
-	_test_var_register(test, "$" #var, &fbr_var_##var);
+	fbr_test_var_register(test, "$" #var, &fbr_var_##var);
 #define FBR_TEST_VARF(varf)					\
 	_test_varf_register(test, "$" #varf, &fbr_varf_##varf);
 
@@ -166,14 +166,14 @@ _test_cmds_free(struct fbr_test_context *ctx)
 #define CHTTP_TEST_CMD(cmd)					\
 	_test_cmd_register(test, #cmd, &chttp_test_cmd_##cmd);
 #define CHTTP_TEST_VAR(var)					\
-	_test_var_register(test, "$" #var, &chttp_test_var_##var);
+	fbr_test_var_register(test, "$" #var, &chttp_test_var_##var);
 
 #undef FJSON_TEST_CMD
 #undef FJSON_TEST_VAR
 #define FJSON_TEST_CMD(cmd)					\
 	_test_cmd_register(test, #cmd, &fjson_cmd_##cmd);
 #define FJSON_TEST_VAR(var)					\
-	_test_var_register(test, "$" #var, &fjson_var_##var);
+	fbr_test_var_register(test, "$" #var, &fjson_var_##var);
 
 void
 fbr_test_cmds_init(struct fbr_test *test)
@@ -195,6 +195,7 @@ fbr_test_cmds_get(struct fbr_test *test, const char *name)
 	assert(name);
 
 	struct fbr_test_cmdentry find;
+	find.magic = FBR_TEST_ENTRY_MAGIC;
 	find.name = name;
 
 	_cmd_LOCK(test);

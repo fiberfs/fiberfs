@@ -12,14 +12,14 @@ fs_test_rw_mount $sys_tmpdir
 
 sys_ls $sys_tmpdir "..:dir .:dir"
 
-set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "test1" "test2" "test3"
+set file $sys_tmpdir "/test.txt"
+sys_write $file "test1" "test2" "test3"
 
 equal $fs_test_stat_write_bytes 15
 
 sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
-sys_stat_size $var1 15
-sys_cat $var1 "test1test2test3"
+sys_stat_size $file 15
+sys_cat $file "test1test2test3"
 
 equal $fs_test_stat_read_bytes 0
 

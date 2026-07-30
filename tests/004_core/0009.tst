@@ -12,8 +12,8 @@ fs_test_fuse_init_root
 
 print "### TEST 1 (load inode)"
 
-set_var1 $sys_tmpdir "/fiber_dir01/fiber_dir14"
-sys_ls $var1
+set dir1 $sys_tmpdir "/fiber_dir01/fiber_dir14"
+sys_ls $dir1
 
 sleep_ms 100
 fs_test_stats
@@ -27,7 +27,7 @@ equal $fs_test_stat_files_inodes 3
 
 print "### TEST 2 (save inode)"
 
-_fs_test_take_dir $var1
+_fs_test_take_dir $dir1
 
 # Expire cache
 
@@ -52,7 +52,7 @@ equal $fs_test_stat_files_inodes 3
 
 print "### TEST 4 (new operations)"
 
-sys_ls $var1
+sys_ls $dir1
 
 # Cleanup
 

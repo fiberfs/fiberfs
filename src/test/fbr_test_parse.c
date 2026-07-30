@@ -262,7 +262,12 @@ fbr_test_read_var(struct fbr_test *test, const char *variable)
 		return NULL;
 	}
 
+	test->variable = variable;
+
 	const char *value = cmd_entry->var_func(test->context);
+
+	test->variable = NULL;
+
 	return value;
 }
 

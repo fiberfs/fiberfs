@@ -13,11 +13,11 @@ fs_test_fuse_init_root
 
 print "### Test 1"
 
-set_var1 "cd " $sys_tmpdir "; sleep 0.01; cat * >/dev/null 2>&1 || true"
-set_var2 "cd " $sys_tmpdir "; sleep 0.01; cat */* >/dev/null 2>&1 || true"
+set cmd1 "cd " $sys_tmpdir "; sleep 0.01; cat * >/dev/null 2>&1 || true"
+set cmd2 "cd " $sys_tmpdir "; sleep 0.01; cat */* >/dev/null 2>&1 || true"
 
-shell_bg $var1
-shell_bg $var2
+shell_bg $cmd1
+shell_bg $cmd2
 
 sleep_ms 10
 fs_test_release_all

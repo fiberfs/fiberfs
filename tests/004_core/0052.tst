@@ -12,19 +12,19 @@ fs_test_rw_mount $sys_tmpdir
 
 print "### APPEND 1"
 
-set_var1 $sys_tmpdir "/append.txt"
-sys_append $var1 "ONE"
+set file $sys_tmpdir "/append.txt"
+sys_append $file "ONE"
 
 sleep_ms 100
 
 print "### APPEND 2"
 
-sys_append $var1 "T" "W" "OoO"
-sys_append $var1 "THREE"
+sys_append $file "T" "W" "OoO"
+sys_append $file "THREE"
 
 print "### READ (memory)"
 
-sys_cat $var1 "ONETWOoOTHREE"
+sys_cat $file "ONETWOoOTHREE"
 
 sleep_ms 100
 
@@ -33,7 +33,7 @@ print "### READ (cstore)"
 fs_test_release_all_wait
 sleep_ms 10
 
-sys_cat $var1 "ONETWOoOTHREE"
+sys_cat $file "ONETWOoOTHREE"
 
 # Cleanup
 

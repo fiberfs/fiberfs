@@ -25,8 +25,8 @@ sleep_ms 10
 
 print "### WRITE"
 
-set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "test_ABC"
+set file $sys_tmpdir "/test.txt"
+sys_write $file "test_ABC"
 
 sleep_ms 10
 
@@ -48,7 +48,7 @@ sleep_ms 250
 equal $fs_test_stat_files_inodes 1
 
 sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
-sys_cat $var1 "test_ABC"
+sys_cat $file "test_ABC"
 
 greater_equal $cstore_stat_http_400:2 1
 
@@ -67,7 +67,7 @@ greater_equal $cstore_stat_http_400:1 1
 
 sleep_ms 30
 
-sys_cat_error $var1
+sys_cat_error $file
 
 print "### DELETE cache and READ"
 

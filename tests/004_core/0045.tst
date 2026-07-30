@@ -11,8 +11,8 @@ fs_test_rw_mount $sys_tmpdir
 
 print "### Write"
 
-set_var1 $sys_tmpdir "/Zfile"
-sys_write $var1 "ABC" "123" "ZZZ"
+set file $sys_tmpdir "/Zfile"
+sys_write $file "ABC" "123" "ZZZ"
 
 print "### Unlink"
 
@@ -20,7 +20,7 @@ sleep_ms 20
 
 equal $cstore_stat_chunks:0 3
 
-sys_unlink $var1
+sys_unlink $file
 
 equal $cstore_stat_chunks:0 0
 

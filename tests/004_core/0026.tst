@@ -11,12 +11,12 @@ fs_test_rw_mount $sys_tmpdir
 
 # Operations
 
-set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 1 333 999999999 55555 1 666666
+set file $sys_tmpdir "/test.txt"
+sys_write $file 1 333 999999999 55555 1 666666
 
 equal $fs_test_stat_write_bytes 25
 
-sys_cat $var1 "1333999999999555551666666"
+sys_cat $file "1333999999999555551666666"
 
 equal $fs_test_stat_read_bytes 25
 

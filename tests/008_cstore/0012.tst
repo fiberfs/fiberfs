@@ -19,9 +19,9 @@ fs_test_rw_mount $sys_tmpdir
 
 print "### WRITE 2 CHUNKS"
 
-set_var1 $sys_tmpdir "/test.txt"
-sys_write_sync $var1 "test1test2test3"
-sys_append $var1 "test4test5"
+set file $sys_tmpdir "/test.txt"
+sys_write_sync $file "test1test2test3"
+sys_append $file "test4test5"
 
 sleep_ms 100
 
@@ -45,7 +45,7 @@ sleep_ms 10
 
 print "### READ 2 CHUNKS FROM CSTORE_1"
 
-sys_cat $var1 "test1test2test3test4test5"
+sys_cat $file "test1test2test3test4test5"
 
 sleep_ms 100
 cstore_debug

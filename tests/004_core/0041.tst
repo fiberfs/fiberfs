@@ -12,8 +12,8 @@ print "### CREATE EMPTY"
 
 equal $fs_test_stat_flushes 0
 
-set_var1 $sys_tmpdir "/somefile"
-sys_write_seek $var1 0 ""
+set file $sys_tmpdir "/somefile"
+sys_write_seek $file 0 ""
 
 equal $fs_test_stat_flushes 1
 
@@ -22,12 +22,12 @@ sleep_ms 10
 
 print "### VERIFY"
 
-sys_stat_size $var1 0
-sys_cat $var1 ""
+sys_stat_size $file 0
+sys_cat $file ""
 
 print "### WRITE"
 
-sys_write $var1 "123"
+sys_write $file "123"
 
 equal $fs_test_stat_flushes 2
 
@@ -36,8 +36,8 @@ sleep_ms 10
 
 print "### VERIFY 2"
 
-sys_stat_size $var1 3
-sys_cat $var1 "123"
+sys_stat_size $file 3
+sys_cat $file "123"
 
 equal $cstore_stat_chunks:0 1
 
@@ -45,7 +45,7 @@ sleep_ms 20
 
 print "### WRITE NOTHING"
 
-sys_write_seek $var1 0 ""
+sys_write_seek $file 0 ""
 
 sleep_ms 20
 
@@ -53,7 +53,7 @@ equal $fs_test_stat_flushes 2
 
 print "### WRITE TRUNCATE"
 
-sys_write $var1 ""
+sys_write $file ""
 
 equal $fs_test_stat_flushes 3
 
@@ -62,8 +62,8 @@ sleep_ms 10
 
 print "### VERIFY 3"
 
-sys_stat_size $var1 0
-sys_cat $var1 ""
+sys_stat_size $file 0
+sys_cat $file ""
 
 # Cleanup
 

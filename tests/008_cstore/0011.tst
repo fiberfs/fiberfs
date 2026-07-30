@@ -76,8 +76,8 @@ server_url_submatch ".fiberfsindex"
 server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
 server_send_response
 
-set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "content_here"
+set file $sys_tmpdir "/test.txt"
+sys_write $file "content_here"
 
 sleep_ms 100
 

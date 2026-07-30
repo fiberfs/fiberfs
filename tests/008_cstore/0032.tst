@@ -40,8 +40,8 @@ sleep_ms 20
 
 print "### WRITE"
 
-set_var1 $sys_tmpdir "/testCDN.txt"
-sys_write $var1 "test_ABC"
+set file $sys_tmpdir "/testCDN.txt"
+sys_write $file "test_ABC"
 
 sleep_ms 20
 

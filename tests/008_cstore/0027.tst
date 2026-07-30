@@ -25,11 +25,11 @@ sleep_ms 20
 
 print "### WRITE"
 
-set_var1 $sys_tmpdir "/test1.txt"
-sys_write $var1 "test_ABC"
+set file $sys_tmpdir "/test1.txt"
+sys_write $file "test_ABC"
 
-set_var2 $sys_tmpdir "/test2.txt"
-sys_write $var2 "Test 22"
+set file2 $sys_tmpdir "/test2.txt"
+sys_write $file2 "Test 22"
 
 sleep_ms 20
 
@@ -67,8 +67,8 @@ fs_test_release_all_wait
 
 sleep_ms 10
 
-sys_cat $var1 "test_ABC"
-sys_cat $var2 "Test 22"
+sys_cat $file "test_ABC"
+sys_cat $file2 "Test 22"
 
 equal $cstore_stat_http_200:1 12
 equal $cstore_stat_http_400:1 0
@@ -82,7 +82,7 @@ sleep_ms 20
 
 print "### UNLINK"
 
-sys_unlink $var2
+sys_unlink $file2
 
 sleep_ms 20
 

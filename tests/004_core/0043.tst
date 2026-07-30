@@ -11,36 +11,36 @@ fs_test_rw_mount $sys_tmpdir
 
 print "### Extend"
 
-set_var1 $sys_tmpdir "/somefile"
-sys_truncate $var1 16
+set file $sys_tmpdir "/somefile"
+sys_truncate $file 16
 
 fs_test_release_all_wait
 sleep_ms 20
 
-sys_cat_md5 $var1 4ae71336e44bf9bf79d2752e234818a5
+sys_cat_md5 $file 4ae71336e44bf9bf79d2752e234818a5
 
 print "### Truncate"
 
 sleep_ms 20
 
-sys_truncate $var1 5
+sys_truncate $file 5
 
 fs_test_release_all_wait
 sleep_ms 20
 
-sys_cat_md5 $var1 ca9c491ac66b2c62500882e93f3719a8
+sys_cat_md5 $file ca9c491ac66b2c62500882e93f3719a8
 
 print "### Write"
 
 sleep_ms 20
 
-sys_write_seek $var1 3 "ABC" "123" "ZZZ"
-sys_truncate $var1 15
+sys_write_seek $file 3 "ABC" "123" "ZZZ"
+sys_truncate $file 15
 
 fs_test_release_all_wait
 sleep_ms 20
 
-sys_cat_md5 $var1 808a50a8621d968b9b69e97af4eaaf9b
+sys_cat_md5 $file 808a50a8621d968b9b69e97af4eaaf9b
 
 equal $cstore_stat_chunks:0 3
 
@@ -48,12 +48,12 @@ print "### Truncate 2"
 
 sleep_ms 20
 
-sys_truncate $var1 5
+sys_truncate $file 5
 
 fs_test_release_all_wait
 sleep_ms 20
 
-sys_cat_md5 $var1 536629b0ae03b922650462e857fc90e1
+sys_cat_md5 $file 536629b0ae03b922650462e857fc90e1
 
 equal $cstore_stat_chunks:0 1
 

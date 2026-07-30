@@ -27,8 +27,8 @@ sleep_ms 100
 
 print "### WRITE"
 
-set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "test_ABC"
+set file $sys_tmpdir "/test.txt"
+sys_write $file "test_ABC"
 
 sleep_ms 100
 
@@ -42,7 +42,7 @@ equal $cstore_entries:2 3
 
 print "### WRITE OVER"
 
-sys_write $var1 "XYZ 22"
+sys_write $file "XYZ 22"
 
 sleep_ms 100
 
@@ -65,7 +65,7 @@ sleep_ms 10
 
 print "### READ"
 
-sys_cat $var1 "XYZ 22"
+sys_cat $file "XYZ 22"
 
 sleep_ms 100
 
@@ -86,7 +86,7 @@ sleep_ms 10
 
 print "### READ AGAIN"
 
-sys_cat $var1 "XYZ 22"
+sys_cat $file "XYZ 22"
 
 sleep_ms 100
 

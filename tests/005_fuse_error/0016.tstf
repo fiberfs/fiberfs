@@ -4,7 +4,7 @@ sys_mkdir_tmp
 
 fuse_error_mount $sys_tmpdir
 
-set_var1 $sys_tmpdir "/fiber13"
-sys_cat $var1
+set file $sys_tmpdir "/fiber13"
+sys_cat $file
 
 fuse_test_unmount

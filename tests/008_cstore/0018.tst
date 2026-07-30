@@ -36,11 +36,11 @@ sleep_ms 100
 
 print "### WRITE"
 
-set_var1 $sys_tmpdir "/test1.txt"
-sys_write $var1 "test CLUSTER"
+set file $sys_tmpdir "/test1.txt"
+sys_write $file "test CLUSTER"
 
-set_var2 $sys_tmpdir "/test2.txt"
-sys_write $var2 "Number #2"
+set file2 $sys_tmpdir "/test2.txt"
+sys_write $file2 "Number #2"
 
 sleep_ms 100
 
@@ -71,8 +71,8 @@ equal $fs_test_stat_files_inodes 1
 
 print "### READ"
 
-sys_cat $var1 "test CLUSTER"
-sys_cat $var2 "Number #2"
+sys_cat $file "test CLUSTER"
+sys_cat $file2 "Number #2"
 
 sleep_ms 100
 

@@ -13,8 +13,8 @@ fs_test_rw_mount $sys_tmpdir
 
 print "### CREATE"
 
-set_var1 $sys_tmpdir "/test.txt"
-sys_write $var1 "123" "4" "567" "89012" "345" "6" "7890"
+set file $sys_tmpdir "/test.txt"
+sys_write $file "123" "4" "567" "89012" "345" "6" "7890"
 
 cstore_debug
 
@@ -24,11 +24,11 @@ sleep_ms 100
 
 print "### TRUNCATE"
 
-sys_write $var1 "ABC" "DE" "FG"
+sys_write $file "ABC" "DE" "FG"
 
 print "### READ (memory)"
 
-sys_cat $var1 "ABCDEFG"
+sys_cat $file "ABCDEFG"
 
 sleep_ms 100
 
@@ -37,7 +37,7 @@ print "### READ (cstore)"
 fs_test_release_all_wait
 sleep_ms 10
 
-sys_cat $var1 "ABCDEFG"
+sys_cat $file "ABCDEFG"
 
 # Cleanup
 

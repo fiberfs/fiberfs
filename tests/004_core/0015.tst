@@ -12,15 +12,15 @@ fs_test_fuse_init_root
 
 print "### TEST 1 (read and hold)"
 
-set_var1 $sys_tmpdir "/fiber_zero1"
-sys_stat_size $var1 500
-sys_cat_md5 $var1 49a47e24ec21818ece7bccb86e9ad880
+set file $sys_tmpdir "/fiber_zero1"
+sys_stat_size $file 500
+sys_cat_md5 $file 49a47e24ec21818ece7bccb86e9ad880
 
 sleep_ms 100
 fs_test_stats
 fs_test_debug
 
-_fs_test_take_file $var1 
+_fs_test_take_file $file
 
 sleep_ms 100
 fs_test_stats
@@ -47,8 +47,8 @@ equal $fs_test_stat_directories_dindex 0
 equal $fs_test_stat_files 2
 equal $fs_test_stat_files_inodes 2
 
-sys_stat_size $var1 500
-sys_cat_md5 $var1 49a47e24ec21818ece7bccb86e9ad880
+sys_stat_size $file 500
+sys_cat_md5 $file 49a47e24ec21818ece7bccb86e9ad880
 
 # Cleanup
 

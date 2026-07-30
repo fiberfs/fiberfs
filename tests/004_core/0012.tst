@@ -8,9 +8,9 @@ fs_test_fuse_init_root
 
 # Do read
 
-set_var1 $sys_tmpdir "/fiber_small"
-sys_stat_size $var1 101
-sys_cat_md5 $var1 525cce3d8c3eaf36a756a91fcb996d59
+set file $sys_tmpdir "/fiber_small"
+sys_stat_size $file 101
+sys_cat_md5 $file 525cce3d8c3eaf36a756a91fcb996d59
 
 # Cleanup
 

@@ -14,11 +14,11 @@ print "### TEST 1"
 
 sys_ls $sys_tmpdir
 
-set_var1 $sys_tmpdir "/fiber_dir02"
-sys_ls $var1
+set dir1 $sys_tmpdir "/fiber_dir02"
+sys_ls $dir1
 
-set_var2 $var1 "/fiber_dir13"
-sys_ls $var2
+set dir2 $dir1 "/fiber_dir13"
+sys_ls $dir2
 
 # Expire cache
 
@@ -38,8 +38,8 @@ fs_test_debug
 print "### TEST 3 (more operations)"
 
 sys_ls $sys_tmpdir
-sys_ls $var1
-sys_ls $var2
+sys_ls $dir1
+sys_ls $dir2
 
 # Cleanup
 
