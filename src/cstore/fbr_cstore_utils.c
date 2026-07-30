@@ -175,8 +175,12 @@ fbr_cstore_autoinit(struct fbr_cstore *cstore)
 	int s3_tls = fbr_conf_get_bool("S3_TLS",
 		tls ? FBR_CSTORE_S3_DEFAULT_TLS : FBR_CONFIG_FALSE);
 
+	if (s3_tls && !tls) {
+		return 1;
+	}
+
 	int s3_port = fbr_conf_get_ulong("S3_PORT",
-		tls ? FBR_CSTORE_S3_DEFAULT_TLS_PORT : FBR_CSTORE_S3_DEFAULT_PORT);
+		s3_tls ? FBR_CSTORE_S3_DEFAULT_TLS_PORT : FBR_CSTORE_S3_DEFAULT_PORT);
 	if (s3_port > USHRT_MAX) {
 		if (s3_tls) {
 			s3_port = FBR_CSTORE_S3_DEFAULT_TLS_PORT;
