@@ -42,9 +42,9 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 	int is_test = fbr_is_test();
 
 	cstore->config.delete_cache = fbr_conf_get_bool("CSTORE_DELETE_CACHE", FBR_CONFIG_FALSE);
-	cstore->config.allow_cdn_put = fbr_conf_get_bool("ALLOW_CDN_PUT", FBR_CONFIG_FALSE);
-	cstore->config.allow_cdn_delete = fbr_conf_get_bool("ALLOW_CDN_DELETE", FBR_CONFIG_FALSE);
-	cstore->config.allow_cdn_root_get = fbr_conf_get_bool("ALLOW_CDN_ROOT_GET",
+	cstore->config.allow_cdn_put = fbr_conf_get_bool("CDN_ALLOW_PUT", FBR_CONFIG_FALSE);
+	cstore->config.allow_cdn_delete = fbr_conf_get_bool("CDN_ALLOW_DELETE", FBR_CONFIG_FALSE);
+	cstore->config.allow_cdn_root_get = fbr_conf_get_bool("CDN_ALLOW_ROOT_GET",
 		FBR_CONFIG_FALSE);
 	cstore->config.force_chunk_write = fbr_conf_get_bool("FORCE_CHUNK_WRITE",
 		FBR_CONFIG_FALSE);

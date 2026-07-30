@@ -480,8 +480,8 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	fbr_test_conf_add("CSTORE_SERVER", "true");
 	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
 	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
-	fbr_test_conf_add("ALLOW_CDN_PUT", "true");
-	fbr_test_conf_add("ALLOW_CDN_DELETE", "true");
+	fbr_test_conf_add("CDN_ALLOW_PUT", "true");
+	fbr_test_conf_add("CDN_ALLOW_DELETE", "true");
 
 	fbr_test_fuse_mock(ctx);
 

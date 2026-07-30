@@ -4,9 +4,9 @@ fiber_test "cstore server with bad CDN"
 config_add CSTORE_SERVER true
 config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
 config_add CSTORE_SERVER_PORT 0
-config_add ALLOW_CDN_PUT true
-config_add ALLOW_CDN_DELETE true
-config_add ALLOW_CDN_ROOT_GET true
+config_add CDN_ALLOW_PUT true
+config_add CDN_ALLOW_DELETE true
+config_add CDN_ALLOW_ROOT_GET true
 config_add CSTORE_DELETE_CACHE true
 
 # Self
