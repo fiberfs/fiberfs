@@ -46,7 +46,8 @@ fbr_cstore_async_init(struct fbr_cstore *cstore)
 		fbr_cstore_op_ok(op);
 	}
 
-	async->threads_max = fbr_conf_get_ulong("ASYNC_TASKS", FBR_CSTORE_ASYNC_THREAD_DEFAULT);
+	async->threads_max = fbr_conf_get_ulong("ASYNC_TASKS",
+		fbr_is_test() ? FBR_CSTORE_ASYNC_THREAD_TEST : FBR_CSTORE_ASYNC_THREAD_DEFAULT);
 
 	for (size_t i = 0; i < async->threads_max; i++) {
 		pt_assert(pthread_create(&async->threads[i], NULL, _cstore_async_loop, cstore));
