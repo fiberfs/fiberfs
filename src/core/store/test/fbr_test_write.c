@@ -411,8 +411,8 @@ _write_test(void)
 	}
 
 	if (error_mode) {
-		fbr_test_logs("*** ERRORS wbuffer: %zu flush: %zu", __ERROR_WBUFFER,
-			__ERROR_FLUSH);
+		fbr_test_logs("*** ERRORS wbuffer: %zu flush: %zu buffer_pre_sync: %d",
+			__ERROR_WBUFFER, __ERROR_FLUSH, fs->wbuffer_pre_sync);
 	}
 
 	fbr_request_pool_shutdown();
@@ -472,6 +472,10 @@ fbr_cmd_store_write_error_flush(struct fbr_test_context *ctx, struct fbr_test_cm
 
 	_ERROR_FLUSH = 3;
 	_SHARED_FIO = 1;
+
+	if (random() % 2 == 0) {
+		_ERROR_WBUFFER = 3;
+	}
 
 	_write_test();
 
