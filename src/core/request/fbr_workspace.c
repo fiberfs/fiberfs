@@ -11,7 +11,7 @@
 #include "fbr_workspace.h"
 #include "config/fbr_config.h"
 
-#define _WORKSPACE_SIZE				(1024 * 16)
+#define _WORKSPACE_SIZE				(1024 * 20)
 #define _WORKSPACE_MIN_SIZE			(sizeof(struct fbr_workspace) + \
 							FBR_WORKSPACE_MIN_SIZE)
 

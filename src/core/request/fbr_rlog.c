@@ -46,7 +46,7 @@ _rlog_size(struct fbr_request *request)
 	}
 
 	if (!rlog_size) {
-		rlog_size = fbr_conf_get_ulong("LOG_BUFFER_SIZE", FBR_RLOG_MIN_SIZE);
+		rlog_size = fbr_conf_get_ulong("LOG_BUFFER_SIZE", FBR_RLOG_DEFAULT_SIZE);
 	}
 
 	if (rlog_size < FBR_RLOG_MIN_SIZE) {

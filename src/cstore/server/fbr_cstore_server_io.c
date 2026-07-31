@@ -402,11 +402,13 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	if (backend) {
 		assert(file_type != FBR_CSTORE_FILE_ROOT);
 
-		struct fbr_cstore_fetch_context fetch;
-		struct chttp_context http_backend;
+		char chttp_stack[FBR_CSTORE_CHTTP_SIZE];
+		struct chttp_context *http_backend = chttp_context_init_buf(chttp_stack,
+			sizeof(chttp_stack));
+		chttp_context_ok(http_backend);
 
-		chttp_context_init(&http_backend);
-		fbr_cstore_fetch_init(&fetch, cstore, &http_backend, file_type, &file_path, NULL,
+		struct fbr_cstore_fetch_context fetch;
+		fbr_cstore_fetch_init(&fetch, cstore, http_backend, file_type, &file_path, NULL,
 			NULL, length, metadata.gzipped, FBR_CSTORE_ROUTE_CDN);
 
 		struct _cstore_entry_cb_data cb_data;
@@ -420,16 +422,16 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 		fbr_s3_send_put(&fetch);
 
-		if (http_backend.error || !fbr_cstore_http_success(http_backend.status)) {
+		if (http_backend->error || !fbr_cstore_http_success(http_backend->status)) {
 			fbr_cstore_release(cstore, &entry);
-			chttp_context_free(&http_backend);
-			fbr_cstore_http_respond(cstore, http, http_backend.status, "Error");
+			chttp_context_free(http_backend);
+			fbr_cstore_http_respond(cstore, http, http_backend->status, "Error");
 			return;
 		}
 
 		// TODO return the http_backend response better
 
-		chttp_context_free(&http_backend);
+		chttp_context_free(http_backend);
 	}
 
 	fbr_cstore_release(cstore, &entry);
@@ -583,15 +585,17 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			struct fbr_cstore_path file_path;
 			fbr_cstore_path_url(cstore, url_encoded, &file_path);
 
-			struct fbr_cstore_fetch_context fetch;
-			struct chttp_context http;
+			char chttp_stack[FBR_CSTORE_CHTTP_SIZE];
+			struct chttp_context *http = chttp_context_init_buf(chttp_stack,
+				sizeof(chttp_stack));
+			chttp_context_ok(http);
 
-			chttp_context_init(&http);
-			fbr_cstore_fetch_init(&fetch, cstore, &http, file_type,
+			struct fbr_cstore_fetch_context fetch;
+			fbr_cstore_fetch_init(&fetch, cstore, http, file_type,
 				&file_path, NULL, NULL, 0, 0, FBR_CSTORE_ROUTE_CDN);
 
 			http_error = fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
-			assert_dev(http.state == CHTTP_STATE_NONE);
+			assert_dev(http->state == CHTTP_STATE_NONE);
 		} else if (retry > 1) {
 			assert_zero(fbr_cstore_entry_has_ref(&entry_ref));
 

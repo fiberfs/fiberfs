@@ -386,11 +386,13 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE %s %zu %s", chunk_path.value, wbuf_bytes,
 		hashpath.value);
 
-	struct chttp_context http;
-	chttp_context_init(&http);
+	char chttp_stack[FBR_CSTORE_CHTTP_SIZE];
+	struct chttp_context *http = chttp_context_init_buf(chttp_stack, sizeof(chttp_stack));
+	chttp_context_ok(http);
+
 	struct fbr_cstore_op_sync sync;
 	fbr_cstore_op_sync_init(&sync);
-	fbr_cstore_async_wbuffer_send(cstore, &http, &chunk_path, wbuffer, &sync);
+	fbr_cstore_async_wbuffer_send(cstore, http, &chunk_path, wbuffer, &sync);
 
 	if (fbr_cstore_backend_enabled(cstore) && !cstore->config.force_chunk_write) {
 		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash,
@@ -398,7 +400,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 
 		if (cstore->cluster.size && !fbr_cstore_servers_contains(cstore, backend)) {
 			fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE skipping local");
-			fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &http, wbuffer, 1);
+			fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, http, wbuffer, 1);
 			return;
 		}
 	}
@@ -407,7 +409,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		&hashpath);
 	if (!entry) {
 		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR loading state");
-		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &http, wbuffer, 1);
+		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, http, wbuffer, 1);
 		return;
 	}
 	fbr_cstore_entry_ok(entry);
@@ -418,7 +420,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, &entry);
-		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &http, wbuffer, 1);
+		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, http, wbuffer, 1);
 		return;
 	}
 
@@ -429,7 +431,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR bytes");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, &entry);
-		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &http, wbuffer, 1);
+		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, http, wbuffer, 1);
 		return;
 	}
 
@@ -445,7 +447,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR metadata");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, &entry);
-		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &http, wbuffer, 1);
+		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, http, wbuffer, 1);
 		return;
 	}
 
@@ -457,7 +459,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 
 	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE success %zu bytes", bytes);
 
-	fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, &http, wbuffer, 0);
+	fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, http, wbuffer, 0);
 }
 
 void
@@ -626,18 +628,20 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	fbr_rlog(FBR_LOG_CS_INDEX, "WRITE %s %s", index_path.value, hashpath.value);
 
-	struct chttp_context http;
-	chttp_context_init(&http);
+	char chttp_stack[FBR_CSTORE_CHTTP_SIZE];
+	struct chttp_context *http = chttp_context_init_buf(chttp_stack, sizeof(chttp_stack));
+	chttp_context_ok(http);
+
 	struct fbr_cstore_op_sync sync;
 	fbr_cstore_op_sync_init(&sync);
-	fbr_cstore_async_index_send(cstore, &http, &index_path, writer, &sync);
+	fbr_cstore_async_index_send(cstore, http, &index_path, writer, &sync);
 
 	int ret;
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, writer->bytes,
 		&hashpath);
 	if (!entry) {
 		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR loading state");
-		ret = fbr_cstore_s3_send_finish(cstore, &sync, &http, 1);
+		ret = fbr_cstore_s3_send_finish(cstore, &sync, http, 1);
 		return ret;
 	}
 	fbr_cstore_entry_ok(entry);
@@ -648,7 +652,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR open()");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, &entry);
-		ret = fbr_cstore_s3_send_finish(cstore, &sync, &http, 1);
+		ret = fbr_cstore_s3_send_finish(cstore, &sync, http, 1);
 		return ret;
 	}
 
@@ -659,7 +663,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR writing");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, &entry);
-		ret = fbr_cstore_s3_send_finish(cstore, &sync, &http, 1);
+		ret = fbr_cstore_s3_send_finish(cstore, &sync, http, 1);
 		return ret;
 	}
 
@@ -676,7 +680,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR metadata");
 		fbr_cstore_set_error(entry);
 		fbr_cstore_remove(cstore, &entry);
-		ret = fbr_cstore_s3_send_finish(cstore, &sync, &http, 1);
+		ret = fbr_cstore_s3_send_finish(cstore, &sync, http, 1);
 		return ret;
 	}
 
@@ -689,7 +693,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	fbr_rlog(FBR_LOG_CS_INDEX, "WRITE success %zu bytes", writer->bytes);
 
-	ret = fbr_cstore_s3_send_finish(cstore, &sync, &http, 0);
+	ret = fbr_cstore_s3_send_finish(cstore, &sync, http, 0);
 	return ret;
 }
 
@@ -733,15 +737,17 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 				return 1;
 			}
 
-			struct fbr_cstore_fetch_context fetch;
-			struct chttp_context http;
+			char chttp_stack[FBR_CSTORE_CHTTP_SIZE];
+			struct chttp_context *http = chttp_context_init_buf(chttp_stack,
+				sizeof(chttp_stack));
+			chttp_context_ok(http);
 
-			chttp_context_init(&http);
-			fbr_cstore_fetch_init(&fetch, cstore, &http, FBR_CSTORE_FILE_INDEX,
+			struct fbr_cstore_fetch_context fetch;
+			fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_INDEX,
 				&path, NULL, NULL, 0, 0, FBR_CSTORE_ROUTE_CLUSTER);
 
 			int ret = fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
-			assert_dev(http.state == CHTTP_STATE_NONE);
+			assert_dev(http->state == CHTTP_STATE_NONE);
 
 			if (ret == 400 || ret == 404) {
 				return EAGAIN;

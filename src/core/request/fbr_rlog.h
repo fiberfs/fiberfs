@@ -13,6 +13,7 @@
 #include "log/fbr_log.h"
 
 #define FBR_RLOG_MIN_SIZE			1024
+#define FBR_RLOG_DEFAULT_SIZE			4096
 
 struct fbr_rlog {
 	unsigned int				magic;
