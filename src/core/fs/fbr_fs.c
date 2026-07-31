@@ -84,6 +84,8 @@ fbr_fs_alloc(void)
 
 	fs->store = &_STORE_CALLBACKS_EMPTY;
 
+	fs->wbuffer_pre_sync = fbr_conf_get_bool("WBUFFER_PRE_SYNC", FBR_CONFIG_FALSE);
+
 	fbr_fs_ok(fs);
 
 	return fs;

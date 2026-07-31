@@ -405,6 +405,7 @@ struct fbr_fs {
 
 	fbr_bitflag_t				cstore_managed:1;
 	fbr_bitflag_t				writeback_enabled:1;
+	fbr_bitflag_t				wbuffer_pre_sync:1;
 };
 
 struct fbr_fs_timeout {
@@ -578,8 +579,10 @@ void fbr_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 	enum fbr_wbuffer_state state);
 void fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffers, int revert_write, int have_file_lock);
-int fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file,
-	struct fbr_wbuffer *wbuffers, int revert_on_error, int have_file_lock);
+void fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file,
+	struct fbr_wbuffer *wbuffers);
+int fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
+	int revert_on_error, int have_file_lock);
 int fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffers_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
 	int chunk_add);

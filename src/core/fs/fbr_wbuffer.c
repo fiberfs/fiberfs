@@ -526,9 +526,8 @@ fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 	}
 }
 
-int
-fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-    int revert_on_error, int have_file_lock)
+void
+fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -555,10 +554,22 @@ fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 		wbuffer = wbuffer->next;
 	}
 
-	// TODO we can check for ready later in the write pipeline
-	// see: fbr_cstore_index_root_write()
+	pt_assert(pthread_mutex_unlock(&fio->wbuffer_update_lock));
+}
+
+int
+fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
+    int revert_on_error, int have_file_lock)
+{
+	fbr_fs_ok(fs);
+	assert_dev(fs->store);
+	fbr_wbuffer_ok(wbuffers);
+	struct fbr_fio *fio = wbuffers->fio;
+	fbr_fio_ok(fio);
 
 	int error = 0;
+
+	fbr_fuse_LOCK(fs->fuse_ctx, &fio->wbuffer_update_lock);
 
 	while (!_wbuffer_ready(wbuffers)) {
 		if (_wbuffer_ready_error(wbuffers)) {
@@ -577,6 +588,8 @@ fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 	if (error) {
 		fbr_stat_add(&fs->stats.flush_errors);
 		fbr_wbuffers_error_reset(fs, file, wbuffers, revert_on_error, have_file_lock);
+	} else {
+		fbr_rlog(FBR_LOG_WBUFFER, "flush completed");
 	}
 
 	return error;
@@ -638,20 +651,23 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 		flags |= FBR_FLUSH_TRUNCATE;
 	}
 
-	int error = 0;
 	if (!fbr_is_flag(flags, FBR_FLUSH_DELAY_WRITE) && fio->wbuffers) {
-		error = fbr_wbuffer_flush_store(fs, file, fio->wbuffers, 0, 0);
-	}
+		fbr_wbuffer_flush_store(fs, file, fio->wbuffers);
 
-	if (error) {
-		_wbuffer_UNLOCK(fio);
-		return error;
+		if (fs->wbuffer_pre_sync) {
+			int error = fbr_wbuffer_flush_ready(fs, file, fio->wbuffers, 0, 0);
+
+			if (error) {
+				_wbuffer_UNLOCK(fio);
+				return error;
+			}
+		}
 	}
 
 	struct fbr_flush_data flush_data;
 	fbr_flush_data_init(&flush_data, file, NULL, fio->wbuffers, flags);
 
-	error = fbr_fs_flush(fs, &flush_data);
+	int error = fbr_fs_flush(fs, &flush_data);
 
 	if (!error) {
 		assert_zero_dev(file->local_only);

@@ -44,13 +44,15 @@ fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 
 int
 fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
-    struct fbr_writer *writer, struct fbr_directory *previous)
+    struct fbr_writer *writer, struct fbr_directory *previous, struct fbr_index_data *index_data)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	fbr_writer_ok(writer);
 	assert_dev(writer->output);
+	assert(index_data);
+	assert_zero_dev(index_data->wbuffer_error);
 
 	if (!fs->cstore) {
 		return 1;
@@ -59,7 +61,27 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
 
+	int do_append = 0;
+	if (fbr_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
+		do_append = 1;
+	}
+
 	int fail = fbr_cstore_io_index_write(fs, directory, writer);
+
+	if (!fs->wbuffer_pre_sync && index_data->wbuffers) {
+		int error = fbr_wbuffer_flush_ready(fs, index_data->file, index_data->wbuffers,
+			do_append, 1);
+		if (error) {
+			if (!fail) {
+				fbr_cstore_io_index_remove(fs, directory);
+			}
+
+			index_data->wbuffer_error = 1;
+
+			return error;
+		}
+	}
+
 	if (fail) {
 		if (fbr_cstore_http_conflict(fail)) {
 			return EAGAIN;
@@ -67,9 +89,6 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 		return EIO;
 	}
-
-	// TODO we can delay wbuffer upload completion to here
-	// see: fbr_wbuffer_flush_store()
 
 	char *etag_match = NULL;
 	if (previous) {

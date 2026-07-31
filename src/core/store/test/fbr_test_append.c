@@ -248,15 +248,22 @@ _append_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wb
 
 static int
 _append_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
-    struct fbr_writer *writer, struct fbr_directory *previous)
+    struct fbr_writer *writer, struct fbr_directory *previous, struct fbr_index_data *index_data)
 {
 	if (_APPEND_ERROR_FLUSH > 0 && !(random() % 2)) {
 		fbr_test_logs("*** ERROR FLUSH");
+		int error = fbr_wbuffer_flush_ready(fs, index_data->file, index_data->wbuffers,
+			1, 1);
+		if (error) {
+			assert_zero(fs->wbuffer_pre_sync);
+			index_data->wbuffer_error = 1;
+			return error;
+		}
 		fbr_atomic_sub(&_APPEND_ERROR_FLUSH, 1);
 		return EIO;
 	}
 
-	return fbr_cstore_index_root_write(fs, directory, writer, previous);
+	return fbr_cstore_index_root_write(fs, directory, writer, previous, index_data);
 }
 
 static const struct fbr_store_callbacks _APPEND_TEST_ERROR_CALLBACKS = {
@@ -374,8 +381,6 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
-	fbr_test_random_seed();
-
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
 	fbr_test_cstore_bind_new(fs);
@@ -384,6 +389,10 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("*** Allocating root");
 
 	fbr_test_fs_root_alloc(fs);
+
+	if (fs->wbuffer_pre_sync) {
+		fbr_test_logs("*** wbuffer_pre_sync detected");
+	}
 
 	fbr_test_logs("*** Starting threads...");
 
@@ -479,12 +488,24 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		_APPEND_ERROR_TEST ? " (ERROR TEST)" : "");
 }
 
+static void
+_append_random_pre_sync(void)
+{
+	fbr_test_random_seed();
+
+	if (random() % 2 == 0) {
+		fbr_test_conf_add("WBUFFER_PRE_SYNC", FBR_CONFIG_TRUE);
+	}
+}
+
 void
 fbr_cmd_append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	assert_zero(_APPEND_ERROR_TEST);
 	assert_zero(_APPEND_ERROR_WBUFFER);
 	assert_zero(_APPEND_ERROR_FLUSH);
+
+	_append_random_pre_sync();
 
 	fbr_test_fuse_mock(ctx);
 
@@ -499,6 +520,8 @@ fbr_cmd_append_thread_error_test(struct fbr_test_context *ctx, struct fbr_test_c
 	_APPEND_ERROR_FLUSH = 3;
 
 	fbr_test_conf_add_long("DEBUG_FS_WBUFFER_ALLOC_SIZE", 2);
+
+	_append_random_pre_sync();
 
 	fbr_test_fuse_mock(ctx);
 

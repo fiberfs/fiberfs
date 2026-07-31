@@ -26,6 +26,7 @@ server_send_header "Content-Length: 0"
 server_send_header_done
 
 config_add LOG_ALWAYS_FLUSH 1
+config_add WBUFFER_PRE_SYNC true
 
 cstore_init 0
 cstore_set_s3 0 $server_host $server_port region access_key secret_key

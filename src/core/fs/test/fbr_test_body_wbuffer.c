@@ -63,6 +63,7 @@ _test_thread_init(void)
 	_WBUFFER_ALLOC_SIZE = (random() % (_BODY_WRITE_SIZE * 2)) + 1;
 
 	fbr_test_conf_add_long("DEBUG_FS_WBUFFER_ALLOC_SIZE", _WBUFFER_ALLOC_SIZE);
+	fbr_test_conf_add("WBUFFER_PRE_SYNC", FBR_CONFIG_TRUE);
 }
 
 static void

@@ -117,6 +117,8 @@ struct fbr_index_data {
 	struct fbr_chunk_list			*removed;
 	unsigned long				size;
 	enum fbr_flush_flags			flags;
+
+	int					wbuffer_error;
 };
 
 struct fbr_store_callbacks {
@@ -127,7 +129,8 @@ struct fbr_store_callbacks {
 	void (*wbuffer_write_f)(struct fbr_fs *fs, struct fbr_file *file,
 		struct fbr_wbuffer *wbuffer);
 	int (*index_write_f)(struct fbr_fs *fs, struct fbr_directory *directory,
-		struct fbr_writer *writer, struct fbr_directory *previous);
+		struct fbr_writer *writer, struct fbr_directory *previous,
+		struct fbr_index_data *index_data);
 	int (*index_read_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 	int (*index_delete_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 	fbr_id_t (*root_read_f)(struct fbr_fs *fs, struct fbr_directory *directory, int route_s3);

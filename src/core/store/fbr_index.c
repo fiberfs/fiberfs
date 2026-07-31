@@ -470,10 +470,14 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	}
 
 	if (fbr_is_flag(index_data->flags, FBR_FLUSH_DELAY_WRITE) && index_data->wbuffers) {
-		int ret = fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers,
-			do_append, 1);
-		if (ret) {
-			return ret;
+		fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
+
+		if (fs->wbuffer_pre_sync) {
+			int error = fbr_wbuffer_flush_ready(fs, index_data->file,
+				index_data->wbuffers, do_append, 1);
+			if (error) {
+				return error;
+			}
 		}
 	}
 
@@ -497,13 +501,14 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 
 	int ret = EINVAL;
 	if (fs->store->index_write_f && !json_gen.error) {
-		ret = fs->store->index_write_f(fs, directory, &json_gen, index_data->previous);
+		ret = fs->store->index_write_f(fs, directory, &json_gen, index_data->previous,
+			index_data);
 		assert(ret || directory->etag.length);
 
 		directory->updated = fbr_get_time();
 	}
 
-	if (ret && do_append) {
+	if (ret && do_append && !index_data->wbuffer_error) {
 		fbr_wbuffers_error_reset(fs, index_data->file, index_data->wbuffers, 1, 1);
 	}
 

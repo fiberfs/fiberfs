@@ -100,7 +100,7 @@ _write_wbuffer(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbu
 
 static int
 _write_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
-    struct fbr_writer *writer, struct fbr_directory *previous)
+    struct fbr_writer *writer, struct fbr_directory *previous, struct fbr_index_data *index_data)
 {
 	if (_ERROR_FLUSH && !(random() % 2)) {
 		fbr_test_logs("*** ERROR FLUSH");
@@ -108,7 +108,7 @@ _write_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
 		return EIO;
 	}
 
-	return fbr_cstore_index_root_write(fs, directory, writer, previous);
+	return fbr_cstore_index_root_write(fs, directory, writer, previous, index_data);
 }
 
 static const struct fbr_store_callbacks _WRITE_CALLBACKS = {

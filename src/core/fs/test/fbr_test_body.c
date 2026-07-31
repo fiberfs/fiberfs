@@ -12,6 +12,7 @@
 
 #include "test/fbr_test.h"
 #include "fbr_test_fs_cmds.h"
+#include "config/test/fbr_test_config_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 static size_t
@@ -477,6 +478,8 @@ fbr_cmd_fs_test_body_hole(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_conf_add("WBUFFER_PRE_SYNC", FBR_CONFIG_TRUE);
 
 	struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 
