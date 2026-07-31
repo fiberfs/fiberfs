@@ -508,9 +508,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 		directory->updated = fbr_get_time();
 	}
 
-	if (ret && index_data->wbuffers && !index_data->wbuffer_error) {
-		fbr_wbuffers_error_reset(fs, index_data->file, index_data->wbuffers,
-			do_append, 1);
+	if (ret && do_append && !index_data->wbuffer_error) {
+		fbr_wbuffers_error_reset(fs, index_data->file, index_data->wbuffers, 1, 1);
 	}
 
 	if (!ret && index_data->removed) {
