@@ -48,6 +48,12 @@ _init(void)
 	_ERROR_FLUSH = 0;
 
 	fbr_test_random_seed();
+
+	if (random() % 2 == 0) {
+		fbr_test_conf_add("WBUFFER_PRE_SYNC", FBR_CONFIG_TRUE);
+	} else {
+		fbr_test_conf_add("WBUFFER_PRE_SYNC", FBR_CONFIG_FALSE);
+	}
 }
 
 static unsigned char
@@ -104,6 +110,12 @@ _write_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
 {
 	if (_ERROR_FLUSH && !(random() % 2)) {
 		fbr_test_logs("*** ERROR FLUSH");
+		int error = fbr_wbuffer_flush_ready(fs, index_data->file, index_data->wbuffers,
+			0, 1);
+		if (error) {
+			index_data->wbuffer_error = 1;
+			return error;
+		}
 		fbr_atomic_sub(&_ERROR_FLUSH, 1);
 		return EIO;
 	}
