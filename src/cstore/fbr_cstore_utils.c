@@ -4,6 +4,11 @@
  *
  */
 
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "fiberfs.h"
 #include "fbr_cstore_api.h"
 #include "server/fbr_cstore_server.h"

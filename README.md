@@ -52,6 +52,7 @@ Note: all Makefile commands support parallelism, ex: `make test -j8`.
 * All filesystem features have concurrent access tests (best effort).
 * Gcov is used to provide testing code coverage reports: `make gcov` `-j8`
 * The entire test suite can be run thru valgrind for a complete safety and leak report: `make valgrind` `-j4`
+* To build with ASAN: `make ASAN=true` `-j4`
 
 ## Releases
 

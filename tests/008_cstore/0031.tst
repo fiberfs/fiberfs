@@ -1,5 +1,7 @@
 fiber_test "cstore server with cluster, CDN, S3 via config with TLS"
 
+skip_if_not $tls_enabled
+
 # Config
 config_add CSTORE_SERVER true
 config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
