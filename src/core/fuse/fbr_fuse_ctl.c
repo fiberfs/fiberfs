@@ -27,7 +27,6 @@ fbr_fuse_init(struct fbr_fuse_context *ctx)
 
 	fbr_zero(ctx);
 	ctx->magic = FBR_FUSE_CTX_MAGIC;
-	ctx->init = 1;
 
 	pt_assert(pthread_mutex_init(&ctx->mount_lock, NULL));
 
@@ -40,7 +39,6 @@ fbr_fuse_set_callbacks(struct fbr_fuse_context *ctx, fbr_fuse_init_f init_f,
 {
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
-	assert(ctx->init);
 	assert_zero(ctx->init_f);
 	assert_zero(ctx->fuse_callbacks);
 
@@ -70,10 +68,10 @@ _fuse_error(struct fbr_fuse_context *ctx)
 {
 	assert_dev(ctx);
 
+	ctx->error = 1;
+
 	fbr_fuse_unmount(ctx);
 	assert_dev(ctx->state == FBR_FUSE_NONE);
-
-	ctx->error = 1;
 }
 
 static void *
@@ -108,7 +106,6 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 {
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
-	assert(ctx->init);
 	assert_zero(ctx->detached);
 
 	pt_assert(pthread_mutex_lock(&ctx->mount_lock));
@@ -383,9 +380,8 @@ fbr_fuse_unmount_signal(void)
 {
 	if (_FUSE_CTX) {
 		fbr_fuse_context_ok(_FUSE_CTX);
-		_FUSE_CTX->error = 1;
 
-		fbr_fuse_unmount(_FUSE_CTX);
+		_fuse_error(_FUSE_CTX);
 	}
 }
 

@@ -42,7 +42,6 @@ struct fbr_fuse_context {
 	struct fbr_fs				*fs;
 	struct fbr_log				*log;
 
-	fbr_bitflag_t				init:1;
 	fbr_bitflag_t				debug:1;
 	fbr_bitflag_t				signals:1;
 	fbr_bitflag_t				detached:1;

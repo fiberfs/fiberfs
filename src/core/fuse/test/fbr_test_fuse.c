@@ -156,7 +156,7 @@ fbr_test_fuse_mock(struct fbr_test_context *test_ctx)
 	fbr_test_context_ok(test_ctx);
 
 	struct fbr_fuse_context *fuse_ctx = _fuse_init(test_ctx);
-	if (!fuse_ctx->init) {
+	if (fbr_object_is_empty(fuse_ctx)) {
 		fbr_object_empty(fuse_ctx);
 
 		_fuse_init_valgrind();
