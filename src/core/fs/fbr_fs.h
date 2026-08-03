@@ -339,6 +339,7 @@ struct fbr_fs_stats {
 	fbr_stats_t				files_inodes;
 	fbr_stats_t				files_total;
 	fbr_stats_t				file_refs;
+	fbr_stats_t				fios;
 
 	fbr_stats_t				dir_alloc_hit;
 	fbr_stats_t				dir_alloc_miss;

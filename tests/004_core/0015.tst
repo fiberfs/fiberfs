@@ -35,7 +35,7 @@ equal $fs_test_stat_files_inodes 2
 
 print "### TEST 2 (directory expired, new inodes)"
 
-fs_test_release_all_wait
+fs_test_release_all_wait_nf
 
 sleep_ms 10
 fs_test_stats

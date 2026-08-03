@@ -39,19 +39,15 @@ fbr_cmd_fs_test_release_all(struct fbr_test_context *ctx, struct fbr_test_cmd *c
 }
 
 void
-fbr_cmd_fs_test_release_all_wait(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_fs_test_release_all_wait_nf(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
-	// TODO allow for delayed page cache operations to happen
-	fbr_test_sleep_ms(10);
-
-	fbr_cmd_fs_test_release_all(ctx, cmd);
-
 	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
 	fbr_fuse_mounted(fuse_ctx);
 	assert_zero(fuse_ctx->detached);
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
+	fbr_cmd_fs_test_release_all(ctx, cmd);
 	fbr_test_fs_wait(fs);
 
 	int max = 40;
@@ -71,6 +67,34 @@ fbr_cmd_fs_test_release_all_wait(struct fbr_test_context *ctx, struct fbr_test_c
 		fs->stats.directories, count);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs_test_release_all wait done");
+}
+
+void
+fbr_cmd_fs_test_release_all_wait(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_fuse_mounted(fuse_ctx);
+	assert_zero(fuse_ctx->detached);
+	struct fbr_fs *fs = fuse_ctx->fs;
+	fbr_fs_ok(fs);
+
+	int max = 40;
+	int count = 0;
+
+	if (fbr_test_is_valgrind()) {
+		max = 100;
+	}
+
+	while (fs->stats.fios && max) {
+		fbr_test_sleep_ms(count);
+		max--;
+		count++;
+	}
+
+	fbr_ASSERT(!fs->stats.fios, "fs->stats.fios=%lu count: %d",
+		fs->stats.fios, count);
+
+	fbr_cmd_fs_test_release_all_wait_nf(ctx, cmd);
 }
 
 void
@@ -133,6 +157,7 @@ fbr_test_fs_stats(struct fbr_fs *fs)
 	_FS_TEST_STAT_PRINT(files_inodes);
 	_FS_TEST_STAT_PRINT(files_total);
 	_FS_TEST_STAT_PRINT(file_refs);
+	_FS_TEST_STAT_PRINT(fios);
 	_FS_TEST_STAT_PRINT(dir_alloc_hit);
 	_FS_TEST_STAT_PRINT(dir_alloc_miss);
 	_FS_TEST_STAT_PRINT(index_matches);

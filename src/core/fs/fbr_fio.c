@@ -49,6 +49,8 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file, int read_only)
 	fbr_body_debug(fs, file);
 	fbr_file_UNLOCK(file);
 
+	fbr_stat_add(&fs->stats.fios);
+
 	return fio;
 }
 
@@ -552,6 +554,8 @@ fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	fbr_inode_release(fs, &fio->file);
 	assert_zero_dev(fio->file);
+
+	fbr_stat_sub(&fs->stats.fios);
 
 	fbr_zero(fio);
 	free(fio);
