@@ -40,48 +40,68 @@ fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
 		return 1;
 	}
 
-	char buf[256];
-	size_t length;
+	struct fbr_writer writer;
+	char buffer[sizeof(*metadata) + 128];
+	struct fbr_fs *fs = NULL;
+	fbr_writer_init_buffer(fs, &writer, buffer, sizeof(buffer));
 
 	// p: path
-	fbr_sys_write(fd, "{\"p\":\"", 6);
-	fbr_sys_write(fd, metadata->path, strlen(metadata->path));
+	fbr_writer_add(fs, &writer, "{\"p\":\"", 6);
+	fbr_writer_add(fs, &writer, metadata->path, strlen(metadata->path));
+
+	char buf[256];
+	size_t length;
 
 	// e: etag
 	if (metadata->etag.length) {
 		length = fbr_urlencode(metadata->etag.value, metadata->etag.length, buf,
 			sizeof(buf));
 
-		fbr_sys_write(fd, "\",\"e\":\"", 7);
-		fbr_sys_write(fd, buf, length);
+		fbr_writer_add(fs, &writer, "\",\"e\":\"", 7);
+		fbr_writer_add(fs, &writer, buf, length);
 	}
 
 	// i: timestamp
 	length = fbr_bprintf(buf, "%f", metadata->timestamp);
 
-	fbr_sys_write(fd, "\",\"i\":", 6);
-	fbr_sys_write(fd, buf, length);
+	fbr_writer_add(fs, &writer, "\",\"i\":", 6);
+	fbr_writer_add(fs, &writer, buf, length);
 
 	// s: size
 	length = fbr_bprintf(buf, "%lu", metadata->size);
 
-	fbr_sys_write(fd, ",\"s\":", 5);
-	fbr_sys_write(fd, buf, length);
+	fbr_writer_add(fs, &writer, ",\"s\":", 5);
+	fbr_writer_add(fs, &writer, buf, length);
 
 	// t: type
 	length = fbr_bprintf(buf, "%d", metadata->type);
 
-	fbr_sys_write(fd, ",\"t\":", 5);
-	fbr_sys_write(fd, buf, length);
+	fbr_writer_add(fs, &writer, ",\"t\":", 5);
+	fbr_writer_add(fs, &writer, buf, length);
 
 	// g: gzipped
 	if (metadata->gzipped) {
-		fbr_sys_write(fd, ",\"g\":1}", 7);
+		fbr_writer_add(fs, &writer, ",\"g\":1}", 7);
 	} else {
-		fbr_sys_write(fd, "}", 1);
+		fbr_writer_add(fs, &writer, "}", 1);
+	}
+
+	fbr_writer_flush(fs, &writer);
+	assert_zero(writer.error);
+
+	struct fbr_buffer *output = writer.output;
+	assert_dev(output);
+	while (output) {
+		fbr_buffer_ok(output);
+		assert_dev(output->buffer_pos);
+
+		fbr_sys_write(fd, output->buffer, output->buffer_pos);
+
+		output = output->next;
 	}
 
 	assert_zero(close(fd));
+	fbr_writer_free(&writer);
 
 	return 0;
 }
