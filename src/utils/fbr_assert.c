@@ -2,6 +2,8 @@
  * Copyright (c) 2024-2026 FiberFS LLC
  * All rights reserved.
  *
+ * See fbr_fuse_abort.c for a description on how we actually abort
+ *
  */
 
 #include <errno.h>
