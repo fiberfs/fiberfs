@@ -35,7 +35,7 @@ void fbr_libunwind_backtrace(char **stack_syms, int len);
 #define assert_zero(expr)							\
 	fbr_ASSERT(!(expr), NULL)
 #define pt_assert(expr)								\
-	fbr_ASSERT(!(expr), NULL)
+	assert_zero(expr)
 #define fbr_void(expr)								\
 	(void)(expr)
 #define fbr_ABORT(fmt, ...)							\
