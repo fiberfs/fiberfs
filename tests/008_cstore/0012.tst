@@ -51,5 +51,6 @@ sleep_ms 10
 cstore_debug
 cstore_debug 1
 equal $cstore_entries:0 4
+equal $fs_test_stat_fios 0
 
 fuse_test_unmount
