@@ -53,7 +53,7 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 		FBR_CONFIG_FALSE);
 	cstore->config.force_chunk_write = fbr_conf_get_bool("FORCE_CHUNK_WRITE",
 		FBR_CONFIG_FALSE);
-	cstore->config.skip_chunk_write = fbr_conf_get_bool("SKIP_CHUNK_WRITE",
+	cstore->config.skip_chunk_write = fbr_conf_get_bool("SKIP_CHUNK_WRITE_THRU",
 		FBR_CONFIG_FALSE);
 	cstore->config.async_write = fbr_conf_get_bool("ASYNC_WRITE", FBR_CONFIG_TRUE);
 	cstore->config.skip_content_hash = fbr_conf_get_bool("S3_SKIP_CONTENT_HASH",
