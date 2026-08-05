@@ -62,7 +62,7 @@ fbr_cstore_config_load(struct fbr_cstore *cstore)
 		FBR_CONFIG_FALSE);
 	cstore->config.ssl_verify_peer = fbr_conf_get_bool("SSL_VERIFY_PEER",
 		is_test ? FBR_CONFIG_FALSE : FBR_CONFIG_TRUE);
-	cstore->config.prune_attempts = fbr_conf_get_ulong("PRUNE_ATTEMPTS",
+	cstore->config.prune_attempts = fbr_conf_get_ulong("CSTORE_PRUNE_ATTEMPTS",
 		FBR_CSTORE_PRUNE_ATTEMPTS);
 
 	cstore->config.timeout_connect_ms = fbr_conf_get_ulong("HTTP_CONNECT_TIMEOUT_MSEC",
