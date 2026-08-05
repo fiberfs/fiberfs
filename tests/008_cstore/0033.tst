@@ -1,7 +1,7 @@
 fiber_test "cstore with no local chunk write"
 
 config_add FUSE_WRITEBACK_CACHE false
-config_add SKIP_CHUNK_WRITE_THRU true
+config_add CACHE_CHUNK_WRITE_THRU false
 
 cstore_init 0
 

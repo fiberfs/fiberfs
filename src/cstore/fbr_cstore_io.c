@@ -414,7 +414,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_op_sync_init(&sync);
 	fbr_cstore_async_wbuffer_send(cstore, http, &chunk_path, wbuffer, &sync);
 
-	if (cstore->config.skip_chunk_write) {
+	if (!cstore->config.chunk_write_thru) {
 		fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE skipping local");
 		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, http, wbuffer, 1);
 		return;
