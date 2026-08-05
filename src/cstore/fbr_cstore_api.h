@@ -120,6 +120,7 @@ struct fbr_cstore_config {
 	int					allow_cdn_delete;
 	int					allow_cdn_root_get;
 	int					force_chunk_write;
+	int					skip_chunk_write;
 	int					async_write;
 	int					skip_content_hash;
 	int					validate_content_hash;

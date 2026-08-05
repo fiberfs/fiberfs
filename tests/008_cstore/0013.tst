@@ -23,14 +23,14 @@ cstore_add_cluster 0 $cstore_server_host:1 $cstore_server_port:1
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 
-sleep_ms 100
+sleep_ms 10
 
 print "### WRITE"
 
 set file $sys_tmpdir "/test.txt"
 sys_write $file "test_ABC"
 
-sleep_ms 100
+sleep_ms 10
 
 cstore_debug
 cstore_debug 1
@@ -44,7 +44,7 @@ print "### WRITE OVER"
 
 sys_write $file "XYZ 22"
 
-sleep_ms 100
+sleep_ms 10
 
 cstore_debug
 cstore_debug 1
@@ -67,7 +67,7 @@ print "### READ"
 
 sys_cat $file "XYZ 22"
 
-sleep_ms 100
+sleep_ms 10
 
 cstore_debug
 cstore_debug 1
@@ -88,7 +88,7 @@ print "### READ AGAIN"
 
 sys_cat $file "XYZ 22"
 
-sleep_ms 100
+sleep_ms 10
 
 cstore_debug
 cstore_debug 1

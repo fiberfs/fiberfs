@@ -26,7 +26,7 @@ fs_test_rw_mount $sys_tmpdir
 set file $sys_tmpdir "/test.txt"
 sys_write $file "testing 123"
 
-sleep_ms 100
+sleep_ms 10
 
 cstore_debug
 cstore_debug 1
@@ -47,7 +47,7 @@ print "### READ INDEX AND FILE"
 
 sys_cat $file "testing 123"
 
-sleep_ms 100
+sleep_ms 10
 
 cstore_debug
 cstore_debug 1

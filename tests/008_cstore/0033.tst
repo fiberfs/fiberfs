@@ -1,8 +1,7 @@
-fiber_test "cstore server PUT/GET with s3"
+fiber_test "cstore with no local chunk write"
 
 config_add FUSE_WRITEBACK_CACHE false
-config_add S3_SKIP_CONTENT_HASH false
-config_add CSTORE_VALIDATE_CONTENT_HASH true
+config_add SKIP_CHUNK_WRITE true
 
 cstore_init 0
 
@@ -20,7 +19,7 @@ fs_test_rw_mount $sys_tmpdir
 print "### WRITE 2 CHUNKS"
 
 set file $sys_tmpdir "/test.txt"
-sys_write_sync $file "test1test2test3"
+sys_write $file "test1test2test3"
 sys_append $file "test4test5"
 
 sleep_ms 10
@@ -28,9 +27,9 @@ sleep_ms 10
 cstore_debug
 cstore_debug 1
 
-equal $cstore_entries:0 7
-equal $cstore_stat_chunks:0 2
-equal $cstore_stat_indexes:0 4
+equal $cstore_entries:0 4
+equal $cstore_stat_chunks:0 0
+equal $cstore_stat_indexes:0 3
 equal $cstore_stat_roots:0 1
 
 equal $cstore_entries:1 4
@@ -38,9 +37,8 @@ equal $cstore_stat_chunks:1 2
 equal $cstore_stat_indexes:1 1
 equal $cstore_stat_roots:1 1
 
-cstore_clear 0
-equal $cstore_entries:0 0
 fs_test_release_all_wait
+
 sleep_ms 10
 
 print "### READ 2 CHUNKS FROM CSTORE_1"
@@ -48,8 +46,11 @@ print "### READ 2 CHUNKS FROM CSTORE_1"
 sys_cat $file "test1test2test3test4test5"
 
 sleep_ms 10
+
 cstore_debug
 cstore_debug 1
-equal $cstore_entries:0 4
+
+equal $cstore_entries:0 6
+equal $cstore_stat_chunks:0 2
 
 fuse_test_unmount

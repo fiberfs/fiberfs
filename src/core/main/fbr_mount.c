@@ -158,6 +158,7 @@ _fiberfs_setup_mount(const char *fiberfs_conf, const char *mount_path)
 
 	while (!_STOP) {
 		fbr_fuse_mounted(fuse_ctx);
+		assert_zero(fuse_ctx->detached);
 		fbr_sleep_ms(FBR_FUSE_MOUNT_LOOP_MS);
 	}
 
