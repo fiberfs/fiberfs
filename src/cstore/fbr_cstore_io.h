@@ -15,8 +15,8 @@
 #include "cstore/fbr_cstore_path.h"
 #include "data/queue.h"
 
-#define FBR_CSTORE_ASYNC_THREAD_MAX		128
-#define FBR_CSTORE_ASYNC_THREAD_DEFAULT		8
+#define FBR_CSTORE_ASYNC_THREAD_MAX		256
+#define FBR_CSTORE_ASYNC_THREAD_DEFAULT		16
 #define FBR_CSTORE_ASYNC_THREAD_TEST		4
 
 #define FBR_ENUM_CSTORE_OP_TYPE							\
