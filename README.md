@@ -56,6 +56,10 @@ Note: all Makefile commands support parallelism, ex: `make test -j8`.
 
 ## Releases
 
+### FiberFS 0.9.2 (2026-08-06)
+
+* Better defaults, more TLS options, S3 content checksums, sticky dns, http timings, and more tests.
+
 ### FiberFS 0.9.1 (2026-07-15)
 
 * Cluster and CDN configuration. See [building and running FiberFS](https://fiberfs.io/content/building_and_running_fiberfs).
