@@ -97,15 +97,7 @@ void fjson_context_free(struct fjson_context *ctx);
 static inline FJSON_ENUM_STATE
 static inline FJSON_ENUM_TOKEN_TYPE
 
-#define fjson_context_ok(ctx)					\
-{								\
-	assert(ctx);						\
-	assert((ctx)->magic == FJSON_CTX_MAGIC);		\
-}
-#define fjson_token_ok(token)					\
-{								\
-	assert(token);						\
-	assert((token)->magic == FJSON_TOKEN_MAGIC);		\
-}
+#define fjson_context_ok(ctx)		fbr_magic_check(ctx, FJSON_CTX_MAGIC)
+#define fjson_token_ok(token)		fbr_magic_check(token, FJSON_TOKEN_MAGIC)
 
 #endif /* _FJSON_H_INCLUDED_ */

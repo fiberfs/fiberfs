@@ -2,7 +2,7 @@
  * Copyright (c) 2024-2026 FiberFS LLC
  * All rights reserved.
  *
- * A complete streaming (gzip friendly) JSON parser with zero memory allocations
+ * A spec compliant streaming (gzip friendly) JSON parser with zero memory allocations
  *
  */
 
