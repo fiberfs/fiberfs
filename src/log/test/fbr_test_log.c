@@ -655,6 +655,8 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	i = 0;
 	while ((log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)))) {
+		fbr_logline_ok(log_line);
+
 		if (reader.cursor.tag.parts.class_data != FBR_LOG_TEST) {
 			continue;
 		}
@@ -670,6 +672,17 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(i == 19);
 
 	fbr_request_free(r2);
+
+	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	fbr_logline_ok(log_line);
+	size_t len = strlen(log_line->buffer);
+	fbr_test_logs("READER log_buffer[%zu]:%zu", i, len);
+	assert_zero(log_line->truncated);
+	assert(len == sizeof(buffer) - 1);
+
+	log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+	assert_zero(log_line);
+
 	fbr_log_reader_free(&reader);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "test_log_rlog passed");
