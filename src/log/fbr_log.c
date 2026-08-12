@@ -279,7 +279,7 @@ _log_get(struct fbr_log *log, size_t length, unsigned char *sequence, size_t cou
 
 	fbr_log_data_t eof = fbr_log_tag_gen(writer->sequence, FBR_LOG_TAG_EOF,
 		FBR_LOG_TAG_EOF_DATA, 0);
-	assert(*writer->log_pos == eof);
+	assert_dev(*writer->log_pos == eof);
 
 	*sequence = writer->sequence;
 	writer->sequence++;
