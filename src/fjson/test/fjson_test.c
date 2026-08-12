@@ -52,6 +52,8 @@ fjson_cmd_json_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fjson_context fjson;
 	fjson_context_init(&fjson);
 
+	fjson.nulled_input = 1;
+
 	fjson_parse(&fjson, cmd->params[0].value, cmd->params[0].len);
 
 	fbr_test_ERROR(fjson.error, "fjson error %s: %s", fjson_state_name(fjson.state),
@@ -84,6 +86,8 @@ fjson_cmd_json_fail(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fjson_context fjson;
 	fjson_context_init(&fjson);
 
+	fjson.nulled_input = 1;
+
 	fjson_parse(&fjson, cmd->params[0].value, cmd->params[0].len);
 
 	fbr_test_ERROR(!fjson.error, "fjson error: valid json %s", fjson_state_name(fjson.state));
@@ -105,6 +109,8 @@ fjson_cmd_json_multi(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fjson_context fjson;
 	fjson_context_init(&fjson);
+
+	fjson.nulled_input = 1;
 
 	char buf[1024];
 	size_t pos = 0;
@@ -159,7 +165,7 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 
 	if (cmd->param_count >= 2) {
 		long val = fbr_test_parse_long(cmd->params[1].value);
-		fbr_test_ERROR(val < 0 || val > (long)sizeof(buf), "Bad size");
+		fbr_test_ERROR(val < 0 || val >= (long)sizeof(buf), "Bad size");
 		size = (size_t)val;
 	} else {
 		size = 0;
@@ -199,6 +205,7 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 	struct fjson_context fjson;
 	fjson_context_init(&fjson);
 
+	fjson.nulled_input = 1;
 	fjson.callback = &_json_print;
 	fjson.callback_priv = ctx;
 	pos = 0;
@@ -214,12 +221,15 @@ _json_file(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd, int fail)
 		assert(size + pos <= sizeof(buf));
 
 		len = read(fd, buf + pos, size);
+		assert(pos + len < sizeof(buf));
+
+		buf[pos + len] = '\0';
 
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "read %zu (asked %zu)", len, size);
 
-		fjson_parse_partial(&fjson, buf, len + pos);
+		fjson_parse_partial(&fjson, buf, pos + len);
 
-		pos = fjson_shift(&fjson, buf, len + pos, sizeof(buf));
+		pos = fjson_shift(&fjson, buf, pos + len, sizeof(buf));
 
 		if (pos) {
 			fbr_test_log(ctx, FBR_LOG_VERBOSE, "shifted %zu", pos);

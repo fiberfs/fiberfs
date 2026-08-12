@@ -25,6 +25,7 @@
 		FBR_ENUM_VALUES(FJSON_STATE_ERROR, "ERROR")			\
 		FBR_ENUM_VALUES(FJSON_STATE_ERROR_JSON, "ERROR_JSON")		\
 		FBR_ENUM_VALUES(FJSON_STATE_ERROR_SIZE, "ERROR_SIZE")		\
+		FBR_ENUM_VALUES(FJSON_STATE_ERROR_NULL, "ERROR_NULL")		\
 		FBR_ENUM_VALUES(FJSON_STATE_ERROR_CALLBACK, "ERROR_CALLBACK")	\
 	FBR_ENUM_END("ERROR_BADSTATE")
 
@@ -76,6 +77,7 @@ struct fjson_context {
 
 	fbr_bitflag_t			error:1;
 	fbr_bitflag_t			finish:1;
+	fbr_bitflag_t			nulled_input:1;
 
 	const char			*error_msg;
 

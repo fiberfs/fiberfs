@@ -75,11 +75,6 @@ _gen_random(long low, long high)
 int
 main(int argc, char **argv)
 {
-	struct fjson_context json;
-	char buf[1024];
-	int fd, error;
-	size_t i, size, pos, len;
-
 	printf("fjson_client\n");
 
 	if (argc < 2) {
@@ -90,10 +85,12 @@ main(int argc, char **argv)
 	fbr_setup_crash_signals();
 	fbr_allow_abort();
 
+	struct fjson_context json;
 	fjson_context_init(&json);
+	json.nulled_input = 1;
 	json.callback = &_json_print;
 
-	error = 0;
+	int fd, error = 0;
 
 	if (!strcmp(argv[1], "-f")) {
 		if (argc == 2) {
@@ -112,22 +109,27 @@ main(int argc, char **argv)
 			return 1;
 		}
 
-		pos = 0;
-
 		_random_seed();
 
+		char buf[1024];
+		size_t pos = 0, len;
+
 		do {
-			size = _gen_random(1, sizeof(buf) - pos);
-			assert(size + pos <= sizeof(buf));
+			size_t size = _gen_random(1, sizeof(buf) - pos - 1);
+			assert(size + pos < sizeof(buf));
 
 			len = read(fd, buf + pos, size);
+			assert(pos + len < sizeof(buf));
 
-			fjson_parse_partial(&json, buf, len + pos);
+			buf[pos + len] = '\0';
 
-			pos = fjson_shift(&json, buf, len + pos, sizeof(buf));
+			fjson_parse_partial(&json, buf, pos + len);
+
+			pos = fjson_shift(&json, buf, pos + len, sizeof(buf) - 1);
 
 			if (pos) {
 				printf("Shifting %zu\n", pos);
+				assert(pos < sizeof(buf) - 1);
 			}
 		} while (len > 0 && !json.error);
 
@@ -168,7 +170,7 @@ main(int argc, char **argv)
 
 	if (json.error) {
 		printf("%s\n", argv[1]);
-		for (i = 1; i < json.position; i++) {
+		for (size_t i = 1; i < json.position; i++) {
 			printf(" ");
 		}
 		printf("^\n");

@@ -350,11 +350,16 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		return;
 	}
 
-	if (ctx->pos == buf_len && !ctx->finish) {
-		ctx->state = FJSON_STATE_NEEDMORE;
-		ctx->pos = start;
+	if (ctx->pos == buf_len) {
+		if (!ctx->finish) {
+			ctx->state = FJSON_STATE_NEEDMORE;
+			ctx->pos = start;
 
-		return;
+			return;
+		} else if (!ctx->nulled_input) {
+			_set_error(ctx, FJSON_STATE_ERROR_NULL, "need null terminator");
+			return;
+		}
 	}
 
 	if (!has_number) {
