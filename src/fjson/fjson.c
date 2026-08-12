@@ -148,6 +148,7 @@ _alloc_next_token(struct fjson_context *ctx, enum fjson_token_type type)
 		token = &ctx->tokens[ctx->tokens_pos - 1];
 		fjson_token_ok(token);
 
+		token->svalue = NULL;
 		token->length++;
 
 		if (!token->length) {
