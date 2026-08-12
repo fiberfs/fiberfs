@@ -610,27 +610,33 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int ret = fbr_log_reader_init(&reader, fuse_ctx->path);
 	assert(ret);
 
+	assert(reader.magic == FBR_LOG_READER_MAGIC);
+	fbr_log_ok(&reader.log);
+	fbr_log_header_ok(reader.log.header);
+	fbr_memory_sync();
+	assert_zero(reader.log.header->segment_counter);
+
 	char log_buffer[FBR_LOGLINE_MAX_LENGTH];
 	struct fbr_log_line *log_line;
 
 	do {
 		log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
 	} while (log_line && reader.cursor.tag.parts.class_data != FBR_LOG_TEST);
-	fbr_test_logs("READER[0]");
+	fbr_test_logs("READER[0] (status = %d)", reader.cursor.status);
 	_test_logline_debug(log_line);
 	assert_zero(strcmp(log_line->buffer, "TEST 1"));
 
 	do {
 		log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
 	} while (log_line && reader.cursor.tag.parts.class_data != FBR_LOG_TEST);
-	fbr_test_logs("READER[1]");
+	fbr_test_logs("READER[1] (status = %d)", reader.cursor.status);
 	_test_logline_debug(log_line);
 	assert_zero(strcmp(log_line->buffer, "TEST 2"));
 
 	do {
 		log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
 	} while (log_line && reader.cursor.tag.parts.class_data != FBR_LOG_TEST);
-	fbr_test_logs("READER[2]");
+	fbr_test_logs("READER[2] (status = %d)", reader.cursor.status);
 	_test_logline_debug(log_line);
 	assert_zero(strcmp(log_line->buffer, "TEST THREE"));
 

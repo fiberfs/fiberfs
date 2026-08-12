@@ -11,6 +11,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <sys/mman.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -251,12 +252,13 @@ _log_segment(struct fbr_log_header *header, fbr_log_data_t *log_pos)
 }
 
 static fbr_log_data_t *
-_log_get(struct fbr_log *log, unsigned short length, unsigned char *sequence, size_t count)
+_log_get(struct fbr_log *log, size_t length, unsigned char *sequence, size_t count)
 {
 	fbr_log_ok(log);
 	fbr_log_header_ok(log->header);
 	assert(log->writer.valid);
 	assert_dev(length);
+	assert_dev(length <= USHRT_MAX);
 	assert_dev(sequence);
 	assert_dev(count);
 
@@ -435,6 +437,7 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 	int init_sequence = 0;
 
 	if (!cursor->log_pos) {
+		// TODO allow starting at an earlier segment
 		cursor->segment_counter = header->segment_counter;
 		size_t segment = cursor->segment_counter % header->segments;
 		cursor->log_pos = header->data + header->segment_offset[segment];
