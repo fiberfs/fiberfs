@@ -467,7 +467,12 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 	size_t literal_len;
 
 	for (; ctx->pos < buf_len; ctx->pos++) {
+		if (ctx->error) {
+			return;
+		}
+
 		assert(ctx->state == FJSON_STATE_INDEXING);
+
 		switch (buf[ctx->pos]) {
 		/* Start of object */
 		case '{':
@@ -508,10 +513,6 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 
 			_close_token(ctx, token, 1);
 
-			if (ctx->error) {
-				return;
-			}
-
 			continue;
 		/* Start of array */
 		case '[':
@@ -536,10 +537,6 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			}
 
 			_close_token(ctx, token, 1);
-
-			if (ctx->error) {
-				return;
-			}
 
 			continue;
 		/* String literal */
@@ -688,7 +685,7 @@ _parse_tokens(struct fjson_context *ctx, const char *buf, size_t buf_len)
 		}
 	}
 
-	assert(ctx->state == FJSON_STATE_INDEXING);
+	assert(ctx->error || ctx->state == FJSON_STATE_INDEXING);
 }
 
 void
