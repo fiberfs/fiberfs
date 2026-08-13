@@ -77,6 +77,7 @@ _index_print_file_gz(const char *path, size_t gz_bytes)
 	struct fbr_gzip gzip;
 	fbr_gzip_inflate_init(&gzip);
 	assert_dev(gzip.status == FBR_GZIP_DONE);
+	assert_zero_dev(gzip.end);
 
 	char gz_buffer[4096];
 	char out_buffer[4096];
@@ -120,6 +121,7 @@ _index_print_file_gz(const char *path, size_t gz_bytes)
 	assert_zero(bytes);
 	assert_zero(gz_bytes);
 	assert(gzip.status == FBR_GZIP_DONE);
+	assert(gzip.end);
 
 	fbr_gzip_free(&gzip);
 	assert_zero(close(fd));

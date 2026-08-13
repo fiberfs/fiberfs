@@ -71,6 +71,7 @@ _gzip_roundtrip(const char *input, size_t input_len)
 		assert(decompress.status == FBR_GZIP_DONE);
 	} while (compress.status == FBR_GZIP_MORE_BUFFER);
 	assert(decompress.status == FBR_GZIP_DONE);
+	assert(decompress.end);
 
 	fbr_test_logs("input: %zu compressed: %zu output: %zu", input_len, compressed_bytes,
 		output_bytes);

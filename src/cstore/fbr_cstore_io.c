@@ -921,7 +921,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	int errors = 0;
 
 	if (metadata.gzipped) {
-		if (gzip.status != FBR_GZIP_DONE) {
+		if (gzip.status != FBR_GZIP_DONE || !gzip.end) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR gunzip");
 			errors += 1;
 		}

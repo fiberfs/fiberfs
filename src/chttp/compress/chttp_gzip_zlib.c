@@ -32,7 +32,6 @@ chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t ou
 	size_t read, written;
 
 	chttp_context_ok(ctx);
-	assert(ctx->gzip_priv);
 	assert(output);
 
 	if (!output_len) {
@@ -40,6 +39,7 @@ chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t ou
 	}
 
 	zlib = ctx->gzip_priv;
+	fbr_zlib_ok(zlib);
 	assert(zlib->buffer);
 	assert(zlib->buffer_len);
 	assert(zlib->type == FBR_ZLIB_INFLATE);
@@ -97,9 +97,10 @@ chttp_zlib_send_chunk(struct fbr_zlib *zlib, struct chttp_addr *addr, const unsi
 	int final;
 
 	fbr_zlib_ok(zlib);
-	chttp_addr_connected(addr);
+	assert(zlib->type == FBR_ZLIB_DEFLATE);
 	assert(zlib->buffer);
 	assert(zlib->buffer_len);
+	chttp_addr_connected(addr);
 
 	inbuf = input;
 	inlen = input_len;

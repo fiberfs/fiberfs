@@ -91,6 +91,7 @@ fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t input_l
 	fbr_zlib_ok(zlib);
 	assert(output);
 	assert(output_len);
+	assert(output_len <= UINT_MAX);
 	assert(written);
 
 	*written = 0;
@@ -110,6 +111,7 @@ fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t input_l
 
 	if (input) {
 		assert(input_len);
+		assert(input_len <= UINT_MAX);
 		assert_zero(zlib->zs.avail_in);
 		zlib->zs.next_in = input;
 		zlib->zs.avail_in = input_len;
@@ -154,8 +156,10 @@ fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t input_l
 			}
 
 			return FBR_GZIP_DONE;
-		case Z_OK:
 		case Z_STREAM_END:
+			zlib->end = 1;
+			/* Fallthru */
+		case Z_OK:
 			if(zlib->zs.avail_in) {
 				return FBR_GZIP_ERROR;
 			}

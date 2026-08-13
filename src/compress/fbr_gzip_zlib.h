@@ -34,6 +34,7 @@ struct fbr_zlib {
 	int				status;
 	int				zstate;
 
+	fbr_bitflag_t			end:1;
 	fbr_bitflag_t			do_free:1;
 
 	unsigned char			*buffer;
