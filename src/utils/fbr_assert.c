@@ -108,6 +108,11 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
 {
 	unsigned long count = fbr_atomic_add(&_ASSERT_LOOP, 1);
 
+	if (count > 32) {
+		fprintf(stderr, "ERROR: too many aborts (%lu), exiting\n", count);
+		abort();
+	}
+
 	fbr_context_abort(1);
 
 	char buffer[4096];
@@ -135,13 +140,6 @@ fbr_do_abort(const char *assertion, const char *function, const char *file, int 
 
 	if (count <= 3) {
 		_dump_backtrace();
-
-		if (count == 1) {
-			// TODO get more details on this context like thread name, etc
-		}
-	} else if (count > 32) {
-		fprintf(stderr, "ERROR: too many aborts (%lu), exiting\n", count);
-		abort();
 	}
 
 	fbr_context_abort(0);

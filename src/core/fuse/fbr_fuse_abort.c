@@ -53,6 +53,9 @@ fbr_context_abort(int pre_abort)
 {
 	if (pre_abort) {
 		fbr_log_restore_stderr();
+
+		// TODO get more details on this context like thread name, etc
+
 		return;
 	}
 
