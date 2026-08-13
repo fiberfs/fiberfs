@@ -112,7 +112,9 @@ fbr_sys_write(int fd, const void *buf, size_t buf_len)
 
 	while (bytes < buf_len) {
 		ssize_t ret = write(fd, (const char*)buf + bytes, buf_len - bytes);
-		if (ret <= 0) {
+		if (ret < 0 && errno == EINTR) {
+			continue;
+		} else if (ret <= 0) {
 			return 0;
 		}
 
