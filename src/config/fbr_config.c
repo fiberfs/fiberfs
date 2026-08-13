@@ -88,6 +88,8 @@ fbr_config_add(struct fbr_config *config, const char *name, size_t name_len,
 {
 	fbr_config_ok(config);
 	assert(name && name_len);
+	assert(name_len < 4096);
+	assert(value_len < 32 * 1024 * 1024);
 
 	name_len++;
 	value_len++;
@@ -338,6 +340,8 @@ fbr_config_reader_ready(struct fbr_config_reader *reader)
 	if (reader->init) {
 		return;
 	}
+
+	fbr_memory_sync();
 
 	reader->init = 1;
 }

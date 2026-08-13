@@ -81,6 +81,10 @@ fbr_config_parse(struct fbr_config *config, const char *filepath)
 		entries++;
 	}
 
+	if (line_error) {
+		fbr_stat_add(&config->stats.errors);
+	}
+
 	if (!feof(f)) {
 		fbr_stat_add(&config->stats.errors);
 	}
