@@ -11,7 +11,8 @@ DEPFLAGS=-MMD -MP
 CC_ALL=$(CC) $(CFLAGS) $(CFLAGS_INCLUDE) $(CFLAGS_EXTRA) $(CFLAGS_CC) $(CFLAGS_BUILD) $(DEPFLAGS)
 LDFLAGS=-shared
 LIBFLAGS=-lrt -lpthread
-AR=ar crs
+AR=ar
+AR_FLAGS=crs
 BUILD=build
 
 TEST_SRC:=$(shell find * -type f -name '*.c' -path '*test/*')
@@ -182,10 +183,9 @@ else ifneq ($(_LIB_ALL),$(LIBFLAGS))
 $(error Compiler flags changed, please run 'make clean' or use 'CC_REUSE=true')
 endif
 
-.PHONY:		all lib clean gcov gcovclean afl
+.PHONY:		all clean gcov gcovclean afl
 
 all:		fiberfs_test fiberfs fiberfs_log
-lib:		libfiberfs.so
 
 chttp_fuzz:	libchttp.a libfiberutil.a $(CHTTP_CLIENT_OBJS)
 		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libchttp.a libfiberutil.a $(LIBFLAGS)
@@ -202,40 +202,37 @@ fiberfs:	libfiberfs.a libchttp.a libfjson.a libcstore.a libfiberutil.a
 fiberfs_log:	$(LOG_OBJS) $(LOG_CLIENT_OBJS) libfiberutil.a
 		$(CC) -o $@ $(LOG_CLIENT_OBJS) $(LOG_OBJS) libfiberutil.a $(LIBFLAGS)
 
-libfiberfs.so:	libfiberfs.a libchttp.a libfjson.a libcstore.a libfiberutil.a
-		$(CC) $(LDFLAGS) -o $@ libfiberfs.a libchttp.a libfjson.a libcstore.a libfiberutil.a
-
 libfiberfs.a:	$(OBJS)
 		$(RM) $@
-		$(AR) $@ $(OBJS)
+		$(AR) $(AR_FLAGS) $@ $(OBJS)
 
 libfibertest.a:	$(TEST_OBJS)
 		$(RM) $@
-		$(AR) $@ $(TEST_OBJS)
+		$(AR) $(AR_FLAGS) $@ $(TEST_OBJS)
 
 libfiberutil.a:	$(UTILS_OBJS)
 		$(RM) $@
-		$(AR) $@ $(UTILS_OBJS)
+		$(AR) $(AR_FLAGS) $@ $(UTILS_OBJS)
 
 libchttp.a:	$(CHTTP_OBJS)
 		$(RM) $@
-		$(AR) $@ $(CHTTP_OBJS)
+		$(AR) $(AR_FLAGS) $@ $(CHTTP_OBJS)
 
 libfjson.a:	$(FJSON_OBJS)
 		$(RM) $@
-		$(AR) $@ $(FJSON_OBJS)
+		$(AR) $(AR_FLAGS) $@ $(FJSON_OBJS)
 
 libcstore.a:	$(CSTORE_OBJS)
 		$(RM) $@
-		$(AR) $@ $(CSTORE_OBJS)
+		$(AR) $(AR_FLAGS) $@ $(CSTORE_OBJS)
 
 $(BUILD)/%.o:	%.c | $(BUILD_DIRS) $(CC_FILE) $(LIB_FILE)
 		$(CC_ALL) -c $< -o $@
 
-$(CC_FILE):
+$(CC_FILE):	| $(BUILD_DIRS)
 		$(file > $(CC_FILE),$(CC_ALL))
 
-$(LIB_FILE):
+$(LIB_FILE):	| $(BUILD_DIRS)
 		$(file > $(LIB_FILE),$(LIBFLAGS))
 
 $(BUILD_DIRS):
@@ -245,7 +242,7 @@ include $(wildcard $(DEPS))
 
 clean:		gcovclean
 		$(RMDIR) $(BUILD)
-		$(RM) *.so *.a
+		$(RM) *.a
 		$(RM) chttp_fuzz fjson_client fiberfs_test fiberfs_log fiberfs
 
 gcov:		CFLAGS_EXTRA+=$(GCOVFLAGS)
