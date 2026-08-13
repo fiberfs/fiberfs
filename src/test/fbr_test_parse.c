@@ -68,7 +68,9 @@ fbr_test_unescape(struct fbr_test_param *param)
 				i++;
 				continue;
 			default:
+				_value[i - offset] = '\\';
 				i++;
+				_value[i - offset] = val;
 				continue;
 		}
 	}

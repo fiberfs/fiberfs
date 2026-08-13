@@ -121,7 +121,7 @@ fbr_cmd_skip_shell_failure(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 struct _shell_bg_ctl
 {
-	int		status;
+	volatile int	status;
 	char		shell_cmd[4096];
 };
 
