@@ -69,9 +69,24 @@ fbr_cmd_test_id_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_id_t id2 = fbr_id_gen();
 	fbr_id_t id3 = fbr_id_gen();
 
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id: %lu", id1);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id: %lu", id2);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id: %lu", id3);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id1: %lu", id1);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id2: %lu", id2);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id3: %lu", id3);
+
+	struct fbr_id id1_full;
+	struct fbr_id id2_full;
+	struct fbr_id id3_full;
+
+	id1_full.value = id1;
+	id2_full.value = id2;
+	id3_full.value = id3;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id1.other: %u",
+		id1_full.parts.random_parts.other);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id2.other: %u",
+		id2_full.parts.random_parts.other);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fiber id3.other: %u",
+		id3_full.parts.random_parts.other);
 
 	char id1_string[FBR_ID_STRING_MAX];
 	char id2_string[FBR_ID_STRING_MAX];

@@ -20,9 +20,9 @@ fbr_id_gen(void)
 	assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
 
 	struct fbr_id id;
-	id.parts.timestamp = ts.tv_sec % FBR_ID_TIMEBITS_MAX;
-	id.parts.random_parts.random = random() % FBR_ID_RANDBITS_MAX;
-	id.parts.random_parts.other = ts.tv_nsec % FBR_ID_OTHERBITS_MAX;
+	id.parts.timestamp = ts.tv_sec & FBR_ID_TIMEBITS_MAX;
+	id.parts.random_parts.random = random() & FBR_ID_RANDBITS_MAX;
+	id.parts.random_parts.other = ts.tv_nsec & FBR_ID_OTHERBITS_MAX;
 
 	return id.value;
 }
