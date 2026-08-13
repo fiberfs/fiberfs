@@ -65,6 +65,6 @@ void fbr_md5_update(struct fbr_md5_ctx *md5, const void *input, size_t len);
 void fbr_md5_final(struct fbr_md5_ctx *md5);
 
 #define fbr_sha256_ok(sha256)			fbr_magic_check(sha256, FBR_SHA256_MAGIC)
-#define fbr_md5_ok(sha256)			fbr_magic_check(md5, FBR_MD5_MAGIC)
+#define fbr_md5_ok(md5)				fbr_magic_check(md5, FBR_MD5_MAGIC)
 
 #endif /* _FBR_SHA256_H_INCLUDED_ */
