@@ -267,6 +267,7 @@ _parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 	chttp_context_ok(ctx);
 	chttp_dpage_ok(ctx->dpage_last);
 	assert_zero(ctx->seen_first);
+	assert_zero_dev(ctx->version);
 
 	struct chttp_dpage *dpage = ctx->dpage_last;
 	size_t len = end - start;
@@ -276,14 +277,14 @@ _parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 
 	for (size_t i = start; i < end; i++) {
 		if (dpage->data[i] < ' ') {
-			chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+			chttp_error(ctx, CHTTP_ERR_PARSE);
 			return;
 		} else if (dpage->data[i] == ' ') {
 			dpage->data[i] = '\0';
 			count++;
 
 			if (dpage->data[i + 1] <= ' ') {
-				chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+				chttp_error(ctx, CHTTP_ERR_PARSE);
 				return;
 			}
 
@@ -301,7 +302,10 @@ _parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 	}
 
 	if (count != 2) {
-		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+		chttp_error(ctx, CHTTP_ERR_PARSE);
+		return;
+	} else if (!ctx->version) {
+		chttp_error(ctx, CHTTP_ERR_PARSE);
 		return;
 	}
 }
@@ -320,23 +324,23 @@ _parse_response_status(struct chttp_context *ctx, size_t start, size_t end)
 	assert_dev(strlen((char*)&dpage->data[start]) == len);
 
 	if (len < 14) {
-		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+		chttp_error(ctx, CHTTP_ERR_PARSE);
 		return;
 	}
 
 	if (strncmp((char*)&dpage->data[start], "HTTP/1.", 7)) {
-		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+		chttp_error(ctx, CHTTP_ERR_PARSE);
 		return;
 	}
 
-	start = 7;
+	start += 7;
 
 	if (dpage->data[start] == '0') {
 		ctx->version = CHTTP_H_VERSION_1_0;
 	} else if (dpage->data[start] == '1') {
 		ctx->version = CHTTP_H_VERSION_1_1;
 	} else {
-		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+		chttp_error(ctx, CHTTP_ERR_PARSE);
 		return;
 	}
 
@@ -346,7 +350,7 @@ _parse_response_status(struct chttp_context *ctx, size_t start, size_t end)
 	    dpage->data[start + 1] < '0' || dpage->data[start + 1] > '9' ||
 	    dpage->data[start + 2] < '0' || dpage->data[start + 2] > '9' ||
 	    dpage->data[start + 3] < '0' || dpage->data[start + 3] > '9') {
-		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+		chttp_error(ctx, CHTTP_ERR_PARSE);
 		return;
 	}
 
@@ -357,7 +361,7 @@ _parse_response_status(struct chttp_context *ctx, size_t start, size_t end)
 	start += 4;
 
 	if (ctx->status == 0 || dpage->data[start] != ' ') {
-		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+		chttp_error(ctx, CHTTP_ERR_PARSE);
 		return;
 	}
 
@@ -366,7 +370,7 @@ _parse_response_status(struct chttp_context *ctx, size_t start, size_t end)
 
 	while (start < end) {
 		if (dpage->data[start] < ' ' || dpage->data[start] > '~') {
-			chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+			chttp_error(ctx, CHTTP_ERR_PARSE);
 			return;
 		}
 		start++;
@@ -397,9 +401,9 @@ _header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 	size_t start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
 
 	for (; start < dpage->offset; start++) {
-		size_t end;
+		size_t mid, end;
 		int binary;
-		int error = chttp_header_endline(dpage, start, NULL, &end, 1, &binary);
+		int error = chttp_header_endline(dpage, start, &mid, &end, 1, &binary);
 
 		// Incomplete line
 		if (error < 0) {
@@ -407,7 +411,7 @@ _header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 		}
 
 		if (error || binary) {
-			chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+			chttp_error(ctx, CHTTP_ERR_PARSE);
 			return;
 		}
 
@@ -441,6 +445,9 @@ _header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 
 			chttp_dpage_ptr_set(&ctx->data_end, dpage, end + 1, 0);
 
+			return;
+		} else if (!mid) {
+			chttp_error(ctx, CHTTP_ERR_PARSE);
 			return;
 		}
 

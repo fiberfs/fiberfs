@@ -29,13 +29,13 @@ _body_chunk_end(struct chttp_context *ctx)
 		int error = chttp_header_endline(ctx->dpage_last, start, NULL, &end, 1, NULL);
 
 		if (error > 0) {
-			chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
+			chttp_error(ctx, CHTTP_ERR_CHUNK);
 			return;
 		} else if (error < 0) {
 			chttp_dpage_shift_full(ctx);
 		} else {
 			if (end - start != 1) {
-				chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
+				chttp_error(ctx, CHTTP_ERR_CHUNK);
 				return;
 			} else {
 				end++;
@@ -65,7 +65,7 @@ _body_chunk_end(struct chttp_context *ctx)
 		return;
 	}
 
-	chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
+	chttp_error(ctx, CHTTP_ERR_CHUNK);
 
 	return;
 }
@@ -87,7 +87,7 @@ _body_chunk_start(struct chttp_context *ctx)
 		int error = chttp_header_endline(ctx->dpage_last, start, NULL, &end, 1, NULL);
 
 		if (error > 0) {
-			chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
+			chttp_error(ctx, CHTTP_ERR_CHUNK);
 			return;
 		} else if (error < 0) {
 			chttp_dpage_shift_full(ctx);
@@ -99,7 +99,7 @@ _body_chunk_start(struct chttp_context *ctx)
 
 			if (ctx->length < 0 || ctx->length == LONG_MAX || errno ||
 			    len_end == len_start || *len_end != '\r') {
-				chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
+				chttp_error(ctx, CHTTP_ERR_CHUNK);
 				return;
 			}
 
@@ -140,7 +140,7 @@ _body_chunk_start(struct chttp_context *ctx)
 		return;
 	}
 
-	chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
+	chttp_error(ctx, CHTTP_ERR_CHUNK);
 }
 
 static void
@@ -213,6 +213,9 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type)
 		ctx->chunked = 1;
 		_body_chunk_start(ctx);
 		return;
+	} else if (header) {
+		chttp_error(ctx, CHTTP_ERR_CHUNK);
+		return;
 	}
 
 	header = chttp_header_get(ctx, "content-length");
@@ -223,7 +226,7 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type)
 
 		if (ctx->length < 0 || ctx->length == LONG_MAX || errno ||
 		    len_end == header || *len_end != '\0') {
-			chttp_error(ctx, CHTTP_ERR_RESP_LENGTH);
+			chttp_error(ctx, CHTTP_ERR_LENGTH);
 			return;
 		}
 
@@ -244,7 +247,7 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type)
 		return;
 	}
 
-	chttp_error(ctx, CHTTP_ERR_RESP_LENGTH);
+	chttp_error(ctx, CHTTP_ERR_LENGTH);
 
 	return;
 }
@@ -399,7 +402,7 @@ chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 		ctx->perf.body = chttp_perf_split(ctx);
 
 		if (ctx->length > 0 || ctx->chunked) {
-			chttp_error(ctx, CHTTP_ERR_RESP_BODY);
+			chttp_error(ctx, CHTTP_ERR_BODY);
 			return 0;
 		} else {
 			ctx->length = 0;

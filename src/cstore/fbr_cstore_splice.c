@@ -127,12 +127,12 @@ fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, i
 				cstore->cant_splice_in = 1;
 				fallback_rw = 1;
 			} else {
-				chttp_error(http, CHTTP_ERR_RESP_BODY);
+				chttp_error(http, CHTTP_ERR_BODY);
 				error = errno;
 			}
 			break;
 		} else if (!pipe_bytes) {
-			chttp_error(http, CHTTP_ERR_RESP_BODY);
+			chttp_error(http, CHTTP_ERR_BODY);
 			break;
 		}
 
@@ -141,7 +141,7 @@ fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, i
 			ssize_t ret = splice(pipefd[0], NULL, fd_out, NULL, pipe_bytes - out_bytes,
 				SPLICE_F_MOVE);
 			if (ret <= 0) {
-				chttp_error(http, CHTTP_ERR_RESP_BODY);
+				chttp_error(http, CHTTP_ERR_BODY);
 				if (ret < 0) {
 					error = errno;
 				}
@@ -152,7 +152,7 @@ fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, i
 		}
 
 		if (pipe_bytes != out_bytes) {
-			chttp_error(http, CHTTP_ERR_RESP_BODY);
+			chttp_error(http, CHTTP_ERR_BODY);
 			break;
 		}
 
@@ -175,7 +175,7 @@ fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, i
 
 		ret = fbr_sys_write(fd_out, buffer, ret);
 		if (ret == 0) {
-			chttp_error(http, CHTTP_ERR_RESP_BODY);
+			chttp_error(http, CHTTP_ERR_BODY);
 			break;
 		}
 

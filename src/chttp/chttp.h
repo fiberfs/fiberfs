@@ -57,10 +57,10 @@ enum chttp_version {
 		FBR_ENUM_VALUES(CHTTP_ERR_CONNECT, "cannot make connection")		\
 		FBR_ENUM_VALUES(CHTTP_ERR_NETWORK, "network error")			\
 		FBR_ENUM_VALUES(CHTTP_ERR_REQ_BODY, "bad request body")			\
-		FBR_ENUM_VALUES(CHTTP_ERR_RESP_PARSE, "cannot parse response")		\
-		FBR_ENUM_VALUES(CHTTP_ERR_RESP_LENGTH, "cannot parse resp body length")	\
-		FBR_ENUM_VALUES(CHTTP_ERR_RESP_CHUNK, "cannot parse resp body chunk")	\
-		FBR_ENUM_VALUES(CHTTP_ERR_RESP_BODY, "cannot parse resp body")		\
+		FBR_ENUM_VALUES(CHTTP_ERR_PARSE, "cannot parse http")			\
+		FBR_ENUM_VALUES(CHTTP_ERR_LENGTH, "cannot parse body length")		\
+		FBR_ENUM_VALUES(CHTTP_ERR_CHUNK, "cannot parse body chunk")		\
+		FBR_ENUM_VALUES(CHTTP_ERR_BODY, "cannot parse body")			\
 		FBR_ENUM_VALUES(CHTTP_ERR_TLS_INIT, "TLS initialization error")		\
 		FBR_ENUM_VALUES(CHTTP_ERR_TLS_HANDSHAKE, "TLS handshake error")		\
 		FBR_ENUM_VALUES(CHTTP_ERR_GZIP, "gzip error")				\
