@@ -16,3 +16,5 @@ FBR_TEST_CMD(open_exclusive_error)
 FBR_TEST_CMD(rmdir_error)
 FBR_TEST_CMD(rmdir_2fs_test)
 FBR_TEST_CMD(rmdir_2fs_test_cluster)
+
+FBR_TEST_CMD(create_2fs_test)
