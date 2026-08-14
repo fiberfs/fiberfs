@@ -327,7 +327,7 @@ fbr_request_pool_shutdown(void)
 	static unsigned int max_ms = 3000;
 	static unsigned int wait_ms = 0;
 	static unsigned int sleep_ms = 25;
-	while (wait_ms < max_ms && !TAILQ_EMPTY(&_REQUEST_POOL->active_list)) {
+	while (wait_ms < max_ms && _REQUEST_POOL->active_size) {
 		if (fbr_fuse_has_context()) {
 			struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
 			if (fuse_ctx->error) {
