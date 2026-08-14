@@ -88,7 +88,10 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	if (ret) {
 		if (fs->store->index_delete_f) {
 			int delete_ret = fs->store->index_delete_f(fs, new_directory);
-			assert_zero(delete_ret);
+			if (delete_ret) {
+				fbr_rlog(FBR_LOG_ERROR, "index_delete_f(new_directory) failed: %d",
+					delete_ret);
+			}
 		}
 
 		fbr_fuse_reply_err(request, ret);
