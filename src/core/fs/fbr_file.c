@@ -273,6 +273,18 @@ fbr_file_extend(struct fbr_file *file, size_t size)
 	file->size = size;
 }
 
+void
+fbr_file_generation(struct fbr_file *file)
+{
+	fbr_file_ok(file);
+
+	file->generation++;
+
+	if (!file->generation) {
+		file->generation = 1;
+	}
+}
+
 int
 fbr_file_ptr_cmp(const struct fbr_file_ptr *p1, const struct fbr_file_ptr *p2)
 {

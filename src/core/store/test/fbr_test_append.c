@@ -428,7 +428,7 @@ _append_thread_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	struct fbr_file *file = fbr_directory_find_file(root, "file.append-thread", 18);
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_OK);
-	fbr_test_ASSERT(file->generation == _APPEND_COUNTER_MAX, "file->generation: %lu",
+	fbr_test_ASSERT(file->generation >= _APPEND_COUNTER_MAX, "file->generation: %lu",
 		file->generation);
 
 	fbr_test_logs("*** root->generation: %lu file->generation: %lu", root->generation,

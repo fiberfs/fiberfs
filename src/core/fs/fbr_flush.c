@@ -129,7 +129,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		local_update = 1;
 	}
 
-	file->generation++;
+	fbr_file_generation(file);
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_WBUFFER)) {
 		assert_dev(flush_data->flags < FBR_FLUSH_MKDIR);
@@ -144,7 +144,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_directory_remove_file(fs, directory, latest);
 			fbr_directory_add_file(fs, directory, file);
 
-			file->generation++;
+			fbr_file_generation(file);
 		} else if (!latest) {
 			fbr_directory_add_file(fs, directory, file);
 		} else {
@@ -159,8 +159,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_rlog(FBR_LOG_FLUSH, "mkdir EEXIST detected");
 			return EEXIST;
 		}
-
-		assert_dev(file->generation == 1);
 
 		fbr_directory_add_file(fs, directory, file);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_ATTR)) {
@@ -183,7 +181,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_file_set_attr(fs, clone, flush_data->attr);
 
 		if (remote_merge || local_update) {
-			clone->generation++;
+			fbr_file_generation(clone);
 		}
 
 		clone->state = FBR_FILE_OK;
@@ -245,7 +243,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_rlog(FBR_LOG_FLUSH, "resize EISDIR detected");
 			return EISDIR;
 		} else if (remote_merge || local_update) {
-			latest->generation++;
+			fbr_file_generation(latest);
 		} else {
 			assert_dev(file == latest);
 		}
@@ -347,8 +345,6 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
 		} else {
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
-
-			file->generation--;
 
 			if (ret == EAGAIN) {
 				retry = 1;
