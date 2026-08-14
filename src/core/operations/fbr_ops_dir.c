@@ -62,6 +62,8 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 	fbr_rlog(FBR_LOG_OP, "READDIR req: %lu ino: %lu size: %zu off: %ld", request->id, ino,
 		size, off);
 
+	// TODO we need better off support
+
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 
 	if (reader->end) {

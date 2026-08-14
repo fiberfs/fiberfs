@@ -63,6 +63,7 @@ fbr_ops_rmdir(struct fbr_request *request, fuse_ino_t parent_inode, const char *
 	fbr_dindex_release(fs, &parent);
 
 	// Sync and delete directory first (existing references are stable)
+	// TODO we might have a previously incomplete rmdir, we should support a redo attempt
 
 	struct fbr_fs_timeout timeout;
 	fbr_fs_timeout_init(&timeout);

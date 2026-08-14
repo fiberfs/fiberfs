@@ -61,6 +61,8 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 		fbr_ABORT("O_CREAT used in OPEN?");
 	}
 
+	// TODO if we have an existing file size, we should truncate now
+
 	if (fio->sync && fio->truncate) {
 		struct fbr_flush_data flush_data;
 		enum fbr_flush_flags flags = FBR_FLUSH_WBUFFER | FBR_FLUSH_TRUNCATE;

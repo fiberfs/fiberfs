@@ -122,6 +122,8 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		}
 	}
 
+	// TODO need to_set flags on st_after, concurrent changes can revert each other
+
 	int attr_changed = 0;
 	int size_changed = 0;
 
