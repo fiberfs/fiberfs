@@ -376,12 +376,14 @@ fbr_dindex_take(struct fbr_fs *fs, const struct fbr_path_name *dirname, int wait
 	_dindex_ref(fs, directory);
 
 	if (directory->state == FBR_DIRSTATE_LOADING) {
-		pt_assert(pthread_cond_wait(&directory->update, &dirhead->lock));
+		while (directory->state == FBR_DIRSTATE_LOADING) {
+			pt_assert(pthread_cond_wait(&directory->update, &dirhead->lock));
+		}
 	} else {
 		assert_dev(directory->state == FBR_DIRSTATE_OK);
 	}
 
-	assert_dev(directory->state >= FBR_DIRSTATE_OK);
+	assert(directory->state >= FBR_DIRSTATE_OK);
 
 	_dindex_UNLOCK(dirhead);
 
@@ -495,7 +497,7 @@ fbr_directory_wait_ok(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_dindex_dirhead *dirhead = _dindex_LOCK(fs, directory);
 
-	if (directory->state == FBR_DIRSTATE_LOADING) {
+	while (directory->state == FBR_DIRSTATE_LOADING) {
 		pt_assert(pthread_cond_wait(&directory->update, &dirhead->lock));
 	}
 
