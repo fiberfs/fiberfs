@@ -60,15 +60,12 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 	assert(fbr_is_flag(fi->flags, O_CREAT));
 
-	if (fbr_is_flag(fi->flags, O_RDONLY)) {
-		fbr_ABORT("O_RDONLY used in CREATE?");
+	if (fbr_is_flag(fi->flags, O_RDWR)) {
+		fbr_rlog(FBR_LOG_OP_CREATE, "flags: read+write");
+	} else if (fbr_is_flag(fi->flags, O_WRONLY)) {
+		fbr_rlog(FBR_LOG_OP_CREATE, "flags: write only");
 	} else {
-		assert_dev(fbr_is_flag(fi->flags, O_WRONLY | O_RDWR));
-		if (fbr_is_flag(fi->flags, O_WRONLY)) {
-			fbr_rlog(FBR_LOG_OP_CREATE, "flags: write only");
-		} else if (fbr_is_flag(fi->flags, O_RDWR)) {
-			fbr_rlog(FBR_LOG_OP_CREATE, "flags: read+write");
-		}
+		fbr_rlog(FBR_LOG_OP_CREATE, "flags: read only");
 	}
 
 	if (S_ISREG(mode)) {
