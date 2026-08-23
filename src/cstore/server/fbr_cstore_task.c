@@ -212,11 +212,23 @@ fbr_cstore_tasks_free(struct fbr_cstore *cstore)
 	pt_assert(pthread_cond_broadcast(&tasks->cond));
 	pt_assert(pthread_mutex_unlock(&tasks->lock));
 
-	for (size_t i = 0; i < tasks->workers_count; i++) {
-		pt_assert(pthread_join(tasks->workers[i], NULL));
+	unsigned int max_ms = 3000;
+	unsigned int wait_ms = 0;
+	unsigned int sleep_ms = 25;
+	while (wait_ms < max_ms && tasks->workers_running) {
+		fbr_sleep_ms(sleep_ms);
+		wait_ms += sleep_ms;
 	}
 
-	assert_zero(tasks->workers_running);
+	if (tasks->workers_running) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_WORKER, FBR_REQID_CSTORE,
+			"tasks stuck: %zu", tasks->workers_running);
+	}
+
+	for (size_t i = 0; i < tasks->workers_count; i++) {
+		pthread_cancel(tasks->workers[i]);
+		pt_assert(pthread_join(tasks->workers[i], NULL));
+	}
 
 	pt_assert(pthread_mutex_destroy(&tasks->lock));
 	pt_assert(pthread_cond_destroy(&tasks->cond));

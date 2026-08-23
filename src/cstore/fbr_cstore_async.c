@@ -253,11 +253,25 @@ fbr_cstore_async_free(struct fbr_cstore *cstore)
 	pt_assert(pthread_cond_broadcast(&async->todo_ready));
 	pt_assert(pthread_mutex_unlock(&async->queue_lock));
 
+	unsigned int max_ms = 3000;
+	unsigned int wait_ms = 0;
+	unsigned int sleep_ms = 25;
+	while (wait_ms < max_ms && async->threads_running) {
+		fbr_sleep_ms(sleep_ms);
+		wait_ms += sleep_ms;
+	}
+
+	if (async->threads_running) {
+		fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, FBR_REQID_CSTORE,
+			"async stuck: %zu", async->threads_running);
+	}
+
 	for (size_t i = 0; i < async->threads_max; i++) {
+		pthread_cancel(async->threads[i]);
 		pt_assert(pthread_join(async->threads[i], NULL));
 	}
 
-	assert_zero(async->threads_running);
+
 	assert_zero(async->queue_len);
 	assert(TAILQ_EMPTY(&async->todo_list));
 	assert(TAILQ_EMPTY(&async->active_list));

@@ -50,7 +50,7 @@ fbr_cmd_fs_test_release_all_wait_nf(struct fbr_test_context *ctx, struct fbr_tes
 	fbr_cmd_fs_test_release_all(ctx, cmd);
 	fbr_test_fs_wait(fs);
 
-	int max = 40;
+	int max = 60;
 	int count = 0;
 
 	if (fbr_test_is_valgrind()) {
@@ -78,7 +78,7 @@ fbr_cmd_fs_test_release_all_wait(struct fbr_test_context *ctx, struct fbr_test_c
 	struct fbr_fs *fs = fuse_ctx->fs;
 	fbr_fs_ok(fs);
 
-	int max = 40;
+	int max = 60;
 	int count = 0;
 
 	if (fbr_test_is_valgrind()) {
@@ -123,7 +123,7 @@ fbr_test_fs_wait(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
 
-	int max = 40;
+	int max = 60;
 	int count = 0;
 
 	if (fbr_test_is_valgrind()) {

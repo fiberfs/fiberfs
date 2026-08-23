@@ -53,6 +53,8 @@ fbr_fuse_LOCK(struct fbr_fuse_context *fuse_ctx, pthread_mutex_t *lock)
 	do {
 		fbr_fuse_mounted(fuse_ctx);
 
+		pthread_testcancel();
+
 		struct timespec ts;
 		ts.tv_sec = 0;
 		ts.tv_nsec = 1000 * 1000 * 250;

@@ -324,9 +324,9 @@ fbr_request_pool_shutdown(void)
 
 	fbr_stat_add(&_REQUEST_POOL->stats.shutdowns);
 
-	static unsigned int max_ms = 3000;
-	static unsigned int wait_ms = 0;
-	static unsigned int sleep_ms = 25;
+	unsigned int max_ms = 3000;
+	unsigned int wait_ms = 0;
+	unsigned int sleep_ms = 25;
 	while (wait_ms < max_ms && _REQUEST_POOL->active_size) {
 		if (fbr_fuse_has_context()) {
 			struct fbr_fuse_context *fuse_ctx = fbr_fuse_get_context();
@@ -375,10 +375,9 @@ fbr_request_pool_shutdown(void)
 
 		assert_zero_dev(request->fuse_req);
 
-		// This does practically nothing. Hung threads will block a fuse unmount.
 		if (request->thread) {
-			fbr_rlog(FBR_LOG_REQUEST, "id: %lu sending SIGQUIT", request->id);
-			pthread_kill(request->thread, SIGQUIT);
+			fbr_rlog(FBR_LOG_REQUEST, "id: %lu sending cancel", request->id);
+			pthread_cancel(request->thread);
 			fbr_zero(&request->thread);
 		}
 
