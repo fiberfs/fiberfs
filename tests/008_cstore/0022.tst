@@ -4,7 +4,7 @@ set_timeout_sec 25
 
 config_add LOG_SIZE 4000000
 #config_add LOG_ALWAYS_FLUSH true
-config_add ASYNC_WRITE false
+config_add CSTORE_ASYNC_WRITE false
 config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 2000
 
 config_add CSTORE_SERVER true

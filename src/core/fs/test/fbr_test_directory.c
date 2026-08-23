@@ -763,7 +763,7 @@ fbr_cmd_fs_test_directory_load_ttl(struct fbr_test_context *ctx, struct fbr_test
 	assert(FBR_CSTORE_ROOT_TTL_MIN < FBR_ROOT_TTL_MIN);
 
 	fbr_test_conf_add("LOG_SIZE", "200000");
-	fbr_test_conf_add("ASYNC_WRITE", "false");
+	fbr_test_conf_add("CSTORE_ASYNC_WRITE", "false");
 	fbr_test_conf_add("CSTORE_SERVER", "true");
 	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
 	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
@@ -787,7 +787,7 @@ fbr_cmd_fs_test_directory_load_304(struct fbr_test_context *ctx, struct fbr_test
 	assert(FBR_CSTORE_ROOT_TTL_MIN < FBR_ROOT_TTL_MIN);
 
 	fbr_test_conf_add("LOG_SIZE", "200000");
-	fbr_test_conf_add("ASYNC_WRITE", "false");
+	fbr_test_conf_add("CSTORE_ASYNC_WRITE", "false");
 	fbr_test_conf_add("CSTORE_SERVER", "true");
 	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
 	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");

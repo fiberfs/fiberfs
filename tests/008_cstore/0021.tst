@@ -4,7 +4,7 @@ skip_if $is_valgrind
 
 config_add LOG_SIZE 1000000
 #config_add LOG_ALWAYS_FLUSH true
-config_add ASYNC_WRITE false
+config_add CSTORE_ASYNC_WRITE false
 config_add S3_SKIP_CONTENT_HASH false
 config_add CSTORE_VALIDATE_CONTENT_HASH true
 

@@ -476,7 +476,7 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 	fbr_test_random_seed();
 
 	fbr_test_conf_add("LOG_ALWAYS_FLUSH", "true");
-	fbr_test_conf_add("ASYNC_WRITE", "false");
+	fbr_test_conf_add("CSTORE_ASYNC_WRITE", "false");
 	fbr_test_conf_add("CSTORE_SERVER", "true");
 	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
 	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");

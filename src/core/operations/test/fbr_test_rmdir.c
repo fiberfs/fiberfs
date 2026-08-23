@@ -80,7 +80,7 @@ _rmdir_2fs_test(struct fbr_test_context *ctx, int cluster)
 	fbr_fs_set_store(fs_2, FBR_CSTORE_DEFAULT_CALLBACKS);
 
 	if (cluster) {
-		fbr_test_conf_add("ASYNC_WRITE", "false");
+		fbr_test_conf_add("CSTORE_ASYNC_WRITE", "false");
 		fbr_test_conf_add("CSTORE_SERVER", "true");
 		fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
 		fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
