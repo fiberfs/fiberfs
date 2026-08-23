@@ -104,5 +104,6 @@ equal $cstore_stat_http_400:2 0
 equal $cstore_stat_http_500:2 0
 
 fs_test_stats
+fs_test_release_all_wait
 
 fuse_test_unmount
