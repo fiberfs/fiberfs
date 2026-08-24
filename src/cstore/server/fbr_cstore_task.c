@@ -226,7 +226,10 @@ fbr_cstore_tasks_free(struct fbr_cstore *cstore)
 	}
 
 	for (size_t i = 0; i < tasks->workers_count; i++) {
-		pthread_cancel(tasks->workers[i]);
+		if (tasks->workers_running) {
+			pthread_cancel(tasks->workers[i]);
+		}
+
 		pt_assert(pthread_join(tasks->workers[i], NULL));
 	}
 

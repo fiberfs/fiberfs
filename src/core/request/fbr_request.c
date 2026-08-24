@@ -376,7 +376,7 @@ fbr_request_pool_shutdown(void)
 		assert_zero_dev(request->fuse_req);
 
 		if (request->thread) {
-			fbr_rlog(FBR_LOG_REQUEST, "id: %lu sending cancel", request->id);
+			fbr_rlog(FBR_LOG_REQUEST, "id: %lu sending pthread_cancel", request->id);
 			pthread_cancel(request->thread);
 			fbr_zero(&request->thread);
 		}

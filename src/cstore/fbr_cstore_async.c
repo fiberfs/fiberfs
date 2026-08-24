@@ -267,7 +267,10 @@ fbr_cstore_async_free(struct fbr_cstore *cstore)
 	}
 
 	for (size_t i = 0; i < async->threads_max; i++) {
-		pthread_cancel(async->threads[i]);
+		if (async->threads_running) {
+			pthread_cancel(async->threads[i]);
+		}
+
 		pt_assert(pthread_join(async->threads[i], NULL));
 	}
 
