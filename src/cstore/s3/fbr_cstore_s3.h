@@ -14,7 +14,6 @@
 #include "chttp.h"
 #include "core/fs/fbr_fs.h"
 
-// TODO is this a good size?
 #define FBR_CSTORE_IO_SIZE			(1024 * 16)
 #define FBR_CSTORE_CHTTP_SIZE			4096
 #define FBR_CSTORE_TIMEOUT_CONNECT_MS		2000
@@ -22,6 +21,7 @@
 #define FBR_CSTORE_S3_DEFAULT_TLS_PORT		443
 #define FBR_CSTORE_S3_DEFAULT_PORT		80
 #define FBR_CSTORE_S3_DEFAULT_TLS		"true"
+#define FBR_CSTORE_S3_UNSIGNED			"UNSIGNED-PAYLOAD"
 
 #define FBR_ENUM_CSTORE_ROUTE						\
 	FBR_ENUM_NAMES(fbr_cstore_route, _cstore_route_string)		\

@@ -146,7 +146,7 @@ fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_conten
 		content_hex_len = hash_cb(hash_priv, context_hex, sizeof(context_hex));
 	}
 	if (!content_hex_len) {
-		content_hex_len = fbr_strbcpy(context_hex, "UNSIGNED-PAYLOAD");
+		content_hex_len = fbr_strbcpy(context_hex, FBR_CSTORE_S3_UNSIGNED);
 	}
 
 	// Canonical Request

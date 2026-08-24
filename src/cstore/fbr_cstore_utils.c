@@ -323,7 +323,7 @@ fbr_cstore_validate_file(const char *path, const char *hash)
 	assert(path);
 	assert(hash);
 
-	if (!strcmp(hash, "UNSIGNED-PAYLOAD")) {
+	if (!strcmp(hash, FBR_CSTORE_S3_UNSIGNED)) {
 		return 1;
 	}
 
@@ -332,7 +332,6 @@ fbr_cstore_validate_file(const char *path, const char *hash)
 		return 0;
 	}
 
-	uint8_t bin_hash[FBR_SHA256_DIGEST_SIZE];
 	struct fbr_sha256_ctx file_hash;
 	fbr_sha256_init(&file_hash, 0);
 
@@ -344,6 +343,7 @@ fbr_cstore_validate_file(const char *path, const char *hash)
 
 	assert_zero(close(fd));
 
+	uint8_t bin_hash[FBR_SHA256_DIGEST_SIZE];
 	char hex_hash[FBR_HEX_LEN(sizeof(bin_hash))];
 	fbr_sha256_final(&file_hash, bin_hash, sizeof(bin_hash));
 	fbr_bin2hex(bin_hash, sizeof(bin_hash), hex_hash, sizeof(hex_hash));
