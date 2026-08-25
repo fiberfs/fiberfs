@@ -16,13 +16,13 @@ set file $sys_tmpdir "/fiber_zero1"
 sys_stat_size $file 500
 sys_cat_md5 $file 49a47e24ec21818ece7bccb86e9ad880
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
 _fs_test_take_file $file
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -52,7 +52,7 @@ sys_cat_md5 $file 49a47e24ec21818ece7bccb86e9ad880
 
 # Cleanup
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -64,7 +64,7 @@ equal $fs_test_stat_files_inodes 3
 # The stale inode is forgotten after release
 _fs_test_release_file
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

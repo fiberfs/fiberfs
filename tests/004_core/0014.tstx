@@ -38,7 +38,7 @@ sys_cat_md5 $file 4cf30131c206e004d37e694a53733f70
 
 print "### CLEAR CACHE"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -49,7 +49,7 @@ equal $fs_test_stat_files_inodes 8
 
 shell "echo 2 | sudo -n tee /proc/sys/vm/drop_caches > /dev/null"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -68,7 +68,7 @@ sys_cat_md5 $file 560ecea077b5f4f29efdb6f41062af0d
 
 print "### CLEANUP"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -79,7 +79,7 @@ equal $fs_test_stat_files_inodes 4
 
 shell "echo 2 | sudo -n tee /proc/sys/vm/drop_caches > /dev/null"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

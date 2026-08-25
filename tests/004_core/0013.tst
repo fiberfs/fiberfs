@@ -36,7 +36,7 @@ sys_cat_md5 $file 4cf30131c206e004d37e694a53733f70
 
 print "### TEST 2 (all cached)"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -48,7 +48,7 @@ sys_cat_md5 $file 560ecea077b5f4f29efdb6f41062af0d
 
 print "### TEST 3 (directory expired, new inodes)"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -66,13 +66,13 @@ sys_cat_md5 $file 560ecea077b5f4f29efdb6f41062af0d
 
 print "### TEST 4 (cleanup)"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
 fs_test_release_all 1
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

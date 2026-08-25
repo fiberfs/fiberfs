@@ -20,7 +20,7 @@ cstore_debug
 
 equal $cstore_stat_chunks:0 7
 
-sleep_ms 100
+sleep_ms 10
 
 print "### TRUNCATE"
 
@@ -30,7 +30,7 @@ print "### READ (memory)"
 
 sys_cat $file "ABCDEFG"
 
-sleep_ms 100
+sleep_ms 10
 
 print "### READ (cstore)"
 

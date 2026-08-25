@@ -19,7 +19,7 @@ cstore_debug
 
 equal $cstore_stat_chunks:0 7
 
-sleep_ms 100
+sleep_ms 10
 
 print "### WRITE"
 
@@ -29,7 +29,7 @@ print "### READ (memory)"
 
 sys_cat $file "12ABCDEFG01234567890"
 
-sleep_ms 100
+sleep_ms 10
 
 print "### READ (cstore)"
 

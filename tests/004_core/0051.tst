@@ -25,7 +25,7 @@ equal $fs_test_stat_read_bytes 0
 
 # Cleanup
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

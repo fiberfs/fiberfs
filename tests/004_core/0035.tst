@@ -13,7 +13,7 @@ fs_test_rw_mount $sys_tmpdir
 set file $sys_tmpdir "/test1"
 sys_mkdir $file
 
-sleep_ms 100
+sleep_ms 10
 
 # release
 

@@ -15,7 +15,7 @@ print "### APPEND 1"
 set file $sys_tmpdir "/append.txt"
 sys_append $file "ONE"
 
-sleep_ms 100
+sleep_ms 10
 
 print "### APPEND 2"
 
@@ -26,7 +26,7 @@ print "### READ (memory)"
 
 sys_cat $file "ONETWOoOTHREE"
 
-sleep_ms 100
+sleep_ms 10
 
 print "### READ (cstore)"
 

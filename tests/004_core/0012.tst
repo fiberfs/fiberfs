@@ -14,7 +14,7 @@ sys_cat_md5 $file 525cce3d8c3eaf36a756a91fcb996d59
 
 # Cleanup
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

@@ -15,7 +15,7 @@ print "### TEST 1 (load inode)"
 set dir1 $sys_tmpdir "/fiber_dir01/fiber_dir14"
 sys_ls $dir1
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -33,13 +33,13 @@ _fs_test_take_dir $dir1
 
 print "### TEST 3 (expire cache)"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
 fs_test_release_all
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -58,7 +58,7 @@ sys_ls $dir1
 
 print "### TEST 5 (cleanup and release)"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -71,7 +71,7 @@ equal $fs_test_stat_files_inodes 5
 _fs_test_release_dir
 fs_test_release_all 1
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

@@ -26,7 +26,7 @@ _fs_test_take_dir $dir1
 
 print "### TEST 3 (expire cache)"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -35,7 +35,7 @@ fs_test_release_all
 # Does nothing, we are holding all inodes
 shell "echo 2 | sudo -n tee /proc/sys/vm/drop_caches > /dev/null"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -49,13 +49,13 @@ sys_ls $dir1
 
 print "### TEST 5 (cleanup and release)"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
 _fs_test_release_dir
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -64,7 +64,7 @@ equal $fs_test_stat_files_inodes 3
 
 fs_test_release_all 1
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 

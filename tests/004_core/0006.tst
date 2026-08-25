@@ -24,7 +24,7 @@ sys_ls $dir2
 
 print "### TEST 2 (release root)"
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
@@ -43,7 +43,7 @@ sys_ls $dir2
 
 # Cleanup
 
-sleep_ms 100
+sleep_ms 10
 fs_test_stats
 fs_test_debug
 
