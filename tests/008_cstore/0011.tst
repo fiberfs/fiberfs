@@ -34,7 +34,7 @@ cstore_set_s3 0 $server_host $server_port region access_key secret_key
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 
-sleep_ms 100
+sleep_ms 20
 
 print "### WRITE"
 
@@ -80,7 +80,7 @@ server_send_response
 set file $sys_tmpdir "/test.txt"
 sys_write $file "content_here"
 
-sleep_ms 100
+sleep_ms 20
 
 cstore_debug
 equal $cstore_entries:0 4

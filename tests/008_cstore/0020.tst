@@ -26,7 +26,7 @@ cstore_add_cluster 0 $cstore_server_host:0 $cstore_server_port:0
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
 
-sleep_ms 100
+sleep_ms 10
 
 print "### WRITE"
 
@@ -36,7 +36,7 @@ sys_write $file "test CLUSTER"
 set file2 $sys_tmpdir "/test2.txt"
 sys_write $file2 "Number #2"
 
-sleep_ms 100
+sleep_ms 10
 
 cstore_debug
 cstore_debug 1
@@ -61,7 +61,7 @@ print "### READ"
 sys_cat $file "test CLUSTER"
 sys_cat $file2 "Number #2"
 
-sleep_ms 100
+sleep_ms 10
 
 cstore_debug
 cstore_debug 1
