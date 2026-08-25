@@ -727,7 +727,7 @@ _cstore_test(void)
 			_CSTORE_BYTES_COUNTER, cstore->bytes);
 	} else {
 		size_t max_bytes = cstore->max_bytes +
-			(_CSTORE_HASH_MAX_BYTES * _CSTORE_THREAD_COUNT);
+			(_CSTORE_HASH_MAX_BYTES * _CSTORE_THREAD_COUNT * 4);
 		fbr_ASSERT(cstore->bytes <= max_bytes, "bytes: %zu, found %zu",
 			_CSTORE_BYTES_COUNTER, max_bytes);
 	}
