@@ -34,5 +34,6 @@ FBR_TEST_CMD(fuse_test_unmount)
 
 FBR_TEST_CMD(fuse_test_ops_mount)
 FBR_TEST_CMD(fuse_test_ops_unmount)
+FBR_TEST_VAR(fuse_test_ops_open_count)
 
 FBR_TEST_CMD(fuse_error_mount)

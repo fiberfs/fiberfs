@@ -12,6 +12,6 @@ sys_cat $filename "fiber42"
 set filename2 $sys_tmpdir "/fiber2"
 sys_cat $filename2 "fiber2"
 
-sleep_ms 100
+equal $fuse_test_ops_open_count 0
 
 fuse_test_ops_unmount

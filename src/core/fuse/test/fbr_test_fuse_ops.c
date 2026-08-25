@@ -21,6 +21,7 @@
 #define _TEST_OPS_FUSE_TTL_SEC		2.0
 
 static int _TEST_OPS_FUSE_STATE;
+static int _TEST_OPS_OPEN_COUNT;
 
 static void
 _test_ops_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
@@ -28,6 +29,7 @@ _test_ops_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_fuse_mounted(ctx);
 	assert(conn);
 	assert_zero(_TEST_OPS_FUSE_STATE);
+	assert_zero(_TEST_OPS_OPEN_COUNT);
 
 	_TEST_OPS_FUSE_STATE = 1;
 }
@@ -199,6 +201,8 @@ _test_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 	//fi->cache_readdir
 	fi->cache_readdir = 1;
 
+	fbr_atomic_add(&_TEST_OPS_OPEN_COUNT, 1);
+
 	fbr_fuse_reply_open(request, fi);
 }
 
@@ -298,6 +302,8 @@ _test_ops_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_fi
 
 	fbr_test_logs("RELEASEDIR req: %lu ino: %lu fh: %lu", request->id, ino, fi->fh);
 
+	fbr_atomic_sub(&_TEST_OPS_OPEN_COUNT, 1);
+
 	fbr_fuse_reply_err(request, 0);
 }
 
@@ -325,6 +331,8 @@ _test_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_inf
 
 	//fi->keep_cache
 	fi->keep_cache = 1;
+
+	fbr_atomic_add(&_TEST_OPS_OPEN_COUNT, 1);
 
 	fbr_fuse_reply_open(request, fi);
 }
@@ -369,6 +377,8 @@ _test_ops_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_
 
 	fbr_test_logs("RELEASE req: %lu ino: %lu flags: %d fh: %lu", request->id, ino, fi->flags,
 		fi->fh);
+
+	fbr_atomic_sub(&_TEST_OPS_OPEN_COUNT, 1);
 
 	fbr_fuse_reply_err(request, 0);
 }
@@ -452,4 +462,16 @@ fbr_cmd_fuse_test_ops_unmount(struct fbr_test_context *ctx, struct fbr_test_cmd 
 	fbr_test_ASSERT(_TEST_OPS_FUSE_STATE == 2, "destroy callback failed")
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "Fuse test_ops unmounted");
+}
+
+const char *
+fbr_var_fuse_test_ops_open_count(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	static char open_buffer[32];
+
+	fbr_bprintf(open_buffer, "%d", _TEST_OPS_OPEN_COUNT);
+
+	return open_buffer;
 }

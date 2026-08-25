@@ -9,6 +9,6 @@ sys_ls $sys_tmpdir "..:dir .:dir fiber1:file fiber2:file fiber3:file fiber4:dir 
 set filename $sys_tmpdir "/fiber4"
 sys_ls $filename "..:dir .:dir fiber41:file fiber42:file fiber43:file"
 
-sleep_ms 100
+equal $fuse_test_ops_open_count 0
 
 fuse_test_ops_unmount
