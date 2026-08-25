@@ -704,8 +704,11 @@ _cstore_test(void)
 		}
 	}
 
+	size_t total_size = fbr_array_len(cstore->heads) * sizeof(*cstore->heads[0].slabs);
+
 	fbr_test_logs("* sizeof(_CSTORE)=%zu", sizeof(*cstore));
 	fbr_test_logs("* sizeof(_CSTORE->heads.slab)=%zu", sizeof(*cstore->heads[0].slabs));
+	fbr_test_logs("* total_size = %zu", total_size);
 	fbr_test_logs("* _CSTORE->heads=%zu", fbr_array_len(cstore->heads));
 	fbr_test_logs("* _CSTORE->entries=%zu", cstore->entries);
 	fbr_test_logs("* _CSTORE->max_bytes=%zu", cstore->max_bytes);

@@ -24,7 +24,7 @@
 #include "utils/fbr_id.h"
 
 #define FBR_CSTORE_HEAD_COUNT			256
-#define FBR_CSTORE_SLAB_SIZE			128
+#define FBR_CSTORE_SLAB_SIZE			64
 #define FBR_CSTORE_PRUNE_ATTEMPTS		5
 #define FBR_CSTORE_DATA_DIR			"data"
 #define FBR_CSTORE_META_DIR			"meta"
