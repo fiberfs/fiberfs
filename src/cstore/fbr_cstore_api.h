@@ -23,7 +23,7 @@
 #include "server/fbr_cstore_server.h"
 #include "utils/fbr_id.h"
 
-#define FBR_CSTORE_HEAD_COUNT			64
+#define FBR_CSTORE_HEAD_COUNT			256
 #define FBR_CSTORE_SLAB_SIZE			128
 #define FBR_CSTORE_PRUNE_ATTEMPTS		5
 #define FBR_CSTORE_DATA_DIR			"data"
