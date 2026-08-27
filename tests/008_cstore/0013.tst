@@ -106,4 +106,6 @@ equal $cstore_stat_http_500:2 0
 fs_test_stats
 fs_test_release_all_wait
 
+equal $fs_test_stat_files_inodes 1
+
 fuse_test_unmount
