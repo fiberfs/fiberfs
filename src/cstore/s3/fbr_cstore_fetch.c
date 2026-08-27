@@ -762,6 +762,18 @@ static inline void
 _s3_chunk_read_error(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fbr_cstore_entry *entry,
     struct fbr_file *file, struct fbr_chunk *chunk, struct chttp_context *http)
 {
+	assert_dev(chunk);
+
+	if (chunk->do_free) {
+		assert(chunk->data);
+		free(chunk->data);
+
+		chunk->do_free = 0;
+		chunk->data = NULL;
+	}
+
+	assert_zero(chunk->data);
+
 	fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);
 
 	fbr_cstore_set_error(entry);
