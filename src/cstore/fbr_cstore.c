@@ -402,14 +402,14 @@ fbr_cstore_set_size(struct fbr_cstore *cstore, struct fbr_cstore_entry *entry, s
 	pt_assert(pthread_mutex_lock(&head->lock));
 	fbr_cstore_head_ok(head);
 
-	entry->bytes = bytes;
-
 	if (cstore->do_lru) {
 		_cstore_lru_prune(cstore, head, bytes);
 	} else if (_cstore_full(cstore, bytes)) {
 		pt_assert(pthread_mutex_unlock(&head->lock));
 		return 1;
 	}
+
+	entry->bytes = bytes;
 
 	fbr_atomic_add(&cstore->bytes, bytes);
 
