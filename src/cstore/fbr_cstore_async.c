@@ -189,12 +189,13 @@ _cstore_async_loop(void *arg)
 
 	fbr_thread_name("fbr_async");
 
-	while (!async->exit) {
+	while (!async->exit || !TAILQ_EMPTY(&async->todo_list)) {
 		if (worker->thread_pos > async->threads_max) {
 			break;
 		}
 
 		if (TAILQ_EMPTY(&async->todo_list)) {
+			assert_zero_dev(async->exit);
 			pt_assert(pthread_cond_wait(&async->todo_ready, &async->queue_lock));
 			continue;
 		}
