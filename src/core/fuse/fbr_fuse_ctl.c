@@ -281,7 +281,7 @@ _fuse_abort(struct fbr_fuse_context *ctx)
 	fuse_session_exit(ctx->session);
 
 	char cmd[FBR_PATH_MAX + 32];
-	fbr_bprintf(cmd, "fusermount -u %s%s",
+	fbr_bprintf(cmd, "fusermount -u \"%s\"%s",
 		ctx->path, ctx->debug ? "" : " >/dev/null 2>&1");
 
 	fbr_rlog(FBR_LOG_FUSE, "calling fusermount");
