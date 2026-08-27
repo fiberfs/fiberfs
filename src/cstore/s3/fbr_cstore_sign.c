@@ -419,6 +419,8 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 		return 1;
 	}
 
+	// TODO validate timestamp (x-amz-date) is within an acceptable time range
+
 	fbr_rlog(FBR_LOG_CS_S3, "Authorization passed");
 
 	return 0;
