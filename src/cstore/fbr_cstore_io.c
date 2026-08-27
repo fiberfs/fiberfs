@@ -102,7 +102,13 @@ fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
 		fbr_buffer_ok(output);
 		assert_dev(output->buffer_pos);
 
-		fbr_sys_write(fd, output->buffer, output->buffer_pos);
+		size_t bytes = fbr_sys_write(fd, output->buffer, output->buffer_pos);
+		if (bytes != output->buffer_pos) {
+			assert_zero(close(fd));
+			fbr_writer_free(&writer);
+
+			return 1;
+		}
 
 		output = output->next;
 	}
