@@ -224,7 +224,12 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
 
-	fbr_writer_add(fs, json, filename.name, filename.length);
+	char encoded[FBR_URL_MAX];
+	size_t encoded_len = fbr_urlencode(filename.name, filename.length, encoded,
+		sizeof(encoded));
+	assert(encoded_len >= filename.length);
+
+	fbr_writer_add(fs, json, encoded, encoded_len);
 
 	// j: file generation
 	fbr_writer_add(fs, json, "\",\"j\":", 6);
@@ -912,7 +917,8 @@ _parser_get_file(struct fbr_index_parser *parser)
 }
 
 static void
-_index_parse_file_start(struct fbr_index_parser *parser, const char *filename, size_t filename_len)
+_index_parse_file_start(struct fbr_index_parser *parser, const char *filename_enc,
+    size_t filename_enc_len)
 {
 	assert_dev(parser);
 	assert_dev(parser->fs);
@@ -921,7 +927,16 @@ _index_parse_file_start(struct fbr_index_parser *parser, const char *filename, s
 	assert_zero_dev(parser->existing);
 	assert_zero_dev(parser->file_match.magic);
 	assert_zero_dev(parser->file);
-	assert_dev(filename);
+	assert_dev(filename_enc);
+
+	if (filename_enc_len >= FBR_URL_MAX) {
+		parser->error = 1;
+		return;
+	}
+
+	char filename[FBR_URL_MAX];
+	size_t filename_len = fbr_urldecode(filename_enc, filename_enc_len, filename,
+		sizeof(filename));
 
 	if (!filename_len || filename_len >= FBR_PATH_MAX) {
 		parser->error = 1;

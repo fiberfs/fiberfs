@@ -45,9 +45,16 @@ fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
 	struct fbr_fs *fs = NULL;
 	fbr_writer_init_buffer(fs, &writer, buffer, sizeof(buffer));
 
+	size_t filename_len = strlen(metadata->path);
+	assert(filename_len);
+	char encoded[FBR_URL_MAX];
+	size_t encoded_len = fbr_urlencode(metadata->path, filename_len, encoded,
+		sizeof(encoded));
+	assert(encoded_len >= filename_len);
+
 	// p: path
 	fbr_writer_add(fs, &writer, "{\"p\":\"", 6);
-	fbr_writer_add(fs, &writer, metadata->path, strlen(metadata->path));
+	fbr_writer_add(fs, &writer, encoded, encoded_len);
 
 	char buf[256];
 	size_t length;
@@ -140,8 +147,11 @@ _cstore_parse_metadata(struct fjson_context *ctx, void *priv)
 				metadata->etag.value, sizeof(metadata->etag.value));
 			assert(metadata->etag.length);
 		} else if (metadata->_context == 'p') {
-			assert(token->svalue_len < sizeof(metadata->path));
-			memcpy(metadata->path, token->svalue, token->svalue_len);
+			assert(token->svalue_len < FBR_URL_MAX);
+
+			size_t filename_len = fbr_urldecode(token->svalue, token->svalue_len,
+				metadata->path, sizeof(metadata->path));
+			assert(filename_len);
 		}
 	} else if (token->type == FJSON_TOKEN_NUMBER) {
 		if (metadata->_context == 'i') {

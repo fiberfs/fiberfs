@@ -265,6 +265,15 @@ fbr_cmd_index_print_json(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_body_chunk_add(fs, file, fbr_id_gen(), 150 , 50);
 	file->state = FBR_FILE_OK;
 
+	fbr_path_name_init(&filename, "file_\"2\"");
+	file = fbr_file_alloc(fs, root, &filename);
+	file->generation = 1;
+	file->size = 0;
+	file->mode = S_IFREG | 0666;
+	file->uid = 1000;
+	file->gid = 1000;
+	file->state = FBR_FILE_OK;
+
 	fbr_test_logs("* Writing root index");
 
 	fbr_test_fs_write_index(fs, root);
@@ -555,6 +564,21 @@ fbr_cmd_index_json_parse(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	directory = _parse_directory(fs, json);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_ERROR);
+	fbr_dindex_release(fs, &directory);
+
+	// 1 new, 1 unchanged/inherited
+	json = "{\"fiberfs\":1,\"g\":7,\"f\":[{\"n\":\"file_ABC\",\"j\":1},"
+		"{\"n\":\"file_%22quote%22\",\"j\":1}]}";
+	directory = _parse_directory(fs, json);
+	fbr_directory_ok(directory);
+	assert(directory->state == FBR_DIRSTATE_OK);
+	assert(directory->generation == 7);
+	assert(directory->file_count == 2);
+	file = fbr_directory_find_file(directory, "file_\"quote\"", 12);
+	fbr_file_ok(file);
+	assert(file->generation == 1);
+	assert_zero(file->size);
+	assert_zero(fbr_test_fs_count_chunks(file));
 	fbr_dindex_release(fs, &directory);
 
 	fbr_fs_release_all(fs, 1);
