@@ -159,7 +159,7 @@ _openssl_free(struct chttp_openssl_ctx *ctx)
 
 	pt_assert(pthread_mutex_lock(&ctx->lock));
 
-	if (ctx->initialized && !ctx->failed) {
+	if ((ctx->initialized && !ctx->failed) || ctx->ssl_ctx) {
 		assert(ctx->ssl_ctx);
 
 		SSL_CTX_free(ctx->ssl_ctx);
@@ -168,7 +168,7 @@ _openssl_free(struct chttp_openssl_ctx *ctx)
 		ctx->failed = 1;
 	}
 
-	assert_zero(ctx->ssl_ctx);
+	assert_zero_dev(ctx->ssl_ctx);
 
 	pt_assert(pthread_mutex_unlock(&ctx->lock));
 }
