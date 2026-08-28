@@ -138,7 +138,9 @@ fbr_sys_read(int fd, void *buf, size_t buf_len)
 
 	do {
 		ret = read(fd, (char*)buf + bytes, buf_len - bytes);
-		if (ret < 0) {
+		if (ret < 0 && errno == EINTR) {
+			continue;
+		} else if (ret < 0) {
 			return ret;
 		}
 

@@ -160,6 +160,7 @@ fbr_parse_ulong(const char *str, size_t length, int *error)
 	assert(length);
 
 	*error = 0;
+	errno = 0;
 
 	char *end;
 	unsigned long ret = strtoul(str, &end, 10);
@@ -179,6 +180,7 @@ fbr_parse_long(const char *str, size_t length, int *error)
 	assert(length);
 
 	*error = 0;
+	errno = 0;
 
 	char *end;
 	long ret = strtol(str, &end, 10);
