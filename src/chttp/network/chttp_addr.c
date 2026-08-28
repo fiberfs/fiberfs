@@ -70,6 +70,8 @@ chttp_addr_cmp(const struct chttp_addr *a1, const struct chttp_addr *a2)
 		return a2->len - a1->len;
 	}
 
+	// TODO for TLS, we need to be a bit more strict on the matching
+
 	if (a1->tls != a2->tls) {
 		return a2->tls - a1->tls;
 	}

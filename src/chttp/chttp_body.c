@@ -148,6 +148,8 @@ _body_chunk_parse(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
+	// TODO we should have a threshold to limit infinite chunk parsing
+
 	_body_chunk_end(ctx);
 
 	if (ctx->state == CHTTP_STATE_BODY) {
