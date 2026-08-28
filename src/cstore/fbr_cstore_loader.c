@@ -169,7 +169,7 @@ _cstore_scan_dir(struct fbr_cstore *cstore, const char *hpath, unsigned char h1,
 
 		struct stat st;
 		int ret = lstat(subpath, &st);
-		if (ret || st.st_size <= 0) {
+		if (ret) {
 			_cstore_remove(hpath, dentry->d_name);
 			continue;
 		}

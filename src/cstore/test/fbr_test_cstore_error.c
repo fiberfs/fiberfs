@@ -185,6 +185,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert_zero(ret);
 	fd = open(hashpath.value, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	assert(fd > 0);
+	assert(fbr_sys_write(fd, "1", 1));
 	assert_zero(close(fd));
 
 	struct fbr_index_data index_data;
