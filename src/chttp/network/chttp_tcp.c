@@ -87,11 +87,6 @@ _tcp_poll_connected(struct chttp_addr *addr)
 		return 0;
 	}
 
-	// Assume we connected
-	if (addr->poll_revents & POLLWRNORM) {
-		return 1;
-	}
-
 	int error;
 	socklen_t error_len = sizeof(error);
 
@@ -100,9 +95,11 @@ _tcp_poll_connected(struct chttp_addr *addr)
 
 	if (error) {
 		return 0;
+	} else if (addr->poll_revents & POLLWRNORM) {
+		return 1;
 	}
 
-	return 1;
+	return 0;
 }
 
 int
