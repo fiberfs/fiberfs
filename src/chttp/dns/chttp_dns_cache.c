@@ -240,7 +240,6 @@ void
 chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_list)
 {
 	chttp_dns_cache_ok();
-	assert(_DNS_CACHE.initialized);
 	assert(host);
 	assert(host_len);
 	assert(ai_list);
