@@ -69,6 +69,8 @@ fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf, const
 	assert(st);
 	assert(offset);
 
+	fbr_rlog(FBR_LOG_OP_DIR, "add name: '%s' inode: %lu off: %ld", name, st->st_ino, offset);
+
 	size_t write = fuse_add_direntry(request->fuse_req, dbuf->buffer + dbuf->pos,
 		dbuf->free, name, st, offset);
 

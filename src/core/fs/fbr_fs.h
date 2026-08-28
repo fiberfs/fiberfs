@@ -248,6 +248,9 @@ struct fbr_dreader {
 	fbr_bitflag_t				end:1;
 
 	struct fbr_directory			*directory;
+
+	off_t					offset;
+	struct fbr_file_ptr			*file_pos;
 };
 
 enum fbr_flush_flags {

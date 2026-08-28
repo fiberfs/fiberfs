@@ -47,9 +47,6 @@ _ops_diradd(struct fbr_request *request, struct fbr_dirbuffer *dbuf, struct fbr_
 
 	const char *filename = fbr_path_get_file(&file->path, NULL);
 
-	fbr_rlog(FBR_LOG_OP_DIR, "read filename: '%s' inode: %lu off: %ld", filename,
-		file->inode, offset);
-
 	struct stat st;
 	fbr_file_attr(fs, file, &st);
 
@@ -71,6 +68,9 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 		fbr_rlog(FBR_LOG_OP_DIR, "read return: end");
 		fbr_fuse_reply_buf(request, NULL, 0);
 		return;
+	} else if (reader->offset != off || !off) {
+		reader->offset = off;
+		reader->file_pos = NULL;
 	}
 
 	struct fbr_directory *directory = reader->directory;
@@ -79,28 +79,28 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 	struct fbr_dirbuffer dbuf;
 	fbr_dirbuffer_init(&dbuf, size);
 
-	if (!dbuf.full && !off) {
+	if (!dbuf.full && !reader->offset) {
 		fbr_file_ok(directory->file);
 
 		struct stat st;
 		fbr_file_attr(fs, directory->file, &st);
 
-		off++;
+		reader->offset++;
 
-		fbr_dirbuffer_add(request, &dbuf, ".", &st, off);
+		fbr_dirbuffer_add(request, &dbuf, ".", &st, reader->offset);
 	}
-	if (!dbuf.full && off == 1) {
-		int do_release = 1;
+	if (!dbuf.full && reader->offset == 1) {
+		int do_release = 0;
 
 		struct fbr_file *parent;
 		if (directory->file->parent_inode) {
 			parent = fbr_inode_take(fs, directory->file->parent_inode);
+			do_release = 1;
 		} else {
 			parent = directory->file;
-			do_release = 0;
 		}
 
-		off++;
+		reader->offset++;
 
 		if (parent) {
 			fbr_file_ok(parent);
@@ -112,7 +112,7 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 				fbr_inode_release(fs, &parent);
 			}
 
-			fbr_dirbuffer_add(request, &dbuf, "..", &st, off);
+			fbr_dirbuffer_add(request, &dbuf, "..", &st, reader->offset);
 		}
 	}
 
@@ -123,32 +123,52 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 	}
 
 	struct fbr_file_ptr *file_ptr;
-	off_t current = 2;
-	assert_dev(off >= 2);
+	assert_dev(reader->offset >= 2);
 
-	RB_FOREACH(file_ptr, fbr_filename_tree, &directory->filename_tree) {
-		fbr_file_ptr_ok(file_ptr);
-		struct fbr_file *file = file_ptr->file;
+	if (reader->file_pos) {
+		RB_FOREACH_FROM(file_ptr, fbr_filename_tree, reader->file_pos) {
+			fbr_file_ptr_ok(file_ptr);
+			struct fbr_file *file = file_ptr->file;
 
-		if (current < off) {
-			current++;
-			continue;
+			reader->offset++;
+
+			_ops_diradd(request, &dbuf, file, reader->offset);
+
+			if (dbuf.full) {
+				break;
+			}
 		}
+	} else {
+		off_t current = 2;
 
-		off++;
-		current = off;
+		RB_FOREACH(file_ptr, fbr_filename_tree, &directory->filename_tree) {
+			fbr_file_ptr_ok(file_ptr);
+			struct fbr_file *file = file_ptr->file;
 
-		_ops_diradd(request, &dbuf, file, off);
+			if (current < reader->offset) {
+				current++;
+				continue;
+			}
 
-		if (dbuf.full) {
-			break;
+			reader->offset++;
+			current = reader->offset;
+
+			_ops_diradd(request, &dbuf, file, reader->offset);
+
+			if (dbuf.full) {
+				break;
+			}
 		}
 	}
 
 	if (dbuf.full) {
 		assert_zero_dev(reader->end);
 
-		fbr_rlog(FBR_LOG_OP_DIR, "read return: %zu", dbuf.pos);
+		reader->offset--;
+		reader->file_pos = file_ptr;
+
+		fbr_rlog(FBR_LOG_OP_DIR, "read return: %zu offset: %ld", dbuf.pos, reader->offset);
+
 		fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
 
 		return;

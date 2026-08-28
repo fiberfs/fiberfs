@@ -297,6 +297,12 @@ _test_fs_fuse_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, 
 	if (random() % 2 == 0) {
 		size = (random() % 256) + 50;
 		fbr_test_logs("READDIR size: %zu", size);
+
+		if (off && random() % 2 == 0) {
+			struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
+			reader->offset = 0;
+			fbr_test_logs("READDIR reset offset");
+		}
 	}
 
 	fbr_ops_readdir(request, ino, size, off, fi);
