@@ -245,12 +245,9 @@ struct fbr_dreader {
 	unsigned int				magic;
 #define FBR_DREADER_MAGIC			0xF3CFAEDF
 
-	fbr_bitflag_t				read_dot:1;
-	fbr_bitflag_t				read_dotdot:1;
 	fbr_bitflag_t				end:1;
 
 	struct fbr_directory			*directory;
-	struct fbr_file_ptr			*position;
 };
 
 enum fbr_flush_flags {
@@ -559,7 +556,7 @@ void fbr_dindex_free_all(struct fbr_fs *fs);
 struct fbr_dreader *fbr_dreader_alloc(struct fbr_fs *fs, struct fbr_directory *directory);
 void fbr_dirbuffer_init(struct fbr_dirbuffer *dbuf, size_t fuse_size);
 void fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf,
-	const char *name, struct stat *st);
+	const char *name, struct stat *st, off_t offset);
 void fbr_dreader_free(struct fbr_fs *fs, struct fbr_dreader *reader);
 
 struct fbr_fio *fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file, int read_only);

@@ -59,7 +59,7 @@ fbr_dirbuffer_init(struct fbr_dirbuffer *dbuf, size_t fuse_size)
 
 void
 fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf, const char *name,
-    struct stat *st)
+    struct stat *st, off_t offset)
 {
 	fbr_request_valid(request);
 	assert(dbuf);
@@ -67,9 +67,10 @@ fbr_dirbuffer_add(struct fbr_request *request, struct fbr_dirbuffer *dbuf, const
 	assert_dev(dbuf->pos + dbuf->free == dbuf->max);
 	assert(name);
 	assert(st);
+	assert(offset);
 
 	size_t write = fuse_add_direntry(request->fuse_req, dbuf->buffer + dbuf->pos,
-		dbuf->free, name, st, 1);
+		dbuf->free, name, st, offset);
 
 	if (write > dbuf->free) {
 		dbuf->full = 1;

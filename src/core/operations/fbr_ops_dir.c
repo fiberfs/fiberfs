@@ -37,20 +37,23 @@ fbr_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 }
 
 static void
-_ops_diradd(struct fbr_request *request, struct fbr_dirbuffer *dbuf, struct fbr_file *file)
+_ops_diradd(struct fbr_request *request, struct fbr_dirbuffer *dbuf, struct fbr_file *file,
+    off_t offset)
 {
 	struct fbr_fs *fs = fbr_request_fs(request);
 	assert_dev(dbuf);
 	assert_dev(file);
+	assert_dev(offset)
 
 	const char *filename = fbr_path_get_file(&file->path, NULL);
 
-	fbr_rlog(FBR_LOG_OP_DIR, "read filename: '%s' inode: %lu", filename, file->inode);
+	fbr_rlog(FBR_LOG_OP_DIR, "read filename: '%s' inode: %lu off: %ld", filename,
+		file->inode, offset);
 
 	struct stat st;
 	fbr_file_attr(fs, file, &st);
 
-	fbr_dirbuffer_add(request, dbuf, filename, &st);
+	fbr_dirbuffer_add(request, dbuf, filename, &st, offset);
 }
 
 void
@@ -61,8 +64,6 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 
 	fbr_rlog(FBR_LOG_OP, "READDIR req: %lu ino: %lu size: %zu off: %ld", request->id, ino,
 		size, off);
-
-	// TODO we need better off support
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 
@@ -78,19 +79,17 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 	struct fbr_dirbuffer dbuf;
 	fbr_dirbuffer_init(&dbuf, size);
 
-	if (!dbuf.full && !reader->read_dot) {
+	if (!dbuf.full && !off) {
 		fbr_file_ok(directory->file);
 
 		struct stat st;
 		fbr_file_attr(fs, directory->file, &st);
 
-		fbr_dirbuffer_add(request, &dbuf, ".", &st);
+		off++;
 
-		if (!dbuf.full) {
-			reader->read_dot = 1;
-		}
+		fbr_dirbuffer_add(request, &dbuf, ".", &st, off);
 	}
-	if (!dbuf.full && !reader->read_dotdot) {
+	if (!dbuf.full && off == 1) {
 		int do_release = 1;
 
 		struct fbr_file *parent;
@@ -100,6 +99,8 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 			parent = directory->file;
 			do_release = 0;
 		}
+
+		off++;
 
 		if (parent) {
 			fbr_file_ok(parent);
@@ -111,13 +112,7 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 				fbr_inode_release(fs, &parent);
 			}
 
-			fbr_dirbuffer_add(request, &dbuf, "..", &st);
-
-			if (!dbuf.full) {
-				reader->read_dotdot = 1;
-			}
-		} else {
-			reader->read_dotdot = 1;
+			fbr_dirbuffer_add(request, &dbuf, "..", &st, off);
 		}
 	}
 
@@ -127,47 +122,31 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 		return;
 	}
 
-	struct fbr_path_name filedir;
-	struct fbr_path_name dirname;
-	fbr_directory_name(directory, &dirname);
-
 	struct fbr_file_ptr *file_ptr;
-	struct fbr_file_ptr *file_ptr_pos = reader->position;
+	off_t current = 2;
+	assert_dev(off >= 2);
 
-	if (file_ptr_pos) {
-		RB_FOREACH_FROM(file_ptr, fbr_filename_tree, file_ptr_pos) {
-			fbr_file_ptr_ok(file_ptr);
-			struct fbr_file *file = file_ptr->file;
+	RB_FOREACH(file_ptr, fbr_filename_tree, &directory->filename_tree) {
+		fbr_file_ptr_ok(file_ptr);
+		struct fbr_file *file = file_ptr->file;
 
-			fbr_path_get_dir(&file->path, &filedir);
-			assert_zero(fbr_path_name_cmp(&dirname, &filedir));
-
-			_ops_diradd(request, &dbuf, file);
-
-			if (dbuf.full) {
-				break;
-			}
+		if (current < off) {
+			current++;
+			continue;
 		}
-	} else {
-		RB_FOREACH(file_ptr, fbr_filename_tree, &directory->filename_tree) {
-			fbr_file_ptr_ok(file_ptr);
-			struct fbr_file *file = file_ptr->file;
 
-			fbr_path_get_dir(&file->path, &filedir);
-			assert_zero(fbr_path_name_cmp(&dirname, &filedir));
+		off++;
+		current = off;
 
-			_ops_diradd(request, &dbuf, file);
+		_ops_diradd(request, &dbuf, file, off);
 
-			if (dbuf.full) {
-				break;
-			}
+		if (dbuf.full) {
+			break;
 		}
 	}
 
 	if (dbuf.full) {
 		assert_zero_dev(reader->end);
-
-		reader->position = file_ptr;
 
 		fbr_rlog(FBR_LOG_OP_DIR, "read return: %zu", dbuf.pos);
 		fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
@@ -178,6 +157,7 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 	reader->end = 1;
 
 	fbr_rlog(FBR_LOG_OP_DIR, "read return: %zu", dbuf.pos);
+
 	fbr_fuse_reply_buf(request, dbuf.buffer, dbuf.pos);
 }
 

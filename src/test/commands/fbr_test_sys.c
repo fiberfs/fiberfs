@@ -203,11 +203,15 @@ fbr_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct dirent *dentry;
 	while ((dentry = readdir(dir)) != NULL) {
-		fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_ls entry: %s type: %s ino: %lu",
+		long offset = telldir(dir);
+		assert(offset >= 0);
+
+		fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_ls entry: %s type: %s ino: %lu off: %ld",
 			dentry->d_name,
 			dentry->d_type == DT_REG ? "file" :
 				dentry->d_type == DT_DIR ? "dir" : "other",
-			dentry->d_ino);
+			dentry->d_ino,
+			offset);
 
 		if (!want_result) {
 			continue;
