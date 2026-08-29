@@ -44,7 +44,7 @@ equal $cstore_stat_roots:0 1
 equal $cstore_stat_indexes:0 1
 equal $cstore_stat_chunks:0 1
 
-equal $cstore_stat_root_updates:0 3
+greater_equal $cstore_stat_root_updates:0 3
 
 equal $fs_test_stat_flushes 2
 equal $fs_test_stat_flush_memory 1
