@@ -205,7 +205,7 @@ chttp_body_init(struct chttp_context *ctx, enum chttp_request_type type)
 		return;
 	}
 
-	if (ctx->length) {
+	if (ctx->length && !ctx->want_100) {
 		chttp_error(ctx, CHTTP_ERR_REQ_BODY);
 		return;
 	}

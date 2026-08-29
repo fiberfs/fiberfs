@@ -53,6 +53,7 @@ struct chttp_test_server {
 	char					port_str[16];
 	int					tls;
 	int					pipeline_close;
+	int					skip_100;
 
 	struct chttp_context			*chttp;
 
@@ -433,6 +434,21 @@ chttp_test_cmd_server_pipeline_close(struct fbr_test_context *ctx, struct fbr_te
 }
 
 void
+chttp_test_cmd_server_skip_100(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	struct chttp_test_server *server = _server_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	assert_zero(server->skip_100);
+	server->skip_100 = 1;
+}
+
+void
 chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	struct chttp_test_server *server = _server_context_ok(ctx);
@@ -460,6 +476,9 @@ chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test
 	chttp_context_init_buf(server->chttp, sizeof(struct chttp_context));
 
 	server->chttp->do_free = 1;
+	server->chttp->skip_100 = server->skip_100;
+
+	server->skip_100 = 0;
 
 	chttp_addr_move(&server->chttp->addr, &server->addr);
 
@@ -477,7 +496,7 @@ chttp_test_cmd_server_read_request(struct fbr_test_context *ctx, struct fbr_test
 		chttp_context_debug(server->chttp);
 	}
 
-	if (server->chttp->state == CHTTP_STATE_IDLE) {
+	if (server->chttp->state == CHTTP_STATE_IDLE || server->chttp->skip_100) {
 		if (server->pipeline_close) {
 			assert(server->chttp->pipeline);
 			server->pipeline_close++;
@@ -812,7 +831,7 @@ _server_send_response(struct chttp_test_server *server, struct fbr_test_cmd *cmd
 {
 	_server_ok(server);
 	chttp_context_ok(server->chttp);
-	assert(server->chttp->state == CHTTP_STATE_IDLE);
+	assert(server->chttp->skip_100 || server->chttp->state == CHTTP_STATE_IDLE);
 	chttp_addr_connected(&server->addr);
 	assert(cmd);
 	assert(cmd->param_count <= 4);

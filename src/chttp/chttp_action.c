@@ -251,7 +251,7 @@ chttp_parse(struct chttp_context *ctx, enum chttp_request_type type)
 	assert(ctx->state == CHTTP_STATE_BODY);
 	chttp_dpage_ok(ctx->data_end.dpage);
 
-	if (type == CHTTP_REQUEST) {
+	if (type == CHTTP_REQUEST && !ctx->skip_100) {
 		const char *expect = chttp_header_get(ctx, "expect");
 
 		if (expect && !strcasecmp(expect, "100-continue")) {
@@ -292,7 +292,8 @@ chttp_finish(struct chttp_context *ctx)
 		chttp_addr_ok(&ctx->addr);
 
 		if (ctx->close || ctx->error || ctx->state < CHTTP_STATE_IDLE ||
-		    ctx->addr.error || !ctx->addr.resolved || ctx->request || ctx->pipeline) {
+		    ctx->addr.error || !ctx->addr.resolved || ctx->request || ctx->pipeline ||
+		    ctx->length) {
 			chttp_tcp_close(&ctx->addr);
 		} else {
 			chttp_tcp_pool_store(&ctx->addr);

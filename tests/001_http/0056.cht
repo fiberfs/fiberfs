@@ -1,0 +1,23 @@
+chttp_test "H1 100-continue error response"
+
+server_init
+server_skip_100
+server_accept
+server_read_request
+server_method_match PUT
+server_url_match /object
+server_header_match expect 100-continue
+server_send_response 500 STOP
+
+chttp_init
+chttp_method PUT
+chttp_url /object
+chttp_add_header "Expect" "100-continue"
+chttp_add_header "Content-Length" "5"
+chttp_connect $server_host $server_port
+chttp_send_only
+
+# Continue error
+chttp_receive
+chttp_status_match 500
+chttp_reason_match STOP

@@ -116,6 +116,7 @@ struct chttp_context {
 	fbr_bitflag_t			gzip:1;
 	fbr_bitflag_t			want_100:1;
 	fbr_bitflag_t			sent_100:1;
+	fbr_bitflag_t			skip_100:1;
 	fbr_bitflag_t			request:1;
 	fbr_bitflag_t			pipeline:1;
 
