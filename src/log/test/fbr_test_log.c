@@ -621,6 +621,10 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	do {
 		log_line = fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer));
+		if (!log_line) {
+			assert(reader.cursor.status == FBR_LOG_CURSOR_EOF);
+			continue;
+		}
 	} while (log_line && reader.cursor.tag.parts.class_data != FBR_LOG_TEST);
 	fbr_test_logs("READER[0] (status = %d)", reader.cursor.status);
 	_test_logline_debug(log_line);
