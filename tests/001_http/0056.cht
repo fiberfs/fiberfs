@@ -19,5 +19,4 @@ chttp_send_only
 
 # Continue error
 chttp_receive
-chttp_status_match 500
-chttp_reason_match STOP
+chttp_take_error
