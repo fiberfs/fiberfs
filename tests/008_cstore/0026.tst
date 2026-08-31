@@ -89,6 +89,9 @@ sys_ls_error $sys_tmpdir
 print "### CLEANUP"
 
 fs_test_release_all_wait 1
+cstore_wait 0
+cstore_wait 1
+cstore_wait 2
 
 sleep_ms 20
 fs_test_stats
