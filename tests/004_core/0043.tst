@@ -25,6 +25,8 @@ sleep_ms 20
 
 sys_truncate $file 5
 
+sleep_ms 50
+
 fs_test_release_all_wait
 sleep_ms 20
 
@@ -36,6 +38,8 @@ sleep_ms 20
 
 sys_write_seek $file 3 "ABC" "123" "ZZZ"
 sys_truncate $file 15
+
+sleep_ms 50
 
 fs_test_release_all_wait
 sleep_ms 20
@@ -49,6 +53,8 @@ print "### Truncate 2"
 sleep_ms 20
 
 sys_truncate $file 5
+
+sleep_ms 50
 
 fs_test_release_all_wait
 sleep_ms 20

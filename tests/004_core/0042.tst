@@ -23,6 +23,8 @@ sys_stat_mode $file 33060
 
 # Read from index
 
+sleep_ms 50
+
 fs_test_release_all_wait
 
 print "### LOAD INDEX"
