@@ -42,10 +42,11 @@ print "### Delete S3 and READ"
 
 cstore_clear 2
 equal $cstore_entries:2 0
-fs_test_release_all_wait
 
-sleep_ms 250
+fs_test_release_all_wait
 equal $fs_test_stat_files_inodes 1
+
+sleep_ms 350
 
 sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
 sys_cat $file "test_ABC"
@@ -56,10 +57,11 @@ print "### Delete cluster and READ"
 
 cstore_clear 1
 equal $cstore_entries:1 0
-fs_test_release_all_wait
 
-sleep_ms 250
+fs_test_release_all_wait
 equal $fs_test_stat_files_inodes 1
+
+sleep_ms 350
 
 sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
 

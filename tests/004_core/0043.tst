@@ -14,8 +14,10 @@ print "### Extend"
 set file $sys_tmpdir "/somefile"
 sys_truncate $file 16
 
+sleep_ms 50
+
 fs_test_release_all_wait
-sleep_ms 20
+equal $fs_test_stat_files_inodes 1
 
 sys_cat_md5 $file 4ae71336e44bf9bf79d2752e234818a5
 
@@ -28,7 +30,7 @@ sys_truncate $file 5
 sleep_ms 50
 
 fs_test_release_all_wait
-sleep_ms 20
+equal $fs_test_stat_files_inodes 1
 
 sys_cat_md5 $file ca9c491ac66b2c62500882e93f3719a8
 
@@ -42,7 +44,7 @@ sys_truncate $file 15
 sleep_ms 50
 
 fs_test_release_all_wait
-sleep_ms 20
+equal $fs_test_stat_files_inodes 1
 
 sys_cat_md5 $file 808a50a8621d968b9b69e97af4eaaf9b
 
@@ -57,7 +59,7 @@ sys_truncate $file 5
 sleep_ms 50
 
 fs_test_release_all_wait
-sleep_ms 20
+equal $fs_test_stat_files_inodes 1
 
 sys_cat_md5 $file 536629b0ae03b922650462e857fc90e1
 
@@ -70,6 +72,7 @@ print "### CLEANUP"
 fs_test_release_all_wait 1
 
 sleep_ms 20
+
 fs_test_stats
 fs_test_debug
 cstore_debug

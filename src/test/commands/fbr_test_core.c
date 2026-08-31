@@ -52,8 +52,7 @@ fbr_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	int ret;
 	size_t retries = 0;
-	const size_t max_retries = 20;
-	const size_t retry_sleep_ms = 10;
+	const size_t max_retries = 70;
 
 	const char *v1 = cmd->params[0].value;
 	const char *v2 = cmd->params[1].value;
@@ -74,8 +73,8 @@ fbr_cmd_equal(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 				v1, v2);
 		}
 
+		fbr_test_sleep_ms(retries);
 		retries++;
-		fbr_test_sleep_ms(retry_sleep_ms * retries);
 
 		if (v1_var) {
 			v1 = fbr_test_read_var(ctx->test, v1_var);
@@ -122,8 +121,7 @@ _compare_values(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	const char *l2_var = cmd->params[1].variable;
 
 	size_t retries = 0;
-	const size_t max_retries = 20;
-	const size_t retry_sleep_ms = 10;
+	const size_t max_retries = 70;
 	int passed = 0;
 
 	while (retries < max_retries) {
@@ -148,8 +146,8 @@ _compare_values(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 				command, l1, l2);
 		}
 
+		fbr_test_sleep_ms(retries);
 		retries++;
-		fbr_test_sleep_ms(retry_sleep_ms * retries);
 
 		if (l1_var) {
 			s1 = fbr_test_read_var(ctx->test, l1_var);

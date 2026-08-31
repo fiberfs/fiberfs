@@ -26,6 +26,7 @@ sys_stat_mode $file 33060
 sleep_ms 50
 
 fs_test_release_all_wait
+equal $fs_test_stat_files_inodes 1
 
 print "### LOAD INDEX"
 
