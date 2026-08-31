@@ -17,8 +17,10 @@ sys_write_seek $file 0 ""
 
 greater_equal $fs_test_stat_flushes 1
 
+sleep_ms 50
+
 fs_test_release_all_wait
-sleep_ms 10
+equal $fs_test_stat_files_inodes 1
 
 print "### VERIFY"
 
@@ -31,8 +33,10 @@ sys_write $file "123"
 
 greater_equal $fs_test_stat_flushes 2
 
+sleep_ms 50
+
 fs_test_release_all_wait
-sleep_ms 10
+equal $fs_test_stat_files_inodes 1
 
 print "### VERIFY 2"
 
@@ -57,8 +61,10 @@ sys_write $file ""
 
 greater_equal $fs_test_stat_flushes 3
 
+sleep_ms 50
+
 fs_test_release_all_wait
-sleep_ms 10
+equal $fs_test_stat_files_inodes 1
 
 print "### VERIFY 3"
 
