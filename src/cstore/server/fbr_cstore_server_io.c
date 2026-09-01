@@ -437,8 +437,6 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	fbr_cstore_release(cstore, &entry);
 	assert_zero_dev(entry);
 
-	fbr_cstore_http_resp_etag(cstore, http, 200, "OK", etag_hdr);
-
 	switch (file_type) {
 		case FBR_CSTORE_FILE_CHUNK:
 			fbr_stat_add_count(&cstore->stats.wr_chunk_bytes, bytes);
@@ -455,6 +453,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		default:
 			break;
 	}
+
+	fbr_cstore_http_resp_etag(cstore, http, 200, "OK", etag_hdr);
 }
 
 static void
