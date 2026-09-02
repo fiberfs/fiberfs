@@ -399,15 +399,19 @@ void
 fbr_path_shared_init(struct fbr_path_shared *shared, const struct fbr_path_name *value)
 {
 	assert(shared);
-	assert(value);
-	assert(value->name);
+
+	fbr_zero(shared);
 
 	shared->magic = FBR_PATH_SHARED_MAGIC;
-	shared->refcount = 0;
-	shared->value.length = value->length;
-	shared->value.name = value->name;
 
-	assert_dev(strlen(shared->value.name) == shared->value.length);
+	if (value) {
+		assert(value->name);
+
+		shared->value.length = value->length;
+		shared->value.name = value->name;
+
+		assert_dev(strlen(shared->value.name) == shared->value.length);
+	}
 
 	fbr_path_shared_ok(shared);
 }
@@ -417,17 +421,15 @@ fbr_path_shared_alloc(const struct fbr_path_name *value)
 {
 	assert(value);
 
-	struct fbr_path_shared *shared = malloc(sizeof(*shared));
+	struct fbr_path_shared *shared = malloc(sizeof(*shared) + value->length + 1);
 	assert(shared);
 
-	struct fbr_path_name value_dup;
-	value_dup.length = value->length;
-	value_dup.name = strdup(value->name);
-	assert(value_dup.name);
-
-	fbr_path_shared_init(shared, &value_dup);
+	fbr_path_shared_init(shared, NULL);
+	fbr_strcpy(shared->_data, value->length + 1, value->name);
 
 	shared->refcount = 1;
+	shared->value.length = value->length;
+	shared->value.name = shared->_data;
 
 	return shared;
 }
@@ -474,9 +476,6 @@ fbr_path_shared_release(struct fbr_path_shared *shared)
 	if (refs) {
 		return;
 	}
-
-	assert_dev(shared->value.name);
-	free((char*)shared->value.name);
 
 	fbr_zero(shared);
 	free(shared);

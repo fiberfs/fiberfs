@@ -86,6 +86,8 @@ struct fbr_path_shared {
 	fbr_refcount_t				refcount;
 
 	struct fbr_path_name			value;
+
+	char					_data[];
 };
 
 void *fbr_path_storage_alloc(size_t size, size_t path_offset, struct fbr_path_shared *dirname,
