@@ -44,7 +44,7 @@ _fuse_finish_none(struct fbr_request *request)
 }
 
 static inline void
-_fuse_finish_error(struct fbr_request *request, int error)
+_fuse_finish(struct fbr_request *request, int error)
 {
 	fbr_request_ok(request);
 
@@ -95,7 +95,7 @@ _fuse_ops_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 
 	_fuse_ops_callback(request, lookup, parent, name);
 
-	_fuse_finish_error(request, EIO);
+	_fuse_finish(request, EIO);
 }
 
 static void
@@ -105,7 +105,7 @@ _fuse_ops_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 	_fuse_ops_callback(request, getattr, ino, fi);
 
-	_fuse_finish_error(request, EIO);
+	_fuse_finish(request, EIO);
 }
 
 static void
@@ -116,7 +116,7 @@ _fuse_ops_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
 
 	_fuse_ops_callback(request, setattr, ino, attr, to_set, fi);
 
-	_fuse_finish_error(request, ENOSYS);
+	_fuse_finish(request, ENOSYS);
 }
 
 static void
@@ -126,7 +126,7 @@ _fuse_ops_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode
 
 	_fuse_ops_callback(request, mkdir, parent, name, mode);
 
-	_fuse_finish_error(request, ENOSYS);
+	_fuse_finish(request, ENOSYS);
 }
 
 static void
@@ -136,7 +136,7 @@ _fuse_ops_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 
 	_fuse_ops_callback(request, unlink, parent, name);
 
-	_fuse_finish_error(request, ENOSYS);
+	_fuse_finish(request, ENOSYS);
 }
 
 static void
@@ -146,7 +146,7 @@ _fuse_ops_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name)
 
 	_fuse_ops_callback(request, rmdir, parent, name);
 
-	_fuse_finish_error(request, ENOSYS);
+	_fuse_finish(request, ENOSYS);
 }
 
 static void
@@ -156,7 +156,7 @@ _fuse_ops_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 	_fuse_ops_callback(request, open, ino, fi);
 
-	_fuse_finish_error(request, ENOSYS);
+	_fuse_finish(request, ENOSYS);
 }
 
 
@@ -168,7 +168,7 @@ _fuse_ops_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mod
 
 	_fuse_ops_callback(request, create, parent, name, mode, fi);
 
-	_fuse_finish_error(request, ENOSYS);
+	_fuse_finish(request, ENOSYS);
 }
 
 static void
@@ -178,7 +178,7 @@ _fuse_ops_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fu
 
 	_fuse_ops_callback(request, read, ino, size, off, fi);
 
-	_fuse_finish_error(request, EIO);
+	_fuse_finish(request, EIO);
 }
 
 static void
@@ -189,7 +189,7 @@ _fuse_ops_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size, of
 
 	_fuse_ops_callback(request, write, ino, buf, size, off, fi);
 
-	_fuse_finish_error(request, EIO);
+	_fuse_finish(request, EIO);
 }
 
 static void
@@ -199,7 +199,7 @@ _fuse_ops_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 	_fuse_ops_callback(request, flush, ino, fi);
 
-	_fuse_finish_error(request, ENOSYS);
+	_fuse_finish(request, ENOSYS);
 }
 
 static void
@@ -209,7 +209,7 @@ _fuse_ops_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 	_fuse_ops_callback(request, release, ino, fi);
 
-	_fuse_finish_error(request, EIO);
+	_fuse_finish(request, EIO);
 }
 
 static void
@@ -219,7 +219,7 @@ _fuse_ops_fsync(fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_i
 
 	_fuse_ops_callback(request, fsync, ino, datasync, fi);
 
-	_fuse_finish_error(request, ENOSYS);
+	_fuse_finish(request, ENOSYS);
 }
 
 static void
@@ -229,7 +229,7 @@ _fuse_ops_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 	_fuse_ops_callback(request, opendir, ino, fi);
 
-	_fuse_finish_error(request, ENOSYS);
+	_fuse_finish(request, ENOSYS);
 }
 
 static void
@@ -240,7 +240,7 @@ _fuse_ops_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 	_fuse_ops_callback(request, readdir, ino, size, off, fi);
 
-	_fuse_finish_error(request, EIO);
+	_fuse_finish(request, EIO);
 }
 
 static void
@@ -250,7 +250,7 @@ _fuse_ops_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 	_fuse_ops_callback(request, releasedir, ino, fi);
 
-	_fuse_finish_error(request, ENOSYS);
+	_fuse_finish(request, ENOSYS);
 }
 
 static void
