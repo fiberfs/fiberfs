@@ -150,6 +150,7 @@ struct fbr_file {
 	enum fbr_file_state			state;
 
 	struct fbr_path				path;
+	struct fbr_path_shared			*alias;
 
 	struct fbr_file_refcounts		refcounts;
 	pthread_mutex_t				refcount_lock;
