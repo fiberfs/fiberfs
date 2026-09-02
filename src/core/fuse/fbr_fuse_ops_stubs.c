@@ -150,6 +150,17 @@ _fuse_ops_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name)
 }
 
 static void
+_fuse_ops_rename(fuse_req_t req, fuse_ino_t parent, const char *name, fuse_ino_t newparent,
+    const char *newname, unsigned int flags)
+{
+	struct fbr_request *request = _fuse_setup(req, __func__);
+
+	_fuse_ops_callback(request, rename, parent, name, newparent, newname, flags);
+
+	_fuse_finish(request, ENOSYS);
+}
+
+static void
 _fuse_ops_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
 	struct fbr_request *request = _fuse_setup(req, __func__);
@@ -285,6 +296,7 @@ static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.releasedir = _fuse_ops_releasedir,
 	.unlink = _fuse_ops_unlink,
 	.rmdir = _fuse_ops_rmdir,
+	.rename = _fuse_ops_rename,
 	.open = _fuse_ops_open,
 	.create = _fuse_ops_create,
 	.read = _fuse_ops_read,
