@@ -20,6 +20,8 @@ void fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, o
 void fbr_ops_releasedir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
 void fbr_ops_unlink(struct fbr_request *request, fuse_ino_t parent, const char *name);
 void fbr_ops_rmdir(struct fbr_request *request, fuse_ino_t parent, const char *name);
+void fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
+	fuse_ino_t newparent, const char *newname, unsigned int flags);
 void fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info *fi);
 void fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name, mode_t mode,
 	struct fuse_file_info *fi);
