@@ -327,6 +327,8 @@ struct fbr_flush_data {
 	struct stat				*attr;
 	struct fbr_wbuffer			*wbuffers;
 	enum fbr_flush_flags			flags;
+
+	struct fbr_flush_data			*next;
 };
 
 struct fbr_fs_stats {
@@ -540,7 +542,7 @@ struct fbr_directory *fbr_directory_make(struct fbr_fs *fs, const struct fbr_pat
 
 void fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,
 	struct stat *attr, struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
-int fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data);
+int fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
 struct fbr_directory *fbr_dindex_add(struct fbr_fs *fs, struct fbr_directory *directory);

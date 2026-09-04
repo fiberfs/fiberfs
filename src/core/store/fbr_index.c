@@ -195,27 +195,35 @@ _json_body_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 
 static void
 _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file,
-    struct fbr_index_data *index_data)
+    struct fbr_index_data *index_data_cmds)
 {
 	assert_dev(fs);
 	assert_dev(json);
 	assert_dev(file);
 	assert(file->generation);
-	assert_dev(index_data);
+	assert_dev(index_data_cmds);
 
 	int modified = 0;
 	int resize = 0;
 	int has_lock = 0;
 
-	if (file == index_data->file && fbr_is_flag(index_data->flags, FBR_FLUSH_WBUFFER)) {
-		assert_dev(index_data->chunks);
-		modified = 1;
-	} else if (file == index_data->file && fbr_is_flag(index_data->flags, FBR_FLUSH_RESIZE) &&
-	    index_data->chunks) {
-		resize = 1;
-	}
-	if (file == index_data->file) {
-		has_lock = 1;
+	struct fbr_index_data *index_data = index_data_cmds;
+	while (index_data) {
+		if (file == index_data->file && fbr_is_flag(index_data->flags, FBR_FLUSH_WBUFFER)) {
+			assert_dev(index_data->chunks);
+			modified = 1;
+			break;
+		} else if (file == index_data->file &&
+		    fbr_is_flag(index_data->flags, FBR_FLUSH_RESIZE) && index_data->chunks) {
+			resize = 1;
+			break;
+		}
+		if (file == index_data->file) {
+			has_lock = 1;
+			break;
+		}
+
+		index_data = index_data->next;
 	}
 
 	// n: filename
@@ -238,6 +246,7 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	// s: file size
 	fbr_writer_add(fs, json, ",\"s\":", 5);
 	if (modified) {
+		assert_dev(index_data);
 		fbr_writer_add_ulong(fs, json, index_data->size);
 	} else {
 		fbr_writer_add_ulong(fs, json, file->size);
@@ -280,13 +289,14 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 }
 
 static void
-_json_directory_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_index_data *index_data)
+_json_directory_gen(struct fbr_fs *fs, struct fbr_writer *json,
+    struct fbr_index_data *index_data_cmds)
 {
 	assert_dev(fs);
 	assert_dev(json);
-	assert_dev(index_data);
+	assert_dev(index_data_cmds);
 
-	struct fbr_directory *directory = index_data->directory;
+	struct fbr_directory *directory = index_data_cmds->directory;
 	assert_dev(directory);
 	assert(directory->generation);
 
@@ -307,7 +317,7 @@ _json_directory_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_index
 			fbr_writer_add(fs, json, ",", 1);
 		}
 
-		_json_file_gen(fs, json, file, index_data);
+		_json_file_gen(fs, json, file, index_data_cmds);
 
 		comma = 1;
 	}
@@ -424,42 +434,49 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 }
 
 void
-fbr_index_data_free(struct fbr_index_data *index_data)
+fbr_index_data_free(struct fbr_index_data *index_data_cmds)
 {
-	assert(index_data);
+	assert(index_data_cmds);
 
-	if (index_data->chunks) {
-		fbr_chunk_list_free(index_data->chunks);
-	}
-	if (index_data->removed) {
-		fbr_chunk_list_free(index_data->removed);
-	}
+	while (index_data_cmds) {
+		struct fbr_index_data *index_data = index_data_cmds;
 
-	fbr_zero(index_data);
+		if (index_data->chunks) {
+			fbr_chunk_list_free(index_data->chunks);
+		}
+		if (index_data->removed) {
+			fbr_chunk_list_free(index_data->removed);
+		}
+
+		index_data_cmds = index_data->next;
+
+		fbr_zero(index_data);
+	}
 }
 
 // Note: if doing file IO, file->lock needed
 int
-fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
+fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
-	assert(index_data);
+	assert(index_data_cmds);
 
-	struct fbr_directory *directory = index_data->directory;
+	struct fbr_directory *directory = index_data_cmds->directory;
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
 	assert_dev(directory->version);
 	assert_dev(directory->generation);
 
-	if (fbr_is_flag(index_data->flags, FBR_FLUSH_MEM_ONLY)) {
-		assert_zero_dev(index_data->wbuffers);
-		assert_zero_dev(index_data->chunks);
-		assert_zero_dev(index_data->removed);
-		assert_dev(index_data->previous);
-		assert_dev(directory->generation == index_data->previous->generation + 1);
+	if (fbr_is_flag(index_data_cmds->flags, FBR_FLUSH_MEM_ONLY)) {
+		assert_zero_dev(index_data_cmds->wbuffers);
+		assert_zero_dev(index_data_cmds->chunks);
+		assert_zero_dev(index_data_cmds->removed);
+		assert_zero_dev(index_data_cmds->next);
+		assert_dev(index_data_cmds->previous);
+		assert_dev(directory->generation == index_data_cmds->previous->generation + 1);
 
-		fbr_directory_clone_id(fs, directory, index_data->previous);
+		fbr_directory_clone_id(fs, directory, index_data_cmds->previous);
 
 		fbr_rlog(FBR_LOG_INDEX, "skipping write, doing memory only");
 
@@ -468,22 +485,27 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 
 	fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_write()");
 
-	int do_append = 0;
-	if (fbr_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
-		assert_dev(index_data->wbuffers);
-		do_append = 1;
-	}
+	struct fbr_index_data *index_data = index_data_cmds;
+	while (index_data) {
+		int do_append = 0;
+		if (fbr_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
+			assert_dev(index_data->wbuffers);
+			do_append = 1;
+		}
 
-	if (fbr_is_flag(index_data->flags, FBR_FLUSH_DELAY_WRITE) && index_data->wbuffers) {
-		fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
+		if (fbr_is_flag(index_data->flags, FBR_FLUSH_DELAY_WRITE) && index_data->wbuffers) {
+			fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
 
-		if (fs->wbuffer_pre_sync) {
-			int error = fbr_wbuffer_flush_ready(fs, index_data->file,
-				index_data->wbuffers, do_append, 1);
-			if (error) {
-				return error;
+			if (fs->wbuffer_pre_sync) {
+				int error = fbr_wbuffer_flush_ready(fs, index_data->file,
+					index_data->wbuffers, do_append, 1);
+				if (error) {
+					return error;
+				}
 			}
 		}
+
+		index_data = index_data->next;
 	}
 
 	struct fbr_request *request = fbr_request_get();
@@ -497,7 +519,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 	fbr_writer_init(fs, &json_gen, request, gzip);
 
 	_json_header_gen(fs, &json_gen);
-	_json_directory_gen(fs, &json_gen, index_data);
+	_json_directory_gen(fs, &json_gen, index_data_cmds);
 	_json_footer_gen(fs, &json_gen);
 
 	fbr_writer_flush(fs, &json_gen);
@@ -506,27 +528,37 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data)
 
 	int ret = EINVAL;
 	if (fs->store->index_write_f && !json_gen.error) {
-		ret = fs->store->index_write_f(fs, directory, &json_gen, index_data->previous,
-			index_data);
+		ret = fs->store->index_write_f(fs, directory, &json_gen, index_data_cmds->previous,
+			index_data_cmds);
 		assert(ret || directory->etag.length);
 
 		directory->updated = fbr_get_time();
 	}
 
-	if (ret && do_append && !index_data->wbuffer_error) {
-		fbr_wbuffers_error_reset(fs, index_data->file, index_data->wbuffers, 1, 1);
-	}
+	index_data = index_data_cmds;
+	while (index_data) {
+		int was_append = 0;
+		if (fbr_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
+			was_append = 1;
+		}
 
-	if (!ret && index_data->removed) {
-		fbr_body_chunk_prune(fs, index_data->file, index_data->removed);
-	}
+		if (ret && was_append && !index_data_cmds->wbuffer_error) {
+			fbr_wbuffers_error_reset(fs, index_data->file, index_data->wbuffers, 1, 1);
+		}
 
-	if (!ret && index_data->wbuffers) {
-		fbr_wbuffers_ready(fs, index_data->file, index_data->wbuffers, do_append);
-	}
+		if (!ret && index_data->removed) {
+			fbr_body_chunk_prune(fs, index_data->file, index_data->removed);
+		}
 
-	if (!ret && index_data->file) {
-		index_data->file->local_only = 0;
+		if (!ret && index_data->wbuffers) {
+			fbr_wbuffers_ready(fs, index_data->file, index_data->wbuffers, was_append);
+		}
+
+		if (!ret && index_data->file) {
+			index_data->file->local_only = 0;
+		}
+
+		index_data = index_data->next;
 	}
 
 	fbr_writer_free(&json_gen);

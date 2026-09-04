@@ -18,7 +18,7 @@ void fbr_cstore_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffer);
 int fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_writer *writer, struct fbr_directory *previous,
-	struct fbr_index_data *index_data);
+	struct fbr_index_data *index_data_cmds);
 int fbr_cstore_index_read(struct fbr_fs *fs, struct fbr_directory *directory);
 int fbr_cstore_index_delete(struct fbr_fs *fs, struct fbr_directory *directory);
 fbr_id_t fbr_cstore_root_read(struct fbr_fs *fs, struct fbr_directory *directory, int route_s3);

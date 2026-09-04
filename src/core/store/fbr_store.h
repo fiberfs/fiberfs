@@ -15,6 +15,7 @@
 #define FBR_DEFAULT_BUFFERS			4
 #define FBR_DEFAULT_BUFLEN			4096
 #define FBR_ROOT_JSON_SIZE			128
+#define FBR_INDEX_MAX_CMDS			16
 
 struct fbr_buffer {
 	unsigned int				magic;
@@ -119,6 +120,8 @@ struct fbr_index_data {
 	enum fbr_flush_flags			flags;
 
 	int					wbuffer_error;
+
+	struct fbr_index_data			*next;
 };
 
 struct fbr_store_callbacks {
@@ -130,13 +133,13 @@ struct fbr_store_callbacks {
 		struct fbr_wbuffer *wbuffer);
 	int (*index_write_f)(struct fbr_fs *fs, struct fbr_directory *directory,
 		struct fbr_writer *writer, struct fbr_directory *previous,
-		struct fbr_index_data *index_data);
+		struct fbr_index_data *index_data_cmds);
 	int (*index_read_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 	int (*index_delete_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 	fbr_id_t (*root_read_f)(struct fbr_fs *fs, struct fbr_directory *directory, int route_s3);
 
 	struct {
-		int (*directory_flush_f)(struct fbr_fs *fs, struct fbr_flush_data *flush_data);
+		int (*directory_flush_f)(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds);
 	} optional;
 };
 
@@ -145,8 +148,8 @@ struct fjson_context;
 void fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	struct fbr_directory *directory, struct fbr_directory *previous,
 	struct fbr_file *file, struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
-void fbr_index_data_free(struct fbr_index_data *index_data);
-int fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data);
+void fbr_index_data_free(struct fbr_index_data *index_data_cmds);
+int fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds);
 void fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);
 fbr_id_t fbr_root_json_parse(const char *json_buf, size_t json_buf_len);
 void fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory,

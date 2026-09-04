@@ -37,11 +37,18 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 }
 
 static void
-_flush_data_free(struct fbr_flush_data *flush_data)
+_flush_data_free(struct fbr_flush_data *flush_data_cmds)
 {
-	fbr_flush_data_ok(flush_data);
+	assert(flush_data_cmds);
 
-	fbr_zero(flush_data);
+	while (flush_data_cmds) {
+		struct fbr_flush_data *flush_data = flush_data_cmds;
+		fbr_flush_data_ok(flush_data);
+
+		flush_data_cmds = flush_data->next;
+
+		fbr_zero(flush_data);
+	}
 }
 
 static struct fbr_directory *
@@ -262,14 +269,12 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 }
 
 int
-fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
+fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 {
 	fbr_fs_ok(fs);
-	fbr_flush_data_ok(flush_data);
-	assert_dev(flush_data->flags);
+	fbr_flush_data_ok(flush_data_cmds);
 
-	struct fbr_file *file = flush_data->file;
-	fbr_inode_t inode = file->parent_inode;
+	fbr_inode_t inode = flush_data_cmds->file->parent_inode;
 	struct fbr_file *parent = fbr_inode_take(fs, inode);
 	if (!parent) {
 		fbr_rlog(FBR_LOG_ERROR, "flush parent inode missing (%lu)", inode);
@@ -280,13 +285,10 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 	fbr_path_get_full(&parent->path, &dirpath);
 	fbr_inode_release(fs, &parent);
 
-	struct fbr_path_name filename;
-	fbr_path_get_file(&file->path, &filename);
-
 	struct fbr_fs_timeout timeout;
 	fbr_fs_timeout_init(&timeout);
 
-	fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' file: '%s'", dirpath.path.name, filename.name);
+	fbr_rlog(FBR_LOG_FLUSH, "directory: '%s'", dirpath.path.name);
 
 	struct fbr_directory *directory = fbr_directory_get(fs, &dirpath.path, inode, 1, 0);
 	if (!directory) {
@@ -295,7 +297,10 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 
 	// Start sync/write loop
 
-	struct fbr_index_data index_data;
+	struct fbr_index_data _index_data_cmds[FBR_INDEX_MAX_CMDS];
+	struct fbr_index_data *index_data_cmds;
+
+	size_t cmd_count = 0;
 	unsigned int version_matches = 0;
 	fbr_id_t last_version = 0, directory_version;
 	int ret = EIO;
@@ -303,6 +308,9 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 
 	while (directory) {
 		assert_dev(directory->state == FBR_DIRSTATE_OK);
+
+		index_data_cmds = NULL;
+		cmd_count = 0;
 
 		fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' found generation: %lu attempts: %u",
 			dirpath.path.name, directory->generation, timeout.attempts);
@@ -327,22 +335,78 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 
 		new_directory->generation++;
 
-		ret = _flush_merge(fs, new_directory, flush_data);
-		if (ret) {
-			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
-			fbr_dindex_release(fs, &new_directory);
-			fbr_dindex_release(fs, &directory);
-			break;
+		struct fbr_flush_data *flush_data = flush_data_cmds;
+		while (flush_data) {
+			fbr_flush_data_ok(flush_data);
+			assert_dev(flush_data->flags);
+
+			struct fbr_file *file = flush_data->file;
+			assert(file->parent_inode == inode);
+
+			fbr_rlog(FBR_LOG_FLUSH, "flush command: %zu", cmd_count);
+
+			ret = _flush_merge(fs, new_directory, flush_data);
+			if (ret) {
+				fbr_rlog(FBR_LOG_ERROR, "flush merge failed %d (%s)", ret,
+					fbr_berror(ret, errbuf));
+
+				fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
+				fbr_dindex_release(fs, &new_directory);
+				fbr_dindex_release(fs, &directory);
+
+				return ret;
+			}
+
+			flush_data = flush_data->next;
+			cmd_count++;
 		}
 
-		fbr_file_LOCK(fs, file);
+		assert(cmd_count <= fbr_array_len(_index_data_cmds));
 
-		fbr_index_data_init(fs, &index_data, new_directory, previous, file,
-			flush_data->wbuffers, flush_data->flags);
+		size_t count = 0;
+		struct fbr_index_data *index_last = NULL;
+
+		flush_data = flush_data_cmds;
+		while (flush_data) {
+			fbr_flush_data_ok(flush_data);
+
+			struct fbr_file *file = flush_data->file;
+
+			struct fbr_flush_data *flush_data_check = flush_data_cmds;
+			while (flush_data_check != flush_data) {
+				assert(flush_data->file != file);
+				flush_data_check = flush_data_check->next;
+			}
+
+			fbr_file_LOCK(fs, file);
+
+			struct fbr_index_data *index_data = &_index_data_cmds[count];
+
+			fbr_index_data_init(fs, index_data, new_directory, previous, file,
+				flush_data->wbuffers, flush_data->flags);
+
+			if (!index_last) {
+				assert_zero_dev(index_data_cmds);
+				index_data_cmds = index_data;
+			} else {
+				assert_zero_dev(fbr_is_flag(index_data->flags,
+					FBR_FLUSH_MEM_ONLY));
+				assert_zero_dev(index_data->next);
+
+				index_last->next = index_data;
+			}
+
+			index_last = index_data;
+			flush_data = flush_data->next;
+			count++;
+		}
+
+		assert_dev(index_data_cmds);
+		assert_dev(count == cmd_count);
 
 		int retry = 0;
 
-		ret = fbr_index_write(fs, &index_data);
+		ret = fbr_index_write(fs, index_data_cmds);
 
 		if (!ret) {
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
@@ -357,11 +421,18 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 				ret, fbr_berror(ret, errbuf), retry);
 		}
 
-		fbr_file_UNLOCK(file);
+		flush_data = flush_data_cmds;
+		while (flush_data) {
+			fbr_flush_data_ok(flush_data);
+
+			fbr_file_UNLOCK(flush_data->file);
+
+			flush_data = flush_data->next;
+		}
 
 		directory_version = directory->version;
 
-		fbr_index_data_free(&index_data);
+		fbr_index_data_free(index_data_cmds);
 		fbr_dindex_release(fs, &new_directory);
 		fbr_dindex_release(fs, &directory);
 
@@ -402,7 +473,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 
 	if (ret) {
 		fbr_rlog(FBR_LOG_ERROR, "flush failed %d (%s)", ret, fbr_berror(ret, errbuf));
-	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_MEM_ONLY)) {
+	} else if (fbr_is_flag(flush_data_cmds->flags, FBR_FLUSH_MEM_ONLY)) {
+		assert_zero_dev(flush_data_cmds->next);
 		fbr_stat_add(&fs->stats.flush_memory);
 	} else {
 		fbr_stat_add(&fs->stats.flushes);
@@ -412,11 +484,11 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 }
 
 int
-fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
+fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
-	fbr_flush_data_ok(flush_data);
+	fbr_flush_data_ok(flush_data_cmds);
 
 	int ret = EIO;
 
@@ -424,12 +496,12 @@ fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data)
 		assert_dev(fs->store->optional.directory_flush_f != fbr_fs_flush);
 		assert_dev(fs->store->optional.directory_flush_f != fbr_flush);
 
-		ret = fs->store->optional.directory_flush_f(fs, flush_data);
+		ret = fs->store->optional.directory_flush_f(fs, flush_data_cmds);
 	} else {
-		ret = fbr_flush(fs, flush_data);
+		ret = fbr_flush(fs, flush_data_cmds);
 	}
 
-	_flush_data_free(flush_data);
+	_flush_data_free(flush_data_cmds);
 
 	return ret;
 }
