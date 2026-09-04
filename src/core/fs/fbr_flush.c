@@ -374,7 +374,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 
 			struct fbr_flush_data *flush_data_check = flush_data_cmds;
 			while (flush_data_check != flush_data) {
-				assert(flush_data->file != file);
+				assert(flush_data_check->file != file);
 				flush_data_check = flush_data_check->next;
 			}
 
