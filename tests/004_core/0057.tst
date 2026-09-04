@@ -1,3 +1,3 @@
 fiber_test "Multi flush"
 
-fs_test_multi_flush
+fs_test_soft_flush

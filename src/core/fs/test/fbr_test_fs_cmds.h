@@ -87,4 +87,4 @@ FBR_TEST_CMD(fs_test_directory_release_ttl)
 FBR_TEST_CMD(fs_test_directory_load_ttl)
 FBR_TEST_CMD(fs_test_directory_load_304)
 
-FBR_TEST_CMD(fs_test_multi_flush)
+FBR_TEST_CMD(fs_test_soft_flush)

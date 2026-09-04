@@ -18,7 +18,7 @@
 int fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds);
 
 static int _FLUSH_COUNT;
-static struct fbr_flush_data _FLUSH_CMDS[2];
+static struct fbr_flush_data _FLUSH_CMD;
 
 static int
 _test_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
@@ -30,7 +30,7 @@ _test_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 	fbr_test_logs("*** Got flush command");
 
 	if (!_FLUSH_COUNT) {
-		memcpy(&_FLUSH_CMDS[0], flush_data_cmds, sizeof(*flush_data_cmds));
+		memcpy(&_FLUSH_CMD, flush_data_cmds, sizeof(*flush_data_cmds));
 		_FLUSH_COUNT++;
 
 		fbr_test_logs("*** flush 0 captured");
@@ -40,17 +40,17 @@ _test_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 
 	assert(_FLUSH_COUNT == 1);
 
-	_FLUSH_CMDS[0].next = flush_data_cmds;
+	_FLUSH_CMD.next = flush_data_cmds;
 
 	fbr_test_logs("*** sending flush 0 + 1");
 
-	return fbr_flush(fs, &_FLUSH_CMDS[0]);
+	return fbr_flush(fs, &_FLUSH_CMD);
 }
 
 static struct fbr_store_callbacks _TEST_FLUSH_CALLBACKS;
 
 void
-fbr_cmd_fs_test_multi_flush(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+fbr_cmd_fs_test_soft_flush(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
