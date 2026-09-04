@@ -17,7 +17,25 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	fbr_rlog(FBR_LOG_OP, "RENAME req: %lu parent: %lu name: '%s' newparent: %lu newname: '%s'"
 		" flags: %d", request->id, parent, name, newparent, newname, flags);
 
-	(void)fs;
+	if (parent != newparent) {
+		fbr_rlog(FBR_LOG_OP_RENAME, "parent directory must match");
+		fbr_fuse_reply_err(request, EFAULT);
+		return;
+	}
+
+	int error = fbr_check_name(newname);
+	if (error) {
+		fbr_fuse_reply_err(request, error);
+		return;
+	}
+
+	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent);
+	if (!directory) {
+		fbr_fuse_reply_err(request, ENOTDIR);
+		return;
+	}
+
+	fbr_dindex_release(fs, &directory);
 
 	fbr_fuse_reply_err(request, ENOSYS);
 }
