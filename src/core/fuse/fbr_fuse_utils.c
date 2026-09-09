@@ -19,6 +19,7 @@ static const struct fbr_fuse_callbacks _FUSE_DEFAULT_CALLBACKS = {
 	.mkdir = fbr_ops_mkdir,
 	.unlink = fbr_ops_unlink,
 	.rmdir = fbr_ops_rmdir,
+	.rename = fbr_ops_rename,
 
 	.opendir = fbr_ops_opendir,
 	.readdir = fbr_ops_readdir,

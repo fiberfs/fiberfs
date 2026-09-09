@@ -427,6 +427,8 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		assert_zero_dev(index_data->chunks->length);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RMDIR)) {
 		assert_zero_dev(wbuffers);
+	} else if (fbr_is_flag(flags, FBR_FLUSH_RENAME)) {
+		fbr_ABORT("TODO index_data rename");
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
 		assert_zero_dev(wbuffers);

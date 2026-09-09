@@ -10,12 +10,13 @@
 
 void
 fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, struct stat *attr,
-    struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags)
+    struct fbr_wbuffer *wbuffers, const char *name, enum fbr_flush_flags flags)
 {
 	assert(flush_data);
 	fbr_file_ok(file);
 	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
-		FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_UNLINK | FBR_FLUSH_RMDIR));
+		FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_UNLINK | FBR_FLUSH_RMDIR |
+		FBR_FLUSH_RENAME));
 
 	fbr_zero(flush_data);
 	flush_data->file = file;
@@ -31,6 +32,11 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 		assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER));
 		assert_zero(fbr_is_flag(flags, FBR_FLUSH_MEM_ONLY));
 		flush_data->wbuffers = wbuffers;
+	}
+
+	if (name) {
+		assert(fbr_is_flag(flags, FBR_FLUSH_RENAME));
+		flush_data->name = name;
 	}
 
 	fbr_flush_data_ok(flush_data);
@@ -239,6 +245,14 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		}
 
 		fbr_directory_remove_file(fs, directory, latest);
+	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RENAME)) {
+		assert_dev(flush_data->flags == FBR_FLUSH_RENAME);
+
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_RENAME");
+
+		// TODO implement this
+
+		return EIO;
 	}
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RESIZE)) {

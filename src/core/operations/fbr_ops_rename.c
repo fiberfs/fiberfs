@@ -18,7 +18,7 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		" flags: %d", request->id, parent, name, newparent, newname, flags);
 
 	if (parent != newparent) {
-		fbr_rlog(FBR_LOG_OP_RENAME, "parent directory must match");
+		fbr_rlog(FBR_LOG_OP_RENAME, "parent directories must match");
 		fbr_fuse_reply_err(request, EFAULT);
 		return;
 	}
@@ -35,7 +35,26 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		return;
 	}
 
+	struct fbr_file *file = fbr_directory_find_file(directory, name, strlen(name));
+	if (!file) {
+		fbr_fuse_reply_err(request, ENOENT);
+		fbr_dindex_release(fs, &directory);
+		return;
+	}
+
+	// TODO check newname
+
+	struct fbr_flush_data flush_data_rename;
+	fbr_flush_data_init(&flush_data_rename, file, NULL, NULL, name, FBR_FLUSH_RENAME);
+
+	int ret = fbr_fs_flush(fs, &flush_data_rename);
+	if (ret) {
+		fbr_fuse_reply_err(request, ret);
+		fbr_dindex_release(fs, &directory);
+		return;
+	}
+
 	fbr_dindex_release(fs, &directory);
 
-	fbr_fuse_reply_err(request, ENOSYS);
+	fbr_fuse_reply_err(request, 0);
 }

@@ -64,7 +64,7 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 	if (fio->sync && fio->truncate) {
 		struct fbr_flush_data flush_data;
 		enum fbr_flush_flags flags = FBR_FLUSH_WBUFFER | FBR_FLUSH_TRUNCATE;
-		fbr_flush_data_init(&flush_data, file, NULL, NULL, flags);
+		fbr_flush_data_init(&flush_data, file, NULL, NULL, NULL, flags);
 
 		int ret = fbr_fs_flush(fs, &flush_data);
 
