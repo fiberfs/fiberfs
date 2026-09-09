@@ -328,7 +328,7 @@ struct fbr_flush_data {
 	struct fbr_file				*file;
 	struct stat				*attr;
 	struct fbr_wbuffer			*wbuffers;
-	const char 				*name;
+	struct fbr_path_name			filename;
 
 	enum fbr_flush_flags			flags;
 
@@ -528,7 +528,7 @@ int fbr_directory_new_cmp(const struct fbr_directory *left,
 void fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);
 void fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory,
-	struct fbr_file *file);
+	struct fbr_file **file_ref);
 struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
 	size_t filename_len);
 void fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest,
@@ -545,7 +545,7 @@ struct fbr_directory *fbr_directory_make(struct fbr_fs *fs, const struct fbr_pat
 	fbr_inode_t inode);
 
 void fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,
-	struct stat *attr, struct fbr_wbuffer *wbuffers, const char *name,
+	struct stat *attr, struct fbr_wbuffer *wbuffers, const char *filename,
 	enum fbr_flush_flags flags);
 int fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds);
 

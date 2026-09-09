@@ -428,7 +428,17 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RMDIR)) {
 		assert_zero_dev(wbuffers);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RENAME)) {
-		fbr_ABORT("TODO index_data rename");
+		assert_dev(file->alias);
+		fbr_directory_ok(previous);
+
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
+		struct fbr_file *prev_file = fbr_directory_find_file(previous, filename.name,
+			filename.length);
+		if (prev_file) {
+			index_data->removed = fbr_body_chunk_all(prev_file, 0);
+		}
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
 		assert_zero_dev(wbuffers);

@@ -273,25 +273,28 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory, struc
 }
 
 void
-fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file *file)
+fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_file **file_ref)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
-	fbr_file_ok(file);
+	assert(file_ref);
+	fbr_file_ok(*file_ref);
 
 	struct fbr_file_ptr *file_ptr, *temp;
 	RB_FOREACH_SAFE(file_ptr, fbr_filename_tree, &directory->filename_tree, temp) {
 		fbr_file_ptr_ok(file_ptr);
 
-		if (file_ptr->file != file) {
+		if (file_ptr->file != *file_ref) {
 			continue;
 		}
 
 		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file_ptr);
 		fbr_file_ptr_free(file_ptr);
 
-		fbr_file_release_dindex(fs, &file);
+		fbr_file_release_dindex(fs, file_ref);
+		assert_zero_dev(*file_ref);
 
 		directory->file_count--;
 
