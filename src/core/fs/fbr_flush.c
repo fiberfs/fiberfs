@@ -10,7 +10,7 @@
 
 void
 fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, struct stat *attr,
-    struct fbr_wbuffer *wbuffers, const char *name, enum fbr_flush_flags flags)
+    struct fbr_wbuffer *wbuffers, const char *filename, enum fbr_flush_flags flags)
 {
 	assert(flush_data);
 	fbr_file_ok(file);
@@ -34,9 +34,9 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 		flush_data->wbuffers = wbuffers;
 	}
 
-	if (name) {
+	if (filename) {
 		assert(fbr_is_flag(flags, FBR_FLUSH_RENAME));
-		flush_data->name = name;
+		fbr_path_name_init(&flush_data->filename, filename);
 	}
 
 	fbr_flush_data_ok(flush_data);
@@ -154,7 +154,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			return EISDIR;
 		} else if (remote_merge || local_update) {
 			fbr_file_merge(fs, latest, file);
-			fbr_directory_remove_file(fs, directory, latest);
+			fbr_directory_remove_file(fs, directory, &latest);
 			fbr_directory_add_file(fs, directory, file);
 
 			fbr_file_generation(file);
@@ -199,8 +199,10 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		clone->state = FBR_FILE_OK;
 
-		fbr_directory_remove_file(fs, directory, latest);
+		fbr_directory_remove_file(fs, directory, &latest);
 		fbr_directory_add_file(fs, directory, clone);
+
+		assert_zero_dev(latest);
 
 		latest = clone;
 		local_update = 1;
@@ -230,7 +232,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			return EISDIR;
 		}
 
-		fbr_directory_remove_file(fs, directory, latest);
+		fbr_directory_remove_file(fs, directory, &latest);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RMDIR)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_RMDIR);
 
@@ -244,15 +246,54 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			return ENOTDIR;
 		}
 
-		fbr_directory_remove_file(fs, directory, latest);
+		fbr_directory_remove_file(fs, directory, &latest);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RENAME)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_RENAME);
+		assert_dev(flush_data->filename.length);
 
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_RENAME");
 
-		// TODO implement this
+		if (!latest) {
+			fbr_rlog(FBR_LOG_FLUSH, "rename ENOENT detected (source)");
+			return ENOENT;
+		} else if (S_ISDIR(latest->mode)) {
+			fbr_rlog(FBR_LOG_FLUSH, "rename EISDIR detected");
+			return EISDIR;
+		} else if (remote_merge || local_update) {
+			fbr_file_generation(latest);
+		} else {
+			assert(file == latest);
+		}
 
-		return EIO;
+		struct fbr_file *dest = fbr_directory_find_file(directory,
+			flush_data->filename.name, flush_data->filename.length);
+
+		if (dest) {
+			if (S_ISDIR(dest->mode)) {
+				fbr_rlog(FBR_LOG_FLUSH, "rename EISDIR detected (dest)");
+				return EISDIR;
+			}
+
+			fbr_directory_remove_file(fs, directory, &dest);
+		}
+
+		dest = fbr_file_alloc(fs, directory, &flush_data->filename);
+		fbr_file_ok(dest);
+		assert_dev(dest->state == FBR_FILE_INIT);
+
+		if (latest->alias) {
+			dest->alias = fbr_path_shared_take(latest->alias);
+		} else {
+			dest->alias = fbr_path_shared_alloc(&flush_data->filename);
+		}
+
+		// TODO we need to mark latest is now aliased to dest so writes hit dest
+
+		fbr_file_merge(fs, latest, dest);
+		fbr_directory_remove_file(fs, directory, &latest);
+
+		flush_data->file = dest;
+		file = dest;
 	}
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RESIZE)) {

@@ -35,17 +35,28 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		return;
 	}
 
-	struct fbr_file *file = fbr_directory_find_file(directory, name, strlen(name));
+	size_t name_len = strlen(name);
+	struct fbr_file *file = fbr_directory_find_file(directory, name, name_len);
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
 		fbr_dindex_release(fs, &directory);
 		return;
+	} else if (S_ISDIR(file->mode)) {
+		fbr_fuse_reply_err(request, EISDIR);
+		fbr_dindex_release(fs, &directory);
+		return;
 	}
 
-	// TODO check newname
+	size_t newname_len = strlen(newname);
+	struct fbr_file *newfile = fbr_directory_find_file(directory, newname, newname_len);
+	if (newfile && S_ISDIR(newfile->mode)) {
+		fbr_fuse_reply_err(request, EISDIR);
+		fbr_dindex_release(fs, &directory);
+		return;
+	}
 
 	struct fbr_flush_data flush_data_rename;
-	fbr_flush_data_init(&flush_data_rename, file, NULL, NULL, name, FBR_FLUSH_RENAME);
+	fbr_flush_data_init(&flush_data_rename, file, NULL, NULL, newname, FBR_FLUSH_RENAME);
 
 	int ret = fbr_fs_flush(fs, &flush_data_rename);
 	if (ret) {
@@ -54,7 +65,18 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		return;
 	}
 
+	fbr_inode_t inode = directory->inode;
+
 	fbr_dindex_release(fs, &directory);
 
 	fbr_fuse_reply_err(request, 0);
+
+	if (fbr_request_is_fuse(request)) {
+		fbr_fuse_mounted(fs->fuse_ctx);
+		assert(fs->fuse_ctx->session);
+
+		ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session, inode, newname,
+			newname_len);
+		assert_dev(ret != -ENOSYS);
+	}
 }
