@@ -5,6 +5,7 @@
  */
 
 #define FBR_TEST_FILE
+#define _GNU_SOURCE
 
 #include <dirent.h>
 #include <errno.h>
@@ -844,4 +845,33 @@ fbr_cmd_sys_rmdir(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_ASSERT(!ret, "rmdir() failed %s (%d)", strerror(errno), ret);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_rmdir passed %s", filename);
+}
+
+void
+fbr_cmd_sys_rename(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_cmd_ok(cmd);
+	assert(cmd->param_count >= 2 && cmd->param_count <= 3);
+	assert(cmd->params[0].len);
+	assert(cmd->params[1].len);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+	const char *filename_dest = cmd->params[1].value;
+
+	unsigned int flags = 0;
+	if (cmd->param_count >= 3) {
+		flags = fbr_test_parse_long(cmd->params[2].value);
+	}
+
+	int ret = renameat2(AT_FDCWD, filename, AT_FDCWD, filename_dest, flags);
+	fbr_ASSERT(!ret, "renameat2(%s,%s,%u) failed %s (%d)", filename, filename_dest, flags,
+		strerror(errno), ret);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_rename passed %s", filename_dest);
 }

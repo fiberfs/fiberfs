@@ -267,7 +267,8 @@ enum fbr_flush_flags {
 	FBR_FLUSH_NEW_EXCLUSIVE = (1 << 8),
 	FBR_FLUSH_MEM_ONLY = (1 << 9),
 	FBR_FLUSH_UNLINK = (1 << 10),
-	FBR_FLUSH_RMDIR = (1 << 11)
+	FBR_FLUSH_RMDIR = (1 << 11),
+	FBR_FLUSH_RENAME = (1 << 12)
 };
 
 enum fbr_wbuffer_state {
@@ -327,6 +328,8 @@ struct fbr_flush_data {
 	struct fbr_file				*file;
 	struct stat				*attr;
 	struct fbr_wbuffer			*wbuffers;
+	const char 				*name;
+
 	enum fbr_flush_flags			flags;
 
 	struct fbr_flush_data			*next;
@@ -542,7 +545,8 @@ struct fbr_directory *fbr_directory_make(struct fbr_fs *fs, const struct fbr_pat
 	fbr_inode_t inode);
 
 void fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,
-	struct stat *attr, struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
+	struct stat *attr, struct fbr_wbuffer *wbuffers, const char *name,
+	enum fbr_flush_flags flags);
 int fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
