@@ -112,7 +112,8 @@ fbr_file_UNLOCK(struct fbr_file *file)
 
 // Note: file isnt added to directory, its returned unreferenced
 struct fbr_file *
-fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file *source)
+fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file *source,
+    int lock_source)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(source);
@@ -127,15 +128,16 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 
 	fbr_rlog(FBR_LOG_CLONE, "cloned inode: %lu to %lu", source->inode, clone->inode);
 
-	fbr_file_merge(fs, source, clone);
+	fbr_file_merge(fs, source, clone, lock_source);
 
 	clone->size = source->size;
 
 	return clone;
 }
 
+// Note: dest must have file->lock if live
 void
-fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest)
+fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest, int lock_source)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(source);
@@ -148,8 +150,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 
 	fbr_stat_add(&fs->stats.merges);
 
-	fbr_file_LOCK(fs, source);
-	fbr_file_LOCK(fs, dest);
+	if (lock_source) {
+		fbr_file_LOCK(fs, source);
+	}
 
 	dest->generation = source->generation;
 	dest->mode = source->mode;
@@ -255,8 +258,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 		assert_dev(ret != -ENOSYS);
 	}
 
-	fbr_file_UNLOCK(source);
-	fbr_file_UNLOCK(dest);
+	if (lock_source) {
+		fbr_file_UNLOCK(source);
+	}
 }
 
 void
