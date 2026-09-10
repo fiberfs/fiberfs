@@ -204,6 +204,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		assert_zero_dev(latest);
 
+		flush_data->file = clone;
 		latest = clone;
 		local_update = 1;
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE)) {
@@ -400,6 +401,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 
 			fbr_rlog(FBR_LOG_FLUSH, "flush command: %zu", cmd_count);
 
+			// TODO file lock needs to move up here
+
 			ret = _flush_merge(fs, new_directory, flush_data);
 			if (ret) {
 				fbr_rlog(FBR_LOG_ERROR, "flush merge failed %d (%s)", ret,
@@ -479,6 +482,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 		flush_data = flush_data_cmds;
 		while (flush_data) {
 			fbr_flush_data_ok(flush_data);
+
+			// TODO mark the source file as aliased
 
 			fbr_file_UNLOCK(flush_data->file);
 
