@@ -54,10 +54,13 @@ fbr_directory_root_inode_init(struct fbr_fs *fs)
 			root_file->uid = uid;
 			root_file->gid = gid;
 
+			fs->root_file = root_file;
+
 			fbr_inode_add(fs, root_file);
 
-			fs->root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
-			fbr_file_ok(fs->root_file);
+			root_file = fbr_inode_take(fs, FBR_INODE_ROOT);
+			fbr_file_ok(root_file);
+			assert(root_file == fs->root_file);
 		}
 
 		fbr_fs_UNLOCK(fs);
