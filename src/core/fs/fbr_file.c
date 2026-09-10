@@ -460,6 +460,10 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 		fbr_path_shared_release(file->alias);
 	}
 
+	if (file->alias_file) {
+		fbr_inode_release(fs, &file->alias_file);
+	}
+
 	pt_assert(pthread_mutex_destroy(&file->refcount_lock));
 	pt_assert(pthread_mutex_destroy(&file->lock));
 	pt_assert(pthread_cond_destroy(&file->update));

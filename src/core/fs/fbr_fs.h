@@ -151,6 +151,7 @@ struct fbr_file {
 
 	struct fbr_path				path;
 	struct fbr_path_shared			*alias;
+	struct fbr_file				*alias_file;
 
 	struct fbr_file_refcounts		refcounts;
 	pthread_mutex_t				refcount_lock;
