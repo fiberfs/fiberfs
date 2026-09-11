@@ -327,7 +327,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		if (latest->alias) {
 			dest->alias = fbr_path_shared_take(latest->alias);
 		} else {
-			dest->alias = fbr_path_shared_alloc(&flush_data->filename);
+			dest->alias = fbr_path_shared_alloc(&filename);
 		}
 
 		fbr_inode_add(fs, dest);
@@ -338,9 +338,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_file_merge(fs, latest, dest, !latest_locked);
 		fbr_directory_remove_file(fs, directory, &latest);
 
-		if (!latest_locked) {
-			file->state = FBR_FILE_OK;
+		dest->state = FBR_FILE_OK;
 
+		if (!latest_locked) {
 			fbr_file_UNLOCK(file);
 			fbr_file_LOCK(fs, latest);
 
