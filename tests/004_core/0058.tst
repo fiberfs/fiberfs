@@ -24,11 +24,37 @@ sleep_ms 20
 
 print "### Verify"
 
+sys_ls $sys_tmpdir "..:dir .:dir file_NEW:file"
+
+sys_cat $file_new "renamed file"
+
+sleep_ms 20
+
+print "### Verify (index)"
+
 fs_test_release_all_wait
 
 sys_ls $sys_tmpdir "..:dir .:dir file_NEW:file"
 
-# TODO cat file
+sys_cat $file_new "renamed file"
+
+sleep_ms 20
+
+print "### Append"
+
+sys_append $file_new "_chunky"
+
+sys_cat $file_new "renamed file_chunky"
+
+sleep_ms 20
+
+print "### Verify (index 2)"
+
+fs_test_release_all_wait
+
+sys_ls $sys_tmpdir "..:dir .:dir file_NEW:file"
+
+sys_cat $file_new "renamed file_chunky"
 
 # Cleanup
 
@@ -40,6 +66,8 @@ sleep_ms 20
 fs_test_stats
 fs_test_debug
 cstore_debug
+
+equal $cstore_stat_chunks:0 2
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0

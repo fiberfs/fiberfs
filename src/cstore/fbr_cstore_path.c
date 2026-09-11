@@ -112,12 +112,50 @@ fbr_cstore_hashpath_loader(struct fbr_cstore *cstore, unsigned char dir, int met
 }
 
 void
+_cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset,
+    struct fbr_cstore_path *path)
+{
+	fbr_file_ok(file);
+	fbr_path_shared_ok(file->alias);
+	assert(file->alias->value.length);
+	assert(id);
+	assert(path);
+
+	struct fbr_path_name dirpath;
+	fbr_path_get_dir(&file->path, &dirpath);
+
+	char chunk_id[FBR_ID_STRING_MAX];
+	fbr_id_string(id, chunk_id, sizeof(chunk_id));
+
+	char *root_sep = "";
+	if (dirpath.length) {
+		root_sep = "/";
+	}
+
+	path->magic = FBR_CSTORE_PATH_MAGIC;
+	path->length = fbr_bprintf(path->value, "%s%s%s%s.%s.%zu",
+		dirpath.name,
+		root_sep,
+		file->alias->value.name,
+		FBR_FIBERFS_CHUNK_NAME,
+		chunk_id,
+		offset);
+
+	fbr_cstore_path_ok(path);
+}
+
+void
 fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset,
     struct fbr_cstore_path *path)
 {
 	fbr_file_ok(file);
 	assert(id);
 	assert(path);
+
+	if (file->alias) {
+		_cstore_path_chunk_alias(file, id, offset, path);
+		return;
+	}
 
 	struct fbr_fullpath_name filepath;
 	fbr_path_get_full(&file->path, &filepath);
