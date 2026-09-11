@@ -108,6 +108,23 @@ _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_ino
 	return directory;
 }
 
+static struct fbr_file *
+_flush_find_alias(struct fbr_file *file)
+{
+	while (file) {
+		fbr_file_ok(file);
+
+		if (file->alias_file) {
+			file = file->alias_file;
+			continue;
+		}
+
+		break;
+	}
+
+	return file;
+}
+
 static int
 _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flush_data *flush_data)
 {
@@ -156,6 +173,17 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		assert_dev(flush_data->flags < FBR_FLUSH_MKDIR);
 
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_WBUFFER");
+
+		struct fbr_file *alias = _flush_find_alias(file);
+		if (!alias) {
+			alias = _flush_find_alias(latest);
+		}
+		if (alias) {
+			fbr_file_ok(alias);
+			fbr_ABORT("TODO aliasing");
+			// TODO we need to make sure alias isnt part of cmds...
+			// set alias to latest with local_update
+		}
 
 		if (latest && S_ISDIR(latest->mode)) {
 			fbr_rlog(FBR_LOG_FLUSH, "wbuffer EISDIR detected");
