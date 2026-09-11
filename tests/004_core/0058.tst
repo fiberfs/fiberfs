@@ -26,7 +26,9 @@ print "### Verify"
 
 fs_test_release_all_wait
 
-#TODO
+sys_ls $sys_tmpdir "..:dir .:dir file_NEW:file"
+
+# TODO cat file
 
 # Cleanup
 
