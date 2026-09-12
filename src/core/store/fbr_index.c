@@ -272,6 +272,20 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	fbr_writer_add(fs, json, ",\"d\":", 5);
 	fbr_writer_add_ulong(fs, json, file->mtime);
 
+	// a: alias (optional)
+	if (file->alias) {
+		fbr_path_shared_ok(file->alias);
+
+		fbr_writer_add(fs, json, ",\"a\":\"", 6);
+
+		encoded_len = fbr_urlencode(file->alias->value.name, file->alias->value.length,
+			encoded, sizeof(encoded));
+		assert(encoded_len >= file->alias->value.length);
+
+		fbr_writer_add(fs, json, encoded, encoded_len);
+		fbr_writer_add(fs, json, "\"", 1);
+	}
+
 	if (file->body.chunks || modified || resize) {
 		// b: body chunks
 		fbr_writer_add(fs, json, ",\"b\":[", 6);
@@ -427,6 +441,21 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		assert_zero_dev(index_data->chunks->length);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RMDIR)) {
 		assert_zero_dev(wbuffers);
+	} else if (fbr_is_flag(flags, FBR_FLUSH_RENAME)) {
+		fbr_file_ok(file);
+		fbr_directory_ok(previous);
+
+		struct fbr_file *dest = file->alias_file;
+		fbr_file_ok(dest);
+
+		struct fbr_path_name destname;
+		fbr_path_get_file(&dest->path, &destname);
+
+		struct fbr_file *prev_dest = fbr_directory_find_file(previous, destname.name,
+			destname.length);
+		if (prev_dest) {
+			index_data->removed = fbr_body_chunk_all(prev_dest, 0);
+		}
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
 		assert_zero_dev(wbuffers);
@@ -1159,6 +1188,23 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'd')) {
 				struct fbr_file *file = _parser_get_file(parser);
 				file->mtime = token->dvalue;
+			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'a')) {
+				if (token->svalue_len) {
+					char buf[FBR_PATH_MAX];
+					size_t buf_len = fbr_urldecode(token->svalue,
+						token->svalue_len, buf, sizeof(buf));
+					if (buf_len < token->svalue_len) {
+						parser->error = 1;
+						break;
+					}
+
+					struct fbr_path_name alias;
+					fbr_path_name_init(&alias, buf);
+					assert_dev(alias.length == buf_len);
+
+					struct fbr_file *file = _parser_get_file(parser);
+					file->alias = fbr_path_shared_alloc(&alias);
+				}
 			}
 			break;
 		case FJSON_TOKEN_OBJECT:
