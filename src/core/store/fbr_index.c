@@ -280,7 +280,7 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 
 		encoded_len = fbr_urlencode(file->alias->value.name, file->alias->value.length,
 			encoded, sizeof(encoded));
-		assert(encoded_len >= filename.length);
+		assert(encoded_len >= file->alias->value.length);
 
 		fbr_writer_add(fs, json, encoded, encoded_len);
 		fbr_writer_add(fs, json, "\"", 1);
