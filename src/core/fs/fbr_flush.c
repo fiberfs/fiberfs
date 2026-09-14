@@ -126,6 +126,28 @@ _flush_find_alias(struct fbr_file *file)
 }
 
 static int
+_flush_contains_file(struct fbr_flush_data *flush_data, struct fbr_file *file)
+{
+	assert_dev(flush_data);
+	assert_dev(flush_data->head);
+	assert_dev(file);
+
+	struct fbr_flush_data *flush_data_ptr = flush_data->head;
+
+	while (flush_data_ptr != flush_data) {
+		fbr_flush_data_ok(flush_data_ptr);
+
+		if (flush_data_ptr->file == file) {
+			return 1;
+		}
+
+		flush_data_ptr = flush_data_ptr->next;
+	}
+
+	return 0;
+}
+
+static int
 _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flush_data *flush_data)
 {
 	assert_dev(fs);
@@ -175,11 +197,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_WBUFFER");
 
 		struct fbr_file *alias = _flush_find_alias(file->alias_file);
-		if (!alias && latest) {
-			alias = _flush_find_alias(latest->alias_file);
-		}
 		if (alias) {
 			fbr_file_ok(alias);
+			fbr_flush_data_ok(flush_data->head);
 			fbr_ABORT("TODO aliasing");
 			// TODO we need to make sure alias isnt part of cmds...
 			// set alias to latest with local_update
@@ -413,20 +433,18 @@ _flush_cmds_merge(struct fbr_fs *fs, struct fbr_directory *directory,
 		fbr_flush_data_ok(flush_data);
 		assert_dev(flush_data->flags);
 
+		flush_data->head = flush_data_cmds;
+
 		struct fbr_file *file = flush_data->file;
 		assert(file->parent_inode == flush_data_cmds->file->parent_inode);
 
 		fbr_rlog(FBR_LOG_FLUSH, "flush command: %zu", cmd_count);
 
-		struct fbr_flush_data *flush_data_ptr = flush_data_cmds;
-		while (flush_data_ptr != flush_data) {
-			assert(flush_data_ptr->file != file);
-			flush_data_ptr = flush_data_ptr->next;
-		}
+		assert_zero(_flush_contains_file(flush_data, file));
 
 		int ret = _flush_merge(fs, directory, flush_data);
 		if (ret) {
-			flush_data_ptr = flush_data_cmds;
+			struct fbr_flush_data *flush_data_ptr = flush_data_cmds;
 			while (flush_data_ptr != flush_data) {
 				_flush_done(fs, flush_data_ptr, ret);
 				flush_data_ptr = flush_data_ptr->next;

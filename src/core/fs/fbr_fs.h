@@ -333,6 +333,7 @@ struct fbr_flush_data {
 
 	enum fbr_flush_flags			flags;
 
+	struct fbr_flush_data			*head;
 	struct fbr_flush_data			*next;
 };
 
