@@ -20,6 +20,7 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 
 	fbr_zero(flush_data);
 	flush_data->file = file;
+	flush_data->_file = file;
 	flush_data->flags = flags;
 
 	if (attr) {
@@ -155,6 +156,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 	assert_dev(flush_data);
 	assert_dev(flush_data->flags);
+	assert_zero_dev(flush_data->latest);
+	assert_zero_dev(flush_data->prev);
 
 	struct fbr_file *file = flush_data->file;
 	assert_dev(file);
@@ -170,23 +173,23 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	struct fbr_file *latest = fbr_directory_find_file(directory, filename.name,
 		filename.length);
 
-	int remote_merge = 0;
-	int local_update = 0;
-	int latest_locked = 0;
+	int latest_modified = 0;
 
 	if (latest && latest != file) {
+		assert_zero(_flush_contains_file(flush_data, latest));
+
 		if (latest->generation > file->generation) {
 			fbr_rlog(FBR_LOG_FLUSH, "new remote generation found (%lu > %lu)",
 				latest->generation, file->generation);
-			remote_merge = 1;
 		} else {
 			fbr_rlog(FBR_LOG_FLUSH, "local update found (%lu != %lu)",
 				latest->inode, file->inode);
-			local_update = 1;
 		}
-	} else if (latest) {
-		assert_dev(latest == file);
-		latest_locked = 1;
+
+		fbr_file_LOCK(fs, latest);
+
+		flush_data->latest = latest;
+		latest_modified = 1;
 	}
 
 	fbr_file_generation(file);
@@ -199,17 +202,26 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		struct fbr_file *alias = _flush_find_alias(file->alias_file);
 		if (alias) {
 			fbr_file_ok(alias);
-			fbr_flush_data_ok(flush_data->head);
-			fbr_ABORT("TODO aliasing");
-			// TODO we need to make sure alias isnt part of cmds...
-			// set alias to latest with local_update
+			assert_zero(_flush_contains_file(flush_data, alias));
+
+			fbr_file_LOCK(fs, alias);
+
+			fbr_path_get_file(&alias->path, &filename);
+			fbr_rlog(FBR_LOG_FLUSH, "alias detected: '%s'", filename.name);
+
+			flush_data->file = alias;
+			flush_data->prev = file;
+
+			file = alias;
+			latest = alias;
+			latest_modified = 0;
 		}
 
 		if (latest && S_ISDIR(latest->mode)) {
 			fbr_rlog(FBR_LOG_FLUSH, "wbuffer EISDIR detected");
 			return EISDIR;
-		} else if (remote_merge || local_update) {
-			fbr_file_merge(fs, latest, file, !latest_locked);
+		} else if (latest_modified) {
+			fbr_file_merge(fs, latest, file);
 			fbr_directory_remove_file(fs, directory, &latest);
 			fbr_directory_add_file(fs, directory, file);
 
@@ -241,7 +253,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			return ENOENT;
 		}
 
-		struct fbr_file *clone = fbr_file_clone(fs, directory, latest, !latest_locked);
+		struct fbr_file *clone = fbr_file_clone(fs, directory, latest);
 		fbr_file_ok(clone);
 		assert_dev(clone->state == FBR_FILE_INIT);
 		assert_dev(clone->inode > latest->inode);
@@ -249,7 +261,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_file_set_attr(fs, clone, flush_data->attr);
 
-		if (remote_merge || local_update) {
+		if (latest_modified) {
 			fbr_file_generation(clone);
 		}
 
@@ -258,16 +270,14 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		assert_zero_dev(latest);
 
-		fbr_file_UNLOCK(file);
 		fbr_file_LOCK(fs, clone);
 
 		flush_data->file = clone;
+		flush_data->prev = file;
+
 		file = clone;
 		latest = clone;
-
-		remote_merge = 0;
-		local_update = 0;
-		latest_locked = 1;
+		latest_modified = 0;
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE)) {
 		assert_dev(flush_data->flags < FBR_FLUSH_UNLINK);
 		assert_zero(file->size);
@@ -321,11 +331,10 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		} else if (S_ISDIR(latest->mode)) {
 			fbr_rlog(FBR_LOG_FLUSH, "rename EISDIR detected");
 			return EISDIR;
-		} else if (remote_merge || local_update) {
+		} else if (latest_modified) {
 			fbr_file_generation(latest);
 		} else {
-			assert(file == latest);
-			assert_dev(latest_locked);
+			assert_dev(file == latest);
 		}
 
 		struct fbr_file *dest = fbr_directory_find_file(directory,
@@ -355,20 +364,20 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		assert_zero_dev(latest->alias_file);
 		latest->alias_file = dest;
 
-		fbr_file_merge(fs, latest, dest, !latest_locked);
+		fbr_file_merge(fs, latest, dest);
 		fbr_directory_remove_file(fs, directory, &latest);
 
 		dest->state = FBR_FILE_OK;
 
-		if (!latest_locked) {
-			fbr_file_UNLOCK(file);
-			fbr_file_LOCK(fs, latest);
+		if (latest_modified) {
+			assert_zero_dev(file->alias_file);
+			file->alias_file = dest;
 
 			flush_data->file = latest;
+			flush_data->latest = file;
+
 			file = latest;
-			remote_merge = 0;
-			local_update = 0;
-			latest_locked = 1;
+			latest_modified = 0;
 		}
 	}
 
@@ -383,11 +392,10 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		} else if (S_ISDIR(latest->mode)) {
 			fbr_rlog(FBR_LOG_FLUSH, "resize EISDIR detected");
 			return EISDIR;
-		} else if (remote_merge || local_update) {
+		} else if (latest_modified) {
 			fbr_file_generation(latest);
 		} else {
 			assert_dev(file == latest);
-			assert_dev(latest_locked);
 		}
 
 		latest->size = flush_data->attr->st_size;
@@ -416,6 +424,18 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 	}
 
 	fbr_file_UNLOCK(file);
+
+	if (flush_data->latest) {
+		fbr_file_UNLOCK(flush_data->latest);
+		flush_data->latest = NULL;
+	}
+
+	if (flush_data->prev) {
+		fbr_file_UNLOCK(flush_data->prev);
+		flush_data->prev = NULL;
+	}
+
+	flush_data->file = flush_data->_file;
 }
 
 static int

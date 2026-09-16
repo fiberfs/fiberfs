@@ -331,6 +331,10 @@ struct fbr_flush_data {
 	struct fbr_wbuffer			*wbuffers;
 	struct fbr_path_name			filename;
 
+	struct fbr_file				*_file;
+	struct fbr_file				*latest;
+	struct fbr_file				*prev;
+
 	enum fbr_flush_flags			flags;
 
 	struct fbr_flush_data			*head;
@@ -461,9 +465,8 @@ void fbr_file_UNLOCK(struct fbr_file *file);
 void fbr_file_extend(struct fbr_file *file, size_t size);
 void fbr_file_generation(struct fbr_file *file);
 struct fbr_file * fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent,
-	struct fbr_file *source, int lock_source);
-void fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest,
-	int lock_source);
+	struct fbr_file *source);
+void fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest);
 int fbr_file_ptr_cmp(const struct fbr_file_ptr *p1, const struct fbr_file_ptr *p2);
 int fbr_file_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
 int fbr_file_inode_cmp(const struct fbr_file *f1, const struct fbr_file *f2);
@@ -589,12 +592,10 @@ void fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 	const char *buf, size_t size);
 void fbr_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 	enum fbr_wbuffer_state state);
-void fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_file *file,
-	struct fbr_wbuffer *wbuffers, int revert_write, int have_file_lock);
+void fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, int revert_write);
 void fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffers);
-int fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-	int revert_on_error, int have_file_lock);
+int fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, int revert_on_error);
 int fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffers_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
 	int chunk_add);
