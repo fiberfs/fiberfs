@@ -59,6 +59,10 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		return 1;
 	}
 
+	char root_id[FBR_ID_STRING_MAX];
+	fbr_id_string(directory->version, root_id, sizeof(root_id));
+	fbr_rlog(FBR_LOG_CS_ROOT, "CREATE %lu (%s)", directory->version, root_id);
+
 	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
 
@@ -72,8 +76,7 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 		}
 
 		if (!fs->wbuffer_pre_sync && index_data->wbuffers) {
-			int error = fbr_wbuffer_flush_ready(fs, index_data->file,
-				index_data->wbuffers, was_append, 1);
+			int error = fbr_wbuffer_flush_ready(fs, index_data->wbuffers, was_append);
 			if (error) {
 				if (!fail) {
 					fbr_cstore_io_index_remove(fs, directory);
