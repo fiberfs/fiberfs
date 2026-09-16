@@ -2,6 +2,7 @@ fiber_test "Rename file multiple times"
 
 # Config
 config_add FUSE_WRITEBACK_CACHE false
+config_add CSTORE_ASYNC_WRITE false
 config_add CSTORE_SERVER true
 config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
 config_add CSTORE_SERVER_PORT 0
