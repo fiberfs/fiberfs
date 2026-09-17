@@ -20,6 +20,8 @@ sys_cat $file "1333999999999555551666666"
 
 equal $fs_test_stat_read_bytes 25
 
+sys_syncfs
+
 # Cleanup
 
 fs_test_release_all_wait 1

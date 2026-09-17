@@ -19,10 +19,13 @@
 #include <unistd.h>
 
 #include "fiberfs.h"
-#include "test/fbr_test.h"
-#include "test/chttp_test_cmds.h"
+#include "core/fuse/fbr_fuse.h"
 #include "utils/fbr_chash.h"
 #include "utils/fbr_sys.h"
+
+#include "test/fbr_test.h"
+#include "test/chttp_test_cmds.h"
+#include "core/fuse/test/fbr_test_fuse_cmds.h"
 
 struct _sys_path {
 	unsigned int			magic;
@@ -874,4 +877,26 @@ fbr_cmd_sys_rename(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		strerror(errno), ret);
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_rename passed %s", filename_dest);
+}
+
+void
+fbr_cmd_sys_syncfs(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	struct fbr_fuse_context *fuse_ctx = fbr_test_fuse_get_ctx(ctx);
+	fbr_fuse_mounted(fuse_ctx);
+
+	const char *mount = fuse_ctx->path;
+
+	int fd = open(mount, O_RDONLY);
+	assert(fd >= 0);
+
+	int ret = syncfs(fd);
+	assert_zero(ret);
+
+	assert_zero(close(fd));
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_syncfs done %s", mount);
 }

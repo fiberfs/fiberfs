@@ -102,6 +102,8 @@ sleep_ms 20
 
 sys_append $file2 " AGAIN"
 
+sys_syncfs
+
 sys_cat $file2 "some data more AGAIN"
 
 sleep_ms 20

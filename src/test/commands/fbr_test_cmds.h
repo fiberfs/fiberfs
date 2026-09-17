@@ -48,6 +48,7 @@ FBR_TEST_CMD(sys_truncate)
 FBR_TEST_CMD(sys_unlink)
 FBR_TEST_CMD(sys_rmdir)
 FBR_TEST_CMD(sys_rename)
+FBR_TEST_CMD(sys_syncfs)
 
 FBR_TEST_CMD(set)
 FBR_TEST_VAR(get)
