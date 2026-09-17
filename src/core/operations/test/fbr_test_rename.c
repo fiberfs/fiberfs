@@ -15,6 +15,7 @@
 #include "cstore/fbr_cstore_api.h"
 
 #include "test/fbr_test.h"
+#include "config/test/fbr_test_config_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
@@ -228,4 +229,108 @@ fbr_cmd_rename_write_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	_rename_test(ctx, 0);
+}
+
+static void
+_assert_fs(struct fbr_fs *fs, int print)
+{
+	fbr_fs_ok(fs);
+
+	fbr_fs_release_all(fs, 1);
+
+	if (print) {
+		fbr_test_fs_stats(fs);
+		fbr_test_fs_dindex_debug(fs);
+		fbr_test_fs_inodes_debug(fs);
+	} else {
+		fbr_test_fs_wait(fs);
+	}
+
+	fbr_test_cstore_wait(fs->cstore);
+
+	assert_zero(fs->stats.directories);
+	assert_zero(fs->stats.directories_dindex);
+	assert_zero(fs->stats.directory_refs);
+	assert_zero(fs->stats.files);
+	assert_zero(fs->stats.files_inodes);
+	assert_zero(fs->stats.file_refs);
+}
+
+#define _RENAME_FS_COUNT	4
+#define _RENAME_THREADS		4
+
+static int _RENAME_DO_RANDOM_WRITE;
+//static size_t _RENAME_THREAD_COUNT;
+
+static void
+_rename_cluster(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	fbr_test_conf_add("CSTORE_SERVER", "true");
+	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
+	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
+
+	fbr_test_random_seed();
+	fbr_test_fuse_mock(ctx);
+	fbr_test_request_pool_register(ctx);
+
+	fbr_test_logs("*** Init fs_array[%d]", _RENAME_FS_COUNT);
+
+	struct fbr_cstore *cstore_s3 = fbr_test_cstore_init(ctx);
+	fbr_cstore_ok(cstore_s3);
+	assert(fbr_test_cstore_count(ctx) == 1);
+	fbr_test_cstore_s3_mock(cstore_s3, NULL, "NA", "Key", "_secret");
+
+	static_ASSERT(_RENAME_FS_COUNT > 0);
+	struct fbr_fs *fs_array[_RENAME_FS_COUNT];
+	for (size_t i = 0; i < fbr_array_len(fs_array); i++) {
+		struct fbr_fs *fs = fbr_test_fs_mock(ctx);
+		fbr_fs_ok(fs);
+		fbr_test_cstore_bind_new(fs);
+		fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
+		fbr_test_cstore_backend_add(fs->cstore, cstore_s3, FBR_CSTORE_ROUTE_S3);
+		fs_array[i] = fs;
+	}
+
+	for (size_t i = 0; i < fbr_array_len(fs_array); i++) {
+		fbr_test_cstore_backend_add(fs_array[i]->cstore, fs_array[0]->cstore,
+			FBR_CSTORE_ROUTE_CLUSTER);
+		fbr_test_cstore_backend_add(fs_array[i]->cstore, fs_array[1]->cstore,
+			FBR_CSTORE_ROUTE_CLUSTER);
+		fbr_test_cstore_backend_add(fs_array[i]->cstore, fs_array[2]->cstore,
+			FBR_CSTORE_ROUTE_CLUSTER);
+		fbr_test_cstore_backend_add(fs_array[i]->cstore, fs_array[3]->cstore,
+			FBR_CSTORE_ROUTE_CLUSTER);
+	}
+
+	fbr_test_logs("*** Make root");
+
+	fbr_test_fs_root_alloc(fs_array[0]);
+
+	fbr_test_sleep_ms(20);
+	fbr_test_logs("*** Cleanup");
+
+	for (size_t i = 0; i < fbr_array_len(fs_array); i++) {
+		fbr_test_logs("FS_ARRAY[%zu]", i);
+		_assert_fs(fs_array[i], 0);
+		fbr_test_cstore_debug(fs_array[i]->cstore);
+		fbr_fs_free(fs_array[i]);
+	}
+
+	fbr_test_logs("CSTORE_S3");
+	fbr_test_cstore_debug(cstore_s3);
+
+	fbr_test_logs("rename_cluster_test done");
+}
+
+void
+fbr_cmd_rename_cluster_append_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	assert_zero(_RENAME_DO_RANDOM_WRITE);
+
+	_rename_cluster(ctx);
 }
