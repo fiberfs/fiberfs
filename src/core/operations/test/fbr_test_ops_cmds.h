@@ -21,3 +21,4 @@ FBR_TEST_CMD(create_2fs_test)
 
 FBR_TEST_CMD(rename_append_test)
 FBR_TEST_CMD(rename_write_test)
+FBR_TEST_CMD(rename_cluster_append_test)
