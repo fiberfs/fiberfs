@@ -1,6 +1,7 @@
 fiber_test "Rename file multiple times"
 
 # Config
+config_add LOG_SIZE 300000
 config_add FUSE_WRITEBACK_CACHE false
 config_add CSTORE_ASYNC_WRITE false
 config_add CSTORE_SERVER true
