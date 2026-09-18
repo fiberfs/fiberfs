@@ -129,6 +129,10 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 
 	fbr_file_merge(fs, source, clone);
 
+	if (source->alias) {
+		clone->alias = fbr_path_shared_take(source->alias);
+	}
+
 	clone->size = source->size;
 
 	return clone;
@@ -149,16 +153,14 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 
 	fbr_stat_add(&fs->stats.merges);
 
+	// TODO if we have a mix of aliasing, chunks will not merge correctly
+
 	dest->generation = source->generation;
 	dest->mode = source->mode;
 	dest->uid = source->uid;
 	dest->gid = source->gid;
 	dest->ctime = source->ctime;
 	dest->mtime = source->mtime;
-
-	if (source->alias) {
-		dest->alias = fbr_path_shared_take(source->alias);
-	}
 
 	// Start zipper merge
 
@@ -454,7 +456,6 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	if (file->alias) {
 		fbr_path_shared_release(file->alias);
 	}
-
 	if (file->alias_file) {
 		fbr_inode_release(fs, &file->alias_file);
 	}
