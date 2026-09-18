@@ -41,7 +41,7 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 		fbr_fuse_reply_err(request, EACCES);
 		fbr_dindex_release(fs, &directory);
 		return;
-	} else if (file->state == FBR_FILE_EXPIRED) {
+	} else if (file->state == FBR_FILE_DELETED) {
 		fbr_fuse_reply_err(request, ENOENT);
 		fbr_dindex_release(fs, &directory);
 		return;

@@ -140,7 +140,8 @@ struct fbr_file_ptr_slab {
 enum fbr_file_state {
 	FBR_FILE_INIT = 0,
 	FBR_FILE_OK,
-	FBR_FILE_EXPIRED
+	FBR_FILE_EXPIRED,
+	FBR_FILE_DELETED
 };
 
 struct fbr_file {
