@@ -363,7 +363,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		assert_zero_dev(latest->alias_file);
 		latest->alias_file = dest;
-		latest->state = FBR_FILE_EXPIRED;
+		latest->state = FBR_FILE_DELETED;
 
 		fbr_file_merge(fs, latest, dest);
 		fbr_directory_remove_file(fs, directory, &latest);
@@ -371,9 +371,11 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		dest->state = FBR_FILE_OK;
 
 		if (latest_modified) {
+			fbr_inode_add(fs, dest);
+
 			assert_zero_dev(file->alias_file);
 			file->alias_file = dest;
-			file->state = FBR_FILE_EXPIRED;
+			file->state = FBR_FILE_DELETED;
 
 			flush_data->file = latest;
 			flush_data->latest = file;
@@ -423,6 +425,11 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RENAME) && error) {
 		assert_dev(flush_data->file->alias_file);
 		fbr_inode_release(fs, &flush_data->file->alias_file);
+
+		if (flush_data->latest && flush_data->latest->alias_file) {
+			fbr_file_ok(flush_data->latest);
+			fbr_inode_release(fs, &flush_data->latest->alias_file);
+		}
 	}
 
 	fbr_file_UNLOCK(file);
@@ -599,7 +606,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 			flush_data = flush_data->next;
 		}
 
-		fbr_rlog(FBR_LOG_FLUSH, "completed: %d", ret);
+		fbr_rlog(FBR_LOG_FLUSH, "completed: %d (inode: %lu gen: %lu)", ret,
+			new_directory->inode, new_directory->generation);
 
 		if (!ret) {
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
