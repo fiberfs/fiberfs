@@ -156,6 +156,10 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	dest->ctime = source->ctime;
 	dest->mtime = source->mtime;
 
+	if (source->alias) {
+		dest->alias = fbr_path_shared_take(source->alias);
+	}
+
 	// Start zipper merge
 
 	struct fbr_chunk *chunk_source = source->body.chunks;

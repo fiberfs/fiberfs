@@ -351,6 +351,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 	fbr_zero(index_data);
 
+	index_data->fs = fs;
 	index_data->directory = directory;
 	index_data->previous = previous;
 	index_data->file = file;
@@ -454,6 +455,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		struct fbr_file *prev_dest = fbr_directory_find_file(previous, destname.name,
 			destname.length);
 		if (prev_dest) {
+			index_data->removed_file = prev_dest;
 			index_data->removed = fbr_body_chunk_all(prev_dest, 0);
 		}
 	} else {
@@ -469,6 +471,7 @@ fbr_index_data_free(struct fbr_index_data *index_data_cmds)
 
 	while (index_data_cmds) {
 		struct fbr_index_data *index_data = index_data_cmds;
+		fbr_fs_ok(index_data->fs);
 
 		if (index_data->chunks) {
 			fbr_chunk_list_free(index_data->chunks);
@@ -566,6 +569,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 
 	index_data = index_data_cmds;
 	while (index_data) {
+		fbr_fs_ok(index_data->fs);
+
 		int was_append = 0;
 		if (fbr_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
 			was_append = 1;
@@ -576,7 +581,12 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 		}
 
 		if (!ret && index_data->removed) {
-			fbr_body_chunk_prune(fs, index_data->file, index_data->removed);
+			if (index_data->removed_file) {
+				fbr_body_chunk_prune(fs, index_data->removed_file,
+					index_data->removed);
+			} else {
+				fbr_body_chunk_prune(fs, index_data->file, index_data->removed);
+			}
 		}
 
 		if (!ret && index_data->wbuffers) {

@@ -5,9 +5,12 @@
  */
 
 #define FBR_TEST_FILE
+#define _GNU_SOURCE
 
+#include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <stdio.h>
 
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
@@ -21,6 +24,35 @@
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
+
+void
+fbr_cmd_rename_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx)
+	fbr_test_cmd_ok(cmd);
+	assert(cmd->param_count >= 2 && cmd->param_count <= 3);
+	assert(cmd->params[0].len);
+	assert(cmd->params[1].len);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+	const char *filename_dest = cmd->params[1].value;
+
+	unsigned int flags = 0;
+	if (cmd->param_count >= 3) {
+		flags = fbr_test_parse_long(cmd->params[2].value);
+	}
+
+	int ret = renameat2(AT_FDCWD, filename, AT_FDCWD, filename_dest, flags);
+	fbr_ASSERT(ret, "renameat2(%s,%s,%u) did not fail", filename, filename_dest, flags);
+
+	fbr_test_logs("renameat2(%s,%s,%u) PASSED with failure %s (%d)", filename, filename_dest,
+		flags, strerror(errno), ret);
+}
 
 static struct fbr_request *
 _rename_request(struct fbr_fs *fs)
