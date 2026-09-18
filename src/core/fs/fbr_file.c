@@ -110,7 +110,7 @@ fbr_file_UNLOCK(struct fbr_file *file)
 	pt_assert(pthread_mutex_unlock(&file->lock));
 }
 
-// Note: file isnt added to directory, its returned unreferenced
+// Note: file isnt added to directory, its returned unreferenced, source must have file->lock
 struct fbr_file *
 fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file *source)
 {
@@ -134,6 +134,7 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 	return clone;
 }
 
+// Note: source and dest must have file->lock if live
 void
 fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest)
 {
@@ -148,15 +149,16 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 
 	fbr_stat_add(&fs->stats.merges);
 
-	fbr_file_LOCK(fs, source);
-	fbr_file_LOCK(fs, dest);
-
 	dest->generation = source->generation;
 	dest->mode = source->mode;
 	dest->uid = source->uid;
 	dest->gid = source->gid;
 	dest->ctime = source->ctime;
 	dest->mtime = source->mtime;
+
+	if (source->alias) {
+		dest->alias = fbr_path_shared_take(source->alias);
+	}
 
 	// Start zipper merge
 
@@ -254,9 +256,6 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			0, 0);
 		assert_dev(ret != -ENOSYS);
 	}
-
-	fbr_file_UNLOCK(source);
-	fbr_file_UNLOCK(dest);
 }
 
 void
@@ -451,6 +450,14 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_body_free(&file->body);
 	fbr_path_free(&file->path);
 	fbr_file_ptrs_free(file);
+
+	if (file->alias) {
+		fbr_path_shared_release(file->alias);
+	}
+
+	if (file->alias_file) {
+		fbr_inode_release(fs, &file->alias_file);
+	}
 
 	pt_assert(pthread_mutex_destroy(&file->refcount_lock));
 	pt_assert(pthread_mutex_destroy(&file->lock));

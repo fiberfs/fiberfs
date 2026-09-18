@@ -140,7 +140,8 @@ struct fbr_file_ptr_slab {
 enum fbr_file_state {
 	FBR_FILE_INIT = 0,
 	FBR_FILE_OK,
-	FBR_FILE_EXPIRED
+	FBR_FILE_EXPIRED,
+	FBR_FILE_DELETED
 };
 
 struct fbr_file {
@@ -150,6 +151,8 @@ struct fbr_file {
 	enum fbr_file_state			state;
 
 	struct fbr_path				path;
+	struct fbr_path_shared			*alias;
+	struct fbr_file				*alias_file;
 
 	struct fbr_file_refcounts		refcounts;
 	pthread_mutex_t				refcount_lock;
@@ -266,7 +269,9 @@ enum fbr_flush_flags {
 	FBR_FLUSH_NEW_EXCLUSIVE = (1 << 8),
 	FBR_FLUSH_MEM_ONLY = (1 << 9),
 	FBR_FLUSH_UNLINK = (1 << 10),
-	FBR_FLUSH_RMDIR = (1 << 11)
+	FBR_FLUSH_RMDIR = (1 << 11),
+	FBR_FLUSH_RENAME = (1 << 12),
+	FBR_FLUSH_RENAME_UNIQUE = (1 << 13)
 };
 
 enum fbr_wbuffer_state {
@@ -326,8 +331,15 @@ struct fbr_flush_data {
 	struct fbr_file				*file;
 	struct stat				*attr;
 	struct fbr_wbuffer			*wbuffers;
+	struct fbr_path_name			filename;
+
+	struct fbr_file				*_file;
+	struct fbr_file				*latest;
+	struct fbr_file				*prev;
+
 	enum fbr_flush_flags			flags;
 
+	struct fbr_flush_data			*head;
 	struct fbr_flush_data			*next;
 };
 
@@ -524,7 +536,7 @@ int fbr_directory_new_cmp(const struct fbr_directory *left,
 void fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);
 void fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory,
-	struct fbr_file *file);
+	struct fbr_file **file_ref);
 struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
 	size_t filename_len);
 void fbr_directory_copy(struct fbr_fs *fs, struct fbr_directory *dest,
@@ -541,7 +553,8 @@ struct fbr_directory *fbr_directory_make(struct fbr_fs *fs, const struct fbr_pat
 	fbr_inode_t inode);
 
 void fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,
-	struct stat *attr, struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
+	struct stat *attr, struct fbr_wbuffer *wbuffers, const char *filename,
+	enum fbr_flush_flags flags);
 int fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
@@ -581,12 +594,10 @@ void fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 	const char *buf, size_t size);
 void fbr_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 	enum fbr_wbuffer_state state);
-void fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_file *file,
-	struct fbr_wbuffer *wbuffers, int revert_write, int have_file_lock);
+void fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, int revert_write);
 void fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffers);
-int fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-	int revert_on_error, int have_file_lock);
+int fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, int revert_on_error);
 int fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffers_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
 	int chunk_add);

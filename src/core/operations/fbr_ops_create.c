@@ -4,6 +4,8 @@
  *
  */
 
+#include <fcntl.h>
+
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
@@ -109,9 +111,9 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 	// Flush empty file
 	struct fbr_flush_data flush_data;
-	fbr_flush_data_init(&flush_data, file, NULL, NULL, flags);
-	int ret = fbr_fs_flush(fs, &flush_data);
+	fbr_flush_data_init(&flush_data, file, NULL, NULL, NULL, flags);
 
+	int ret = fbr_fs_flush(fs, &flush_data);
 	if (ret) {
 		fbr_fuse_reply_err(request, ret);
 		fbr_inode_release(fs, &file);
