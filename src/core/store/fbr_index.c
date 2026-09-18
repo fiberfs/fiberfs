@@ -479,6 +479,9 @@ fbr_index_data_free(struct fbr_index_data *index_data_cmds)
 		if (index_data->removed) {
 			fbr_chunk_list_free(index_data->removed);
 		}
+		if (index_data->removed_file) {
+			assert_zero_dev(index_data->removed_file->body.chunks);
+		}
 
 		index_data_cmds = index_data->next;
 
@@ -1087,10 +1090,19 @@ _index_parse_file_match(struct fbr_index_parser *parser)
 	fbr_file_ok(file);
 	assert_zero_dev(parser->file);
 
+	int alias_match = 1;
+	if (existing->alias || file->alias) {
+		if (!existing->alias || !file->alias) {
+			alias_match = 0;
+		} else if (fbr_path_name_cmp(&existing->alias->value, &file->alias->value)) {
+			alias_match = 0;
+		}
+	}
+
 	if (existing->generation == file->generation && existing->size == file->size &&
 	    existing->mode == file->mode && existing->uid == file->uid &&
 	    existing->gid == file->gid && existing->ctime == file->ctime &&
-	    existing->mtime == file->mtime) {
+	    existing->mtime == file->mtime && alias_match) {
 		fbr_rlog(FBR_LOG_DEBUG, "PARSER existing match");
 
 		fbr_directory_add_file(fs, directory, existing);
@@ -1111,11 +1123,19 @@ _index_parse_file_match(struct fbr_index_parser *parser)
 		parser->file->gid = file->gid;
 		parser->file->ctime = file->ctime;
 		parser->file->mtime = file->mtime;
+
+		if (file->alias) {
+			parser->file->alias = fbr_path_shared_take(file->alias);
+		}
+	}
+
+	if (parser->file_match.alias) {
+		fbr_path_shared_release(parser->file_match.alias);
+		parser->file_match.alias = NULL;
 	}
 
 	parser->existing = NULL;
 	parser->file_match.magic = 0;
-
 }
 
 static void
@@ -1213,7 +1233,9 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 					assert_dev(alias.length == buf_len);
 
 					struct fbr_file *file = _parser_get_file(parser);
-					file->alias = fbr_path_shared_alloc(&alias);
+					if (!file->alias) {
+						file->alias = fbr_path_shared_alloc(&alias);
+					}
 				}
 			}
 			break;
