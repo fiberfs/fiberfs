@@ -4,6 +4,11 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <fcntl.h>
+#include <stdio.h>
+
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
@@ -20,6 +25,9 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	if (parent != newparent) {
 		fbr_rlog(FBR_LOG_OP_RENAME, "parent directories must match");
 		fbr_fuse_reply_err(request, EFAULT);
+		return;
+	} else if (flags && flags != RENAME_NOREPLACE) {
+		fbr_fuse_reply_err(request, EINVAL);
 		return;
 	}
 
@@ -53,10 +61,19 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		fbr_fuse_reply_err(request, EISDIR);
 		fbr_dindex_release(fs, &directory);
 		return;
+	} else if (newfile && flags & RENAME_NOREPLACE) {
+		fbr_fuse_reply_err(request, EEXIST);
+		fbr_dindex_release(fs, &directory);
+		return;
+	}
+
+	enum fbr_flush_flags flush_flags = FBR_FLUSH_RENAME;
+	if (flags & RENAME_NOREPLACE) {
+		flush_flags |= FBR_FLUSH_RENAME_UNIQUE;
 	}
 
 	struct fbr_flush_data flush_data_rename;
-	fbr_flush_data_init(&flush_data_rename, file, NULL, NULL, newname, FBR_FLUSH_RENAME);
+	fbr_flush_data_init(&flush_data_rename, file, NULL, NULL, newname, flush_flags);
 
 	int ret = fbr_fs_flush(fs, &flush_data_rename);
 	if (ret) {

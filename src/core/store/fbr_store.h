@@ -110,12 +110,14 @@ struct fbr_index_parser {
 };
 
 struct fbr_index_data {
+	struct fbr_fs				*fs;
 	struct fbr_directory			*directory;
 	struct fbr_directory			*previous;
 	struct fbr_file				*file;
 	struct fbr_wbuffer			*wbuffers;
 	struct fbr_chunk_list			*chunks;
 	struct fbr_chunk_list			*removed;
+	struct fbr_file				*removed_file;
 	unsigned long				size;
 	enum fbr_flush_flags			flags;
 

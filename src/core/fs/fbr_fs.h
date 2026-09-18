@@ -270,7 +270,8 @@ enum fbr_flush_flags {
 	FBR_FLUSH_MEM_ONLY = (1 << 9),
 	FBR_FLUSH_UNLINK = (1 << 10),
 	FBR_FLUSH_RMDIR = (1 << 11),
-	FBR_FLUSH_RENAME = (1 << 12)
+	FBR_FLUSH_RENAME = (1 << 12),
+	FBR_FLUSH_RENAME_UNIQUE = (1 << 13)
 };
 
 enum fbr_wbuffer_state {

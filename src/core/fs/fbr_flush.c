@@ -320,7 +320,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_directory_remove_file(fs, directory, &latest);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RENAME)) {
-		assert_dev(flush_data->flags == FBR_FLUSH_RENAME);
+		assert_dev(flush_data->flags == FBR_FLUSH_RENAME ||
+			flush_data->flags == (FBR_FLUSH_RENAME | FBR_FLUSH_RENAME_UNIQUE));
 		assert_dev(flush_data->filename.length);
 
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_RENAME");
@@ -344,6 +345,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			if (S_ISDIR(dest->mode)) {
 				fbr_rlog(FBR_LOG_FLUSH, "rename EISDIR detected (dest)");
 				return EISDIR;
+			} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RENAME_UNIQUE)) {
+				fbr_rlog(FBR_LOG_FLUSH, "rename EEXIST detected (dest)");
+				return EEXIST;
 			}
 
 			fbr_directory_remove_file(fs, directory, &dest);
