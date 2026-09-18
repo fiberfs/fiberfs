@@ -7,6 +7,7 @@
 #define FBR_TEST_FILE
 
 #include <fcntl.h>
+#include <pthread.h>
 
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
@@ -257,10 +258,44 @@ _assert_fs(struct fbr_fs *fs, int print)
 }
 
 #define _RENAME_FS_COUNT	4
-#define _RENAME_THREADS		4
+#define _RENAME_THREADS		3
 
 static int _RENAME_DO_RANDOM_WRITE;
-//static size_t _RENAME_THREAD_COUNT;
+static size_t _RENAME_THREAD_COUNT;
+
+struct {
+	struct {
+		struct fbr_fs		*fs;
+		pthread_t		thread;
+		size_t			id;
+		int			do_rename;
+	} context;
+	struct {
+		size_t			count;
+	} stats;
+} _RENAME_DATA[_RENAME_FS_COUNT][_RENAME_THREADS];
+
+static void *
+_rename_thread(void *arg)
+{
+	size_t id = (size_t)arg;
+	size_t i = id / _RENAME_FS_COUNT;
+	size_t j = id % _RENAME_FS_COUNT;
+
+	fbr_fs_ok(_RENAME_DATA[i][j].context.fs);
+	assert(_RENAME_DATA[i][j].context.thread == pthread_self());
+	assert(_RENAME_DATA[i][j].context.id == id);
+
+	fbr_atomic_add(&_RENAME_THREAD_COUNT, 1);
+	while (_RENAME_THREAD_COUNT != _RENAME_FS_COUNT * _RENAME_THREADS) {
+		fbr_test_sleep_ms(1);
+	}
+
+	fbr_test_logs("*** rename thread %zu [%zu,%zu] running (rename: %d)", id, i, j,
+		_RENAME_DATA[i][j].context.do_rename);
+
+	return NULL;
+}
 
 static void
 _rename_cluster(struct fbr_test_context *ctx)
@@ -309,6 +344,41 @@ _rename_cluster(struct fbr_test_context *ctx)
 	fbr_test_fs_root_alloc(fs_array[0]);
 
 	fbr_test_sleep_ms(20);
+
+	fbr_test_logs("*** Spawn threads");
+
+	static_ASSERT(_RENAME_THREADS >= 2);
+	size_t renamers = 0;
+
+	for (size_t i = 0; i < fbr_array_len(_RENAME_DATA); i++) {
+		for (size_t j = 0; j < fbr_array_len(_RENAME_DATA[i]); j++) {
+			fbr_zero(&_RENAME_DATA[i][j]);
+
+			_RENAME_DATA[i][j].context.fs = fs_array[i];
+			_RENAME_DATA[i][j].context.id = (i * fbr_array_len(_RENAME_DATA)) + j;
+
+			if (j == fbr_array_len(_RENAME_DATA[i]) - 1) {
+				_RENAME_DATA[i][j].context.do_rename = 1;
+				renamers++;
+			}
+
+			pt_assert(pthread_create(&_RENAME_DATA[i][j].context.thread, NULL,
+				&_rename_thread, (void*)_RENAME_DATA[i][j].context.id));
+		}
+	}
+
+	assert(renamers == _RENAME_FS_COUNT);
+
+	fbr_test_logs("*** Join threads");
+
+	for (size_t i = 0; i < fbr_array_len(_RENAME_DATA); i++) {
+		for (size_t j = 0; j < fbr_array_len(_RENAME_DATA[i]); j++) {
+			pt_assert(pthread_join(_RENAME_DATA[i][j].context.thread, NULL));
+		}
+	}
+
+	assert(_RENAME_THREAD_COUNT == _RENAME_FS_COUNT * _RENAME_THREADS);
+
 	fbr_test_logs("*** Cleanup");
 
 	for (size_t i = 0; i < fbr_array_len(fs_array); i++) {
