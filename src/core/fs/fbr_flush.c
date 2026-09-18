@@ -363,6 +363,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		assert_zero_dev(latest->alias_file);
 		latest->alias_file = dest;
+		latest->state = FBR_FILE_EXPIRED;
 
 		fbr_file_merge(fs, latest, dest);
 		fbr_directory_remove_file(fs, directory, &latest);
@@ -372,6 +373,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		if (latest_modified) {
 			assert_zero_dev(file->alias_file);
 			file->alias_file = dest;
+			file->state = FBR_FILE_EXPIRED;
 
 			flush_data->file = latest;
 			flush_data->latest = file;
@@ -596,6 +598,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 			_flush_done(fs, flush_data, ret);
 			flush_data = flush_data->next;
 		}
+
+		fbr_rlog(FBR_LOG_FLUSH, "completed: %d", ret);
 
 		if (!ret) {
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
