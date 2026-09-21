@@ -127,11 +127,11 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 
 	fbr_rlog(FBR_LOG_CLONE, "cloned inode: %lu to %lu", source->inode, clone->inode);
 
-	fbr_file_merge(fs, source, clone);
-
 	if (source->alias) {
 		clone->alias = fbr_path_shared_take(source->alias);
 	}
+
+	fbr_file_merge(fs, source, clone);
 
 	clone->size = source->size;
 
@@ -151,9 +151,10 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	fbr_rlog(FBR_LOG_MERGE, "'%s' gen: %lu source inode: %lu dest inode: %lu",
 		filename, source->generation, source->inode, dest->inode);
 
-	fbr_stat_add(&fs->stats.merges);
-
 	// TODO if we have a mix of aliasing, chunks will not merge correctly
+	if (source->alias) {
+		assert_zero_dev(fbr_path_alias_cmp(source->alias, dest->alias));
+	}
 
 	dest->generation = source->generation;
 	dest->mode = source->mode;
@@ -245,6 +246,8 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 		chunk_dest_prev = chunk_dest;
 		chunk_dest = chunk_dest->next;
 	}
+
+	fbr_stat_add(&fs->stats.merges);
 
 	fbr_body_debug(fs, dest);
 

@@ -113,6 +113,7 @@ int fbr_path_shared_cmp(const struct fbr_path_shared *shared1,
 	const struct fbr_path_shared *shared2);
 void fbr_path_shared_name(struct fbr_path_shared *shared, struct fbr_path_name *result);
 void fbr_path_shared_release(struct fbr_path_shared *shared);
+int fbr_path_alias_cmp(const struct fbr_path_shared *alias1, const struct fbr_path_shared *alias2);
 
 #define fbr_path_shared_ok(shared)	\
 	fbr_magic_check(shared, FBR_PATH_SHARED_MAGIC)
