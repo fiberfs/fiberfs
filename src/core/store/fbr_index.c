@@ -1090,6 +1090,7 @@ _index_parse_file_match(struct fbr_index_parser *parser)
 	fbr_file_ok(file);
 	assert_zero_dev(parser->file);
 
+	// TODO make this a helper
 	int alias_match = 1;
 	if (existing->alias || file->alias) {
 		if (!existing->alias || !file->alias) {
