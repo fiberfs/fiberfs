@@ -126,7 +126,7 @@ fbr_ops_rmdir(struct fbr_request *request, fuse_ino_t parent_inode, const char *
 	// Delete from parent (existing references are stable)
 
 	struct fbr_flush_data flush_data;
-	fbr_flush_data_init(&flush_data, file, NULL, NULL, NULL, FBR_FLUSH_RMDIR);
+	fbr_flush_data_init(&flush_data, file, NULL, NULL, NULL, FBR_FLUSH_RMDIR, NULL);
 	ret = fbr_fs_flush(fs, &flush_data);
 
 	fbr_inode_release(fs, &file);

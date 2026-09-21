@@ -73,7 +73,7 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	}
 
 	struct fbr_flush_data flush_data_rename;
-	fbr_flush_data_init(&flush_data_rename, file, NULL, NULL, newname, flush_flags);
+	fbr_flush_data_init(&flush_data_rename, file, NULL, NULL, newname, flush_flags, NULL);
 
 	int ret = fbr_fs_flush(fs, &flush_data_rename);
 	if (ret) {

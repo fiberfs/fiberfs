@@ -442,7 +442,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		assert_zero_dev(wbuffers);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_NEW_FILE)) {
 		assert_zero_dev(wbuffers);
-	} else if (fbr_is_flag(flags, FBR_FLUSH_UNLINK)) {
+	} else if (fbr_is_flag(flags, FBR_FLUSH_UNLINK | FBR_FLUSH_DELETE)) {
 		fbr_file_ok(file);
 		assert_zero_dev(wbuffers);
 
@@ -450,27 +450,19 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 		index_data->chunks = fbr_body_chunk_range(file, 0, 0, &index_data->removed, NULL);
 		assert_zero_dev(index_data->chunks->length);
+
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
+		fbr_rlog(FBR_LOG_INDEX, "%s '%s' deleted: %u",
+			fbr_is_flag(flags, FBR_FLUSH_UNLINK) ? "FBR_FLUSH_UNLINK" :
+				"FBR_FLUSH_DELETE",
+			filename.name, index_data->removed->length);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RMDIR)) {
 		assert_zero_dev(wbuffers);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RENAME)) {
 		fbr_file_ok(file);
-		fbr_directory_ok(previous);
-
-		struct fbr_file *dest = file->alias_file;
-		fbr_file_ok(dest);
-
-		struct fbr_path_name destname;
-		fbr_path_get_file(&dest->path, &destname);
-
-		struct fbr_file *prev_dest = fbr_directory_find_file(previous, destname.name,
-			destname.length);
-		if (prev_dest) {
-			index_data->removed_file = prev_dest;
-			index_data->removed = fbr_body_chunk_all(prev_dest, 0);
-
-			fbr_rlog(FBR_LOG_INDEX, "FBR_FLUSH_RENAME '%s' deleted: %u",
-				destname.name, index_data->removed->length);
-		}
+		assert_zero_dev(wbuffers);
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
 		assert_zero_dev(wbuffers);
@@ -491,9 +483,6 @@ fbr_index_data_free(struct fbr_index_data *index_data_cmds)
 		}
 		if (index_data->removed) {
 			fbr_chunk_list_free(index_data->removed);
-		}
-		if (index_data->removed_file) {
-			assert_zero_dev(index_data->removed_file->body.chunks);
 		}
 
 		index_data_cmds = index_data->next;
@@ -597,12 +586,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 		}
 
 		if (!ret && index_data->removed) {
-			if (index_data->removed_file) {
-				fbr_body_chunk_prune(fs, index_data->removed_file,
-					index_data->removed);
-			} else {
-				fbr_body_chunk_prune(fs, index_data->file, index_data->removed);
-			}
+			fbr_body_chunk_prune(fs, index_data->file, index_data->removed);
 		}
 
 		if (!ret && index_data->wbuffers) {

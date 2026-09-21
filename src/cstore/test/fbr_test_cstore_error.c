@@ -161,7 +161,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert(fs->store);
 	assert_zero(fs->store->optional.directory_flush_f);
 	struct fbr_flush_data flush_data;
-	fbr_flush_data_init(&flush_data, dir2file, NULL, NULL, NULL, FBR_FLUSH_MKDIR);
+	fbr_flush_data_init(&flush_data, dir2file, NULL, NULL, NULL, FBR_FLUSH_MKDIR, NULL);
 	ret = fbr_fs_flush(fs, &flush_data);
 	assert_zero(ret);
 	assert(dir2file->state == FBR_FILE_OK);

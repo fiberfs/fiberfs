@@ -4,24 +4,36 @@
  *
  */
 
+#include <stdlib.h>
+
 #include "fiberfs.h"
 #include "fbr_fs.h"
 #include "core/store/fbr_store.h"
 
-void
+struct fbr_flush_data *
 fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, struct stat *attr,
-    struct fbr_wbuffer *wbuffers, const char *filename, enum fbr_flush_flags flags)
+    struct fbr_wbuffer *wbuffers, const char *filename, enum fbr_flush_flags flags,
+    struct fbr_flush_data *current)
 {
-	assert(flush_data);
 	fbr_file_ok(file);
 	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
 		FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_UNLINK | FBR_FLUSH_RMDIR |
-		FBR_FLUSH_RENAME));
+		FBR_FLUSH_RENAME | FBR_FLUSH_DELETE));
+
+	int do_free = 0;
+
+	if (!flush_data) {
+		flush_data = malloc(sizeof(*flush_data));
+		assert(flush_data);
+
+		do_free = 1;
+	}
 
 	fbr_zero(flush_data);
 	flush_data->file = file;
 	flush_data->_file = file;
 	flush_data->flags = flags;
+	flush_data->do_free = do_free;
 
 	if (attr) {
 		assert(fbr_is_flag(flags, FBR_FLUSH_ATTR | FBR_FLUSH_RESIZE));
@@ -40,7 +52,21 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 		fbr_path_name_init(&flush_data->filename, filename);
 	}
 
+	while (current) {
+		fbr_flush_data_ok(current);
+		assert_dev(current != flush_data);
+
+		if (!current->next) {
+			current->next = flush_data;
+			break;
+		}
+
+		current = current->next;
+	}
+
 	fbr_flush_data_ok(flush_data);
+
+	return flush_data;
 }
 
 static void
@@ -54,7 +80,13 @@ _flush_data_free(struct fbr_flush_data *flush_data_cmds)
 
 		flush_data_cmds = flush_data->next;
 
+		int do_free = flush_data->do_free;
+
 		fbr_zero(flush_data);
+
+		if (do_free) {
+			free(flush_data);
+		}
 	}
 }
 
@@ -162,7 +194,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	struct fbr_file *file = flush_data->file;
 	assert_dev(file);
 
-	fbr_file_LOCK(fs, file);
+	if (!flush_data->skip_lock) {
+		fbr_file_LOCK(fs, file);
+	}
 
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
@@ -170,8 +204,10 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	fbr_rlog(FBR_LOG_MERGE, "starting merge '%s' curr gen: %lu inode: %lu dir new gen: %lu",
 		filename.name, file->generation, file->inode, directory->generation);
 
-	struct fbr_file *latest = fbr_directory_find_file(directory, filename.name,
-		filename.length);
+	struct fbr_file *latest = NULL;
+	if (!flush_data->skip_latest) {
+		latest = fbr_directory_find_file(directory, filename.name, filename.length);
+	}
 
 	int latest_modified = 0;
 
@@ -352,6 +388,11 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 				return EEXIST;
 			}
 
+			struct fbr_flush_data *flush_rm = fbr_flush_data_init(NULL, dest, NULL,
+				NULL, NULL, FBR_FLUSH_DELETE, flush_data);
+
+			flush_rm->skip_latest = 1;
+
 			fbr_directory_remove_file(fs, directory, &dest);
 		}
 
@@ -374,6 +415,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_file_merge(fs, latest, dest);
 		fbr_directory_remove_file(fs, directory, &latest);
 
+		fbr_file_generation(dest);
+
 		dest->state = FBR_FILE_OK;
 
 		if (latest_modified) {
@@ -382,13 +425,10 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_zero_dev(file->alias_file);
 			file->alias_file = dest;
 			file->state = FBR_FILE_DELETED;
-
-			flush_data->file = latest;
-			flush_data->latest = file;
-
-			file = latest;
-			latest_modified = 0;
 		}
+	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_DELETE)) {
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_DELETE");
+		assert_zero_dev(latest);
 	}
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RESIZE)) {
@@ -438,7 +478,9 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 		}
 	}
 
-	fbr_file_UNLOCK(file);
+	if (!flush_data->skip_lock) {
+		fbr_file_UNLOCK(file);
+	}
 
 	if (flush_data->latest) {
 		fbr_file_UNLOCK(flush_data->latest);

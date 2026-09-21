@@ -111,7 +111,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 	// Flush empty file
 	struct fbr_flush_data flush_data;
-	fbr_flush_data_init(&flush_data, file, NULL, NULL, NULL, flags);
+	fbr_flush_data_init(&flush_data, file, NULL, NULL, NULL, flags, NULL);
 
 	int ret = fbr_fs_flush(fs, &flush_data);
 	if (ret) {
