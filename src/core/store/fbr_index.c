@@ -415,6 +415,16 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
 				&index_data->removed, wbuffers);
 		}
+
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
+		assert_dev(index_data->chunks);
+		assert_dev(index_data->removed);
+
+		fbr_rlog(FBR_LOG_INDEX, "FBR_FLUSH_WBUFFER '%s' chunks: %u size: %lu deleted: %u",
+			filename.name, index_data->chunks->length, index_data->size,
+			index_data->removed->length);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_MKDIR)) {
 		assert(flags == FBR_FLUSH_MKDIR);
 		assert_zero_dev(wbuffers);
@@ -457,6 +467,9 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		if (prev_dest) {
 			index_data->removed_file = prev_dest;
 			index_data->removed = fbr_body_chunk_all(prev_dest, 0);
+
+			fbr_rlog(FBR_LOG_INDEX, "FBR_FLUSH_RENAME '%s' deleted: %u",
+				destname.name, index_data->removed->length);
 		}
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
