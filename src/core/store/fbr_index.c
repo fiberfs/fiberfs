@@ -1103,20 +1103,10 @@ _index_parse_file_match(struct fbr_index_parser *parser)
 	fbr_file_ok(file);
 	assert_zero_dev(parser->file);
 
-	// TODO make this a helper
-	int alias_match = 1;
-	if (existing->alias || file->alias) {
-		if (!existing->alias || !file->alias) {
-			alias_match = 0;
-		} else if (fbr_path_name_cmp(&existing->alias->value, &file->alias->value)) {
-			alias_match = 0;
-		}
-	}
-
 	if (existing->generation == file->generation && existing->size == file->size &&
 	    existing->mode == file->mode && existing->uid == file->uid &&
 	    existing->gid == file->gid && existing->ctime == file->ctime &&
-	    existing->mtime == file->mtime && alias_match) {
+	    existing->mtime == file->mtime && !fbr_path_alias_cmp(existing->alias, file->alias)) {
 		fbr_rlog(FBR_LOG_DEBUG, "PARSER existing match");
 
 		fbr_directory_add_file(fs, directory, existing);

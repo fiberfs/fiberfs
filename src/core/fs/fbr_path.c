@@ -480,3 +480,27 @@ fbr_path_shared_release(struct fbr_path_shared *shared)
 	fbr_zero(shared);
 	free(shared);
 }
+
+int
+fbr_path_alias_cmp(const struct fbr_path_shared *alias1, const struct fbr_path_shared *alias2)
+{
+	if (!alias1 && !alias2) {
+		return 0;
+	}
+
+	if (alias1 && alias2) {
+		fbr_path_shared_ok(alias1);
+		fbr_path_shared_ok(alias2);
+
+		return fbr_path_name_cmp(&alias1->value, &alias2->value);
+	}
+
+	if (!alias1) {
+		assert_dev(alias2);
+		return -1;
+	}
+
+	assert_dev(!alias2);
+
+	return 1;
+}
