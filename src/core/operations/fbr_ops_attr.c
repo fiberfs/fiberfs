@@ -168,7 +168,7 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 	assert_dev(flags);
 
 	struct fbr_flush_data flush_data;
-	fbr_flush_data_init(&flush_data, file, &st_after, NULL, NULL, flags);
+	fbr_flush_data_init(&flush_data, file, &st_after, NULL, NULL, flags, NULL);
 	int ret = fbr_fs_flush(fs, &flush_data);
 
 	if (ret) {
