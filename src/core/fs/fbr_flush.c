@@ -199,6 +199,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_WBUFFER");
 
+		// TODO what happens if aliases exist for file or latest?
+
 		struct fbr_file *alias = _flush_find_alias(file->alias_file);
 		if (alias) {
 			fbr_file_ok(alias);
