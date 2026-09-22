@@ -261,29 +261,25 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	}
 }
 
-// TODO we need to apply this to most operations
 struct fbr_file *
-fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file, int inode_ref)
+fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
-	fbr_file_ok(file);
 
-	while (file->alias_file) {
-		struct fbr_file *last = file;
-
-		file = file->alias_file;
+	while (file) {
 		fbr_file_ok(file);
 
 		struct fbr_path_name filename;
 		fbr_path_get_file(&file->path, &filename);
 
-		fbr_rlog(FBR_LOG_FS, "ALIAS name: '%s' inode: %lu", filename.name,
-			file->inode);
+		fbr_rlog(FBR_LOG_INODE, "ALIAS name: '%s' inode: %lu type: %s", filename.name,
+			file->inode, S_ISDIR(file->mode) ? "DIR" : "FILE");
 
-		if (inode_ref) {
-			fbr_inode_release(fs, &last);
-			fbr_inode_add(fs, file);
+		if (!file->alias_file) {
+			break;
 		}
+
+		file = file->alias_file;
 	}
 
 	return file;

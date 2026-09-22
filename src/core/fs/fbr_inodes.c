@@ -128,6 +128,36 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 }
 
 struct fbr_file *
+fbr_inode_take_alias(struct fbr_fs *fs, fbr_inode_t inode)
+{
+	fbr_fs_ok(fs);
+
+	struct fbr_file *file = fbr_inode_take(fs, inode);
+	if (!file) {
+		return NULL;
+	}
+
+	struct fbr_path_name filename;
+	fbr_path_get_file(&file->path, &filename);
+
+	fbr_rlog(FBR_LOG_INODE, "name: '%s' inode: %lu type: %s", filename.name, file->inode,
+		S_ISDIR(file->mode) ? "DIR" : "FILE");
+
+	assert_dev(file->inode == inode);
+
+	if (file->alias_file) {
+		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
+
+		fbr_inode_add(fs, alias);
+		fbr_inode_release(fs, &file);
+
+		return alias;
+	}
+
+	return file;
+}
+
+struct fbr_file *
 fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode)
 {
 	struct fbr_inodes *inodes = _inodes_fs_get(fs);

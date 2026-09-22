@@ -224,7 +224,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		}
 
 		if (file->alias_file) {
-			struct fbr_file *alias = fbr_file_get_alias(fs, file, 0);
+			struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
 			fbr_file_ok(alias);
 			assert(alias != file);
 			assert_zero(_flush_contains_file(flush_data, alias));

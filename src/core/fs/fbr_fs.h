@@ -457,6 +457,7 @@ int fbr_fs_is_timeout(struct fbr_fs *fs, struct fbr_fs_timeout *timeout);
 void fbr_inodes_alloc(struct fbr_fs *fs);
 fbr_inode_t fbr_inode_gen(struct fbr_fs *fs);
 void fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file);
+struct fbr_file *fbr_inode_take_alias(struct fbr_fs *fs, fbr_inode_t inode);
 struct fbr_file *fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode);
 void fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref);
 void fbr_inode_forget(struct fbr_fs *fs, fbr_inode_t inode, fbr_refcount_t refs);
@@ -472,7 +473,7 @@ void fbr_file_UNLOCK(struct fbr_file *file);
 struct fbr_file * fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent,
 	struct fbr_file *source);
 void fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest);
-struct fbr_file *fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file, int inode_ref);
+struct fbr_file *fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_extend(struct fbr_file *file, size_t size);
 void fbr_file_generation(struct fbr_file *file);
 int fbr_file_ptr_cmp(const struct fbr_file_ptr *p1, const struct fbr_file_ptr *p2);

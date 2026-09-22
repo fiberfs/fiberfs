@@ -17,19 +17,11 @@ fbr_ops_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 
 	fbr_rlog(FBR_LOG_OP, "GETATTR req: %lu ino: %lu", request->id, ino);
 
-	struct fbr_file *file = fbr_inode_take(fs, ino);
+	struct fbr_file *file = fbr_inode_take_alias(fs, ino);
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
 		return;
-	}
-
-	const char *filename = fbr_path_get_file(&file->path, NULL);
-	fbr_rlog(FBR_LOG_OP_ATTR, "name: '%s' type: %s", filename,
-		S_ISDIR(file->mode) ? "DIR" : "FILE");
-
-	file = fbr_file_get_alias(fs, file, 1);
-
-	if (file->state == FBR_FILE_DELETED) {
+	} else if (file->state == FBR_FILE_DELETED) {
 		fbr_inode_release(fs, &file);
 		fbr_fuse_reply_err(request, ENOENT);
 		return;
@@ -52,16 +44,11 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 
 	fbr_rlog(FBR_LOG_OP, "SETATTR req: %lu ino: %lu to_set: %d", request->id, ino, to_set);
 
-	struct fbr_file *file = fbr_inode_take(fs, ino);
+	struct fbr_file *file = fbr_inode_take_alias(fs, ino);
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
 		return;
 	}
-
-	const char *filename = fbr_path_get_file(&file->path, NULL);
-
-	fbr_rlog(FBR_LOG_OP_ATTR, "name: '%s' type: %s", filename,
-		S_ISDIR(file->mode) ? "DIR" : "FILE");
 
 	struct stat st_before, st_after;
 	fbr_file_attr(fs, file, &st_before);
