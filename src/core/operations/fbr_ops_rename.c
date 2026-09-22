@@ -86,15 +86,13 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 	fbr_dindex_release(fs, &directory);
 
-	// TODO debugging
-	directory = fbr_directory_from_inode(fs, parent);
-	fbr_dindex_release(fs, &directory);
-
 	fbr_fuse_reply_err(request, 0);
 
 	if (fbr_request_is_fuse(request)) {
 		fbr_fuse_mounted(fs->fuse_ctx);
 		assert(fs->fuse_ctx->session);
+
+		fbr_rlog(FBR_LOG_OP_RENAME, "INVAL '%s' inode: %lu (inode)", newname, inode);
 
 		ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session, inode, newname,
 			newname_len);

@@ -248,13 +248,32 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_file_LOCK(fs, alias);
 
 			fbr_path_get_file(&alias->path, &filename);
-			fbr_rlog(FBR_LOG_FLUSH, "alias detected: '%s'", filename.name);
+			fbr_rlog(FBR_LOG_FLUSH, "alias detected: '%s' inode: %lu", filename.name,
+				alias->inode);
 
-			flush_data->file = alias;
+			struct fbr_file *clone = fbr_file_clone(fs, directory, alias);
+			fbr_file_ok(clone);
+			assert_dev(clone->state == FBR_FILE_INIT);
+			assert(clone->alias);
+
+			fbr_file_UNLOCK(alias);
+
+			if (flush_data->wbuffers &&
+			    !fbr_is_flag(flush_data->flags, FBR_FLUSH_APPEND)) {
+				fbr_wbuffers_merge(fs, clone, flush_data->wbuffers);
+			}
+
+			fbr_file_generation(clone);
+			fbr_directory_remove_file(fs, directory, &alias);
+			fbr_directory_add_file(fs, directory, clone);
+
+			fbr_file_LOCK(fs, clone);
+
+			flush_data->file = clone;
 			flush_data->prev = file;
 
-			file = alias;
-			latest = alias;
+			file = clone;
+			latest = clone;
 			latest_modified = 0;
 		}
 
@@ -262,6 +281,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_rlog(FBR_LOG_FLUSH, "wbuffer EISDIR detected");
 			return EISDIR;
 		} else if (latest_modified) {
+			// TODO for write isolation just merge into a clone
 			fbr_file_merge(fs, latest, file);
 			fbr_directory_remove_file(fs, directory, &latest);
 			fbr_directory_add_file(fs, directory, file);
@@ -405,22 +425,26 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		if (latest->alias) {
 			dest->alias = fbr_path_shared_take(latest->alias);
-		} else {
+		}
+
+		fbr_file_merge(fs, latest, dest);
+		fbr_file_generation(dest);
+		fbr_inode_add(fs, dest);
+
+		if (!dest->alias) {
 			dest->alias = fbr_path_shared_alloc(&filename);
 		}
 
-		fbr_inode_add(fs, dest);
+		dest->state = FBR_FILE_OK;
 
 		assert_zero_dev(latest->alias_file);
 		latest->alias_file = dest;
 		latest->state = FBR_FILE_DELETED;
 
-		fbr_file_merge(fs, latest, dest);
+		fbr_rlog(FBR_LOG_FLUSH, "state: DELETED name: '%s' inode: %lu", filename.name,
+			latest->inode);
+
 		fbr_directory_remove_file(fs, directory, &latest);
-
-		fbr_file_generation(dest);
-
-		dest->state = FBR_FILE_OK;
 
 		if (latest_modified) {
 			fbr_inode_add(fs, dest);
@@ -428,6 +452,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_zero_dev(file->alias_file);
 			file->alias_file = dest;
 			file->state = FBR_FILE_DELETED;
+
+			fbr_rlog(FBR_LOG_FLUSH, "state: DELETED name: '%s' inode: %lu",
+				filename.name, file->inode);
 		}
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_DELETE)) {
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_DELETE");

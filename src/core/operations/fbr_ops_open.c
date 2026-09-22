@@ -29,6 +29,9 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 		return;
 	}
 
+	const char *filename = fbr_path_get_file(&file->path, NULL);
+	fbr_rlog(FBR_LOG_OP_OPEN, "name: '%s'", filename);
+
 	int read_only = 0;
 
 	if (fbr_is_flag(fi->flags, O_RDWR)) {

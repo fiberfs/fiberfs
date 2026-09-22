@@ -151,10 +151,8 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	fbr_rlog(FBR_LOG_MERGE, "'%s' gen: %lu source inode: %lu dest inode: %lu",
 		filename, source->generation, source->inode, dest->inode);
 
-	// TODO if we have a mix of aliasing, chunks will not merge correctly
-	if (source->alias) {
-		assert_zero_dev(fbr_path_alias_cmp(source->alias, dest->alias));
-	}
+	// TODO if we have a mix of aliasing, chunks should not be merged
+	assert_zero_dev(fbr_path_alias_cmp(source->alias, dest->alias));
 
 	dest->generation = source->generation;
 	dest->mode = source->mode;
@@ -255,7 +253,7 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 		fbr_fuse_mounted(fs->fuse_ctx);
 		assert(fs->fuse_ctx->session);
 
-		fbr_rlog(FBR_LOG_MERGE, "INVAL inode: %lu (file)", dest->inode);
+		fbr_rlog(FBR_LOG_MERGE, "INVAL '%s' inode: %lu (inode)", filename, dest->inode);
 
 		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, dest->inode,
 			0, 0);

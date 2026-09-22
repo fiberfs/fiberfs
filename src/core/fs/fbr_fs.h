@@ -604,6 +604,7 @@ void fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffers);
 int fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, int revert_on_error);
 int fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio);
+void fbr_wbuffers_merge(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers);
 void fbr_wbuffers_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
 	int chunk_add);
 void fbr_wbuffers_reset(struct fbr_fs *fs, struct fbr_fio *fio);
