@@ -24,9 +24,10 @@ fbr_ops_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 	}
 
 	const char *filename = fbr_path_get_file(&file->path, NULL);
-
 	fbr_rlog(FBR_LOG_OP_ATTR, "name: '%s' type: %s", filename,
 		S_ISDIR(file->mode) ? "DIR" : "FILE");
+
+	file = fbr_file_get_alias(fs, file, 1);
 
 	if (file->state == FBR_FILE_DELETED) {
 		fbr_inode_release(fs, &file);

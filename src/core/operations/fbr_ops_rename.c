@@ -92,10 +92,10 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		fbr_fuse_mounted(fs->fuse_ctx);
 		assert(fs->fuse_ctx->session);
 
-		fbr_rlog(FBR_LOG_OP_RENAME, "INVAL '%s' inode: %lu (inode)", newname, inode);
+		fbr_rlog(FBR_LOG_OP_RENAME, "INVAL '%s' inode: %lu (inode)", name, inode);
 
-		ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session, inode, newname,
-			newname_len);
+		ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session, inode, name,
+			name_len);
 		assert_dev(ret != -ENOSYS);
 	}
 }
