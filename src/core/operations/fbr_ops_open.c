@@ -18,20 +18,11 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 
 	fbr_rlog(FBR_LOG_OP, "OPEN req: %lu ino: %lu flags: %d", request->id, ino, fi->flags);
 
-	struct fbr_file *file = fbr_inode_take(fs, ino);
+	struct fbr_file *file = fbr_inode_take_alias(fs, ino);
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
 		return;
-	}
-
-	struct fbr_path_name filename;
-	fbr_path_get_file(&file->path, &filename);
-
-	fbr_rlog(FBR_LOG_OP_OPEN, "name: '%s'", filename.name);
-
-	file = fbr_file_get_alias(fs, file, 1);
-
-	if (!S_ISREG(file->mode)) {
+	} else if (!S_ISREG(file->mode)) {
 		fbr_fuse_reply_err(request, EISDIR);
 		fbr_inode_release(fs, &file);
 		return;
