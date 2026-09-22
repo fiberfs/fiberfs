@@ -57,6 +57,11 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		return;
 	}
 
+	const char *filename = fbr_path_get_file(&file->path, NULL);
+
+	fbr_rlog(FBR_LOG_OP_ATTR, "name: '%s' type: %s", filename,
+		S_ISDIR(file->mode) ? "DIR" : "FILE");
+
 	struct stat st_before, st_after;
 	fbr_file_attr(fs, file, &st_before);
 	memcpy(&st_after, &st_before, sizeof(st_after));
