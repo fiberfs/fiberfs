@@ -398,7 +398,11 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(fs->fuse_ctx->session);
 
 	if (next && next->remote) {
-		fbr_rlog(FBR_LOG_DIR_EXP, "INVAL inode: %lu (directory)", directory->inode);
+		struct fbr_path_name dirname;
+		fbr_path_shared_name(directory->path, &dirname);
+
+		fbr_rlog(FBR_LOG_DIR_EXP, "INVAL '%s' inode: %lu (directory)", dirname.name,
+			directory->inode);
 
 		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, directory->inode,
 			0, 0);
@@ -436,17 +440,21 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 		}
 
 		if (file_deleted) {
-			fbr_rlog(FBR_LOG_DIR_EXP, "DELETE inode: %lu (file)", file->inode);
+			fbr_rlog(FBR_LOG_DIR_EXP, "DELETE '%s' inode: %lu (file)", filename.name,
+				file->inode);
 
-			file->state = FBR_FILE_EXPIRED;
+			if (file->state <= FBR_FILE_OK) {
+				file->state = FBR_FILE_EXPIRED;
+			}
 
 			ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
 				file->inode, filename.name, filename.length);
 			assert_dev(ret != -ENOSYS);
 		} else if (file_expired || file_inval) {
-			fbr_rlog(FBR_LOG_DIR_EXP, "INVAL inode: %lu (file)", file->inode);
+			fbr_rlog(FBR_LOG_DIR_EXP, "INVAL '%s' inode: %lu (file)", filename.name,
+				file->inode);
 
-			if (file_expired) {
+			if (file_expired && file->state <= FBR_FILE_OK) {
 				file->state = FBR_FILE_EXPIRED;
 			}
 

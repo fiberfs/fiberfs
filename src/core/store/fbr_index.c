@@ -203,6 +203,9 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	assert(file->generation);
 	assert_dev(index_data_cmds);
 
+	struct fbr_path_name filename;
+	fbr_path_get_file(&file->path, &filename);
+
 	int modified = 0;
 	int resize = 0;
 	int has_lock = 0;
@@ -212,10 +215,12 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 		if (file == index_data->file && fbr_is_flag(index_data->flags, FBR_FLUSH_WBUFFER)) {
 			assert_dev(index_data->chunks);
 			modified = 1;
+			fbr_rlog(FBR_LOG_INDEX, "modified JSON for: '%s' (chunks)", filename.name);
 			break;
 		} else if (file == index_data->file &&
 		    fbr_is_flag(index_data->flags, FBR_FLUSH_RESIZE) && index_data->chunks) {
 			resize = 1;
+			fbr_rlog(FBR_LOG_INDEX, "modified JSON for: '%s' (size)", filename.name);
 			break;
 		}
 		if (file == index_data->file) {
@@ -228,9 +233,6 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 
 	// n: filename
 	fbr_writer_add(fs, json, "{\"n\":\"", 6);
-
-	struct fbr_path_name filename;
-	fbr_path_get_file(&file->path, &filename);
 
 	char encoded[FBR_URL_MAX];
 	size_t encoded_len = fbr_urlencode(filename.name, filename.length, encoded,
