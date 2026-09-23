@@ -188,12 +188,11 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		filename.name, file->generation, file->inode, directory->generation);
 
 	struct fbr_file *latest = NULL;
+	int latest_modified = 0;
+
 	if (!flush_data->skip_latest) {
 		latest = fbr_directory_find_file(directory, filename.name, filename.length);
 	}
-
-	int latest_modified = 0;
-
 	if (latest && latest != file) {
 		assert_zero(_flush_contains_file(flush_data, latest));
 
