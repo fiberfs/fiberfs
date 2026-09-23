@@ -147,6 +147,8 @@ fbr_inode_take_alias(struct fbr_fs *fs, fbr_inode_t inode)
 
 	if (file->alias_file) {
 		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
+		assert_dev(alias);
+		assert_dev(alias->refcounts.inode);
 
 		fbr_inode_add(fs, alias);
 		fbr_inode_release(fs, &file);
