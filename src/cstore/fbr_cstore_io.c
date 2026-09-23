@@ -394,6 +394,7 @@ fbr_cstore_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
 	fbr_wbuffer_update(fs, wbuffer, state);
 }
 
+// Note: file may not own wbuffer
 void
 fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {

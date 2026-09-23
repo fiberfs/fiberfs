@@ -203,6 +203,9 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	assert(file->generation);
 	assert_dev(index_data_cmds);
 
+	struct fbr_path_name filename;
+	fbr_path_get_file(&file->path, &filename);
+
 	int modified = 0;
 	int resize = 0;
 	int has_lock = 0;
@@ -212,10 +215,12 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 		if (file == index_data->file && fbr_is_flag(index_data->flags, FBR_FLUSH_WBUFFER)) {
 			assert_dev(index_data->chunks);
 			modified = 1;
+			fbr_rlog(FBR_LOG_INDEX, "modified JSON for: '%s' (chunks)", filename.name);
 			break;
 		} else if (file == index_data->file &&
 		    fbr_is_flag(index_data->flags, FBR_FLUSH_RESIZE) && index_data->chunks) {
 			resize = 1;
+			fbr_rlog(FBR_LOG_INDEX, "modified JSON for: '%s' (size)", filename.name);
 			break;
 		}
 		if (file == index_data->file) {
@@ -228,9 +233,6 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 
 	// n: filename
 	fbr_writer_add(fs, json, "{\"n\":\"", 6);
-
-	struct fbr_path_name filename;
-	fbr_path_get_file(&file->path, &filename);
 
 	char encoded[FBR_URL_MAX];
 	size_t encoded_len = fbr_urlencode(filename.name, filename.length, encoded,
@@ -271,6 +273,20 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	// d: mtime
 	fbr_writer_add(fs, json, ",\"d\":", 5);
 	fbr_writer_add_ulong(fs, json, file->mtime);
+
+	// a: alias (optional)
+	if (file->alias) {
+		fbr_path_shared_ok(file->alias);
+
+		fbr_writer_add(fs, json, ",\"a\":\"", 6);
+
+		encoded_len = fbr_urlencode(file->alias->value.name, file->alias->value.length,
+			encoded, sizeof(encoded));
+		assert(encoded_len >= file->alias->value.length);
+
+		fbr_writer_add(fs, json, encoded, encoded_len);
+		fbr_writer_add(fs, json, "\"", 1);
+	}
 
 	if (file->body.chunks || modified || resize) {
 		// b: body chunks
@@ -337,6 +353,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 	fbr_zero(index_data);
 
+	index_data->fs = fs;
 	index_data->directory = directory;
 	index_data->previous = previous;
 	index_data->file = file;
@@ -400,6 +417,16 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
 				&index_data->removed, wbuffers);
 		}
+
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
+		assert_dev(index_data->chunks);
+		assert_dev(index_data->removed);
+
+		fbr_rlog(FBR_LOG_INDEX, "FBR_FLUSH_WBUFFER '%s' chunks: %u size: %lu deleted: %u",
+			filename.name, index_data->chunks->length, index_data->size,
+			index_data->removed->length);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_MKDIR)) {
 		assert(flags == FBR_FLUSH_MKDIR);
 		assert_zero_dev(wbuffers);
@@ -417,7 +444,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 		assert_zero_dev(wbuffers);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_NEW_FILE)) {
 		assert_zero_dev(wbuffers);
-	} else if (fbr_is_flag(flags, FBR_FLUSH_UNLINK)) {
+	} else if (fbr_is_flag(flags, FBR_FLUSH_UNLINK | FBR_FLUSH_DELETE)) {
 		fbr_file_ok(file);
 		assert_zero_dev(wbuffers);
 
@@ -425,7 +452,18 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 		index_data->chunks = fbr_body_chunk_range(file, 0, 0, &index_data->removed, NULL);
 		assert_zero_dev(index_data->chunks->length);
+
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
+		fbr_rlog(FBR_LOG_INDEX, "%s '%s' deleted: %u",
+			fbr_is_flag(flags, FBR_FLUSH_UNLINK) ? "FBR_FLUSH_UNLINK" :
+				"FBR_FLUSH_DELETE",
+			filename.name, index_data->removed->length);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RMDIR)) {
+		assert_zero_dev(wbuffers);
+	} else if (fbr_is_flag(flags, FBR_FLUSH_RENAME)) {
+		fbr_file_ok(file);
 		assert_zero_dev(wbuffers);
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
@@ -440,6 +478,7 @@ fbr_index_data_free(struct fbr_index_data *index_data_cmds)
 
 	while (index_data_cmds) {
 		struct fbr_index_data *index_data = index_data_cmds;
+		fbr_fs_ok(index_data->fs);
 
 		if (index_data->chunks) {
 			fbr_chunk_list_free(index_data->chunks);
@@ -497,8 +536,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 			fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
 
 			if (fs->wbuffer_pre_sync) {
-				int error = fbr_wbuffer_flush_ready(fs, index_data->file,
-					index_data->wbuffers, do_append, 1);
+				int error = fbr_wbuffer_flush_ready(fs, index_data->wbuffers,
+					do_append);
 				if (error) {
 					return error;
 				}
@@ -537,13 +576,15 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 
 	index_data = index_data_cmds;
 	while (index_data) {
+		fbr_fs_ok(index_data->fs);
+
 		int was_append = 0;
 		if (fbr_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
 			was_append = 1;
 		}
 
 		if (ret && was_append && !index_data_cmds->wbuffer_error) {
-			fbr_wbuffers_error_reset(fs, index_data->file, index_data->wbuffers, 1, 1);
+			fbr_wbuffers_error_reset(fs, index_data->wbuffers, 1);
 		}
 
 		if (!ret && index_data->removed) {
@@ -1051,7 +1092,7 @@ _index_parse_file_match(struct fbr_index_parser *parser)
 	if (existing->generation == file->generation && existing->size == file->size &&
 	    existing->mode == file->mode && existing->uid == file->uid &&
 	    existing->gid == file->gid && existing->ctime == file->ctime &&
-	    existing->mtime == file->mtime) {
+	    existing->mtime == file->mtime && !fbr_path_alias_cmp(existing->alias, file->alias)) {
 		fbr_rlog(FBR_LOG_DEBUG, "PARSER existing match");
 
 		fbr_directory_add_file(fs, directory, existing);
@@ -1072,11 +1113,19 @@ _index_parse_file_match(struct fbr_index_parser *parser)
 		parser->file->gid = file->gid;
 		parser->file->ctime = file->ctime;
 		parser->file->mtime = file->mtime;
+
+		if (file->alias) {
+			parser->file->alias = fbr_path_shared_take(file->alias);
+		}
+	}
+
+	if (parser->file_match.alias) {
+		fbr_path_shared_release(parser->file_match.alias);
+		parser->file_match.alias = NULL;
 	}
 
 	parser->existing = NULL;
 	parser->file_match.magic = 0;
-
 }
 
 static void
@@ -1159,6 +1208,25 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'd')) {
 				struct fbr_file *file = _parser_get_file(parser);
 				file->mtime = token->dvalue;
+			} else if (_parser_match(parser, FBR_INDEX_LOC_FILE, 'a')) {
+				if (token->svalue_len) {
+					char buf[FBR_PATH_MAX];
+					size_t buf_len = fbr_urldecode(token->svalue,
+						token->svalue_len, buf, sizeof(buf));
+					if (buf_len < token->svalue_len) {
+						parser->error = 1;
+						break;
+					}
+
+					struct fbr_path_name alias;
+					fbr_path_name_init(&alias, buf);
+					assert_dev(alias.length == buf_len);
+
+					struct fbr_file *file = _parser_get_file(parser);
+					if (!file->alias) {
+						file->alias = fbr_path_shared_alloc(&alias);
+					}
+				}
 			}
 			break;
 		case FJSON_TOKEN_OBJECT:

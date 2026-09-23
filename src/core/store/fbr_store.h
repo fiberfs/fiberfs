@@ -110,6 +110,7 @@ struct fbr_index_parser {
 };
 
 struct fbr_index_data {
+	struct fbr_fs				*fs;
 	struct fbr_directory			*directory;
 	struct fbr_directory			*previous;
 	struct fbr_file				*file;

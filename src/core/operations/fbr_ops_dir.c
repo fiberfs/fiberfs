@@ -25,6 +25,11 @@ fbr_ops_opendir(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 		return;
 	}
 
+	struct fbr_path_name dirname;
+	fbr_path_shared_name(directory->path, &dirname);
+
+	fbr_rlog(FBR_LOG_OP_DIR, "name: '%s'", dirname.name);
+
 	struct fbr_dreader *reader = fbr_dreader_alloc(fs, directory);
 	fbr_dreader_ok(reader);
 

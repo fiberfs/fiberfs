@@ -110,7 +110,7 @@ fbr_file_UNLOCK(struct fbr_file *file)
 	pt_assert(pthread_mutex_unlock(&file->lock));
 }
 
-// Note: file isnt added to directory, its returned unreferenced
+// Note: file isnt added to directory, its returned unreferenced, source must have file->lock
 struct fbr_file *
 fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file *source)
 {
@@ -127,6 +127,10 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 
 	fbr_rlog(FBR_LOG_CLONE, "cloned inode: %lu to %lu", source->inode, clone->inode);
 
+	if (source->alias) {
+		clone->alias = fbr_path_shared_take(source->alias);
+	}
+
 	fbr_file_merge(fs, source, clone);
 
 	clone->size = source->size;
@@ -134,6 +138,7 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 	return clone;
 }
 
+// Note: source and dest must have file->lock if live
 void
 fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest)
 {
@@ -146,10 +151,8 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	fbr_rlog(FBR_LOG_MERGE, "'%s' gen: %lu source inode: %lu dest inode: %lu",
 		filename, source->generation, source->inode, dest->inode);
 
-	fbr_stat_add(&fs->stats.merges);
-
-	fbr_file_LOCK(fs, source);
-	fbr_file_LOCK(fs, dest);
+	// TODO if we have a mix of aliasing, chunks should not be merged
+	assert_zero_dev(fbr_path_alias_cmp(source->alias, dest->alias));
 
 	dest->generation = source->generation;
 	dest->mode = source->mode;
@@ -242,21 +245,44 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 		chunk_dest = chunk_dest->next;
 	}
 
+	fbr_stat_add(&fs->stats.merges);
+
 	fbr_body_debug(fs, dest);
 
 	if (fs->fuse_ctx && dest->state >= FBR_FILE_OK) {
 		fbr_fuse_mounted(fs->fuse_ctx);
 		assert(fs->fuse_ctx->session);
 
-		fbr_rlog(FBR_LOG_MERGE, "INVAL inode: %lu (file)", dest->inode);
+		fbr_rlog(FBR_LOG_MERGE, "INVAL '%s' inode: %lu (inode)", filename, dest->inode);
 
 		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, dest->inode,
 			0, 0);
 		assert_dev(ret != -ENOSYS);
 	}
+}
 
-	fbr_file_UNLOCK(source);
-	fbr_file_UNLOCK(dest);
+struct fbr_file *
+fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+
+	while (file) {
+		fbr_file_ok(file);
+
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
+		fbr_rlog(FBR_LOG_INODE, "ALIAS name: '%s' inode: %lu type: %s", filename.name,
+			file->inode, S_ISDIR(file->mode) ? "DIR" : "FILE");
+
+		if (!file->alias_file) {
+			break;
+		}
+
+		file = file->alias_file;
+	}
+
+	return file;
 }
 
 void
@@ -451,6 +477,13 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_body_free(&file->body);
 	fbr_path_free(&file->path);
 	fbr_file_ptrs_free(file);
+
+	if (file->alias) {
+		fbr_path_shared_release(file->alias);
+	}
+	if (file->alias_file) {
+		fbr_inode_release(fs, &file->alias_file);
+	}
 
 	pt_assert(pthread_mutex_destroy(&file->refcount_lock));
 	pt_assert(pthread_mutex_destroy(&file->lock));

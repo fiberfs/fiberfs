@@ -273,25 +273,28 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory, struc
 }
 
 void
-fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_file *file)
+fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_file **file_ref)
 {
 	fbr_fs_ok(fs);
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_LOADING);
-	fbr_file_ok(file);
+	assert(file_ref);
+	fbr_file_ok(*file_ref);
 
 	struct fbr_file_ptr *file_ptr, *temp;
 	RB_FOREACH_SAFE(file_ptr, fbr_filename_tree, &directory->filename_tree, temp) {
 		fbr_file_ptr_ok(file_ptr);
 
-		if (file_ptr->file != file) {
+		if (file_ptr->file != *file_ref) {
 			continue;
 		}
 
 		(void)RB_REMOVE(fbr_filename_tree, &directory->filename_tree, file_ptr);
 		fbr_file_ptr_free(file_ptr);
 
-		fbr_file_release_dindex(fs, &file);
+		fbr_file_release_dindex(fs, file_ref);
+		assert_zero_dev(*file_ref);
 
 		directory->file_count--;
 
@@ -395,7 +398,11 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(fs->fuse_ctx->session);
 
 	if (next && next->remote) {
-		fbr_rlog(FBR_LOG_DIR_EXP, "INVAL inode: %lu (directory)", directory->inode);
+		struct fbr_path_name dirname;
+		fbr_path_shared_name(directory->path, &dirname);
+
+		fbr_rlog(FBR_LOG_DIR_EXP, "INVAL '%s' inode: %lu (directory)", dirname.name,
+			directory->inode);
 
 		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, directory->inode,
 			0, 0);
@@ -433,17 +440,21 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 		}
 
 		if (file_deleted) {
-			fbr_rlog(FBR_LOG_DIR_EXP, "DELETE inode: %lu (file)", file->inode);
+			fbr_rlog(FBR_LOG_DIR_EXP, "DELETE '%s' inode: %lu (file)", filename.name,
+				file->inode);
 
-			file->state = FBR_FILE_EXPIRED;
+			if (file->state <= FBR_FILE_OK) {
+				file->state = FBR_FILE_EXPIRED;
+			}
 
 			ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
 				file->inode, filename.name, filename.length);
 			assert_dev(ret != -ENOSYS);
 		} else if (file_expired || file_inval) {
-			fbr_rlog(FBR_LOG_DIR_EXP, "INVAL inode: %lu (file)", file->inode);
+			fbr_rlog(FBR_LOG_DIR_EXP, "INVAL '%s' inode: %lu (file)", filename.name,
+				file->inode);
 
-			if (file_expired) {
+			if (file_expired && file->state <= FBR_FILE_OK) {
 				file->state = FBR_FILE_EXPIRED;
 			}
 
@@ -612,7 +623,8 @@ fbr_directory_get(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_in
 	fbr_directory_ok(directory);
 	assert(directory->state == FBR_DIRSTATE_OK);
 
-	fbr_rlog(FBR_LOG_FS, "directory found: '%s' (inode: %lu)", dirpath->name, directory->inode);
+	fbr_rlog(FBR_LOG_FS, "directory found: '%s' (inode: %lu gen: %lu)", dirpath->name,
+		directory->inode, directory->generation);
 
 	fbr_ASSERT(directory->inode == inode, "Found: %lu expected: %lu", directory->inode, inode);
 
@@ -641,6 +653,8 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 		fbr_inode_release(fs, &file);
 		return NULL;
 	}
+
+	assert_zero(file->alias_file);
 
 	struct fbr_fullpath_name dirpath;
 	fbr_path_get_full(&file->path, &dirpath);
