@@ -3,6 +3,7 @@ fiber_test "Rename errors and overwriting"
 # Init
 config_add FUSE_WRITEBACK_CACHE false
 config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 3
+config_add LOG_SIZE 150000
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir
