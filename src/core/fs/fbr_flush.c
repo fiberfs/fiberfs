@@ -423,9 +423,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		assert_zero_dev(latest->alias_file);
 		latest->alias_file = dest;
 
-		fbr_rlog(FBR_LOG_FLUSH, "state: DELETED name: '%s' inode: %lu", filename.name,
-			latest->inode);
-
 		fbr_directory_remove_file(fs, directory, &latest);
 
 		if (latest_modified) {
@@ -433,9 +430,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			assert_zero_dev(file->alias_file);
 			file->alias_file = dest;
-
-			fbr_rlog(FBR_LOG_FLUSH, "state: DELETED name: '%s' inode: %lu",
-				filename.name, file->inode);
 		}
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_DELETE)) {
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_DELETE");

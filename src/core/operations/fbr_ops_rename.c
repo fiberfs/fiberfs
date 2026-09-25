@@ -24,7 +24,7 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 	if (parent != newparent) {
 		fbr_rlog(FBR_LOG_OP_RENAME, "parent directories must match");
-		fbr_fuse_reply_err(request, EFAULT);
+		fbr_fuse_reply_err(request, EISDIR);
 		return;
 	} else if (flags && flags != RENAME_NOREPLACE) {
 		fbr_fuse_reply_err(request, EINVAL);
