@@ -163,6 +163,24 @@ _flush_contains_file(struct fbr_flush_data *flush_data, struct fbr_file *file)
 	return 0;
 }
 
+static void
+_flush_add_alias(struct fbr_flush_data *flush_data, struct fbr_file *source, struct fbr_file *alias)
+{
+	assert_dev(flush_data);
+	assert_dev(source);
+	assert_dev(alias);
+
+	for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {
+		if (!flush_data->aliases[i].source) {
+			flush_data->aliases[i].source = source;
+			flush_data->aliases[i].alias = alias;
+			return;
+		}
+	}
+
+	fbr_ABORT("Too many aliases");
+}
+
 static int
 _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flush_data *flush_data)
 {
@@ -239,6 +257,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_dev(clone->state == FBR_FILE_INIT);
 			assert(clone->alias);
 
+			_flush_add_alias(flush_data, alias, clone);
+
 			fbr_file_UNLOCK(alias);
 
 			if (flush_data->wbuffers &&
@@ -247,6 +267,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			}
 
 			fbr_file_generation(clone);
+			// TODO: alias might not exist anymore...
 			fbr_directory_remove_file(fs, directory, &alias);
 			fbr_directory_add_file(fs, directory, clone);
 
@@ -256,6 +277,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			flush_data->prev = file;
 
 			file = clone;
+
+			// TODO we should still merge latest?
+
 			latest = clone;
 			latest_modified = 0;
 		}
@@ -412,7 +436,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_file_merge(fs, latest, dest);
 		fbr_file_generation(dest);
-		fbr_inode_add(fs, dest);
+		_flush_add_alias(flush_data, latest, dest);
 
 		if (!dest->alias) {
 			dest->alias = fbr_path_shared_alloc(&filename);
@@ -420,16 +444,10 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		dest->state = FBR_FILE_OK;
 
-		assert_zero_dev(latest->alias_file);
-		latest->alias_file = dest;
-
 		fbr_directory_remove_file(fs, directory, &latest);
 
 		if (latest_modified) {
-			fbr_inode_add(fs, dest);
-
-			assert_zero_dev(file->alias_file);
-			file->alias_file = dest;
+			_flush_add_alias(flush_data, file, dest);
 		}
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_DELETE)) {
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_DELETE");
@@ -473,13 +491,22 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 	struct fbr_file *file = flush_data->file;
 	assert_dev(file);
 
-	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RENAME) && error) {
-		assert_dev(flush_data->file->alias_file);
-		fbr_inode_release(fs, &flush_data->file->alias_file);
+	if (!error) {
+		for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {
+			if (flush_data->aliases[i].source) {
+				struct fbr_file *source = flush_data->aliases[i].source;
+				fbr_file_ok(source);
+				assert_zero(source->alias_file);
 
-		if (flush_data->latest && flush_data->latest->alias_file) {
-			fbr_file_ok(flush_data->latest);
-			fbr_inode_release(fs, &flush_data->latest->alias_file);
+				struct fbr_file *alias = flush_data->aliases[i].alias;
+				fbr_file_ok(alias);
+
+				fbr_inode_add(fs, alias);
+
+				source->alias_file = alias;
+
+				fbr_zero(&flush_data->aliases[i]);
+			}
 		}
 	}
 
