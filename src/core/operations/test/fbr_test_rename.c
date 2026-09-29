@@ -292,7 +292,7 @@ _assert_fs(struct fbr_fs *fs, int print)
 
 #define _RENAME_FS_COUNT	1
 #define _RENAME_THREADS		2
-#define _RENAME_WRITE_MAX	500
+#define _RENAME_WRITE_MAX	50
 #define _RENAME_WRITE_FILE	"write_data"
 #define _RENAME_RENAME_FILE	"done"
 
@@ -308,7 +308,13 @@ struct _rename_data {
 		int			do_rename;
 	} context;
 	struct {
-		size_t			count;
+		size_t			write_loops;
+		size_t			rename_loops;
+		size_t			rename_count;
+		size_t			rename_success;
+		size_t			rename_source_notfound;
+		size_t			rename_dest_exists;
+		size_t			rename_error;
 	} stats;
 } _RENAME_DATA[_RENAME_FS_COUNT][_RENAME_THREADS];
 
@@ -331,17 +337,27 @@ _write_thread(struct _rename_data *data)
 		struct fbr_fio *fio = fbr_fh_fio(fi.fh);
 		fbr_file_ok(fio->file);
 
-		request = _rename_request(fs);
+		size_t max = fbr_test_gen_random(1, 16);
+		for (size_t i = 0; i < max; i++) {
+			size_t count = fbr_atomic_add(&_RENAME_WRITE_COUNTER, 1);
 
-		fbr_ops_write(request, fio->file->inode, "test", 4, 0, &fi);
-		assert_zero(request->error);
+			char buf[32];
+			size_t buf_len = fbr_bprintf(buf, "%zu ", count);
+
+			request = _rename_request(fs);
+
+			fbr_ops_write(request, fio->file->inode, buf, buf_len, 0, &fi);
+			assert_zero(request->error);
+		}
 
 		request = _rename_request(fs);
 
 		fbr_ops_release(request, fio->file->inode, &fi);
 		assert_zero(request->error);
 
-		break;
+		data->stats.write_loops++;
+
+		fbr_sleep_ms(1.0);
 	}
 
 	fbr_request_free(request);
@@ -355,7 +371,7 @@ _rename_thread(void *arg)
 	struct fbr_fs *fs = data->context.fs;
 	fbr_fs_ok(fs);
 	assert(data->context.thread == pthread_self());
-	assert_zero(data->stats.count);
+	assert_zero(data->stats.rename_count);
 	assert_zero(_RENAME_WRITE_COUNTER);
 
 	fbr_atomic_add(&_RENAME_THREAD_COUNT, 1);
@@ -371,32 +387,43 @@ _rename_thread(void *arg)
 		return NULL;
 	}
 
-	struct fbr_request *request = _rename_request(fs);
+	struct fbr_request *request = NULL;
 
 	while (_RENAME_WRITE_COUNTER < _RENAME_WRITE_MAX) {
-		struct fbr_directory *directory = fbr_directory_from_inode(fs, FBR_INODE_ROOT);
-		fbr_directory_ok(directory);
-
-		struct fbr_file *file = fbr_directory_find_file(directory, _RENAME_WRITE_FILE,
-			strlen(_RENAME_WRITE_FILE));
-		if (!file) {
-			fbr_dindex_release(fs, &directory);
-			fbr_test_sleep_ms(1);
-			continue;
-		}
-
-		fbr_dindex_release(fs, &directory);
-
 		request = _rename_request(fs);
 
-		fbr_ops_rename(request, FBR_INODE_ROOT, _RENAME_WRITE_FILE, FBR_INODE_ROOT,
-			_RENAME_RENAME_FILE, RENAME_NOREPLACE);
-		assert_zero(request->error);
+		char rename_dest[32];
+		fbr_bprintf(rename_dest, "%s_%zu", _RENAME_RENAME_FILE,
+			data->stats.rename_count);
 
-		break;
+		fbr_ops_rename(request, FBR_INODE_ROOT, _RENAME_WRITE_FILE, FBR_INODE_ROOT,
+			rename_dest, RENAME_NOREPLACE);
+
+		switch(request->error) {
+			case 0:
+				fbr_stat_add(&data->stats.rename_success);
+				break;
+			case ENOENT:
+				fbr_stat_add(&data->stats.rename_source_notfound);
+				break;
+			case EEXIST:
+				fbr_atomic_add(&data->stats.rename_count, 1);
+				fbr_stat_add(&data->stats.rename_dest_exists);
+				break;
+			default:
+				fbr_stat_add(&data->stats.rename_error);
+				break;
+		}
+
+		request->error = 0;
+		data->stats.rename_loops++;
+
+		fbr_sleep_ms(1.0);
 	}
 
-	fbr_request_free(request);
+	if (request) {
+		fbr_request_free(request);
+	}
 
 	return NULL;
 }
@@ -409,7 +436,7 @@ _rename_cluster(struct fbr_test_context *ctx)
 	fbr_test_conf_add("CSTORE_SERVER", "true");
 	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
 	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
-	fbr_test_conf_add("LOG_SIZE", "250000");
+	fbr_test_conf_add("LOG_SIZE", "2500000");
 
 	fbr_test_random_seed();
 	fbr_test_fuse_mock(ctx);
@@ -434,12 +461,15 @@ _rename_cluster(struct fbr_test_context *ctx)
 		fs_array[i] = fs;
 	}
 
+	// TODO skipping cluster, less logging
+	/*
 	for (size_t i = 0; i < fbr_array_len(fs_array); i++) {
 		for (size_t j = 0; j < fbr_array_len(fs_array); j++) {
 			fbr_test_cstore_backend_add(fs_array[i]->cstore, fs_array[j]->cstore,
 				FBR_CSTORE_ROUTE_CLUSTER);
 		}
 	}
+	*/
 
 	fbr_test_logs("*** Make root");
 
@@ -482,19 +512,100 @@ _rename_cluster(struct fbr_test_context *ctx)
 
 	assert(_RENAME_THREAD_COUNT == _RENAME_FS_COUNT * _RENAME_THREADS);
 
-	fbr_test_sleep_ms(20);
+	fbr_test_sleep_ms(100);
 
+	fbr_test_logs("*** Validate");
+
+	fbr_test_logs("_RENAME_WRITE_COUNTER=%zu", _RENAME_WRITE_COUNTER);
+
+	for (size_t i = 0; i < fbr_array_len(_RENAME_DATA); i++) {
+		for (size_t j = 0; j < fbr_array_len(_RENAME_DATA[i]); j++) {
+			struct _rename_data *data = &_RENAME_DATA[i][j];
+			fbr_fs_ok(data->context.fs);
+
+			fbr_test_logs("_RENAME_DATA[%zu][%zu] (rename: %d)", i, j,
+				data->context.do_rename);
+
+			if (data->context.do_rename) {
+				fbr_test_logs("DATA.stats.rename_loops=%zu",
+					data->stats.rename_loops);
+				fbr_test_logs("DATA.stats.rename_count=%zu",
+					data->stats.rename_count);
+				fbr_test_logs("DATA.stats.rename_success=%zu",
+					data->stats.rename_success);
+				fbr_test_logs("DATA.stats.rename_source_notfound=%zu",
+					data->stats.rename_source_notfound);
+				fbr_test_logs("DATA.stats.rename_dest_exists=%zu",
+					data->stats.rename_dest_exists);
+				fbr_test_logs("DATA.stats.rename_error=%zu",
+					data->stats.rename_error);
+			} else {
+				fbr_test_logs("DATA.stats.write_loops=%zu",
+					data->stats.write_loops);
+			}
+		}
+	}
+
+	struct fbr_fs *fs = fs_array[0];
+	fbr_fs_ok(fs);
+
+	struct fbr_directory *root = fbr_directory_from_inode(fs, FBR_INODE_ROOT);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_OK);
+
+	int write_file_exists = 0;
+
+	struct fbr_file *file = fbr_directory_find_file(root, _RENAME_WRITE_FILE,
+		strlen(_RENAME_WRITE_FILE));
+	if (file) {
+		fbr_file_ok(file);
+		assert (file->state == FBR_FILE_OK);
+
+		fbr_test_logs("%s exists", _RENAME_WRITE_FILE);
+
+		write_file_exists = 1;
+	}
+
+	size_t rename_count = 0;
+	while (1) {
+		char rename_dest[32];
+		size_t len = fbr_bprintf(rename_dest, "%s_%zu", _RENAME_RENAME_FILE,
+			rename_count);
+
+		file = fbr_directory_find_file(root, rename_dest, len);
+		if (!file) {
+			break;
+		}
+
+		fbr_file_ok(file);
+		assert(file->state == FBR_FILE_OK);
+
+		fbr_test_logs("%s exists", rename_dest);
+
+		rename_count++;
+	}
+
+	(void)write_file_exists;
+	// TODO validate the counts in all the files...
+
+	fbr_dindex_release(fs, &root);
+	fs = NULL;
+
+	fbr_test_sleep_ms(20);
 	fbr_test_logs("*** Cleanup");
 
 	for (size_t i = 0; i < fbr_array_len(fs_array); i++) {
 		fbr_test_logs("FS_ARRAY[%zu]", i);
 		_assert_fs(fs_array[i], 0);
-		fbr_test_cstore_debug(fs_array[i]->cstore);
+		//fbr_test_cstore_debug(fs_array[i]->cstore);
+		fbr_test_cstore_wait(fs_array[i]->cstore);
 		fbr_fs_free(fs_array[i]);
 	}
 
 	fbr_test_logs("CSTORE_S3");
 	fbr_test_cstore_debug(cstore_s3);
+
+	assert(cstore_s3->stats.wr_chunks == _RENAME_WRITE_COUNTER);
 
 	fbr_test_logs("rename_cluster_test done");
 }

@@ -38,6 +38,7 @@
 #define FBR_MAX_VERSION_ERRORS			3
 #define FBR_BLOCK_SIZE_CALC			512
 #define FBR_ATTR_TIME_CHANGE_MIN_MSEC		1200
+#define FBR_FLUSH_ALIAS_MAX			2
 
 #define FBR_ENUM_CHUNK_STATE						\
 	FBR_ENUM_NAME(fbr_chunk_state)					\
@@ -337,6 +338,11 @@ struct fbr_flush_data {
 	struct fbr_file				*_file;
 	struct fbr_file				*latest;
 	struct fbr_file				*prev;
+
+	struct {
+		struct fbr_file			*source;
+		struct fbr_file			*alias;
+	} aliases[FBR_FLUSH_ALIAS_MAX];
 
 	enum fbr_flush_flags			flags;
 
