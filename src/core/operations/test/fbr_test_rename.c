@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
@@ -429,6 +430,35 @@ _rename_thread(void *arg)
 }
 
 static void
+_rename_validate_counts(struct fbr_fs *fs, struct fbr_file *file, int *write_validate)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	assert(write_validate);
+
+	char buffer[1024];
+	size_t buffer_len = fbr_test_fs_read(fs, file, 0, buffer, sizeof(buffer));
+	assert(buffer_len < sizeof(buffer));
+	buffer[buffer_len] = '\0';
+
+	size_t values = 0;
+	char *check_pos = buffer;
+	while (*check_pos) {
+		char *end = NULL;
+		long value = strtol(check_pos, &end, 10);
+		assert(end && *end == ' ');
+		assert(value > 0 && (size_t)value <= _RENAME_WRITE_COUNTER);
+
+		write_validate[value - 1]++;
+
+		check_pos = end + 1;
+		values++;
+	}
+
+	fbr_test_logs(" %zu values", values);
+}
+
+static void
 _rename_cluster(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
@@ -461,7 +491,7 @@ _rename_cluster(struct fbr_test_context *ctx)
 		fs_array[i] = fs;
 	}
 
-	// TODO skipping cluster, less logging
+	// TODO skipping cluster for now
 	/*
 	for (size_t i = 0; i < fbr_array_len(fs_array); i++) {
 		for (size_t j = 0; j < fbr_array_len(fs_array); j++) {
@@ -546,14 +576,15 @@ _rename_cluster(struct fbr_test_context *ctx)
 		}
 	}
 
+	int *write_validate = calloc(_RENAME_WRITE_COUNTER, sizeof(*write_validate));
+	assert(write_validate);
+
 	struct fbr_fs *fs = fs_array[0];
 	fbr_fs_ok(fs);
 
 	struct fbr_directory *root = fbr_directory_from_inode(fs, FBR_INODE_ROOT);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
-
-	int write_file_exists = 0;
 
 	struct fbr_file *file = fbr_directory_find_file(root, _RENAME_WRITE_FILE,
 		strlen(_RENAME_WRITE_FILE));
@@ -563,7 +594,7 @@ _rename_cluster(struct fbr_test_context *ctx)
 
 		fbr_test_logs("%s exists", _RENAME_WRITE_FILE);
 
-		write_file_exists = 1;
+		_rename_validate_counts(fs, file, write_validate);
 	}
 
 	size_t rename_count = 0;
@@ -582,12 +613,20 @@ _rename_cluster(struct fbr_test_context *ctx)
 
 		fbr_test_logs("%s exists", rename_dest);
 
+		_rename_validate_counts(fs, file, write_validate);
+
 		rename_count++;
 	}
 
-	(void)write_file_exists;
-	// TODO validate the counts in all the files...
+	fbr_test_sleep_ms(20);
 
+	for (size_t i = 0; i < _RENAME_WRITE_COUNTER; i++) {
+		fbr_ASSERT(write_validate[i] == 1, "count %zu bad: %d", i + 1, write_validate[i]);
+	}
+
+	fbr_test_logs("Renamed writes passed validation!");
+
+	free(write_validate);
 	fbr_dindex_release(fs, &root);
 	fs = NULL;
 
@@ -603,7 +642,8 @@ _rename_cluster(struct fbr_test_context *ctx)
 	}
 
 	fbr_test_logs("CSTORE_S3");
-	fbr_test_cstore_debug(cstore_s3);
+	//fbr_test_cstore_debug(cstore_s3);
+	fbr_test_cstore_wait(cstore_s3);
 
 	assert(cstore_s3->stats.wr_chunks == _RENAME_WRITE_COUNTER);
 
