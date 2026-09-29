@@ -248,6 +248,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			fbr_file_LOCK(fs, alias);
 
+			flush_data->alias = alias;
+
 			fbr_path_get_file(&alias->path, &filename);
 			fbr_rlog(FBR_LOG_FLUSH, "alias detected: '%s' inode: %lu", filename.name,
 				alias->inode);
@@ -258,8 +260,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert(clone->alias);
 
 			_flush_add_alias(flush_data, alias, clone);
-
-			fbr_file_UNLOCK(alias);
 
 			if (flush_data->wbuffers &&
 			    !fbr_is_flag(flush_data->flags, FBR_FLUSH_APPEND)) {
@@ -491,34 +491,34 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 	struct fbr_file *file = flush_data->file;
 	assert_dev(file);
 
-	if (!error) {
-		for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {
-			if (flush_data->aliases[i].source) {
-				struct fbr_file *source = flush_data->aliases[i].source;
-				fbr_file_ok(source);
-				assert_zero(source->alias_file);
+	for (size_t i = 0; i < fbr_array_len(flush_data->aliases) && !error; i++) {
+		if (flush_data->aliases[i].source) {
+			struct fbr_file *source = flush_data->aliases[i].source;
+			fbr_file_ok(source);
+			assert_zero(source->alias_file);
 
-				struct fbr_file *alias = flush_data->aliases[i].alias;
-				fbr_file_ok(alias);
+			struct fbr_file *alias = flush_data->aliases[i].alias;
+			fbr_file_ok(alias);
 
-				fbr_inode_add(fs, alias);
+			fbr_inode_add(fs, alias);
 
-				source->alias_file = alias;
+			source->alias_file = alias;
 
-				fbr_zero(&flush_data->aliases[i]);
-			}
+			fbr_zero(&flush_data->aliases[i]);
 		}
 	}
 
 	if (!flush_data->skip_lock) {
 		fbr_file_UNLOCK(file);
 	}
-
 	if (flush_data->latest) {
 		fbr_file_UNLOCK(flush_data->latest);
 		flush_data->latest = NULL;
 	}
-
+	if (flush_data->alias) {
+		fbr_file_UNLOCK(flush_data->alias);
+		flush_data->alias = NULL;
+	}
 	if (flush_data->prev) {
 		fbr_file_UNLOCK(flush_data->prev);
 		flush_data->prev = NULL;
@@ -657,6 +657,10 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 
 			fbr_index_data_init(fs, index_data, new_directory, previous,
 				flush_data->file, flush_data->wbuffers, flush_data->flags);
+
+			index_data->locked_files[0] = flush_data->latest;
+			index_data->locked_files[1] = flush_data->alias;
+			index_data->locked_files[2] = flush_data->prev;
 
 			if (!index_last) {
 				assert_zero_dev(index_data_cmds);

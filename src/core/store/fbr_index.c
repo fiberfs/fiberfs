@@ -215,16 +215,27 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 		if (file == index_data->file && fbr_is_flag(index_data->flags, FBR_FLUSH_WBUFFER)) {
 			assert_dev(index_data->chunks);
 			modified = 1;
+			has_lock = 1;
 			fbr_rlog(FBR_LOG_INDEX, "modified JSON for: '%s' (chunks)", filename.name);
 			break;
 		} else if (file == index_data->file &&
 		    fbr_is_flag(index_data->flags, FBR_FLUSH_RESIZE) && index_data->chunks) {
 			resize = 1;
+			has_lock = 1;
 			fbr_rlog(FBR_LOG_INDEX, "modified JSON for: '%s' (size)", filename.name);
 			break;
-		}
-		if (file == index_data->file) {
+		} else if (file == index_data->file) {
 			has_lock = 1;
+			break;
+		}
+
+		for (size_t i = 0; i < fbr_array_len(index_data->locked_files); i++) {
+			if (file == index_data->locked_files[i]) {
+				has_lock = 1;
+				break;
+			}
+		}
+		if (has_lock) {
 			break;
 		}
 
