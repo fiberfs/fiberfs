@@ -480,6 +480,7 @@ void fbr_file_UNLOCK(struct fbr_file *file);
 struct fbr_file * fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent,
 	struct fbr_file *source);
 void fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest);
+struct fbr_file *fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file);
 struct fbr_file *fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_extend(struct fbr_file *file, size_t size);
 void fbr_file_generation(struct fbr_file *file);
@@ -549,7 +550,7 @@ int fbr_directory_new_cmp(const struct fbr_directory *left,
 	const struct fbr_directory *right);
 void fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file *file);
-void fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory,
+int fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory,
 	struct fbr_file **file_ref);
 struct fbr_file *fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
 	size_t filename_len);

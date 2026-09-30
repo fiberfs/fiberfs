@@ -292,7 +292,7 @@ _assert_fs(struct fbr_fs *fs, int print)
 }
 
 #define _RENAME_FS_COUNT	1
-#define _RENAME_THREADS		2
+#define _RENAME_THREADS		3
 #define _RENAME_WRITE_MAX	50
 #define _RENAME_WRITE_FILE	"write_data"
 #define _RENAME_RENAME_FILE	"done"
@@ -325,9 +325,11 @@ _write_thread(struct _rename_data *data)
 	struct fbr_fs *fs = data->context.fs;
 	fbr_fs_ok(fs);
 
-	struct fbr_request *request = _rename_request(fs);
+	struct fbr_request *request = NULL;
 
 	while (_RENAME_WRITE_COUNTER < _RENAME_WRITE_MAX) {
+		request = _rename_request(fs);
+
 		struct fuse_file_info fi;
 		fbr_zero(&fi);
 		fi.flags = O_CREAT | O_WRONLY | O_APPEND;
@@ -361,7 +363,9 @@ _write_thread(struct _rename_data *data)
 		fbr_sleep_ms(1.0);
 	}
 
-	fbr_request_free(request);
+	if (request) {
+		fbr_request_free(request);
+	}
 }
 
 static void *
@@ -620,9 +624,16 @@ _rename_cluster(struct fbr_test_context *ctx)
 
 	fbr_test_sleep_ms(20);
 
+	int errors = 0;
 	for (size_t i = 0; i < _RENAME_WRITE_COUNTER; i++) {
-		fbr_ASSERT(write_validate[i] == 1, "count %zu bad: %d", i + 1, write_validate[i]);
+		fbr_test_logs("  count: %zu value: %d", i + 1, write_validate[i]);
+
+		if (write_validate[i] != 1) {
+			errors++;
+		}
 	}
+
+	fbr_ASSERT(!errors, "error(s) found: %d", errors);
 
 	fbr_test_logs("Renamed writes passed validation!");
 
