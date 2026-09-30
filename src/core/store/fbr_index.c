@@ -371,6 +371,14 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	index_data->wbuffers = wbuffers;
 	index_data->flags = flags;
 
+	if (file) {
+		const char *filename = fbr_path_get_file(&file->path, NULL);
+		fbr_rlog(FBR_LOG_INDEX, "INIT '%s' inode: %lu gen: %lu", filename, file->inode,
+			file->generation);
+	} else {
+		fbr_rlog(FBR_LOG_INDEX, "INIT no file (flags: %d)", flags);
+	}
+
 	if (fbr_is_flag(flags, FBR_FLUSH_WBUFFER)) {
 		fbr_file_ok(file);
 		assert_zero(fbr_is_flag(flags, FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |

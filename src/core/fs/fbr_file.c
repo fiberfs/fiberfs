@@ -125,7 +125,7 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 	assert_dev(clone);
 	assert_dev(clone->state == FBR_FILE_INIT);
 
-	fbr_rlog(FBR_LOG_CLONE, "cloned inode: %lu to %lu", source->inode, clone->inode);
+	fbr_rlog(FBR_LOG_CLONE, "source inode: %lu new inode: %lu", source->inode, clone->inode);
 
 	if (source->alias) {
 		clone->alias = fbr_path_shared_take(source->alias);
@@ -134,6 +134,8 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 	fbr_file_merge(fs, source, clone);
 
 	clone->size = source->size;
+
+	fbr_rlog(FBR_LOG_CLONE, "clone->size: %zu", clone->size);
 
 	return clone;
 }
@@ -148,8 +150,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	assert(source != dest);
 
 	const char *filename = fbr_path_get_file(&dest->path, NULL);
-	fbr_rlog(FBR_LOG_MERGE, "'%s' gen: %lu source inode: %lu dest inode: %lu",
-		filename, source->generation, source->inode, dest->inode);
+
+	fbr_rlog(FBR_LOG_MERGE, "'%s' source inode: %lu gen: %lu dest inode: %lu gen: %lu",
+		filename, source->inode, source->generation, dest->inode, dest->generation);
 
 	// TODO if we have a mix of aliasing, chunks should not be merged
 	assert_zero_dev(fbr_path_alias_cmp(source->alias, dest->alias));
@@ -259,6 +262,20 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			0, 0);
 		assert_dev(ret != -ENOSYS);
 	}
+}
+
+struct fbr_file *
+fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file)
+{
+	assert(fs);
+	fbr_file_ok(file);
+
+	if (file->alias_file) {
+		file = fbr_file_get_alias(fs, file->alias_file);
+		assert_dev(file);
+	}
+
+	return file;
 }
 
 struct fbr_file *

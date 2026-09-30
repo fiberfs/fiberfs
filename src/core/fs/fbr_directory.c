@@ -272,7 +272,7 @@ fbr_directory_add_file(struct fbr_fs *fs, struct fbr_directory *directory, struc
 	directory->file_count++;
 }
 
-void
+int
 fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory,
     struct fbr_file **file_ref)
 {
@@ -298,10 +298,10 @@ fbr_directory_remove_file(struct fbr_fs *fs, struct fbr_directory *directory,
 
 		directory->file_count--;
 
-		return;
+		return 1;
 	}
 
-	fbr_ABORT("fbr_directory_remove_file() file not found");
+	return 0;
 }
 
 struct fbr_file *
