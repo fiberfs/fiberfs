@@ -253,6 +253,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			// TODO delete file, use latest
 		}
 
+		// TODO after getting an alias, we should re-alias if we took multiple jumps
+
 		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
 		if (!alias && latest) {
 			alias = fbr_file_get_alias(fs, latest->alias_file);
