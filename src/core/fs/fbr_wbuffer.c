@@ -691,7 +691,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	int error = fbr_fs_flush(fs, &flush_data);
 
 	if (!error) {
-		struct fbr_file *alias = fbr_file_find_alias(fs, file);
+		struct fbr_file *alias = fbr_file_find_alias(fs, file, 1);
 		assert_zero_dev(alias->local_only);
 
 		fbr_wbuffers_reset(fs, fio);

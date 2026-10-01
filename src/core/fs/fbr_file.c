@@ -265,21 +265,34 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 }
 
 struct fbr_file *
-fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file)
+fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file, int lock)
 {
 	assert(fs);
 	fbr_file_ok(file);
 
-	if (file->alias_file) {
-		file = fbr_file_get_alias(fs, file->alias_file);
-		assert_dev(file);
+
+	if (file->has_alias_file) {
+		assert_dev(file->alias_file);
+
+		if (lock) {
+			fbr_file_LOCK(fs, file);
+		}
+
+		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file, lock);
+		assert_dev(alias);
+
+		if (lock) {
+			fbr_file_UNLOCK(file);
+		}
+
+		return alias;
 	}
 
 	return file;
 }
 
 struct fbr_file *
-fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file)
+fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file, int lock)
 {
 	fbr_fs_ok(fs);
 
@@ -292,11 +305,23 @@ fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file)
 		fbr_rlog(FBR_LOG_INODE, "ALIAS name: '%s' inode: %lu type: %s", filename.name,
 			file->inode, S_ISDIR(file->mode) ? "DIR" : "FILE");
 
-		if (!file->alias_file) {
+		if (!file->has_alias_file) {
+			assert_zero_dev(file->alias_file);
 			break;
 		}
 
-		file = file->alias_file;
+		if (lock) {
+			fbr_file_LOCK(fs, file);
+		}
+
+		struct fbr_file *alias = file->alias_file;
+		assert_dev(alias);
+
+		if (lock) {
+			fbr_file_UNLOCK(file);
+		}
+
+		file = alias;
 	}
 
 	return file;
@@ -499,6 +524,7 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 		fbr_path_shared_release(file->alias);
 	}
 	if (file->alias_file) {
+		assert_dev(file->has_alias_file);
 		fbr_inode_release(fs, &file->alias_file);
 	}
 
