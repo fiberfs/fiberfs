@@ -124,7 +124,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	assert_dev(file->state == FBR_FILE_OK);
 	assert_dev(file->generation);
 
-	struct fbr_file *alias = fbr_file_find_alias(fs, file);
+	struct fbr_file *alias = fbr_file_find_alias(fs, file, 1);
 	fbr_file_ok(alias);
 
 	struct fbr_fio *fio = fbr_fio_alloc(fs, alias, 0);

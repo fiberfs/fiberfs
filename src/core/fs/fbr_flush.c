@@ -163,6 +163,8 @@ _flush_contains_file(struct fbr_flush_data *flush_data, struct fbr_file *file)
 	return 0;
 }
 
+// Note: can only be used during flush with a DIRSTATE_LOADING lock
+// Note: need source->lock if source state is OK
 static void
 _flush_set_alias(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *alias)
 {
@@ -173,13 +175,15 @@ _flush_set_alias(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *al
 
 	fbr_inode_add(fs, alias);
 
-	if(source->alias_file) {
+	if(source->has_alias_file) {
+		assert_dev(source->alias_file);
 		fbr_inode_release(fs, &source->alias_file);
 	}
 
 	assert_zero_dev(source->alias_file);
 
 	source->alias_file = alias;
+	source->has_alias_file = 1;
 }
 
 static void
@@ -273,12 +277,12 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			// TODO delete file, use latest
 		}
 
-		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
+		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file, 0);
 		if (alias && alias != file->alias_file) {
 			_flush_set_alias(fs, file, alias);
 		}
 		if (!alias && latest) {
-			alias = fbr_file_get_alias(fs, latest->alias_file);
+			alias = fbr_file_get_alias(fs, latest->alias_file, 0);
 			if (alias && alias != latest->alias_file) {
 				assert(alias != file);
 				_flush_set_alias(fs, latest, alias);
@@ -291,6 +295,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			fbr_file_LOCK(fs, alias);
 
+			assert_zero_dev(flush_data->alias);
 			flush_data->alias = alias;
 
 			fbr_path_get_file(&alias->path, &filename);
@@ -499,7 +504,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_dev(file == latest);
 		}
 
-		assert_zero(latest->alias_file);
+		assert_zero(latest->has_alias_file);
 
 		struct fbr_file *dest = fbr_directory_find_file(directory,
 			flush_data->filename.name, flush_data->filename.length);
@@ -546,8 +551,13 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		dest->state = FBR_FILE_OK;
 
 		if (latest_modified) {
-			struct fbr_file *f_alias = fbr_file_find_alias(fs, file);
+			struct fbr_file *f_alias = fbr_file_find_alias(fs, file, 0);
 			if (f_alias != latest) {
+				assert_zero_dev(flush_data->alias);
+				flush_data->alias = f_alias;
+
+				fbr_file_LOCK(fs, f_alias);
+
 				_flush_queue_alias(flush_data, f_alias, dest);
 			}
 		}
@@ -598,6 +608,7 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 	for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {
 		if (!error && flush_data->aliases[i].source) {
 			struct fbr_file *source = flush_data->aliases[i].source;
+			assert_zero(source->has_alias_file);
 			assert_zero(source->alias_file);
 
 			_flush_set_alias(fs, source, flush_data->aliases[i].alias);

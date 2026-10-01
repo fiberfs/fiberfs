@@ -145,12 +145,18 @@ fbr_inode_take_alias(struct fbr_fs *fs, fbr_inode_t inode)
 
 	assert_dev(file->inode == inode);
 
-	if (file->alias_file) {
-		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
+	if (file->has_alias_file) {
+		assert_dev(file->alias_file);
+
+		fbr_file_LOCK(fs, file);
+
+		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file, 1);
 		assert_dev(alias);
 		assert_dev(alias->refcounts.inode);
 
 		fbr_inode_add(fs, alias);
+
+		fbr_file_UNLOCK(file);
 		fbr_inode_release(fs, &file);
 
 		return alias;

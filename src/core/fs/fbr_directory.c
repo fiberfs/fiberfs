@@ -654,8 +654,9 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 		return NULL;
 	}
 
-	assert_zero(file->alias_file);
-
+	assert_zero(file->has_alias_file);
+	assert_zero_dev(file->alias_file);
+;
 	struct fbr_fullpath_name dirpath;
 	fbr_path_get_full(&file->path, &dirpath);
 
