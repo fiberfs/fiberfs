@@ -124,7 +124,10 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	assert_dev(file->state == FBR_FILE_OK);
 	assert_dev(file->generation);
 
-	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 0);
+	struct fbr_file *alias = fbr_file_find_alias(fs, file);
+	fbr_file_ok(alias);
+
+	struct fbr_fio *fio = fbr_fio_alloc(fs, alias, 0);
 	fbr_fio_ok(fio);
 
 	if (fbr_is_flag(fi->flags, O_APPEND)) {
@@ -153,8 +156,8 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	fbr_zero(&entry);
 	entry.attr_timeout = fbr_fs_dentry_ttl(fs);
 	entry.entry_timeout = fbr_fs_dentry_ttl(fs);
-	entry.ino = file->inode;
-	fbr_file_attr(fs, file, &entry.attr);
+	entry.ino = alias->inode;
+	fbr_file_attr(fs, alias, &entry.attr);
 
 	if (request->not_fuse) {
 		fbr_inode_release(fs, &file);

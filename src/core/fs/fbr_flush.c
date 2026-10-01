@@ -172,6 +172,9 @@ _flush_add_alias(struct fbr_flush_data *flush_data, struct fbr_file *source, str
 	assert_dev(alias);
 	assert(source != alias);
 
+	fbr_rlog(FBR_LOG_FLUSH, "ALIAS source inode: %lu gen: %lu to inode: %lu gen: %lu",
+		source->inode, source->generation, alias->inode, alias->generation);
+
 	for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {
 		if (!flush_data->aliases[i].source) {
 			flush_data->aliases[i].source = source;
@@ -419,8 +422,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_rlog(FBR_LOG_FLUSH, "EEXIST detected (want exclusive)");
 			return EEXIST;
 		} else if (latest_modified) {
-			// TODO should we alias here?
-			//_flush_add_alias(flush_data, file, latest);
+			_flush_add_alias(flush_data, file, latest);
 		}
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_UNLINK)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_UNLINK);
@@ -483,6 +485,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 				return EEXIST;
 			}
 
+			fbr_rlog(FBR_LOG_FLUSH, "DELETE dest '%s' inode: %lu gen: %lu",
+				flush_data->filename.name, dest->inode, dest->generation);
+
 			struct fbr_flush_data *flush_rm = fbr_flush_data_init(NULL, dest, NULL,
 				NULL, NULL, FBR_FLUSH_DELETE, flush_data);
 
@@ -494,6 +499,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		dest = fbr_file_alloc(fs, directory, &flush_data->filename);
 		fbr_file_ok(dest);
 		assert_dev(dest->state == FBR_FILE_INIT);
+
+		fbr_rlog(FBR_LOG_FLUSH, "NEW dest '%s' inode: %lu gen: %lu", flush_data->filename.name,
+			dest->inode, dest->generation);
 
 		if (latest->alias) {
 			dest->alias = fbr_path_shared_take(latest->alias);
@@ -559,8 +567,8 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 	struct fbr_file *file = flush_data->file;
 	assert_dev(file);
 
-	for (size_t i = 0; i < fbr_array_len(flush_data->aliases) && !error; i++) {
-		if (flush_data->aliases[i].source) {
+	for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {
+		if (!error && flush_data->aliases[i].source) {
 			struct fbr_file *source = flush_data->aliases[i].source;
 			fbr_file_ok(source);
 			assert_zero(source->alias_file);
@@ -571,9 +579,9 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 			fbr_inode_add(fs, alias);
 
 			source->alias_file = alias;
-
-			fbr_zero(&flush_data->aliases[i]);
 		}
+
+		fbr_zero(&flush_data->aliases[i]);
 	}
 
 	if (!flush_data->skip_lock) {
