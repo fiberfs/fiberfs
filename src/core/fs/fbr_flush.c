@@ -4,22 +4,36 @@
  *
  */
 
+#include <stdlib.h>
+
 #include "fiberfs.h"
 #include "fbr_fs.h"
 #include "core/store/fbr_store.h"
 
-void
+struct fbr_flush_data *
 fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, struct stat *attr,
-    struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags)
+    struct fbr_wbuffer *wbuffers, const char *filename, enum fbr_flush_flags flags,
+    struct fbr_flush_data *current)
 {
-	assert(flush_data);
 	fbr_file_ok(file);
 	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
-		FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_UNLINK | FBR_FLUSH_RMDIR));
+		FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_UNLINK | FBR_FLUSH_RMDIR |
+		FBR_FLUSH_RENAME | FBR_FLUSH_DELETE));
+
+	int do_free = 0;
+
+	if (!flush_data) {
+		flush_data = malloc(sizeof(*flush_data));
+		assert(flush_data);
+
+		do_free = 1;
+	}
 
 	fbr_zero(flush_data);
 	flush_data->file = file;
+	flush_data->_file = file;
 	flush_data->flags = flags;
+	flush_data->do_free = do_free;
 
 	if (attr) {
 		assert(fbr_is_flag(flags, FBR_FLUSH_ATTR | FBR_FLUSH_RESIZE));
@@ -33,7 +47,26 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 		flush_data->wbuffers = wbuffers;
 	}
 
+	if (filename) {
+		assert(fbr_is_flag(flags, FBR_FLUSH_RENAME));
+		fbr_path_name_init(&flush_data->filename, filename);
+	}
+
+	while (current) {
+		fbr_flush_data_ok(current);
+		assert_dev(current != flush_data);
+
+		if (!current->next) {
+			current->next = flush_data;
+			break;
+		}
+
+		current = current->next;
+	}
+
 	fbr_flush_data_ok(flush_data);
+
+	return flush_data;
 }
 
 static void
@@ -47,7 +80,13 @@ _flush_data_free(struct fbr_flush_data *flush_data_cmds)
 
 		flush_data_cmds = flush_data->next;
 
+		int do_free = flush_data->do_free;
+
 		fbr_zero(flush_data);
+
+		if (do_free) {
+			free(flush_data);
+		}
 	}
 }
 
@@ -103,57 +142,257 @@ _directory_get_loading(struct fbr_fs *fs, struct fbr_path_name *dirname, fbr_ino
 }
 
 static int
+_flush_contains_file(struct fbr_flush_data *flush_data, struct fbr_file *file)
+{
+	assert_dev(flush_data);
+	assert_dev(flush_data->head);
+	assert_dev(file);
+
+	struct fbr_flush_data *flush_data_ptr = flush_data->head;
+
+	while (flush_data_ptr != flush_data) {
+		fbr_flush_data_ok(flush_data_ptr);
+
+		if (flush_data_ptr->file == file) {
+			return 1;
+		}
+
+		flush_data_ptr = flush_data_ptr->next;
+	}
+
+	return 0;
+}
+
+// Note: can only be used during flush with a DIRSTATE_LOADING lock
+// Note: need source->lock if source state is OK
+static void
+_flush_set_alias(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *alias)
+{
+	assert_dev(fs);
+	fbr_file_ok(source);
+	fbr_file_ok(alias);
+	assert_zero(alias->alias_file);
+
+	fbr_rlog(FBR_LOG_FLUSH, "ALIAS source inode: %lu gen: %lu to inode: %lu gen: %lu",
+		source->inode, source->generation, alias->inode, alias->generation);
+
+	fbr_inode_add(fs, alias);
+
+	assert_zero(source->has_alias_file);
+	assert_zero(source->alias_file);
+	/*
+	 * TODO revisit this after rename and make an alias service with locking
+	if(source->has_alias_file) {
+		assert_dev(source->alias_file);
+		fbr_inode_release(fs, &source->alias_file);
+	}
+	*/
+
+	assert_zero_dev(source->alias_file);
+
+	source->alias_file = alias;
+	source->has_alias_file = 1;
+}
+
+static void
+_flush_queue_alias(struct fbr_flush_data *flush_data, struct fbr_file *source,
+    struct fbr_file *alias)
+{
+	assert_dev(flush_data);
+	assert_dev(source);
+	assert_zero(source->alias_file);
+	assert_dev(alias);
+	assert(source != alias);
+
+	for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {
+		if (!flush_data->aliases[i].source) {
+			flush_data->aliases[i].source = source;
+			flush_data->aliases[i].alias = alias;
+			return;
+		}
+
+		assert(flush_data->aliases[i].source != source);
+	}
+
+	fbr_ABORT("Too many aliases");
+}
+
+static int
 _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flush_data *flush_data)
 {
 	assert_dev(fs);
 	assert_dev(directory);
 	assert_dev(directory->state == FBR_DIRSTATE_LOADING);
 	assert_dev(flush_data);
-	assert_dev(flush_data->file);
 	assert_dev(flush_data->flags);
+	assert_zero_dev(flush_data->latest);
+	assert_zero_dev(flush_data->prev_file);
 
 	struct fbr_file *file = flush_data->file;
+	assert_dev(file);
+
+	if (!flush_data->skip_lock) {
+		fbr_file_LOCK(fs, file);
+	}
+
+	int file_new = 0;
+	if (file->state == FBR_FILE_INIT || file->local_only) {
+		file_new = 1;
+	}
 
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
 
-	fbr_rlog(FBR_LOG_MERGE, "starting merge '%s' curr gen: %lu inode: %lu dir new gen: %lu",
-		filename.name, file->generation, file->inode, directory->generation);
+	fbr_rlog(FBR_LOG_FLUSH, "FILE '%s' inode: %lu gen: %lu (directory->gen: %lu)",
+		filename.name, file->inode, file->generation, directory->generation);
 
-	struct fbr_file *latest = fbr_directory_find_file(directory, filename.name,
-		filename.length);
+	struct fbr_file *latest = NULL;
+	int latest_modified = 0;
 
-	int remote_merge = 0;
-	int local_update = 0;
+	if (!flush_data->skip_latest) {
+		latest = fbr_directory_find_file(directory, filename.name, filename.length);
+	}
+	if (latest && latest != file) {
+		assert_zero(_flush_contains_file(flush_data, latest));
 
-	if (latest && latest->generation > file->generation) {
-		fbr_rlog(FBR_LOG_FLUSH, "new remote generation found (%lu > %lu)",
-			latest->generation, file->generation);
-		remote_merge = 1;
-	} else if (latest && latest != file) {
-		fbr_rlog(FBR_LOG_FLUSH, "local update found (%lu != %lu)",
-			latest->inode, file->inode);
-		local_update = 1;
+		if (latest->generation > file->generation) {
+			fbr_rlog(FBR_LOG_FLUSH, "LATEST found inode: %lu gen: %lu (new gen)",
+				latest->inode, latest->generation);
+		} else {
+			fbr_rlog(FBR_LOG_FLUSH, "LATEST found inode: %lu gen: %lu (new inode)",
+				latest->inode, latest->generation);
+		}
+
+		fbr_file_LOCK(fs, latest);
+
+		flush_data->latest = latest;
+		latest_modified = 1;
 	}
 
 	fbr_file_generation(file);
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_WBUFFER)) {
 		assert_dev(flush_data->flags < FBR_FLUSH_MKDIR);
+		assert_zero_dev(flush_data->skip_latest);
 
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_WBUFFER");
+
+		if (latest_modified && fbr_alias_path_cmp(file, latest)) {
+			fbr_ABORT("TODO alias mismatch");
+			// TODO delete file, use latest
+		}
+
+		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
+		if (alias && alias != file->alias_file) {
+			// TODO implement this deferred to reduce alias chaining
+			//_flush_set_alias(fs, file, alias);
+		}
+		if (!alias && latest) {
+			alias = fbr_file_get_alias(fs, latest->alias_file);
+			if (alias && alias != latest->alias_file) {
+				assert(alias != file);
+				// TODO implement this deferred to reduce alias chaining
+				//_flush_set_alias(fs, latest, alias);
+			}
+		}
+		if (alias && alias != latest) {
+			fbr_file_ok(alias);
+			assert(alias != file);
+			assert_zero(_flush_contains_file(flush_data, alias));
+
+			fbr_file_LOCK(fs, alias);
+
+			assert_zero_dev(flush_data->alias_file);
+			flush_data->alias_file = alias;
+
+			fbr_path_get_file(&alias->path, &filename);
+
+			// Write isolated to clone when aliasing
+
+			struct fbr_file *clone = fbr_file_clone(fs, directory, alias);
+			fbr_file_ok(clone);
+			assert_dev(clone->state == FBR_FILE_INIT);
+
+			_flush_queue_alias(flush_data, alias, clone);
+
+			if (flush_data->wbuffers &&
+			    !fbr_is_flag(flush_data->flags, FBR_FLUSH_APPEND)) {
+				fbr_wbuffers_merge(fs, clone, flush_data->wbuffers);
+			}
+
+			int removed = fbr_directory_remove_file(fs, directory, &alias);
+			if (!removed) {
+				struct fbr_file *dup = fbr_directory_find_file(directory,
+					filename.name, filename.length);
+				if (dup) {
+					fbr_directory_remove_file(fs, directory, &dup);
+				}
+			}
+
+			fbr_file_generation(clone);
+			fbr_directory_add_file(fs, directory, clone);
+
+			fbr_file_LOCK(fs, clone);
+
+			assert_zero(flush_data->prev_file);
+			assert_zero(flush_data->skip_lock);
+
+			flush_data->file = clone;
+			flush_data->prev_file = file;
+
+			file = clone;
+
+			latest = clone;
+			latest_modified = 0;
+		} else if (alias && alias == latest) {
+			assert_dev(latest_modified);
+			assert_zero(flush_data->prev_file);
+			assert_zero(flush_data->skip_lock);
+
+			flush_data->file = latest;
+			flush_data->latest = NULL;
+			flush_data->prev_file = file;
+
+			file = latest;
+			latest_modified = 0;
+		}
 
 		if (latest && S_ISDIR(latest->mode)) {
 			fbr_rlog(FBR_LOG_FLUSH, "wbuffer EISDIR detected");
 			return EISDIR;
-		} else if (remote_merge || local_update) {
+		} else if (latest_modified) {
+			fbr_rlog(FBR_LOG_FLUSH, "MERGING latest into file");
+
+			// TODO for write isolation just merge into a clone
+
 			fbr_file_merge(fs, latest, file);
-			fbr_directory_remove_file(fs, directory, latest);
+			fbr_directory_remove_file(fs, directory, &latest);
 			fbr_directory_add_file(fs, directory, file);
 
 			fbr_file_generation(file);
-		} else if (!latest) {
+		} else if (!latest && file_new) {
+			fbr_rlog(FBR_LOG_FLUSH, "ADDING file");
 			fbr_directory_add_file(fs, directory, file);
+		} else if (!latest) {
+			struct fbr_file *file_new = fbr_file_alloc(fs, directory, &filename);
+			fbr_file_ok(file_new);
+			assert_dev(file_new->state == FBR_FILE_INIT);
+
+			fbr_rlog(FBR_LOG_FLUSH, "NEW file inode: %lu gen: %lu", file_new->inode,
+				file_new->generation);
+
+			fbr_file_generation(file_new);
+			_flush_queue_alias(flush_data, file, file_new);
+
+			fbr_file_LOCK(fs, file_new);
+
+			assert_zero(flush_data->prev_file);
+			assert_zero(flush_data->skip_lock);
+
+			flush_data->file = file_new;
+			flush_data->prev_file = file;
+
+			file = file_new;
 		} else {
 			assert_dev(latest == file);
 		}
@@ -187,17 +426,26 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_file_set_attr(fs, clone, flush_data->attr);
 
-		if (remote_merge || local_update) {
+		if (latest_modified) {
 			fbr_file_generation(clone);
 		}
 
-		clone->state = FBR_FILE_OK;
-
-		fbr_directory_remove_file(fs, directory, latest);
+		fbr_directory_remove_file(fs, directory, &latest);
 		fbr_directory_add_file(fs, directory, clone);
 
+		assert_zero_dev(latest);
+
+		fbr_file_LOCK(fs, clone);
+
+		assert_zero(flush_data->prev_file);
+		assert_zero(flush_data->skip_lock);
+
+		flush_data->file = clone;
+		flush_data->prev_file = file;
+
+		file = clone;
 		latest = clone;
-		local_update = 1;
+		latest_modified = 0;
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_FILE)) {
 		assert_dev(flush_data->flags < FBR_FLUSH_UNLINK);
 		assert_zero(file->size);
@@ -210,6 +458,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_EXCLUSIVE)) {
 			fbr_rlog(FBR_LOG_FLUSH, "EEXIST detected (want exclusive)");
 			return EEXIST;
+		} else if (latest_modified) {
+			// TODO for write isolation dont alias
+			_flush_queue_alias(flush_data, file, latest);
 		}
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_UNLINK)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_UNLINK);
@@ -224,7 +475,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			return EISDIR;
 		}
 
-		fbr_directory_remove_file(fs, directory, latest);
+		fbr_directory_remove_file(fs, directory, &latest);
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RMDIR)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_RMDIR);
 
@@ -238,7 +489,91 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			return ENOTDIR;
 		}
 
-		fbr_directory_remove_file(fs, directory, latest);
+		fbr_directory_remove_file(fs, directory, &latest);
+	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RENAME)) {
+		assert_dev(flush_data->flags == FBR_FLUSH_RENAME ||
+			flush_data->flags == (FBR_FLUSH_RENAME | FBR_FLUSH_RENAME_UNIQUE));
+		assert_dev(flush_data->filename.length);
+
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_RENAME");
+
+		if (!latest) {
+			fbr_rlog(FBR_LOG_FLUSH, "rename ENOENT detected (source)");
+			return ENOENT;
+		} else if (S_ISDIR(latest->mode)) {
+			fbr_rlog(FBR_LOG_FLUSH, "rename EISDIR detected");
+			return EISDIR;
+		} else if (latest_modified) {
+			fbr_file_generation(latest);
+		} else {
+			assert_dev(file == latest);
+		}
+
+		// TODO flush_data->alias_latest
+		assert_zero(latest->has_alias_file);
+
+		struct fbr_file *dest = fbr_directory_find_file(directory,
+			flush_data->filename.name, flush_data->filename.length);
+
+		if (dest) {
+			if (S_ISDIR(dest->mode)) {
+				fbr_rlog(FBR_LOG_FLUSH, "rename EISDIR detected (dest)");
+				return EISDIR;
+			} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RENAME_UNIQUE)) {
+				fbr_rlog(FBR_LOG_FLUSH, "rename EEXIST detected (dest)");
+				return EEXIST;
+			}
+
+			fbr_rlog(FBR_LOG_FLUSH, "DELETE dest '%s' inode: %lu gen: %lu",
+				flush_data->filename.name, dest->inode, dest->generation);
+
+			struct fbr_flush_data *flush_rm = fbr_flush_data_init(NULL, dest, NULL,
+				NULL, NULL, FBR_FLUSH_DELETE, flush_data);
+
+			flush_rm->skip_latest = 1;
+
+			fbr_directory_remove_file(fs, directory, &dest);
+		}
+
+		dest = fbr_file_alloc(fs, directory, &flush_data->filename);
+		fbr_file_ok(dest);
+		assert_dev(dest->state == FBR_FILE_INIT);
+
+		fbr_rlog(FBR_LOG_FLUSH, "NEW dest '%s' inode: %lu gen: %lu", flush_data->filename.name,
+			dest->inode, dest->generation);
+
+		if (latest->alias_path) {
+			fbr_alias_path_take(fs, latest, dest);
+			assert_dev(dest->alias_path);
+		}
+
+		fbr_file_merge(fs, latest, dest);
+		fbr_file_generation(dest);
+		_flush_queue_alias(flush_data, latest, dest);
+
+		if (!dest->alias_path) {
+			fbr_alias_path_alloc(fs, dest, &filename);
+			assert_dev(dest->alias_path);
+		}
+
+		dest->state = FBR_FILE_OK;
+
+		if (latest_modified) {
+			struct fbr_file *alias_file = fbr_file_find_alias(fs, file);
+			if (alias_file != latest) {
+				assert_zero_dev(flush_data->alias_file);
+				flush_data->alias_file = alias_file;
+
+				fbr_file_LOCK(fs, alias_file);
+
+				_flush_queue_alias(flush_data, alias_file, dest);
+			}
+		}
+
+		fbr_directory_remove_file(fs, directory, &latest);
+	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_DELETE)) {
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_DELETE");
+		assert_zero_dev(latest);
 	}
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RESIZE)) {
@@ -252,7 +587,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		} else if (S_ISDIR(latest->mode)) {
 			fbr_rlog(FBR_LOG_FLUSH, "resize EISDIR detected");
 			return EISDIR;
-		} else if (remote_merge || local_update) {
+		} else if (latest_modified) {
 			fbr_file_generation(latest);
 		} else {
 			assert_dev(file == latest);
@@ -268,6 +603,96 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	return 0;
 }
 
+static void
+_flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
+{
+	assert_dev(fs);
+	fbr_flush_data_ok(flush_data);
+	assert_dev(flush_data->flags);
+
+	struct fbr_file *file = flush_data->file;
+	assert_dev(file);
+
+	// TODO move this after unlocking everything, non-alias writes will be merged
+	for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {
+		if (!error && flush_data->aliases[i].source) {
+			struct fbr_file *source = flush_data->aliases[i].source;
+			assert_zero(source->has_alias_file);
+			assert_zero(source->alias_file);
+
+			_flush_set_alias(fs, source, flush_data->aliases[i].alias);
+		}
+
+		fbr_zero(&flush_data->aliases[i]);
+	}
+
+	if (!flush_data->skip_lock) {
+		fbr_file_UNLOCK(file);
+	}
+	if (flush_data->latest) {
+		fbr_file_UNLOCK(flush_data->latest);
+		flush_data->latest = NULL;
+	}
+	if (flush_data->alias_file) {
+		fbr_file_UNLOCK(flush_data->alias_file);
+		flush_data->alias_file = NULL;
+	}
+	if (flush_data->alias_latest) {
+		fbr_file_UNLOCK(flush_data->alias_latest);
+		flush_data->alias_latest = NULL;
+	}
+	if (flush_data->prev_file) {
+		fbr_file_UNLOCK(flush_data->prev_file);
+		flush_data->prev_file = NULL;
+	}
+
+	flush_data->file = flush_data->_file;
+}
+
+static int
+_flush_cmds_merge(struct fbr_fs *fs, struct fbr_directory *directory,
+    struct fbr_flush_data *flush_data_cmds)
+{
+	assert_dev(fs);
+	assert_dev(directory);
+	assert_dev(flush_data_cmds);
+
+	struct fbr_flush_data *flush_data = flush_data_cmds;
+	size_t cmd_count = 0;
+
+	while (flush_data) {
+		fbr_flush_data_ok(flush_data);
+		assert_dev(flush_data->flags);
+
+		flush_data->head = flush_data_cmds;
+
+		struct fbr_file *file = flush_data->file;
+		assert(file->parent_inode == flush_data_cmds->file->parent_inode);
+
+		fbr_rlog(FBR_LOG_FLUSH, "command: %zu", cmd_count);
+
+		assert_zero(_flush_contains_file(flush_data, file));
+
+		int ret = _flush_merge(fs, directory, flush_data);
+		if (ret) {
+			struct fbr_flush_data *flush_data_ptr = flush_data_cmds;
+			while (flush_data_ptr != flush_data) {
+				_flush_done(fs, flush_data_ptr, ret);
+				flush_data_ptr = flush_data_ptr->next;
+			}
+
+			_flush_done(fs, flush_data, ret);
+
+			return ret;
+		}
+
+		flush_data = flush_data->next;
+		cmd_count++;
+	}
+
+	return 0;
+}
+
 int
 fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 {
@@ -277,7 +702,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 	fbr_inode_t inode = flush_data_cmds->file->parent_inode;
 	struct fbr_file *parent = fbr_inode_take(fs, inode);
 	if (!parent) {
-		fbr_rlog(FBR_LOG_ERROR, "flush parent inode missing (%lu)", inode);
+		fbr_rlog(FBR_LOG_FLUSH, "ERROR parent inode missing (%lu)", inode);
 		return ENOENT;
 	}
 
@@ -288,7 +713,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 	struct fbr_fs_timeout timeout;
 	fbr_fs_timeout_init(&timeout);
 
-	fbr_rlog(FBR_LOG_FLUSH, "directory: '%s'", dirpath.path.name);
+	fbr_rlog(FBR_LOG_FLUSH, "INIT directory: '%s'", dirpath.path.name);
 
 	struct fbr_directory *directory = fbr_directory_get(fs, &dirpath.path, inode, 1, 0);
 	if (!directory) {
@@ -300,7 +725,6 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 	struct fbr_index_data _index_data_cmds[FBR_INDEX_MAX_CMDS];
 	struct fbr_index_data *index_data_cmds;
 
-	size_t cmd_count = 0;
 	unsigned int version_matches = 0;
 	fbr_id_t last_version = 0, directory_version;
 	int ret = EIO;
@@ -310,10 +734,6 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 		assert_dev(directory->state == FBR_DIRSTATE_OK);
 
 		index_data_cmds = NULL;
-		cmd_count = 0;
-
-		fbr_rlog(FBR_LOG_FLUSH, "directory: '%s' found generation: %lu attempts: %u",
-			dirpath.path.name, directory->generation, timeout.attempts);
 
 		// Lock on LOADING state
 		struct fbr_directory *new_directory = _directory_get_loading(fs, &dirpath.path,
@@ -335,55 +755,35 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 
 		new_directory->generation++;
 
-		struct fbr_flush_data *flush_data = flush_data_cmds;
-		while (flush_data) {
-			fbr_flush_data_ok(flush_data);
-			assert_dev(flush_data->flags);
+		fbr_rlog(FBR_LOG_FLUSH, "LOOP %u directory: '%s' inode: %lu gen: %lu",
+			timeout.attempts, dirpath.path.name, previous->inode, previous->generation);
 
-			struct fbr_file *file = flush_data->file;
-			assert(file->parent_inode == inode);
+		ret = _flush_cmds_merge(fs, new_directory, flush_data_cmds);
+		if (ret) {
+			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
+			fbr_dindex_release(fs, &new_directory);
+			fbr_dindex_release(fs, &directory);
 
-			fbr_rlog(FBR_LOG_FLUSH, "flush command: %zu", cmd_count);
-
-			ret = _flush_merge(fs, new_directory, flush_data);
-			if (ret) {
-				fbr_rlog(FBR_LOG_ERROR, "flush merge failed %d (%s)", ret,
-					fbr_berror(ret, errbuf));
-
-				fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_ERROR);
-				fbr_dindex_release(fs, &new_directory);
-				fbr_dindex_release(fs, &directory);
-
-				return ret;
-			}
-
-			flush_data = flush_data->next;
-			cmd_count++;
+			break;
 		}
-
-		assert(cmd_count <= fbr_array_len(_index_data_cmds));
 
 		size_t count = 0;
 		struct fbr_index_data *index_last = NULL;
 
-		flush_data = flush_data_cmds;
+		struct fbr_flush_data *flush_data = flush_data_cmds;
 		while (flush_data) {
 			fbr_flush_data_ok(flush_data);
 
-			struct fbr_file *file = flush_data->file;
-
-			struct fbr_flush_data *flush_data_check = flush_data_cmds;
-			while (flush_data_check != flush_data) {
-				assert(flush_data_check->file != file);
-				flush_data_check = flush_data_check->next;
-			}
-
-			fbr_file_LOCK(fs, file);
-
+			assert(count < fbr_array_len(_index_data_cmds));
 			struct fbr_index_data *index_data = &_index_data_cmds[count];
 
-			fbr_index_data_init(fs, index_data, new_directory, previous, file,
-				flush_data->wbuffers, flush_data->flags);
+			fbr_index_data_init(fs, index_data, new_directory, previous,
+				flush_data->file, flush_data->wbuffers, flush_data->flags);
+
+			index_data->locked_files[0] = flush_data->latest;
+			index_data->locked_files[1] = flush_data->alias_file;
+			index_data->locked_files[2] = flush_data->alias_latest;
+			index_data->locked_files[3] = flush_data->prev_file;
 
 			if (!index_last) {
 				assert_zero_dev(index_data_cmds);
@@ -402,11 +802,19 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 		}
 
 		assert_dev(index_data_cmds);
-		assert_dev(count == cmd_count);
 
 		int retry = 0;
 
 		ret = fbr_index_write(fs, index_data_cmds);
+
+		flush_data = flush_data_cmds;
+		while (flush_data) {
+			_flush_done(fs, flush_data, ret);
+			flush_data = flush_data->next;
+		}
+
+		fbr_rlog(FBR_LOG_FLUSH, "DONE: %d (directory inode: %lu gen: %lu)", ret,
+			new_directory->inode, new_directory->generation);
 
 		if (!ret) {
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);
@@ -417,17 +825,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 				retry = 1;
 			}
 
-			fbr_rlog(FBR_LOG_ERROR, "flush fbr_index_write failed (%d %s) retry: %d",
+			fbr_rlog(FBR_LOG_FLUSH, "ERROR fbr_index_write failed (%d %s) retry: %d",
 				ret, fbr_berror(ret, errbuf), retry);
-		}
-
-		flush_data = flush_data_cmds;
-		while (flush_data) {
-			fbr_flush_data_ok(flush_data);
-
-			fbr_file_UNLOCK(flush_data->file);
-
-			flush_data = flush_data->next;
 		}
 
 		directory_version = directory->version;
@@ -447,7 +846,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 		} else if (directory_version == last_version) {
 			version_matches++;
 
-			fbr_rlog(FBR_LOG_FLUSH, "warning version hasn't changed (%u)",
+			fbr_rlog(FBR_LOG_FLUSH, "WARNING version hasn't changed (%u)",
 				version_matches);
 
 			if (version_matches >= FBR_MAX_VERSION_ERRORS) {
@@ -472,7 +871,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 	}
 
 	if (ret) {
-		fbr_rlog(FBR_LOG_ERROR, "flush failed %d (%s)", ret, fbr_berror(ret, errbuf));
+		fbr_rlog(FBR_LOG_FLUSH, "FAILED %d (%s)", ret, fbr_berror(ret, errbuf));
 	} else if (fbr_is_flag(flush_data_cmds->flags, FBR_FLUSH_MEM_ONLY)) {
 		assert_zero_dev(flush_data_cmds->next);
 		fbr_stat_add(&fs->stats.flush_memory);

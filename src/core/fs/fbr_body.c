@@ -344,9 +344,14 @@ fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 		chunk = chunk->next;
 	}
 
-	if (fbr_is_dev() && wbuffers) {
+	if (fbr_is_dev() && wbuffers && wbuffers->fio) {
+		fbr_wbuffer_ok(wbuffers);
+
+		struct fbr_fio *fio = wbuffers->fio;
+		fbr_fio_ok(fio);
+
 		struct fbr_wbuffer *wbuffer = wbuffers;
-		while (wbuffer) {
+		while (wbuffer && fio->file == file) {
 			assert_dev(wbuffer->chunk);
 			assert_dev(fbr_chunk_list_contains(chunks, wbuffer->chunk));
 			if (do_removed) {

@@ -22,7 +22,6 @@ fbr_ops_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, size
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
-	assert(fio->file->inode == ino);
 
 	fbr_wbuffer_write(fs, fio, off, buf, size);
 

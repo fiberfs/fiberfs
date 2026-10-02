@@ -11,7 +11,6 @@
 #include "fbr_fs.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 
-#define _INODE_START				1000
 #define _INODES_HEAD_COUNT			1024
 
 struct fbr_inodes_head {
@@ -39,7 +38,7 @@ RB_GENERATE_STATIC(fbr_inodes_tree, fbr_file, inode_entry, fbr_file_inode_cmp)
 void
 fbr_inodes_alloc(struct fbr_fs *fs)
 {
-	assert(_INODE_START > FBR_INODE_ROOT);
+	static_ASSERT(FBR_INODES_START > FBR_INODE_ROOT);
 
 	fbr_fs_ok(fs);
 	assert_zero(fs->inodes);
@@ -50,7 +49,7 @@ fbr_inodes_alloc(struct fbr_fs *fs)
 	assert(inodes);
 
 	inodes->magic = FBR_INODES_MAGIC;
-	inodes->next = _INODE_START;
+	inodes->next = FBR_INODES_START;
 
 	assert(_INODES_HEAD_COUNT);
 
@@ -75,13 +74,23 @@ _inodes_fs_get(struct fbr_fs *fs)
 	return fs->inodes;
 }
 
+void
+fbr_inode_set_start(struct fbr_fs *fs, fbr_inode_t start)
+{
+	struct fbr_inodes *inodes = _inodes_fs_get(fs);
+	assert(inodes->next == FBR_INODES_START);
+	assert(start >= FBR_INODES_START);
+
+	inodes->next = start;
+}
+
 fbr_inode_t
 fbr_inode_gen(struct fbr_fs *fs)
 {
 	struct fbr_inodes *inodes = _inodes_fs_get(fs);
 
 	fbr_inode_t inode_next = fbr_atomic_get_add(&inodes->next, 1);
-	assert(inode_next >= _INODE_START);
+	assert(inode_next >= FBR_INODES_START);
 
 	return inode_next;
 }
@@ -125,6 +134,40 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 	}
 
 	pt_assert(pthread_mutex_unlock(&head->lock));
+}
+
+struct fbr_file *
+fbr_inode_take_alias(struct fbr_fs *fs, fbr_inode_t inode)
+{
+	fbr_fs_ok(fs);
+
+	struct fbr_file *file = fbr_inode_take(fs, inode);
+	if (!file) {
+		return NULL;
+	}
+
+	struct fbr_path_name filename;
+	fbr_path_get_file(&file->path, &filename);
+
+	fbr_rlog(FBR_LOG_INODE, "name: '%s' inode: %lu type: %s", filename.name, file->inode,
+		S_ISDIR(file->mode) ? "DIR" : "FILE");
+
+	assert_dev(file->inode == inode);
+
+	if (file->has_alias_file) {
+		assert_dev(file->alias_file);
+
+		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
+		assert_dev(alias);
+		assert_dev(alias->refcounts.inode);
+
+		fbr_inode_add(fs, alias);
+		fbr_inode_release(fs, &file);
+
+		return alias;
+	}
+
+	return file;
 }
 
 struct fbr_file *

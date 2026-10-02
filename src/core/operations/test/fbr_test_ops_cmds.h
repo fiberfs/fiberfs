@@ -18,3 +18,8 @@ FBR_TEST_CMD(rmdir_2fs_test)
 FBR_TEST_CMD(rmdir_2fs_test_cluster)
 
 FBR_TEST_CMD(create_2fs_test)
+
+FBR_TEST_CMD(rename_error)
+FBR_TEST_CMD(rename_append_test)
+FBR_TEST_CMD(rename_write_test)
+FBR_TEST_CMD(rename_cluster_append_test)

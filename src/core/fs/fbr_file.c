@@ -94,6 +94,7 @@ fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *parent,
 
 /*
  * Locking is required when reading/writing the body and attributes
+ * Note: only take 1 file lock per transaction unless you have a DIRSTATE_LOADING
  */
 void
 fbr_file_LOCK(struct fbr_fs *fs, struct fbr_file *file)
@@ -110,7 +111,7 @@ fbr_file_UNLOCK(struct fbr_file *file)
 	pt_assert(pthread_mutex_unlock(&file->lock));
 }
 
-// Note: file isnt added to directory, its returned unreferenced
+// Note: file isnt added to directory, its returned unreferenced, source must have file->lock
 struct fbr_file *
 fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file *source)
 {
@@ -125,15 +126,22 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 	assert_dev(clone);
 	assert_dev(clone->state == FBR_FILE_INIT);
 
-	fbr_rlog(FBR_LOG_CLONE, "cloned inode: %lu to %lu", source->inode, clone->inode);
+	fbr_rlog(FBR_LOG_CLONE, "source inode: %lu new inode: %lu", source->inode, clone->inode);
+
+	if (source->alias_path) {
+		fbr_alias_path_take(fs, source, clone);
+	}
 
 	fbr_file_merge(fs, source, clone);
 
 	clone->size = source->size;
 
+	fbr_rlog(FBR_LOG_CLONE, "clone->size: %zu", clone->size);
+
 	return clone;
 }
 
+// Note: source and dest must have file->lock if live
 void
 fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest)
 {
@@ -143,13 +151,12 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	assert(source != dest);
 
 	const char *filename = fbr_path_get_file(&dest->path, NULL);
-	fbr_rlog(FBR_LOG_MERGE, "'%s' gen: %lu source inode: %lu dest inode: %lu",
-		filename, source->generation, source->inode, dest->inode);
 
-	fbr_stat_add(&fs->stats.merges);
+	fbr_rlog(FBR_LOG_MERGE, "'%s' source inode: %lu gen: %lu dest inode: %lu gen: %lu",
+		filename, source->inode, source->generation, dest->inode, dest->generation);
 
-	fbr_file_LOCK(fs, source);
-	fbr_file_LOCK(fs, dest);
+	// TODO if we have a mix of aliasing, chunks should not be merged
+	assert_zero_dev(fbr_alias_path_cmp(source, dest));
 
 	dest->generation = source->generation;
 	dest->mode = source->mode;
@@ -242,21 +249,68 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 		chunk_dest = chunk_dest->next;
 	}
 
+	fbr_stat_add(&fs->stats.merges);
+
 	fbr_body_debug(fs, dest);
 
 	if (fs->fuse_ctx && dest->state >= FBR_FILE_OK) {
 		fbr_fuse_mounted(fs->fuse_ctx);
 		assert(fs->fuse_ctx->session);
 
-		fbr_rlog(FBR_LOG_MERGE, "INVAL inode: %lu (file)", dest->inode);
+		fbr_rlog(FBR_LOG_MERGE, "INVAL '%s' inode: %lu (inode)", filename, dest->inode);
 
 		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, dest->inode,
 			0, 0);
 		assert_dev(ret != -ENOSYS);
 	}
+}
 
-	fbr_file_UNLOCK(source);
-	fbr_file_UNLOCK(dest);
+// TODO move this to a dedicated alias service with locking
+struct fbr_file *
+fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file)
+{
+	assert(fs);
+	fbr_file_ok(file);
+
+
+	if (file->has_alias_file) {
+		assert_dev(file->alias_file);
+
+		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
+		assert_dev(alias);
+
+		return alias;
+	}
+
+	return file;
+}
+
+struct fbr_file *
+fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+
+	while (file) {
+		fbr_file_ok(file);
+
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
+		fbr_rlog(FBR_LOG_INODE, "ALIAS name: '%s' inode: %lu type: %s", filename.name,
+			file->inode, S_ISDIR(file->mode) ? "DIR" : "FILE");
+
+		if (!file->has_alias_file) {
+			assert_zero_dev(file->alias_file);
+			break;
+		}
+
+		struct fbr_file *alias = file->alias_file;
+		assert_dev(alias);
+
+		file = alias;
+	}
+
+	return file;
 }
 
 void
@@ -451,6 +505,14 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_body_free(&file->body);
 	fbr_path_free(&file->path);
 	fbr_file_ptrs_free(file);
+
+	if (file->alias_path) {
+		fbr_alias_path_free(fs, file);
+	}
+	if (file->alias_file) {
+		assert_dev(file->has_alias_file);
+		fbr_inode_release(fs, &file->alias_file);
+	}
 
 	pt_assert(pthread_mutex_destroy(&file->refcount_lock));
 	pt_assert(pthread_mutex_destroy(&file->lock));
