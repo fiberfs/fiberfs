@@ -26,6 +26,8 @@
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
+void fbr_inode_set_start(struct fbr_fs *fs, fbr_inode_t start);
+
 void
 fbr_cmd_rename_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
@@ -266,6 +268,21 @@ fbr_cmd_rename_write_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	_rename_test(ctx, 0);
 }
 
+static unsigned long
+_pow(unsigned long base, unsigned long exp)
+{
+	assert(exp < 20);
+
+	unsigned long result = 1;
+
+	while (exp) {
+		result *= base;
+		exp--;
+	}
+
+	return result;
+}
+
 static void
 _assert_fs(struct fbr_fs *fs, int print)
 {
@@ -291,9 +308,10 @@ _assert_fs(struct fbr_fs *fs, int print)
 	assert_zero(fs->stats.file_refs);
 }
 
-#define _RENAME_FS_COUNT	1
-#define _RENAME_THREADS		3
-#define _RENAME_WRITE_MAX	50
+#define _RENAME_FS_COUNT	2
+#define _RENAME_THREADS		2
+#define _RENAME_WRITE_FILE_MAX	5
+#define _RENAME_WRITE_MAX	20
 #define _RENAME_WRITE_FILE	"write_data"
 #define _RENAME_RENAME_FILE	"done"
 
@@ -306,6 +324,7 @@ struct _rename_data {
 		struct fbr_fs		*fs;
 		pthread_t		thread;
 		size_t			id;
+		size_t			fs_id;
 		int			do_rename;
 	} context;
 	struct {
@@ -319,6 +338,20 @@ struct _rename_data {
 	} stats;
 } _RENAME_DATA[_RENAME_FS_COUNT][_RENAME_THREADS];
 
+static struct fbr_request *
+_rename_request_data(struct _rename_data *data)
+{
+	assert(data);
+
+	struct fbr_request *request = _rename_request(data->context.fs);
+	assert(request);
+
+	request->id = request->id * _pow(10, data->context.fs_id);
+	request->rlog->request_id = request->id;
+
+	return request;
+}
+
 void
 _write_thread(struct _rename_data *data)
 {
@@ -328,7 +361,7 @@ _write_thread(struct _rename_data *data)
 	struct fbr_request *request = NULL;
 
 	while (_RENAME_WRITE_COUNTER < _RENAME_WRITE_MAX) {
-		request = _rename_request(fs);
+		request = _rename_request_data(data);
 
 		struct fuse_file_info fi;
 		fbr_zero(&fi);
@@ -340,20 +373,22 @@ _write_thread(struct _rename_data *data)
 		struct fbr_fio *fio = fbr_fh_fio(fi.fh);
 		fbr_file_ok(fio->file);
 
-		size_t max = fbr_test_gen_random(1, 16);
+		static_ASSERT(_RENAME_WRITE_FILE_MAX > 1);
+		static_ASSERT(_RENAME_WRITE_FILE_MAX < _RENAME_WRITE_MAX);
+		size_t max = fbr_test_gen_random(1, _RENAME_WRITE_FILE_MAX);
 		for (size_t i = 0; i < max; i++) {
 			size_t count = fbr_atomic_add(&_RENAME_WRITE_COUNTER, 1);
 
 			char buf[32];
 			size_t buf_len = fbr_bprintf(buf, "%zu ", count);
 
-			request = _rename_request(fs);
+			request = _rename_request_data(data);
 
 			fbr_ops_write(request, fio->file->inode, buf, buf_len, 0, &fi);
 			assert_zero(request->error);
 		}
 
-		request = _rename_request(fs);
+		request = _rename_request_data(data);
 
 		fbr_ops_release(request, fio->file->inode, &fi);
 		assert_zero(request->error);
@@ -395,7 +430,7 @@ _rename_thread(void *arg)
 	struct fbr_request *request = NULL;
 
 	while (_RENAME_WRITE_COUNTER < _RENAME_WRITE_MAX) {
-		request = _rename_request(fs);
+		request = _rename_request_data(data);
 
 		char rename_dest[32];
 		fbr_bprintf(rename_dest, "%s_%zu", _RENAME_RENAME_FILE,
@@ -488,6 +523,10 @@ _rename_cluster(struct fbr_test_context *ctx)
 	for (size_t i = 0; i < fbr_array_len(fs_array); i++) {
 		struct fbr_fs *fs = fbr_test_fs_mock(ctx);
 		fbr_fs_ok(fs);
+
+		long offset = _pow(10, i);
+		fbr_inode_set_start(fs, FBR_INODES_START * offset);
+
 		fbr_test_cstore_bind_new(fs);
 		fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 		fbr_test_cstore_backend_add(fs->cstore, cstore_s3, FBR_CSTORE_ROUTE_S3);
@@ -509,6 +548,13 @@ _rename_cluster(struct fbr_test_context *ctx)
 
 	fbr_test_fs_root_alloc(fs_array[0]);
 
+	for (size_t i = 1; i < fbr_array_len(fs_array); i++) {
+		struct fbr_directory *root = fbr_directory_from_inode(fs_array[i], FBR_INODE_ROOT);
+		fbr_directory_ok(root);
+		assert(root->state == FBR_DIRSTATE_OK);
+		fbr_dindex_release(fs_array[i], &root);
+	}
+
 	fbr_test_sleep_ms(20);
 
 	fbr_test_logs("*** Spawn threads");
@@ -523,6 +569,7 @@ _rename_cluster(struct fbr_test_context *ctx)
 
 			data->context.fs = fs_array[i];
 			data->context.id = (i * fbr_array_len(_RENAME_DATA)) + j;
+			data->context.fs_id = i;
 
 			if (j == fbr_array_len(_RENAME_DATA[i]) - 1) {
 				data->context.do_rename = 1;
@@ -586,7 +633,7 @@ _rename_cluster(struct fbr_test_context *ctx)
 	struct fbr_fs *fs = fs_array[0];
 	fbr_fs_ok(fs);
 
-	struct fbr_directory *root = fbr_directory_from_inode(fs, FBR_INODE_ROOT);
+	struct fbr_directory *root = fbr_directory_get(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0, 1);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
 

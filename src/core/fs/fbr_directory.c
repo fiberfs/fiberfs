@@ -591,7 +591,10 @@ fbr_directory_get(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_in
 	assert(dirpath);
 	assert(inode);
 
-	struct fbr_directory *directory = fbr_dindex_take(fs, dirpath, wait_for_new);
+	struct fbr_directory *directory = NULL;
+	if (!route_s3) {
+		directory = fbr_dindex_take(fs, dirpath, wait_for_new);
+	}
 
 	if (directory) {
 		fbr_directory_ok(directory);

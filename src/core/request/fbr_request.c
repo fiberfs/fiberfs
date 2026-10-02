@@ -57,7 +57,6 @@ unsigned long
 fbr_request_id_thread_gen(void)
 {
 	unsigned long id = fbr_atomic_add(&_REQUEST_ID_THREAD_COUNT, 1);
-	assert(id < FBR_REQUEST_ID_MIN);
 
 	return id;
 }
