@@ -226,7 +226,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	assert_dev(flush_data);
 	assert_dev(flush_data->flags);
 	assert_zero_dev(flush_data->latest);
-	assert_zero_dev(flush_data->prev);
+	assert_zero_dev(flush_data->prev_file);
 
 	struct fbr_file *file = flush_data->file;
 	assert_dev(file);
@@ -302,8 +302,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			fbr_file_LOCK(fs, alias);
 
-			assert_zero_dev(flush_data->alias);
-			flush_data->alias = alias;
+			assert_zero_dev(flush_data->alias_file);
+			flush_data->alias_file = alias;
 
 			fbr_path_get_file(&alias->path, &filename);
 
@@ -334,11 +334,11 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			fbr_file_LOCK(fs, clone);
 
-			assert_zero(flush_data->prev);
+			assert_zero(flush_data->prev_file);
 			assert_zero(flush_data->skip_lock);
 
 			flush_data->file = clone;
-			flush_data->prev = file;
+			flush_data->prev_file = file;
 
 			file = clone;
 
@@ -346,12 +346,12 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			latest_modified = 0;
 		} else if (alias && alias == latest) {
 			assert_dev(latest_modified);
-			assert_zero(flush_data->prev);
+			assert_zero(flush_data->prev_file);
 			assert_zero(flush_data->skip_lock);
 
 			flush_data->file = latest;
 			flush_data->latest = NULL;
-			flush_data->prev = file;
+			flush_data->prev_file = file;
 
 			file = latest;
 			latest_modified = 0;
@@ -386,11 +386,11 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			fbr_file_LOCK(fs, file_new);
 
-			assert_zero(flush_data->prev);
+			assert_zero(flush_data->prev_file);
 			assert_zero(flush_data->skip_lock);
 
 			flush_data->file = file_new;
-			flush_data->prev = file;
+			flush_data->prev_file = file;
 
 			file = file_new;
 		} else {
@@ -437,11 +437,11 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_file_LOCK(fs, clone);
 
-		assert_zero(flush_data->prev);
+		assert_zero(flush_data->prev_file);
 		assert_zero(flush_data->skip_lock);
 
 		flush_data->file = clone;
-		flush_data->prev = file;
+		flush_data->prev_file = file;
 
 		file = clone;
 		latest = clone;
@@ -509,6 +509,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_dev(file == latest);
 		}
 
+		// TODO flush_data->alias_latest
 		assert_zero(latest->has_alias_file);
 
 		struct fbr_file *dest = fbr_directory_find_file(directory,
@@ -558,14 +559,14 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		dest->state = FBR_FILE_OK;
 
 		if (latest_modified) {
-			struct fbr_file *f_alias = fbr_file_find_alias(fs, file);
-			if (f_alias != latest) {
-				assert_zero_dev(flush_data->alias);
-				flush_data->alias = f_alias;
+			struct fbr_file *alias_file = fbr_file_find_alias(fs, file);
+			if (alias_file != latest) {
+				assert_zero_dev(flush_data->alias_file);
+				flush_data->alias_file = alias_file;
 
-				fbr_file_LOCK(fs, f_alias);
+				fbr_file_LOCK(fs, alias_file);
 
-				_flush_queue_alias(flush_data, f_alias, dest);
+				_flush_queue_alias(flush_data, alias_file, dest);
 			}
 		}
 
@@ -632,13 +633,17 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 		fbr_file_UNLOCK(flush_data->latest);
 		flush_data->latest = NULL;
 	}
-	if (flush_data->alias) {
-		fbr_file_UNLOCK(flush_data->alias);
-		flush_data->alias = NULL;
+	if (flush_data->alias_file) {
+		fbr_file_UNLOCK(flush_data->alias_file);
+		flush_data->alias_file = NULL;
 	}
-	if (flush_data->prev) {
-		fbr_file_UNLOCK(flush_data->prev);
-		flush_data->prev = NULL;
+	if (flush_data->alias_latest) {
+		fbr_file_UNLOCK(flush_data->alias_latest);
+		flush_data->alias_latest = NULL;
+	}
+	if (flush_data->prev_file) {
+		fbr_file_UNLOCK(flush_data->prev_file);
+		flush_data->prev_file = NULL;
 	}
 
 	flush_data->file = flush_data->_file;
@@ -776,8 +781,9 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 				flush_data->file, flush_data->wbuffers, flush_data->flags);
 
 			index_data->locked_files[0] = flush_data->latest;
-			index_data->locked_files[1] = flush_data->alias;
-			index_data->locked_files[2] = flush_data->prev;
+			index_data->locked_files[1] = flush_data->alias_file;
+			index_data->locked_files[2] = flush_data->alias_latest;
+			index_data->locked_files[3] = flush_data->prev_file;
 
 			if (!index_last) {
 				assert_zero_dev(index_data_cmds);
