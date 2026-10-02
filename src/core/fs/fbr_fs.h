@@ -153,7 +153,7 @@ struct fbr_file {
 	enum fbr_file_state			state;
 
 	struct fbr_path				path;
-	struct fbr_path_shared			*alias;
+	struct fbr_path_shared			*alias_path;
 	struct fbr_file				*alias_file;
 
 	struct fbr_file_refcounts		refcounts;
@@ -622,6 +622,11 @@ void fbr_wbuffers_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 void fbr_wbuffers_reset(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffers_reset_lock(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
+
+void fbr_alias_path_alloc(struct fbr_fs *fs, struct fbr_file *file, const struct fbr_path_name *value);
+void fbr_alias_path_take(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest);
+void fbr_alias_path_free(struct fbr_fs *fs, struct fbr_file *file);
+int fbr_alias_path_cmp(struct fbr_file *file1, struct fbr_file *file2);
 
 #define fbr_fs_ok(fs)			fbr_magic_check(fs, FBR_FS_MAGIC)
 #define fbr_file_ok(file)		fbr_magic_check(file, FBR_FILE_MAGIC)

@@ -277,21 +277,21 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_WBUFFER");
 
-		if (latest_modified && fbr_path_alias_cmp(file->alias, latest->alias)) {
+		if (latest_modified && fbr_alias_path_cmp(file, latest)) {
 			fbr_ABORT("TODO alias mismatch");
 			// TODO delete file, use latest
 		}
 
 		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
 		if (alias && alias != file->alias_file) {
-			// TODO implement this to reduce alias chaining
+			// TODO implement this deferred to reduce alias chaining
 			//_flush_set_alias(fs, file, alias);
 		}
 		if (!alias && latest) {
 			alias = fbr_file_get_alias(fs, latest->alias_file);
 			if (alias && alias != latest->alias_file) {
 				assert(alias != file);
-				// TODO implement this to reduce alias chaining
+				// TODO implement this deferred to reduce alias chaining
 				//_flush_set_alias(fs, latest, alias);
 			}
 		}
@@ -541,16 +541,18 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_rlog(FBR_LOG_FLUSH, "NEW dest '%s' inode: %lu gen: %lu", flush_data->filename.name,
 			dest->inode, dest->generation);
 
-		if (latest->alias) {
-			dest->alias = fbr_path_shared_take(latest->alias);
+		if (latest->alias_path) {
+			fbr_alias_path_take(fs, latest, dest);
+			assert_dev(dest->alias_path);
 		}
 
 		fbr_file_merge(fs, latest, dest);
 		fbr_file_generation(dest);
 		_flush_queue_alias(flush_data, latest, dest);
 
-		if (!dest->alias) {
-			dest->alias = fbr_path_shared_alloc(&filename);
+		if (!dest->alias_path) {
+			fbr_alias_path_alloc(fs, dest, &filename);
+			assert_dev(dest->alias_path);
 		}
 
 		dest->state = FBR_FILE_OK;

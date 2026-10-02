@@ -128,8 +128,8 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 
 	fbr_rlog(FBR_LOG_CLONE, "source inode: %lu new inode: %lu", source->inode, clone->inode);
 
-	if (source->alias) {
-		clone->alias = fbr_path_shared_take(source->alias);
+	if (source->alias_path) {
+		fbr_alias_path_take(fs, source, clone);
 	}
 
 	fbr_file_merge(fs, source, clone);
@@ -156,7 +156,7 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 		filename, source->inode, source->generation, dest->inode, dest->generation);
 
 	// TODO if we have a mix of aliasing, chunks should not be merged
-	assert_zero_dev(fbr_path_alias_cmp(source->alias, dest->alias));
+	assert_zero_dev(fbr_alias_path_cmp(source, dest));
 
 	dest->generation = source->generation;
 	dest->mode = source->mode;
@@ -506,8 +506,8 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_path_free(&file->path);
 	fbr_file_ptrs_free(file);
 
-	if (file->alias) {
-		fbr_path_shared_release(file->alias);
+	if (file->alias_path) {
+		fbr_alias_path_free(fs, file);
 	}
 	if (file->alias_file) {
 		assert_dev(file->has_alias_file);
