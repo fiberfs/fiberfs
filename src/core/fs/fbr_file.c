@@ -94,6 +94,7 @@ fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *parent,
 
 /*
  * Locking is required when reading/writing the body and attributes
+ * Note: only take 1 file lock per transaction unless you have a DIRSTATE_LOADING
  */
 void
 fbr_file_LOCK(struct fbr_fs *fs, struct fbr_file *file)
@@ -264,8 +265,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	}
 }
 
+// TODO move this to a dedicated alias service with locking
 struct fbr_file *
-fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file, int lock)
+fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file)
 {
 	assert(fs);
 	fbr_file_ok(file);
@@ -274,16 +276,8 @@ fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file, int lock)
 	if (file->has_alias_file) {
 		assert_dev(file->alias_file);
 
-		if (lock) {
-			fbr_file_LOCK(fs, file);
-		}
-
-		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file, lock);
+		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
 		assert_dev(alias);
-
-		if (lock) {
-			fbr_file_UNLOCK(file);
-		}
 
 		return alias;
 	}
@@ -292,7 +286,7 @@ fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file, int lock)
 }
 
 struct fbr_file *
-fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file, int lock)
+fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file)
 {
 	fbr_fs_ok(fs);
 
@@ -310,16 +304,8 @@ fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file, int lock)
 			break;
 		}
 
-		if (lock) {
-			fbr_file_LOCK(fs, file);
-		}
-
 		struct fbr_file *alias = file->alias_file;
 		assert_dev(alias);
-
-		if (lock) {
-			fbr_file_UNLOCK(file);
-		}
 
 		file = alias;
 	}

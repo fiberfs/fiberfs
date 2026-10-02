@@ -178,10 +178,15 @@ _flush_set_alias(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *al
 
 	fbr_inode_add(fs, alias);
 
+	assert_zero(source->has_alias_file);
+	assert_zero(source->alias_file);
+	/*
+	 * TODO revisit this after rename and make an alias service with locking
 	if(source->has_alias_file) {
 		assert_dev(source->alias_file);
 		fbr_inode_release(fs, &source->alias_file);
 	}
+	*/
 
 	assert_zero_dev(source->alias_file);
 
@@ -277,15 +282,17 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			// TODO delete file, use latest
 		}
 
-		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file, 0);
+		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
 		if (alias && alias != file->alias_file) {
-			_flush_set_alias(fs, file, alias);
+			// TODO implement this to reduce alias chaining
+			//_flush_set_alias(fs, file, alias);
 		}
 		if (!alias && latest) {
-			alias = fbr_file_get_alias(fs, latest->alias_file, 0);
+			alias = fbr_file_get_alias(fs, latest->alias_file);
 			if (alias && alias != latest->alias_file) {
 				assert(alias != file);
-				_flush_set_alias(fs, latest, alias);
+				// TODO implement this to reduce alias chaining
+				//_flush_set_alias(fs, latest, alias);
 			}
 		}
 		if (alias && alias != latest) {
@@ -549,7 +556,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		dest->state = FBR_FILE_OK;
 
 		if (latest_modified) {
-			struct fbr_file *f_alias = fbr_file_find_alias(fs, file, 0);
+			struct fbr_file *f_alias = fbr_file_find_alias(fs, file);
 			if (f_alias != latest) {
 				assert_zero_dev(flush_data->alias);
 				flush_data->alias = f_alias;
@@ -603,6 +610,7 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 	struct fbr_file *file = flush_data->file;
 	assert_dev(file);
 
+	// TODO move this after unlocking everything, non-alias writes will be merged
 	for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {
 		if (!error && flush_data->aliases[i].source) {
 			struct fbr_file *source = flush_data->aliases[i].source;
