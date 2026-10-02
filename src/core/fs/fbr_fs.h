@@ -26,6 +26,7 @@
 #include "utils/fbr_id.h"
 
 #define FBR_INODE_ROOT				FUSE_ROOT_ID
+#define FBR_INODES_START			1000
 #define FBR_READDIR_SIZE			4096
 #define FBR_BODY_DEFAULT_CHUNKS			4
 #define FBR_BODY_SLAB_DEFAULT_CHUNKS		32

@@ -173,6 +173,9 @@ _flush_set_alias(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *al
 	fbr_file_ok(alias);
 	assert_zero(alias->alias_file);
 
+	fbr_rlog(FBR_LOG_FLUSH, "ALIAS source inode: %lu gen: %lu to inode: %lu gen: %lu",
+		source->inode, source->generation, alias->inode, alias->generation);
+
 	fbr_inode_add(fs, alias);
 
 	if(source->has_alias_file) {
@@ -195,9 +198,6 @@ _flush_queue_alias(struct fbr_flush_data *flush_data, struct fbr_file *source,
 	assert_zero(source->alias_file);
 	assert_dev(alias);
 	assert(source != alias);
-
-	fbr_rlog(FBR_LOG_FLUSH, "ALIAS source inode: %lu gen: %lu to inode: %lu gen: %lu",
-		source->inode, source->generation, alias->inode, alias->generation);
 
 	for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {
 		if (!flush_data->aliases[i].source) {
@@ -299,8 +299,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			flush_data->alias = alias;
 
 			fbr_path_get_file(&alias->path, &filename);
-			fbr_rlog(FBR_LOG_FLUSH, "ALIAS found: '%s' inode: %lu gen: %lu",
-				filename.name, alias->inode, alias->generation);
 
 			// Write isolated to clone when aliasing
 
