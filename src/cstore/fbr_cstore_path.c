@@ -116,8 +116,8 @@ _cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset
     struct fbr_cstore_path *path)
 {
 	fbr_file_ok(file);
-	fbr_path_shared_ok(file->alias);
-	assert(file->alias->value.length);
+	fbr_path_shared_ok(file->alias_path);
+	assert(file->alias_path->value.length);
 	assert(id);
 	assert(path);
 
@@ -136,7 +136,7 @@ _cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset
 	path->length = fbr_bprintf(path->value, "%s%s%s%s.%s.%zu",
 		dirpath.name,
 		root_sep,
-		file->alias->value.name,
+		file->alias_path->value.name,
 		FBR_FIBERFS_CHUNK_NAME,
 		chunk_id,
 		offset);
@@ -152,7 +152,7 @@ fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset,
 	assert(id);
 	assert(path);
 
-	if (file->alias) {
+	if (file->alias_path) {
 		_cstore_path_chunk_alias(file, id, offset, path);
 		return;
 	}

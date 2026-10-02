@@ -286,14 +286,14 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 	fbr_writer_add_ulong(fs, json, file->mtime);
 
 	// a: alias (optional)
-	if (file->alias) {
-		fbr_path_shared_ok(file->alias);
+	if (file->alias_path) {
+		fbr_path_shared_ok(file->alias_path);
 
 		fbr_writer_add(fs, json, ",\"a\":\"", 6);
 
-		encoded_len = fbr_urlencode(file->alias->value.name, file->alias->value.length,
-			encoded, sizeof(encoded));
-		assert(encoded_len >= file->alias->value.length);
+		encoded_len = fbr_urlencode(file->alias_path->value.name,
+			file->alias_path->value.length, encoded, sizeof(encoded));
+		assert(encoded_len >= file->alias_path->value.length);
 
 		fbr_writer_add(fs, json, encoded, encoded_len);
 		fbr_writer_add(fs, json, "\"", 1);
@@ -1111,7 +1111,7 @@ _index_parse_file_match(struct fbr_index_parser *parser)
 	if (existing->generation == file->generation && existing->size == file->size &&
 	    existing->mode == file->mode && existing->uid == file->uid &&
 	    existing->gid == file->gid && existing->ctime == file->ctime &&
-	    existing->mtime == file->mtime && !fbr_path_alias_cmp(existing->alias, file->alias)) {
+	    existing->mtime == file->mtime && !fbr_alias_path_cmp(existing, file)) {
 		fbr_rlog(FBR_LOG_DEBUG, "PARSER existing match");
 
 		fbr_directory_add_file(fs, directory, existing);
@@ -1133,14 +1133,14 @@ _index_parse_file_match(struct fbr_index_parser *parser)
 		parser->file->ctime = file->ctime;
 		parser->file->mtime = file->mtime;
 
-		if (file->alias) {
-			parser->file->alias = fbr_path_shared_take(file->alias);
+		if (file->alias_path) {
+			fbr_alias_path_take(fs, file, parser->file);
 		}
 	}
 
-	if (parser->file_match.alias) {
-		fbr_path_shared_release(parser->file_match.alias);
-		parser->file_match.alias = NULL;
+	if (parser->file_match.alias_path) {
+		fbr_alias_path_free(fs, &parser->file_match);
+		assert_zero_dev(parser->file_match.alias_path);
 	}
 
 	parser->existing = NULL;
@@ -1237,13 +1237,13 @@ _index_parse_file(struct fbr_index_parser *parser, struct fjson_token *token, si
 						break;
 					}
 
-					struct fbr_path_name alias;
-					fbr_path_name_init(&alias, buf);
-					assert_dev(alias.length == buf_len);
+					struct fbr_path_name alias_path;
+					fbr_path_name_init(&alias_path, buf);
+					assert_dev(alias_path.length == buf_len);
 
 					struct fbr_file *file = _parser_get_file(parser);
-					if (!file->alias) {
-						file->alias = fbr_path_shared_alloc(&alias);
+					if (!file->alias_path) {
+						fbr_alias_path_alloc(parser->fs, file, &alias_path);
 					}
 				}
 			}
