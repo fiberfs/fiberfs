@@ -339,8 +339,9 @@ struct fbr_flush_data {
 
 	struct fbr_file				*_file;
 	struct fbr_file				*latest;
-	struct fbr_file				*alias;
-	struct fbr_file				*prev;
+	struct fbr_file				*alias_file;
+	struct fbr_file				*alias_latest;
+	struct fbr_file				*prev_file;
 
 	struct {
 		struct fbr_file			*source;
