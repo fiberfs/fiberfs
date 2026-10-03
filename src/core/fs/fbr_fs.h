@@ -139,6 +139,11 @@ struct fbr_file_ptr_slab {
 	struct fbr_file_ptr			ptrs[];
 };
 
+struct fbr_alias {
+	struct fbr_path_shared			*path;
+	struct fbr_file				*file;
+};
+
 enum fbr_file_state {
 	FBR_FILE_INIT = 0,
 	FBR_FILE_OK,
@@ -153,8 +158,7 @@ struct fbr_file {
 	enum fbr_file_state			state;
 
 	struct fbr_path				path;
-	struct fbr_path_shared			*alias_path;
-	struct fbr_file				*alias_file;
+	struct fbr_alias			alias;
 
 	struct fbr_file_refcounts		refcounts;
 	pthread_mutex_t				refcount_lock;
@@ -653,5 +657,7 @@ int fbr_alias_path_cmp(struct fbr_file *file1, struct fbr_file *file2);
 }
 #define fbr_fs_int64(obj)					\
 	((uint64_t)(obj))
+#define fbr_has_alias_path(file)				\
+	((file)->alias.path)
 
 #endif /* _FBR_FS_H_INCLUDED_ */

@@ -128,7 +128,7 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 
 	fbr_rlog(FBR_LOG_CLONE, "source inode: %lu new inode: %lu", source->inode, clone->inode);
 
-	if (source->alias_path) {
+	if (fbr_has_alias_path(source)) {
 		fbr_alias_path_take(fs, source, clone);
 	}
 
@@ -274,9 +274,9 @@ fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file)
 
 
 	if (file->has_alias_file) {
-		assert_dev(file->alias_file);
+		assert_dev(file->alias.file);
 
-		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
+		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias.file);
 		assert_dev(alias);
 
 		return alias;
@@ -300,11 +300,11 @@ fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file)
 			file->inode, S_ISDIR(file->mode) ? "DIR" : "FILE");
 
 		if (!file->has_alias_file) {
-			assert_zero_dev(file->alias_file);
+			assert_zero_dev(file->alias.file);
 			break;
 		}
 
-		struct fbr_file *alias = file->alias_file;
+		struct fbr_file *alias = file->alias.file;
 		assert_dev(alias);
 
 		file = alias;
@@ -506,12 +506,12 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_path_free(&file->path);
 	fbr_file_ptrs_free(file);
 
-	if (file->alias_path) {
+	if (fbr_has_alias_path(file)) {
 		fbr_alias_path_free(fs, file);
 	}
-	if (file->alias_file) {
+	if (file->alias.file) {
 		assert_dev(file->has_alias_file);
-		fbr_inode_release(fs, &file->alias_file);
+		fbr_inode_release(fs, &file->alias.file);
 	}
 
 	pt_assert(pthread_mutex_destroy(&file->refcount_lock));
