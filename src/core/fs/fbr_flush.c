@@ -171,7 +171,7 @@ _flush_set_alias(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *al
 	assert_dev(fs);
 	fbr_file_ok(source);
 	fbr_file_ok(alias);
-	assert_zero(alias->alias_file);
+	assert_zero(alias->alias.file);
 
 	fbr_rlog(FBR_LOG_FLUSH, "ALIAS source inode: %lu gen: %lu to inode: %lu gen: %lu",
 		source->inode, source->generation, alias->inode, alias->generation);
@@ -179,7 +179,7 @@ _flush_set_alias(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *al
 	fbr_inode_add(fs, alias);
 
 	assert_zero(source->has_alias_file);
-	assert_zero(source->alias_file);
+	assert_zero(source->alias.file);
 	/*
 	 * TODO revisit this after rename and make an alias service with locking
 	if(source->has_alias_file) {
@@ -188,9 +188,9 @@ _flush_set_alias(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *al
 	}
 	*/
 
-	assert_zero_dev(source->alias_file);
+	assert_zero_dev(source->alias.file);
 
-	source->alias_file = alias;
+	source->alias.file = alias;
 	source->has_alias_file = 1;
 }
 
@@ -200,7 +200,7 @@ _flush_queue_alias(struct fbr_flush_data *flush_data, struct fbr_file *source,
 {
 	assert_dev(flush_data);
 	assert_dev(source);
-	assert_zero(source->alias_file);
+	assert_zero(source->alias.file);
 	assert_dev(alias);
 	assert(source != alias);
 
@@ -282,14 +282,14 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			// TODO delete file, use latest
 		}
 
-		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias_file);
-		if (alias && alias != file->alias_file) {
+		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias.file);
+		if (alias && alias != file->alias.file) {
 			// TODO implement this deferred to reduce alias chaining
 			//_flush_set_alias(fs, file, alias);
 		}
 		if (!alias && latest) {
-			alias = fbr_file_get_alias(fs, latest->alias_file);
-			if (alias && alias != latest->alias_file) {
+			alias = fbr_file_get_alias(fs, latest->alias.file);
+			if (alias && alias != latest->alias.file) {
 				assert(alias != file);
 				// TODO implement this deferred to reduce alias chaining
 				//_flush_set_alias(fs, latest, alias);
@@ -542,18 +542,18 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_rlog(FBR_LOG_FLUSH, "NEW dest '%s' inode: %lu gen: %lu", flush_data->filename.name,
 			dest->inode, dest->generation);
 
-		if (latest->alias_path) {
+		if (fbr_has_alias_path(latest)) {
 			fbr_alias_path_take(fs, latest, dest);
-			assert_dev(dest->alias_path);
+			assert_dev(fbr_has_alias_path(dest));
 		}
 
 		fbr_file_merge(fs, latest, dest);
 		fbr_file_generation(dest);
 		_flush_queue_alias(flush_data, latest, dest);
 
-		if (!dest->alias_path) {
+		if (!fbr_has_alias_path(dest)) {
 			fbr_alias_path_alloc(fs, dest, &filename);
-			assert_dev(dest->alias_path);
+			assert_dev(fbr_has_alias_path(dest));
 		}
 
 		dest->state = FBR_FILE_OK;
@@ -618,7 +618,7 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 		if (!error && flush_data->aliases[i].source) {
 			struct fbr_file *source = flush_data->aliases[i].source;
 			assert_zero(source->has_alias_file);
-			assert_zero(source->alias_file);
+			assert_zero(source->alias.file);
 
 			_flush_set_alias(fs, source, flush_data->aliases[i].alias);
 		}
