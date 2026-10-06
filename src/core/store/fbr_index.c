@@ -373,11 +373,15 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 	if (file) {
 		const char *filename = fbr_path_get_file(&file->path, NULL);
-		fbr_rlog(FBR_LOG_INDEX, "INIT '%s' inode: %lu gen: %lu", filename, file->inode,
+		fbr_rlog(FBR_LOG_INDEX, "INIT file '%s' inode: %lu gen: %lu", filename, file->inode,
 			file->generation);
-	} else {
-		fbr_rlog(FBR_LOG_INDEX, "INIT no file (flags: %d)", flags);
 	}
+
+	struct fbr_path_name dirpath;
+	fbr_path_shared_name(directory->path, &dirpath);
+
+	fbr_rlog(FBR_LOG_INDEX, "INIT directory '%s' inode: %lu gen: %lu (flags: %d)",
+		dirpath.name, directory->inode, directory->generation, flags);
 
 	if (fbr_is_flag(flags, FBR_FLUSH_WBUFFER)) {
 		fbr_file_ok(file);
@@ -402,6 +406,10 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 				fbr_rlog(FBR_LOG_INDEX, "new file->size: %zu (was: %zu)",
 					index_data->size, file->size);
 				file->size = index_data->size;
+			}
+
+			if (fbr_wbuffer_is_clone(fs, file, wbuffers)) {
+				fbr_wbuffers_merge(fs, file, wbuffers, flags);
 			}
 		} else if (fbr_is_flag(flags, FBR_FLUSH_APPEND)) {
 			fbr_rlog(FBR_LOG_INDEX, "APPEND flagged");
@@ -432,9 +440,15 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 				wbuffer = wbuffer->next;
 			}
 		} else {
+			if (fbr_wbuffer_is_clone(fs, file, wbuffers)) {
+				fbr_wbuffers_merge(fs, file, wbuffers, flags);
+			}
+
 			index_data->size = fbr_body_length(file, wbuffers);
 			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
 				&index_data->removed, wbuffers);
+
+			assert_dev(index_data->size == file->size);
 		}
 
 		struct fbr_path_name filename;
@@ -611,7 +625,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 		}
 
 		if (!ret && index_data->wbuffers) {
-			fbr_wbuffers_ready(fs, index_data->file, index_data->wbuffers, was_append);
+			fbr_wbuffers_ready(fs, index_data->file, index_data->wbuffers,
+				index_data->flags);
 		}
 
 		if (!ret && index_data->file) {

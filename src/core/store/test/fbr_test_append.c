@@ -111,6 +111,8 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(file->state == FBR_FILE_INIT);
 	assert_zero(file->size);
 
+	fbr_inode_add(fs_2, file);
+
 	fio = fbr_fio_alloc(fs_2, file, 0);
 	fio->append = 1;
 	fbr_wbuffer_write(fs_2, fio, 0, "2222", 4);
@@ -120,8 +122,14 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_OK);
-	assert(file->size == 7);
-	assert(file->generation == 2);
+
+	struct fbr_file *alias = fbr_file_find_alias(fs_2, file);
+	fbr_file_ok(alias);
+	assert(alias->state == FBR_FILE_OK);
+	assert(alias->size == 7);
+	assert(alias->generation == 2);
+
+	fbr_inode_release(fs_2, &file);
 
 	fbr_dindex_release(fs_2, &dir_fs2);
 
@@ -148,8 +156,12 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_OK);
-	assert(file->size == 10);
-	assert(file->generation == 3);
+
+	alias = fbr_file_find_alias(fs_2, file);
+	fbr_file_ok(alias);
+	assert(alias->state == FBR_FILE_OK);
+	assert(alias->size == 10);
+	assert(alias->generation == 3);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
@@ -195,7 +207,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(fs_1->stats.files_inodes);
 	assert_zero(fs_1->stats.file_refs);
 	assert(fs_1->stats.appends == 2);
-	assert(fs_1->stats.merges == 1);
+	assert(fs_1->stats.merges == 2);
 
 	fbr_fs_free(fs_1);
 
@@ -214,7 +226,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(fs_2->stats.files_inodes);
 	assert_zero(fs_2->stats.file_refs);
 	assert(fs_2->stats.appends == 1);
-	assert(fs_2->stats.merges == 1);
+	assert(fs_2->stats.merges == 2);
 
 	fbr_fs_free(fs_2);
 

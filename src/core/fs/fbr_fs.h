@@ -612,6 +612,7 @@ void fbr_fio_release(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffer_init(struct fbr_fio *fio);
 int fbr_wbuffer_has_chunk(struct fbr_wbuffer *wbuffers, struct fbr_chunk *chunk);
 struct fbr_chunk_list *fbr_wbuffer_chunks(struct fbr_wbuffer *wbuffer);
+int fbr_wbuffer_is_clone(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers);
 void fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset,
 	const char *buf, size_t size);
 void fbr_wbuffer_update(struct fbr_fs *fs, struct fbr_wbuffer *wbuffer,
@@ -621,9 +622,10 @@ void fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file,
 	struct fbr_wbuffer *wbuffers);
 int fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, int revert_on_error);
 int fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio);
-void fbr_wbuffers_merge(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers);
+void fbr_wbuffers_merge(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
+	enum fbr_flush_flags flags);
 void fbr_wbuffers_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-	int chunk_add);
+	enum fbr_flush_flags flags);
 void fbr_wbuffers_reset(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffers_reset_lock(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
