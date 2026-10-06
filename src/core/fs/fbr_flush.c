@@ -265,6 +265,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_file_LOCK(fs, latest);
 
+		fbr_inode_add(fs, latest);
+
 		flush_data->latest = latest;
 		latest_modified = 1;
 	}
@@ -313,12 +315,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_file_ok(clone);
 			assert_dev(clone->state == FBR_FILE_INIT);
 
-			_flush_queue_alias(flush_data, alias, clone);
+			fbr_file_generation(clone);
 
-			if (flush_data->wbuffers &&
-			    !fbr_is_flag(flush_data->flags, FBR_FLUSH_APPEND)) {
-				fbr_wbuffers_merge(fs, clone, flush_data->wbuffers);
-			}
+			_flush_queue_alias(flush_data, alias, clone);
 
 			int removed = fbr_directory_remove_file(fs, directory, &alias);
 			if (!removed) {
@@ -329,7 +328,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 				}
 			}
 
-			fbr_file_generation(clone);
 			fbr_directory_add_file(fs, directory, clone);
 
 			fbr_file_LOCK(fs, clone);
@@ -350,8 +348,10 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_zero(flush_data->skip_lock);
 
 			flush_data->file = latest;
-			flush_data->latest = NULL;
 			flush_data->prev_file = file;
+
+			fbr_inode_release(fs, &flush_data->latest);
+			assert_zero_dev(flush_data->latest);
 
 			file = latest;
 			latest_modified = 0;
@@ -361,15 +361,33 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_rlog(FBR_LOG_FLUSH, "wbuffer EISDIR detected");
 			return EISDIR;
 		} else if (latest_modified) {
-			fbr_rlog(FBR_LOG_FLUSH, "MERGING latest into file");
+			fbr_rlog(FBR_LOG_FLUSH, "MERGING file and latest into clone");
 
-			// TODO for write isolation just merge into a clone
+			struct fbr_file *clone = fbr_file_clone(fs, directory, file);
+			fbr_file_ok(clone);
+			assert_dev(clone->state == FBR_FILE_INIT);
 
-			fbr_file_merge(fs, latest, file);
+			fbr_file_merge(fs, latest, clone);
+			fbr_file_generation(clone);
+
+			_flush_queue_alias(flush_data, file, clone);
+			_flush_queue_alias(flush_data, latest, clone);
+
 			fbr_directory_remove_file(fs, directory, &latest);
-			fbr_directory_add_file(fs, directory, file);
+			fbr_directory_add_file(fs, directory, clone);
 
-			fbr_file_generation(file);
+			fbr_file_LOCK(fs, clone);
+
+			assert_zero(flush_data->prev_file);
+			assert_zero(flush_data->skip_lock);
+
+			flush_data->file = clone;
+			flush_data->prev_file = file;
+
+			file = clone;
+
+			latest = clone;
+			latest_modified = 0;
 		} else if (!latest && file_new) {
 			fbr_rlog(FBR_LOG_FLUSH, "ADDING file");
 			fbr_directory_add_file(fs, directory, file);
@@ -596,6 +614,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		latest->size = flush_data->attr->st_size;
 	}
 
+	// TODO do this after a successful flush?
 	if (file->state == FBR_FILE_INIT) {
 		file->state = FBR_FILE_OK;
 	}
@@ -631,7 +650,8 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 	}
 	if (flush_data->latest) {
 		fbr_file_UNLOCK(flush_data->latest);
-		flush_data->latest = NULL;
+		fbr_inode_release(fs, &flush_data->latest);
+		assert_zero_dev(flush_data->latest);
 	}
 	if (flush_data->alias_file) {
 		fbr_file_UNLOCK(flush_data->alias_file);

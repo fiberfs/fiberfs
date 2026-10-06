@@ -111,7 +111,7 @@ fbr_file_UNLOCK(struct fbr_file *file)
 	pt_assert(pthread_mutex_unlock(&file->lock));
 }
 
-// Note: file isnt added to directory, its returned unreferenced, source must have file->lock
+// Note: clone isnt added to directory, its returned unreferenced, source must have file->lock
 struct fbr_file *
 fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file *source)
 {

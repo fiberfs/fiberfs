@@ -181,7 +181,11 @@ fbr_test_cstore_init(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 
+	pt_assert(pthread_mutex_lock(&_TEST_CSTORE_LOCK));
+
 	const char *root = fbr_test_mkdir_tmp(ctx, NULL);
+
+	pt_assert(pthread_mutex_unlock(&_TEST_CSTORE_LOCK));
 
 	return _test_cstore_init_pos(ctx, root);
 }
