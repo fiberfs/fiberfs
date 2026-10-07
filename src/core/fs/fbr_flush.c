@@ -243,8 +243,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
 
-	fbr_rlog(FBR_LOG_FLUSH, "FILE '%s' inode: %lu gen: %lu (directory->gen: %lu)",
-		filename.name, file->inode, file->generation, directory->generation);
+	fbr_rlog(FBR_LOG_FLUSH, "FILE '%s' inode: %lu gen: %lu state: %d (directory->gen: %lu)",
+		filename.name, file->inode, file->generation, file->state, directory->generation);
 
 	struct fbr_file *latest = NULL;
 	int latest_modified = 0;
@@ -477,7 +477,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_rlog(FBR_LOG_FLUSH, "EEXIST detected (want exclusive)");
 			return EEXIST;
 		} else if (latest_modified) {
-			// TODO for write isolation dont alias
 			_flush_queue_alias(flush_data, file, latest);
 		}
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_UNLINK)) {
@@ -557,8 +556,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_file_ok(dest);
 		assert_dev(dest->state == FBR_FILE_INIT);
 
-		fbr_rlog(FBR_LOG_FLUSH, "NEW dest '%s' inode: %lu gen: %lu", flush_data->filename.name,
-			dest->inode, dest->generation);
+		fbr_rlog(FBR_LOG_FLUSH, "NEW dest '%s' inode: %lu gen: %lu",
+			flush_data->filename.name, dest->inode, dest->generation);
 
 		if (fbr_has_alias_path(latest)) {
 			fbr_alias_path_take(fs, latest, dest);
@@ -574,21 +573,31 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_dev(fbr_has_alias_path(dest));
 		}
 
-		dest->state = FBR_FILE_OK;
-
 		if (latest_modified) {
 			struct fbr_file *alias_file = fbr_file_find_alias(fs, file);
 			if (alias_file != latest) {
-				assert_zero_dev(flush_data->alias_file);
-				flush_data->alias_file = alias_file;
+				if (alias_file != file) {
+					assert_zero_dev(flush_data->alias_file);
+					flush_data->alias_file = alias_file;
 
-				fbr_file_LOCK(fs, alias_file);
+					fbr_file_LOCK(fs, alias_file);
+				}
 
 				_flush_queue_alias(flush_data, alias_file, dest);
 			}
 		}
 
 		fbr_directory_remove_file(fs, directory, &latest);
+
+		fbr_file_LOCK(fs, dest);
+
+		assert_zero(flush_data->prev_file);
+		assert_zero(flush_data->skip_lock);
+
+		flush_data->file = dest;
+		flush_data->prev_file = file;
+
+		file = dest;
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_DELETE)) {
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_DELETE");
 		assert_zero_dev(latest);
@@ -614,11 +623,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		latest->size = flush_data->attr->st_size;
 	}
 
-	// TODO do this after a successful flush?
-	if (file->state == FBR_FILE_INIT) {
-		file->state = FBR_FILE_OK;
-	}
-
 	return 0;
 }
 
@@ -631,6 +635,10 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 
 	struct fbr_file *file = flush_data->file;
 	assert_dev(file);
+
+	if (!error && file->state == FBR_FILE_INIT) {
+		file->state = FBR_FILE_OK;
+	}
 
 	// TODO move this after unlocking everything, non-alias writes will be merged
 	for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {

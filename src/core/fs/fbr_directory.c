@@ -328,7 +328,10 @@ fbr_directory_find_file(struct fbr_directory *directory, const char *filename,
 
 	struct fbr_file *file = file_ptr->file;
 	fbr_file_ok(file);
-	assert_dev(file->state >= FBR_FILE_OK);
+
+	if (directory->state == FBR_DIRSTATE_OK) {
+		assert_dev(file->state >= FBR_FILE_OK);
+	}
 
 	// directory owns a reference
 
