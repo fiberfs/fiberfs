@@ -121,7 +121,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_fio_release(fs_2, fio);
 
 	fbr_file_ok(file);
-	assert(file->state == FBR_FILE_OK);
+	assert(file->state == FBR_FILE_INIT);
 
 	struct fbr_file *alias = fbr_file_find_alias(fs_2, file);
 	fbr_file_ok(alias);

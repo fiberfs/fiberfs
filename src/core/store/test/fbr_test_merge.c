@@ -130,7 +130,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_fio_release(fs_2, fio);
 
 	fbr_file_ok(file1);
-	assert(file1->state == FBR_FILE_OK);
+	assert(file1->state == FBR_FILE_INIT);
 	assert(file1->generation);
 	assert(file1->size == 5);
 	assert_zero(file1->mode);

@@ -736,6 +736,7 @@ fbr_wbuffers_merge(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
+	assert(file->state == FBR_FILE_INIT);
 	fbr_wbuffer_ok(wbuffers);
 	assert_dev(fbr_wbuffer_is_clone(fs, file, wbuffers));
 

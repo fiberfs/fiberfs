@@ -117,7 +117,6 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(source);
-	fbr_ASSERT(source->state >= FBR_FILE_OK, "source->state=%d", source->state);
 
 	struct fbr_path_name filename;
 	fbr_path_get_file(&source->path, &filename);

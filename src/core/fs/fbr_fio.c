@@ -300,6 +300,8 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
+	// TODO grab the latest file and invalidate if we want no isolation
+
 	fbr_file_LOCK(fs, fio->file);
 
 	fio->error = 0;
