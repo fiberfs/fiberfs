@@ -480,6 +480,20 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			return EEXIST;
 		} else if (latest_modified) {
 			_flush_queue_alias(flush_data, file, latest);
+
+			assert_zero(flush_data->prev_file);
+			assert_zero(flush_data->skip_lock);
+
+			fbr_file_generation(latest);
+
+			flush_data->file = latest;
+			flush_data->prev_file = file;
+
+			fbr_inode_release(fs, &flush_data->latest);
+			assert_zero_dev(flush_data->latest);
+
+			file = latest;
+			latest_modified = 0;
 		}
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_UNLINK)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_UNLINK);
