@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "fiberfs.h"
+#include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/operations/fbr_operations.h"
 
@@ -65,4 +66,75 @@ fbr_fuse_LOCK(struct fbr_fuse_context *fuse_ctx, pthread_mutex_t *lock)
 	} while (ret == ETIMEDOUT);
 
 	pt_assert(ret);
+}
+
+void
+fbr_fuse_invalidate_dentry(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	if (fs->fuse_ctx) {
+		fbr_fuse_mounted(fs->fuse_ctx);
+		assert(fs->fuse_ctx->session);
+
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
+		fbr_rlog(FBR_LOG_FUSE, "INVAL DENTRY '%s' inode: %lu parent: %lu", filename.name,
+			file->inode, file->parent_inode);
+
+		int ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
+			file->parent_inode, filename.name, filename.length);
+		assert_dev(ret != -ENOSYS);
+	}
+}
+
+void
+fbr_fuse_invalidate_inode(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	if (fs->fuse_ctx) {
+		fbr_fuse_mounted(fs->fuse_ctx);
+		assert(fs->fuse_ctx->session);
+
+		const char *type = "file";
+		if (S_ISDIR(file->mode)) {
+			type = "directory";
+		}
+
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
+		fbr_rlog(FBR_LOG_FUSE, "INVAL INODE '%s' inode: %lu (%s)", filename.name,
+			file->inode, type);
+
+		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, file->inode,
+			0, 0);
+		assert_dev(ret != -ENOSYS);
+	}
+}
+
+void
+fbr_fuse_delete_dentry(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	if (fs->fuse_ctx) {
+		fbr_fuse_mounted(fs->fuse_ctx);
+		assert(fs->fuse_ctx->session);
+
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
+		fbr_rlog(FBR_LOG_FUSE, "INVAL DELETE '%s' inode: %lu parent: %lu", filename.name,
+			file->inode, file->parent_inode);
+
+		int ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, file->parent_inode,
+			file->inode, filename.name, filename.length);
+		assert_dev(ret != -ENOSYS);
+	}
 }

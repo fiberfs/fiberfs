@@ -82,20 +82,9 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		return;
 	}
 
-	fbr_inode_t inode = directory->inode;
-
-	fbr_dindex_release(fs, &directory);
-
 	fbr_fuse_reply_err(request, 0);
 
-	if (fbr_request_is_fuse(request)) {
-		fbr_fuse_mounted(fs->fuse_ctx);
-		assert(fs->fuse_ctx->session);
+	fbr_fuse_invalidate_dentry(fs, file);
 
-		fbr_rlog(FBR_LOG_OP_RENAME, "INVAL '%s' inode: %lu (inode)", name, inode);
-
-		ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session, inode, name,
-			name_len);
-		assert_dev(ret != -ENOSYS);
-	}
+	fbr_dindex_release(fs, &directory);
 }

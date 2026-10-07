@@ -69,7 +69,12 @@ void fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 void fbr_fuse_unmount(struct fbr_fuse_context *ctx);
 void fbr_fuse_unmount_signal(void);
 
+struct fbr_file;
+
 void fbr_fuse_LOCK(struct fbr_fuse_context *fuse_ctx, pthread_mutex_t *lock);
+void fbr_fuse_invalidate_dentry(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_fuse_invalidate_inode(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_fuse_delete_dentry(struct fbr_fs *fs, struct fbr_file *file);
 
 #define fbr_fuse_context_ok(ctx)					\
 	fbr_magic_check(ctx, FBR_FUSE_CTX_MAGIC)
