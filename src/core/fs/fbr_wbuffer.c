@@ -547,13 +547,16 @@ fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, int re
 		assert_dev(wbuffer->state >= FBR_WBUFFER_READY);
 		assert_dev(wbuffer->state != FBR_WBUFFER_SYNC);
 
-		if (wbuffer->state == FBR_WBUFFER_ERROR ||
-			wbuffer->state == FBR_WBUFFER_READY) {
+		if (wbuffer->state == FBR_WBUFFER_ERROR || wbuffer->state == FBR_WBUFFER_READY) {
+			fbr_rlog(FBR_LOG_WBUFFER, "RESET offset: %zu end: %zu id: %lu",
+				wbuffer->offset, wbuffer->end, wbuffer->id);
 			wbuffer->state = FBR_WBUFFER_WRITING;
 			_wbuffers_renew_id(fs, file, wbuffer);
 		}
 
 		if (revert_write && wbuffer->state == FBR_WBUFFER_DONE) {
+			fbr_rlog(FBR_LOG_WBUFFER, "REVERT offset: %zu end: %zu id: %lu",
+				wbuffer->offset, wbuffer->end, wbuffer->id);
 			wbuffer->state = FBR_WBUFFER_WRITING;
 			_wbuffer_delete_chunk(fs, file, wbuffer);
 			_wbuffers_renew_id(fs, file, wbuffer);
@@ -715,8 +718,31 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	int error = fbr_fs_flush(fs, &flush_data);
 
 	if (!error) {
-		alias = fbr_file_find_alias(fs, file);
-		assert_zero_dev(alias->local_only);
+		struct fbr_file *alias_new = fbr_file_find_alias(fs, file);
+		assert_zero_dev(alias_new->local_only);
+
+		if (alias_new != alias && fs->fuse_ctx) {
+			fbr_fuse_mounted(fs->fuse_ctx);
+			assert(fs->fuse_ctx->session);
+
+			struct fbr_path_name aliasname;
+			fbr_path_get_file(&alias->path, &aliasname);
+
+			fbr_rlog(FBR_LOG_OP_ATTR, "INVAL '%s' inode: %lu (file)",
+				aliasname.name, alias->inode);
+
+			int ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
+				alias->parent_inode, aliasname.name, aliasname.length);
+			assert_dev(ret != -ENOSYS);
+
+			/*
+			fbr_rlog(FBR_LOG_OP_ATTR, "INVAL inode: %lu (inode)", alias->inode);
+
+			ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session,
+				alias->inode, 0, 0);
+			assert_dev(ret != -ENOSYS);
+			*/
+		}
 
 		fbr_wbuffers_reset(fs, fio);
 		fio->truncate = 0;

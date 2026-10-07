@@ -23,3 +23,5 @@ FBR_TEST_CMD(rename_error)
 FBR_TEST_CMD(rename_append_test)
 FBR_TEST_CMD(rename_write_test)
 FBR_TEST_CMD(rename_cluster_append_test)
+
+FBR_TEST_CMD(remote_append)

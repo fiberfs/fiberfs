@@ -555,7 +555,7 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 		return 0;
 	}
 
-	fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_write()");
+	fbr_rlog(FBR_LOG_INDEX, "WRITE start");
 
 	struct fbr_index_data *index_data = index_data_cmds;
 	while (index_data) {
@@ -606,6 +606,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 
 		directory->updated = fbr_get_time();
 	}
+
+	fbr_rlog(FBR_LOG_INDEX, "WRITE finished: %d", ret);
 
 	index_data = index_data_cmds;
 	while (index_data) {
@@ -718,7 +720,7 @@ fbr_root_json_parse(const char *json_buf, size_t json_buf_len)
 
 	fjson_context_free(&json);
 
-	fbr_rlog(FBR_LOG_INDEX, "parsed root: %lu", root_parser.root_version);
+	fbr_rlog(FBR_LOG_INDEX, "PARSED root: %lu", root_parser.root_version);
 
 	return root_parser.root_version;
 }
@@ -742,7 +744,7 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 	struct fbr_path_name dirpath;
 	fbr_directory_name(directory, &dirpath);
 
-	fbr_rlog(FBR_LOG_INDEX, "fbr_index_read: '%s'", dirpath.name);
+	fbr_rlog(FBR_LOG_INDEX, "READ '%s'", dirpath.name);
 
 	struct fbr_directory *previous = directory->previous;
 
@@ -752,7 +754,7 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 	char errbuf[FBR_STRERROR_LEN];
 
 	do {
-		fbr_rlog(FBR_LOG_INDEX, "starting fbr_index_read() attempts: %u route_s3: %d",
+		fbr_rlog(FBR_LOG_INDEX, "READ START attempts: %u route_s3: %d",
 			timeout->attempts, route_s3);
 
 		if (fs->store->root_read_f) {
@@ -799,14 +801,14 @@ fbr_index_read(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_fs
 			}
 		}
 
-		fbr_rlog(FBR_LOG_INDEX, "index_read_f %d (%s)", ret, fbr_berror(ret, errbuf));
+		fbr_rlog(FBR_LOG_INDEX, "READ finished %d (%s)", ret, fbr_berror(ret, errbuf));
 
 		if (fbr_fs_is_timeout(fs, timeout)) {
 			ret = EIO;
 		} else if (directory->version == last_version) {
 			version_matches++;
 
-			fbr_rlog(FBR_LOG_INDEX, "warning index hasn't changed (%u)",
+			fbr_rlog(FBR_LOG_INDEX, "WARNING index hasn't changed (%u)",
 				version_matches);
 
 			if (version_matches >= FBR_MAX_VERSION_ERRORS) {
