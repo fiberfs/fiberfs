@@ -23,7 +23,6 @@ fbr_cmd_remote_append(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fbr_test_cstore_count(ctx) == 1);
 
 	const char *filename = cmd->params[0].value;
-	//int flags = O_APPEND;
 
 	struct fbr_fs *fs_remote = fbr_test_fs_alloc();
 	fbr_fs_ok(fs_remote);
@@ -54,6 +53,7 @@ fbr_cmd_remote_append(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		fbr_wbuffer_write(fs_remote, fio, 0, cmd->params[i].value, cmd->params[i].len);
 		int ret = fbr_wbuffer_flush_fio(fs_remote, fio);
 		assert_zero(ret);
+
 		fbr_fio_release(fs_remote, fio);
 	}
 

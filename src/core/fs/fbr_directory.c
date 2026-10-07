@@ -401,21 +401,14 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert(fs->fuse_ctx->session);
 
 	if (next && next->remote) {
-		struct fbr_path_name dirname;
-		fbr_path_shared_name(directory->path, &dirname);
-
-		fbr_rlog(FBR_LOG_DIR_EXP, "INVAL '%s' inode: %lu (directory)", dirname.name,
-			directory->inode);
-
-		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, directory->inode,
-			0, 0);
-		assert_dev(ret != -ENOSYS);
+		fbr_fuse_invalidate_inode(fs, directory->file);
 	}
 
 	struct fbr_file_ptr *file_ptr;
 	RB_FOREACH(file_ptr, fbr_filename_tree, &directory->filename_tree) {
 		fbr_file_ptr_ok(file_ptr);
 		struct fbr_file *file = file_ptr->file;
+		assert_dev(file->parent_inode == directory->inode);
 
 		if (!file->refcounts.inode) {
 			continue;
@@ -428,7 +421,6 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 		int file_deleted = 0;
 		int file_expired = 0;
 		int file_inval = 0;
-		int ret;
 
 		if (next) {
 			new_file = fbr_directory_find_file(next, filename.name, filename.length);
@@ -443,27 +435,17 @@ _directory_expire(struct fbr_fs *fs, struct fbr_directory *directory)
 		}
 
 		if (file_deleted) {
-			fbr_rlog(FBR_LOG_DIR_EXP, "DELETE '%s' inode: %lu (file)", filename.name,
-				file->inode);
-
 			if (file->state <= FBR_FILE_OK) {
 				file->state = FBR_FILE_EXPIRED;
 			}
 
-			ret = fuse_lowlevel_notify_delete(fs->fuse_ctx->session, directory->inode,
-				file->inode, filename.name, filename.length);
-			assert_dev(ret != -ENOSYS);
+			fbr_fuse_delete_dentry(fs, file);
 		} else if (file_expired || file_inval) {
-			fbr_rlog(FBR_LOG_DIR_EXP, "INVAL '%s' inode: %lu (file)", filename.name,
-				file->inode);
-
 			if (file_expired && file->state <= FBR_FILE_OK) {
 				file->state = FBR_FILE_EXPIRED;
 			}
 
-			ret = fuse_lowlevel_notify_inval_entry(fs->fuse_ctx->session,
-				directory->inode, filename.name, filename.length);
-			assert_dev(ret != -ENOSYS);
+			fbr_fuse_invalidate_dentry(fs, file);
 		}
 	}
 
