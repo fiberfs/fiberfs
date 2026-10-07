@@ -347,6 +347,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_zero(flush_data->prev_file);
 			assert_zero(flush_data->skip_lock);
 
+			fbr_file_generation(latest);
+
 			flush_data->file = latest;
 			flush_data->prev_file = file;
 
@@ -853,8 +855,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 				retry = 1;
 			}
 
-			fbr_rlog(FBR_LOG_FLUSH, "ERROR fbr_index_write failed (%d %s) retry: %d",
-				ret, fbr_berror(ret, errbuf), retry);
+			fbr_rlog(FBR_LOG_FLUSH, "ERROR %d (%s) retry: %d", ret,
+				fbr_berror(ret, errbuf), retry);
 		}
 
 		directory_version = directory->version;

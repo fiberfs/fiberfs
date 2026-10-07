@@ -32,6 +32,9 @@ fbr_ops_getattr(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_in
 
 	fbr_inode_release(fs, &file);
 
+	fbr_rlog(FBR_LOG_OP_ATTR, "GETATTR inode: %lu mode: %d size: %ld", st.st_ino,
+		st.st_mode, st.st_size);
+
 	fbr_fuse_reply_attr(request, &st, fbr_fs_dentry_ttl(fs));
 }
 
