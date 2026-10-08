@@ -279,11 +279,11 @@ _json_file_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_file *file
 
 	// c: ctime
 	fbr_writer_add(fs, json, ",\"c\":", 5);
-	fbr_writer_add_ulong(fs, json, file->ctime);
+	fbr_writer_add_double(fs, json, file->ctime);
 
 	// d: mtime
 	fbr_writer_add(fs, json, ",\"d\":", 5);
-	fbr_writer_add_ulong(fs, json, file->mtime);
+	fbr_writer_add_double(fs, json, file->mtime);
 
 	// a: alias (optional)
 	if (fbr_has_alias_path(file)) {
@@ -1002,6 +1002,8 @@ _index_parse_file_alloc(struct fbr_index_parser *parser, const char *filename, s
 	assert_dev(parser->file);
 	assert_dev(parser->file->state == FBR_FILE_INIT);
 	assert_zero_dev(parser->file->generation);
+
+	parser->file->remote = 1;
 }
 
 static struct fbr_file *

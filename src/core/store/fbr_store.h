@@ -177,6 +177,7 @@ void fbr_writer_flush(struct fbr_fs *fs, struct fbr_writer *writer);
 void fbr_writer_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer,
 	size_t buffer_len);
 void fbr_writer_add_ulong(struct fbr_fs *fs, struct fbr_writer *writer, unsigned long value);
+void fbr_writer_add_double(struct fbr_fs *fs, struct fbr_writer *writer, double value);
 void fbr_writer_add_id(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t id);
 void fbr_writer_free(struct fbr_writer *writer);
 void fbr_writer_debug(struct fbr_writer *writer);

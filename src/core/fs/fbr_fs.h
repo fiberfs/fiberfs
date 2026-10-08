@@ -179,6 +179,7 @@ struct fbr_file {
 	double					atime;
 
 	fbr_bitflag_t				local_only:1;
+	fbr_bitflag_t				remote:1;
 	fbr_bitflag_t				has_alias_file:1;
 
 	struct {
