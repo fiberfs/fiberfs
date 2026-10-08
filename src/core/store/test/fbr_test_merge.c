@@ -116,6 +116,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	file1 = fbr_file_alloc_new(fs_2, dir_fs2, &filename1);
 	fbr_file_ok(file1);
+	file1->local_only = 1;
 	assert(file1->state == FBR_FILE_INIT);
 	assert_zero(file1->generation);
 	assert_zero(file1->size);
@@ -130,17 +131,12 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_fio_release(fs_2, fio);
 
 	fbr_file_ok(file1);
-	assert(file1->state == FBR_FILE_INIT);
+	assert(file1->state == FBR_FILE_OK);
 	assert(file1->generation);
 	assert(file1->size == 5);
 	assert_zero(file1->mode);
-
-	struct fbr_file *alias = fbr_file_find_alias(fs_2, file1);
-	fbr_file_ok(alias);
-	assert(alias->state == FBR_FILE_OK);
-	assert(alias->size == 10);
-	assert(alias->generation);
-	assert(alias->mode == (S_IFREG | 0444));
+	assert_zero(file1->has_alias_file);
+	assert_zero(file1->local_only);
 
 	fbr_inode_release(fs_2, &file1);
 
@@ -203,12 +199,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(file2->state == FBR_FILE_OK);
 	assert(file2->size == 10);
 	assert(file2->generation > 1);
-
-	alias = fbr_file_find_alias(fs_1, file2);
-	fbr_file_ok(alias);
-	assert(alias->state == FBR_FILE_OK);
-	assert(alias->size == 20);
-	assert(alias->generation == 3);
+	assert_zero(file2->has_alias_file)
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 

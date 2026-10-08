@@ -33,6 +33,8 @@ print "### LOCAL APPEND 3"
 
 sys_append $file "wr6" "wr7"
 
+sleep_ms 100
+
 print "### READ (memory)"
 
 sys_stat_size $file 21

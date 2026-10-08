@@ -121,13 +121,8 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_fio_release(fs_2, fio);
 
 	fbr_file_ok(file);
-	assert(file->state == FBR_FILE_INIT);
-
-	struct fbr_file *alias = fbr_file_find_alias(fs_2, file);
-	fbr_file_ok(alias);
-	assert(alias->state == FBR_FILE_OK);
-	assert(alias->size == 7);
-	assert(alias->generation == 2);
+	assert(file->state == FBR_FILE_OK);
+	assert_zero(file->has_alias_file);
 
 	fbr_inode_release(fs_2, &file);
 
@@ -156,12 +151,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_OK);
-
-	alias = fbr_file_find_alias(fs_2, file);
-	fbr_file_ok(alias);
-	assert(alias->state == FBR_FILE_OK);
-	assert(alias->size == 10);
-	assert(alias->generation == 3);
+	assert_zero(file->has_alias_file);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 

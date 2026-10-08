@@ -69,8 +69,8 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 	return flush_data;
 }
 
-static void
-_flush_data_free(struct fbr_flush_data *flush_data_cmds)
+void
+fbr_flush_data_free(struct fbr_flush_data *flush_data_cmds)
 {
 	assert(flush_data_cmds);
 
@@ -300,8 +300,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			fbr_path_get_file(&alias->path, &filename);
 
-			// Write isolated to clone when aliasing
-
 			struct fbr_file *clone = fbr_file_clone(fs, directory, alias);
 			fbr_file_ok(clone);
 			assert_dev(clone->state == FBR_FILE_INIT);
@@ -350,15 +348,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			fbr_file_generation(clone);
 
-			_flush_queue_alias(flush_data, latest, clone);
-
-			if (alias) {
-				assert_dev(alias == latest);
-			} else {
-				assert_zero_dev(file->has_alias_file);
-				_flush_queue_alias(flush_data, file, clone);
-			}
-
 			fbr_directory_remove_file(fs, directory, &latest);
 			fbr_directory_add_file(fs, directory, clone);
 
@@ -386,7 +375,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 				file_new->generation);
 
 			fbr_file_generation(file_new);
-			_flush_queue_alias(flush_data, file, file_new);
 
 			fbr_file_LOCK(fs, file_new);
 
@@ -463,6 +451,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_rlog(FBR_LOG_FLUSH, "EEXIST detected (want exclusive)");
 			return EEXIST;
 		} else if (latest_modified) {
+			assert(file->state == FBR_FILE_INIT);
+
 			_flush_queue_alias(flush_data, file, latest);
 
 			assert_zero(flush_data->prev_file);
@@ -667,7 +657,9 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 		flush_data->prev_file = NULL;
 	}
 
-	flush_data->file = flush_data->_file;
+	if (error) {
+		flush_data->file = flush_data->_file;
+	}
 }
 
 static int
@@ -903,7 +895,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 }
 
 int
-fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
+fbr_fs_flush_cmds(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -920,7 +912,18 @@ fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 		ret = fbr_flush(fs, flush_data_cmds);
 	}
 
-	_flush_data_free(flush_data_cmds);
+	return ret;
+}
+
+int
+fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
+{
+	assert(fs);
+	assert(flush_data_cmds);
+
+	int ret = fbr_fs_flush_cmds(fs, flush_data_cmds);
+
+	fbr_flush_data_free(flush_data_cmds);
 
 	return ret;
 }

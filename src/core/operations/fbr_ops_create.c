@@ -127,6 +127,8 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	assert_dev(alias->generation);
 
 	if (alias != file) {
+		assert(file->state == FBR_FILE_INIT);
+
 		fbr_inode_add(fs, alias);
 		fbr_inode_release(fs, &file);
 

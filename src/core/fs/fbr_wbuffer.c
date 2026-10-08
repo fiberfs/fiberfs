@@ -548,16 +548,20 @@ fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, int re
 		assert_dev(wbuffer->state != FBR_WBUFFER_SYNC);
 
 		if (wbuffer->state == FBR_WBUFFER_ERROR || wbuffer->state == FBR_WBUFFER_READY) {
-			fbr_rlog(FBR_LOG_WBUFFER, "RESET offset: %zu end: %zu id: %lu",
-				wbuffer->offset, wbuffer->end, wbuffer->id);
+			fbr_rlog(FBR_LOG_WBUFFER, "RESET offset: %zu end: %zu", wbuffer->offset,
+				wbuffer->end);
+
 			wbuffer->state = FBR_WBUFFER_WRITING;
+
 			_wbuffers_renew_id(fs, file, wbuffer);
 		}
 
 		if (revert_write && wbuffer->state == FBR_WBUFFER_DONE) {
-			fbr_rlog(FBR_LOG_WBUFFER, "REVERT offset: %zu end: %zu id: %lu",
-				wbuffer->offset, wbuffer->end, wbuffer->id);
+			fbr_rlog(FBR_LOG_WBUFFER, "REVERT offset: %zu end: %zu", wbuffer->offset,
+				wbuffer->end);
+
 			wbuffer->state = FBR_WBUFFER_WRITING;
+
 			_wbuffer_delete_chunk(fs, file, wbuffer);
 			_wbuffers_renew_id(fs, file, wbuffer);
 		}
@@ -715,15 +719,23 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	struct fbr_flush_data flush_data;
 	fbr_flush_data_init(&flush_data, file, NULL, fio->wbuffers, NULL, flags, NULL);
 
-	int error = fbr_fs_flush(fs, &flush_data);
+	int error = fbr_fs_flush_cmds(fs, &flush_data);
 
 	if (!error) {
-		struct fbr_file *alias_new = fbr_file_find_alias(fs, file);
-		assert_zero_dev(alias_new->local_only);
+		struct fbr_file *clone = flush_data.file;
+		fbr_file_ok(clone);
+		assert(clone->state >= FBR_FILE_OK);
+		assert_zero(clone->local_only);
 
-		if (alias_new != alias) {
+		if (clone != alias) {
 			fbr_fuse_invalidate_dentry(fs, alias);
 			//fbr_fuse_invalidate_inode(fs, alias);
+
+			alias->local_only = 0;
+
+			if (alias->state == FBR_FILE_INIT) {
+				alias->state = FBR_FILE_OK;
+			}
 		}
 
 		fbr_wbuffers_reset(fs, fio);
@@ -731,6 +743,8 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	} else {
 		fbr_stat_add(&fs->stats.flush_errors);
 	}
+
+	fbr_flush_data_free(&flush_data);
 
 	_wbuffer_UNLOCK(fio);
 

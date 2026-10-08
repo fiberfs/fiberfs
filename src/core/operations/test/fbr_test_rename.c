@@ -377,12 +377,12 @@ _write_thread(struct _rename_data *data)
 		static_ASSERT(_RENAME_WRITE_FILE_MAX < _RENAME_WRITE_MAX);
 		size_t max = fbr_test_gen_random(1, _RENAME_WRITE_FILE_MAX);
 		for (size_t i = 0; i < max; i++) {
+			request = _rename_request_data(data);
+
 			size_t count = fbr_atomic_add(&_RENAME_WRITE_COUNTER, 1);
 
 			char buf[32];
 			size_t buf_len = fbr_bprintf(buf, "%zu ", count);
-
-			request = _rename_request_data(data);
 
 			fbr_ops_write(request, fio->file->inode, buf, buf_len, 0, &fi);
 			assert_zero(request->error);
