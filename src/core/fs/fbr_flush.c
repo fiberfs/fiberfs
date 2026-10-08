@@ -255,8 +255,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	if (latest && latest != file) {
 		assert_zero(_flush_contains_file(flush_data, latest));
 
-		fbr_rlog(FBR_LOG_FLUSH, "LATEST found inode: %lu gen: %lu",
-			latest->inode, latest->generation);
+		fbr_rlog(FBR_LOG_FLUSH, "LATEST found inode: %lu gen: %lu remote: %d",
+			latest->inode, latest->generation, latest->remote);
 
 		fbr_file_LOCK(fs, latest);
 

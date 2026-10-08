@@ -489,6 +489,32 @@ fbr_writer_add_ulong(struct fbr_fs *fs, struct fbr_writer *writer, unsigned long
 }
 
 void
+fbr_writer_add_double(struct fbr_fs *fs, struct fbr_writer *writer, double value)
+{
+	fbr_writer_ok(writer);
+
+	struct fbr_buffer *output = _buffer_get(writer);
+	assert_dev(output);
+
+	size_t output_free = output->buffer_len - output->buffer_pos;
+
+	if (output_free < 128) {
+		output = _flush_extend(fs, writer);
+		assert_dev(output);
+		assert_zero_dev(output->buffer_pos);
+
+		output_free = output->buffer_len;
+		assert(output_free >= 32);
+	}
+
+	int ret = snprintf(output->buffer + output->buffer_pos, output_free, "%.3f", value);
+	assert(ret > 0 && (size_t)ret < output_free);
+
+	output->buffer_pos += ret;
+	writer->raw_bytes += ret;
+}
+
+void
 fbr_writer_add_id(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t id)
 {
 	fbr_writer_ok(writer);

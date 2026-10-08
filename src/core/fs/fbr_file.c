@@ -133,9 +133,10 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 
 	fbr_file_merge(fs, source, clone);
 
-	clone->size = source->size;
-
-	fbr_rlog(FBR_LOG_CLONE, "clone->size: %zu", clone->size);
+	if (clone->size != source->size) {
+		clone->size = source->size;
+		fbr_rlog(FBR_LOG_CLONE, "clone->size: %zu", clone->size);
+	}
 
 	return clone;
 }
@@ -171,6 +172,8 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	struct fbr_chunk *chunk_dest_prev = NULL;
 	struct fbr_chunk *clone;
 
+	size_t inserted = 0;
+
 	while (chunk_source) {
 		if (chunk_source->state == FBR_CHUNK_WBUFFER) {
 			chunk_source = chunk_source->next;
@@ -178,7 +181,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 		}
 
 		size_t chunk_source_end = chunk_source->offset + chunk_source->length;
-		fbr_file_extend(dest, chunk_source_end);
+		if (chunk_source_end > dest->size) {
+			dest->size = chunk_source_end;
+		}
 
 		if (!chunk_dest) {
 			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
@@ -194,6 +199,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			}
 
 			chunk_source = chunk_source->next;
+
+			inserted++;
+
 			continue;
 		} else if (chunk_dest->state == FBR_CHUNK_WBUFFER) {
 			chunk_dest_prev = chunk_dest;
@@ -222,6 +230,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			chunk_source = chunk_source->next;
 			chunk_dest_prev = chunk_dest;
 			chunk_dest = chunk_dest->next;
+
+			inserted++;
+
 			continue;
 		}
 
@@ -239,6 +250,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			chunk_dest_prev = clone;
 
 			chunk_source = chunk_source->next;
+
+			inserted++;
+
 			continue;
 		}
 
@@ -249,6 +263,8 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	}
 
 	fbr_stat_add(&fs->stats.merges);
+
+	fbr_rlog(FBR_LOG_MERGE, "inserted %zu chunks size: %zu", inserted, dest->size);
 
 	fbr_body_debug(fs, dest);
 
