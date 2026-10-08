@@ -304,7 +304,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_1->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs_1->stats.file_refs, "non zero");
 	fbr_test_ASSERT(fs_1->stats.flush_conflicts == 1, "zero");
-	fbr_test_ASSERT(fs_1->stats.merges == 2, "merges found: %zu", fs_1->stats.merges);
+	fbr_test_ASSERT(fs_1->stats.merges == 1, "merges found: %zu", fs_1->stats.merges);
 
 	fbr_fs_free(fs_1);
 
@@ -325,7 +325,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_2->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs_2->stats.file_refs, "non zero");
 	fbr_test_ASSERT(fs_2->stats.flush_conflicts == 1, "zero");
-	fbr_test_ASSERT(fs_2->stats.merges == 2, "merges found: %zu", fs_2->stats.merges);
+	fbr_test_ASSERT(fs_2->stats.merges == 1, "merges found: %zu", fs_2->stats.merges);
 
 	fbr_fs_free(fs_2);
 

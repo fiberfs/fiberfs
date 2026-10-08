@@ -308,10 +308,10 @@ _assert_fs(struct fbr_fs *fs, int print)
 	assert_zero(fs->stats.file_refs);
 }
 
-#define _RENAME_FS_COUNT	1
+#define _RENAME_FS_COUNT	3
 #define _RENAME_THREADS		3
-#define _RENAME_WRITE_FILE_MAX	8
-#define _RENAME_WRITE_MAX	50
+#define _RENAME_WRITE_FILE_MAX	5
+#define _RENAME_WRITE_MAX	20
 #define _RENAME_WRITE_FILE	"write_data"
 #define _RENAME_RENAME_FILE	"done"
 
