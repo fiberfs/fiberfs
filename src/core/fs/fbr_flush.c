@@ -321,9 +321,13 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			fbr_file_LOCK(fs, clone);
 
+			assert_zero(flush_data->clone);
 			assert_zero(flush_data->prev_file);
 			assert_zero(flush_data->skip_lock);
 
+			fbr_inode_add(fs, clone);
+
+			flush_data->clone = clone;
 			flush_data->file = clone;
 			flush_data->prev_file = file;
 
@@ -353,9 +357,13 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			fbr_file_LOCK(fs, clone);
 
+			assert_zero(flush_data->clone);
 			assert_zero(flush_data->prev_file);
 			assert_zero(flush_data->skip_lock);
 
+			fbr_inode_add(fs, clone);
+
+			flush_data->clone = clone;
 			flush_data->file = clone;
 			flush_data->prev_file = file;
 
@@ -378,9 +386,13 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			fbr_file_LOCK(fs, file_new);
 
+			assert_zero(flush_data->clone);
 			assert_zero(flush_data->prev_file);
 			assert_zero(flush_data->skip_lock);
 
+			fbr_inode_add(fs, file_new);
+
+			flush_data->clone = file_new;
 			flush_data->file = file_new;
 			flush_data->prev_file = file;
 
@@ -429,9 +441,13 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_file_LOCK(fs, clone);
 
+		assert_zero(flush_data->clone);
 		assert_zero(flush_data->prev_file);
 		assert_zero(flush_data->skip_lock);
 
+		fbr_inode_add(fs, clone);
+
+		flush_data->clone = clone;
 		flush_data->file = clone;
 		flush_data->prev_file = file;
 
@@ -578,9 +594,13 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_file_LOCK(fs, dest);
 
+		assert_zero(flush_data->clone);
 		assert_zero(flush_data->prev_file);
 		assert_zero(flush_data->skip_lock);
 
+		fbr_inode_add(fs, dest);
+
+		flush_data->clone = dest;
 		flush_data->file = dest;
 		flush_data->prev_file = file;
 
@@ -655,6 +675,9 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 	if (flush_data->prev_file) {
 		fbr_file_UNLOCK(flush_data->prev_file);
 		flush_data->prev_file = NULL;
+	}
+	if (flush_data->clone) {
+		fbr_inode_release(fs, &flush_data->clone);
 	}
 
 	if (error) {
