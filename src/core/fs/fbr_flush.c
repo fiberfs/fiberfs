@@ -70,8 +70,9 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 }
 
 void
-fbr_flush_data_free(struct fbr_flush_data *flush_data_cmds)
+fbr_flush_data_free(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 {
+	fbr_fs_ok(fs);
 	assert(flush_data_cmds);
 
 	while (flush_data_cmds) {
@@ -79,6 +80,10 @@ fbr_flush_data_free(struct fbr_flush_data *flush_data_cmds)
 		fbr_flush_data_ok(flush_data);
 
 		flush_data_cmds = flush_data->next;
+
+		if (flush_data->clone) {
+			fbr_inode_release(fs, &flush_data->clone);
+		}
 
 		int do_free = flush_data->do_free;
 
@@ -676,11 +681,12 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 		fbr_file_UNLOCK(flush_data->prev_file);
 		flush_data->prev_file = NULL;
 	}
-	if (flush_data->clone) {
-		fbr_inode_release(fs, &flush_data->clone);
-	}
 
 	if (error) {
+		if (flush_data->clone) {
+			fbr_inode_release(fs, &flush_data->clone);
+		}
+
 		flush_data->file = flush_data->_file;
 	}
 }
@@ -946,7 +952,7 @@ fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 
 	int ret = fbr_fs_flush_cmds(fs, flush_data_cmds);
 
-	fbr_flush_data_free(flush_data_cmds);
+	fbr_flush_data_free(fs, flush_data_cmds);
 
 	return ret;
 }

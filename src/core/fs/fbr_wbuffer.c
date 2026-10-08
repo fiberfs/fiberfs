@@ -744,7 +744,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 		fbr_stat_add(&fs->stats.flush_errors);
 	}
 
-	fbr_flush_data_free(&flush_data);
+	fbr_flush_data_free(fs, &flush_data);
 
 	_wbuffer_UNLOCK(fio);
 
