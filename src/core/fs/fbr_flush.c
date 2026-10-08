@@ -333,7 +333,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			latest = clone;
 			latest_modified = 0;
-		} else if (alias && alias == latest) {
+		} else if (alias) {
+			assert_dev(alias == latest);
 			assert_dev(latest_modified);
 		}
 
@@ -354,6 +355,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			if (alias) {
 				assert_dev(alias == latest);
 			} else {
+				assert_zero_dev(file->has_alias_file);
 				_flush_queue_alias(flush_data, file, clone);
 			}
 
@@ -569,7 +571,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		_flush_queue_alias(flush_data, latest, dest);
 
 		if (latest_modified) {
-			struct fbr_file *alias = fbr_file_get_alias(fs, file);
+			struct fbr_file *alias = fbr_file_get_alias(fs, file->alias.file);
 			if (alias && alias != latest) {
 				assert_zero_dev(flush_data->alias_file);
 				flush_data->alias_file = alias;
@@ -577,7 +579,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 				fbr_file_LOCK(fs, alias);
 
 				_flush_queue_alias(flush_data, alias, dest);
-			} else {
+			} else if (!alias) {
 				_flush_queue_alias(flush_data, file, dest);
 			}
 		}
