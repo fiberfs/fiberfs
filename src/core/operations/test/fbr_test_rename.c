@@ -311,7 +311,7 @@ _assert_fs(struct fbr_fs *fs, int print)
 #define _RENAME_FS_COUNT	3
 #define _RENAME_THREADS		3
 #define _RENAME_WRITE_FILE_MAX	5
-#define _RENAME_WRITE_MAX	20
+#define _RENAME_WRITE_MAX	50
 #define _RENAME_WRITE_FILE	"write_data"
 #define _RENAME_RENAME_FILE	"done"
 
@@ -395,7 +395,7 @@ _write_thread(struct _rename_data *data)
 
 		data->stats.write_loops++;
 
-		fbr_sleep_ms(1.0);
+		fbr_test_sleep_ms(fbr_test_gen_random(100, 200));
 	}
 
 	if (request) {
@@ -455,10 +455,14 @@ _rename_thread(void *arg)
 				break;
 		}
 
+		if (request->error) {
+			fbr_test_sleep_ms(fbr_test_gen_random(10, 20));
+		} else {
+			fbr_test_sleep_ms(fbr_test_gen_random(100, 200));
+		}
+
 		request->error = 0;
 		data->stats.rename_loops++;
-
-		fbr_sleep_ms(1.0);
 	}
 
 	if (request) {
@@ -469,14 +473,17 @@ _rename_thread(void *arg)
 }
 
 static void
-_rename_validate_counts(struct fbr_fs *fs, struct fbr_file *file, int *write_validate)
+_rename_validate_counts(struct fbr_fs *fs, struct fbr_file *file, int *write_validate,
+    int *write_count)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	assert(write_validate);
+	assert(write_count);
 
 	char buffer[1024];
 	size_t buffer_len = fbr_test_fs_read(fs, file, 0, buffer, sizeof(buffer));
+	assert(buffer_len);
 	assert(buffer_len < sizeof(buffer));
 	buffer[buffer_len] = '\0';
 
@@ -494,7 +501,7 @@ _rename_validate_counts(struct fbr_fs *fs, struct fbr_file *file, int *write_val
 		values++;
 	}
 
-	fbr_test_logs(" %zu values", values);
+	*write_count = values;
 }
 
 static void
@@ -505,7 +512,7 @@ _rename_cluster(struct fbr_test_context *ctx)
 	fbr_test_conf_add("CSTORE_SERVER", "true");
 	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
 	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
-	fbr_test_conf_add("LOG_SIZE", "2500000");
+	fbr_test_conf_add("LOG_SIZE", "3000000");
 
 	fbr_test_random_seed();
 	fbr_test_fuse_mock(ctx);
@@ -597,6 +604,73 @@ _rename_cluster(struct fbr_test_context *ctx)
 
 	fbr_test_logs("*** Validate");
 
+	int *write_validate = calloc(_RENAME_WRITE_COUNTER, sizeof(*write_validate));
+	assert(write_validate);
+
+	int *write_counts = realloc(NULL, sizeof(*write_counts));
+	assert(write_counts);
+
+	struct fbr_fs *fs = fs_array[0];
+	fbr_fs_ok(fs);
+
+	struct fbr_directory *root = fbr_directory_get(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0, 1);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_OK);
+
+	struct fbr_file *file = fbr_directory_find_file(root, _RENAME_WRITE_FILE,
+		strlen(_RENAME_WRITE_FILE));
+	if (file) {
+		fbr_file_ok(file);
+		assert (file->state == FBR_FILE_OK);
+
+		fbr_test_logs("VALIDATE %s exists", _RENAME_WRITE_FILE);
+
+		_rename_validate_counts(fs, file, write_validate, &write_counts[0]);
+	}
+
+	size_t rename_count = 0;
+	while (1) {
+		char rename_dest[32];
+		size_t len = fbr_bprintf(rename_dest, "%s_%zu", _RENAME_RENAME_FILE,
+			rename_count);
+
+		file = fbr_directory_find_file(root, rename_dest, len);
+		if (!file) {
+			break;
+		}
+
+		fbr_file_ok(file);
+		assert(file->state == FBR_FILE_OK);
+
+		fbr_test_logs("%s exists", rename_dest);
+
+		write_counts = realloc(write_counts, sizeof(*write_counts) * (rename_count + 2));
+
+		_rename_validate_counts(fs, file, write_validate, &write_counts[rename_count + 1]);
+
+		rename_count++;
+	}
+
+	fbr_test_sleep_ms(20);
+
+	for (size_t i = 0; i <= rename_count; i++) {
+		if (!i) {
+			fbr_test_logs("File %s: %d writes", _RENAME_WRITE_FILE, write_counts[i]);
+		} else {
+			fbr_test_logs("File %s_%zu: %d writes", _RENAME_RENAME_FILE, i - 1,
+				write_counts[i]);
+		}
+	}
+
+	int errors = 0;
+	for (size_t i = 0; i < _RENAME_WRITE_COUNTER; i++) {
+		fbr_test_logs("  count: %zu value: %d", i + 1, write_validate[i]);
+
+		if (write_validate[i] != 1) {
+			errors++;
+		}
+	}
+
 	fbr_test_logs("_RENAME_WRITE_COUNTER=%zu", _RENAME_WRITE_COUNTER);
 
 	for (size_t i = 0; i < fbr_array_len(_RENAME_DATA); i++) {
@@ -627,64 +701,12 @@ _rename_cluster(struct fbr_test_context *ctx)
 		}
 	}
 
-	int *write_validate = calloc(_RENAME_WRITE_COUNTER, sizeof(*write_validate));
-	assert(write_validate);
-
-	struct fbr_fs *fs = fs_array[0];
-	fbr_fs_ok(fs);
-
-	struct fbr_directory *root = fbr_directory_get(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0, 1);
-	fbr_directory_ok(root);
-	assert(root->state == FBR_DIRSTATE_OK);
-
-	struct fbr_file *file = fbr_directory_find_file(root, _RENAME_WRITE_FILE,
-		strlen(_RENAME_WRITE_FILE));
-	if (file) {
-		fbr_file_ok(file);
-		assert (file->state == FBR_FILE_OK);
-
-		fbr_test_logs("%s exists", _RENAME_WRITE_FILE);
-
-		_rename_validate_counts(fs, file, write_validate);
-	}
-
-	size_t rename_count = 0;
-	while (1) {
-		char rename_dest[32];
-		size_t len = fbr_bprintf(rename_dest, "%s_%zu", _RENAME_RENAME_FILE,
-			rename_count);
-
-		file = fbr_directory_find_file(root, rename_dest, len);
-		if (!file) {
-			break;
-		}
-
-		fbr_file_ok(file);
-		assert(file->state == FBR_FILE_OK);
-
-		fbr_test_logs("%s exists", rename_dest);
-
-		_rename_validate_counts(fs, file, write_validate);
-
-		rename_count++;
-	}
-
-	fbr_test_sleep_ms(20);
-
-	int errors = 0;
-	for (size_t i = 0; i < _RENAME_WRITE_COUNTER; i++) {
-		fbr_test_logs("  count: %zu value: %d", i + 1, write_validate[i]);
-
-		if (write_validate[i] != 1) {
-			errors++;
-		}
-	}
-
 	fbr_ASSERT(!errors, "error(s) found: %d", errors);
 
 	fbr_test_logs("Renamed writes passed validation!");
 
 	free(write_validate);
+	free(write_counts);
 	fbr_dindex_release(fs, &root);
 	fs = NULL;
 
