@@ -207,7 +207,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(fs_1->stats.files_inodes);
 	assert_zero(fs_1->stats.file_refs);
 	assert(fs_1->stats.appends == 2);
-	assert(fs_1->stats.merges == 2);
+	assert(fs_1->stats.merges == 1);
 
 	fbr_fs_free(fs_1);
 
@@ -226,7 +226,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(fs_2->stats.files_inodes);
 	assert_zero(fs_2->stats.file_refs);
 	assert(fs_2->stats.appends == 1);
-	assert(fs_2->stats.merges == 2);
+	assert(fs_2->stats.merges == 1);
 
 	fbr_fs_free(fs_2);
 

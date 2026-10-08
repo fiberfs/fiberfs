@@ -435,11 +435,12 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 		fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE skipping local");
 		fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, http, wbuffer, 1);
 		return;
-	} else if (fbr_cstore_backend_enabled(cstore) && !cstore->config.force_chunk_write) {
+	} else if (fbr_cstore_backend_enabled(cstore) && !cstore->config.force_chunk_write &&
+	    cstore->cluster.size) {
 		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash,
 			FBR_CSTORE_ROUTE_CLUSTER, 0, 0);
 
-		if (cstore->cluster.size && !fbr_cstore_servers_contains(cstore, backend)) {
+		if (!fbr_cstore_servers_contains(cstore, backend)) {
 			fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE skipping local (cluster)");
 			fbr_cstore_s3_wbuffer_finish(fs, cstore, &sync, http, wbuffer, 1);
 			return;

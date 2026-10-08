@@ -880,11 +880,11 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	fbr_stat_add_count(&cstore->stats.rd_chunk_bytes, bytes);
 	fbr_stat_add(&cstore->stats.fetch_chunks);
 
-	if (!cstore->config.force_chunk_write) {
+	if (!cstore->config.force_chunk_write && cstore->cluster.size) {
 		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash,
 			FBR_CSTORE_ROUTE_CLUSTER, 0, 0);
 
-		if (cstore->cluster.size && !fbr_cstore_servers_contains(cstore, backend)) {
+		if (!fbr_cstore_servers_contains(cstore, backend)) {
 			fbr_rlog(FBR_LOG_CS_WBUFFER, "READ S3 WRITE skipping local (cluster)");
 
 			fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_READY);
