@@ -255,13 +255,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	if (latest && latest != file) {
 		assert_zero(_flush_contains_file(flush_data, latest));
 
-		if (latest->generation > file->generation) {
-			fbr_rlog(FBR_LOG_FLUSH, "LATEST found inode: %lu gen: %lu (new gen)",
-				latest->inode, latest->generation);
-		} else {
-			fbr_rlog(FBR_LOG_FLUSH, "LATEST found inode: %lu gen: %lu (new inode)",
-				latest->inode, latest->generation);
-		}
+		fbr_rlog(FBR_LOG_FLUSH, "LATEST found inode: %lu gen: %lu",
+			latest->inode, latest->generation);
 
 		fbr_file_LOCK(fs, latest);
 
@@ -269,6 +264,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		flush_data->latest = latest;
 		latest_modified = 1;
+	} else if (latest) {
+		assert_zero(latest->has_alias_file);
 	}
 
 	fbr_file_generation(file);
@@ -289,18 +286,12 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			// TODO implement this deferred to reduce alias chaining
 			//_flush_set_alias(fs, file, alias);
 		}
-		if (!alias && latest) {
-			alias = fbr_file_get_alias(fs, latest->alias.file);
-			if (alias && alias != latest->alias.file) {
-				assert(alias != file);
-				// TODO implement this deferred to reduce alias chaining
-				//_flush_set_alias(fs, latest, alias);
-			}
-		}
 		if (alias && alias != latest) {
 			fbr_file_ok(alias);
-			assert(alias != file);
 			assert_zero(_flush_contains_file(flush_data, alias));
+			assert_dev(!latest || latest_modified);
+
+			fbr_rlog(FBR_LOG_FLUSH, "CLONING alias");
 
 			fbr_file_LOCK(fs, alias);
 
@@ -358,12 +349,12 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			fbr_file_generation(clone);
 
+			_flush_queue_alias(flush_data, latest, clone);
+
 			if (alias) {
 				assert_dev(alias == latest);
-				_flush_queue_alias(flush_data, alias, clone);
 			} else {
 				_flush_queue_alias(flush_data, file, clone);
-				_flush_queue_alias(flush_data, latest, clone);
 			}
 
 			fbr_directory_remove_file(fs, directory, &latest);
@@ -533,9 +524,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_dev(file == latest);
 		}
 
-		// TODO flush_data->alias_latest
-		assert_zero(latest->has_alias_file);
-
 		struct fbr_file *dest = fbr_directory_find_file(directory,
 			flush_data->filename.name, flush_data->filename.length);
 
@@ -572,25 +560,25 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		}
 
 		fbr_file_merge(fs, latest, dest);
-		fbr_file_generation(dest);
-		_flush_queue_alias(flush_data, latest, dest);
 
 		if (!fbr_has_alias_path(dest)) {
 			fbr_alias_path_alloc(fs, dest, &filename);
 			assert_dev(fbr_has_alias_path(dest));
 		}
 
+		_flush_queue_alias(flush_data, latest, dest);
+
 		if (latest_modified) {
-			struct fbr_file *alias_file = fbr_file_find_alias(fs, file);
-			if (alias_file != latest) {
-				if (alias_file != file) {
-					assert_zero_dev(flush_data->alias_file);
-					flush_data->alias_file = alias_file;
+			struct fbr_file *alias = fbr_file_get_alias(fs, file);
+			if (alias && alias != latest) {
+				assert_zero_dev(flush_data->alias_file);
+				flush_data->alias_file = alias;
 
-					fbr_file_LOCK(fs, alias_file);
-				}
+				fbr_file_LOCK(fs, alias);
 
-				_flush_queue_alias(flush_data, alias_file, dest);
+				_flush_queue_alias(flush_data, alias, dest);
+			} else {
+				_flush_queue_alias(flush_data, file, dest);
 			}
 		}
 
@@ -671,10 +659,6 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 	if (flush_data->alias_file) {
 		fbr_file_UNLOCK(flush_data->alias_file);
 		flush_data->alias_file = NULL;
-	}
-	if (flush_data->alias_latest) {
-		fbr_file_UNLOCK(flush_data->alias_latest);
-		flush_data->alias_latest = NULL;
 	}
 	if (flush_data->prev_file) {
 		fbr_file_UNLOCK(flush_data->prev_file);
@@ -817,8 +801,7 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 
 			index_data->locked_files[0] = flush_data->latest;
 			index_data->locked_files[1] = flush_data->alias_file;
-			index_data->locked_files[2] = flush_data->alias_latest;
-			index_data->locked_files[3] = flush_data->prev_file;
+			index_data->locked_files[2] = flush_data->prev_file;
 
 			if (!index_last) {
 				assert_zero_dev(index_data_cmds);

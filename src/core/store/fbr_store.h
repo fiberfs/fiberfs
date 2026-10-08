@@ -117,7 +117,7 @@ struct fbr_index_data {
 	struct fbr_wbuffer			*wbuffers;
 	struct fbr_chunk_list			*chunks;
 	struct fbr_chunk_list			*removed;
-	struct fbr_file				*locked_files[4];
+	struct fbr_file				*locked_files[3];
 	unsigned long				size;
 	enum fbr_flush_flags			flags;
 
