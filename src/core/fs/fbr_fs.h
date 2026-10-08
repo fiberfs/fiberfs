@@ -577,6 +577,8 @@ struct fbr_directory *fbr_directory_make(struct fbr_fs *fs, const struct fbr_pat
 struct fbr_flush_data *fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file,
 	struct stat *attr, struct fbr_wbuffer *wbuffers, const char *filename,
 	enum fbr_flush_flags flags, struct fbr_flush_data *current);
+void fbr_flush_data_free(struct fbr_flush_data *flush_data_cmds);
+int fbr_fs_flush_cmds(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds);
 int fbr_fs_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds);
 
 void fbr_dindex_alloc(struct fbr_fs *fs);
