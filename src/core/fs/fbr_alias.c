@@ -68,3 +68,108 @@ fbr_alias_path_cmp(struct fbr_file *file1, struct fbr_file *file2)
 
 	return 1;
 }
+
+// Note: can only be used during flush with a DIRSTATE_LOADING lock
+// Note: need source->lock if source state is OK
+void
+fbr_alias_file_set(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *alias)
+{
+	assert_dev(fs);
+	fbr_file_ok(source);
+	fbr_file_ok(alias);
+	assert_zero(alias->alias.file);
+
+	fbr_rlog(FBR_LOG_FS, "ALIAS source inode: %lu gen: %lu to inode: %lu gen: %lu",
+		source->inode, source->generation, alias->inode, alias->generation);
+
+	assert_zero(source->has_alias_file);
+	assert_zero(source->alias.file);
+	/*
+	 * TODO revisit this after rename and make an alias service with locking
+	if(source->has_alias_file) {
+		assert_dev(source->alias_file);
+		fbr_inode_release(fs, &source->alias_file);
+	}
+	*/
+
+	assert_zero_dev(source->alias.file);
+
+	source->alias.file = fbr_inode_add(fs, alias);
+	source->has_alias_file = 1;
+}
+
+void
+fbr_alias_file_free(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	assert(file->alias.file);
+	assert_dev(file->has_alias_file);
+
+	file->has_alias_file = 0;
+
+	fbr_inode_release(fs, &file->alias.file);
+	assert_zero_dev(file->alias.file);
+}
+
+// TODO this eventually needs locking if we want to compact aliases
+struct fbr_file *
+fbr_alias_file_find(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	if (file->has_alias_file) {
+		assert_dev(file->alias.file);
+
+		struct fbr_file *alias = fbr_alias_file_get(fs, file->alias.file);
+		assert_dev(alias);
+
+		return alias;
+	}
+
+	return file;
+}
+
+struct fbr_file *
+fbr_alias_file_get(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+
+	while (file) {
+		fbr_file_ok(file);
+
+		struct fbr_path_name filename;
+		fbr_path_get_file(&file->path, &filename);
+
+		fbr_rlog(FBR_LOG_FS, "ALIAS name: '%s' inode: %lu type: %s", filename.name,
+			file->inode, S_ISDIR(file->mode) ? "DIR" : "FILE");
+
+		if (!file->has_alias_file) {
+			assert_zero_dev(file->alias.file);
+			break;
+		}
+
+		struct fbr_file *alias = file->alias.file;
+		assert_dev(alias);
+
+		file = alias;
+	}
+
+	return file;
+}
+
+void
+fbr_alias_free(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	if (fbr_has_alias_path(file)) {
+		fbr_alias_path_free(fs, file);
+	}
+
+	if (file->has_alias_file) {
+		fbr_alias_file_free(fs, file);
+	}
+}

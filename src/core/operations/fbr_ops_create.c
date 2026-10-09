@@ -121,7 +121,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		return;
 	}
 
-	struct fbr_file *alias = fbr_file_find_alias(fs, file);
+	struct fbr_file *alias = fbr_alias_file_find(fs, file);
 	fbr_file_ok(alias);
 	assert_dev(alias->state == FBR_FILE_OK);
 	assert_dev(alias->generation);

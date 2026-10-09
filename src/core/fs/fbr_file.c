@@ -273,54 +273,6 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	}
 }
 
-// TODO move this to a dedicated alias service with locking
-struct fbr_file *
-fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file)
-{
-	assert(fs);
-	fbr_file_ok(file);
-
-
-	if (file->has_alias_file) {
-		assert_dev(file->alias.file);
-
-		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias.file);
-		assert_dev(alias);
-
-		return alias;
-	}
-
-	return file;
-}
-
-struct fbr_file *
-fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file)
-{
-	fbr_fs_ok(fs);
-
-	while (file) {
-		fbr_file_ok(file);
-
-		struct fbr_path_name filename;
-		fbr_path_get_file(&file->path, &filename);
-
-		fbr_rlog(FBR_LOG_INODE, "ALIAS name: '%s' inode: %lu type: %s", filename.name,
-			file->inode, S_ISDIR(file->mode) ? "DIR" : "FILE");
-
-		if (!file->has_alias_file) {
-			assert_zero_dev(file->alias.file);
-			break;
-		}
-
-		struct fbr_file *alias = file->alias.file;
-		assert_dev(alias);
-
-		file = alias;
-	}
-
-	return file;
-}
-
 void
 fbr_file_extend(struct fbr_file *file, size_t size)
 {
@@ -513,14 +465,7 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_body_free(&file->body);
 	fbr_path_free(&file->path);
 	fbr_file_ptrs_free(file);
-
-	if (fbr_has_alias_path(file)) {
-		fbr_alias_path_free(fs, file);
-	}
-	if (file->alias.file) {
-		assert_dev(file->has_alias_file);
-		fbr_inode_release(fs, &file->alias.file);
-	}
+	fbr_alias_free(fs, file);
 
 	pt_assert(pthread_mutex_destroy(&file->refcount_lock));
 	pt_assert(pthread_mutex_destroy(&file->lock));
