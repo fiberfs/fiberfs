@@ -613,6 +613,7 @@ _rename_cluster(struct fbr_test_context *ctx)
 
 	int *write_counts = realloc(NULL, sizeof(*write_counts));
 	assert(write_counts);
+	write_counts[0] = 0;
 
 	struct fbr_fs *fs = fs_array[0];
 	fbr_fs_ok(fs);
