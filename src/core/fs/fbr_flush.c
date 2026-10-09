@@ -249,16 +249,21 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_WBUFFER");
 
-		if (latest_modified && fbr_alias_path_cmp(file, latest)) {
-			fbr_ABORT("TODO alias mismatch");
-			// TODO delete file, use latest
+		if (latest_modified) {
+			int alias_path_mismatch = fbr_alias_path_cmp(file, latest);
+			assert_zero_dev(alias_path_mismatch)
+
+			if (alias_path_mismatch) {
+				fbr_rlog(FBR_LOG_FLUSH, "ERROR alias_path_mismatch, "
+					"dropping latest");
+
+				latest = NULL;
+				latest_modified = 0;
+				file_new = 1;
+			}
 		}
 
 		struct fbr_file *alias = fbr_alias_file_get(fs, file->alias.file);
-		if (alias && alias != file->alias.file) {
-			// TODO implement this deferred to reduce alias chaining
-			// set file->alias.file = alias
-		}
 		if (alias && alias != latest) {
 			fbr_path_get_file(&alias->path, &filename);
 
@@ -611,7 +616,6 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 		file->state = FBR_FILE_OK;
 	}
 
-	// TODO move this after unlocking everything, non-alias writes will be merged
 	for (size_t i = 0; i < fbr_array_len(flush_data->aliases); i++) {
 		if (!error && flush_data->aliases[i].source) {
 			struct fbr_file *source = flush_data->aliases[i].source;
