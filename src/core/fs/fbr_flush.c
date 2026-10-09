@@ -268,7 +268,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			if (latest_alias && latest_alias != alias) {
 				alias = latest_alias;
 				fbr_rlog(FBR_LOG_FLUSH, "LATEST_ALIAS found "
-					"inode: %lu gen: %lu", alias->inode, alias->generation);
+					"inode: %lu gen: %lu remote: %d", alias->inode,
+					alias->generation, alias->remote);
 			}
 		}
 		if (alias && alias != latest) {
@@ -288,8 +289,6 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_dev(clone->state == FBR_FILE_INIT);
 
 			fbr_file_generation(clone);
-
-			_flush_queue_alias(flush_data, alias, clone);
 
 			fbr_directory_remove_file(fs, directory, &alias);
 			fbr_directory_add_file(fs, directory, clone);
