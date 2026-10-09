@@ -264,14 +264,23 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_zero(_flush_contains_file(flush_data, alias));
 			assert_dev(!latest || latest_modified);
 
-			fbr_rlog(FBR_LOG_FLUSH, "CLONING alias");
+			fbr_path_get_file(&alias->path, &filename);
+
+			struct fbr_file *latest_alias = fbr_directory_find_file(directory,
+				filename.name, filename.length);
+			if (latest_alias && latest_alias != alias) {
+				assert(latest_alias != latest);
+				alias = latest_alias;
+				fbr_rlog(FBR_LOG_FLUSH, "CLONING latest_alias "
+					"(inode: %lu gen: %lu)", alias->inode, alias->generation);
+			} else {
+				fbr_rlog(FBR_LOG_FLUSH, "CLONING alias");
+			}
 
 			fbr_file_LOCK(fs, alias);
 
 			assert_zero_dev(flush_data->alias_file);
 			flush_data->alias_file = alias;
-
-			fbr_path_get_file(&alias->path, &filename);
 
 			struct fbr_file *clone = fbr_file_clone(fs, directory, alias);
 			fbr_file_ok(clone);
@@ -281,16 +290,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			_flush_queue_alias(flush_data, alias, clone);
 
-			int removed = fbr_directory_remove_file(fs, directory, &alias);
-			if (!removed) {
-				struct fbr_file *latest = fbr_directory_find_file(directory,
-					filename.name, filename.length);
-				if (latest) {
-					// TODO merge latest into clone
-					fbr_directory_remove_file(fs, directory, &latest);
-				}
-			}
-
+			fbr_directory_remove_file(fs, directory, &alias);
 			fbr_directory_add_file(fs, directory, clone);
 
 			fbr_file_LOCK(fs, clone);
