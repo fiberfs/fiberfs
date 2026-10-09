@@ -181,8 +181,6 @@ _flush_set_alias(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *al
 	fbr_rlog(FBR_LOG_FLUSH, "ALIAS source inode: %lu gen: %lu to inode: %lu gen: %lu",
 		source->inode, source->generation, alias->inode, alias->generation);
 
-	fbr_inode_add(fs, alias);
-
 	assert_zero(source->has_alias_file);
 	assert_zero(source->alias.file);
 	/*
@@ -195,7 +193,7 @@ _flush_set_alias(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *al
 
 	assert_zero_dev(source->alias.file);
 
-	source->alias.file = alias;
+	source->alias.file = fbr_inode_add(fs, alias);
 	source->has_alias_file = 1;
 }
 
@@ -265,9 +263,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_file_LOCK(fs, latest);
 
-		fbr_inode_add(fs, latest);
-
-		flush_data->latest = latest;
+		flush_data->latest = fbr_inode_add(fs, latest);
 		latest_modified = 1;
 	} else if (latest) {
 		assert_zero(latest->has_alias_file);
@@ -330,9 +326,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_zero(flush_data->prev_file);
 			assert_zero(flush_data->skip_lock);
 
-			fbr_inode_add(fs, clone);
-
-			flush_data->clone = clone;
+			flush_data->clone = fbr_inode_add(fs, clone);
 			flush_data->file = clone;
 			flush_data->prev_file = file;
 
@@ -366,9 +360,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_zero(flush_data->prev_file);
 			assert_zero(flush_data->skip_lock);
 
-			fbr_inode_add(fs, clone);
-
-			flush_data->clone = clone;
+			flush_data->clone = fbr_inode_add(fs, clone);
 			flush_data->file = clone;
 			flush_data->prev_file = file;
 
@@ -395,9 +387,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_zero(flush_data->prev_file);
 			assert_zero(flush_data->skip_lock);
 
-			fbr_inode_add(fs, file_new);
-
-			flush_data->clone = file_new;
+			flush_data->clone = fbr_inode_add(fs, file_new);
 			flush_data->file = file_new;
 			flush_data->prev_file = file;
 
@@ -450,9 +440,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		assert_zero(flush_data->prev_file);
 		assert_zero(flush_data->skip_lock);
 
-		fbr_inode_add(fs, clone);
-
-		flush_data->clone = clone;
+		flush_data->clone = fbr_inode_add(fs, clone);
 		flush_data->file = clone;
 		flush_data->prev_file = file;
 
@@ -603,9 +591,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		assert_zero(flush_data->prev_file);
 		assert_zero(flush_data->skip_lock);
 
-		fbr_inode_add(fs, dest);
-
-		flush_data->clone = dest;
+		flush_data->clone = fbr_inode_add(fs, dest);
 		flush_data->file = dest;
 		flush_data->prev_file = file;
 

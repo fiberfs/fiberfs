@@ -109,7 +109,7 @@ _inodes_get_head(struct fbr_inodes *inodes, struct fbr_file *file)
 	return head;
 }
 
-void
+struct fbr_file *
 fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 {
 	struct fbr_inodes *inodes = _inodes_fs_get(fs);
@@ -134,6 +134,8 @@ fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file)
 	}
 
 	pt_assert(pthread_mutex_unlock(&head->lock));
+
+	return file;
 }
 
 struct fbr_file *

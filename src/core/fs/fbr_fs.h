@@ -471,7 +471,7 @@ int fbr_fs_is_timeout(struct fbr_fs *fs, struct fbr_fs_timeout *timeout);
 
 void fbr_inodes_alloc(struct fbr_fs *fs);
 fbr_inode_t fbr_inode_gen(struct fbr_fs *fs);
-void fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file);
+struct fbr_file *fbr_inode_add(struct fbr_fs *fs, struct fbr_file *file);
 struct fbr_file *fbr_inode_take_alias(struct fbr_fs *fs, fbr_inode_t inode);
 struct fbr_file *fbr_inode_take(struct fbr_fs *fs, fbr_inode_t inode);
 void fbr_inode_release(struct fbr_fs *fs, struct fbr_file **file_ref);
