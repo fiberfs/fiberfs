@@ -636,7 +636,7 @@ void fbr_alias_path_alloc(struct fbr_fs *fs, struct fbr_file *file,
 void fbr_alias_path_take(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest);
 void fbr_alias_path_free(struct fbr_fs *fs, struct fbr_file *file);
 int fbr_alias_path_cmp(struct fbr_file *file1, struct fbr_file *file2);
-void fbr_alias_file_set(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *alias);
+void fbr_alias_file_set(struct fbr_fs *fs, struct fbr_file *file, struct fbr_file *alias);
 void fbr_alias_file_free(struct fbr_fs *fs, struct fbr_file *file);
 struct fbr_file *fbr_alias_file_find(struct fbr_fs *fs, struct fbr_file *file);
 struct fbr_file *fbr_alias_file_get(struct fbr_fs *fs, struct fbr_file *file);
