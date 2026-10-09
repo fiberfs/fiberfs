@@ -470,6 +470,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		}
 
 		fbr_directory_remove_file(fs, directory, &latest);
+
+		// TODO need special alias to keep further writes within the file->inode
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RMDIR)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_RMDIR);
 
@@ -817,8 +819,9 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 			flush_data = flush_data->next;
 		}
 
-		fbr_rlog(FBR_LOG_FLUSH, "DONE: %d (directory inode: %lu gen: %lu)", ret,
-			new_directory->inode, new_directory->generation);
+		fbr_rlog(FBR_LOG_FLUSH, "DONE: %d (directory inode: %lu gen: %lu files: %zu)",
+			ret, new_directory->inode, new_directory->generation,
+			new_directory->file_count);
 
 		if (!ret) {
 			fbr_directory_set_state(fs, new_directory, FBR_DIRSTATE_OK);

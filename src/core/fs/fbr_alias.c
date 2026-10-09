@@ -127,22 +127,21 @@ fbr_alias_file_get(struct fbr_fs *fs, struct fbr_file *file)
 
 	while (file) {
 		fbr_file_ok(file);
+		assert(S_ISREG(file->mode));
 
 		struct fbr_path_name filename;
 		fbr_path_get_file(&file->path, &filename);
 
-		fbr_rlog(FBR_LOG_FS, "ALIAS name: '%s' inode: %lu type: %s", filename.name,
-			file->inode, S_ISDIR(file->mode) ? "DIR" : "FILE");
+		fbr_rlog(FBR_LOG_FS, "ALIAS name: '%s' inode: %lu gen: %lu", filename.name,
+			file->inode, file->generation);
 
 		if (!file->has_alias_file) {
 			assert_zero_dev(file->alias.file);
 			break;
 		}
 
-		struct fbr_file *alias = file->alias.file;
-		assert_dev(alias);
-
-		file = alias;
+		file = file->alias.file;
+		assert_dev(file);
 	}
 
 	return file;
