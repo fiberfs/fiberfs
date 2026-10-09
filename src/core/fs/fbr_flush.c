@@ -168,41 +168,13 @@ _flush_contains_file(struct fbr_flush_data *flush_data, struct fbr_file *file)
 	return 0;
 }
 
-// Note: can only be used during flush with a DIRSTATE_LOADING lock
-// Note: need source->lock if source state is OK
-static void
-_flush_set_alias(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *alias)
-{
-	assert_dev(fs);
-	fbr_file_ok(source);
-	fbr_file_ok(alias);
-	assert_zero(alias->alias.file);
-
-	fbr_rlog(FBR_LOG_FLUSH, "ALIAS source inode: %lu gen: %lu to inode: %lu gen: %lu",
-		source->inode, source->generation, alias->inode, alias->generation);
-
-	assert_zero(source->has_alias_file);
-	assert_zero(source->alias.file);
-	/*
-	 * TODO revisit this after rename and make an alias service with locking
-	if(source->has_alias_file) {
-		assert_dev(source->alias_file);
-		fbr_inode_release(fs, &source->alias_file);
-	}
-	*/
-
-	assert_zero_dev(source->alias.file);
-
-	source->alias.file = fbr_inode_add(fs, alias);
-	source->has_alias_file = 1;
-}
-
 static void
 _flush_queue_alias(struct fbr_flush_data *flush_data, struct fbr_file *source,
     struct fbr_file *alias)
 {
 	assert_dev(flush_data);
 	assert_dev(source);
+	assert_zero_dev(source->has_alias_file);
 	assert_zero(source->alias.file);
 	assert_dev(alias);
 	assert(source != alias);
@@ -282,7 +254,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			// TODO delete file, use latest
 		}
 
-		struct fbr_file *alias = fbr_file_get_alias(fs, file->alias.file);
+		struct fbr_file *alias = fbr_alias_file_get(fs, file->alias.file);
 		if (alias && alias != file->alias.file) {
 			// TODO implement this deferred to reduce alias chaining
 			//_flush_set_alias(fs, file, alias);
@@ -311,10 +283,11 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			int removed = fbr_directory_remove_file(fs, directory, &alias);
 			if (!removed) {
-				struct fbr_file *dup = fbr_directory_find_file(directory,
+				struct fbr_file *latest = fbr_directory_find_file(directory,
 					filename.name, filename.length);
-				if (dup) {
-					fbr_directory_remove_file(fs, directory, &dup);
+				if (latest) {
+					// TODO merge latest into clone
+					fbr_directory_remove_file(fs, directory, &latest);
 				}
 			}
 
@@ -570,7 +543,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		_flush_queue_alias(flush_data, latest, dest);
 
 		if (latest_modified) {
-			struct fbr_file *alias = fbr_file_get_alias(fs, file->alias.file);
+			struct fbr_file *alias = fbr_alias_file_get(fs, file->alias.file);
 			if (alias && alias != latest) {
 				assert_zero_dev(flush_data->alias_file);
 				flush_data->alias_file = alias;
@@ -645,7 +618,7 @@ _flush_done(struct fbr_fs *fs, struct fbr_flush_data *flush_data, int error)
 			assert_zero(source->has_alias_file);
 			assert_zero(source->alias.file);
 
-			_flush_set_alias(fs, source, flush_data->aliases[i].alias);
+			fbr_alias_file_set(fs, source, flush_data->aliases[i].alias);
 		}
 
 		fbr_zero(&flush_data->aliases[i]);

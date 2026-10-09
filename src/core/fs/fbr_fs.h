@@ -488,8 +488,6 @@ void fbr_file_UNLOCK(struct fbr_file *file);
 struct fbr_file * fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent,
 	struct fbr_file *source);
 void fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest);
-struct fbr_file *fbr_file_find_alias(struct fbr_fs *fs, struct fbr_file *file);
-struct fbr_file *fbr_file_get_alias(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_file_extend(struct fbr_file *file, size_t size);
 void fbr_file_generation(struct fbr_file *file);
 int fbr_file_ptr_cmp(const struct fbr_file_ptr *p1, const struct fbr_file_ptr *p2);
@@ -633,10 +631,16 @@ void fbr_wbuffers_reset(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffers_reset_lock(struct fbr_fs *fs, struct fbr_fio *fio);
 void fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio);
 
-void fbr_alias_path_alloc(struct fbr_fs *fs, struct fbr_file *file, const struct fbr_path_name *value);
+void fbr_alias_path_alloc(struct fbr_fs *fs, struct fbr_file *file,
+	const struct fbr_path_name *value);
 void fbr_alias_path_take(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest);
 void fbr_alias_path_free(struct fbr_fs *fs, struct fbr_file *file);
 int fbr_alias_path_cmp(struct fbr_file *file1, struct fbr_file *file2);
+void fbr_alias_file_set(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *alias);
+void fbr_alias_file_free(struct fbr_fs *fs, struct fbr_file *file);
+struct fbr_file *fbr_alias_file_find(struct fbr_fs *fs, struct fbr_file *file);
+struct fbr_file *fbr_alias_file_get(struct fbr_fs *fs, struct fbr_file *file);
+void fbr_alias_free(struct fbr_fs *fs, struct fbr_file *file);
 
 #define fbr_fs_ok(fs)			fbr_magic_check(fs, FBR_FS_MAGIC)
 #define fbr_file_ok(file)		fbr_magic_check(file, FBR_FILE_MAGIC)

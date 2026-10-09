@@ -656,7 +656,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	struct fbr_file *file = fio->file;
 	fbr_file_ok(file);
 
-	struct fbr_file *alias = fbr_file_find_alias(fs, file);
+	struct fbr_file *alias = fbr_alias_file_find(fs, file);
 	fbr_file_ok(alias);
 
 	int need_flush = 0;
