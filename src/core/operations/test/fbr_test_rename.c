@@ -84,26 +84,31 @@ _rename_test(struct fbr_test_context *ctx, int append)
 {
 	assert_dev(ctx);
 
+	fbr_test_random_seed();
 	fbr_test_fuse_mock(ctx);
 	fbr_test_request_pool_register(ctx);
+
+	int sleep_timeout = 0;
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);
 	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
 	fbr_test_cstore_bind_new(fs);
 
-	fbr_test_sleep_ms(20);
+	fbr_test_sleep_ms(sleep_timeout);
 	fbr_test_logs("*** Create root");
 
 	fbr_test_fs_root_alloc(fs);
 
-	fbr_test_sleep_ms(20);
+	fbr_test_sleep_ms(sleep_timeout);
 	fbr_test_logs("*** Create file.1");
 
 	struct fbr_path_name filename1;
 	fbr_path_name_init(&filename1, "file.1");
 	struct fbr_path_name filename2;
 	fbr_path_name_init(&filename2, "file.2");
+	struct fbr_path_name filename3;
+	fbr_path_name_init(&filename3, "file.3");
 
 	struct fbr_request *request = _rename_request(fs);
 
@@ -133,7 +138,7 @@ _rename_test(struct fbr_test_context *ctx, int append)
 
 	fbr_dindex_release(fs, &root);
 
-	fbr_test_sleep_ms(20);
+	fbr_test_sleep_ms(sleep_timeout);
 	fbr_test_logs("*** Append to file.1 (1)");
 
 	root = fbr_directory_get(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0, 0);
@@ -168,7 +173,7 @@ _rename_test(struct fbr_test_context *ctx, int append)
 	fbr_ops_write(request, fio->file->inode, " append1", 8, 0, &fi);
 	assert_zero(request->error);
 
-	fbr_test_sleep_ms(20);
+	fbr_test_sleep_ms(sleep_timeout);
 	fbr_test_logs("*** Rename file.1 to file.2");
 
 	request = _rename_request(fs);
@@ -176,21 +181,19 @@ _rename_test(struct fbr_test_context *ctx, int append)
 	fbr_ops_rename(request, FBR_INODE_ROOT, filename1.name, FBR_INODE_ROOT, filename2.name, 0);
 	assert_zero(request->error);
 
-	fbr_test_sleep_ms(20);
+	fbr_test_sleep_ms(sleep_timeout);
 	fbr_test_logs("*** Append to file.1 (2)");
 
 	request = _rename_request(fs);
 
-	fbr_ops_write(request, fio->file->inode, " append2", 8, 0, &fi);
+	fbr_ops_write(request, fio->file->inode, " append2 here", 13, 0, &fi);
 	assert_zero(request->error);
 
 	request = _rename_request(fs);
 
-	fbr_ops_release(request, file->inode, &fi);
-	assert_zero(request->error);
-	fbr_inode_release(fs, &file);
+	fbr_ops_flush(request, fio->file->inode, &fi);
 
-	fbr_test_sleep_ms(20);
+	fbr_test_sleep_ms(sleep_timeout);
 	fbr_test_logs("*** Validate file.2");
 
 	root = fbr_directory_get(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0, 0);
@@ -198,28 +201,83 @@ _rename_test(struct fbr_test_context *ctx, int append)
 	assert(root->state == FBR_DIRSTATE_OK);
 	assert(root->file_count == 1);
 
-	file = fbr_directory_find_file(root, filename2.name, filename2.length);
-	fbr_file_ok(file);
-	assert(file->state == FBR_FILE_OK);
+	struct fbr_file *vfile = fbr_directory_find_file(root, filename2.name, filename2.length);
+	fbr_file_ok(vfile);
+	assert(vfile->state == FBR_FILE_OK);
 	if (append) {
-		fbr_ASSERT(file->size == 26, "found size: %lu", file->size);
+		fbr_ASSERT(vfile->size == 31, "found size: %lu", vfile->size);
 	} else {
-		fbr_ASSERT(file->size == 10, "found size: %lu", file->size);
+		fbr_ASSERT(vfile->size == 13, "found size: %lu", vfile->size);
 	}
 
 	char buf[128];
-	size_t bytes = fbr_test_fs_read(fs, file, 0, buf, sizeof(buf));
+	size_t bytes = fbr_test_fs_read(fs, vfile, 0, buf, sizeof(buf));
 	assert(bytes < sizeof(buf));
 	buf[bytes] = '\0';
 	if (append) {
-		fbr_ASSERT(!strcmp(buf, "pre_rename append1 append2"), "found: '%s'", buf);
+		fbr_ASSERT(!strcmp(buf, "pre_rename append1 append2 here"), "found: '%s'", buf);
 	} else {
-		fbr_ASSERT(!strcmp(buf, " append2me"), "found: '%s'", buf);
+		fbr_ASSERT(!strcmp(buf, " append2 here"), "found: '%s'", buf);
 	}
 
 	fbr_dindex_release(fs, &root);
 
-	fbr_test_sleep_ms(20);
+	fbr_test_sleep_ms(sleep_timeout);
+	fbr_test_logs("*** Rename file.2 to file.3");
+
+	request = _rename_request(fs);
+
+	fbr_ops_rename(request, FBR_INODE_ROOT, filename2.name, FBR_INODE_ROOT, filename3.name, 0);
+	assert_zero(request->error);
+
+	/*
+	fbr_test_sleep_ms(sleep_timeout);
+	fbr_test_logs("*** Append to file.1 (3)");
+
+	request = _rename_request(fs);
+
+	fbr_ops_write(request, fio->file->inode, " append3 done", 8, 8, &fi);
+	assert_zero(request->error);
+	*/
+
+	request = _rename_request(fs);
+
+	fbr_ops_release(request, file->inode, &fi);
+	assert_zero(request->error);
+	fbr_inode_release(fs, &file);
+
+	/*
+	fbr_test_sleep_ms(sleep_timeout);
+	fbr_test_logs("*** Validate file.3");
+
+	root = fbr_directory_get(fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0, 0);
+	fbr_directory_ok(root);
+	assert(root->state == FBR_DIRSTATE_OK);
+	assert(root->file_count == 1);
+
+	vfile = fbr_directory_find_file(root, filename3.name, filename3.length);
+	fbr_file_ok(vfile);
+	assert(vfile->state == FBR_FILE_OK);
+	if (append) {
+		fbr_ASSERT(vfile->size == 39, "found size: %lu", vfile->size);
+	} else {
+		fbr_ASSERT(vfile->size == 21, "found size: %lu", vfile->size);
+	}
+
+	bytes = fbr_test_fs_read(fs, vfile, 0, buf, sizeof(buf));
+	assert(bytes < sizeof(buf));
+	buf[bytes] = '\0';
+	if (append) {
+		fbr_ASSERT(!strcmp(buf, "pre_rename append1 append2 append3 here"),
+			"found: '%s'", buf);
+	} else {
+		fbr_ASSERT(!strcmp(buf, " append1 append3 here"), "found: '%s'", buf);
+	}
+
+	fbr_dindex_release(fs, &root);
+	*/
+
+	fbr_test_sleep_ms(sleep_timeout);
 	fbr_test_logs("*** Cleanup fs");
 
 	fbr_request_free(request);
@@ -233,7 +291,7 @@ _rename_test(struct fbr_test_context *ctx, int append)
 	if (append) {
 		assert(fs->cstore->stats.wr_chunks == 3);
 	} else {
-		assert(fs->cstore->stats.wr_chunks == 2);
+		assert(fs->cstore->stats.wr_chunks == 1);
 	}
 
 	assert_zero(fs->stats.directories);
