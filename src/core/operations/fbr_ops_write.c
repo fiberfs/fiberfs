@@ -8,6 +8,8 @@
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
 
+int _FBR_WRITE_DEBUG;
+
 void
 fbr_ops_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, size_t size,
     off_t off, struct fuse_file_info *fi)
@@ -18,6 +20,10 @@ fbr_ops_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, size
 		size);
 	assert(off >= 0);
 	assert(size);
+
+	if (_FBR_WRITE_DEBUG) {
+		fbr_rlog(FBR_LOG_OP_WRITE, "DEBUG_BUFFER '%.*s':%zu", (int)size, buf, size);
+	}
 
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_take(fio);
