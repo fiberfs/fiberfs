@@ -27,8 +27,7 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file, int read_only)
 	fio->magic = FBR_FIO_MAGIC;
 
 	// Take an inode ref
-	fbr_inode_add(fs, file);
-	fio->file = file;
+	fio->file = fbr_inode_add(fs, file);
 
 	fio->floating = fbr_chunk_list_alloc();
 	fbr_chunk_list_ok(fio->floating);
@@ -299,6 +298,8 @@ fbr_fio_vector_gen(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t
 	fbr_fs_ok(fs);
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
+
+	// TODO grab the latest file and invalidate if we want no isolation
 
 	fbr_file_LOCK(fs, fio->file);
 

@@ -53,4 +53,7 @@ cstore_debug 1
 equal $cstore_entries:0 6
 equal $cstore_stat_chunks:0 2
 
+fs_test_release_all_wait 1
+equal $fs_test_stat_files_inodes 0
+
 fuse_test_unmount

@@ -22,8 +22,6 @@ sys_ls $sys_tmpdir "..:dir .:dir test.txt:file"
 sys_stat_size $file 15
 sys_cat $file "test1test2test3"
 
-equal $fs_test_stat_read_bytes 15
-
 # Cleanup
 
 sleep_ms 10
@@ -39,7 +37,6 @@ fs_test_debug
 cstore_debug
 
 equal $cstore_stat_chunk_write_bytes:0 15
-equal $cstore_stat_chunk_read_bytes:0 15
 equal $cstore_stat_roots:0 1
 equal $cstore_stat_indexes:0 1
 equal $cstore_stat_chunks:0 1

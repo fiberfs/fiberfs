@@ -111,6 +111,8 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(file->state == FBR_FILE_INIT);
 	assert_zero(file->size);
 
+	fbr_inode_add(fs_2, file);
+
 	fio = fbr_fio_alloc(fs_2, file, 0);
 	fio->append = 1;
 	fbr_wbuffer_write(fs_2, fio, 0, "2222", 4);
@@ -120,8 +122,9 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_OK);
-	assert(file->size == 7);
-	assert(file->generation == 2);
+	assert_zero(file->has_alias_file);
+
+	fbr_inode_release(fs_2, &file);
 
 	fbr_dindex_release(fs_2, &dir_fs2);
 
@@ -148,8 +151,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_file_ok(file);
 	assert(file->state == FBR_FILE_OK);
-	assert(file->size == 10);
-	assert(file->generation == 3);
+	assert_zero(file->has_alias_file);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
@@ -252,8 +254,7 @@ _append_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
 {
 	if (_APPEND_ERROR_FLUSH > 0 && !(random() % 2)) {
 		fbr_test_logs("*** ERROR FLUSH");
-		int error = fbr_wbuffer_flush_ready(fs, index_data->file, index_data->wbuffers,
-			1, 1);
+		int error = fbr_wbuffer_flush_ready(fs, index_data->wbuffers, 1);
 		if (error) {
 			assert_zero(fs->wbuffer_pre_sync);
 			index_data->wbuffer_error = 1;

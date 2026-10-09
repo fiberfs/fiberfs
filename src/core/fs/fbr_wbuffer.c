@@ -10,8 +10,8 @@
 #include "fbr_fs.h"
 #include "core/store/fbr_store.h"
 
-void _wbuffers_renew_id(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer,
-	int have_file_lock);
+static void _wbuffers_renew_id(struct fbr_fs *fs, struct fbr_file *file,
+	struct fbr_wbuffer *wbuffer);
 
 void
 fbr_wbuffer_init(struct fbr_fio *fio)
@@ -138,7 +138,7 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 		wbuffer->next = prev->next;
 		prev->next = wbuffer;
 
-		fbr_rlog(FBR_LOG_WBUFFER, "hole detected hole: %zu offset: %zu end: %zu size: %zu",
+		fbr_rlog(FBR_LOG_WBUFFER, "HOLE prev: %zu offset: %zu end: %zu size: %zu",
 			prev->offset + prev->end, offset, wbuffer->end, wbuffer->size);
 	}
 
@@ -164,7 +164,7 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 
 		wbuffer->next = current;
 
-		fbr_rlog(FBR_LOG_WBUFFER, "alloc offset: %zu end: %zu size: %zu"
+		fbr_rlog(FBR_LOG_WBUFFER, "ALLOC offset: %zu end: %zu size: %zu"
 			" current->offset: %zd", wbuffer->offset, wbuffer->end, wbuffer->size,
 			current ? (ssize_t)current->offset : -1);
 	} else {
@@ -175,13 +175,13 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 
 			wbuffer->state = FBR_WBUFFER_WRITING;
 
-			fbr_rlog(FBR_LOG_WBUFFER, "rewriting offset: %zu", wbuffer->offset);
+			fbr_rlog(FBR_LOG_WBUFFER, "REWRITE offset: %zu", wbuffer->offset);
 
 			if (fs->store->chunk_delete_f) {
 				fs->store->chunk_delete_f(fs, fio->file, wbuffer->chunk);
 			}
 
-			_wbuffers_renew_id(fs, fio->file, wbuffer, 1);
+			_wbuffers_renew_id(fs, fio->file, wbuffer);
 		}
 	}
 
@@ -239,7 +239,7 @@ _wbuffer_UNLOCK(struct fbr_fio *fio)
 	pt_assert(pthread_mutex_unlock(&fio->wbuffer_lock));
 }
 
-// Note: file->lock required
+// Note: must have file->lock
 static void
 _wbuffer_chunk_add(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer,
     int ready)
@@ -247,10 +247,8 @@ _wbuffer_chunk_add(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_wbuffer_ok(wbuffer);
-	assert_zero(wbuffer->chunk);
-	assert_dev(fbr_file_has_wbuffer(file));
 
-	fbr_rlog(FBR_LOG_WBUFFER, "new chunk offset: %zu length: %zu", wbuffer->offset,
+	fbr_rlog(FBR_LOG_WBUFFER, "CHUNK offset: %zu length: %zu", wbuffer->offset,
 		wbuffer->end);
 
 	struct fbr_chunk *chunk = fbr_body_chunk_add(fs, file, wbuffer->id, wbuffer->offset,
@@ -261,6 +259,9 @@ _wbuffer_chunk_add(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 	if (ready) {
 		return;
 	}
+
+	assert_zero(wbuffer->chunk);
+	assert_dev(fbr_file_has_wbuffer(file));
 
 	chunk->state = FBR_CHUNK_WBUFFER;
 	chunk->data = wbuffer->buffer;
@@ -306,18 +307,14 @@ fbr_wbuffer_chunks(struct fbr_wbuffer *wbuffer)
 	return chunks;
 }
 
-void
-_wbuffers_renew_id(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer,
-    int have_file_lock)
+// Note: must have file->lock
+static void
+_wbuffers_renew_id(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffer)
 {
 	assert_dev(fs);
 	fbr_file_ok(file);
 	fbr_wbuffer_ok(wbuffer);
 	assert(wbuffer->state == FBR_WBUFFER_WRITING);
-
-	if (!have_file_lock) {
-		fbr_file_LOCK(fs, file);
-	}
 
 	wbuffer->id = fbr_id_gen();
 
@@ -325,10 +322,48 @@ _wbuffers_renew_id(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 		fbr_chunk_ok(wbuffer->chunk);
 		wbuffer->chunk->id = wbuffer->id;
 	}
+}
 
-	if (!have_file_lock) {
-		fbr_file_UNLOCK(file);
+static struct fbr_file *
+_wbuffer_get_parent(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers)
+{
+	fbr_fs_ok(fs);
+	fbr_wbuffer_ok(wbuffers);
+
+	struct fbr_fio *fio = wbuffers->fio;
+	fbr_fio_ok(fio);
+	fbr_file_ok(fio->file);
+
+	struct fbr_wbuffer *wbuffer = wbuffers;
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+		assert_dev(wbuffer->fio == fio);
+
+		wbuffer = wbuffer->next;
 	}
+
+	return fio->file;
+}
+
+int
+fbr_wbuffer_is_clone(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	if (!wbuffers) {
+		return 0;
+	}
+
+	struct fbr_file *parent = _wbuffer_get_parent(fs, wbuffers);
+	fbr_file_ok(parent);
+
+	if (file == parent) {
+		assert(fbr_file_has_wbuffer(file));
+		return 0;
+	}
+
+	return 1;
 }
 
 void
@@ -371,7 +406,7 @@ fbr_wbuffer_write(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, const c
 		memcpy(wbuffer->buffer + wbuffer_offset, buf + written, wsize);
 
 		if (wbuffer->end < wbuffer_offset + wsize) {
-			fbr_rlog(FBR_LOG_WBUFFER, "extending offset: %zu end: %zu (was: %zu)",
+			fbr_rlog(FBR_LOG_WBUFFER, "EXTEND offset: %zu end: %zu (was: %zu)",
 				wbuffer->offset, wbuffer_offset + wsize, wbuffer->end);
 
 			wbuffer->end = wbuffer_offset + wsize;
@@ -496,13 +531,15 @@ _wbuffer_delete_chunk(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 	}
 }
 
+// Note: must have file->lock
 void
-fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-    int revert_write, int have_file_lock)
+fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, int revert_write)
 {
 	fbr_fs_ok(fs);
+	fbr_wbuffer_ok(wbuffers);
+
+	struct fbr_file *file = _wbuffer_get_parent(fs, wbuffers);
 	fbr_file_ok(file);
-	assert(wbuffers);
 
 	struct fbr_wbuffer *wbuffer = wbuffers;
 	while (wbuffer) {
@@ -510,16 +547,23 @@ fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wb
 		assert_dev(wbuffer->state >= FBR_WBUFFER_READY);
 		assert_dev(wbuffer->state != FBR_WBUFFER_SYNC);
 
-		if (wbuffer->state == FBR_WBUFFER_ERROR ||
-			wbuffer->state == FBR_WBUFFER_READY) {
+		if (wbuffer->state == FBR_WBUFFER_ERROR || wbuffer->state == FBR_WBUFFER_READY) {
+			fbr_rlog(FBR_LOG_WBUFFER, "RESET offset: %zu end: %zu", wbuffer->offset,
+				wbuffer->end);
+
 			wbuffer->state = FBR_WBUFFER_WRITING;
-			_wbuffers_renew_id(fs, file, wbuffer, have_file_lock);
+
+			_wbuffers_renew_id(fs, file, wbuffer);
 		}
 
 		if (revert_write && wbuffer->state == FBR_WBUFFER_DONE) {
+			fbr_rlog(FBR_LOG_WBUFFER, "REVERT offset: %zu end: %zu", wbuffer->offset,
+				wbuffer->end);
+
 			wbuffer->state = FBR_WBUFFER_WRITING;
+
 			_wbuffer_delete_chunk(fs, file, wbuffer);
-			_wbuffers_renew_id(fs, file, wbuffer, have_file_lock);
+			_wbuffers_renew_id(fs, file, wbuffer);
 		}
 
 		wbuffer = wbuffer->next;
@@ -532,6 +576,7 @@ fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
 	fbr_wbuffer_ok(wbuffers);
+
 	struct fbr_fio *fio = wbuffers->fio;
 	fbr_fio_ok(fio);
 
@@ -557,9 +602,9 @@ fbr_wbuffer_flush_store(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 	pt_assert(pthread_mutex_unlock(&fio->wbuffer_update_lock));
 }
 
+// Note: must have file->lock
 int
-fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-    int revert_on_error, int have_file_lock)
+fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, int revert_on_error)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -573,7 +618,7 @@ fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 
 	while (!_wbuffer_ready(wbuffers)) {
 		if (_wbuffer_ready_error(wbuffers)) {
-			fbr_rlog(FBR_LOG_ERROR, "wbuffer error state found, setting EIO");
+			fbr_rlog(FBR_LOG_ERROR, "WBUFFER error state found, setting EIO");
 			if (!error) {
 				error = EIO;
 			}
@@ -587,9 +632,9 @@ fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbu
 
 	if (error) {
 		fbr_stat_add(&fs->stats.flush_errors);
-		fbr_wbuffers_error_reset(fs, file, wbuffers, revert_on_error, have_file_lock);
+		fbr_wbuffers_error_reset(fs, wbuffers, revert_on_error);
 	} else {
-		fbr_rlog(FBR_LOG_WBUFFER, "flush completed");
+		fbr_rlog(FBR_LOG_WBUFFER, "FLUSH completed");
 	}
 
 	return error;
@@ -611,10 +656,13 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	struct fbr_file *file = fio->file;
 	fbr_file_ok(file);
 
+	struct fbr_file *alias = fbr_alias_file_find(fs, file);
+	fbr_file_ok(alias);
+
 	int need_flush = 0;
 	int do_flush = 0;
 
-	if (fio->truncate || file->local_only || file->state == FBR_FILE_INIT) {
+	if (fio->truncate || alias->local_only || alias->state == FBR_FILE_INIT) {
 		need_flush = 1;
 	}
 	if (fio->close && need_flush) {
@@ -655,7 +703,11 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 		fbr_wbuffer_flush_store(fs, file, fio->wbuffers);
 
 		if (fs->wbuffer_pre_sync) {
-			int error = fbr_wbuffer_flush_ready(fs, file, fio->wbuffers, 0, 0);
+			fbr_file_LOCK(fs, file);
+
+			int error = fbr_wbuffer_flush_ready(fs, fio->wbuffers, 0);
+
+			fbr_file_UNLOCK(file);
 
 			if (error) {
 				_wbuffer_UNLOCK(fio);
@@ -665,18 +717,34 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	struct fbr_flush_data flush_data;
-	fbr_flush_data_init(&flush_data, file, NULL, fio->wbuffers, flags);
+	fbr_flush_data_init(&flush_data, file, NULL, fio->wbuffers, NULL, flags, NULL);
 
-	int error = fbr_fs_flush(fs, &flush_data);
+	int error = fbr_fs_flush_cmds(fs, &flush_data);
 
 	if (!error) {
-		assert_zero_dev(file->local_only);
+		struct fbr_file *clone = flush_data.file;
+		fbr_file_ok(clone);
+		assert(clone->state >= FBR_FILE_OK);
+		assert_zero(clone->local_only);
+
+		if (clone != alias) {
+			fbr_fuse_invalidate_dentry(fs, alias);
+			//fbr_fuse_invalidate_inode(fs, alias);
+
+			alias->local_only = 0;
+
+			if (alias->state == FBR_FILE_INIT) {
+				alias->state = FBR_FILE_OK;
+			}
+		}
 
 		fbr_wbuffers_reset(fs, fio);
 		fio->truncate = 0;
 	} else {
 		fbr_stat_add(&fs->stats.flush_errors);
 	}
+
+	fbr_flush_data_free(fs, &flush_data);
 
 	_wbuffer_UNLOCK(fio);
 
@@ -685,19 +753,50 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 
 // Note: file->lock required
 void
-fbr_wbuffers_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
-    int chunk_add)
+fbr_wbuffers_merge(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
+    enum fbr_flush_flags flags)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
-	assert(wbuffers);
+	assert(file->state == FBR_FILE_INIT);
+	fbr_wbuffer_ok(wbuffers);
+	assert_dev(fbr_wbuffer_is_clone(fs, file, wbuffers));
+
+	if (fbr_is_flag(flags, FBR_FLUSH_APPEND)) {
+		return;
+	}
+
+	const char *filename = fbr_path_get_file(&file->path, NULL);
+	fbr_rlog(FBR_LOG_MERGE, "WBUFFER '%s' inode: %lu gen: %lu", filename, file->inode,
+		file->generation);
+
+	struct fbr_wbuffer *wbuffer = wbuffers;
+	while (wbuffer) {
+		fbr_wbuffer_ok(wbuffer);
+
+		_wbuffer_chunk_add(fs, file, wbuffer, 1);
+
+		wbuffer = wbuffer->next;
+	}
+}
+
+// Note: file->lock required
+void
+fbr_wbuffers_ready(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer *wbuffers,
+    enum fbr_flush_flags flags)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+	fbr_wbuffer_ok(wbuffers);
 
 	struct fbr_wbuffer *wbuffer = wbuffers;
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
 		assert(wbuffer->state == FBR_WBUFFER_DONE);
 
-		if (chunk_add) {
+		if (fbr_is_flag(flags, FBR_FLUSH_APPEND)) {
+			assert_zero(wbuffer->chunk);
+
 			_wbuffer_chunk_add(fs, file, wbuffer, 1);
 
 			wbuffer = wbuffer->next;

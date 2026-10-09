@@ -17,7 +17,7 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 	struct fbr_fs *fs = fbr_request_fs(request);
 	assert_dev(fs->store);
 
-	fbr_rlog(FBR_LOG_OP, "LOOKUP req: %lu parent: %lu name: %s", request->id, parent, name);
+	fbr_rlog(FBR_LOG_OP, "LOOKUP req: %lu parent: %lu name: '%s'", request->id, parent, name);
 
 	int error = fbr_check_name(name);
 	if (error) {
@@ -39,6 +39,10 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 		return;
 	} else if (file->parent_inode != parent) {
 		fbr_fuse_reply_err(request, EACCES);
+		fbr_dindex_release(fs, &directory);
+		return;
+	} else if (file->state == FBR_FILE_DELETED) {
+		fbr_fuse_reply_err(request, ENOENT);
 		fbr_dindex_release(fs, &directory);
 		return;
 	}

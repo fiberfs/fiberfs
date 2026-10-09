@@ -227,7 +227,6 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
 	fbr_file_ok(file);
-	assert(file->state >= FBR_FILE_OK);
 	fbr_chunk_list_ok(remove);
 
 	if (!remove->length || !file->body.chunks) {
@@ -278,7 +277,6 @@ fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
     struct fbr_chunk_list **removed, struct fbr_wbuffer *wbuffers)
 {
 	fbr_file_ok(file);
-	assert(file->state >= FBR_FILE_OK);
 	assert_dev(size <= file->size);
 
 	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
@@ -344,9 +342,14 @@ fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 		chunk = chunk->next;
 	}
 
-	if (fbr_is_dev() && wbuffers) {
+	if (fbr_is_dev() && wbuffers && wbuffers->fio) {
+		fbr_wbuffer_ok(wbuffers);
+
+		struct fbr_fio *fio = wbuffers->fio;
+		fbr_fio_ok(fio);
+
 		struct fbr_wbuffer *wbuffer = wbuffers;
-		while (wbuffer) {
+		while (wbuffer && fio->file == file) {
 			assert_dev(wbuffer->chunk);
 			assert_dev(fbr_chunk_list_contains(chunks, wbuffer->chunk));
 			if (do_removed) {
@@ -364,7 +367,6 @@ struct fbr_chunk_list *
 fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers)
 {
 	fbr_file_ok(file);
-	assert(file->state >= FBR_FILE_OK);
 
 	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
 	struct fbr_chunk *chunk = file->body.chunks;

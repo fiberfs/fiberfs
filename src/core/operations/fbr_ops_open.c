@@ -4,6 +4,8 @@
  *
  */
 
+#include <fcntl.h>
+
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
@@ -16,8 +18,7 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 
 	fbr_rlog(FBR_LOG_OP, "OPEN req: %lu ino: %lu flags: %d", request->id, ino, fi->flags);
 
-	struct fbr_file *file = fbr_inode_take(fs, ino);
-
+	struct fbr_file *file = fbr_inode_take_alias(fs, ino);
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
 		return;
@@ -42,12 +43,9 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 	fbr_fio_ok(fio);
 
 	if (fbr_is_flag(fi->flags, O_APPEND)) {
-		if (fs->writeback_enabled) {
-			fbr_rlog(FBR_LOG_OP_OPEN, "flags: append (ignoring, writeback enabled)");
-		} else {
-			fio->append = 1;
-			fbr_rlog(FBR_LOG_OP_OPEN, "flags: append");
-		}
+		fi->direct_io = 1;
+		fio->append = 1;
+		fbr_rlog(FBR_LOG_OP_OPEN, "flags: append");
 	}
 	if (fbr_is_flag(fi->flags, O_TRUNC)) {
 		fio->truncate = 1;
@@ -64,7 +62,7 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 	if (fio->sync && fio->truncate) {
 		struct fbr_flush_data flush_data;
 		enum fbr_flush_flags flags = FBR_FLUSH_WBUFFER | FBR_FLUSH_TRUNCATE;
-		fbr_flush_data_init(&flush_data, file, NULL, NULL, flags);
+		fbr_flush_data_init(&flush_data, file, NULL, NULL, NULL, flags, NULL);
 
 		int ret = fbr_fs_flush(fs, &flush_data);
 

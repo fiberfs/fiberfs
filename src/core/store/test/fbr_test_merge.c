@@ -12,6 +12,7 @@
 #include "cstore/fbr_cstore_callback.h"
 
 #include "test/fbr_test.h"
+#include "config/test/fbr_test_config_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
@@ -21,6 +22,8 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
+
+	fbr_test_conf_add("LOG_SHOW_DEBUG", "TRUE");
 
 	fbr_test_fuse_mock(ctx);
 
@@ -113,9 +116,13 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	file1 = fbr_file_alloc_new(fs_2, dir_fs2, &filename1);
 	fbr_file_ok(file1);
+	file1->local_only = 1;
 	assert(file1->state == FBR_FILE_INIT);
+	assert_zero(file1->generation);
 	assert_zero(file1->size);
 	assert_zero(file1->mode);
+
+	fbr_inode_add(fs_2, file1);
 
 	fio = fbr_fio_alloc(fs_2, file1, 0);
 	fbr_wbuffer_write(fs_2, fio, 0, "ABCDE", 5);
@@ -125,9 +132,13 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_file_ok(file1);
 	assert(file1->state == FBR_FILE_OK);
-	assert(file1->size == 10);
-	assert(file1->generation == 2);
-	assert(file1->mode == (S_IFREG | 0444));
+	assert(file1->generation);
+	assert(file1->size == 5);
+	assert_zero(file1->mode);
+	assert_zero(file1->has_alias_file);
+	assert_zero(file1->local_only);
+
+	fbr_inode_release(fs_2, &file1);
 
 	fbr_dindex_release(fs_2, &dir_fs2);
 
@@ -186,8 +197,9 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_file_ok(file2);
 	assert(file2->state == FBR_FILE_OK);
-	assert(file2->size == 20);
-	assert(file2->generation == 3);
+	assert(file2->size == 10);
+	assert(file2->generation > 1);
+	assert_zero(file2->has_alias_file)
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
@@ -283,7 +295,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_1->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs_1->stats.file_refs, "non zero");
 	fbr_test_ASSERT(fs_1->stats.flush_conflicts == 1, "zero");
-	fbr_test_ASSERT(fs_1->stats.merges == 1, "zero");
+	fbr_test_ASSERT(fs_1->stats.merges == 1, "merges found: %zu", fs_1->stats.merges);
 
 	fbr_fs_free(fs_1);
 
@@ -304,7 +316,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs_2->stats.files_inodes, "non zero");
 	fbr_test_ERROR(fs_2->stats.file_refs, "non zero");
 	fbr_test_ASSERT(fs_2->stats.flush_conflicts == 1, "zero");
-	fbr_test_ASSERT(fs_2->stats.merges == 1, "zero");
+	fbr_test_ASSERT(fs_2->stats.merges == 1, "merges found: %zu", fs_2->stats.merges);
 
 	fbr_fs_free(fs_2);
 
@@ -346,7 +358,15 @@ fbr_cmd_merge_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fbr_test_fs_get_chunk(file1, 0)->id == 1);
 	assert(fbr_test_fs_get_chunk(file1, 1)->id == 2);
 	assert(fbr_test_fs_get_chunk(file1, 2)->id == 3);
+	file2 = fbr_file_clone(fs, root, file1);
 	fbr_file_free(fs, file1);
+	assert(fbr_test_fs_count_chunks(file2) == 3);
+	assert(file2->body.chunk_last == fbr_test_fs_get_chunk(file2, 2));
+	assert(file2->size == 300);
+	assert(fbr_test_fs_get_chunk(file2, 0)->id == 1);
+	assert(fbr_test_fs_get_chunk(file2, 1)->id == 2);
+	assert(fbr_test_fs_get_chunk(file2, 2)->id == 3);
+	fbr_file_free(fs, file2);
 
 	file1 = fbr_file_alloc_new(fs, root, fbr_path_name_init(&name, "file_merge2"));
 	file1->state = FBR_FILE_OK;

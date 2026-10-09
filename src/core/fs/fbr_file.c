@@ -94,6 +94,7 @@ fbr_file_alloc_new(struct fbr_fs *fs, struct fbr_directory *parent,
 
 /*
  * Locking is required when reading/writing the body and attributes
+ * Note: only take 1 file lock per transaction unless you have a DIRSTATE_LOADING
  */
 void
 fbr_file_LOCK(struct fbr_fs *fs, struct fbr_file *file)
@@ -110,13 +111,12 @@ fbr_file_UNLOCK(struct fbr_file *file)
 	pt_assert(pthread_mutex_unlock(&file->lock));
 }
 
-// Note: file isnt added to directory, its returned unreferenced
+// Note: clone isnt added to directory, its returned unreferenced, source must have file->lock
 struct fbr_file *
 fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file *source)
 {
 	fbr_fs_ok(fs);
 	fbr_file_ok(source);
-	fbr_ASSERT(source->state >= FBR_FILE_OK, "source->state=%d", source->state);
 
 	struct fbr_path_name filename;
 	fbr_path_get_file(&source->path, &filename);
@@ -125,15 +125,23 @@ fbr_file_clone(struct fbr_fs *fs, struct fbr_directory *parent, struct fbr_file 
 	assert_dev(clone);
 	assert_dev(clone->state == FBR_FILE_INIT);
 
-	fbr_rlog(FBR_LOG_CLONE, "cloned inode: %lu to %lu", source->inode, clone->inode);
+	fbr_rlog(FBR_LOG_CLONE, "source inode: %lu new inode: %lu", source->inode, clone->inode);
+
+	if (fbr_has_alias_path(source)) {
+		fbr_alias_path_take(fs, source, clone);
+	}
 
 	fbr_file_merge(fs, source, clone);
 
-	clone->size = source->size;
+	if (clone->size != source->size) {
+		clone->size = source->size;
+		fbr_rlog(FBR_LOG_CLONE, "clone->size: %zu", clone->size);
+	}
 
 	return clone;
 }
 
+// Note: source and dest must have file->lock if live
 void
 fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest)
 {
@@ -143,13 +151,12 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	assert(source != dest);
 
 	const char *filename = fbr_path_get_file(&dest->path, NULL);
-	fbr_rlog(FBR_LOG_MERGE, "'%s' gen: %lu source inode: %lu dest inode: %lu",
-		filename, source->generation, source->inode, dest->inode);
 
-	fbr_stat_add(&fs->stats.merges);
+	fbr_rlog(FBR_LOG_MERGE, "'%s' source inode: %lu gen: %lu dest inode: %lu gen: %lu",
+		filename, source->inode, source->generation, dest->inode, dest->generation);
 
-	fbr_file_LOCK(fs, source);
-	fbr_file_LOCK(fs, dest);
+	// TODO if we have a mix of aliasing, chunks should not be merged
+	assert_zero_dev(fbr_alias_path_cmp(source, dest));
 
 	dest->generation = source->generation;
 	dest->mode = source->mode;
@@ -165,6 +172,8 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 	struct fbr_chunk *chunk_dest_prev = NULL;
 	struct fbr_chunk *clone;
 
+	size_t inserted = 0;
+
 	while (chunk_source) {
 		if (chunk_source->state == FBR_CHUNK_WBUFFER) {
 			chunk_source = chunk_source->next;
@@ -172,7 +181,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 		}
 
 		size_t chunk_source_end = chunk_source->offset + chunk_source->length;
-		fbr_file_extend(dest, chunk_source_end);
+		if (chunk_source_end > dest->size) {
+			dest->size = chunk_source_end;
+		}
 
 		if (!chunk_dest) {
 			clone = fbr_body_chunk_clone(fs, &dest->body, chunk_source);
@@ -188,6 +199,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			}
 
 			chunk_source = chunk_source->next;
+
+			inserted++;
+
 			continue;
 		} else if (chunk_dest->state == FBR_CHUNK_WBUFFER) {
 			chunk_dest_prev = chunk_dest;
@@ -216,6 +230,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			chunk_source = chunk_source->next;
 			chunk_dest_prev = chunk_dest;
 			chunk_dest = chunk_dest->next;
+
+			inserted++;
+
 			continue;
 		}
 
@@ -233,6 +250,9 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 			chunk_dest_prev = clone;
 
 			chunk_source = chunk_source->next;
+
+			inserted++;
+
 			continue;
 		}
 
@@ -242,21 +262,15 @@ fbr_file_merge(struct fbr_fs *fs, struct fbr_file *source, struct fbr_file *dest
 		chunk_dest = chunk_dest->next;
 	}
 
+	fbr_stat_add(&fs->stats.merges);
+
+	fbr_rlog(FBR_LOG_MERGE, "inserted %zu chunks size: %zu", inserted, dest->size);
+
 	fbr_body_debug(fs, dest);
 
-	if (fs->fuse_ctx && dest->state >= FBR_FILE_OK) {
-		fbr_fuse_mounted(fs->fuse_ctx);
-		assert(fs->fuse_ctx->session);
-
-		fbr_rlog(FBR_LOG_MERGE, "INVAL inode: %lu (file)", dest->inode);
-
-		int ret = fuse_lowlevel_notify_inval_inode(fs->fuse_ctx->session, dest->inode,
-			0, 0);
-		assert_dev(ret != -ENOSYS);
+	if (dest->state >= FBR_FILE_OK) {
+		fbr_fuse_invalidate_inode(fs, dest);
 	}
-
-	fbr_file_UNLOCK(source);
-	fbr_file_UNLOCK(dest);
 }
 
 void
@@ -451,6 +465,7 @@ fbr_file_free(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_body_free(&file->body);
 	fbr_path_free(&file->path);
 	fbr_file_ptrs_free(file);
+	fbr_alias_free(fs, file);
 
 	pt_assert(pthread_mutex_destroy(&file->refcount_lock));
 	pt_assert(pthread_mutex_destroy(&file->lock));
