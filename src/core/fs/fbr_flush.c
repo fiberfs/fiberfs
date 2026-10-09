@@ -257,25 +257,26 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		struct fbr_file *alias = fbr_alias_file_get(fs, file->alias.file);
 		if (alias && alias != file->alias.file) {
 			// TODO implement this deferred to reduce alias chaining
-			//_flush_set_alias(fs, file, alias);
+			// set file->alias.file = alias
+		}
+		if (alias && alias != latest) {
+			fbr_path_get_file(&alias->path, &filename);
+
+			struct fbr_file *latest_alias = fbr_directory_find_file(directory,
+				filename.name, filename.length);
+
+			if (latest_alias && latest_alias != alias) {
+				alias = latest_alias;
+				fbr_rlog(FBR_LOG_FLUSH, "LATEST_ALIAS found "
+					"inode: %lu gen: %lu", alias->inode, alias->generation);
+			}
 		}
 		if (alias && alias != latest) {
 			fbr_file_ok(alias);
 			assert_zero(_flush_contains_file(flush_data, alias));
 			assert_dev(!latest || latest_modified);
 
-			fbr_path_get_file(&alias->path, &filename);
-
-			struct fbr_file *latest_alias = fbr_directory_find_file(directory,
-				filename.name, filename.length);
-			if (latest_alias && latest_alias != alias) {
-				assert(latest_alias != latest);
-				alias = latest_alias;
-				fbr_rlog(FBR_LOG_FLUSH, "CLONING latest_alias "
-					"(inode: %lu gen: %lu)", alias->inode, alias->generation);
-			} else {
-				fbr_rlog(FBR_LOG_FLUSH, "CLONING alias");
-			}
+			fbr_rlog(FBR_LOG_FLUSH, "CLONING alias");
 
 			fbr_file_LOCK(fs, alias);
 
