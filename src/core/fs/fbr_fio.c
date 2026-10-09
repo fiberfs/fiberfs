@@ -27,8 +27,7 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file, int read_only)
 	fio->magic = FBR_FIO_MAGIC;
 
 	// Take an inode ref
-	fbr_inode_add(fs, file);
-	fio->file = file;
+	fio->file = fbr_inode_add(fs, file);
 
 	fio->floating = fbr_chunk_list_alloc();
 	fbr_chunk_list_ok(fio->floating);
