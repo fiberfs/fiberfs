@@ -26,6 +26,8 @@
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
+extern int _FBR_WRITE_DEBUG;
+
 void fbr_inode_set_start(struct fbr_fs *fs, fbr_inode_t start);
 
 void
@@ -513,6 +515,8 @@ _rename_cluster(struct fbr_test_context *ctx)
 	fbr_test_conf_add("CSTORE_SERVER_ADDRESS", "127.0.0.1");
 	fbr_test_conf_add("CSTORE_SERVER_PORT", "0");
 	fbr_test_conf_add("LOG_SIZE", "3000000");
+
+	_FBR_WRITE_DEBUG = 1;
 
 	fbr_test_random_seed();
 	fbr_test_fuse_mock(ctx);
