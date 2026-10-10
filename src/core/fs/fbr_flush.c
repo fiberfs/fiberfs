@@ -563,9 +563,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			}
 		}
 
-		// TODO aliasing here is incomplete, it breaks when across clones
-		// We need to index all fios in a 2 level tree (dirname/alias filename)
-		// and add new aliases based on active fio alias filenames
+		// TODO aliasing here is incomplete, it breaks across clones
+		// We need to index all fios in a 2 level tree (dirname/filename (aliased))
+		// and add new aliases based on filename matches
 
 		fbr_directory_remove_file(fs, directory, &latest);
 
