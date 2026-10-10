@@ -716,6 +716,9 @@ _rename_cluster(struct fbr_test_context *ctx)
 
 	fbr_test_sleep_ms(20);
 
+	fbr_test_logs("CSTORE_S3");
+	fbr_test_cstore_debug(cstore_s3);
+
 	for (size_t i = 0; i <= rename_count; i++) {
 		if (!i) {
 			fbr_test_logs("File %s: %d writes", _RENAME_WRITE_FILE, write_counts[i]);
@@ -784,8 +787,6 @@ _rename_cluster(struct fbr_test_context *ctx)
 		fbr_fs_free(fs_array[i]);
 	}
 
-	fbr_test_logs("CSTORE_S3");
-	//fbr_test_cstore_debug(cstore_s3);
 	fbr_test_cstore_wait(cstore_s3);
 
 	assert(cstore_s3->stats.wr_chunks == _RENAME_WRITE_COUNTER);
