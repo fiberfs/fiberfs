@@ -155,10 +155,10 @@ _flush_contains_file(struct fbr_flush_data *flush_data, struct fbr_file *file)
 
 	struct fbr_flush_data *flush_data_ptr = flush_data->head;
 
-	while (flush_data_ptr != flush_data) {
+	while (flush_data_ptr) {
 		fbr_flush_data_ok(flush_data_ptr);
 
-		if (flush_data_ptr->file == file) {
+		if (flush_data_ptr != flush_data && flush_data_ptr->file == file) {
 			return 1;
 		}
 
