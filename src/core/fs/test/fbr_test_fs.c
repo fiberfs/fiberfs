@@ -94,6 +94,9 @@ fbr_cmd_fs_test_release_all_wait(struct fbr_test_context *ctx, struct fbr_test_c
 	fbr_ASSERT(!fs->stats.fios, "fs->stats.fios=%lu count: %d",
 		fs->stats.fios, count);
 
+	// Let any follow up page cache transactions complete...
+	fbr_test_sleep_ms(20);
+
 	fbr_cmd_fs_test_release_all_wait_nf(ctx, cmd);
 }
 

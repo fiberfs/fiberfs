@@ -230,6 +230,8 @@ _rename_test(struct fbr_test_context *ctx, int append)
 	fbr_ops_rename(request, FBR_INODE_ROOT, filename2.name, FBR_INODE_ROOT, filename3.name, 0);
 	assert_zero(request->error);
 
+	// TODO uncomment the rest of this test when we have a proper rename to fio design
+
 	/*
 	fbr_test_sleep_ms(sleep_timeout);
 	fbr_test_logs("*** Append to file.1 (3)");
