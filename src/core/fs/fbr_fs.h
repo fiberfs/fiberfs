@@ -113,7 +113,7 @@ struct fbr_body {
 	struct {
 		struct fbr_chunk		chunks[FBR_BODY_DEFAULT_CHUNKS];
 		struct fbr_chunk_slab		*next;
-	}  chunk_head;
+	} chunk_head;
 
 	struct fbr_chunk			*chunks;
 	struct fbr_chunk			*chunk_last;
@@ -185,7 +185,7 @@ struct fbr_file {
 	struct {
 		struct fbr_file_ptr		ptrs[FBR_FILE_DEFAULT_PTRS];
 		struct fbr_file_ptr_slab	*next;
-	}  ptr_head;
+	} ptr_head;
 
 	RB_ENTRY(fbr_file)			inode_entry;
 
