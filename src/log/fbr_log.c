@@ -460,7 +460,7 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 
 	size_t distance = header->segment_counter - cursor->segment_counter;
 	if (distance > header->segments - FBR_LOG_SEGMENT_GAP) {
-		cursor->status = FBR_LOG_CURSOR_OVERFLOW;
+		cursor->status = FBR_LOG_CURSOR_OVERRUN;
 		return NULL;
 	}
 

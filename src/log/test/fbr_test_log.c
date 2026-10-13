@@ -72,8 +72,8 @@ _test_log_printer_thread(void *arg)
 			if (reader->cursor.status == FBR_LOG_CURSOR_EXIT) {
 				break;
 			}
-			fbr_ASSERT(reader->cursor.status != FBR_LOG_CURSOR_OVERFLOW,
-				"%s ### LOG OVERFLOW ###", printer->prefix);
+			fbr_ASSERT(reader->cursor.status != FBR_LOG_CURSOR_OVERRUN,
+				"%s ### LOG OVERRUN ###", printer->prefix);
 			fbr_ASSERT(reader->cursor.status == FBR_LOG_CURSOR_EOF,
 				"cursor.status=%d", reader->cursor.status);
 
@@ -439,7 +439,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	_test_log_debug(log);
 
-	fbr_test_logs("*** overflow");
+	fbr_test_logs("*** overrun");
 
 	big_size = 30000;
 	fbr_log_append(log, FBR_LOG_TAG_OTHER, 6, big, big_size);
@@ -454,7 +454,7 @@ fbr_cmd_test_log_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("*** cursor.segment_counter: %zu", reader.cursor.segment_counter);
 
 	assert_zero(fbr_log_reader_get(&reader, log_buffer, sizeof(log_buffer)));
-	assert(reader.cursor.status == FBR_LOG_CURSOR_OVERFLOW);
+	assert(reader.cursor.status == FBR_LOG_CURSOR_OVERRUN);
 
 	assert(log->writer.stat_appends == 8);
 

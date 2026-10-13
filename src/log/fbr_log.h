@@ -99,7 +99,7 @@ enum fbr_log_cursor_status {
 	FBR_LOG_CURSOR_EOF,
 	FBR_LOG_CURSOR_ERROR,
 	FBR_LOG_CURSOR_EXIT,
-	FBR_LOG_CURSOR_OVERFLOW
+	FBR_LOG_CURSOR_OVERRUN
 };
 
 struct fbr_log_cursor {

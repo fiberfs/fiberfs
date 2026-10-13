@@ -80,6 +80,7 @@ main(int argc, char **argv)
 		return 1;
 	}
 
+	// TODO we should make sure we dont go past the current segment
 	reader->cursor.rewind = dump_history;
 
 	while (!_STOP) {
@@ -92,8 +93,8 @@ main(int argc, char **argv)
 			if (reader->cursor.status == FBR_LOG_CURSOR_EXIT) {
 				fprintf(stderr, "Shutdown detected\n");
 				break;
-			} else if (reader->cursor.status == FBR_LOG_CURSOR_OVERFLOW) {
-				fprintf(stderr, "ERROR overflow, "
+			} else if (reader->cursor.status == FBR_LOG_CURSOR_OVERRUN) {
+				fprintf(stderr, "ERROR overrun, "
 					"cannot read or print fast enough\n");
 				break;
 			}
@@ -102,7 +103,7 @@ main(int argc, char **argv)
 				"cursor.status=%d", reader->cursor.status);
 
 			if (dump_history) {
-				return 0;
+				break;
 			}
 
 			fbr_sleep_ms(sleep_ms);
