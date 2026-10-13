@@ -12,8 +12,8 @@
 
 #include <pthread.h>
 
-#define CHTTP_TCP_POOL_SIZE				30
-#define CHTTP_TCP_POOL_AGE_MSEC				(30 * 1000)
+#define CHTTP_TCP_POOL_SIZE				200
+#define CHTTP_TCP_POOL_AGE_MSEC				(300 * 1000)
 
 struct chttp_tcp_pool_entry {
 	unsigned int					magic;

@@ -26,7 +26,7 @@ chttp_load_config(void)
 		return;
 	}
 
-	CHTTP_CONFIG.tcp_pool_age_msec = fbr_conf_get_long("TCP_POOL_AGE_MSEC",
+	CHTTP_CONFIG.tcp_pool_age_msec = fbr_conf_get_long("HTTP_KEEP_ALIVE_SEC",
 		CHTTP_TCP_POOL_AGE_MSEC);
 	CHTTP_CONFIG.tcp_pool_size = fbr_conf_get_ulong("TCP_POOL_SIZE", CHTTP_TCP_POOL_SIZE);
 	CHTTP_CONFIG.dns_cache_ttl = fbr_conf_get_long("DNS_CACHE_TTL", CHTTP_DNS_CACHE_TTL);
