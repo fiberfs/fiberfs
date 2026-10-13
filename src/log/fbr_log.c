@@ -437,8 +437,16 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 	int init_sequence = 0;
 
 	if (!cursor->log_pos) {
-		// TODO allow starting at an earlier segment
 		cursor->segment_counter = header->segment_counter;
+		if (cursor->rewind) {
+			assert(header->segments > FBR_LOG_SEGMENT_GAP);
+			if (cursor->segment_counter > header->segments - FBR_LOG_SEGMENT_GAP) {
+				cursor->segment_counter -= header->segments - FBR_LOG_SEGMENT_GAP;
+			} else {
+				cursor->segment_counter = 0;
+			}
+		}
+
 		size_t segment = cursor->segment_counter % header->segments;
 		cursor->log_pos = header->data + header->segment_offset[segment];
 
@@ -451,7 +459,7 @@ fbr_log_read(struct fbr_log *log, struct fbr_log_cursor *cursor)
 	}
 
 	size_t distance = header->segment_counter - cursor->segment_counter;
-	if (distance > header->segments - 2) {
+	if (distance > header->segments - FBR_LOG_SEGMENT_GAP) {
 		cursor->status = FBR_LOG_CURSOR_OVERFLOW;
 		return NULL;
 	}

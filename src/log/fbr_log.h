@@ -19,6 +19,7 @@
 #include "fbr_log_types.h"
 
 #define FBR_LOG_SEGMENTS			8
+#define FBR_LOG_SEGMENT_GAP			2
 #define FBR_LOG_VERSION				1
 #define FBR_LOG_SIZE_DEFAULT			(128 * 1024UL)
 #define FBR_LOG_MIN_SIZE			(65 * 1024UL)
@@ -109,6 +110,8 @@ struct fbr_log_cursor {
 
 	struct fbr_log_tag			tag;
 	enum fbr_log_cursor_status		status;
+
+	fbr_bitflag_t				rewind;
 };
 
 struct fbr_log {

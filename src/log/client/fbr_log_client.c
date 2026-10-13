@@ -5,6 +5,7 @@
  */
 
 #include <errno.h>
+#include <getopt.h>
 #include <stdio.h>
 
 #include "log/fbr_log.h"
@@ -19,7 +20,7 @@ _log_signal_stop(int signal, siginfo_t *info, void *ucontext)
 	(void)info;
 	(void)ucontext;
 
-	printf("Caught signal: %s (%d)\n", strsignal(signal), signal);
+	fprintf(stderr, "Caught signal: %s (%d)\n", strsignal(signal), signal);
 
 	_STOP = 1;
 }
@@ -27,30 +28,59 @@ _log_signal_stop(int signal, siginfo_t *info, void *ucontext)
 static void
 _usage(void)
 {
-	printf("Usage: fiberfs_log MOUNT_PATH\n");
+	fprintf(stderr, "Usage: fiberfs_log [-d] MOUNT_PATH\n");
 }
 
 int
 main(int argc, char **argv)
 {
-	if (argc != 2) {
+	fbr_setup_crash_signals();
+	fbr_setup_stop_signals(_log_signal_stop);
+
+	const char *mount_path = NULL;
+	int dump_history = 0;
+
+	int opt;
+	static struct option options[] = {
+		{"dump-history", no_argument, NULL, 'd'},
+		{NULL, 0, NULL, 0}
+	};
+
+	while ((opt = getopt_long(argc, argv, "d", options, NULL)) != -1) {
+		switch (opt) {
+			case 'd':
+				dump_history = 1;
+				break;
+			default:
+				_usage();
+				return 1;
+		}
+	}
+
+	for (int i = optind; i < argc; i++) {
+		if (!mount_path) {
+			mount_path = argv[i];
+		} else {
+			_usage();
+			return 1;
+		}
+	}
+	if (!mount_path) {
 		_usage();
 		return 1;
 	}
 
-	fbr_setup_crash_signals();
-	fbr_setup_stop_signals(_log_signal_stop);
-
-	const char *mount_path = argv[1];
 	struct fbr_log_reader _reader;
 	struct fbr_log_reader *reader = &_reader;
 	unsigned long sleep_ms = 0;
 
 	int ret = fbr_log_reader_init(reader, mount_path);
 	if (!ret) {
-		printf("Cannot open log for %s (errno %d)\n", mount_path, errno);
+		fprintf(stderr, "Cannot open log for %s (errno %d)\n", mount_path, errno);
 		return 1;
 	}
+
+	reader->cursor.rewind = dump_history;
 
 	while (!_STOP) {
 		char log_buffer[FBR_LOGLINE_MAX_LENGTH];
@@ -60,15 +90,20 @@ main(int argc, char **argv)
 
 		if (!log_line) {
 			if (reader->cursor.status == FBR_LOG_CURSOR_EXIT) {
-				printf("Shutdown detected\n");
+				fprintf(stderr, "Shutdown detected\n");
 				break;
 			} else if (reader->cursor.status == FBR_LOG_CURSOR_OVERFLOW) {
-				printf("ERROR overflow, cannot read or print fast enough\n");
+				fprintf(stderr, "ERROR overflow, "
+					"cannot read or print fast enough\n");
 				break;
 			}
 
 			fbr_ASSERT(reader->cursor.status == FBR_LOG_CURSOR_EOF,
 				"cursor.status=%d", reader->cursor.status);
+
+			if (dump_history) {
+				return 0;
+			}
 
 			fbr_sleep_ms(sleep_ms);
 
