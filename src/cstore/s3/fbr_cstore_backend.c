@@ -312,14 +312,16 @@ fbr_cstore_backend_get(struct fbr_cstore *cstore, fbr_hash_t hash, enum fbr_csto
 	assert(route && route <= FBR_CSTORE_ROUTE_S3);
 	assert(retries >= 0);
 
-	fbr_rlog(FBR_LOG_CS_S3, "BACKEND hash: %lu (%d)", hash, retries);
-
 	struct fbr_cstore_backend *backend = NULL;
 	const char *route_type = "";
 
 	if (route == FBR_CSTORE_ROUTE_CLUSTER && cstore->cluster.size) {
+		fbr_rlog(FBR_LOG_CS_S3, "BACKEND cluster hash: %lu (%d)", hash, retries);
+
 		backend = _backend_rv_hash(cstore, &cstore->cluster, hash, retries);
 	} else if (route <= FBR_CSTORE_ROUTE_CDN && cdn_ok && cstore->cdn.size) {
+		fbr_rlog(FBR_LOG_CS_S3, "BACKEND cdn hash: %lu (%d)", hash, retries);
+
 		backend = _backend_rv_hash(cstore, &cstore->cdn, hash, 0);
 
 		if (route != FBR_CSTORE_ROUTE_CDN) {
