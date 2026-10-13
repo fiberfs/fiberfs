@@ -56,6 +56,10 @@ Note: all Makefile commands support parallelism, ex: `make test -j8`.
 
 ## Releases
 
+### FiberFS 0.9.3 (2026-10-13)
+
+* Atomic rename, full inode isolation mode, fiberfs_log history.
+
 ### FiberFS 0.9.2 (2026-08-06)
 
 * Better defaults, more TLS options, S3 content checksums, sticky DNS, HTTP timings, and more tests.
