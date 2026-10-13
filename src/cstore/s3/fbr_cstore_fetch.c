@@ -37,7 +37,7 @@ _fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
 void
 fbr_cstore_fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
     struct chttp_context *http, enum fbr_cstore_file_type type, struct fbr_cstore_path *file_path,
-    const char *etag_304, const char *etag_match, size_t length, int gzip,
+    const char *etag_304, const char *etag_match, size_t length, enum fbr_compression compress,
     enum fbr_cstore_route route)
 {
 	_fetch_init(fetch, cstore, http);
@@ -49,7 +49,7 @@ fbr_cstore_fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore 
 	fetch->type = type;
 	fetch->file_path = file_path;
 	fetch->length = length;
-	fetch->gzip = gzip;
+	fetch->compress = compress;
 	fetch->orig_route = route;
 	fetch->route = FBR_CSTORE_ROUTE_NONE;
 
@@ -333,8 +333,15 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 		chttp_header_add(http, "If-None-Match", "*");
 	}
 
-	if (fetch->gzip) {
-		chttp_header_add(http, "Content-Encoding", "gzip");
+	switch (fetch->compress) {
+		case FBR_COMPRESS_GZIP:
+			chttp_header_add(http, "Content-Encoding", "gzip");
+			break;
+		case FBR_COMPRESS_ZSTD:
+			chttp_header_add(http, "Content-Encoding", "zstd");
+			break;
+		default:
+			break;
 	}
 
 	switch (fetch->type) {
@@ -571,7 +578,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 	fbr_zero(&metadata);
 	metadata.size = bytes;
 	metadata.type = fetch->type;
-	metadata.gzipped = http->gzip;
+	metadata.compress = (http->gzip ? FBR_COMPRESS_GZIP : FBR_COMPRESS_NONE);
 	fbr_strbcpy(metadata.path, fetch->file_path->value);
 
 	chttp_context_free(http);
@@ -1045,7 +1052,7 @@ fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
 	struct fbr_cstore_fetch_context fetch;
 
 	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_INDEX, path, NULL, NULL,
-		writer->bytes, writer->is_gzip, FBR_CSTORE_ROUTE_CLUSTER);
+		writer->bytes, writer->is_compress, FBR_CSTORE_ROUTE_CLUSTER);
 
 	fetch.data_callback = _s3_writer_data_cb;
 	fetch.hash_callback = _s3_writer_hash_cb;
@@ -1075,7 +1082,7 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 
 	struct fbr_cstore_fetch_context fetch;
 	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_ROOT, root_path, NULL,
-		etag_match, root_json->bytes, root_json->is_gzip, route);
+		etag_match, root_json->bytes, root_json->is_compress, route);
 
 	fetch.data_callback = _s3_writer_data_cb;
 	fetch.hash_callback = _s3_writer_hash_cb;

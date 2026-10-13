@@ -17,6 +17,13 @@
 #define FBR_ROOT_JSON_SIZE			128
 #define FBR_INDEX_MAX_CMDS			16
 
+enum fbr_compression {
+	FBR_COMPRESS_NONE = 0,
+	FBR_COMPRESS_GZIP,
+	FBR_COMPRESS_ZSTD,
+	__FBR_COMPRESS_SIZE
+};
+
 struct fbr_buffer {
 	unsigned int				magic;
 #define FBR_BUFFER_MAGIC			0xDB60ECD5
@@ -43,11 +50,12 @@ struct fbr_writer {
 	struct fbr_workspace			*workspace;
 	struct fbr_gzip				gzip;
 
+	enum fbr_compression			want_compress;
+	enum fbr_compression			is_compress;
+
 	size_t					raw_bytes;
 	size_t					bytes;
 
-	fbr_bitflag_t				want_gzip:1;
-	fbr_bitflag_t				is_gzip:1;
 	fbr_bitflag_t				error:1;
 	fbr_bitflag_t				do_free:1;
 };
@@ -64,7 +72,7 @@ struct fbr_reader {
 	size_t					raw_bytes;
 	size_t					bytes;
 
-	fbr_bitflag_t				was_gzip:1;
+	enum fbr_compression			was_compress;
 };
 
 #define FBR_ENUM_INDEX_LOCATION					\
@@ -169,7 +177,7 @@ void fbr_buffers_free(struct fbr_buffer *buffer);
 void fbr_buffer_debug(struct fbr_buffer *fbuf, const char *name);
 
 void fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer,
-	struct fbr_request *request, int want_gzip);
+	struct fbr_request *request, enum fbr_compression want_compress);
 void fbr_writer_init_buffer(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
 	size_t buffer_len);
 struct fbr_writer *fbr_writer_alloc_dynamic(struct fbr_fs *fs, size_t size);
@@ -183,7 +191,7 @@ void fbr_writer_free(struct fbr_writer *writer);
 void fbr_writer_debug(struct fbr_writer *writer);
 
 void fbr_reader_init(struct fbr_fs *fs, struct fbr_reader *reader,
-	struct fbr_request *request, int is_gzip);
+	struct fbr_request *request, enum fbr_compression is_compress);
 void fbr_reader_free(struct fbr_fs *fs, struct fbr_reader *reader);
 
 #define fbr_buffer_ok(buffer)		fbr_magic_check(buffer, FBR_BUFFER_MAGIC)

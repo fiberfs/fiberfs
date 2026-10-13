@@ -21,14 +21,24 @@ _reader_init(struct fbr_reader *reader)
 
 void
 fbr_reader_init(struct fbr_fs *fs, struct fbr_reader *reader, struct fbr_request *request,
-    int is_gzip)
+    enum fbr_compression is_compress)
 {
 	fbr_fs_ok(fs);
 	assert(reader);
 
 	_reader_init(reader);
 
-	reader->was_gzip = is_gzip;
+	switch (is_compress) {
+		case FBR_COMPRESS_NONE:
+			break;
+		case FBR_COMPRESS_GZIP:
+			reader->was_compress = is_compress;
+			break;
+		case FBR_COMPRESS_ZSTD:
+			fbr_ABORT("ZSTD not supported");
+		default:
+			fbr_ABORT("Bad compression value: %d", is_compress);
+	}
 
 	if (request) {
 		fbr_request_ok(request);
@@ -36,7 +46,7 @@ fbr_reader_init(struct fbr_fs *fs, struct fbr_reader *reader, struct fbr_request
 		char *buffer;
 		size_t buffer_len;
 
-		if (is_gzip) {
+		if (is_compress) {
 			// TODO make these buffer sizes conigurable
 			buffer = fbr_workspace_alloc(request->workspace, FBR_DEFAULT_BUFLEN);
 			buffer_len = FBR_DEFAULT_BUFLEN;
@@ -57,7 +67,7 @@ fbr_reader_init(struct fbr_fs *fs, struct fbr_reader *reader, struct fbr_request
 		}
 	}
 
-	if (!reader->buffer && is_gzip) {
+	if (!reader->buffer && is_compress) {
 		reader->buffer = &reader->_buffer;
 		fbr_buffer_init(fs, reader->buffer, NULL, FBR_DEFAULT_BUFLEN);
 	}

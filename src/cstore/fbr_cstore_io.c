@@ -86,9 +86,11 @@ fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
 	fbr_writer_add(fs, &writer, ",\"t\":", 5);
 	fbr_writer_add(fs, &writer, buf, length);
 
-	// g: gzipped
-	if (metadata->gzipped) {
-		fbr_writer_add(fs, &writer, ",\"g\":1}", 7);
+	// g: compression (gzipped)
+	if (metadata->compress) {
+		fbr_writer_add(fs, &writer, ",\"g\":", 5);
+		fbr_writer_add_ulong(fs, &writer, metadata->compress);
+		fbr_writer_add(fs, &writer, "}", 1);
 	} else {
 		fbr_writer_add(fs, &writer, "}", 1);
 	}
@@ -171,8 +173,8 @@ _cstore_parse_metadata(struct fjson_context *ctx, void *priv)
 				metadata->type = (int)token->dvalue;
 			}
 		}else if (metadata->_context == 'g') {
-			if (token->dvalue == 0 || token->dvalue == 1) {
-				metadata->gzipped = (int)token->dvalue;
+			if (token->dvalue < __FBR_COMPRESS_SIZE) {
+				metadata->compress = (int)token->dvalue;
 			}
 		}
 	}
@@ -598,9 +600,9 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	assert_zero_dev(ret);
 	assert_dev(metadata.size == chunk->length);
 	assert_dev(metadata.type == FBR_CSTORE_FILE_CHUNK);
-	assert_zero_dev(metadata.gzipped);
+	assert_zero_dev(metadata.compress);
 
-	if (ret || metadata.size != chunk->length || metadata.gzipped) {
+	if (ret || metadata.size != chunk->length || metadata.compress) {
 		fbr_rlog(FBR_LOG_CS_CHUNK, "ERROR metadata");
 		fbr_cstore_remove(cstore, &entry);
 		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
@@ -713,7 +715,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	fbr_zero(&metadata);
 	metadata.size = writer->bytes;
 	metadata.type = FBR_CSTORE_FILE_INDEX;
-	metadata.gzipped = writer->is_gzip;
+	metadata.compress = writer->is_compress;
 	fbr_strbcpy(metadata.path, index_path.value);
 
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);
@@ -842,7 +844,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_zero(fbr_cstore_entry_has_ref(&entry_ref));
 
 	struct fbr_gzip gzip;
-	if (metadata.gzipped) {
+	if (metadata.compress == FBR_COMPRESS_GZIP) {
 		if (!fbr_gzip_enabled()) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR no gzip support");
 			fbr_cstore_release(cstore, &entry);
@@ -850,12 +852,16 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 		}
 		fbr_gzip_inflate_init(&gzip);
 		assert_dev(gzip.status == FBR_GZIP_DONE);
+	} else if (metadata.compress) {
+		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR bad compression value: %d", metadata.compress);
+		fbr_cstore_release(cstore, &entry);
+		return EIO;
 	}
 
 	struct fbr_request *request = fbr_request_get();
 
 	struct fbr_reader reader;
-	fbr_reader_init(fs, &reader, request, metadata.gzipped);
+	fbr_reader_init(fs, &reader, request, metadata.compress);
 	struct fbr_buffer *output = reader.output;
 	fbr_buffer_ok(output);
 
@@ -867,7 +873,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	size_t bytes_in = 0, bytes_out = 0;
 
 	do {
-		if (metadata.gzipped) {
+		if (metadata.compress) {
 			struct fbr_buffer *gbuffer = reader.buffer;
 			fbr_buffer_ok(gbuffer);
 
@@ -938,7 +944,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	int errors = 0;
 
-	if (metadata.gzipped) {
+	if (metadata.compress) {
 		if (gzip.status != FBR_GZIP_DONE || !gzip.end) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR gunzip");
 			errors += 1;

@@ -193,7 +193,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_index_request_start();
 
-	fs->config.gzip_index = 0;
+	fs->config.compress_index = 0;
 
 	fbr_test_fs_write_index(fs, directory);
 	_index_validate_directory(directory, 1);
@@ -201,7 +201,7 @@ fbr_cmd_index_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_index_request_finish();
 	fbr_dindex_release(fs, &directory);
 
-	fs->config.gzip_index = 1;
+	fs->config.compress_index = 1;
 
 	fbr_test_logs("*** Releasing directory");
 

@@ -37,7 +37,7 @@ _writer_extend(struct fbr_fs *fs, struct fbr_writer *writer, char *buffer,
 	struct fbr_buffer *current = NULL;
 
 	if (alloc_buffer) {
-		assert_dev(writer->want_gzip);
+		assert_dev(writer->want_compress);
 		head = &writer->buffer;
 		current = writer->buffer;
 	} else {
@@ -122,13 +122,23 @@ _writer_init(struct fbr_writer *writer)
 
 void
 fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer, struct fbr_request *request,
-    int want_gzip)
+    enum fbr_compression want_compress)
 {
 	assert(writer);
 
 	_writer_init(writer);
 
-	writer->want_gzip = want_gzip;
+	switch (want_compress) {
+		case FBR_COMPRESS_NONE:
+			break;
+		case FBR_COMPRESS_GZIP:
+			writer->want_compress = want_compress;
+			break;
+		case FBR_COMPRESS_ZSTD:
+			fbr_ABORT("ZSTD not supported");
+		default:
+			fbr_ABORT("Bad compression value: %d", want_compress);
+	}
 
 	if (request) {
 		fbr_request_ok(request);
@@ -136,7 +146,7 @@ fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer, struct fbr_request
 		char *buffer;
 		size_t buffer_len;
 
-		if (want_gzip) {
+		if (want_compress) {
 			// TODO make these buffer sizes conigurable
 			buffer = fbr_workspace_alloc(request->workspace, FBR_DEFAULT_BUFLEN);
 			buffer_len = FBR_DEFAULT_BUFLEN;
@@ -166,7 +176,7 @@ fbr_writer_init(struct fbr_fs *fs, struct fbr_writer *writer, struct fbr_request
 		}
 	}
 
-	if (!writer->buffer && want_gzip) {
+	if (!writer->buffer && want_compress) {
 		_writer_extend(fs, writer, NULL, 0, 1);
 	}
 	if (!writer->output) {
@@ -219,7 +229,7 @@ fbr_writer_free(struct fbr_writer *writer)
 	fbr_buffers_free(writer->buffer);
 	fbr_buffers_free(writer->output);
 
-	if (writer->is_gzip) {
+	if (writer->is_compress == FBR_COMPRESS_GZIP) {
 		fbr_gzip_free(&writer->gzip);
 	}
 
@@ -237,7 +247,7 @@ _output_compress(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffe
     size_t buffer_len, int final)
 {
 	assert_dev(writer);
-	assert_dev(writer->is_gzip);
+	assert_dev(writer->is_compress == FBR_COMPRESS_GZIP);
 	assert_dev(writer->output);
 	assert_dev(buffer);
 	assert_dev(buffer_len);
@@ -296,14 +306,17 @@ _output_add(struct fbr_fs *fs, struct fbr_writer *writer, const char *buffer, si
 {
 	assert_dev(writer);
 	assert_dev(writer->output);
+	assert_dev(writer->want_compress <= FBR_COMPRESS_GZIP);
 	assert_dev(buffer);
 	assert_dev(buffer_len);
 
-	if (writer->want_gzip && fbr_gzip_enabled()) {
-		if (!writer->is_gzip) {
+	if (writer->want_compress == FBR_COMPRESS_GZIP && fbr_gzip_enabled()) {
+		if (!writer->is_compress) {
 			fbr_gzip_deflate_init(&writer->gzip);
-			writer->is_gzip = 1;
+			writer->is_compress = FBR_COMPRESS_GZIP;
 		}
+
+		assert_dev(writer->is_compress == FBR_COMPRESS_GZIP);
 
 		_output_compress(fs, writer, buffer, buffer_len, final);
 
@@ -547,8 +560,8 @@ fbr_writer_debug(struct fbr_writer *writer)
 	fbr_buffer_debug(writer->buffer, "buffer");
 	fbr_buffer_debug(writer->output, "output");
 
-	fbr_rlog(FBR_LOG_DEBUG, "WRITER workspace: %s want_gzip: %d",
-		writer->workspace ? "true" : "false", writer->want_gzip);
-	fbr_rlog(FBR_LOG_WRITER, "WRITER raw_bytes: %zu bytes: %zu is_gzip: %d",
-		writer->raw_bytes, writer->bytes, writer->is_gzip);
+	fbr_rlog(FBR_LOG_DEBUG, "WRITER workspace: %s want_compress: %d",
+		writer->workspace ? "true" : "false", writer->want_compress);
+	fbr_rlog(FBR_LOG_WRITER, "WRITER raw_bytes: %zu bytes: %zu is_compress: %d",
+		writer->raw_bytes, writer->bytes, writer->is_compress);
 }

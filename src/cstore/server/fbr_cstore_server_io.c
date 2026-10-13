@@ -374,7 +374,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	fbr_zero(&metadata);
 	metadata.size = length;
 	metadata.type = file_type;
-	metadata.gzipped = http->gzip;
+	metadata.compress = (http->gzip ? FBR_COMPRESS_GZIP : FBR_COMPRESS_NONE);
 	fbr_strbcpy(metadata.path, file_path.value);
 
 	char *etag_hdr = NULL;
@@ -409,7 +409,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 		struct fbr_cstore_fetch_context fetch;
 		fbr_cstore_fetch_init(&fetch, cstore, http_backend, file_type, &file_path, NULL,
-			NULL, length, metadata.gzipped, FBR_CSTORE_ROUTE_CDN);
+			NULL, length, metadata.compress, FBR_CSTORE_ROUTE_CDN);
 
 		struct _cstore_entry_cb_data cb_data;
 		cb_data.cstore = cstore;
@@ -747,6 +747,18 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		etag = metadata.etag.value;
 	}
 
+	const char *encoding = "";
+	switch (metadata.compress) {
+		case FBR_COMPRESS_GZIP:
+			encoding = "Content-Encoding: gzip\r\n";
+			break;
+		case FBR_COMPRESS_ZSTD:
+			encoding = "Content-Encoding: zstd\r\n";
+			break;
+		default:
+			break;
+	}
+
 	char fiber_id[32];
 	fbr_cstore_request_id(fiber_id, sizeof(fiber_id));
 
@@ -760,7 +772,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		"FiberFS-ID: %s\r\n"
 		"Content-Length: %zu\r\n\r\n",
 			FIBERFS_VERSION,
-			metadata.gzipped ? "Content-Encoding: gzip\r\n" : "",
+			encoding,
 			cstore->epool.timeout_sec ? "" : "Connection: close\r\n",
 			etag ? "ETag: " : "", etag ? etag : "", etag ? "\r\n" : "",
 			fiber_id, size);

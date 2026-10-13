@@ -145,7 +145,7 @@ _index_metadata(struct fbr_cstore_hashpath *hashpath, struct fbr_cstore_metadata
 	fbr_test_logs(" *** metadata.etag: '%s':%u", metadata->etag.value, metadata->etag.length);
 	fbr_test_logs(" *** metadata.size: %lu", metadata->size);
 	fbr_test_logs(" *** metadata.timestamp: %lf", metadata->timestamp);
-	fbr_test_logs(" *** metadata.gzip: %d", metadata->gzipped);
+	fbr_test_logs(" *** metadata.compress: %d", metadata->compress);
 }
 
 static void
@@ -167,7 +167,7 @@ _index_print_root(struct fbr_fs *fs)
 	struct fbr_cstore_metadata metadata;
 	_index_metadata(&hashpath, &metadata);
 	assert(metadata.type == FBR_CSTORE_FILE_ROOT);
-	assert_zero(metadata.gzipped);
+	assert_zero(metadata.compress);
 
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
@@ -198,10 +198,11 @@ _index_print_index(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
-	if (metadata.gzipped) {
+	if (metadata.compress == FBR_COMPRESS_GZIP) {
 		size_t size = _index_print_file_gz(hashpath.value, metadata.size);
 		fbr_test_logs(" *** bytes: %zu", size);
 	} else {
+		assert_zero(metadata.compress);
 		size_t size = _index_print_file(hashpath.value);
 		assert(size == metadata.size);
 	}

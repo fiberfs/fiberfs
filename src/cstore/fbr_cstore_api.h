@@ -205,7 +205,7 @@ struct fbr_cstore_metadata {
 	double					timestamp;
 	unsigned long				size;
 	enum fbr_cstore_file_type		type;
-	int					gzipped;
+	enum fbr_compression			compress;
 	int					error;
 	char					_context;
 };

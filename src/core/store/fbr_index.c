@@ -582,13 +582,13 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 
 	struct fbr_request *request = fbr_request_get();
 
-	int gzip = 0;
-	if (fs->config.gzip_index && fbr_gzip_enabled()) {
-		gzip = 1;
+	enum fbr_compression compress = FBR_COMPRESS_NONE;
+	if (fs->config.compress_index && fbr_gzip_enabled()) {
+		compress = FBR_COMPRESS_GZIP;
 	}
 
 	struct fbr_writer json_gen;
-	fbr_writer_init(fs, &json_gen, request, gzip);
+	fbr_writer_init(fs, &json_gen, request, compress);
 
 	_json_header_gen(fs, &json_gen);
 	_json_directory_gen(fs, &json_gen, index_data_cmds);
