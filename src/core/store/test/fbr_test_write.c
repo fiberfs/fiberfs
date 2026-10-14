@@ -110,7 +110,7 @@ _write_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
 {
 	if (_ERROR_FLUSH && !(random() % 2)) {
 		fbr_test_logs("*** ERROR FLUSH");
-		int error = fbr_wbuffer_flush_ready(fs, index_data->wbuffers, 0);
+		int error = fbr_wbuffer_flush_ready(fs, index_data->wbuffers, index_data->flags);
 		if (error) {
 			index_data->wbuffer_error = 1;
 			return error;

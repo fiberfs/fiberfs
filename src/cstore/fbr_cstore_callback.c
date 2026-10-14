@@ -70,13 +70,9 @@ fbr_cstore_index_root_write(struct fbr_fs *fs, struct fbr_directory *directory,
 
 	struct fbr_index_data *index_data = index_data_cmds;
 	while (index_data) {
-		int was_append = 0;
-		if (fbr_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
-			was_append = 1;
-		}
-
-		if (!fs->wbuffer_pre_sync && index_data->wbuffers) {
-			int error = fbr_wbuffer_flush_ready(fs, index_data->wbuffers, was_append);
+		if (index_data->wbuffers) {
+			int error = fbr_wbuffer_flush_ready(fs, index_data->wbuffers,
+				index_data->flags);
 			if (error) {
 				if (!fail) {
 					fbr_cstore_io_index_remove(fs, directory);

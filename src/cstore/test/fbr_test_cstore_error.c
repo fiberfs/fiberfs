@@ -110,12 +110,21 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	fbr_test_logs("*** Write file_1 again error");
 
+	assert_zero(fs->stats.flush_errors);
+	assert_zero(fs->stats.flush_conflicts);
+
 	fio = fbr_fio_alloc(fs, file_1, 0);
 	fbr_fio_ok(fio);
 	fbr_wbuffer_write(fs, fio, 0, "write1 again (2)", 16);
 	struct fbr_wbuffer *wbuffer = fio->wbuffers;
 	fbr_wbuffer_ok(wbuffer);
 	assert_zero(wbuffer->next);
+	chunk = wbuffer->chunk;
+	fbr_chunk_ok(chunk);
+	assert(wbuffer->id == chunk->id);
+	assert(file_1->body.chunks == chunk);
+
+	fbr_id_t orig_id = chunk->id;
 
 	hash = fbr_cstore_hash_chunk(cstore, file_1, wbuffer->id, wbuffer->offset,
 		wbuffer->fullfile);
@@ -129,17 +138,23 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	assert_zero(close(fd));
 
 	ret = fbr_wbuffer_flush_fio(fs, fio);
-	assert(ret == EIO);
-	fbr_wbuffers_reset(fs, fio);
+	assert_zero(ret);
 	fbr_fio_release(fs, fio);
+	fbr_chunk_ok(chunk);
+	assert_zero(chunk->next);
+	assert(file_1->body.chunks == chunk);
+	assert(chunk->id != orig_id);
 	fbr_dindex_release(fs, &directory);
+
+	assert(fs->stats.flush_errors == 1);
+	assert(fs->stats.flush_conflicts == 1);
 
 	fbr_test_logs("*** mkdir dir2");
 
 	struct fbr_directory *root = fbr_dindex_take(fs, FBR_DIRNAME_ROOT, 0);
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
-	assert(root->generation == 2);
+	assert(root->generation == 3);
 
 	// Alloc root dir2 file
 	struct fbr_path_name dir2name;

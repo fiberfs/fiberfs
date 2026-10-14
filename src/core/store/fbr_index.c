@@ -456,6 +456,8 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 			assert_dev(index_data->size == file->size);
 		}
 
+		fbr_wbuffer_fullfile(fs, file, wbuffers);
+
 		struct fbr_path_name filename;
 		fbr_path_get_file(&file->path, &filename);
 
@@ -564,18 +566,12 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 
 	struct fbr_index_data *index_data = index_data_cmds;
 	while (index_data) {
-		int do_append = 0;
-		if (fbr_is_flag(index_data->flags, FBR_FLUSH_APPEND)) {
-			assert_dev(index_data->wbuffers);
-			do_append = 1;
-		}
-
-		if (fbr_is_flag(index_data->flags, FBR_FLUSH_DELAY_WRITE) && index_data->wbuffers) {
+		if (index_data->wbuffers) {
 			fbr_wbuffer_flush_store(fs, index_data->file, index_data->wbuffers);
 
 			if (fs->wbuffer_pre_sync) {
 				int error = fbr_wbuffer_flush_ready(fs, index_data->wbuffers,
-					do_append);
+					index_data->flags);
 				if (error) {
 					return error;
 				}
@@ -624,7 +620,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 		}
 
 		if (ret && was_append && !index_data_cmds->wbuffer_error) {
-			fbr_wbuffers_error_reset(fs, index_data->wbuffers, 1);
+			fbr_wbuffers_error_reset(fs, index_data->wbuffers,
+				index_data->flags);
 		}
 
 		if (!ret && index_data->removed) {

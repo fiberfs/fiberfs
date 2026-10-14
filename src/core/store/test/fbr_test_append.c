@@ -254,7 +254,7 @@ _append_index_root(struct fbr_fs *fs, struct fbr_directory *directory,
 {
 	if (_APPEND_ERROR_FLUSH > 0 && !(random() % 2)) {
 		fbr_test_logs("*** ERROR FLUSH");
-		int error = fbr_wbuffer_flush_ready(fs, index_data->wbuffers, 1);
+		int error = fbr_wbuffer_flush_ready(fs, index_data->wbuffers, index_data->flags);
 		if (error) {
 			assert_zero(fs->wbuffer_pre_sync);
 			index_data->wbuffer_error = 1;
