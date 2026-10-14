@@ -112,7 +112,7 @@ fbr_cstore_hashpath_loader(struct fbr_cstore *cstore, unsigned char dir, int met
 }
 
 void
-_cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset,
+_cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset, int fullfile,
     struct fbr_cstore_path *path)
 {
 	fbr_file_ok(file);
@@ -133,19 +133,29 @@ _cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset
 	}
 
 	path->magic = FBR_CSTORE_PATH_MAGIC;
-	path->length = fbr_bprintf(path->value, "%s%s%s%s.%s.%zu",
-		dirpath.name,
-		root_sep,
-		file->alias.path->value.name,
-		FBR_FIBERFS_CHUNK_NAME,
-		chunk_id,
-		offset);
+	if (fullfile) {
+		path->length = fbr_bprintf(path->value, "%s%s%s?%s=%s",
+			dirpath.name,
+			root_sep,
+			file->alias.path->value.name,
+			FBR_FIBERFS_CHUNKID_NAME,
+			chunk_id);
+	} else {
+		path->length = fbr_bprintf(path->value, "%s%s%s%s.%s.%zu",
+			dirpath.name,
+			root_sep,
+			file->alias.path->value.name,
+			FBR_FIBERFS_CHUNK_NAME,
+			chunk_id,
+			offset);
+	}
 
 	fbr_cstore_path_ok(path);
 }
 
+// TODO range gets mixed in here
 void
-fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset,
+fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, int fullfile,
     struct fbr_cstore_path *path)
 {
 	fbr_file_ok(file);
@@ -153,7 +163,7 @@ fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset,
 	assert(path);
 
 	if (fbr_has_alias_path(file)) {
-		_cstore_path_chunk_alias(file, id, offset, path);
+		_cstore_path_chunk_alias(file, id, offset, fullfile, path);
 		return;
 	}
 
@@ -164,11 +174,19 @@ fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset,
 	fbr_id_string(id, chunk_id, sizeof(chunk_id));
 
 	path->magic = FBR_CSTORE_PATH_MAGIC;
-	path->length = fbr_bprintf(path->value, "%s%s.%s.%zu",
-		filepath.path.name,
-		FBR_FIBERFS_CHUNK_NAME,
-		chunk_id,
-		offset);
+
+	if (fullfile) {
+		path->length = fbr_bprintf(path->value, "%s?%s=%s",
+			filepath.path.name,
+			FBR_FIBERFS_CHUNKID_NAME,
+			chunk_id);
+	} else {
+		path->length = fbr_bprintf(path->value, "%s%s.%s.%zu",
+			filepath.path.name,
+			FBR_FIBERFS_CHUNK_NAME,
+			chunk_id,
+			offset);
+	}
 
 	fbr_cstore_path_ok(path);
 }
@@ -295,37 +313,9 @@ _hash_s3(fbr_xxhash_t *hash, struct fbr_cstore *cstore)
 	fbr_xxhash_update(hash, "/", 1);
 }
 
-/*
-static void
-_hash_external(fbr_xxhash_t *hash, fbr_id_t id)
-{
-	assert_dev(hash);
-	assert_dev(id);
-
-	char buffer[FBR_ID_STRING_MAX];
-	size_t buffer_len = fbr_id_string(id, buffer, sizeof(buffer));
-	assert_dev(buffer_len < sizeof(buffer));
-
-	// TODO path?
-
-	fbr_xxhash_update(hash, buffer, buffer_len + 1);
-}
-
-static void
-_hash_range(fbr_xxhash_t *hash, size_t offset, size_t length)
-{
-	assert_dev(hash);
-	assert_dev(length);
-
-	(void)offset;
-
-	fbr_ABORT("TODO");
-}
-*/
-
 fbr_hash_t
 fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
-    size_t offset)
+    size_t offset, int fullfile)
 {
 	fbr_cstore_ok(cstore);
 	fbr_file_ok(file);
@@ -337,10 +327,8 @@ fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t
 	_hash_s3(&hash, cstore);
 
 	struct fbr_cstore_path path;
-	fbr_cstore_path_chunk(file, id, offset, &path);
+	fbr_cstore_path_chunk(file, id, offset, fullfile, &path);
 	fbr_xxhash_update(&hash, path.value, path.length + 1);
-
-	// TODO external (now fullfile)
 
 	fbr_hash_t result = fbr_xxhash_result(&hash);
 
@@ -423,8 +411,6 @@ fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t u
 	fbr_xxhash_update(&hash, url, url_len);
 	fbr_xxhash_update(&hash, "", 1);
 
-	// TODO external (now fullfile)
-
 	fbr_hash_t result = fbr_xxhash_result(&hash);
 
 	return result;
@@ -461,7 +447,7 @@ fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file, struct
 	assert(url);
 
 	struct fbr_cstore_path path;
-	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, &path);
+	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, chunk->fullfile, &path);
 
 	fbr_cstore_s3_url(cstore, &path, url);
 }
@@ -553,6 +539,25 @@ fbr_cstore_s3_url_parse(const char *url, size_t url_len)
 
 	for (size_t i = 0; i < url_len; i++) {
 		if (url[i] == '?') {
+			if (!strncmp(&url[i + 1], FBR_FIBERFS_CHUNKID_NAME "=",
+			    sizeof(FBR_FIBERFS_CHUNKID_NAME))) {
+				i += sizeof(FBR_FIBERFS_CHUNKID_NAME) + 1;
+
+				if (url[i] < '0' || url[i] > '9') {
+					return FBR_CSTORE_FILE_NONE;
+				}
+
+				while (url[i] >= '0' && url[i] <= '9') {
+					i++;
+				}
+
+				// TODO look for range here...
+
+				if (i == url_len) {
+					return FBR_CSTORE_FILE_CHUNK;
+				}
+			}
+
 			return FBR_CSTORE_FILE_NONE;
 		} else if (i && url[i - 1] == '/' && url[i] == '.') {
 			if (!strcmp(&url[i], FBR_FIBERFS_ROOT_NAME)) {

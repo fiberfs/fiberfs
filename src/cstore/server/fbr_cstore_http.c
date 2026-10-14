@@ -57,8 +57,8 @@ fbr_cstore_http_resp_etag(struct fbr_cstore *cstore, struct chttp_context *http,
 		close = "Connection: close\r\n";
 	}
 
-	char fiber_id[32];
-	fbr_cstore_request_id(fiber_id, sizeof(fiber_id));
+	char fiber_rid[32];
+	fbr_cstore_request_id(fiber_rid, sizeof(fiber_rid));
 
 	// TODO merge with fbr_cstore_url_read()
 
@@ -67,9 +67,9 @@ fbr_cstore_http_resp_etag(struct fbr_cstore *cstore, struct chttp_context *http,
 		"HTTP/1.1 %d %s\r\n"
 		"Server: fiberfs cstore %s\r\n"
 		"%s"
-		"FiberFS-ID: %s\r\n"
+		"FiberFS-RID: %s\r\n"
 		"%s%s%s"
-		"Content-Length: 0\r\n\r\n", status, reason, FIBERFS_VERSION, close, fiber_id,
+		"Content-Length: 0\r\n\r\n", status, reason, FIBERFS_VERSION, close, fiber_rid,
 		etag ? "ETag: " : "", etag ? etag : "", etag ? "\r\n" : "");
 
 	chttp_tcp_send(&http->addr, buffer, bytes);

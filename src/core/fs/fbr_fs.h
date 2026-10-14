@@ -312,6 +312,7 @@ struct fbr_wbuffer {
 
 	fbr_bitflag_t				free_buffer:1;
 	fbr_bitflag_t				split:1;
+	fbr_bitflag_t				fullfile:1;
 };
 
 struct fbr_fio {

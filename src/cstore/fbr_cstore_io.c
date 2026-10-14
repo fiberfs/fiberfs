@@ -413,14 +413,15 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
 
-	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, wbuffer->id, wbuffer->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, wbuffer->id, wbuffer->offset,
+		wbuffer->fullfile);
 	size_t wbuf_bytes = wbuffer->end;
 	assert_dev(wbuf_bytes);
 
 	struct fbr_cstore_hashpath hashpath;
 	struct fbr_cstore_path chunk_path;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
-	fbr_cstore_path_chunk(file, wbuffer->id, wbuffer->offset, &chunk_path);
+	fbr_cstore_path_chunk(file, wbuffer->id, wbuffer->offset, wbuffer->fullfile, &chunk_path);
 
 	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE %s %zu %s", chunk_path.value, wbuf_bytes,
 		hashpath.value);
@@ -541,7 +542,8 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
 
-	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset,
+		chunk->fullfile);
 
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);

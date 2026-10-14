@@ -86,9 +86,11 @@ _s3_request_url(struct fbr_cstore_fetch_context *fetch, const char *method,
 		chttp_header_add(fetch->http, "If-None-Match", fetch->etag_304.value);
 	}
 
-	char fiber_id[32];
-	fbr_cstore_request_id(fiber_id, sizeof(fiber_id));
-	chttp_header_add(fetch->http, "FiberFS-ID", fiber_id);
+	char fiber_rid[32];
+	fbr_cstore_request_id(fiber_rid, sizeof(fiber_rid));
+	chttp_header_add(fetch->http, "FiberFS-RID", fiber_rid);
+
+	// TODO add a field for FiberFS-ID (chunk, index, root id)
 
 	fbr_hash_t hash = fbr_cstore_hash_url(s3_backend->host, s3_backend->host_len, url->value,
 		url->length);
@@ -824,7 +826,8 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 		async = 1;
 	}
 
-	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset);
+	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset,
+		chunk->fullfile);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, 0, NULL);
 	if (!entry) {
@@ -837,7 +840,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
 	struct fbr_cstore_path path;
-	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, &path);
+	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, chunk->fullfile, &path);
 
 	char chttp_stack[FBR_CSTORE_CHTTP_SIZE];
 	struct chttp_context *http = chttp_context_init_buf(chttp_stack, sizeof(chttp_stack));
@@ -953,8 +956,6 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	fbr_zero(&metadata);
 	metadata.size = bytes;
 	metadata.type = FBR_CSTORE_FILE_CHUNK;
-
-	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, &path);
 	fbr_strbcpy(metadata.path, path.value);
 
 	fbr_cstore_hashpath(cstore, hash, 1, &hashpath);

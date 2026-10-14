@@ -145,5 +145,32 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	type = _url_parse("/test_dir/SomeFile.txt.fiberfschunk.17828368500534773756.0");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
 
+	type = _url_parse("/123/456/789");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/123/456?.fiberfschunkid=0");
+	assert(type == FBR_CSTORE_FILE_CHUNK);
+
+	type = _url_parse("/123/456?fiberfschunkid=0");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/123/456?.fiberfschunkid=");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/123/456?.fiberfschunkid=a");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/123/456?.fiberfschunkid0");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/123/456?.fiberfschunkid=12345");
+	assert(type == FBR_CSTORE_FILE_CHUNK);
+
+	type = _url_parse("/123/456?.fiberfschunkid=12345&");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/123/456?.fiberfschunkid=12345a4");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
 	fbr_test_logs("cstore_url_test done");
 }

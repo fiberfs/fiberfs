@@ -211,6 +211,8 @@ fbr_body_chunk_clone(struct fbr_fs *fs, struct fbr_body *body, struct fbr_chunk 
 	clone->id = chunk->id;
 	clone->offset = chunk->offset;
 	clone->length = chunk->length;
+	clone->fullfile = chunk->fullfile;
+	clone->external = chunk->external;
 
 	return clone;
 }
