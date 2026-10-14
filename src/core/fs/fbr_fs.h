@@ -63,6 +63,7 @@ struct fbr_chunk {
 
 	fbr_bitflag_t				fd_splice_ok:1;
 	fbr_bitflag_t				do_free:1;
+	fbr_bitflag_t				fullfile:1;
 	fbr_bitflag_t				external:1;
 
 	fbr_id_t				id;
@@ -531,7 +532,7 @@ void fbr_body_init(struct fbr_body *body);
 struct fbr_chunk *fbr_body_chunk_add(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id,
 	size_t offset, size_t length);
 struct fbr_chunk *fbr_body_chunk_append(struct fbr_fs *fs, struct fbr_file *file, fbr_id_t id,
-	size_t offset, size_t length, int external, int resize);
+	size_t offset, size_t length, int resize);
 struct fbr_chunk *fbr_body_chunk_clone(struct fbr_fs *fs, struct fbr_body *body,
 	struct fbr_chunk *chunk);
 void fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file,

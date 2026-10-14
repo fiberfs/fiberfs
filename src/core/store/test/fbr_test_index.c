@@ -120,12 +120,6 @@ _index_validate_directory(struct fbr_directory *directory, int verbose)
 			assert(chunk->offset == chunk_size);
 			assert(chunk->length);
 
-			if (verbose) {
-				assert(chunk->external);
-			} else {
-				assert_zero(chunk->external);
-			}
-
 			chunk_size += chunk->length;
 			chunk = chunk->next;
 

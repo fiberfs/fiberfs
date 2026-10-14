@@ -532,7 +532,6 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	assert(chunk->state == FBR_CHUNK_EMPTY || chunk->state == FBR_CHUNK_LOADING);
 	assert(chunk->length);
 	assert(chunk->id);
-	assert_zero(chunk->external);
 
 	if (!fs->cstore) {
 		fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);

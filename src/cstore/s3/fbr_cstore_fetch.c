@@ -813,7 +813,6 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
 	assert(chunk->state == FBR_CHUNK_EMPTY || chunk->state == FBR_CHUNK_LOADING);
-	assert_zero(chunk->external);
 
 	if (!fbr_cstore_backend_enabled(cstore)) {
 		fbr_cstore_chunk_update(fs, file, chunk, FBR_CHUNK_EMPTY);

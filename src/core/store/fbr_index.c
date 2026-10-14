@@ -90,6 +90,11 @@ _json_chunk_gen(struct fbr_fs *fs, struct fbr_writer *json, struct fbr_chunk *ch
 	fbr_writer_add_id(fs, json, chunk->id);
 	fbr_writer_add(fs, json, "\",", 2);
 
+	// f: chunk fullfile
+	if (chunk->fullfile) {
+		fbr_writer_add(fs, json, "\"f\":1,", 6);
+	}
+
 	// e: chunk external
 	if (chunk->external) {
 		fbr_writer_add(fs, json, "\"e\":1,", 6);
@@ -935,6 +940,7 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 	struct fbr_fs *fs = parser->fs;
 	const char *val = token->svalue;
 	size_t val_len = token->svalue_len;
+	struct fbr_chunk *chunk;
 	int error;
 
 	switch (token->type) {
@@ -946,8 +952,10 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 
 			if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'i')) {
 				parser->chunk.id = fbr_id_parse(val, val_len);
+			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'f')) {
+				parser->chunk.fullfile = (int)token->dvalue;
 			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'e')) {
-				parser->chunk.external = fbr_parse_ulong(val, val_len, &error);
+				parser->chunk.external = (int)token->dvalue;
 			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'o')) {
 				parser->chunk.offset = fbr_parse_ulong(val, val_len, &error);
 			} else if (_parser_match(parser, FBR_INDEX_LOC_BODY, 'l')) {
@@ -959,9 +967,13 @@ _index_parse_body(struct fbr_index_parser *parser, struct fjson_token *token, si
 			    parser->context[FBR_INDEX_LOC_FILE] == 'b') {
 				if (parser->chunk.id && parser->chunk.length) {
 					assert_dev(parser->file);
-					fbr_body_chunk_append(fs, parser->file, parser->chunk.id,
-						parser->chunk.offset, parser->chunk.length,
-						(parser->chunk.external > 0) ? 1 : 0, 0);
+					chunk = fbr_body_chunk_append(fs, parser->file,
+						parser->chunk.id, parser->chunk.offset,
+						parser->chunk.length, 0);
+					fbr_chunk_ok(chunk);
+
+					chunk->fullfile = (parser->chunk.fullfile > 0 ? 1 : 0);
+					chunk->external = (parser->chunk.external > 0 ? 1 : 0);
 				}
 				fbr_zero(&parser->chunk);
 			}

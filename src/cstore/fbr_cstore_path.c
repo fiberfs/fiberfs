@@ -340,7 +340,7 @@ fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t
 	fbr_cstore_path_chunk(file, id, offset, &path);
 	fbr_xxhash_update(&hash, path.value, path.length + 1);
 
-	// TODO external
+	// TODO external (now fullfile)
 
 	fbr_hash_t result = fbr_xxhash_result(&hash);
 
@@ -423,7 +423,7 @@ fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t u
 	fbr_xxhash_update(&hash, url, url_len);
 	fbr_xxhash_update(&hash, "", 1);
 
-	// TODO external
+	// TODO external (now fullfile)
 
 	fbr_hash_t result = fbr_xxhash_result(&hash);
 
