@@ -34,7 +34,7 @@ fbr_cstore_epool_init(struct fbr_cstore *cstore)
         assert(epool->epfd >= 0);
 
 	// TODO this should be dynamic and read directly
-	epool->timeout_sec = cstore->config.keep_alive_sec;
+	epool->timeout_sec = cstore->config.keep_alive_sec + 2;
 	epool->init = 1;
 
 	fbr_cstore_task_add(cstore, FBR_CSTORE_TASK_EPOOL, NULL);
