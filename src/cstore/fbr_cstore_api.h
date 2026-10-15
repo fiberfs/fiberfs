@@ -180,6 +180,7 @@ struct fbr_cstore {
 		fbr_stats_t			loaded;
 		fbr_stats_t			lazy_loaded;
 		fbr_stats_t			wr_chunks;
+		fbr_stats_t			wr_chunks_fullfile;
 		fbr_stats_t			wr_indexes;
 		fbr_stats_t			wr_roots;
 		fbr_stats_t			wr_root_updates;

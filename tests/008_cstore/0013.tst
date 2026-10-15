@@ -98,6 +98,11 @@ equal $cstore_entries:0 3
 equal $cstore_entries:1 3
 equal $cstore_entries:2 3
 
+equal $cstore_stat_roots:2 1
+equal $cstore_stat_indexes:2 1
+equal $cstore_stat_chunks:2 1
+equal $cstore_stat_chunks_fullfile:2 0
+
 equal $cstore_stat_http_400:1 0
 equal $cstore_stat_http_500:1 0
 equal $cstore_stat_http_400:2 0

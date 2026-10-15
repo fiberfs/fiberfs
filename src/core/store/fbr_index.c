@@ -151,6 +151,7 @@ _json_body_modified_gen(struct fbr_fs *fs, struct fbr_writer *json,
 			chunk.id = wbuffer->id;
 			chunk.offset = wbuffer->offset;
 			chunk.length = wbuffer->end;
+			chunk.fullfile = wbuffer->fullfile;
 
 			_json_chunk_gen(fs, json, &chunk);
 
@@ -360,7 +361,7 @@ _json_directory_gen(struct fbr_fs *fs, struct fbr_writer *json,
 void
 fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
     struct fbr_directory *directory, struct fbr_directory *previous, struct fbr_file *file,
-    struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags)
+    struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags, unsigned int attempts)
 {
 	fbr_fs_ok(fs);
 	assert(index_data);
@@ -375,6 +376,7 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	index_data->file = file;
 	index_data->wbuffers = wbuffers;
 	index_data->flags = flags;
+	index_data->attempts = attempts;
 
 	if (file) {
 		const char *filename = fbr_path_get_file(&file->path, NULL);
@@ -444,6 +446,12 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 				wbuffer = wbuffer->next;
 			}
+
+			if (!attempts) {
+				fbr_wbuffer_fullfile(fs, file, wbuffers);
+			} else {
+				assert_zero_dev(wbuffers->fullfile);
+			}
 		} else {
 			if (fbr_wbuffer_is_clone(fs, file, wbuffers)) {
 				fbr_wbuffers_merge(fs, file, wbuffers, flags);
@@ -455,8 +463,6 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 			assert_dev(index_data->size == file->size);
 		}
-
-		fbr_wbuffer_fullfile(fs, file, wbuffers);
 
 		struct fbr_path_name filename;
 		fbr_path_get_file(&file->path, &filename);

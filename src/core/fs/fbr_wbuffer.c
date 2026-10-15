@@ -528,6 +528,7 @@ _wbuffer_delete_chunk(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 		chunk.magic = FBR_CHUNK_MAGIC;
 		chunk.id = wbuffer->id;
 		chunk.offset = wbuffer->offset;
+		chunk.fullfile = wbuffer->fullfile;
 
 		fs->store->chunk_delete_f(fs, file, &chunk);
 
@@ -711,6 +712,7 @@ fbr_wbuffer_flush_fio(struct fbr_fs *fs, struct fbr_fio *fio)
 	}
 
 	if (!fbr_is_flag(flags, FBR_FLUSH_DELAY_WRITE) && fio->wbuffers) {
+		fbr_wbuffer_fullfile(fs, file, fio->wbuffers);
 		fbr_wbuffer_flush_store(fs, file, fio->wbuffers);
 
 		if (fs->wbuffer_pre_sync) {
@@ -777,18 +779,21 @@ fbr_wbuffers_merge(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffer 
 		return;
 	}
 
-	const char *filename = fbr_path_get_file(&file->path, NULL);
-	fbr_rlog(FBR_LOG_MERGE, "WBUFFER '%s' inode: %lu gen: %lu", filename, file->inode,
-		file->generation);
+	size_t count = 0;
 
 	struct fbr_wbuffer *wbuffer = wbuffers;
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
 
 		_wbuffer_chunk_add(fs, file, wbuffer, 1);
+		count++;
 
 		wbuffer = wbuffer->next;
 	}
+
+	const char *filename = fbr_path_get_file(&file->path, NULL);
+	fbr_rlog(FBR_LOG_MERGE, "WBUFFER '%s' inode: %lu gen: %lu count: %zu", filename,
+		file->inode, file->generation, count);
 }
 
 void
@@ -797,17 +802,34 @@ fbr_wbuffer_fullfile(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffe
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 
+	if (fbr_has_alias_path(file)) {
+		return;
+	}
+
+	struct fbr_chunk *chunk = file->body.chunks;
+	while (chunk) {
+		fbr_chunk_ok(chunk);
+
+		if (!fbr_wbuffer_has_chunk(wbuffers, chunk)) {
+			return;
+		}
+
+		chunk = chunk->next;
+	}
+
 	struct fbr_wbuffer *wbuffer = wbuffers;
-	while (wbuffer) {
+	if (wbuffer && wbuffer->offset == 0) {
 		fbr_wbuffer_ok(wbuffer);
-		assert_zero_dev(wbuffer->fullfile);
+
+		fbr_rlog(FBR_LOG_WBUFFER, "FULLFILE candidate offset: %zu size: %zu",
+			wbuffer->offset, wbuffer->end);
+
+		wbuffer->fullfile = 1;
 
 		if (wbuffer->chunk) {
 			fbr_chunk_ok(wbuffer->chunk);
-			assert_dev(wbuffer->fullfile == wbuffer->chunk->fullfile);
+			wbuffer->chunk->fullfile = 1;
 		}
-
-		wbuffer = wbuffer->next;
 	}
 }
 

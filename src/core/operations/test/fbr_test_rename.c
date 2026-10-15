@@ -292,8 +292,10 @@ _rename_test(struct fbr_test_context *ctx, int append)
 
 	if (append) {
 		assert(fs->cstore->stats.wr_chunks == 3);
+		assert(fs->cstore->stats.wr_chunks_fullfile == 1);
 	} else {
 		assert(fs->cstore->stats.wr_chunks == 1);
+		assert_zero(fs->cstore->stats.wr_chunks_fullfile);
 	}
 
 	assert_zero(fs->stats.directories);

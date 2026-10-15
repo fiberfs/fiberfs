@@ -827,7 +827,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset,
-		chunk->fullfile);
+		chunk->fullfile, 0);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, 0, NULL);
 	if (!entry) {

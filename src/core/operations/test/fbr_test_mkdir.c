@@ -159,7 +159,7 @@ fbr_cmd_mkdir_test_remote(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	new_directory->generation = 1;
 	struct fbr_index_data index_data;
 	fbr_index_data_init(fs_remote, &index_data, new_directory, NULL, NULL, NULL,
-		FBR_FLUSH_MKDIR);
+		FBR_FLUSH_MKDIR, 0);
 	int ret = fbr_index_write(fs_remote, &index_data);
 	assert_zero(ret);
 	fbr_directory_set_state(fs_remote, new_directory, FBR_DIRSTATE_OK);

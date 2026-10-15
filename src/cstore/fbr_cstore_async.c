@@ -396,6 +396,7 @@ fbr_cstore_async_chunk_delete(struct fbr_fs *fs, struct fbr_file *file, struct f
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 	fbr_chunk_ok(chunk);
+	assert_zero(chunk->external);
 
 	if (!fs->cstore) {
 		return;

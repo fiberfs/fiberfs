@@ -244,6 +244,7 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 	assert(type == FBR_CSTORE_FILE_CHUNK || type == FBR_CSTORE_FILE_INDEX);
 
 	int backend = fbr_cstore_backend_enabled(cstore);
+	int fullfile = 0;
 
 	if (cstore->config.delete_cache || !backend) {
 		char url_decoded[FBR_URL_MAX];
@@ -256,14 +257,21 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 			hash = fbr_cstore_hash_url(cstore->s3.backend->host,
 				cstore->s3.backend->host_len, url_decoded, url_decoded_len);
 		} else {
+			// TODO parse the URL and get the type
+			size_t url_trim_len = fbr_cstore_s3_url_trim(url_decoded, url_decoded_len);
+			if (url_trim_len < url_decoded_len) {
+				fullfile = 1;
+			}
 			hash = fbr_cstore_hash_url(cstore->s3.host_hash, cstore->s3.host_hash_len,
-				url_decoded, url_decoded_len);
+				url_decoded, url_trim_len);
 		}
 
 		if (etag_match) {
-			fbr_rlog(FBR_LOG_CSTORE, "DELETE %s [%s]", url_decoded, etag_match);
+			fbr_rlog(FBR_LOG_CSTORE, "DELETE %s [%s]%s", url_decoded, etag_match,
+				(fullfile ? " fullfile" : ""));
 		} else {
-			fbr_rlog(FBR_LOG_CSTORE, "DELETE %s", url_decoded);
+			fbr_rlog(FBR_LOG_CSTORE, "DELETE %s%s", url_decoded,
+				(fullfile ? " fullfile" : ""));
 		}
 
 		struct fbr_cstore_entry *entry = fbr_cstore_get(cstore, hash);
@@ -274,6 +282,9 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 			switch (type) {
 				case FBR_CSTORE_FILE_CHUNK:
 					fbr_stat_sub(&cstore->stats.wr_chunks);
+					if (fullfile) {
+						fbr_stat_sub(&cstore->stats.wr_chunks_fullfile);
+					}
 					break;
 				case FBR_CSTORE_FILE_INDEX:
 					fbr_stat_sub(&cstore->stats.wr_indexes);
@@ -413,8 +424,11 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
 
+	int backend = fbr_cstore_backend_enabled(cstore);
+
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, wbuffer->id, wbuffer->offset,
-		wbuffer->fullfile);
+		wbuffer->fullfile, !backend);
+
 	size_t wbuf_bytes = wbuffer->end;
 	assert_dev(wbuf_bytes);
 
@@ -423,8 +437,8 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 	fbr_cstore_path_chunk(file, wbuffer->id, wbuffer->offset, wbuffer->fullfile, &chunk_path);
 
-	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE %s %zu %s", chunk_path.value, wbuf_bytes,
-		hashpath.value);
+	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE %s %zu %s%s", chunk_path.value, wbuf_bytes,
+		hashpath.value, (wbuffer->fullfile ? " fullfile" : ""));
 
 	char chttp_stack[FBR_CSTORE_CHTTP_SIZE];
 	struct chttp_context *http = chttp_context_init_buf(chttp_stack, sizeof(chttp_stack));
@@ -498,6 +512,9 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 
 	fbr_stat_add_count(&cstore->stats.wr_chunk_bytes, bytes);
 	fbr_stat_add(&cstore->stats.wr_chunks);
+	if (wbuffer->fullfile) {
+		fbr_stat_add(&cstore->stats.wr_chunks_fullfile);
+	}
 
 	fbr_cstore_set_ok(entry);
 	fbr_cstore_release(cstore, &entry);
@@ -542,14 +559,16 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
 
+	int backend = fbr_cstore_backend_enabled(cstore);
+
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset,
-		chunk->fullfile);
+		chunk->fullfile, !backend);
 
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 
-	fbr_rlog(FBR_LOG_CS_CHUNK, "READ %s %zu:%zu", hashpath.value, chunk->offset,
-		chunk->length);
+	fbr_rlog(FBR_LOG_CS_CHUNK, "READ %s %zu:%zu%s", hashpath.value, chunk->offset,
+		chunk->length, (chunk->fullfile ? " fullfile" : ""));
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_ok(cstore, hash);
 	if (!entry) {

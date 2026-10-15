@@ -42,6 +42,7 @@ equal $cstore_stat_chunk_read_bytes:0 0
 equal $cstore_stat_roots:0 1
 equal $cstore_stat_indexes:0 1
 equal $cstore_stat_chunks:0 1
+equal $cstore_stat_chunks_fullfile:0 1
 
 greater_equal $cstore_stat_root_updates:0 2
 

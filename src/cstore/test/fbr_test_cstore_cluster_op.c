@@ -623,6 +623,7 @@ _cluster_mkdir(struct fbr_test_context *ctx)
 		assert_zero(_CSTORE_C1_S3->stats.wr_chunks);
 	} else {
 		assert(_CSTORE_C1_S3->stats.wr_chunks == _APPEND_COUNT);
+		assert(_CSTORE_C1_S3->stats.wr_chunks_fullfile == _OP_THREADS);
 	}
 	assert(_CSTORE_C1_S3->stats.wr_indexes == 1 + dir_count);
 	assert(_CSTORE_C1_S3->stats.wr_roots == 1 + dir_count);

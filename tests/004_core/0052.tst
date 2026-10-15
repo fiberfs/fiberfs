@@ -55,5 +55,6 @@ equal $fs_test_stat_appends 5
 greater_equal $fs_test_stat_flushes 3
 equal $fs_test_stat_flush_memory 1
 equal $cstore_stat_chunks:0 5
+equal $cstore_stat_chunks_fullfile:0 1
 
 fuse_test_unmount

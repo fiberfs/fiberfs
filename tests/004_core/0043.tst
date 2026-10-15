@@ -49,6 +49,7 @@ equal $fs_test_stat_files_inodes 1
 sys_cat_md5 $file 808a50a8621d968b9b69e97af4eaaf9b
 
 equal $cstore_stat_chunks:0 3
+equal $cstore_stat_chunks_fullfile:0 0
 
 print "### Truncate 2"
 
@@ -64,6 +65,7 @@ equal $fs_test_stat_files_inodes 1
 sys_cat_md5 $file 536629b0ae03b922650462e857fc90e1
 
 equal $cstore_stat_chunks:0 1
+equal $cstore_stat_chunks_fullfile:0 0
 
 # Cleanup
 

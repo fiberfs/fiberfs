@@ -44,6 +44,7 @@ sys_stat_size $file 3
 sys_cat $file "123"
 
 equal $cstore_stat_chunks:0 1
+equal $cstore_stat_chunks_fullfile:0 1
 
 sleep_ms 20
 
@@ -90,5 +91,6 @@ equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
 equal $cstore_stat_chunks:0 0
+equal $cstore_stat_chunks_fullfile:0 0
 
 fuse_test_unmount

@@ -3,7 +3,7 @@ fiber_test "RW create and truncate"
 # Init
 
 config_add DEBUG_FS_WBUFFER_ALLOC_SIZE 3
-config_add LOG_SHOW_DEBUG true
+#config_add LOG_SHOW_DEBUG true
 config_add FUSE_WRITEBACK_CACHE false
 
 sys_mkdir_tmp
@@ -19,6 +19,7 @@ sys_write $file "123" "4" "567" "89012" "345" "6" "7890"
 cstore_debug
 
 equal $cstore_stat_chunks:0 7
+equal $cstore_stat_chunks_fullfile:0 1
 
 sleep_ms 10
 
@@ -56,6 +57,7 @@ equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
 equal $cstore_stat_chunks:0 3
+equal $cstore_stat_chunks_fullfile:0 0
 
 test_log_debug
 

@@ -42,6 +42,7 @@ equal $cstore_stat_chunk_read_bytes:0 15
 equal $cstore_stat_roots:0 1
 equal $cstore_stat_indexes:0 1
 equal $cstore_stat_chunks:0 2
+equal $cstore_stat_chunks_fullfile:0 1
 equal $cstore_stat_root_updates:0 7
 
 fuse_test_unmount

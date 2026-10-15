@@ -130,6 +130,7 @@ struct fbr_index_data {
 	unsigned long				size;
 	enum fbr_flush_flags			flags;
 
+	unsigned int				attempts;
 	int					wbuffer_error;
 
 	struct fbr_index_data			*next;
@@ -158,7 +159,8 @@ struct fjson_context;
 
 void fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	struct fbr_directory *directory, struct fbr_directory *previous,
-	struct fbr_file *file, struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags);
+	struct fbr_file *file, struct fbr_wbuffer *wbuffers, enum fbr_flush_flags flags,
+	unsigned int attempts);
 void fbr_index_data_free(struct fbr_index_data *index_data_cmds);
 int fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds);
 void fbr_root_json_gen(struct fbr_fs *fs, struct fbr_writer *writer, fbr_id_t version);

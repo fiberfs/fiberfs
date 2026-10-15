@@ -56,6 +56,7 @@ cstore_debug 3
 
 greater_equal $cstore_entries:3 3
 greater_equal $cstore_stat_chunks:3 1
+equal $cstore_stat_chunks_fullfile:3 1
 equal $cstore_stat_indexes:3 1
 equal $cstore_stat_roots:3 1
 

@@ -206,6 +206,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	const char *etag_match = chttp_header_get(http, "If-Match");
 
+	int fullfile = 0;
 	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url");
@@ -244,6 +245,17 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	if (backend && file_type == FBR_CSTORE_FILE_ROOT) {
 		_cstore_root_proxy(cstore, http, url_encoded, etag_match);
 		return;
+	}
+
+	if (!backend) {
+		size_t url_trim_len = fbr_cstore_s3_url_trim(url, url_len);
+		assert_dev(url_trim_len);
+
+		// TODO move this into url parse type
+		if (url_trim_len < url_len) {
+			fullfile = 1;
+			url_len = url_trim_len;
+		}
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
@@ -441,6 +453,9 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		case FBR_CSTORE_FILE_CHUNK:
 			fbr_stat_add_count(&cstore->stats.wr_chunk_bytes, bytes);
 			fbr_stat_add(&cstore->stats.wr_chunks);
+			if (fullfile) {
+				fbr_stat_add(&cstore->stats.wr_chunks_fullfile);
+			}
 			break;
 		case FBR_CSTORE_FILE_INDEX:
 			fbr_stat_add_count(&cstore->stats.wr_index_bytes, bytes);
@@ -532,6 +547,11 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	}
 
 	int backend = fbr_cstore_backend_enabled(cstore);
+
+	if (!backend) {
+		url_len = fbr_cstore_s3_url_trim(url, url_len);
+		assert_dev(url_len);
+	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
 	struct fbr_cstore_hashpath hashpath;
@@ -850,6 +870,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	const char *etag_match = chttp_header_get(http, "If-Match");
 
+	int fullfile = 0;
 	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR url");
@@ -877,6 +898,17 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		}
 
 		return;
+	}
+
+	if (!backend) {
+		size_t url_trim_len = fbr_cstore_s3_url_trim(url, url_len);
+		assert_dev(url_trim_len);
+
+		// TODO move this into url parse type
+		if (url_trim_len < url_len) {
+			fullfile = 1;
+			url_len = url_trim_len;
+		}
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
@@ -923,6 +955,9 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		switch (file_type) {
 			case FBR_CSTORE_FILE_CHUNK:
 				fbr_stat_sub(&cstore->stats.wr_chunks);
+				if (fullfile) {
+					fbr_stat_sub(&cstore->stats.wr_chunks_fullfile);
+				}
 				break;
 			case FBR_CSTORE_FILE_INDEX:
 				fbr_stat_sub(&cstore->stats.wr_indexes);

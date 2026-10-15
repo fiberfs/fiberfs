@@ -19,10 +19,12 @@ print "### Unlink"
 sleep_ms 20
 
 equal $cstore_stat_chunks:0 3
+equal $cstore_stat_chunks_fullfile:0 1
 
 sys_unlink $file
 
 equal $cstore_stat_chunks:0 0
+equal $cstore_stat_chunks_fullfile:0 0
 
 sleep_ms 20
 

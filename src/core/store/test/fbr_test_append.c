@@ -26,6 +26,8 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
+	static int sleep_ms_timeout = 0;
+
 	struct fbr_fs *fs_1 = fbr_test_fs_mock(ctx);
 	fbr_fs_ok(fs_1);
 	fbr_test_cstore_bind_new(fs_1);
@@ -38,6 +40,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	assert(fbr_test_cstore_count(ctx) == 1);
 
+	fbr_test_sleep_ms(sleep_ms_timeout);
 	fbr_test_logs("*** Allocating dir_fs1");
 
 	struct fbr_directory *dir_fs1 = fbr_directory_root_alloc(fs_1);
@@ -46,6 +49,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(dir_fs1->state == FBR_DIRSTATE_LOADING);
 	dir_fs1->generation = 1;
 
+	fbr_test_sleep_ms(sleep_ms_timeout);
 	fbr_test_logs("*** Storing dir_fs1 (gen %lu)", dir_fs1->generation);
 
 	fbr_test_fs_write_index(fs_1, dir_fs1);
@@ -53,6 +57,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
+	fbr_test_sleep_ms(sleep_ms_timeout);
 	fbr_test_logs("*** Loading dir_fs2");
 
 	struct fbr_directory *dir_fs2 = fbr_directory_root_alloc(fs_2);
@@ -67,6 +72,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_dindex_release(fs_2, &dir_fs2);
 
+	fbr_test_sleep_ms(sleep_ms_timeout);
 	fbr_test_logs("*** Write file.append on dir_fs1 (111)");
 
 	dir_fs1 = fbr_dindex_take(fs_1, FBR_DIRNAME_ROOT, 0);
@@ -97,6 +103,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
+	fbr_test_sleep_ms(sleep_ms_timeout);
 	fbr_test_logs("*** Write file.append on dir_fs2 (2222)");
 
 	dir_fs2 = fbr_dindex_take(fs_2, FBR_DIRNAME_ROOT, 0);
@@ -128,6 +135,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_dindex_release(fs_2, &dir_fs2);
 
+	fbr_test_sleep_ms(sleep_ms_timeout);
 	fbr_test_logs("*** Write file.append on dir_fs1 (333)");
 
 	dir_fs1 = fbr_dindex_take(fs_1, FBR_DIRNAME_ROOT, 0);
@@ -155,6 +163,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
+	fbr_test_sleep_ms(sleep_ms_timeout);
 	fbr_test_logs("*** Loading dir_fs2 and validate");
 
 	dir_fs2 = fbr_directory_root_alloc(fs_2);
@@ -180,6 +189,7 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_dindex_release(fs_2, &dir_fs2);
 
+	fbr_test_sleep_ms(sleep_ms_timeout);
 	fbr_test_logs("*** Cleanup fs_1");
 
 	fbr_fs_release_all(fs_1, 1);
@@ -198,9 +208,12 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(fs_1->stats.file_refs);
 	assert(fs_1->stats.appends == 2);
 	assert(fs_1->stats.merges == 1);
+	assert(fs_1->stats.flush_conflicts == 1);
+	assert(fs_1->stats.flush_errors == 0);
 
 	fbr_fs_free(fs_1);
 
+	fbr_test_sleep_ms(sleep_ms_timeout);
 	fbr_test_logs("*** Cleanup fs_2");
 
 	fbr_fs_release_all(fs_2, 1);
@@ -217,6 +230,13 @@ fbr_cmd_append_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(fs_2->stats.file_refs);
 	assert(fs_2->stats.appends == 1);
 	assert(fs_2->stats.merges == 1);
+	assert(fs_2->stats.flush_conflicts == 1);
+	assert(fs_2->stats.flush_errors == 1);
+
+	assert(fs_2->cstore->stats.wr_roots == 1);
+	assert(fs_2->cstore->stats.wr_indexes == 1);
+	assert(fs_2->cstore->stats.wr_chunks == 3);
+	assert(fs_2->cstore->stats.wr_chunks_fullfile == 1);
 
 	fbr_fs_free(fs_2);
 

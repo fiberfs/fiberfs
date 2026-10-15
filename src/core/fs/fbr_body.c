@@ -443,8 +443,9 @@ fbr_body_debug(struct fbr_fs *fs, struct fbr_file *file)
 
 		if (count < 3) {
 			fbr_rlog(FBR_LOG_DEBUG, "BODY chunk[%zu] state: %s off: %zu len: %zu"
-				" id: %lu", count, fbr_chunk_state_string(chunk->state),
-				chunk->offset, chunk->length, chunk->id);
+				" id: %lu fullfile: %d external: %d", count,
+				fbr_chunk_state_string(chunk->state), chunk->offset, chunk->length,
+				chunk->id, chunk->fullfile, chunk->external);
 		}
 
 		count++;

@@ -789,7 +789,8 @@ fbr_flush(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds)
 			struct fbr_index_data *index_data = &_index_data_cmds[count];
 
 			fbr_index_data_init(fs, index_data, new_directory, previous,
-				flush_data->file, flush_data->wbuffers, flush_data->flags);
+				flush_data->file, flush_data->wbuffers, flush_data->flags,
+				timeout.attempts);
 
 			index_data->locked_files[0] = flush_data->latest;
 			index_data->locked_files[1] = flush_data->alias_file;

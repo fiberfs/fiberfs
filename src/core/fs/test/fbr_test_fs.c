@@ -370,7 +370,7 @@ fbr_test_fs_write_index(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_index_data index_data;
 	fbr_index_data_init(fs, &index_data, directory, directory->previous, NULL, NULL,
-		FBR_FLUSH_NONE);
+		FBR_FLUSH_NONE, 0);
 
 	int ret = fbr_index_write(fs, &index_data);
 	fbr_ASSERT(!ret, "fbr_index_write() failed (%d)", ret);

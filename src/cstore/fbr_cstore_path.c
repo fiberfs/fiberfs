@@ -277,6 +277,24 @@ fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url, struct fbr_cstor
 }
 
 static void
+_path_trim(struct fbr_cstore_path *path)
+{
+	assert_dev(path);
+	assert_dev(path->length);
+
+	for (size_t i = 0; i < path->length; i++) {
+		if (path->value[i] == '?') {
+			assert(i);
+			path->value[i] = '\0';
+			path->length = i;
+			return;
+		}
+	}
+
+	fbr_ABORT("Bad path trim");
+}
+
+static void
 _hash_s3(fbr_xxhash_t *hash, struct fbr_cstore *cstore)
 {
 	assert_dev(hash);
@@ -315,7 +333,7 @@ _hash_s3(fbr_xxhash_t *hash, struct fbr_cstore *cstore)
 
 fbr_hash_t
 fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
-    size_t offset, int fullfile)
+    size_t offset, int fullfile, int s3_server)
 {
 	fbr_cstore_ok(cstore);
 	fbr_file_ok(file);
@@ -328,6 +346,11 @@ fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t
 
 	struct fbr_cstore_path path;
 	fbr_cstore_path_chunk(file, id, offset, fullfile, &path);
+
+	if (fullfile && s3_server) {
+		_path_trim(&path);
+	}
+
 	fbr_xxhash_update(&hash, path.value, path.length + 1);
 
 	fbr_hash_t result = fbr_xxhash_result(&hash);
@@ -525,6 +548,22 @@ fbr_cstore_s3_url_clone(struct fbr_cstore_url *dest, const struct fbr_cstore_url
 	fbr_cstore_url_ok(src);
 
 	fbr_cstore_s3_url_init(dest, src->value, src->length);
+}
+
+size_t
+fbr_cstore_s3_url_trim(char *url, size_t url_len)
+{
+	assert(url);
+	assert(url_len);
+
+	for (size_t i = 0; i < url_len; i++) {
+		if (url[i] == '?') {
+			url[i] = '\0';
+			return i;
+		}
+	}
+
+	return url_len;
 }
 
 enum fbr_cstore_file_type

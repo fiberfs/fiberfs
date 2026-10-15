@@ -83,6 +83,7 @@ cstore_debug 3
 
 equal $cstore_entries:3 4
 equal $cstore_stat_chunks:3 2
+equal $cstore_stat_chunks_fullfile:3 2
 equal $cstore_stat_indexes:3 1
 equal $cstore_stat_roots:3 1
 

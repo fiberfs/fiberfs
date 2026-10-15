@@ -679,7 +679,7 @@ fbr_directory_make(struct fbr_fs *fs, const struct fbr_path_name *dirpath, fbr_i
 	directory->generation = 1;
 
 	struct fbr_index_data index_data;
-	fbr_index_data_init(fs, &index_data, directory, NULL, NULL, NULL, FBR_FLUSH_MKDIR);
+	fbr_index_data_init(fs, &index_data, directory, NULL, NULL, NULL, FBR_FLUSH_MKDIR, 0);
 
 	int ret = fbr_index_write(fs, &index_data);
 	if (ret) {

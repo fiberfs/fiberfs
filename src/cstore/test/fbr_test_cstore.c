@@ -415,6 +415,7 @@ fbr_test_cstore_debug(struct fbr_cstore *cstore)
 	fbr_test_logs("CSTORE_DEBUG loaded: %lu", cstore->stats.loaded);
 	fbr_test_logs("CSTORE_DEBUG lazy: %lu", cstore->stats.lazy_loaded);
 	fbr_test_logs("CSTORE_DEBUG chunks: %lu", cstore->stats.wr_chunks);
+	fbr_test_logs("CSTORE_DEBUG chunks_fullfile: %lu", cstore->stats.wr_chunks_fullfile);
 	fbr_test_logs("CSTORE_DEBUG indexes: %lu", cstore->stats.wr_indexes);
 	fbr_test_logs("CSTORE_DEBUG roots: %lu", cstore->stats.wr_roots);
 	fbr_test_logs("CSTORE_DEBUG root updates: %lu", cstore->stats.wr_root_updates);
@@ -513,6 +514,7 @@ fbr_varf_cstore_stat_##var(struct fbr_test_context *ctx, struct fbr_test_param *
 }
 
 _CSTORE_TEST_STAT(chunks, wr_chunks)
+_CSTORE_TEST_STAT(chunks_fullfile, wr_chunks_fullfile)
 _CSTORE_TEST_STAT(indexes, wr_indexes)
 _CSTORE_TEST_STAT(roots, wr_roots)
 _CSTORE_TEST_STAT(chunk_write_bytes, wr_chunk_bytes)
