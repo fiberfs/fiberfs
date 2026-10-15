@@ -2,7 +2,7 @@
  * Copyright (c) 2024-2026 FiberFS LLC
  * All rights reserved.
  *
- * https://docs.aws.amazon.com/AmazonS3/latest/developerguide/sigv4-auth-using-authorization-header.html
+ * https://docs.aws.amazon.com/AmazonS3/latest/developerguide/sig-v4-header-based-auth.html
  *
  */
 
@@ -126,6 +126,22 @@ fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_conten
 	assert(url_len);
 	const char *method = (char*)dpage->data;
 	const char *url = (char*)dpage->data + method_len + 1;
+	assert(url[0] == '/');
+
+	const char *query = NULL;
+	size_t query_len = 0;
+
+	for (size_t i = 0; i < url_len; i++) {
+		if (url[i] == '?') {
+			query = url + i + 1;
+			query_len = url_len - i - 1;
+			assert_dev(query_len < url_len);
+
+			url_len = i;
+
+			break;
+		}
+	}
 
 	if (!sign_time) {
 		sign_time = (time_t)fbr_get_time();
@@ -155,7 +171,9 @@ fbr_cstore_s3_sign(struct chttp_context *http, time_t sign_time, int skip_conten
 	fbr_sha256_update(&crequest, method, method_len);
 	fbr_sha256_update(&crequest, "\n", 1);
 	fbr_sha256_update(&crequest, url, url_len);
-	fbr_sha256_update(&crequest, "\n\n", 2);
+	fbr_sha256_update(&crequest, "\n", 1);
+	fbr_sha256_update(&crequest, query, query_len);
+	fbr_sha256_update(&crequest, "\n", 1);
 	fbr_sha256_update(&crequest, "host:", 5);
 	fbr_sha256_update(&crequest, host, host_len);
 	fbr_sha256_update(&crequest, "\n", 1);
@@ -335,11 +353,27 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 	assert(method);
 	const char *url = chttp_header_get_url(http);
 	assert(url);
+	size_t url_len = strlen(url);
 
 	char context_hex[FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE)];
 	size_t content_hex_len = 0;
 	char timestamp[32];
 	size_t timestamp_len = 0;
+
+	const char *query = NULL;
+	size_t query_len = 0;
+
+	for (size_t i = 0; i < url_len; i++) {
+		if (url[i] == '?') {
+			query = url + i + 1;
+			query_len = url_len - i - 1;
+			assert_dev(query_len < url_len);
+
+			url_len = i;
+
+			break;
+		}
+	}
 
 	// Canonical Requests
 	uint8_t crequest_hash[FBR_SHA256_DIGEST_SIZE];
@@ -347,8 +381,10 @@ fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http)
 	fbr_sha256_init(&crequest, 0);
 	fbr_sha256_update(&crequest, method, strlen(method));
 	fbr_sha256_update(&crequest, "\n", 1);
-	fbr_sha256_update(&crequest, url, strlen(url));
-	fbr_sha256_update(&crequest, "\n\n", 2);
+	fbr_sha256_update(&crequest, url, url_len);
+	fbr_sha256_update(&crequest, "\n", 1);
+	fbr_sha256_update(&crequest, query, query_len);
+	fbr_sha256_update(&crequest, "\n", 1);
 
 	const char *header = headers;
 	size_t header_len;
