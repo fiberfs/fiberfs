@@ -733,6 +733,8 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 
 	for (size_t i = 0; i < _DINDEX_HEAD_COUNT; i++) {
 		struct fbr_dindex_dirhead *dirhead = &dindex->dirheads[i];
+
+		pt_assert(pthread_mutex_lock(&dirhead->lock));
 		fbr_dindex_dirhead_ok(dirhead);
 
 		struct fbr_directory *directory, *next;
@@ -752,6 +754,9 @@ fbr_dindex_free_all(struct fbr_fs *fs)
 
 		assert(RB_EMPTY(&dirhead->tree));
 
+		dirhead->magic = 0;
+
+		pt_assert(pthread_mutex_unlock(&dirhead->lock));
 		pt_assert(pthread_mutex_destroy(&dirhead->lock));
 
 		fbr_zero(dirhead);

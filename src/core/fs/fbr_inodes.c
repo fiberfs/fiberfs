@@ -322,6 +322,8 @@ fbr_inodes_free_all(struct fbr_fs *fs)
 
 	for (size_t i = 0; i < _INODES_HEAD_COUNT; i++) {
 		struct fbr_inodes_head *head = &inodes->heads[i];
+
+		pt_assert(pthread_mutex_lock(&head->lock));
 		fbr_inode_head_ok(head);
 
 		struct fbr_file *file, *next;
@@ -337,6 +339,9 @@ fbr_inodes_free_all(struct fbr_fs *fs)
 
 		assert(RB_EMPTY(&head->tree));
 
+		head->magic = 0;
+
+		pt_assert(pthread_mutex_unlock(&head->lock));
 		pt_assert(pthread_mutex_destroy(&head->lock));
 
 		fbr_zero(head);

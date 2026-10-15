@@ -61,10 +61,6 @@ fbr_context_abort(int pre_abort)
 
 	struct fbr_request *request = fbr_request_get();
 
-	if (request) {
-		fbr_rlog_flush(request->rlog);
-	}
-
 	if (!request || request->not_fuse) {
 		fbr_fuse_unmount_signal();
 

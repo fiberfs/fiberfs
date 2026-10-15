@@ -391,5 +391,7 @@ fbr_request_pool_shutdown(void)
 		}
 	}
 
+	// TODO we should block any new requests from spawning after this...
+
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 }
