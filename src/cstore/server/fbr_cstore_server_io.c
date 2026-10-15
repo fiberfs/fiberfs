@@ -429,9 +429,13 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		fbr_s3_send_put(&fetch);
 
 		if (http_backend->error || !fbr_cstore_http_success(http_backend->status)) {
+			int status = http_backend->status;
+
 			fbr_cstore_release(cstore, &entry);
 			chttp_context_free(http_backend);
-			fbr_cstore_http_respond(cstore, http, http_backend->status, "Error");
+
+			fbr_cstore_http_respond(cstore, http, status, "Error");
+
 			return;
 		}
 
