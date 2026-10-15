@@ -359,10 +359,25 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 
 			_cstore_debug_meta(filename, &metadata);
 
+			struct fbr_cstore_url path;
+			path.length = fbr_bprintf(path.value, "/%s", metadata.path);
+
+			int fullfile;
+			enum fbr_cstore_file_type url_type = fbr_cstore_s3_url_parse(path.value,
+				path.length, &fullfile);
+			assert(url_type == metadata.type);
+
 			switch (metadata.type) {
 			case FBR_CSTORE_FILE_CHUNK:
-				fbr_test_logs("CSTORE_DEBUG file: %s (CHUNK %s size: %lu)",
-					filename, metadata.path, metadata.size);
+				path.length = fbr_strbcpy(path.value, metadata.path);
+				if (fullfile) {
+					path.length = fbr_cstore_s3_url_trim(path.value,
+						path.length);
+				}
+
+				fbr_test_logs("CSTORE_DEBUG file: %s (CHUNK %s size: %lu%s)",
+					filename, path.value, metadata.size,
+					(fullfile ? " fullfile" : ""));
 				fbr_cstore_is_path(metadata.path);
 				assert(strstr(metadata.path, FBR_FIBERFS_CHUNK_NAME));
 				assert((unsigned long)stat->st_size == metadata.size);
