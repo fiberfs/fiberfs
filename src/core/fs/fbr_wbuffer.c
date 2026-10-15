@@ -58,6 +58,9 @@ _wbuffer_alloc_buffer(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, siz
 		wsize = fs->config.debug_wbuffer_size;
 	} else {
 		wsize = fbr_fs_chunk_size(offset);
+		if (!offset && fs->config.fullfile_wbuffer_size > wsize) {
+			wsize = fs->config.fullfile_wbuffer_size;
+		}
 	}
 
 	while (wsize < size) {
