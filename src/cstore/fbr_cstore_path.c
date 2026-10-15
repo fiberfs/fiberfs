@@ -322,8 +322,8 @@ _hash_s3(fbr_xxhash_t *hash, struct fbr_cstore *cstore)
 
 	fbr_xxhash_update(hash, host, host_len + 1);
 
-	if (cstore->s3.prefix) {
-		assert_dev(cstore->s3.prefix_len);
+	if (cstore->s3.prefix_len) {
+		assert_dev(cstore->s3.prefix);
 		assert_dev(cstore->s3.prefix[cstore->s3.prefix_len - 1] != '/');
 		fbr_xxhash_update(hash, cstore->s3.prefix, cstore->s3.prefix_len);
 	}
@@ -443,19 +443,48 @@ void
 fbr_cstore_s3_url(struct fbr_cstore *cstore, struct fbr_cstore_path *path,
     struct fbr_cstore_url *url)
 {
-	fbr_cstore_ok(cstore);
 	fbr_cstore_path_ok(path);
 	assert(url);
 
-	const char *prefix = cstore->s3.prefix;
-	if (!prefix || !fbr_cstore_backend_enabled(cstore)) {
+	const char *prefix = NULL;
+	size_t prefix_len = 0;
+
+	if (cstore && fbr_cstore_backend_enabled(cstore)) {
+		prefix = cstore->s3.prefix;
+		prefix_len = cstore->s3.prefix_len;
+	}
+
+	if (!prefix || !prefix_len) {
 		prefix = "";
+		prefix_len = 0;
+	}
+
+	const char *query = strstr(path->value, "?" FBR_FIBERFS_NAME);
+	size_t query_len = 0;
+	size_t path_len = path->length;
+
+	if (query) {
+		path_len = query - path->value;
+		assert(path_len < path->length);
+
+		query_len = path->length - path_len;
 	}
 
 	url->magic = FBR_CSTORE_URL_MAGIC;
-	url->length = fbr_bprintf(url->value, "%s/", prefix);
-	url->length += fbr_urlencode(path->value, path->length, url->value + url->length,
+	url->length = 0;
+
+	if (prefix_len) {
+		url->length += fbr_urlencode(prefix, prefix_len, url->value, sizeof(url->value));
+	}
+
+	url->length += fbr_snaprintf(url->value, sizeof(url->value), url->length, "/");
+	url->length += fbr_urlencode(path->value, path_len, url->value + url->length,
 		sizeof(url->value) - url->length);
+
+	if (query_len) {
+		url->length += fbr_snaprintf(url->value, sizeof(url->value), url->length, "%s",
+			query);
+	}
 
 	fbr_cstore_url_ok(url);
 }
@@ -504,7 +533,7 @@ fbr_cstore_s3_root_url(struct fbr_cstore *cstore, const struct fbr_path_name *di
 }
 
 void
-fbr_cstore_s3_path_init(struct fbr_cstore_path *dest, const char *path, size_t path_len)
+fbr_cstore_path_init(struct fbr_cstore_path *dest, const char *path, size_t path_len)
 {
 	assert(dest);
 	fbr_cstore_is_path(path);
@@ -518,12 +547,12 @@ fbr_cstore_s3_path_init(struct fbr_cstore_path *dest, const char *path, size_t p
 }
 
 void
-fbr_cstore_s3_path_clone(struct fbr_cstore_path *dest, struct fbr_cstore_path *src)
+fbr_cstore_path_clone(struct fbr_cstore_path *dest, struct fbr_cstore_path *src)
 {
 	assert(dest);
 	fbr_cstore_path_ok(src);
 
-	fbr_cstore_s3_path_init(dest, src->value, src->length);
+	fbr_cstore_path_init(dest, src->value, src->length);
 }
 
 void

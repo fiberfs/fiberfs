@@ -96,8 +96,8 @@ void fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *di
 void fbr_cstore_s3_root_url(struct fbr_cstore *cstore, const struct fbr_path_name *dirpath,
 	struct fbr_cstore_url *url);
 
-void fbr_cstore_s3_path_init(struct fbr_cstore_path *dest, const char *path, size_t path_len);
-void fbr_cstore_s3_path_clone(struct fbr_cstore_path *dest, struct fbr_cstore_path *src);
+void fbr_cstore_path_init(struct fbr_cstore_path *dest, const char *path, size_t path_len);
+void fbr_cstore_path_clone(struct fbr_cstore_path *dest, struct fbr_cstore_path *src);
 void fbr_cstore_s3_url_init(struct fbr_cstore_url *dest, const char *url, size_t url_len);
 void fbr_cstore_s3_url_clone(struct fbr_cstore_url *dest, const struct fbr_cstore_url *src);
 size_t fbr_cstore_s3_url_trim(char *url, size_t url_len);

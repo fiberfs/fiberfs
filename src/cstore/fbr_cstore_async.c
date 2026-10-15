@@ -516,7 +516,7 @@ fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_j
 	struct _async_root_data *root_data = malloc(sizeof(*root_data));
 	assert(root_data);
 
-	fbr_cstore_s3_path_clone(&root_data->path, root_path);
+	fbr_cstore_path_clone(&root_data->path, root_path);
 	root_data->etag.length = fbr_strbcpy(root_data->etag.value, etag);
 	root_data->timestamp = timestamp;
 	root_data->timestamp_p = &root_data->timestamp;

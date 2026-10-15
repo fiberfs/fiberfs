@@ -6,7 +6,10 @@
 
 #define FBR_TEST_FILE
 
+#include <string.h>
+
 #include "cstore/fbr_cstore_api.h"
+#include "cstore/test/fbr_test_cstore_cmds.h"
 
 #include "test/fbr_test.h"
 
@@ -14,6 +17,8 @@
 	fbr_cstore_s3_url_parse(url, strlen(url), fullfile)
 #define _url_parse(url)			\
 	fbr_cstore_s3_url_parse(url, strlen(url), NULL)
+#define _path_init(path, str)		\
+	fbr_cstore_path_init(path, str, strlen(str))
 
 void
 fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
@@ -188,6 +193,35 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	type = _url_parse_ff("/123/456?.fiberfschunkid=12345a4", &fullfile);
 	assert(type == FBR_CSTORE_FILE_NONE);
 	assert_zero(fullfile);
+
+	struct fbr_cstore_path path;
+	struct fbr_cstore_url url;
+
+	_path_init(&path, "something/12345");
+	fbr_cstore_s3_url(NULL, &path, &url);
+	assert_zero(strcmp(url.value, "/something/12345"));
+
+	_path_init(&path, "path/\"123\"/xyz?abc");
+	fbr_cstore_s3_url(NULL, &path, &url);
+	assert_zero(strcmp(url.value, "/path/%22123%22/xyz%3Fabc"));
+
+	_path_init(&path, "path/\"123\"/xyz?abc?.fiberfsid=123");
+	fbr_cstore_s3_url(NULL, &path, &url);
+	assert_zero(strcmp(url.value, "/path/%22123%22/xyz%3Fabc?.fiberfsid=123"));
+
+	struct fbr_cstore *cstore = fbr_test_cstore_init(ctx);
+	fbr_cstore_ok(cstore);
+	fbr_cstore_s3_init(cstore, "127.0.0.1", 80, 0, "some$pfx!_/fs/", "r", "k", "s");
+	fbr_cstore_backend_ok(cstore->s3.backend);
+	assert(fbr_cstore_backend_enabled(cstore));
+	assert(cstore->s3.prefix);
+
+	_path_init(&path, "path/\"123\"/xyz?abc?.fiberfsid=123");
+	fbr_cstore_s3_url(cstore, &path, &url);
+	assert_zero(strcmp(url.value,
+		"/some%24pfx%21_/fs/path/%22123%22/xyz%3Fabc?.fiberfsid=123"));
+
+	cstore = NULL;
 
 	fbr_test_logs("cstore_url_test done");
 }
