@@ -254,6 +254,14 @@ fbr_cstore_async_free(struct fbr_cstore *cstore)
 	pt_assert(pthread_cond_broadcast(&async->todo_ready));
 	pt_assert(pthread_mutex_unlock(&async->queue_lock));
 
+	for (size_t i = 0; i < async->threads_max; i++) {
+		if (async->threads[i] == pthread_self()) {
+			fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, FBR_REQID_CSTORE,
+				"async thread crashed, skipping cleanup");
+			return;
+		}
+	}
+
 	unsigned int max_ms = 3000;
 	unsigned int wait_ms = 0;
 	unsigned int sleep_ms = 25;
@@ -274,7 +282,6 @@ fbr_cstore_async_free(struct fbr_cstore *cstore)
 
 		pt_assert(pthread_join(async->threads[i], NULL));
 	}
-
 
 	assert_zero(async->queue_len);
 	assert(TAILQ_EMPTY(&async->todo_list));
@@ -573,17 +580,32 @@ fbr_cstore_op_sync_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *work
 }
 
 void
-fbr_cstore_op_sync_wait(struct fbr_cstore_op_sync *sync)
+fbr_cstore_op_sync_wait(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync)
 {
+	fbr_cstore_ok(cstore);
 	fbr_cstore_op_sync_ok(sync);
+
+	struct fbr_cstore_async *async = &cstore->async;
 
 	pt_assert(pthread_mutex_lock(&sync->lock));
 
-	// TODO we need to periodically check if we are still mounted
-	// Trigger an assert somewhere behind a cstore async call to test
+	int ret;
 
 	if (!sync->done) {
-		pt_assert(pthread_cond_wait(&sync->cond, &sync->lock));
+		do {
+			assert_zero(async->exit);
+
+			pthread_testcancel();
+
+			struct timespec ts;
+			ts.tv_sec = 0;
+			ts.tv_nsec = 1000 * 1000 * 250;
+			fbr_timespec_add_clock(&ts);
+
+			ret = pthread_cond_timedwait(&sync->cond, &sync->lock, &ts);
+		} while (ret == ETIMEDOUT);
+
+		pt_assert(ret);
 	}
 
 	if (sync->async_id) {

@@ -456,7 +456,7 @@ fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *
 	chttp_context_ok(http);
 
 	if (sync) {
-		fbr_cstore_op_sync_wait(sync);
+		fbr_cstore_op_sync_wait(cstore, sync);
 		if (sync->error) {
 			assert_dev(http->state == CHTTP_STATE_NONE);
 			error = 1;

@@ -129,7 +129,7 @@ void fbr_cstore_async_root_write(struct fbr_cstore *cstore, struct fbr_writer *r
 
 void fbr_cstore_op_sync_init(struct fbr_cstore_op_sync *sync);
 void fbr_cstore_op_sync_done(struct fbr_cstore_op *op, struct fbr_cstore_worker *worker);
-void fbr_cstore_op_sync_wait(struct fbr_cstore_op_sync *sync);
+void fbr_cstore_op_sync_wait(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync);
 void fbr_cstore_op_sync_free(struct fbr_cstore_op_sync *sync);
 
 #include "utils/fbr_enum_string_declare.h"

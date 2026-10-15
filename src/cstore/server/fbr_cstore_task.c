@@ -212,6 +212,14 @@ fbr_cstore_tasks_free(struct fbr_cstore *cstore)
 	pt_assert(pthread_cond_broadcast(&tasks->cond));
 	pt_assert(pthread_mutex_unlock(&tasks->lock));
 
+	for (size_t i = 0; i < tasks->workers_count; i++) {
+		if (tasks->workers[i] == pthread_self()) {
+			fbr_log_print(cstore->log, FBR_LOG_CS_WORKER, FBR_REQID_CSTORE,
+				"task thread crashed, skipping cleanup");
+			return;
+		}
+	}
+
 	unsigned int max_ms = 3000;
 	unsigned int wait_ms = 0;
 	unsigned int sleep_ms = 25;
