@@ -25,6 +25,7 @@ struct {
 
 	size_t					free_size;
 	size_t					active_size;
+	int					shutdown;
 
 	struct fbr_request_stats		stats;
 } __REQUEST_POOL = {
@@ -32,7 +33,7 @@ struct {
 	PTHREAD_MUTEX_INITIALIZER,
 	TAILQ_HEAD_INITIALIZER(__REQUEST_POOL.free_list),
 	TAILQ_HEAD_INITIALIZER(__REQUEST_POOL.active_list),
-	0, 0, {0}
+	0, 0, 0, {0}
 }, *_REQUEST_POOL = &__REQUEST_POOL;
 
 static unsigned int _REQUEST_KEY_COUNT;
@@ -186,6 +187,7 @@ fbr_request_alloc(fuse_req_t fuse_req, const char *name)
 
 	struct fbr_request *request = _request_pool_get(fuse_req, name);
 	if (request) {
+		assert_zero(_REQUEST_POOL->shutdown);
 		return request;
 	}
 
@@ -199,6 +201,8 @@ fbr_request_alloc(fuse_req_t fuse_req, const char *name)
 
 	_request_init(request, fuse_req, name);
 	_request_pool_active(request);
+
+	assert_zero(_REQUEST_POOL->shutdown);
 
 	return request;
 }
@@ -315,13 +319,19 @@ fbr_request_get_stats(void)
 }
 
 void
+fbr_request_pool_reset(void)
+{
+	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
+
+	_REQUEST_POOL->shutdown = 0;
+}
+
+void
 fbr_request_pool_shutdown(void)
 {
 	fbr_magic_check(_REQUEST_POOL, _REQUEST_POOL_MAGIC);
 
 	fbr_rlog(FBR_LOG_REQUEST, "pool shutdown");
-
-	fbr_stat_add(&_REQUEST_POOL->stats.shutdowns);
 
 	unsigned int max_ms = 3000;
 	unsigned int wait_ms = 0;
@@ -340,6 +350,9 @@ fbr_request_pool_shutdown(void)
 	}
 
 	pt_assert(pthread_mutex_lock(&_REQUEST_POOL->lock));
+
+	_REQUEST_POOL->shutdown = 1;
+	fbr_stat_add(&_REQUEST_POOL->stats.shutdowns);
 
 	struct fbr_request *request, *temp;
 
@@ -390,8 +403,6 @@ fbr_request_pool_shutdown(void)
 			fuse_ctx->error = 1;
 		}
 	}
-
-	// TODO we should block any new requests from spawning after this...
 
 	pt_assert(pthread_mutex_unlock(&_REQUEST_POOL->lock));
 }

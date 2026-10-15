@@ -21,6 +21,8 @@ static int _INIT;
 static void
 _test_init(void)
 {
+	fbr_request_pool_reset();
+
 	if (_INIT) {
 		return;
 	}
@@ -36,13 +38,11 @@ _test_memcmp(char *buffer, size_t buffer_len, char *check, size_t check_len)
 	assert(buffer);
 	assert(check);
 
-	int ret;
-
 	if (buffer_len <= check_len) {
 		return memcmp(buffer, check, buffer_len);
 	}
 
-	ret = memcmp(buffer, check, check_len);
+	int ret = memcmp(buffer, check, check_len);
 	if (ret) {
 		return ret;
 	}

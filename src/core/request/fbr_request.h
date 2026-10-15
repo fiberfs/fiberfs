@@ -96,6 +96,7 @@ fuse_req_t fbr_request_take_fuse(struct fbr_request *request);
 void fbr_request_free(struct fbr_request *request);
 
 struct fbr_request_stats *fbr_request_get_stats(void);
+void fbr_request_pool_reset(void);
 void fbr_request_pool_shutdown(void);
 
 void fbr_fuse_reply_none(struct fbr_request *request);
