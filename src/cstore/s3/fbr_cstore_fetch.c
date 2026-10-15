@@ -88,9 +88,7 @@ _s3_request_url(struct fbr_cstore_fetch_context *fetch, const char *method,
 
 	char fiber_rid[32];
 	fbr_cstore_request_id(fiber_rid, sizeof(fiber_rid));
-	chttp_header_add(fetch->http, "FiberFS-RID", fiber_rid);
-
-	// TODO add a field for FiberFS-ID (chunk, index, root id)
+	chttp_header_add(fetch->http, "fiberfs-id", fiber_rid);
 
 	fbr_hash_t hash = fbr_cstore_hash_url(s3_backend->host, s3_backend->host_len, url->value,
 		url->length);

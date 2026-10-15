@@ -67,7 +67,7 @@ fbr_cstore_http_resp_etag(struct fbr_cstore *cstore, struct chttp_context *http,
 		"HTTP/1.1 %d %s\r\n"
 		"Server: fiberfs cstore %s\r\n"
 		"%s"
-		"FiberFS-RID: %s\r\n"
+		"fiberfs-id: %s\r\n"
 		"%s%s%s"
 		"Content-Length: 0\r\n\r\n", status, reason, FIBERFS_VERSION, close, fiber_rid,
 		etag ? "ETag: " : "", etag ? etag : "", etag ? "\r\n" : "");

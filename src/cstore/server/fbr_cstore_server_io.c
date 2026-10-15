@@ -788,7 +788,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		"%s"
 		"%s"
 		"%s%s%s"
-		"FiberFS-RID: %s\r\n"
+		"fiberfs-id: %s\r\n"
 		"Content-Length: %zu\r\n\r\n",
 			FIBERFS_VERSION,
 			encoding,
