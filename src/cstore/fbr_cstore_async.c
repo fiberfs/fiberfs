@@ -580,6 +580,7 @@ fbr_cstore_op_sync_wait(struct fbr_cstore_op_sync *sync)
 	pt_assert(pthread_mutex_lock(&sync->lock));
 
 	// TODO we need to periodically check if we are still mounted
+	// Trigger an assert somewhere behind a cstore async call to test
 
 	if (!sync->done) {
 		pt_assert(pthread_cond_wait(&sync->cond, &sync->lock));

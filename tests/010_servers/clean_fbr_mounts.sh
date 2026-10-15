@@ -43,3 +43,5 @@ done
 find /sys/fs/fuse/connections/* -type d 2>/dev/null
 
 pgrep -af fiberfs
+
+pkill -9 fiberfs_test

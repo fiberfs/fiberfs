@@ -558,19 +558,27 @@ fbr_cstore_s3_url_trim(char *url, size_t url_len)
 
 	for (size_t i = 0; i < url_len; i++) {
 		if (url[i] == '?') {
+			assert_dev(i);
 			url[i] = '\0';
 			return i;
 		}
 	}
 
-	return url_len;
+	fbr_ABORT("Bad url trim");
 }
 
 enum fbr_cstore_file_type
-fbr_cstore_s3_url_parse(const char *url, size_t url_len)
+fbr_cstore_s3_url_parse(const char *url, size_t url_len, int *fullfile)
 {
 	assert(url)
 	assert(url_len);
+
+	int _fullfile;
+	if (!fullfile) {
+		fullfile = &_fullfile;
+	}
+
+	*fullfile = 0;
 
 	if (url_len <= sizeof(FBR_FIBERFS_NAME) || url[0] != '/') {
 		return FBR_CSTORE_FILE_NONE;
@@ -593,6 +601,7 @@ fbr_cstore_s3_url_parse(const char *url, size_t url_len)
 				// TODO look for range here...
 
 				if (i == url_len) {
+					*fullfile = 1;
 					return FBR_CSTORE_FILE_CHUNK;
 				}
 			}

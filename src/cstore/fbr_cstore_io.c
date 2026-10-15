@@ -244,12 +244,16 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 	assert(type == FBR_CSTORE_FILE_CHUNK || type == FBR_CSTORE_FILE_INDEX);
 
 	int backend = fbr_cstore_backend_enabled(cstore);
-	int fullfile = 0;
 
 	if (cstore->config.delete_cache || !backend) {
 		char url_decoded[FBR_URL_MAX];
 		size_t url_decoded_len = fbr_urldecode(url->value, url->length, url_decoded,
 			sizeof(url_decoded));
+
+		int fullfile;
+		enum fbr_cstore_file_type url_type = fbr_cstore_s3_url_parse(url_decoded,
+			url_decoded_len, &fullfile);
+		assert_dev(url_type == type);
 
 		fbr_hash_t hash;
 		if (backend) {
@@ -257,13 +261,12 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 			hash = fbr_cstore_hash_url(cstore->s3.backend->host,
 				cstore->s3.backend->host_len, url_decoded, url_decoded_len);
 		} else {
-			// TODO parse the URL and get the type
-			size_t url_trim_len = fbr_cstore_s3_url_trim(url_decoded, url_decoded_len);
-			if (url_trim_len < url_decoded_len) {
-				fullfile = 1;
+			if (fullfile) {
+				url_decoded_len = fbr_cstore_s3_url_trim(url_decoded,
+					url_decoded_len);
 			}
 			hash = fbr_cstore_hash_url(cstore->s3.host_hash, cstore->s3.host_hash_len,
-				url_decoded, url_trim_len);
+				url_decoded, url_decoded_len);
 		}
 
 		if (etag_match) {

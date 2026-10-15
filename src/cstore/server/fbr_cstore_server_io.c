@@ -206,8 +206,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	const char *etag_match = chttp_header_get(http, "If-Match");
 
-	int fullfile = 0;
-	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len);
+	int fullfile;
+	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &fullfile);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
@@ -247,15 +247,9 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		return;
 	}
 
-	if (!backend) {
-		size_t url_trim_len = fbr_cstore_s3_url_trim(url, url_len);
-		assert_dev(url_trim_len);
-
-		// TODO move this into url parse type
-		if (url_trim_len < url_len) {
-			fullfile = 1;
-			url_len = url_trim_len;
-		}
+	if (!backend && fullfile) {
+		url_len = fbr_cstore_s3_url_trim(url, url_len);
+		assert_dev(url_len);
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
@@ -539,7 +533,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	assert(host);
 	size_t host_len = strlen(host);
 
-	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len);
+	int fullfile;
+	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &fullfile);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
@@ -548,7 +543,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 	int backend = fbr_cstore_backend_enabled(cstore);
 
-	if (!backend) {
+	if (!backend && fullfile) {
 		url_len = fbr_cstore_s3_url_trim(url, url_len);
 		assert_dev(url_len);
 	}
@@ -870,8 +865,8 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	const char *etag_match = chttp_header_get(http, "If-Match");
 
-	int fullfile = 0;
-	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len);
+	int fullfile;
+	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &fullfile);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR url");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
@@ -900,15 +895,9 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		return;
 	}
 
-	if (!backend) {
-		size_t url_trim_len = fbr_cstore_s3_url_trim(url, url_len);
-		assert_dev(url_trim_len);
-
-		// TODO move this into url parse type
-		if (url_trim_len < url_len) {
-			fullfile = 1;
-			url_len = url_trim_len;
-		}
+	if (!backend && fullfile) {
+		url_len = fbr_cstore_s3_url_trim(url, url_len);
+		assert_dev(url_len);
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);

@@ -101,7 +101,7 @@ void fbr_cstore_s3_path_clone(struct fbr_cstore_path *dest, struct fbr_cstore_pa
 void fbr_cstore_s3_url_init(struct fbr_cstore_url *dest, const char *url, size_t url_len);
 void fbr_cstore_s3_url_clone(struct fbr_cstore_url *dest, const struct fbr_cstore_url *src);
 size_t fbr_cstore_s3_url_trim(char *url, size_t url_len);
-enum fbr_cstore_file_type fbr_cstore_s3_url_parse(const char *url, size_t url_len);
+enum fbr_cstore_file_type fbr_cstore_s3_url_parse(const char *url, size_t url_len, int *fullfile);
 
 #define fbr_cstore_path_ok(path)		fbr_magic_check(path, FBR_CSTORE_PATH_MAGIC)
 #define fbr_cstore_hashpath_ok(path)		fbr_magic_check(path, FBR_CSTORE_HASHPATH_MAGIC)

@@ -10,8 +10,10 @@
 
 #include "test/fbr_test.h"
 
-#define _url_parse(url)		\
-	fbr_cstore_s3_url_parse(url, strlen(url))
+#define _url_parse_ff(url, fullfile)	\
+	fbr_cstore_s3_url_parse(url, strlen(url), fullfile)
+#define _url_parse(url)			\
+	fbr_cstore_s3_url_parse(url, strlen(url), NULL)
 
 void
 fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
@@ -20,6 +22,7 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	enum fbr_cstore_file_type type;
+	int fullfile;
 
 	type = _url_parse("/");
 	assert(type == FBR_CSTORE_FILE_NONE);
@@ -27,8 +30,9 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	type = _url_parse("/abc");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/.fiberfs");
+	type = _url_parse_ff("/.fiberfs", &fullfile);
 	assert(type == FBR_CSTORE_FILE_NONE);
+	assert_zero(fullfile);
 
 	type = _url_parse("/.fiberfsRoot");
 	assert(type == FBR_CSTORE_FILE_NONE);
@@ -96,8 +100,9 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	type = _url_parse("/abc.fiberfschunk.6.a");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse("/abc.fiberfschunk.6.1");
+	type = _url_parse_ff("/abc.fiberfschunk.6.1", &fullfile);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
+	assert_zero(fullfile);
 
 	type = _url_parse("/abc.fiberfschunk.6.11");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
@@ -132,8 +137,9 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	type = _url_parse("/abc/file.abc.txt.fiberfschunk.123.123456");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
 
-	type = _url_parse("/abc/file.abc.123.fiberfschunk.456.0");
+	type = _url_parse_ff("/abc/file.abc.123.fiberfschunk.456.0", &fullfile);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
+	assert_zero(fullfile);
 
 	type = _url_parse("/test/안녕하세요.txt.fiberfschunk.17648630080413561840.102400");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
@@ -142,35 +148,46 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		".fiberfschunk.17648630080413561840.102400");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
 
-	type = _url_parse("/test_dir/SomeFile.txt.fiberfschunk.17828368500534773756.0");
+	type = _url_parse_ff("/test_dir/SomeFile.txt.fiberfschunk.17828368500534773756.0",
+		&fullfile);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
+	assert_zero(fullfile);
 
-	type = _url_parse("/123/456/789");
+	type = _url_parse_ff("/123/456/789", &fullfile);
 	assert(type == FBR_CSTORE_FILE_NONE);
+	assert_zero(fullfile);
 
-	type = _url_parse("/123/456?.fiberfschunkid=0");
+	type = _url_parse_ff("/123/456?.fiberfschunkid=0", &fullfile);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
+	assert(fullfile);
 
-	type = _url_parse("/123/456?fiberfschunkid=0");
+	type = _url_parse_ff("/123/456?fiberfschunkid=0", &fullfile);
 	assert(type == FBR_CSTORE_FILE_NONE);
+	assert_zero(fullfile);
 
-	type = _url_parse("/123/456?.fiberfschunkid=");
+	type = _url_parse_ff("/123/456?.fiberfschunkid=", &fullfile);
 	assert(type == FBR_CSTORE_FILE_NONE);
+	assert_zero(fullfile);
 
-	type = _url_parse("/123/456?.fiberfschunkid=a");
+	type = _url_parse_ff("/123/456?.fiberfschunkid=a", &fullfile);
 	assert(type == FBR_CSTORE_FILE_NONE);
+	assert_zero(fullfile);
 
-	type = _url_parse("/123/456?.fiberfschunkid0");
+	type = _url_parse_ff("/123/456?.fiberfschunkid0", &fullfile);
 	assert(type == FBR_CSTORE_FILE_NONE);
+	assert_zero(fullfile);
 
-	type = _url_parse("/123/456?.fiberfschunkid=12345");
+	type = _url_parse_ff("/123/456?.fiberfschunkid=12345", &fullfile);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
+	assert(fullfile);
 
-	type = _url_parse("/123/456?.fiberfschunkid=12345&");
+	type = _url_parse_ff("/123/456?.fiberfschunkid=12345&", &fullfile);
 	assert(type == FBR_CSTORE_FILE_NONE);
+	assert_zero(fullfile);
 
-	type = _url_parse("/123/456?.fiberfschunkid=12345a4");
+	type = _url_parse_ff("/123/456?.fiberfschunkid=12345a4", &fullfile);
 	assert(type == FBR_CSTORE_FILE_NONE);
+	assert_zero(fullfile);
 
 	fbr_test_logs("cstore_url_test done");
 }
