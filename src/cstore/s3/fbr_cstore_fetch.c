@@ -348,11 +348,13 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 
 	switch (fetch->type) {
 		case FBR_CSTORE_FILE_INDEX:
-			chttp_header_add(http, "Content-Type", "application/json");
+			chttp_header_add(http, "Content-Type", "application/json; fiberfs="
+				FIBERFS_VERSION);
 
 			break;
 		case FBR_CSTORE_FILE_ROOT:
-			chttp_header_add(http, "Content-Type", "application/json");
+			chttp_header_add(http, "Content-Type", "application/json; fiberfs="
+				FIBERFS_VERSION);
 
 			// TODO do we want to force a max-age in S3?
 			// see cstore->config.root_ttl_sec
@@ -360,7 +362,8 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 
 			break;
 		default:
-			chttp_header_add(http, "Content-Type", "application/octet-stream");
+			chttp_header_add(http, "Content-Type", "application/octet-stream; fiberfs="
+				FIBERFS_VERSION);
 			break;
 	}
 
