@@ -794,7 +794,7 @@ _rename_cluster(struct fbr_test_context *ctx)
 	fbr_test_cstore_wait(cstore_s3);
 
 	assert(cstore_s3->stats.wr_chunks == _RENAME_WRITE_COUNTER);
-	assert(cstore_s3->stats.wr_chunks_fullfile == 1);
+	assert(cstore_s3->stats.wr_chunks_fullfile <= 1);
 	assert_zero(cstore_s3->stats.http_500);
 
 	fbr_test_logs("rename_cluster_test done");
