@@ -31,7 +31,7 @@ _rlog_init(struct fbr_rlog *rlog, size_t rlog_size, unsigned long request_id)
 	assert(rlog->log_pos < rlog->log_end);
 }
 
-size_t
+static size_t
 _rlog_size(struct fbr_request *request)
 {
 	size_t rlog_size = 0;

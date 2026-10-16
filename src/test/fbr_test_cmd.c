@@ -28,14 +28,14 @@ _test_entry_cmp(const struct fbr_test_cmdentry *k1, const struct fbr_test_cmdent
 	return strcmp(k1->name, k2->name);
 }
 
-void
+static void
 _cmd_LOCK(struct fbr_test *test)
 {
 	assert_dev(test);
 	pt_assert(pthread_mutex_lock(&test->cmd_lock));
 }
 
-void
+static void
 _cmd_UNLOCK(struct fbr_test *test)
 {
 	assert_dev(test);

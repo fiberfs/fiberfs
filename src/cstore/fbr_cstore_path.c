@@ -111,7 +111,7 @@ fbr_cstore_hashpath_loader(struct fbr_cstore *cstore, unsigned char dir, int met
 	fbr_cstore_hashpath_ok(hashpath);
 }
 
-void
+static void
 _cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset, int fullfile,
     struct fbr_cstore_path *path)
 {

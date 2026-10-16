@@ -573,7 +573,7 @@ fbr_unslash(char *buffer, size_t len)
 	return len;
 }
 
-size_t
+static size_t
 _csv_next_pos(const char *csv)
 {
 	size_t len = 0;

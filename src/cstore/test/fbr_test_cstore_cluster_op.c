@@ -76,7 +76,7 @@ _write_count(char *buffer, size_t buffer_len)
 	return count_len;
 }
 
-void
+static void
 _op_mkdir_append(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode_t parent_inode)
 {
 	fbr_fs_ok(fs);
@@ -157,7 +157,7 @@ _op_mkdir_append(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode
 	fbr_dindex_release(fs, &directory);
 }
 
-void
+static void
 _op_mkdir_subdir(struct fbr_fs *fs, struct fbr_path_name *parent_path, fbr_inode_t parent_inode)
 {
 	fbr_fs_ok(fs);

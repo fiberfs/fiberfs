@@ -416,7 +416,7 @@ _rename_request_data(struct _rename_data *data)
 	return request;
 }
 
-void
+static void
 _write_thread(struct _rename_data *data)
 {
 	struct fbr_fs *fs = data->context.fs;
