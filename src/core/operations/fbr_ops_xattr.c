@@ -9,6 +9,8 @@
 #include "core/fs/fbr_fs_inline.h"
 #include "cstore/fbr_cstore_path.h"
 
+#define FBR_XATTR_NAMESPACE	"user" FBR_FIBERFS_NAME
+
 void
 fbr_ops_xattr_list(struct fbr_request *request, fuse_ino_t ino, size_t size)
 {
@@ -24,7 +26,7 @@ fbr_ops_xattr_list(struct fbr_request *request, fuse_ino_t ino, size_t size)
 
 	fbr_inode_release(fs, &file);
 
-	size_t xattr_size = sizeof(FBR_FIBERFS_NAME);
+	size_t xattr_size = sizeof(FBR_XATTR_NAMESPACE);
 
 	if (!size) {
 		fbr_fuse_reply_xattr(request, xattr_size);
@@ -37,7 +39,7 @@ fbr_ops_xattr_list(struct fbr_request *request, fuse_ino_t ino, size_t size)
 	size_t buffer_len = 0;
 	assert(xattr_size <= sizeof(buffer));
 
-	buffer_len += fbr_snaprintf(buffer, sizeof(buffer), buffer_len, "%s", FBR_FIBERFS_NAME);
+	buffer_len += fbr_snaprintf(buffer, sizeof(buffer), buffer_len, "%s", FBR_XATTR_NAMESPACE);
 	buffer_len++;
 
 	assert(buffer_len == xattr_size);
@@ -64,7 +66,7 @@ fbr_ops_xattr_get(struct fbr_request *request, fuse_ino_t ino, const char *name,
 	const char *xattr_value = NULL;
 	size_t xattr_size = 0;
 
-	if (!strcmp(name, FBR_FIBERFS_NAME)) {
+	if (!strcmp(name, FBR_XATTR_NAMESPACE)) {
 		xattr_value = FIBERFS_VERSION;
 		xattr_size = sizeof(FIBERFS_VERSION);
 	}

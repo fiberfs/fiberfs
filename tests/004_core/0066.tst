@@ -12,11 +12,11 @@ sys_truncate $file 0
 
 # xattr
 
-sys_xattr_list $sys_tmpdir ".fiberfs"
-sys_xattr_list $file ".fiberfs"
+sys_xattr_list $sys_tmpdir "user.fiberfs"
+sys_xattr_list $file "user.fiberfs"
 
-sys_xattr_get $sys_tmpdir ".fiberfs" $fiberfs_version
-sys_xattr_get $file ".fiberfs" $fiberfs_version
+sys_xattr_get $sys_tmpdir "user.fiberfs" $fiberfs_version
+sys_xattr_get $file "user.fiberfs" $fiberfs_version
 
 # Validate
 
