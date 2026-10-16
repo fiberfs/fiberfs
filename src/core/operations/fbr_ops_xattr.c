@@ -26,7 +26,9 @@ fbr_ops_xattr_list(struct fbr_request *request, fuse_ino_t ino, size_t size)
 
 	fbr_inode_release(fs, &file);
 
-	size_t xattr_size = sizeof(FBR_XATTR_NAMESPACE);
+	size_t xattr_size = 0;
+	xattr_size += sizeof(FBR_FIBERFS_NAME);
+	xattr_size += sizeof(FBR_XATTR_NAMESPACE);
 
 	if (!size) {
 		fbr_fuse_reply_xattr(request, xattr_size);
@@ -38,6 +40,9 @@ fbr_ops_xattr_list(struct fbr_request *request, fuse_ino_t ino, size_t size)
 	char buffer[256];
 	size_t buffer_len = 0;
 	assert(xattr_size <= sizeof(buffer));
+
+	buffer_len += fbr_snaprintf(buffer, sizeof(buffer), buffer_len, "%s", FBR_FIBERFS_NAME);
+	buffer_len++;
 
 	buffer_len += fbr_snaprintf(buffer, sizeof(buffer), buffer_len, "%s", FBR_XATTR_NAMESPACE);
 	buffer_len++;
@@ -66,7 +71,10 @@ fbr_ops_xattr_get(struct fbr_request *request, fuse_ino_t ino, const char *name,
 	const char *xattr_value = NULL;
 	size_t xattr_size = 0;
 
-	if (!strcmp(name, FBR_XATTR_NAMESPACE)) {
+	if (!strcmp(name, FBR_FIBERFS_NAME)) {
+		xattr_value = FIBERFS_VERSION;
+		xattr_size = sizeof(FIBERFS_VERSION);
+	} else if (!strcmp(name, FBR_XATTR_NAMESPACE)) {
 		xattr_value = FIBERFS_VERSION;
 		xattr_size = sizeof(FIBERFS_VERSION);
 	}
