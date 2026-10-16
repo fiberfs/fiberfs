@@ -18,6 +18,20 @@
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
 
+extern int _DEBUG_CSTORE_CRASH_DELETE;
+
+void
+fbr_cmd_error_cstore_crash_delete(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_cmd_ok(cmd);
+
+	_DEBUG_CSTORE_CRASH_DELETE = 1;
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "error_cstore_crash_delete: %d",
+		_DEBUG_CSTORE_CRASH_DELETE);
+}
+
 void
 fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
