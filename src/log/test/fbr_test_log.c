@@ -85,7 +85,7 @@ _test_log_printer_thread(void *arg)
 
 			fbr_test_sleep_ms(sleep_count);
 
-			if (sleep_count < 20) {
+			if (sleep_count < 10) {
 				sleep_count++;
 			}
 
