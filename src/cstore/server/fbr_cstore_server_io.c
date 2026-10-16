@@ -20,6 +20,8 @@
 #include "utils/fbr_chash.h"
 #include "utils/fbr_sys.h"
 
+int _DEBUG_CSTORE_CRASH_TASK_DELETE;
+
 struct _cstore_entry_cb_data {
 	struct fbr_cstore		*cstore;
 	struct fbr_cstore_entry		*entry;
@@ -837,6 +839,10 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	struct fbr_cstore *cstore = worker->cstore;
 	fbr_cstore_ok(cstore);
+
+	if (fbr_is_test() && _DEBUG_CSTORE_CRASH_TASK_DELETE) {
+		assert_zero(_DEBUG_CSTORE_CRASH_TASK_DELETE);
+	}
 
 	const char *url_encoded = chttp_header_get_url(http);
 	assert(url_encoded);

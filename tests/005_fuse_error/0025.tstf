@@ -10,7 +10,7 @@ cstore_mock_s3 1 region access_key secret_key
 cstore_set_s3 0 $cstore_server_host:1 $cstore_server_port:1 region access_key secret_key
 
 # Setup crash on async delete
-error_cstore_crash_delete
+error_cstore_crash_async_delete
 
 # Mount
 sys_mkdir_tmp

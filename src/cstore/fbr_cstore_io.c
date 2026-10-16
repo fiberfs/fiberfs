@@ -19,7 +19,7 @@
 #include "fjson.h"
 #include "utils/fbr_sys.h"
 
-int _DEBUG_CSTORE_CRASH_DELETE;
+int _DEBUG_CSTORE_CRASH_ASYNC_DELETE;
 
 int
 fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
@@ -247,8 +247,8 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 
 	int backend = fbr_cstore_backend_enabled(cstore);
 
-	if (fbr_is_test() && _DEBUG_CSTORE_CRASH_DELETE) {
-		assert_zero(_DEBUG_CSTORE_CRASH_DELETE);
+	if (fbr_is_test() && _DEBUG_CSTORE_CRASH_ASYNC_DELETE) {
+		assert_zero(_DEBUG_CSTORE_CRASH_ASYNC_DELETE);
 	}
 
 	if (cstore->config.delete_cache || !backend) {

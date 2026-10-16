@@ -95,4 +95,5 @@ FBR_TEST_CMD(cstore_cluster_mkdir)
 FBR_TEST_CMD(cstore_cluster_subdir)
 FBR_TEST_CMD(cstore_cluster_append)
 
-FBR_TEST_CMD(error_cstore_crash_delete)
+FBR_TEST_CMD(error_cstore_crash_async_delete)
+FBR_TEST_CMD(error_cstore_crash_task_delete)
