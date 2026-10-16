@@ -161,7 +161,6 @@ int fbr_test_main(int argc, char **argv);
 void fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 	fbr_test_finish_f *func);
 void fbr_test_run_all_finish(struct fbr_test *test);
-void fbr_test_cleanup(void);
 void fbr_test_context_abort(void);
 int fbr_test_is_forked(void);
 int fbr_test_is_thread(void);
@@ -199,7 +198,7 @@ long fbr_test_parse_long(const char *str);
 void fbr_test_ERROR_param_count(struct fbr_test_cmd *cmd, size_t count);
 void fbr_test_ERROR_string(const char *str);
 void fbr_test_sleep_ms(long ms);
-int fbr_test_join_thread(pthread_t thread, volatile int *stopped,
+int fbr_test_join_thread(pthread_t thread, volatile int *stopped, volatile int *error,
 	volatile unsigned long *timeout_ms);
 size_t fbr_test_line_pos(struct fbr_test *test);
 void fbr_test_random_seed(void);

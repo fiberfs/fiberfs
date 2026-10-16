@@ -150,8 +150,6 @@ fbr_test_do_abort(const char *assertion, const char *function, const char *file,
 		printf("FAILED\n");
 	}
 
-	fbr_test_cleanup();
-
 	exit(1);
 }
 
@@ -210,22 +208,30 @@ fbr_test_sleep_ms(long ms)
 }
 
 int
-fbr_test_join_thread(pthread_t thread, volatile int *stopped,
+fbr_test_join_thread(pthread_t thread, volatile int *stopped, volatile int *error,
     volatile unsigned long *timeout_ms)
 {
+	assert(thread);
 	assert(stopped);
+	assert(error);
 	assert(timeout_ms);
 
 	unsigned long time = 0;
 
-	while (!*stopped) {
+	while (!*stopped && !*error) {
 		fbr_test_sleep_ms(FBR_TEST_JOIN_INTERVAL_MS);
 
 		time += FBR_TEST_JOIN_INTERVAL_MS;
 
 		if (*timeout_ms && time > *timeout_ms) {
+			pthread_cancel(thread);
 			return 1;
 		}
+	}
+
+	if (!*stopped && *error) {
+		pthread_cancel(thread);
+		return 1;
 	}
 
 	pt_assert(pthread_join(thread, NULL));

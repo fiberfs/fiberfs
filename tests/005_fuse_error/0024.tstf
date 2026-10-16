@@ -3,6 +3,7 @@ fiber_test "Error during concurrency"
 # Init
 
 config_add LOG_SIZE 200000
+set_timeout_sec 1
 
 sys_mkdir_tmp
 fs_test_fuse_mount $sys_tmpdir

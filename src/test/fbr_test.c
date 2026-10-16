@@ -22,8 +22,7 @@ extern int _IS_FIBERFS_TEST;
 static struct fbr_test *_TEST;
 static int _EXIT;
 static int _ERROR;
-pthread_mutex_t _FINISH_LOCK;
-pthread_t _FINISH_TID;
+pthread_t _TEST_MAIN;
 
 static void
 _finish_test(struct fbr_test_context *ctx)
@@ -175,14 +174,13 @@ fbr_test_main(int argc, char **argv)
 	// TODO we need to change current directory
 
 	_IS_FIBERFS_TEST = 1;
+	_TEST_MAIN = pthread_self();
 	FBR_FUSE_ABORT_HOOK = fbr_test_context_abort;
 	fbr_setup_crash_signals();
 	fbr_setup_stop_signals(NULL);
 
 	_init_test(&test);
 	fbr_test_cmds_init(&test);
-
-	pt_assert(pthread_mutex_init(&_FINISH_LOCK, NULL));
 
 	test.prog_name = argv[0];
 
@@ -222,8 +220,11 @@ fbr_test_main(int argc, char **argv)
 	pt_assert(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
 	assert_zero(fbr_test_is_thread());
 
-	int ret = fbr_test_join_thread(test.thread, &test.stopped, &test.timeout_ms);
-	fbr_test_ERROR(ret, "test timed out after %ds", (int)test.timeout_ms / 1000);
+	int ret = fbr_test_join_thread(test.thread, &test.stopped, &test.error, &test.timeout_ms);
+	if (!test.error && ret) {
+		fbr_test_log(NULL, FBR_LOG_FORCE, "test timed out after %ds",
+			(int)test.timeout_ms / 1000);
+	}
 
 	int error = test.error;
 	int skip = test.skip;
@@ -308,20 +309,6 @@ fbr_test_register_finish(struct fbr_test_context *ctx, const char *name, fbr_tes
 void
 fbr_test_run_all_finish(struct fbr_test *test)
 {
-	if (_EXIT && _FINISH_TID == pthread_self()) {
-		return;
-	}
-
-	pt_assert(pthread_mutex_lock(&_FINISH_LOCK));
-
-	if (_EXIT) {
-		pt_assert(pthread_mutex_unlock(&_FINISH_LOCK));
-		return;
-	}
-
-	_EXIT = 1;
-	_FINISH_TID = pthread_self();
-
 	fbr_test_ok(test);
 	assert_zero(_ERROR);
 
@@ -346,7 +333,7 @@ fbr_test_run_all_finish(struct fbr_test *test)
 
 	assert(TAILQ_EMPTY(&test->finish_list));
 
-	pt_assert(pthread_mutex_unlock(&_FINISH_LOCK));
+	_EXIT = 1;
 }
 
 struct fbr_test_context *
@@ -361,10 +348,6 @@ fbr_test_get_ctx(void)
 int
 fbr_test_is_thread(void)
 {
-	if (_EXIT) {
-		return 0;
-	}
-
 	fbr_test_ok(_TEST);
 
 	if (pthread_self() == _TEST->thread) {
@@ -374,14 +357,32 @@ fbr_test_is_thread(void)
 	return 0;
 }
 
-// Called from test_do_abort, attempt to gracefully exit
-void
-fbr_test_force_error(void)
+static void
+_error_wait_exit(void)
 {
-	if (_EXIT) {
+	fbr_test_ok(_TEST);
+	assert(_TEST->error);
+	assert(_TEST_MAIN);
+
+	if (pthread_self() == _TEST_MAIN) {
+		// Allow abort/exit
 		return;
 	}
 
+	int max_sleep_ms = 3000;
+
+	while (!_EXIT && max_sleep_ms > 0) {
+		fbr_test_sleep_ms(10);
+		max_sleep_ms -= 10;
+	}
+
+	// Allow abort/exit
+}
+
+// Called from assert/abort, terminate the test
+void
+fbr_test_force_error(void)
+{
 	fbr_test_ok(_TEST);
 
 	_TEST->error = 1;
@@ -390,20 +391,15 @@ fbr_test_force_error(void)
 		_TEST->stopped = 1;
 		pthread_exit(NULL);
 	}
-}
 
-// Called from test_do_abort, cleanup before it exits
-void
-fbr_test_cleanup(void)
-{
-	fbr_test_run_all_finish(_TEST);
+	_error_wait_exit();
 }
 
 // Called from a signal, start abort process
 void
 fbr_test_context_abort(void)
 {
-	fbr_test_ABORT("Signal caught");
+	fbr_test_force_error();
 }
 
 int

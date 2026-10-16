@@ -178,7 +178,8 @@ _server_finish(struct fbr_test_context *ctx)
 
 	unsigned long timeout = _SERVER_JOIN_TIMEOUT_MS;
 
-	int ret = fbr_test_join_thread(server->thread, &server->stopped, &timeout);
+	int error = 0;
+	int ret = fbr_test_join_thread(server->thread, &server->stopped, &error, &timeout);
 	if (ret) {
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "ERROR: server thread is blocked");
 		exit(1);

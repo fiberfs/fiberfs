@@ -254,15 +254,7 @@ fbr_cstore_async_free(struct fbr_cstore *cstore)
 	pt_assert(pthread_cond_broadcast(&async->todo_ready));
 	pt_assert(pthread_mutex_unlock(&async->queue_lock));
 
-	for (size_t i = 0; i < async->threads_max; i++) {
-		if (async->threads[i] == pthread_self()) {
-			fbr_log_print(cstore->log, FBR_LOG_CS_ASYNC, FBR_REQID_CSTORE,
-				"async thread crashed, skipping cleanup");
-			return;
-		}
-	}
-
-	unsigned int max_ms = 3000;
+	unsigned int max_ms = 500;
 	unsigned int wait_ms = 0;
 	unsigned int sleep_ms = 25;
 	while (wait_ms < max_ms && async->threads_running) {
@@ -276,11 +268,16 @@ fbr_cstore_async_free(struct fbr_cstore *cstore)
 	}
 
 	for (size_t i = 0; i < async->threads_max; i++) {
+		assert(async->threads[i] != pthread_self());
 		if (async->threads_running) {
 			pthread_cancel(async->threads[i]);
+		} else {
+			pt_assert(pthread_join(async->threads[i], NULL));
 		}
+	}
 
-		pt_assert(pthread_join(async->threads[i], NULL));
+	if (async->threads_running) {
+		return;
 	}
 
 	assert_zero(async->queue_len);
