@@ -29,6 +29,14 @@ fbr_cmd_fiber_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s", cmd->params[0].value);
 }
 
+const char *
+fbr_var_fiberfs_version(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	return FIBERFS_VERSION;
+}
+
 void
 fbr_cmd_sleep_ms(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {

@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/xattr.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
@@ -899,4 +900,72 @@ fbr_cmd_sys_syncfs(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(close(fd));
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_syncfs done %s", mount);
+}
+
+void
+fbr_cmd_sys_xattr_list(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_cmd_ok(cmd);
+	assert(cmd->param_count >= 1 && cmd->param_count <= 2);
+	assert(cmd->params[0].len);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+	char xattr_list[1024];
+
+	ssize_t ret = listxattr(filename, xattr_list, sizeof(xattr_list));
+	fbr_ASSERT(ret > 0, "listxattr() failed %s (%zd)", strerror(errno), ret);
+	assert_zero(xattr_list[ret - 1]);
+
+	for (size_t i = 0; i < (size_t)ret - 1; i++) {
+		if (!xattr_list[i]) {
+			xattr_list[i] = ',';
+		}
+	}
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "xattr list found: '%s':%zd", xattr_list, ret);
+
+	if (cmd->param_count >= 2) {
+		const char *match = cmd->params[1].value;
+		fbr_test_ERROR(strcmp(xattr_list, match), "Expected xattr list failed");
+	}
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_xattr_list passed");
+}
+
+void
+fbr_cmd_sys_xattr_get(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	_sys_init(ctx);
+	fbr_test_cmd_ok(cmd);
+	assert(cmd->param_count >= 2 && cmd->param_count <= 3);
+	assert(cmd->params[0].len);
+	assert(cmd->params[1].len);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+	const char *xattr_name = cmd->params[1].value;
+	char xattr_value[1024];
+
+	ssize_t ret = getxattr(filename, xattr_name, xattr_value, sizeof(xattr_value));
+	fbr_ASSERT(ret > 0, "getxattr() failed %s (%zd)", strerror(errno), ret);
+	assert_zero(xattr_value[ret - 1]);
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "xattr value found: '%s':%zd", xattr_value, ret);
+
+	if (cmd->param_count >= 3) {
+		const char *match = cmd->params[2].value;
+		fbr_test_ERROR(strcmp(xattr_value, match), "Expected xattr value failed");
+	}
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_xattr_get passed");
 }

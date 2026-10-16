@@ -36,5 +36,7 @@ void fbr_ops_release(struct fbr_request *request, fuse_ino_t ino, struct fuse_fi
 void fbr_ops_forget(struct fbr_request *request, fuse_ino_t ino, uint64_t nlookup);
 void fbr_ops_forget_multi(struct fbr_request *request, size_t count,
 	struct fuse_forget_data *forgets);
+void fbr_ops_xattr_list(struct fbr_request *request, fuse_ino_t ino, size_t size);
+void fbr_ops_xattr_get(struct fbr_request *request, fuse_ino_t ino, const char *name, size_t size);
 
 #endif /* _FBR_OPERATIONS_H_INCLUDED_ */

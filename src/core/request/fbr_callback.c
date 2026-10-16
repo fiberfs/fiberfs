@@ -175,6 +175,19 @@ fbr_fuse_reply_write(struct fbr_request *request, size_t count)
 	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_write %zu", count);
 }
 
+void
+fbr_fuse_reply_xattr(struct fbr_request *request, size_t count)
+{
+	if (_fuse_exists(request)) {
+		fuse_req_t fuse_req = _fuse_reply_init(request);
+
+		int ret = fuse_reply_xattr(fuse_req, count);
+		(void)ret;
+	}
+
+	fbr_rlog(FBR_LOG_FUSE, "fuse_reply_xattr %zu", count);
+}
+
 const struct fuse_ctx *
 fbr_fuse_req_ctx(struct fbr_request *request, struct fuse_ctx *fctx)
 {

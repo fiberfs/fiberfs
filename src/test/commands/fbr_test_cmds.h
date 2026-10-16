@@ -7,6 +7,7 @@
 #include "test/fbr_test_cmd_declare.h"
 
 FBR_TEST_CMD(fiber_test)
+FBR_TEST_VAR(fiberfs_version)
 
 FBR_TEST_CMD(sleep_ms)
 FBR_TEST_CMD(equal)
@@ -49,6 +50,8 @@ FBR_TEST_CMD(sys_unlink)
 FBR_TEST_CMD(sys_rmdir)
 FBR_TEST_CMD(sys_rename)
 FBR_TEST_CMD(sys_syncfs)
+FBR_TEST_CMD(sys_xattr_list)
+FBR_TEST_CMD(sys_xattr_get)
 
 FBR_TEST_CMD(set)
 FBR_TEST_VAR(get)

@@ -284,6 +284,26 @@ _fuse_ops_forget_multi(fuse_req_t req, size_t count, struct fuse_forget_data *fo
 	_fuse_finish_none(request);
 }
 
+static void
+_fuse_ops_xattr_list(fuse_req_t req, fuse_ino_t ino, size_t size)
+{
+	struct fbr_request *request = _fuse_setup(req, __func__);
+
+	_fuse_ops_callback(request, xattr_list, ino, size);
+
+	_fuse_finish(request, ENOSYS);
+}
+
+static void
+_fuse_ops_xattr_get(fuse_req_t req, fuse_ino_t ino, const char *name, size_t size)
+{
+	struct fbr_request *request = _fuse_setup(req, __func__);
+
+	_fuse_ops_callback(request, xattr_get, ino, name, size);
+
+	_fuse_finish(request, ENOSYS);
+}
+
 static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.init = _fuse_ops_init,
 	.destroy = _fuse_ops_destroy,
@@ -305,7 +325,9 @@ static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.release = _fuse_ops_release,
 	.fsync = _fuse_ops_fsync,
 	.forget = _fuse_ops_forget,
-	.forget_multi = _fuse_ops_forget_multi
+	.forget_multi = _fuse_ops_forget_multi,
+	.listxattr = _fuse_ops_xattr_list,
+	.getxattr = _fuse_ops_xattr_get
 };
 
 const struct fuse_lowlevel_ops *FBR_FUSE_OPS = &_FUSE_OPS;

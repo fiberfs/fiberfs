@@ -35,7 +35,10 @@ static const struct fbr_fuse_callbacks _FUSE_DEFAULT_CALLBACKS = {
 	.fsync = fbr_ops_fsync,
 
 	.forget = fbr_ops_forget,
-	.forget_multi = fbr_ops_forget_multi
+	.forget_multi = fbr_ops_forget_multi,
+
+	.xattr_list = fbr_ops_xattr_list,
+	.xattr_get = fbr_ops_xattr_get
 };
 
 const struct fbr_fuse_callbacks *FBR_FUSE_DEFAULT_CALLBACKS = &_FUSE_DEFAULT_CALLBACKS;
