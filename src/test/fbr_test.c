@@ -405,10 +405,6 @@ fbr_test_context_abort(void)
 int
 fbr_test_is_forked(void)
 {
-	if (_EXIT) {
-		return 0;
-	}
-
 	fbr_test_ok(_TEST);
 
 	return _TEST->forked;
