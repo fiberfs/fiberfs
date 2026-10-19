@@ -31,6 +31,7 @@ sys_stat_size $file 0
 # Cleanup
 
 fs_test_release_all_wait 1
+equal $fs_test_stat_files_inodes 1
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0

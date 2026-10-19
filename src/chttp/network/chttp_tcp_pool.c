@@ -42,6 +42,7 @@ _tcp_pool_init(void)
 {
 	chttp_tcp_pool_ok();
 	assert_zero(_TCP_POOL.initialized);
+	assert_zero(_TCP_POOL.stats.size);
 
 	chttp_load_config();
 
