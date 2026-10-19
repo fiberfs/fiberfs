@@ -13,11 +13,11 @@
 
 #include "test/fbr_test.h"
 
-#define _url_parse_ff(url, fullfile)	\
-	fbr_cstore_s3_url_parse(url, strlen(url), fullfile)
-#define _url_parse(url)			\
-	fbr_cstore_s3_url_parse(url, strlen(url), NULL)
-#define _path_init(path, str)		\
+#define _url_parse_ff(url, offset, length)	\
+	fbr_cstore_s3_url_parse(url, strlen(url), offset, length)
+#define _url_parse(url)				\
+	fbr_cstore_s3_url_parse(url, strlen(url), NULL, NULL)
+#define _path_init(path, str)			\
 	fbr_cstore_path_init(path, str, strlen(str))
 
 void
@@ -27,7 +27,7 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 0);
 
 	enum fbr_cstore_file_type type;
-	int fullfile;
+	size_t offset, length;
 
 	type = _url_parse("/");
 	assert(type == FBR_CSTORE_FILE_NONE);
@@ -35,9 +35,10 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	type = _url_parse("/abc");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse_ff("/.fiberfs", &fullfile);
+	type = _url_parse_ff("/.fiberfs", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_NONE);
-	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
 
 	type = _url_parse("/.fiberfsRoot");
 	assert(type == FBR_CSTORE_FILE_NONE);
@@ -105,9 +106,10 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	type = _url_parse("/abc.fiberfschunk.6.a");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
-	type = _url_parse_ff("/abc.fiberfschunk.6.1", &fullfile);
+	type = _url_parse_ff("/abc.fiberfschunk.6.1", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
-	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
 
 	type = _url_parse("/abc.fiberfschunk.6.11");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
@@ -142,9 +144,10 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	type = _url_parse("/abc/file.abc.txt.fiberfschunk.123.123456");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
 
-	type = _url_parse_ff("/abc/file.abc.123.fiberfschunk.456.0", &fullfile);
+	type = _url_parse_ff("/abc/file.abc.123.fiberfschunk.456.0", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
-	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
 
 	type = _url_parse("/test/안녕하세요.txt.fiberfschunk.17648630080413561840.102400");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
@@ -154,45 +157,66 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(type == FBR_CSTORE_FILE_CHUNK);
 
 	type = _url_parse_ff("/test_dir/SomeFile.txt.fiberfschunk.17828368500534773756.0",
-		&fullfile);
+		&offset, &length);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
-	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
 
-	type = _url_parse_ff("/123/456/789", &fullfile);
+	type = _url_parse_ff("/123/456/789", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_NONE);
-	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
 
-	type = _url_parse_ff("/123/456?.fiberfschunkid=0", &fullfile);
+	type = _url_parse_ff("/123/456?.fiberfschunkid=0&b=6&l=4", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
-	assert(fullfile);
+	assert(offset == 6);
+	assert(length == 4);
 
-	type = _url_parse_ff("/123/456?fiberfschunkid=0", &fullfile);
+	type = _url_parse_ff("/123/456?.fiberfschunkid=0", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_NONE);
-	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
 
-	type = _url_parse_ff("/123/456?.fiberfschunkid=", &fullfile);
+	type = _url_parse_ff("/123/456?fiberfschunkid=0&b=6&l=4", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_NONE);
-	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
 
-	type = _url_parse_ff("/123/456?.fiberfschunkid=a", &fullfile);
+	type = _url_parse_ff("/123/456?.fiberfschunkid=&b=6&l=4", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_NONE);
-	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
 
-	type = _url_parse_ff("/123/456?.fiberfschunkid0", &fullfile);
+	type = _url_parse_ff("/123/456?.fiberfschunkid=a&b=6&l=4", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_NONE);
-	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
 
-	type = _url_parse_ff("/123/456?.fiberfschunkid=12345", &fullfile);
+	type = _url_parse_ff("/123/456?.fiberfschunkid0=0&b=6&l=4", &offset, &length);
+	assert(type == FBR_CSTORE_FILE_NONE);
+	assert_zero(offset);
+	assert_zero(length);
+
+	type = _url_parse_ff("/123/456?.fiberfschunkid=12345&b=67890&l=7654321", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
-	assert(fullfile);
+	assert(offset == 67890);
+	assert(length == 7654321);
 
-	type = _url_parse_ff("/123/456?.fiberfschunkid=12345&", &fullfile);
+	type = _url_parse_ff("/123/456?.fiberfschunkid=12345&b=+67890&l=7654321", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_NONE);
-	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
 
-	type = _url_parse_ff("/123/456?.fiberfschunkid=12345a4", &fullfile);
+	type = _url_parse_ff("/123/456?.fiberfschunkid=0&c=6&l=4", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_NONE);
-	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
+
+	type = _url_parse_ff("/123/456?.fiberfschunkid=0&b=6&l=4a", &offset, &length);
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse_ff("/123/456?.fiberfschunkid=0123&b=6a6&l=4", &offset, &length);
+	assert(type == FBR_CSTORE_FILE_NONE);
 
 	struct fbr_cstore_path path;
 	struct fbr_cstore_url url;

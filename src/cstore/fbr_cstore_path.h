@@ -74,14 +74,14 @@ void fbr_cstore_hashpath(struct fbr_cstore *cstore, fbr_hash_t hash, int metadat
 void fbr_cstore_hashpath_loader(struct fbr_cstore *cstore, unsigned char dir, int metadata,
 	struct fbr_cstore_hashpath *hashpath);
 
-void fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, int fullfile,
-	struct fbr_cstore_path *path);
+void fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, size_t length,
+	int fullfile, struct fbr_cstore_path *path);
 void fbr_cstore_path_index(const struct fbr_directory *directory, struct fbr_cstore_path *path);
 void fbr_cstore_path_root(const struct fbr_path_name *dirpath, struct fbr_cstore_path *path);
 void fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url, struct fbr_cstore_path *path);
 
 fbr_hash_t fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
-	size_t offset, int fullfile, int s3_server);
+	size_t offset, size_t length, int fullfile, int s3_server);
 fbr_hash_t fbr_cstore_hash_index(struct fbr_cstore *cstore, struct fbr_directory *directory);
 fbr_hash_t fbr_cstore_hash_root(struct fbr_cstore *cstore, const struct fbr_path_name *dirpath);
 fbr_hash_t fbr_cstore_hash_url(const char *host, size_t host_len, const char *url, size_t url_len);
@@ -101,7 +101,8 @@ void fbr_cstore_path_clone(struct fbr_cstore_path *dest, struct fbr_cstore_path 
 void fbr_cstore_s3_url_init(struct fbr_cstore_url *dest, const char *url, size_t url_len);
 void fbr_cstore_s3_url_clone(struct fbr_cstore_url *dest, const struct fbr_cstore_url *src);
 size_t fbr_cstore_s3_url_trim(char *url, size_t url_len);
-enum fbr_cstore_file_type fbr_cstore_s3_url_parse(const char *url, size_t url_len, int *fullfile);
+enum fbr_cstore_file_type fbr_cstore_s3_url_parse(const char *url, size_t url_len,
+	size_t *ff_offset, size_t *ff_length);
 
 #define fbr_cstore_path_ok(path)		fbr_magic_check(path, FBR_CSTORE_PATH_MAGIC)
 #define fbr_cstore_hashpath_ok(path)		fbr_magic_check(path, FBR_CSTORE_HASHPATH_MAGIC)

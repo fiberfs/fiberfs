@@ -828,7 +828,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset,
-		chunk->fullfile, 0);
+		chunk->length, chunk->fullfile, 0);
 
 	struct fbr_cstore_entry *entry = fbr_cstore_io_get_loading(cstore, hash, 0, NULL);
 	if (!entry) {
@@ -841,7 +841,8 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	assert_dev(entry->state == FBR_CSTORE_LOADING);
 
 	struct fbr_cstore_path path;
-	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, chunk->fullfile, &path);
+	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, chunk->length, chunk->fullfile,
+		&path);
 
 	char chttp_stack[FBR_CSTORE_CHTTP_SIZE];
 	struct chttp_context *http = chttp_context_init_buf(chttp_stack, sizeof(chttp_stack));

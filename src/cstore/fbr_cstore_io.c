@@ -256,10 +256,15 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 		size_t url_decoded_len = fbr_urldecode(url->value, url->length, url_decoded,
 			sizeof(url_decoded));
 
-		int fullfile;
+		size_t length;
 		enum fbr_cstore_file_type url_type = fbr_cstore_s3_url_parse(url_decoded,
-			url_decoded_len, &fullfile);
+			url_decoded_len, NULL, &length);
 		assert_dev(url_type == type);
+
+		int fullfile = 0;
+		if (length) {
+			fullfile = 1;
+		}
 
 		fbr_hash_t hash;
 		if (backend) {
@@ -436,7 +441,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	int backend = fbr_cstore_backend_enabled(cstore);
 
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, wbuffer->id, wbuffer->offset,
-		wbuffer->fullfile, !backend);
+		wbuffer->end, wbuffer->fullfile, !backend);
 
 	size_t wbuf_bytes = wbuffer->end;
 	assert_dev(wbuf_bytes);
@@ -444,7 +449,8 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	struct fbr_cstore_hashpath hashpath;
 	struct fbr_cstore_path chunk_path;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
-	fbr_cstore_path_chunk(file, wbuffer->id, wbuffer->offset, wbuffer->fullfile, &chunk_path);
+	fbr_cstore_path_chunk(file, wbuffer->id, wbuffer->offset, wbuffer->end, wbuffer->fullfile,
+		&chunk_path);
 
 	fbr_rlog(FBR_LOG_CS_WBUFFER, "WRITE %s %zu %s%s", chunk_path.value, wbuf_bytes,
 		hashpath.value, (wbuffer->fullfile ? " fullfile" : ""));
@@ -571,7 +577,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	int backend = fbr_cstore_backend_enabled(cstore);
 
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file, chunk->id, chunk->offset,
-		chunk->fullfile, !backend);
+		chunk->length, chunk->fullfile, !backend);
 
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);

@@ -112,14 +112,15 @@ fbr_cstore_hashpath_loader(struct fbr_cstore *cstore, unsigned char dir, int met
 }
 
 static void
-_cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset, int fullfile,
-    struct fbr_cstore_path *path)
+_cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset, size_t length,
+    int fullfile, struct fbr_cstore_path *path)
 {
-	fbr_file_ok(file);
+	assert_dev(file);
 	fbr_path_shared_ok(file->alias.path);
 	assert(file->alias.path->value.length);
-	assert(id);
-	assert(path);
+	assert_dev(id);
+	assert_dev(length);
+	assert_dev(path);
 
 	struct fbr_path_name dirpath;
 	fbr_path_get_dir(&file->path, &dirpath);
@@ -134,12 +135,12 @@ _cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset
 
 	path->magic = FBR_CSTORE_PATH_MAGIC;
 	if (fullfile) {
-		path->length = fbr_bprintf(path->value, "%s%s%s?%s=%s",
+		path->length = fbr_bprintf(path->value, "%s%s%s?%s=%s&b=%zu&l=%zu",
 			dirpath.name,
 			root_sep,
 			file->alias.path->value.name,
 			FBR_FIBERFS_CHUNKID_NAME,
-			chunk_id);
+			chunk_id, offset, length);
 	} else {
 		path->length = fbr_bprintf(path->value, "%s%s%s%s.%s.%zu",
 			dirpath.name,
@@ -153,17 +154,17 @@ _cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset
 	fbr_cstore_path_ok(path);
 }
 
-// TODO range gets mixed in here
 void
-fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, int fullfile,
-    struct fbr_cstore_path *path)
+fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, size_t length,
+    int fullfile, struct fbr_cstore_path *path)
 {
 	fbr_file_ok(file);
 	assert(id);
 	assert(path);
+	assert(length);
 
 	if (fbr_has_alias_path(file)) {
-		_cstore_path_chunk_alias(file, id, offset, fullfile, path);
+		_cstore_path_chunk_alias(file, id, offset, length, fullfile, path);
 		return;
 	}
 
@@ -176,10 +177,10 @@ fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, i
 	path->magic = FBR_CSTORE_PATH_MAGIC;
 
 	if (fullfile) {
-		path->length = fbr_bprintf(path->value, "%s?%s=%s",
+		path->length = fbr_bprintf(path->value, "%s?%s=%s&b=%zu&l=%zu",
 			filepath.path.name,
 			FBR_FIBERFS_CHUNKID_NAME,
-			chunk_id);
+			chunk_id, offset, length);
 	} else {
 		path->length = fbr_bprintf(path->value, "%s%s.%s.%zu",
 			filepath.path.name,
@@ -333,7 +334,7 @@ _hash_s3(fbr_xxhash_t *hash, struct fbr_cstore *cstore)
 
 fbr_hash_t
 fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
-    size_t offset, int fullfile, int s3_server)
+    size_t offset, size_t length, int fullfile, int s3_server)
 {
 	fbr_cstore_ok(cstore);
 	fbr_file_ok(file);
@@ -345,7 +346,7 @@ fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t
 	_hash_s3(&hash, cstore);
 
 	struct fbr_cstore_path path;
-	fbr_cstore_path_chunk(file, id, offset, fullfile, &path);
+	fbr_cstore_path_chunk(file, id, offset, length, fullfile, &path);
 
 	if (fullfile && s3_server) {
 		_path_trim(&path);
@@ -499,7 +500,8 @@ fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file, struct
 	assert(url);
 
 	struct fbr_cstore_path path;
-	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, chunk->fullfile, &path);
+	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, chunk->length, chunk->fullfile,
+		&path);
 
 	fbr_cstore_s3_url(cstore, &path, url);
 }
@@ -597,17 +599,21 @@ fbr_cstore_s3_url_trim(char *url, size_t url_len)
 }
 
 enum fbr_cstore_file_type
-fbr_cstore_s3_url_parse(const char *url, size_t url_len, int *fullfile)
+fbr_cstore_s3_url_parse(const char *url, size_t url_len, size_t *ff_offset, size_t *ff_length)
 {
 	assert(url)
 	assert(url_len);
 
-	int _fullfile;
-	if (!fullfile) {
-		fullfile = &_fullfile;
+	size_t _offset, _length;
+	if (!ff_offset) {
+		ff_offset = &_offset;
+	}
+	if (!ff_length) {
+		ff_length = &_length;
 	}
 
-	*fullfile = 0;
+	*ff_offset = 0;
+	*ff_length = 0;
 
 	if (url_len <= sizeof(FBR_FIBERFS_NAME) || url[0] != '/') {
 		return FBR_CSTORE_FILE_NONE;
@@ -622,15 +628,50 @@ fbr_cstore_s3_url_parse(const char *url, size_t url_len, int *fullfile)
 				if (url[i] < '0' || url[i] > '9') {
 					return FBR_CSTORE_FILE_NONE;
 				}
-
 				while (url[i] >= '0' && url[i] <= '9') {
 					i++;
 				}
 
-				// TODO look for range here...
+				if (strncmp(&url[i], "&b=", 3)) {
+					return FBR_CSTORE_FILE_NONE;
+				}
+
+				i += 3;
+				size_t svalue = i;
+
+				while (url[i] >= '0' && url[i] <= '9') {
+					i++;
+				}
+				if (i == svalue) {
+					return FBR_CSTORE_FILE_NONE;
+				}
+
+				int error;
+				*ff_offset = fbr_parse_ulong(&url[svalue], i - svalue, &error);
+				if (error) {
+					return FBR_CSTORE_FILE_NONE;
+				}
+
+				if (strncmp(&url[i], "&l=", 3)) {
+					return FBR_CSTORE_FILE_NONE;
+				}
+
+				i += 3;
+				svalue = i;
+
+				while (url[i] >= '0' && url[i] <= '9') {
+					i++;
+				}
+				if (i == svalue) {
+					return FBR_CSTORE_FILE_NONE;
+				}
+
+				*ff_length = fbr_parse_ulong(&url[svalue], i - svalue, &error);
+				if (error) {
+					return FBR_CSTORE_FILE_NONE;
+				}
 
 				if (i == url_len) {
-					*fullfile = 1;
 					return FBR_CSTORE_FILE_CHUNK;
 				}
 			}
@@ -677,6 +718,7 @@ fbr_cstore_s3_url_parse(const char *url, size_t url_len, int *fullfile)
 			while (url[i] >= '0' && url[i] <= '9') {
 				i++;
 			}
+
 			if (i != url_len) {
 				return FBR_CSTORE_FILE_NONE;
 			}

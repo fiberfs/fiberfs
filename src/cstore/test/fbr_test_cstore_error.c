@@ -110,7 +110,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
 	fbr_hash_t hash = fbr_cstore_hash_chunk(cstore, file_1, chunk->id, chunk->offset,
-		chunk->fullfile, 1);
+		chunk->length, chunk->fullfile, 1);
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 	fbr_test_logs("*** file_1 chunk: '%s'", hashpath.value);
 	assert(fbr_sys_exists(hashpath.value));
@@ -153,7 +153,7 @@ fbr_cmd_cstore_error_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	fbr_id_t orig_id = chunk->id;
 
-	hash = fbr_cstore_hash_chunk(cstore, file_1, wbuffer->id, wbuffer->offset,
+	hash = fbr_cstore_hash_chunk(cstore, file_1, wbuffer->id, wbuffer->offset, chunk->length,
 		wbuffer->fullfile, 1);
 	fbr_cstore_hashpath(cstore, hash, 0, &hashpath);
 	fbr_test_logs("*** file_1 new chunk: '%s'", hashpath.value);

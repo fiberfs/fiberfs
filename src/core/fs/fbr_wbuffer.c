@@ -531,6 +531,7 @@ _wbuffer_delete_chunk(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuff
 		chunk.magic = FBR_CHUNK_MAGIC;
 		chunk.id = wbuffer->id;
 		chunk.offset = wbuffer->offset;
+		chunk.length = wbuffer->end;
 		chunk.fullfile = wbuffer->fullfile;
 
 		fs->store->chunk_delete_f(fs, file, &chunk);
