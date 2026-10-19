@@ -164,6 +164,8 @@ _test_cleanup(void)
 		(void)close(1);
 		(void)close(2);
 	}
+
+	_EXIT = 1;
 }
 
 int
@@ -226,6 +228,7 @@ fbr_test_main(int argc, char **argv)
 			(int)test.timeout_ms / 1000);
 	}
 
+	int timeout = ret;
 	int error = test.error;
 	int skip = test.skip;
 	int forked = test.forked;
@@ -234,7 +237,7 @@ fbr_test_main(int argc, char **argv)
 
 	fbr_test_run_all_finish(&test);
 
-	if (error || _ERROR) {
+	if (error || _ERROR || timeout) {
 		if (forked) {
 			if (verbosity >= FBR_LOG_VERBOSE) {
 				fbr_test_log(NULL, FBR_LOG_NONE, "FAILED");
@@ -242,7 +245,9 @@ fbr_test_main(int argc, char **argv)
 		} else {
 			fbr_test_log(NULL, FBR_LOG_FORCE, "FAILED");
 		}
+
 		_test_cleanup();
+
 		return 1;
 	} else if (skip) {
 		if (forked) {
@@ -252,7 +257,9 @@ fbr_test_main(int argc, char **argv)
 		} else {
 			fbr_test_log(NULL, FBR_LOG_FORCE, "SKIPPED");
 		}
+
 		_test_cleanup();
+
 		return 0;
 	}
 
@@ -332,8 +339,6 @@ fbr_test_run_all_finish(struct fbr_test *test)
 	}
 
 	assert(TAILQ_EMPTY(&test->finish_list));
-
-	_EXIT = 1;
 }
 
 struct fbr_test_context *

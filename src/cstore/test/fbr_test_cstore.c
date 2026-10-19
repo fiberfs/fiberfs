@@ -27,15 +27,8 @@ _test_cstore_free(struct fbr_test_context *test_ctx)
 	fbr_test_context_ok(test_ctx);
 	assert(test_ctx->cstore);
 
-	struct fbr_test_cstore *tcstore = test_ctx->cstore;
-	while(tcstore) {
-		fbr_tcstore_ok(tcstore);
-		fbr_test_cstore_wait(&tcstore->cstore);
-		tcstore = tcstore->next;
-	}
-
 	while(test_ctx->cstore) {
-		tcstore = test_ctx->cstore;
+		struct fbr_test_cstore *tcstore = test_ctx->cstore;
 		fbr_tcstore_ok(tcstore);
 
 		test_ctx->cstore = tcstore->next;
