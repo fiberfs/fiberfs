@@ -405,6 +405,7 @@ struct fbr_fs_config {
 	struct fbr_config_reader		reader;
 
 	fbr_bitflag_t				compress_index:1;
+	fbr_bitflag_t				fullfile:1;
 
 	double					dentry_ttl;
 

@@ -806,7 +806,7 @@ fbr_wbuffer_fullfile(struct fbr_fs *fs, struct fbr_file *file, struct fbr_wbuffe
 	fbr_fs_ok(fs);
 	fbr_file_ok(file);
 
-	if (fbr_has_alias_path(file)) {
+	if (!fs->config.fullfile || fbr_has_alias_path(file)) {
 		return;
 	}
 

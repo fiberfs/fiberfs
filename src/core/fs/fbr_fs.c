@@ -55,6 +55,7 @@ fbr_fs_config_load(struct fbr_fs *fs)
 	fs->config.attr_time_change_ms = fbr_conf_get_ulong("ATTR_TIME_CHANGE_IGNORE",
 		FBR_ATTR_TIME_CHANGE_MIN_MSEC);
 	fs->config.rlog_size = fbr_conf_get_ulong("LOG_BUFFER_SIZE", FBR_RLOG_DEFAULT_SIZE);
+	fs->config.fullfile = fbr_conf_get_bool("FULLFILE", FBR_CONFIG_TRUE);
 	fs->config.fullfile_wbuffer_size = fbr_conf_get_ulong("FULLFILE_BUFFER_SIZE", 0);
 	fs->config.debug_wbuffer_size = fbr_conf_get_ulong("DEBUG_FS_WBUFFER_ALLOC_SIZE", 0);
 
