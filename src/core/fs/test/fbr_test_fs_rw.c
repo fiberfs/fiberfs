@@ -16,6 +16,7 @@
 #include "core/request/fbr_request.h"
 #include "core/store/fbr_store.h"
 #include "cstore/fbr_cstore_callback.h"
+#include "utils/fbr_sys.h"
 
 #include "test/fbr_test.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
@@ -101,6 +102,8 @@ fbr_cmd_fs_test_rw_mount(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	int ret = fbr_fuse_test_mount(ctx, mount, _test_fs_rw_init, FBR_FUSE_DEFAULT_CALLBACKS);
 	fbr_test_ERROR(ret, "fs fuse mount failed: %s", mount);
+
+	assert(fbr_sys_is_fiberfs(mount));
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "fs test_fuse mounted: %s", mount);
 }

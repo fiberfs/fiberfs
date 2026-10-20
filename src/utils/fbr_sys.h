@@ -19,6 +19,7 @@ typedef int (*fbr_nftw_f)(const char *filename, const struct stat *stat, int fla
 int fbr_sys_exists(const char *path);
 int fbr_sys_isfile(const char *path);
 int fbr_sys_isdir(const char *path);
+int fbr_sys_is_fiberfs(const char *path);
 void fbr_sys_rmdir(const char *path);
 int fbr_sys_nftw(const char *path, fbr_nftw_f func);
 size_t fbr_sys_write(int fd, const void *buf, size_t buf_len);

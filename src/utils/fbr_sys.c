@@ -11,10 +11,12 @@
 #include <limits.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/xattr.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
 #include "fbr_sys.h"
+#include "cstore/fbr_cstore_path.h"
 
 static mode_t
 _sys_mode(const char *path)
@@ -61,6 +63,17 @@ fbr_sys_isdir(const char *path)
 	mode_t st_mode = _sys_mode(path);
 
 	if (S_ISDIR(st_mode)) {
+		return 1;
+	}
+
+	return 0;
+}
+
+int
+fbr_sys_is_fiberfs(const char *path)
+{
+	ssize_t ret = getxattr(path, FBR_FIBERFS_NAME, NULL, 0);
+	if (ret > 0) {
 		return 1;
 	}
 

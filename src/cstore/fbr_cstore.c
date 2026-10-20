@@ -57,6 +57,7 @@ fbr_cstore_init(struct fbr_cstore *cstore, const char *root_path)
 	assert(cstore);
 	assert(root_path);
 	assert(fbr_sys_isdir(root_path));
+	assert_zero(fbr_sys_is_fiberfs(root_path));
 
 	fbr_zero(cstore);
 
