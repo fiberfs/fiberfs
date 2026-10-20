@@ -18,9 +18,6 @@ First make a `fiberfs.conf` file. At minimum, it just needs to define your S3 en
 
 ```
 S3_HOST = my-bucket.s3.region123.cloud-provider.com
-S3_REGION = region123
-S3_ACCESS_KEY = ACCESS_KEY_STRING
-S3_SECRET_KEY = SECRET_KEY_STRING
 ```
 
 Next run the FiberFS binary to mount the S3 endpoint:
