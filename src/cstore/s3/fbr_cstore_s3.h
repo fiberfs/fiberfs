@@ -64,6 +64,9 @@ struct fbr_cstore_s3 {
 
 	char				*host_hash;
 	size_t				host_hash_len;
+
+	fbr_bitflag_t			init:1;
+	fbr_bitflag_t			no_sign:1;
 };
 
 struct fbr_cstore_cluster {

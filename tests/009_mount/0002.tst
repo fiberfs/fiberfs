@@ -7,7 +7,7 @@ config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
 config_add CSTORE_SERVER_PORT 0
 
 cstore_init 0
-cstore_mock_s3 0 region access_key secret_key
+cstore_mock_s3 0
 
 sys_mkdir_tmp
 set conf $sys_tmpdir "/config"
@@ -18,9 +18,6 @@ set cache $sys_tmpdir
 shell printf '"S3_HOST=%s\n"' $cstore_server_host:0 > $conf
 shell printf '"S3_PORT=%s\n"' $cstore_server_port:0 >> $conf
 shell printf '"S3_TLS=false\n"' >> $conf
-shell printf '"S3_REGION=region\n"' >> $conf
-shell printf '"S3_ACCESS_KEY=access_key\n"' >> $conf
-shell printf '"S3_SECRET_KEY=secret_key\n"' >> $conf
 shell printf '"CACHE_ROOT=%s\n"' $cache >> $conf
 
 sys_mkdir_tmp

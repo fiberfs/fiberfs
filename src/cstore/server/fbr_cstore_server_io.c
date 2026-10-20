@@ -182,7 +182,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	}
 
 	const char *s3_checksum = chttp_header_get(http, "x-amz-content-sha256");
-	if (!s3_checksum) {
+	if (!s3_checksum && !cstore->s3.no_sign) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR missing checksum");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;

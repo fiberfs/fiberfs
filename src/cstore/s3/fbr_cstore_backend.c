@@ -64,13 +64,10 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
     const char *prefix, const char *region, const char *access_key, const char *secret_key)
 {
 	fbr_cstore_ok(cstore);
-	assert(region);
-	assert(access_key);
-	assert(secret_key);
 
 	struct fbr_cstore_s3 *s3 = &cstore->s3;
+	assert_zero(s3->init);
 	assert_zero_dev(s3->backend);
-	assert_zero_dev(s3->region);
 	assert_zero_dev(s3->host_hash);
 	fbr_zero(s3);
 
@@ -81,20 +78,27 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 		assert_dev(s3->backend);
 	}
 
-	s3->region = strdup(region);
-	assert(s3->region);
-	s3->region_len = strlen(s3->region);
-	assert(s3->region_len);
+	if (secret_key && *secret_key) {
+		assert(region);
+		assert(access_key);
 
-	s3->access_key = strdup(access_key);
-	assert(s3->access_key);
-	s3->access_key_len = strlen(s3->access_key);
-	assert(s3->access_key_len);
+		s3->region = strdup(region);
+		assert(s3->region);
+		s3->region_len = strlen(s3->region);
+		assert(s3->region_len);
 
-	s3->secret_key = strdup(secret_key);
-	assert(s3->secret_key);
-	s3->secret_key_len = strlen(s3->secret_key);
-	assert(s3->secret_key_len);
+		s3->access_key = strdup(access_key);
+		assert(s3->access_key);
+		s3->access_key_len = strlen(s3->access_key);
+		assert(s3->access_key_len);
+
+		s3->secret_key = strdup(secret_key);
+		assert(s3->secret_key);
+		s3->secret_key_len = strlen(s3->secret_key);
+		assert(s3->secret_key_len);
+	} else {
+		s3->no_sign = 1;
+	}
 
 	if (prefix && *prefix) {
 		s3->prefix_len = strlen(prefix);
@@ -113,6 +117,8 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 		s3->prefix_len = fbr_unslash(s3->prefix, s3->prefix_len);
 		assert(s3->prefix_len);
 	}
+
+	s3->init = 1;
 }
 
 void
@@ -137,6 +143,11 @@ fbr_cstore_s3_free(struct fbr_cstore *cstore)
 
 	struct fbr_cstore_s3 *s3 = &cstore->s3;
 
+	if (!s3->init) {
+		fbr_zero(s3);
+		return;
+	}
+
 	if (s3->backend) {
 		_backend_free(s3->backend);
 	}
@@ -149,9 +160,17 @@ fbr_cstore_s3_free(struct fbr_cstore *cstore)
 		free(s3->host_hash);
 	}
 
-	free(s3->region);
-	free(s3->access_key);
-	free(s3->secret_key);
+	if (!s3->no_sign) {
+		assert(cstore->s3.secret_key);
+		assert(cstore->s3.secret_key_len);
+		explicit_bzero(cstore->s3.secret_key, cstore->s3.secret_key_len);
+
+		free(s3->region);
+		free(s3->access_key);
+		free(s3->secret_key);
+	} else {
+		assert_zero_dev(cstore->s3.secret_key);
+	}
 
 	fbr_zero(s3);
 }
@@ -208,6 +227,7 @@ fbr_cstore_backend_enabled(struct fbr_cstore *cstore)
 		assert_dev(cstore->s3.backend);
 		return 1;
 	} else if (cstore->s3.backend) {
+		assert_dev(cstore->s3.init);
 		return 1;
 	}
 

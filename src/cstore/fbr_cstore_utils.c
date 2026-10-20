@@ -198,7 +198,11 @@ fbr_cstore_autoinit(struct fbr_cstore *cstore)
 		}
 	}
 
-	if (!s3_host || !s3_region || !s3_access_key || !s3_secret_key) {
+	if (!s3_host) {
+		error = 1;
+	}
+
+	if (s3_secret_key && (!s3_region || !s3_access_key)) {
 		error = 1;
 	}
 
