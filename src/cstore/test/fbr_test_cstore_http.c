@@ -26,8 +26,11 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 0);
 
+	// PATH TYPE
+
 	enum fbr_cstore_file_type type;
-	size_t offset, length;
+	size_t offset;
+	size_t length;
 
 	type = _url_parse("/");
 	assert(type == FBR_CSTORE_FILE_NONE);
@@ -197,6 +200,9 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert_zero(offset);
 	assert_zero(length);
 
+	type = _url_parse_ff("/123/456?.fiberfschunkid=0&b=6&lz=4", &offset, &length);
+	assert(type == FBR_CSTORE_FILE_NONE);
+
 	type = _url_parse_ff("/123/456?.fiberfschunkid=12345&b=67890&l=7654321", &offset, &length);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
 	assert(offset == 67890);
@@ -232,6 +238,44 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_path_init(&path, "path/\"123\"/xyz?abc?.fiberfsid=123");
 	fbr_cstore_s3_url(NULL, &path, &url);
 	assert_zero(strcmp(url.value, "/path/%22123%22/xyz%3Fabc?.fiberfsid=123"));
+
+	// RANGE
+
+	size_t range_start;
+	size_t range_end;
+
+	int ret = fbr_cstore_http_parse_range("bytes=0-9", &range_start, &range_end);
+	fbr_ASSERT(!ret, "ret=%d", ret);
+	assert(range_start == 0);
+	assert(range_end == 9);
+
+	ret = fbr_cstore_http_parse_range("bytes=12345-98765", &range_start, &range_end);
+	assert_zero(ret);
+	assert(range_start == 12345);
+	assert(range_end == 98765);
+
+	ret = fbr_cstore_http_parse_range("Bytes=12345-98765", &range_start, &range_end);
+	assert(ret);
+
+	ret = fbr_cstore_http_parse_range("bytes 12345-98765", &range_start, &range_end);
+	assert(ret);
+
+	ret = fbr_cstore_http_parse_range("bytes=a-98765", &range_start, &range_end);
+	assert(ret);
+
+	ret = fbr_cstore_http_parse_range("bytes=98765", &range_start, &range_end);
+	assert(ret);
+
+	ret = fbr_cstore_http_parse_range("bytes=12345-", &range_start, &range_end);
+	assert(ret);
+
+	ret = fbr_cstore_http_parse_range("bytes=12345-98a765", &range_start, &range_end);
+	assert(ret);
+
+	ret = fbr_cstore_http_parse_range("bytes=12345-98765;", &range_start, &range_end);
+	assert(ret);
+
+	// S3 PREFIX
 
 	struct fbr_cstore *cstore = fbr_test_cstore_init(ctx);
 	fbr_cstore_ok(cstore);

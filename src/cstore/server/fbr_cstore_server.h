@@ -156,6 +156,7 @@ void fbr_cstore_task_worker_add(struct fbr_cstore *cstore, size_t count);
 
 int fbr_cstore_http_conflict(int error_code);
 int fbr_cstore_http_success(int error_code);
+int fbr_cstore_http_parse_range(const char *range, size_t *range_start, size_t *range_end);
 void fbr_cstore_http_respond(struct fbr_cstore *cstore, struct chttp_context *http, int status,
 	const char *reason);
 void fbr_cstore_http_resp_etag(struct fbr_cstore *cstore, struct chttp_context *http, int status,

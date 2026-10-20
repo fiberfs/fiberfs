@@ -34,6 +34,58 @@ fbr_cstore_http_success(int error_code)
 	return 0;
 }
 
+int
+fbr_cstore_http_parse_range(const char *range, size_t *range_start, size_t *range_end)
+{
+	assert(range);
+	assert(range_start);
+	assert(range_end);
+
+	*range_start = 0;
+	*range_end = 0;
+
+	if (strncmp(range, "bytes=", 6)) {
+		return 1;
+	}
+
+	size_t start = 6;
+	size_t end = start;
+
+	while (range[end] >= '0' && range[end] <= '9') {
+		end++;
+	}
+	if (start == end) {
+		return 1;
+	}
+
+	int error;
+	*range_start = fbr_parse_ulong(&range[start], end - start, &error);
+	if (error) {
+		return 1;
+	}
+
+	if (range[end] != '-') {
+		return 1;
+	}
+
+	start = end + 1;
+	end = start;
+
+	while (range[end] >= '0' && range[end] <= '9') {
+		end++;
+	}
+	if (start == end || range[end]) {
+		return 1;
+	}
+
+	*range_end = fbr_parse_ulong(&range[start], end - start, &error);
+	if (error) {
+		return 1;
+	}
+
+	return 0;
+}
+
 void
 fbr_cstore_http_resp_etag(struct fbr_cstore *cstore, struct chttp_context *http, int status,
     const char *reason, const char *etag)

@@ -208,7 +208,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	const char *etag_match = chttp_header_get(http, "If-Match");
 
-	size_t ff_offset, ff_length;
+	size_t ff_offset;
+	size_t ff_length;
 	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &ff_offset,
 		&ff_length);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
@@ -547,7 +548,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	size_t host_len = strlen(host);
 
 	int fullfile = 0;
-	size_t ff_offset, ff_length;
+	size_t ff_offset;
+	size_t ff_length;
 	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &ff_offset,
 		&ff_length);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
@@ -556,6 +558,21 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		return;
 	} else if (file_type == FBR_CSTORE_FILE_CHUNK && ff_length) {
 		fullfile = 1;
+	}
+
+	size_t range_start = 0;
+	size_t range_end = 0;
+	const char *range = chttp_header_get(http, "Range");
+	if (range) {
+		size_t ff_end = ff_offset + ff_length - 1;
+
+		ret = fbr_cstore_http_parse_range(range, &range_start, &range_end);
+
+		if (ret || !fullfile || range_start != ff_offset || range_end != ff_end) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR range");
+			fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+			return;
+		}
 	}
 
 	int backend = fbr_cstore_backend_enabled(cstore);
@@ -792,29 +809,51 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			break;
 	}
 
+	int resp_status = 200;
+	const char *resp_reason = "OK";
+
+	char resp_range[128];
+	resp_range[0] = '\0';
+	if (range) {
+		// TODO we are assuming internal fullfiles
+		assert_zero(range_start);
+		assert(range_end - range_start + 1 == size);
+
+		resp_status = 206;
+		resp_reason = "Partial Content";
+
+		fbr_bprintf(resp_range, "Content-Range: bytes %zu-%zu/%zu\r\n", range_start,
+			range_end, size);
+	}
+
 	char fiber_rid[32];
 	fbr_cstore_request_id(fiber_rid, sizeof(fiber_rid));
 
 	char buffer[1024];
 	size_t header_len = fbr_bprintf(buffer,
-		"HTTP/1.1 200 OK\r\n"
+		"HTTP/1.1 %d %s\r\n"
 		"Server: fiberfs cstore %s\r\n"
 		"%s"
 		"%s"
 		"%s%s%s"
 		"fiberfs-id: %s\r\n"
+		"%s"
 		"Content-Length: %zu\r\n\r\n",
+			resp_status, resp_reason,
 			FIBERFS_VERSION,
 			encoding,
 			cstore->epool.timeout_sec ? "" : "Connection: close\r\n",
 			etag ? "ETag: " : "", etag ? etag : "", etag ? "\r\n" : "",
-			fiber_rid, size);
+			fiber_rid,
+			resp_range,
+			size);
 
 	chttp_tcp_send(&http->addr, buffer, header_len);
 	chttp_tcp_error_check(http);
 
-	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "sent response 200 OK");
+	fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "sent response %d %s", resp_status, resp_reason);
 	fbr_stat_add(&cstore->stats.http_200);
+	assert_dev(resp_status >= 200 && resp_status < 300);
 
 	if (http->error) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR send() headers");
@@ -888,7 +927,8 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 	const char *etag_match = chttp_header_get(http, "If-Match");
 
 	int fullfile = 0;
-	size_t ff_offset, ff_length;
+	size_t ff_offset;
+	size_t ff_length;
 	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &ff_offset,
 		&ff_length);
 	if (file_type == FBR_CSTORE_FILE_NONE) {

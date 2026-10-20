@@ -80,10 +80,6 @@ _s3_request_url(struct fbr_cstore_fetch_context *fetch, const char *method,
 	struct fbr_cstore_backend *s3_backend = fetch->cstore->s3.backend;
 	chttp_header_add(fetch->http, "Host", s3_backend->host);
 
-	if (!strcmp(method, "GET") && fbr_gzip_enabled()) {
-		chttp_header_add(fetch->http, "Accept-Encoding", "gzip");
-	}
-
 	if (fetch->etag_304.length) {
 		chttp_header_add(fetch->http, "If-None-Match", fetch->etag_304.value);
 	}
@@ -234,6 +230,20 @@ _s3_send_get(struct fbr_cstore_fetch_context *fetch)
 	assert_dev(http->state == CHTTP_STATE_NONE);
 
 	fbr_hash_t hash = _s3_request_path(fetch, "GET");
+
+	if (fbr_gzip_enabled()) {
+		chttp_header_add(fetch->http, "Accept-Encoding", "gzip");
+	}
+
+	if (fetch->fullfile) {
+		assert(fetch->length);
+		size_t end_range = fetch->offset + fetch->length - 1;
+
+		char range_buf[64];
+		fbr_bprintf(range_buf, "bytes=%zu-%zu", fetch->offset, end_range);
+
+		chttp_header_add(fetch->http, "Range", range_buf);
+	}
 
 	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, hash, fetch->route,
 		fetch->attempts - 1, 1);
