@@ -33,6 +33,8 @@ sys_stat_size $file 0
 fs_test_release_all_wait 1
 equal $fs_test_stat_files_inodes 0
 
+cstore_wait 0
+
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0
 equal $fs_test_stat_directory_refs 0

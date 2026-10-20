@@ -96,6 +96,33 @@ _init_test(struct fbr_test *test)
 	chttp_test_init(test->context);
 }
 
+void __fbr_attr_printf(5) __fbr_noreturn
+fbr_test_do_abort(const char *assertion, const char *function, const char *file, int line,
+    const char *fmt, ...)
+{
+	if (assertion) {
+		printf("%s:%d %s(): Assertion '%s' triggered\nERROR: ", file, line, function,
+			assertion);
+	} else {
+		printf("%s:%d %s(): Aborted\nERROR: ", file, line, function);
+	}
+
+	va_list ap;
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
+
+	printf("\n");
+
+	fbr_test_force_error();
+
+	if (!fbr_test_is_forked() && !_EXIT) {
+		printf("FAILED\n");
+	}
+
+	exit(1);
+}
+
 static void
 _usage(int error)
 {
