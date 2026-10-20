@@ -82,7 +82,10 @@ struct fbr_cstore_fetch_context {
 	struct fbr_cstore_path		*file_path;
 	struct fbr_etag			etag_304;
 	struct fbr_etag			etag_match;
+	size_t				offset;
 	size_t				length;
+
+	fbr_bitflag_t			fullfile:1;
 
 	fbr_id_t			existing;
 
@@ -120,7 +123,8 @@ size_t fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *
 void fbr_cstore_fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
 	struct chttp_context *http, enum fbr_cstore_file_type type,
 	struct fbr_cstore_path *file_path, const char *etag_304, const char *etag_match,
-	size_t length, enum fbr_compression compress, enum fbr_cstore_route route);
+	size_t offset, size_t length, int fullfile, enum fbr_compression compress,
+	enum fbr_cstore_route route);
 void fbr_cstore_s3_send_get(struct fbr_cstore_fetch_context *fetch);
 void fbr_s3_send_put(struct fbr_cstore_fetch_context *fetch);
 int fbr_cstore_s3_send_finish(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sync,

@@ -424,7 +424,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 		struct fbr_cstore_fetch_context fetch;
 		fbr_cstore_fetch_init(&fetch, cstore, http_backend, file_type, &file_path, NULL,
-			NULL, length, metadata.compress, FBR_CSTORE_ROUTE_CDN);
+			NULL, ff_offset, length, fullfile, metadata.compress, FBR_CSTORE_ROUTE_CDN);
 
 		struct _cstore_entry_cb_data cb_data;
 		cb_data.cstore = cstore;
@@ -624,7 +624,8 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 
 			struct fbr_cstore_fetch_context fetch;
 			fbr_cstore_fetch_init(&fetch, cstore, http, file_type,
-				&file_path, NULL, NULL, 0, 0, FBR_CSTORE_ROUTE_CDN);
+				&file_path, NULL, NULL, ff_offset, ff_length, fullfile, 0,
+				FBR_CSTORE_ROUTE_CDN);
 
 			http_error = fbr_cstore_s3_get_write(&fetch, hash, &entry_ref);
 			assert_dev(http->state == CHTTP_STATE_NONE);

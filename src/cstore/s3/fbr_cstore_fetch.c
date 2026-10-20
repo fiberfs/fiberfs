@@ -37,8 +37,8 @@ _fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
 void
 fbr_cstore_fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore *cstore,
     struct chttp_context *http, enum fbr_cstore_file_type type, struct fbr_cstore_path *file_path,
-    const char *etag_304, const char *etag_match, size_t length, enum fbr_compression compress,
-    enum fbr_cstore_route route)
+    const char *etag_304, const char *etag_match, size_t offset, size_t length, int fullfile,
+    enum fbr_compression compress, enum fbr_cstore_route route)
 {
 	_fetch_init(fetch, cstore, http);
 
@@ -48,7 +48,9 @@ fbr_cstore_fetch_init(struct fbr_cstore_fetch_context *fetch, struct fbr_cstore 
 
 	fetch->type = type;
 	fetch->file_path = file_path;
+	fetch->offset = offset;
 	fetch->length = length;
+	fetch->fullfile = fullfile ? 1 : 0;
 	fetch->compress = compress;
 	fetch->orig_route = route;
 	fetch->route = FBR_CSTORE_ROUTE_NONE;
@@ -743,7 +745,7 @@ fbr_cstore_s3_wbuffer_send(struct fbr_cstore *cstore, struct chttp_context *http
 	struct fbr_cstore_fetch_context fetch;
 
 	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_CHUNK, path, NULL, NULL,
-		wbuffer->end, 0, FBR_CSTORE_ROUTE_CLUSTER);
+		wbuffer->offset, wbuffer->end, wbuffer->fullfile, 0, FBR_CSTORE_ROUTE_CLUSTER);
 
 	fetch.data_callback = _s3_wbuffer_data_cb;
 	fetch.hash_callback = _s3_wbuffer_hash_cb;
@@ -850,7 +852,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 
 	struct fbr_cstore_fetch_context fetch;
 	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_CHUNK, &path, NULL, NULL,
-		chunk->length, 0, FBR_CSTORE_ROUTE_CLUSTER);
+		chunk->offset, chunk->length, chunk->fullfile, 0, FBR_CSTORE_ROUTE_CLUSTER);
 
 	fbr_cstore_s3_send_get(&fetch);
 
@@ -1053,8 +1055,8 @@ fbr_cstore_s3_index_send(struct fbr_cstore *cstore, struct chttp_context *http,
 {
 	struct fbr_cstore_fetch_context fetch;
 
-	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_INDEX, path, NULL, NULL,
-		writer->bytes, writer->is_compress, FBR_CSTORE_ROUTE_CLUSTER);
+	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_INDEX, path, NULL, NULL, 0,
+		writer->bytes, 0, writer->is_compress, FBR_CSTORE_ROUTE_CLUSTER);
 
 	fetch.data_callback = _s3_writer_data_cb;
 	fetch.hash_callback = _s3_writer_hash_cb;
@@ -1084,7 +1086,7 @@ fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_json,
 
 	struct fbr_cstore_fetch_context fetch;
 	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_ROOT, root_path, NULL,
-		etag_match, root_json->bytes, root_json->is_compress, route);
+		etag_match, 0, root_json->bytes, 0, root_json->is_compress, route);
 
 	fetch.data_callback = _s3_writer_data_cb;
 	fetch.hash_callback = _s3_writer_hash_cb;
@@ -1151,7 +1153,7 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 
 	struct fbr_cstore_fetch_context fetch;
 	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_ROOT, root_path, etag_304,
-		NULL, 0, 0, route);
+		NULL, 0, 0, 0, 0, route);
 
 	fbr_cstore_s3_send_get(&fetch);
 
