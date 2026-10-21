@@ -9,6 +9,7 @@
 #include "config/test/fbr_test_config_cmds.h"
 #include "core/fs/test/fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+#include "core/iocmd/test/fbr_test_iocmd_cmds.h"
 #include "core/operations/test/fbr_test_ops_cmds.h"
 #include "core/request/test/fbr_test_request_cmds.h"
 #include "core/store/test/fbr_test_store_cmds.h"
