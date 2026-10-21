@@ -39,14 +39,14 @@ static inline struct fbr_fs *fbr_request_fs(struct fbr_request *request)
 
 static inline int fbr_file_is_dir(struct fbr_file *file)
 {
-	fbr_file_ok(file);
+	assert_dev(file);
 
 	return S_ISDIR(file->mode);
 }
 
 static inline int fbr_file_is_file(struct fbr_file *file)
 {
-	fbr_file_ok(file);
+	assert_dev(file);
 
 	return S_ISREG(file->mode);
 }

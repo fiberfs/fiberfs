@@ -304,6 +304,18 @@ _fuse_ops_xattr_get(fuse_req_t req, fuse_ino_t ino, const char *name, size_t siz
 	_fuse_finish(request, ENOSYS);
 }
 
+static void
+_fuse_ops_ioctl(fuse_req_t req, fuse_ino_t ino, unsigned int cmd, void *arg,
+    struct fuse_file_info *fi, unsigned flags, const void *in_buf, size_t in_bufsz,
+    size_t out_bufsz)
+{
+	struct fbr_request *request = _fuse_setup(req, __func__);
+
+	_fuse_ops_callback(request, ioctl, ino, cmd, arg, fi, flags, in_buf, in_bufsz, out_bufsz);
+
+	_fuse_finish(request, ENOSYS);
+}
+
 static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.init = _fuse_ops_init,
 	.destroy = _fuse_ops_destroy,
@@ -327,7 +339,8 @@ static const struct fuse_lowlevel_ops _FUSE_OPS = {
 	.forget = _fuse_ops_forget,
 	.forget_multi = _fuse_ops_forget_multi,
 	.listxattr = _fuse_ops_xattr_list,
-	.getxattr = _fuse_ops_xattr_get
+	.getxattr = _fuse_ops_xattr_get,
+	.ioctl = _fuse_ops_ioctl
 };
 
 const struct fuse_lowlevel_ops *FBR_FUSE_OPS = &_FUSE_OPS;

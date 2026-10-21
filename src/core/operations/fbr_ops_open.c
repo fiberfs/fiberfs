@@ -22,10 +22,6 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
 		return;
-	} else if (!S_ISREG(file->mode)) {
-		fbr_fuse_reply_err(request, EISDIR);
-		fbr_inode_release(fs, &file);
-		return;
 	}
 
 	int read_only = 0;
@@ -37,6 +33,12 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 	} else {
 		read_only = 1;
 		fbr_rlog(FBR_LOG_OP_OPEN, "flags: read only");
+	}
+
+	if (fbr_file_is_dir(file) && !read_only) {
+		fbr_fuse_reply_err(request, EISDIR);
+		fbr_inode_release(fs, &file);
+		return;
 	}
 
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file, read_only);

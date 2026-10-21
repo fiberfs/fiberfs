@@ -38,5 +38,8 @@ void fbr_ops_forget_multi(struct fbr_request *request, size_t count,
 	struct fuse_forget_data *forgets);
 void fbr_ops_xattr_list(struct fbr_request *request, fuse_ino_t ino, size_t size);
 void fbr_ops_xattr_get(struct fbr_request *request, fuse_ino_t ino, const char *name, size_t size);
+void fbr_ops_ioctl(struct fbr_request *request, fuse_ino_t ino, unsigned int cmd, void *arg,
+	struct fuse_file_info *fi, unsigned flags, const void *in_buf, size_t in_bufsz,
+	size_t out_bufsz);
 
 #endif /* _FBR_OPERATIONS_H_INCLUDED_ */

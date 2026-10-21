@@ -20,6 +20,7 @@ fbr_ops_read(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t off
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
+	assert(fbr_file_is_file(fio->file));
 
 	struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, off, size);
 	if (!vector) {

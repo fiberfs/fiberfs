@@ -69,7 +69,7 @@ fbr_ops_setattr(struct fbr_request *request, fuse_ino_t ino, struct stat *attr, 
 		st_after.st_gid = attr->st_gid;
 	}
 	if (fbr_is_flag(to_set, FUSE_SET_ATTR_SIZE)) {
-		if (S_ISDIR(file->mode)) {
+		if (fbr_file_is_dir(file)) {
 			fbr_inode_release(fs, &file);
 			fbr_fuse_reply_err(request, EISDIR);
 			return;

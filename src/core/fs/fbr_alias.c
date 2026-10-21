@@ -6,6 +6,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "fbr_fs_inline.h"
 
 void
 fbr_alias_path_alloc(struct fbr_fs *fs, struct fbr_file *file, const struct fbr_path_name *value)
@@ -127,7 +128,7 @@ fbr_alias_file_get(struct fbr_fs *fs, struct fbr_file *file)
 
 	while (file) {
 		fbr_file_ok(file);
-		assert_zero(S_ISDIR(file->mode));
+		assert(fbr_file_is_file(file));
 
 		struct fbr_path_name filename;
 		fbr_path_get_file(&file->path, &filename);

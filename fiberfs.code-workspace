@@ -19,6 +19,7 @@
 		],
 		"C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
 			"clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling",
+			"clang-analyzer-optin.core.EnumCastOutOfRange",
 			"misc-include-cleaner",
 			"misc-no-recursion",
 			"misc-static-assert",

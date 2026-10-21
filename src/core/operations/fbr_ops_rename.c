@@ -49,7 +49,7 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		fbr_fuse_reply_err(request, ENOENT);
 		fbr_dindex_release(fs, &directory);
 		return;
-	} else if (S_ISDIR(file->mode)) {
+	} else if (fbr_file_is_dir(file)) {
 		fbr_fuse_reply_err(request, EISDIR);
 		fbr_dindex_release(fs, &directory);
 		return;
@@ -57,7 +57,7 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 
 	size_t newname_len = strlen(newname);
 	struct fbr_file *newfile = fbr_directory_find_file(directory, newname, newname_len);
-	if (newfile && S_ISDIR(newfile->mode)) {
+	if (newfile && fbr_file_is_dir(newfile)) {
 		fbr_fuse_reply_err(request, EISDIR);
 		fbr_dindex_release(fs, &directory);
 		return;

@@ -8,6 +8,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "fbr_fs_inline.h"
 #include "core/store/fbr_store.h"
 
 struct fbr_flush_data *
@@ -317,7 +318,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			assert_dev(latest_modified);
 		}
 
-		if (latest && S_ISDIR(latest->mode)) {
+		if (latest && fbr_file_is_dir(latest)) {
 			fbr_rlog(FBR_LOG_FLUSH, "wbuffer EISDIR detected");
 			return EISDIR;
 		} else if (latest_modified) {
@@ -464,7 +465,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		if (!latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "unlink ENOENT detected");
 			return ENOENT;
-		} else if (S_ISDIR(latest->mode)) {
+		} else if (fbr_file_is_dir(latest)) {
 			fbr_rlog(FBR_LOG_FLUSH, "unlink EISDIR detected");
 			return EISDIR;
 		}
@@ -480,7 +481,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		if (!latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "unlink ENOENT detected");
 			return ENOENT;
-		} else if (!S_ISDIR(latest->mode)) {
+		} else if (!fbr_file_is_dir(latest)) {
 			fbr_rlog(FBR_LOG_FLUSH, "unlink EISDIR detected");
 			return ENOTDIR;
 		}
@@ -496,7 +497,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		if (!latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "rename ENOENT detected (source)");
 			return ENOENT;
-		} else if (S_ISDIR(latest->mode)) {
+		} else if (fbr_file_is_dir(latest)) {
 			fbr_rlog(FBR_LOG_FLUSH, "rename EISDIR detected");
 			return EISDIR;
 		} else if (latest_modified) {
@@ -509,7 +510,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			flush_data->filename.name, flush_data->filename.length);
 
 		if (dest) {
-			if (S_ISDIR(dest->mode)) {
+			if (fbr_file_is_dir(dest)) {
 				fbr_rlog(FBR_LOG_FLUSH, "rename EISDIR detected (dest)");
 				return EISDIR;
 			} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RENAME_UNIQUE)) {
@@ -593,7 +594,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		if (!latest) {
 			fbr_rlog(FBR_LOG_FLUSH, "resize ENOENT detected");
 			return ENOENT;
-		} else if (S_ISDIR(latest->mode)) {
+		} else if (fbr_file_is_dir(latest)) {
 			fbr_rlog(FBR_LOG_FLUSH, "resize EISDIR detected");
 			return EISDIR;
 		} else if (latest_modified) {

@@ -9,6 +9,7 @@
 
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
+#include "core/fs/fbr_fs_inline.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/operations/fbr_operations.h"
 
@@ -38,7 +39,9 @@ static const struct fbr_fuse_callbacks _FUSE_DEFAULT_CALLBACKS = {
 	.forget_multi = fbr_ops_forget_multi,
 
 	.xattr_list = fbr_ops_xattr_list,
-	.xattr_get = fbr_ops_xattr_get
+	.xattr_get = fbr_ops_xattr_get,
+
+	.ioctl = fbr_ops_ioctl
 };
 
 const struct fbr_fuse_callbacks *FBR_FUSE_DEFAULT_CALLBACKS = &_FUSE_DEFAULT_CALLBACKS;
@@ -104,7 +107,7 @@ fbr_fuse_invalidate_inode(struct fbr_fs *fs, struct fbr_file *file)
 		assert(fs->fuse_ctx->session);
 
 		const char *type = "file";
-		if (S_ISDIR(file->mode)) {
+		if (fbr_file_is_dir(file)) {
 			type = "directory";
 		}
 

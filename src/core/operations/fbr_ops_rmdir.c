@@ -34,7 +34,7 @@ fbr_ops_rmdir(struct fbr_request *request, fuse_ino_t parent_inode, const char *
 		fbr_fuse_reply_err(request, ENOENT);
 		fbr_dindex_release(fs, &parent);
 		return;
-	} else if (!S_ISDIR(file->mode)) {
+	} else if (!fbr_file_is_dir(file)) {
 		fbr_fuse_reply_err(request, ENOTDIR);
 		fbr_dindex_release(fs, &parent);
 		return;

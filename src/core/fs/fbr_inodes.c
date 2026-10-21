@@ -9,6 +9,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "fbr_fs_inline.h"
 #include "core/fuse/fbr_fuse_lowlevel.h"
 
 #define _INODES_HEAD_COUNT			1024
@@ -152,7 +153,7 @@ fbr_inode_take_alias(struct fbr_fs *fs, fbr_inode_t inode)
 	fbr_path_get_file(&file->path, &filename);
 
 	fbr_rlog(FBR_LOG_INODE, "name: '%s' inode: %lu type: %s", filename.name, file->inode,
-		S_ISDIR(file->mode) ? "DIR" : "FILE");
+		fbr_file_is_dir(file) ? "DIR" : "FILE");
 
 	assert_dev(file->inode == inode);
 

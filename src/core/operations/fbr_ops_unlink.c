@@ -29,7 +29,7 @@ fbr_ops_unlink(struct fbr_request *request, fuse_ino_t parent, const char *name)
 		fbr_fuse_reply_err(request, ENOENT);
 		fbr_dindex_release(fs, &directory);
 		return;
-	} else if (S_ISDIR(file->mode)) {
+	} else if (fbr_file_is_dir(file)) {
 		fbr_fuse_reply_err(request, EISDIR);
 		fbr_dindex_release(fs, &directory);
 		return;

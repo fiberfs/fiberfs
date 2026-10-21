@@ -11,6 +11,7 @@
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
+#include "fbr_fs_inline.h"
 #include "config/fbr_config.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/store/fbr_store.h"
@@ -636,7 +637,7 @@ fbr_directory_from_inode(struct fbr_fs *fs, fbr_inode_t inode)
 		fbr_rlog(FBR_LOG_FS, "directory inode: %lu expired", inode);
 		fbr_inode_release(fs, &file);
 		return NULL;
-	} else if (!S_ISDIR(file->mode)) {
+	} else if (!fbr_file_is_dir(file)) {
 		fbr_rlog(FBR_LOG_FS, "directory inode: %lu not a directory", inode);
 		fbr_inode_release(fs, &file);
 		return NULL;

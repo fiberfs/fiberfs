@@ -85,6 +85,9 @@ struct fbr_fuse_callbacks {
 	void (*xattr_list)(struct fbr_request *request, fuse_ino_t ino, size_t size);
 	void (*xattr_get)(struct fbr_request *request, fuse_ino_t ino, const char *name,
 		size_t size);
+	void (*ioctl)(struct fbr_request *request, fuse_ino_t ino, unsigned int cmd, void *arg,
+		struct fuse_file_info *fi, unsigned flags, const void *in_buf, size_t in_bufsz,
+		size_t out_bufsz);
 };
 
 unsigned long fbr_request_id_gen(void);
@@ -116,6 +119,7 @@ void fbr_fuse_reply_create(struct fbr_request *request, const struct fuse_entry_
     const struct fuse_file_info *fi);
 void fbr_fuse_reply_write(struct fbr_request *request, size_t count);
 void fbr_fuse_reply_xattr(struct fbr_request *request, size_t count);
+void fbr_fuse_reply_ioctl(struct fbr_request *request, int result, const void *buf, size_t size);
 const struct fuse_ctx *fbr_fuse_req_ctx(struct fbr_request *request, struct fuse_ctx *fctx);
 
 #define fbr_request_ok(request)						\
