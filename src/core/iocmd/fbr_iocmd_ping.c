@@ -44,7 +44,7 @@ fbr_iocmd_ping(const char *path)
 	int close_err = close(fd);
 	assert_zero_dev(close_err);
 
-	if (!ret && io_ping.pong) {
+	if (!ret && io_ping.magic == FBR_IOCMD_PING_MAGIC && io_ping.pong) {
 		return 1;
 	}
 
