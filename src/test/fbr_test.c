@@ -249,13 +249,16 @@ fbr_test_main(int argc, char **argv)
 	pt_assert(pthread_create(&test.thread, NULL, _test_run_test_file, &test));
 	assert_zero(fbr_test_is_thread());
 
-	int ret = fbr_test_join_thread(test.thread, &test.stopped, &test.error, &test.timeout_ms);
-	if (!test.error && ret) {
-		fbr_test_log(NULL, FBR_LOG_FORCE, "test timed out after %ds",
+	int timeout = fbr_test_join_thread(test.thread, &test.stopped, &test.error, &test.timeout_ms);
+	if (timeout) {
+		fbr_test_log(NULL, FBR_LOG_FORCE, "ERROR: test timed out after %ds",
 			(int)test.timeout_ms / 1000);
+	} else if (test.error) {
+		fbr_test_log(NULL, FBR_LOG_FORCE, "ERROR: test aborted");
+	} else {
+		assert(test.stopped);
 	}
 
-	int timeout = ret;
 	int error = test.error;
 	int skip = test.skip;
 	int forked = test.forked;

@@ -149,7 +149,7 @@ struct fbr_test {
 	const char				*variable;
 
 	int					forked;
-	int					error;
+	volatile int				error;
 	int					skip;
 };
 

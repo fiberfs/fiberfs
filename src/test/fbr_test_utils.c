@@ -204,7 +204,7 @@ fbr_test_join_thread(pthread_t thread, volatile int *stopped, volatile int *erro
 
 	if (!*stopped && *error) {
 		pthread_cancel(thread);
-		return 1;
+		return 0;
 	}
 
 	pt_assert(pthread_join(thread, NULL));

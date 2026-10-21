@@ -260,6 +260,8 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	if (!backend && fullfile) {
 		url_len = fbr_cstore_s3_url_trim(url, url_len);
 		assert_dev(url_len);
+
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE trimmed url: '%s'", url);
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
