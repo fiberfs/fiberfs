@@ -9,6 +9,16 @@
 #include "core/fs/fbr_fs_inline.h"
 #include "core/iocmd/fbr_iocmd.h"
 
+static struct {
+	unsigned long			command;
+	fbr_iocmd_f			*callback;
+} _FBR_IOCMD_ROUTES[1] = {
+	{
+		FBR_IOCMD_PING_REQ,
+		fbr_iocmd_pong
+	}
+};
+
 void
 fbr_ops_ioctl(struct fbr_request *request, fuse_ino_t ino, unsigned int cmd, void *arg,
     struct fuse_file_info *fi, unsigned flags, const void *in_buf, size_t in_bufsz,
@@ -23,11 +33,18 @@ fbr_ops_ioctl(struct fbr_request *request, fuse_ino_t ino, unsigned int cmd, voi
 	fbr_rlog(FBR_LOG_OP, "IOCTL req: %lu ino: %lu cmd: %u in_bufsz: %zu out_bufsz: %zu",
 		request->id, ino, cmd, in_bufsz, out_bufsz);
 
+	struct fbr_file *file = fbr_inode_take_alias(fs, ino);
+	if (!file) {
+		fbr_fuse_reply_err(request, ENOTTY);
+		return;
+	}
+
 	char buffer[4096];
 	char *out_buf = NULL;
 	if (out_bufsz) {
 		if (out_bufsz > sizeof(buffer)) {
 			fbr_fuse_reply_err(request, ENOMEM);
+			fbr_inode_release(fs, &file);
 			return;
 		}
 
@@ -36,22 +53,17 @@ fbr_ops_ioctl(struct fbr_request *request, fuse_ino_t ino, unsigned int cmd, voi
 		memset(out_buf, 0, out_bufsz);
 	}
 
-	struct fbr_file *file = fbr_inode_take_alias(fs, ino);
-	if (!file) {
-		fbr_fuse_reply_err(request, ENOTTY);
-		return;
-	}
-
 	int error = EINVAL;
+
 	size_t i;
-	for (i = 0; i < fbr_array_len(FBR_IOCMD_ROUTES); i++) {
-		if (cmd == FBR_IOCMD_ROUTES[i].command) {
-			error = FBR_IOCMD_ROUTES[i].callback(fs, file, cmd, in_buf, out_buf);
+	for (i = 0; i < fbr_array_len(_FBR_IOCMD_ROUTES); i++) {
+		if (cmd == _FBR_IOCMD_ROUTES[i].command) {
+			error = _FBR_IOCMD_ROUTES[i].callback(fs, file, cmd, in_buf, out_buf);
 			break;
 		}
 	}
 
-	if (i >= fbr_array_len(FBR_IOCMD_ROUTES)) {
+	if (i >= fbr_array_len(_FBR_IOCMD_ROUTES)) {
 		fbr_rlog(FBR_LOG_OP_IOCTL, "ERROR cmd not found (%d %d %d %d)",
 			_IOC_DIR(cmd), _IOC_TYPE(cmd), _IOC_NR(cmd), _IOC_SIZE(cmd));
 	}

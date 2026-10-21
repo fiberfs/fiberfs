@@ -19,17 +19,6 @@
 #include "utils/fbr_chash.h"
 #include "utils/fbr_sys.h"
 
-static const struct fbr_store_callbacks _CSTORE_DEFAULT_CALLBACKS = {
-	.chunk_read_f = fbr_cstore_async_chunk_read,
-	.chunk_delete_f = fbr_cstore_async_chunk_delete,
-	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,
-	.index_write_f = fbr_cstore_index_root_write,
-	.index_read_f = fbr_cstore_index_read,
-	.index_delete_f = fbr_cstore_index_delete,
-	.root_read_f = fbr_cstore_root_read
-};
-const struct fbr_store_callbacks *FBR_CSTORE_DEFAULT_CALLBACKS = &_CSTORE_DEFAULT_CALLBACKS;
-
 void
 fbr_cstore_config_load(struct fbr_cstore *cstore)
 {

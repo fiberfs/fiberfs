@@ -9,6 +9,18 @@
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
 
+static const struct fbr_store_callbacks _CSTORE_DEFAULT_CALLBACKS = {
+	.chunk_read_f = fbr_cstore_async_chunk_read,
+	.chunk_delete_f = fbr_cstore_async_chunk_delete,
+	.wbuffer_write_f = fbr_cstore_async_wbuffer_write,
+	.index_write_f = fbr_cstore_index_root_write,
+	.index_read_f = fbr_cstore_index_read,
+	.index_delete_f = fbr_cstore_index_delete,
+	.root_read_f = fbr_cstore_root_read
+};
+
+const struct fbr_store_callbacks *FBR_CSTORE_DEFAULT_CALLBACKS = &_CSTORE_DEFAULT_CALLBACKS;
+
 void
 fbr_cstore_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk *chunk)
 {

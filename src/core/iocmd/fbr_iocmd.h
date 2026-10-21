@@ -12,13 +12,7 @@
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_path.h"
 
-typedef int (fbr_iocmd_f)(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
-	const void *input, void *output);
-
-struct fbr_iocmd_route {
-	unsigned long				command;
-	fbr_iocmd_f				*callback;
-};
+#define FBR_IOCMD_PING_REQ			_IOWR('P', 1, struct fbr_iocmd_ping)
 
 struct fbr_iocmd_ping {
 	unsigned int				magic;
@@ -30,9 +24,8 @@ struct fbr_iocmd_ping {
 	char					version[64];
 };
 
-#define FBR_IOCMD_PING_REQ			_IOWR('P', 1, struct fbr_iocmd_ping)
-
-extern struct fbr_iocmd_route FBR_IOCMD_ROUTES[1];
+typedef int (fbr_iocmd_f)(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
+	const void *input, void *output);
 
 int fbr_iocmd_ping(const char *path);
 int fbr_iocmd_pong(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,

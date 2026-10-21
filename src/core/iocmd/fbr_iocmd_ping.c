@@ -15,13 +15,6 @@
 #include "core/fs/fbr_fs.h"
 #include "core/request/fbr_rlog.h"
 
-struct fbr_iocmd_route FBR_IOCMD_ROUTES[1] = {
-	{
-		FBR_IOCMD_PING_REQ,
-		fbr_iocmd_pong
-	}
-};
-
 int
 fbr_iocmd_ping(const char *path)
 {

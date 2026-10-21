@@ -7,6 +7,7 @@
 #include "fiberfs.h"
 #include "fbr_fuse.h"
 #include "fbr_fuse_lowlevel.h"
+#include "core/operations/fbr_operations.h"
 #include "core/request/fbr_request.h"
 
 #define _fuse_ops_callback(request, name, ...)					\
@@ -15,6 +16,39 @@
 		request->fuse_ctx->fuse_callbacks->name(request, __VA_ARGS__);	\
 	}									\
 }
+
+static const struct fbr_fuse_callbacks _FUSE_DEFAULT_CALLBACKS = {
+	.getattr = fbr_ops_getattr,
+	.setattr = fbr_ops_setattr,
+	.lookup = fbr_ops_lookup,
+
+	.mkdir = fbr_ops_mkdir,
+	.unlink = fbr_ops_unlink,
+	.rmdir = fbr_ops_rmdir,
+	.rename = fbr_ops_rename,
+
+	.opendir = fbr_ops_opendir,
+	.readdir = fbr_ops_readdir,
+	.releasedir = fbr_ops_releasedir,
+
+	.open = fbr_ops_open,
+	.create = fbr_ops_create,
+	.read = fbr_ops_read,
+	.write = fbr_ops_write,
+	.flush = fbr_ops_flush,
+	.release = fbr_ops_release,
+	.fsync = fbr_ops_fsync,
+
+	.forget = fbr_ops_forget,
+	.forget_multi = fbr_ops_forget_multi,
+
+	.xattr_list = fbr_ops_xattr_list,
+	.xattr_get = fbr_ops_xattr_get,
+
+	.ioctl = fbr_ops_ioctl
+};
+
+const struct fbr_fuse_callbacks *FBR_FUSE_DEFAULT_CALLBACKS = &_FUSE_DEFAULT_CALLBACKS;
 
 static inline struct fbr_request *
 _fuse_setup(fuse_req_t fuse_req, const char *name)
