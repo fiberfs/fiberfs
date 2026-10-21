@@ -128,7 +128,7 @@ fbr_alias_file_get(struct fbr_fs *fs, struct fbr_file *file)
 
 	while (file) {
 		fbr_file_ok(file);
-		assert(fbr_file_is_file(file));
+		assert_zero(fbr_file_is_dir(file));
 
 		struct fbr_path_name filename;
 		fbr_path_get_file(&file->path, &filename);

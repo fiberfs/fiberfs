@@ -28,7 +28,7 @@ fbr_ops_write(struct fbr_request *request, fuse_ino_t ino, const char *buf, size
 	struct fbr_fio *fio = fbr_fh_fio(fi->fh);
 	fbr_fio_take(fio);
 	fbr_file_ok(fio->file);
-	assert(fbr_file_is_file(fio->file));
+	assert_zero(fbr_file_is_dir(fio->file));
 
 	fbr_wbuffer_write(fs, fio, off, buf, size);
 
