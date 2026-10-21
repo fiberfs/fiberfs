@@ -121,15 +121,21 @@ fbr_cstore_worker_init(struct fbr_cstore_worker *worker, struct fbr_log *log)
 	assert_dev(worker->workspace->free >= FBR_WORKSPACE_MIN_SIZE);
 	assert_zero_dev(worker->workspace->pos);
 	assert_zero(worker->request_id);
+	assert_zero(worker->active);
 	assert_dev(fbr_cstore_worker_get() == worker);
+
+	pt_assert(pthread_mutex_lock(&_WORKER_POOL->lock));
 
 	worker->time_start = fbr_get_time();
 	worker->request_id = fbr_request_id_gen();
+	worker->active = 1;
 
 	fbr_wlog_workspace_alloc(worker, log);
 
 	fbr_atomic_add(&_WORKER_POOL->active, 1);
 	fbr_stat_add(&worker->cstore->stats.workers_active);
+
+	pt_assert(pthread_mutex_unlock(&_WORKER_POOL->lock));
 }
 
 void
@@ -137,10 +143,14 @@ fbr_cstore_worker_finish(struct fbr_cstore_worker *worker)
 {
 	fbr_cstore_worker_ok(worker);
 	fbr_cstore_ok(worker->cstore);
+	assert(worker->active);
 	assert_dev(worker->request_id);
+
+	pt_assert(pthread_mutex_lock(&_WORKER_POOL->lock));
 
 	worker->time_start = 0;
 	worker->request_id = 0;
+	worker->active = 0;
 
 	fbr_rlog_free(&worker->rlog);
 	fbr_workspace_reset(worker->workspace);
@@ -150,6 +160,8 @@ fbr_cstore_worker_finish(struct fbr_cstore_worker *worker)
 
 	fbr_atomic_sub(&_WORKER_POOL->active, 1);
 	fbr_stat_sub(&worker->cstore->stats.workers_active);
+
+	pt_assert(pthread_mutex_unlock(&_WORKER_POOL->lock));
 }
 
 void
@@ -157,6 +169,7 @@ fbr_cstore_worker_free(struct fbr_cstore_worker *worker)
 {
 	fbr_cstore_worker_ok(worker);
 	fbr_cstore_ok(worker->cstore);
+	assert_zero(worker->active);
 	_worker_pool_ok();
 
 	assert_dev(fbr_cstore_worker_get() == worker);
@@ -177,4 +190,31 @@ fbr_cstore_worker_free(struct fbr_cstore_worker *worker)
 
 	fbr_zero(worker);
 	free(worker);
+}
+
+void
+fbr_cstore_workers_flush(struct fbr_cstore *cstore)
+{
+	fbr_cstore_ok(cstore);
+	_worker_pool_ok();
+
+	pt_assert(pthread_mutex_lock(&_WORKER_POOL->lock));
+
+	struct fbr_cstore_worker *worker;
+	TAILQ_FOREACH(worker, &_WORKER_POOL->alloc_list, entry) {
+		fbr_cstore_worker_ok(worker);
+
+		if (worker->cstore != cstore || !worker->active) {
+			continue;
+		}
+
+		fbr_log_print(cstore->log, FBR_LOG_CS_WORKER, FBR_REQID_CSTORE,
+			"active worker found: %s", worker->name);
+
+		worker->rlog->log = cstore->log;
+
+		fbr_rlog_flush(worker->rlog);
+	}
+
+	pt_assert(pthread_mutex_unlock(&_WORKER_POOL->lock));
 }

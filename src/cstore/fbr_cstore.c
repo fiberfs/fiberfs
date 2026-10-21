@@ -699,6 +699,8 @@ fbr_cstore_free(struct fbr_cstore *cstore)
 	fbr_cstore_cluster_free(&cstore->cluster);
 	fbr_cstore_cluster_free(&cstore->cdn);
 
+	fbr_cstore_workers_flush(cstore);
+
 	for (size_t i = 0; i < fbr_array_len(cstore->heads); i++) {
 		struct fbr_cstore_head *head = &cstore->heads[i];
 		fbr_cstore_head_ok(head);

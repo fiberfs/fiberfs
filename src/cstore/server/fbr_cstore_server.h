@@ -87,6 +87,8 @@ struct fbr_cstore_worker {
 	double					time_start;
 	unsigned long				request_id;
 
+	fbr_bitflag_t				active:1;
+
 	TAILQ_ENTRY(fbr_cstore_worker)		entry;
 };
 
@@ -148,6 +150,7 @@ struct fbr_cstore_worker *fbr_cstore_worker_get(void);
 void fbr_cstore_worker_init(struct fbr_cstore_worker *worker, struct fbr_log *log);
 void fbr_cstore_worker_finish(struct fbr_cstore_worker *worker);
 void fbr_cstore_worker_free(struct fbr_cstore_worker *worker);
+void fbr_cstore_workers_flush(struct fbr_cstore *cstore);
 
 void fbr_cstore_tasks_alloc(struct fbr_cstore *cstore);
 void fbr_cstore_task_add(struct fbr_cstore *cstore, enum fbr_cstore_task_type type, void *param);
