@@ -10,8 +10,9 @@ config_add CSTORE_SERVER_PORT 0
 
 cstore_init 1
 
-cstore_set_s3 0 $cstore_server_host:1 $cstore_server_port:1 region access_key sEcrEt_kEy
-cstore_mock_s3 1 region access_key sEcrEt_kEy
+cstore_set_s3 0 $cstore_server_host:1 $cstore_server_port:1 region access_key sEcrEt_kEy \
+	$cstore_server_tls:1 prefixA1C
+cstore_mock_s3 1 region access_key sEcrEt_kEy prefixA1C
 
 print "### MOUNT"
 
@@ -23,6 +24,10 @@ sleep_ms 10
 print "### UPLOAD"
 
 cstore_s3_upload file 1234
+
+print $cstore_s3_md5
+
+equal $cstore_stat_chunks_fullfile:1 1
 
 print "### DONE"
 

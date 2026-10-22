@@ -32,6 +32,13 @@ chttp_context_debug(struct chttp_context *ctx)
 		ctx->gzip, ctx->addr.tls, ctx->addr.reused, ctx->pipeline,
 		fbr_get_time() - ctx->addr.time_start);
 
+	if (ctx->perf.start) {
+		printf("\tPERF lookup: %d connect: %d (reuse: %d) request: %d  req_body: %d"
+			" response: %d\n",
+			ctx->perf.lookup, ctx->perf.connect, ctx->addr.reused,
+			ctx->perf.request, ctx->perf.req_body, ctx->perf.response);
+	}
+
 	chttp_dpage_debug(ctx->dpage);
 }
 

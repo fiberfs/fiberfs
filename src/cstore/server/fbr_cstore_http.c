@@ -163,7 +163,7 @@ fbr_cstore_http_log(struct chttp_context *http)
 
 	if (http->perf.start) {
 		fbr_rlog(FBR_LOG_CS_HTTP_PERF,
-			"lookup: %d connect: %d (reuse: %d) request: %d  req_body: %d response: %d",
+			"lookup: %d connect: %d (reuse: %d) request: %d req_body: %d response: %d",
 			http->perf.lookup, http->perf.connect, http->addr.reused,
 			http->perf.request, http->perf.req_body, http->perf.response);
 	}
