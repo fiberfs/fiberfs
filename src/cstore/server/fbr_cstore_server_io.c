@@ -55,7 +55,7 @@ _cstore_entry_sendfile(struct chttp_context *http, void *arg)
 
 	size_t bytes = fbr_cstore_s3_splice_out(cstore, &http->addr, fd, entry->bytes);
 
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	if (bytes != entry->bytes) {
 		fbr_rlog(FBR_LOG_CS_S3, "URL_WRITE ERROR splice_out");
@@ -350,7 +350,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	size_t bytes = fbr_cstore_s3_splice_in(cstore, http, fd, length);
 
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	if (bytes != length) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR splice_in (%zu)",
@@ -713,7 +713,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		if (ret) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR stat()");
 			_cstore_url_entry_release(cstore, entry, file_type, 1);
-			assert_zero(close(fd));
+			assert_zero_dev(close(fd));
 			continue;
 		}
 
@@ -725,7 +725,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		if (ret || metadata.size != size || metadata.type != file_type) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR metadata()");
 			_cstore_url_entry_release(cstore, entry, file_type, 1);
-			assert_zero(close(fd));
+			assert_zero_dev(close(fd));
 			continue;
 		}
 
@@ -746,7 +746,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 				assert_dev(entry_ref.want_ref);
 
 				fbr_cstore_release(cstore, &entry);
-				assert_zero(close(fd));
+				assert_zero_dev(close(fd));
 
 				continue;
 			}
@@ -773,7 +773,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR write metadata");
 
 			_cstore_url_entry_release(cstore, entry, file_type, 1);
-			assert_zero(close(fd));
+			assert_zero_dev(close(fd));
 
 			fbr_cstore_http_respond(cstore, http, 500, "Error");
 
@@ -786,7 +786,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ 304 matched");
 
 		_cstore_url_entry_release(cstore, entry, file_type, 0);
-		assert_zero(close(fd));
+		assert_zero_dev(close(fd));
 
 		fbr_cstore_http_respond(cstore, http, 304, "Not Modified");
 
@@ -860,13 +860,13 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	if (http->error) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR send() headers");
 		_cstore_url_entry_release(cstore, entry, file_type, 0);
-		assert_zero(close(fd));
+		assert_zero_dev(close(fd));
 		return;
 	}
 
 	size_t bytes = fbr_cstore_s3_splice_out(cstore, &http->addr, fd, size);
 
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	if (bytes != size) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR splice_out");

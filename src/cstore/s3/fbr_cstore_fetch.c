@@ -559,7 +559,7 @@ fbr_cstore_s3_get_write(struct fbr_cstore_fetch_context *fetch, fbr_hash_t hash,
 
 	size_t bytes = fbr_cstore_s3_splice_in(cstore, http, fd, fetch->length);
 
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	if (http->error || (fetch->length && bytes != fetch->length) || !bytes) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR S3_GET bytes");
@@ -958,7 +958,7 @@ fbr_cstore_s3_chunk_read(struct fbr_fs *fs, struct fbr_cstore *cstore, struct fb
 	}
 
 	bytes = fbr_sys_write(fd, chunk->data, chunk->length);
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	if (bytes != chunk->length) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR rwrite bytes");

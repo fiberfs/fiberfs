@@ -34,8 +34,7 @@ fbr_iocmd_ping(const char *path)
 
 	int ret = ioctl(fd, FBR_IOCMD_PING_REQ, &io_ping);
 
-	int close_err = close(fd);
-	assert_zero_dev(close_err);
+	assert_zero_dev(close(fd));
 
 	if (!ret && fbr_object_is_svalid(io_ping, FBR_IOCMD_PING_MAGIC) && io_ping.pong) {
 		return 1;

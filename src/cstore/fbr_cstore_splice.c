@@ -160,8 +160,8 @@ fbr_cstore_s3_splice_in(struct fbr_cstore *cstore, struct chttp_context *http, i
 	}
 
 	if (!pipe_ret) {
-		assert_zero(close(pipefd[0]));
-		assert_zero(close(pipefd[1]));
+		assert_zero_dev(close(pipefd[0]));
+		assert_zero_dev(close(pipefd[1]));
 	}
 
 	while (fallback_rw && (!size || bytes < size)) {

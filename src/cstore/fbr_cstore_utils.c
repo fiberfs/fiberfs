@@ -334,7 +334,7 @@ fbr_cstore_validate_file(const char *path, const char *hash)
 		fbr_sha256_update(&file_hash, buffer, bytes);
 	}
 
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	uint8_t bin_hash[FBR_SHA256_DIGEST_SIZE];
 	char hex_hash[FBR_HEX_LEN(sizeof(bin_hash))];

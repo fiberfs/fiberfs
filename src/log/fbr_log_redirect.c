@@ -87,7 +87,7 @@ _log_redirector(void *arg)
 
 	assert_zero(buffer_len);
 	assert(redirect->closed);
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	return NULL;
 }
@@ -112,7 +112,7 @@ _log_redirect(struct _log_redirect *redirect)
 
 	ret = dup2(pfd[1], redirect->fd);
 	assert(ret >= 0);
-	assert_zero(close(pfd[1]));
+	assert_zero_dev(close(pfd[1]));
 
 	redirect->pfd = pfd[0];
 
@@ -143,7 +143,7 @@ _log_restore(struct _log_redirect *redirect)
 	int ret = dup2(redirect->ofd, redirect->fd);
 	assert(ret >= 0);
 
-	assert_zero(close(redirect->ofd));
+	assert_zero_dev(close(redirect->ofd));
 
 	// Prevent abort deadlock
 	if (redirect->thread != pthread_self() && !_FBR_LOG_REDIRECTOR_HAS_FORK) {

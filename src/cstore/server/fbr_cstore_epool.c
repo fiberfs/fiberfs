@@ -295,7 +295,7 @@ fbr_cstore_epool_free(struct fbr_cstore *cstore)
 	pt_assert(pthread_mutex_unlock(&epool->lock));
 	pt_assert(pthread_mutex_destroy(&epool->lock));
 
-	assert_zero(close(epool->epfd));
+	assert_zero_dev(close(epool->epfd));
 
 	fbr_zero(epool);
 }

@@ -108,7 +108,7 @@ fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
 
 		size_t bytes = fbr_sys_write(fd, output->buffer, output->buffer_pos);
 		if (bytes != output->buffer_pos) {
-			assert_zero(close(fd));
+			assert_zero_dev(close(fd));
 			fbr_writer_free(&writer);
 
 			return 1;
@@ -117,7 +117,7 @@ fbr_cstore_metadata_write(struct fbr_cstore_hashpath *hashpath,
 		output = output->next;
 	}
 
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 	fbr_writer_free(&writer);
 
 	return 0;
@@ -203,7 +203,7 @@ fbr_cstore_metadata_read(struct fbr_cstore_hashpath *hashpath,
 
 	char buffer[sizeof(*metadata) + 128];
 	ssize_t bytes = fbr_sys_read(fd, buffer, sizeof(buffer));
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	if (bytes <= 0 || (size_t)bytes >= sizeof(buffer)) {
 		metadata->error = 2;
@@ -499,7 +499,7 @@ fbr_cstore_io_wbuffer_write(struct fbr_fs *fs, struct fbr_file *file, struct fbr
 	}
 
 	size_t bytes = fbr_sys_write(fd, wbuffer->buffer, wbuf_bytes);
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	if (bytes != wbuf_bytes) {
 		fbr_rlog(FBR_LOG_CS_WBUFFER, "ERROR bytes");
@@ -608,7 +608,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 	if (ret || (size_t)st.st_size != chunk->length) {
 		fbr_rlog(FBR_LOG_CS_CHUNK, "ERROR size");
 		fbr_cstore_remove(cstore, &entry);
-		assert_zero(close(fd));
+		assert_zero_dev(close(fd));
 		fbr_cstore_s3_chunk_read(fs, cstore, file, chunk);
 		return;
 	}
@@ -619,7 +619,7 @@ fbr_cstore_io_chunk_read(struct fbr_fs *fs, struct fbr_file *file, struct fbr_ch
 
 	ssize_t bytes = fbr_sys_read(fd, chunk->data, chunk->length);
 
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	if ((size_t)bytes != chunk->length) {
 		fbr_rlog(FBR_LOG_CS_CHUNK, "ERROR read()");
@@ -736,7 +736,7 @@ fbr_cstore_io_index_write(struct fbr_fs *fs, struct fbr_directory *directory,
 	}
 
 	ret = _cstore_writer(fd, writer);
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	if (ret) {
 		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR writing");
@@ -972,7 +972,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 			output->buffer_len);
 	} while (read_bytes > 0 && !json.error);
 
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	fjson_parse(&json, output->buffer, output->buffer_pos);
 	fbr_smagic_check(parser, FBR_INDEX_PARSER_MAGIC);
@@ -1166,7 +1166,7 @@ fbr_cstore_io_root_write(struct fbr_cstore *cstore, struct fbr_writer *root_json
 	}
 
 	ret = _cstore_writer(fd, root_json);
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	if (ret) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR write root");
@@ -1252,7 +1252,7 @@ fbr_cstore_io_root_read(struct fbr_cstore *cstore, struct fbr_cstore_path *root_
 
 	char json_buf[FBR_ROOT_JSON_SIZE];
 	ssize_t bytes = fbr_sys_read(fd, json_buf, sizeof(json_buf));
-	assert_zero(close(fd));
+	assert_zero_dev(close(fd));
 
 	if (bytes <= 0 || bytes == sizeof(json_buf)) {
 		fbr_rlog(FBR_LOG_CS_ROOT, "ERROR read()");
