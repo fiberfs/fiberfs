@@ -125,7 +125,7 @@ fjson_get_token(struct fjson_context *ctx, size_t depth)
 	}
 
 	struct fjson_token *token = &ctx->tokens[ctx->tokens_pos - 1 - depth];
-	assert(token->magic == FJSON_TOKEN_MAGIC);
+	fjson_token_ok(token);
 
 	return token;
 }
