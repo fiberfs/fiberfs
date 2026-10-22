@@ -95,5 +95,8 @@ FBR_TEST_CMD(cstore_cluster_mkdir)
 FBR_TEST_CMD(cstore_cluster_subdir)
 FBR_TEST_CMD(cstore_cluster_append)
 
+FBR_TEST_CMD(cstore_s3_upload)
+FBR_TEST_VAR(cstore_s3_md5)
+
 FBR_TEST_CMD(error_cstore_crash_async_delete)
 FBR_TEST_CMD(error_cstore_crash_task_delete)

@@ -8,6 +8,7 @@
 
 #include <string.h>
 
+#include "fiberfs.h"
 #include "cstore/fbr_cstore_api.h"
 #include "cstore/test/fbr_test_cstore_cmds.h"
 
