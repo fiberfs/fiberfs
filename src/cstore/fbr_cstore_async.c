@@ -600,7 +600,7 @@ fbr_cstore_op_sync_wait(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sy
 
 		struct timespec ts;
 		ts.tv_sec = 0;
-		ts.tv_nsec = 1000 * 1000 * 250;
+		ts.tv_nsec = 1000 * 1000 * 200;
 		fbr_timespec_add_clock(&ts);
 
 		ret = pthread_cond_timedwait(&sync->cond, &sync->lock, &ts);
