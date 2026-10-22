@@ -20,6 +20,9 @@
 #define FBR_HASH_SLEN				FBR_HEX_LEN(sizeof(fbr_hash_t))
 #define FBR_STRERROR_LEN			32
 
+typedef unsigned int fbr_refcount_t;
+typedef unsigned int fbr_bitflag_t;
+typedef unsigned long fbr_inode_t;
 typedef unsigned long fbr_stats_t;
 typedef uint64_t fbr_hash_t;
 
