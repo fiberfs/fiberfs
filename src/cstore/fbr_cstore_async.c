@@ -588,29 +588,31 @@ fbr_cstore_op_sync_wait(struct fbr_cstore *cstore, struct fbr_cstore_op_sync *sy
 
 	int ret;
 
-	if (!sync->done) {
-		do {
-			assert_zero(async->exit);
+	do {
+		if (sync->done) {
+			ret = 0;
+			break;
+		}
 
-			pthread_testcancel();
+		assert_zero(async->exit);
 
-			struct timespec ts;
-			ts.tv_sec = 0;
-			ts.tv_nsec = 1000 * 1000 * 250;
-			fbr_timespec_add_clock(&ts);
+		pthread_testcancel();
 
-			ret = pthread_cond_timedwait(&sync->cond, &sync->lock, &ts);
-		} while (ret == ETIMEDOUT);
+		struct timespec ts;
+		ts.tv_sec = 0;
+		ts.tv_nsec = 1000 * 1000 * 250;
+		fbr_timespec_add_clock(&ts);
 
-		pt_assert(ret);
-	}
+		ret = pthread_cond_timedwait(&sync->cond, &sync->lock, &ts);
+	} while (ret == ETIMEDOUT);
+
+	pt_assert(ret);
+	assert(sync->done);
 
 	if (sync->async_id) {
 		fbr_rlog(FBR_LOG_CS_ASYNC, "completed %s async id: %lu",
 			fbr_cstore_async_type(sync->type), sync->async_id);
 	}
-
-	assert(sync->done);
 
 	pt_assert(pthread_mutex_unlock(&sync->lock));
 }

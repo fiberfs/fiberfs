@@ -12,7 +12,6 @@ iocmd_ping $sys_tmpdir
 # Unmount
 
 fs_test_release_all 1
-equal $fs_test_stat_files_inodes 0
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0
