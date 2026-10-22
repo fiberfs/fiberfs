@@ -19,6 +19,7 @@ int
 fbr_iocmd_import(const char *path)
 {
 	assert(path);
+	assert_zero(fbr_request_get());
 
 	int error = fbr_check_name(path);
 	if (error) {

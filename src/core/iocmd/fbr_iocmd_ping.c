@@ -20,6 +20,7 @@ int
 fbr_iocmd_ping(const char *path)
 {
 	assert(path);
+	assert_zero(fbr_request_get());
 
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
