@@ -170,7 +170,7 @@ _test_add_cluster(struct fbr_cstore *cstore, const char *host, int port, int tls
 {
 	fbr_cstore_ok(cstore);
 	assert(host);
-	assert(port)
+	assert(port);
 
 	struct fbr_cstore_cluster *cluster;
 

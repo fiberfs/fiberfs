@@ -252,7 +252,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		if (latest_modified) {
 			int alias_path_mismatch = fbr_alias_path_cmp(file, latest);
-			assert_zero_dev(alias_path_mismatch)
+			assert_zero_dev(alias_path_mismatch);
 
 			if (alias_path_mismatch) {
 				fbr_rlog(FBR_LOG_FLUSH, "ERROR alias_path_mismatch, "

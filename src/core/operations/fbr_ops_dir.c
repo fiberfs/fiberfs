@@ -48,7 +48,7 @@ _ops_diradd(struct fbr_request *request, struct fbr_dirbuffer *dbuf, struct fbr_
 	struct fbr_fs *fs = fbr_request_fs(request);
 	assert_dev(dbuf);
 	assert_dev(file);
-	assert_dev(offset)
+	assert_dev(offset);
 
 	const char *filename = fbr_path_get_file(&file->path, NULL);
 

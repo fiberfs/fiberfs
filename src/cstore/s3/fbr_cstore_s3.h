@@ -165,7 +165,7 @@ int fbr_cstore_s3_validate(struct fbr_cstore *cstore, struct chttp_context *http
 	fbr_magic_check(backend, FBR_CSTORE_BACKEND_MAGIC)
 #define fbr_cstore_fetch_ok(fetch)				\
 {								\
-	assert(fetch)						\
+	assert(fetch);						\
 	fbr_cstore_ok((fetch)->cstore);				\
 	chttp_context_ok((fetch)->http);			\
 }

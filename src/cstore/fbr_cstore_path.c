@@ -601,7 +601,7 @@ fbr_cstore_s3_url_trim(char *url, size_t url_len)
 enum fbr_cstore_file_type
 fbr_cstore_s3_url_parse(const char *url, size_t url_len, size_t *ff_offset, size_t *ff_length)
 {
-	assert(url)
+	assert(url);
 	assert(url_len);
 
 	size_t _offset, _length;

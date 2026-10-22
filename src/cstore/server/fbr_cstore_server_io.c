@@ -77,7 +77,7 @@ _cstore_entry_hash(void *arg, void *hash, size_t hash_len)
 	assert(hash_len >= FBR_HEX_LEN(FBR_SHA256_DIGEST_SIZE));
 
 	struct _cstore_entry_cb_data *cb_data = arg;
-	assert(cb_data->s3_checksum)
+	assert(cb_data->s3_checksum);
 
 	size_t ret = fbr_strcpy(hash, hash_len, cb_data->s3_checksum);
 

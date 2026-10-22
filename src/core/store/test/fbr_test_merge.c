@@ -208,7 +208,7 @@ fbr_cmd_merge_2fs_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(file2->state == FBR_FILE_OK);
 	assert(file2->size == 10);
 	assert(file2->generation > 1);
-	assert_zero(file2->has_alias_file)
+	assert_zero(file2->has_alias_file);
 
 	fbr_dindex_release(fs_1, &dir_fs1);
 
