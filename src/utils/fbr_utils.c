@@ -263,12 +263,12 @@ fbr_strcpy(char *dest, size_t dest_len, const char *source)
 	assert(dest_len);
 	assert(source);
 
-	// TODO do something a bit more efficient than printf(%s)...
+	size_t source_len = strlen(source);
+	assert(source_len < dest_len);
 
-	int ret = fbr_snprintf(dest, dest_len, "%s", source);
-	assert(ret >= 0 && (size_t)ret < dest_len);
+	memcpy(dest, source, source_len + 1);
 
-	return (size_t)ret;
+	return source_len;
 }
 
 size_t __fbr_attr_printf(3)
