@@ -162,9 +162,7 @@ void fbr_test_register_finish(struct fbr_test_context *ctx, const char *name,
 	fbr_test_finish_f *func);
 void fbr_test_run_all_finish(struct fbr_test *test);
 void fbr_test_context_abort(void);
-int fbr_test_is_forked(void);
 int fbr_test_is_thread(void);
-void fbr_test_force_error(void);
 void fbr_finish_ERROR(int cond, const char *msg);
 struct fbr_test_context *fbr_test_get_ctx(void);
 
@@ -192,8 +190,6 @@ void __fbr_attr_printf(1) fbr_test_logs(const char *fmt, ...);
 void __fbr_attr_printf(3) fbr_test_log(struct fbr_test_context *ctx,
 	enum fbr_test_verbocity level, const char *fmt, ...);
 void __fbr_attr_printf(2) fbr_test_warn(int condition, const char *fmt, ...);
-void __fbr_attr_printf(5) __fbr_noreturn fbr_test_do_abort(const char *assertion,
-	const char *function, const char *file, int line, const char *fmt, ...);
 long fbr_test_parse_long(const char *str);
 void fbr_test_ERROR_param_count(struct fbr_test_cmd *cmd, size_t count);
 void fbr_test_ERROR_string(const char *str);
@@ -213,21 +209,10 @@ int fbr_test_is_true(struct fbr_test_param *param);
 #define fbr_test_cmd_ok(cmd)		fbr_magic_check(cmd, FBR_TEST_CMD_MAGIC)
 
 #define fbr_test_ERROR(cond, fmt, ...)					\
-{									\
-	if (__builtin_expect(cond, 0)) {				\
-		fbr_test_do_abort(#cond, __func__, __FILE__, __LINE__,	\
-			fmt, ##__VA_ARGS__);				\
-	}								\
-}
-#define fbr_test_ASSERT(cond, fmt, ...)					\
-{									\
-	if (__builtin_expect(!(cond), 0)) {				\
-		fbr_test_do_abort(#cond, __func__, __FILE__, __LINE__,	\
-			fmt, ##__VA_ARGS__);				\
-	}								\
-}
+	fbr_test_ASSERT(!(cond), fmt, ##__VA_ARGS__)
+#define fbr_test_ASSERT							\
+	fbr_ASSERT
 #define fbr_test_ABORT(fmt, ...)					\
-	fbr_test_do_abort(NULL, __func__, __FILE__, __LINE__, fmt,	\
-		##__VA_ARGS__);
+	fbr_ABORT(fmt, ##__VA_ARGS__)
 
 #endif /* _FBR_TEST_H_INCLUDED_ */

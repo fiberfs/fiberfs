@@ -96,33 +96,6 @@ _init_test(struct fbr_test *test)
 	chttp_test_init(test->context);
 }
 
-void __fbr_attr_printf(5) __fbr_noreturn
-fbr_test_do_abort(const char *assertion, const char *function, const char *file, int line,
-    const char *fmt, ...)
-{
-	if (assertion) {
-		printf("%s:%d %s(): Assertion '%s' triggered\nERROR: ", file, line, function,
-			assertion);
-	} else {
-		printf("%s:%d %s(): Aborted\nERROR: ", file, line, function);
-	}
-
-	va_list ap;
-	va_start(ap, fmt);
-	vprintf(fmt, ap);
-	va_end(ap);
-
-	printf("\n");
-
-	fbr_test_force_error();
-
-	if (!fbr_test_is_forked() && !_EXIT) {
-		printf("FAILED\n");
-	}
-
-	exit(1);
-}
-
 static void
 _usage(int error)
 {
@@ -262,41 +235,26 @@ fbr_test_main(int argc, char **argv)
 	int error = test.error;
 	int skip = test.skip;
 	int forked = test.forked;
-	enum fbr_test_verbocity verbosity = test.verbocity;
 	assert_zero(_ERROR);
 
 	fbr_test_run_all_finish(&test);
 
-	if (error || _ERROR || timeout) {
-		if (forked) {
-			if (verbosity >= FBR_LOG_VERBOSE) {
-				fbr_test_log(NULL, FBR_LOG_NONE, "FAILED");
-			}
-		} else {
-			fbr_test_log(NULL, FBR_LOG_FORCE, "FAILED");
-		}
-
+	if (forked) {
 		_test_cleanup();
 
-		return 1;
-	} else if (skip) {
-		if (forked) {
-			if (verbosity >= FBR_LOG_VERBOSE) {
-				fbr_test_log(NULL, FBR_LOG_NONE, "SKIPPED");
-			}
-		} else {
-			fbr_test_log(NULL, FBR_LOG_FORCE, "SKIPPED");
+		if (error || _ERROR || timeout) {
+			return 1;
 		}
-
-		_test_cleanup();
 
 		return 0;
 	}
 
-	if (forked) {
-		if (verbosity >= FBR_LOG_VERBOSE) {
-			fbr_test_log(NULL, FBR_LOG_NONE, "PASSED");
-		}
+	if (error || _ERROR || timeout) {
+		fbr_test_log(NULL, FBR_LOG_FORCE, "FAILED");
+		_test_cleanup();
+		return 1;
+	} else if (skip) {
+		fbr_test_log(NULL, FBR_LOG_FORCE, "SKIPPED");
 	} else {
 		fbr_test_log(NULL, FBR_LOG_FORCE, "PASSED");
 	}
@@ -393,14 +351,13 @@ fbr_test_is_thread(void)
 }
 
 static void
-_error_wait_exit(void)
+_error_wait_cleanup(void)
 {
 	fbr_test_ok(_TEST);
 	assert(_TEST->error);
 	assert(_TEST_MAIN);
 
 	if (pthread_self() == _TEST_MAIN) {
-		// Allow abort/exit
 		return;
 	}
 
@@ -410,13 +367,10 @@ _error_wait_exit(void)
 		fbr_test_sleep_ms(10);
 		max_sleep_ms -= 10;
 	}
-
-	// Allow abort/exit
 }
 
-// Called from assert/abort, terminate the test
-void
-fbr_test_force_error(void)
+static void
+_test_trigger_error(void)
 {
 	fbr_test_ok(_TEST);
 
@@ -427,22 +381,18 @@ fbr_test_force_error(void)
 		pthread_exit(NULL);
 	}
 
-	_error_wait_exit();
+	_error_wait_cleanup();
+
+	if (!_TEST->forked && !_EXIT) {
+		printf("FAILED\n");
+	}
 }
 
 // Called from a signal, start abort process
 void
 fbr_test_context_abort(void)
 {
-	fbr_test_force_error();
-}
-
-int
-fbr_test_is_forked(void)
-{
-	fbr_test_ok(_TEST);
-
-	return _TEST->forked;
+	_test_trigger_error();
 }
 
 void
