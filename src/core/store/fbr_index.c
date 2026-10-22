@@ -720,7 +720,7 @@ fbr_root_json_parse(const char *json_buf, size_t json_buf_len)
 	json.callback_priv = &root_parser;
 
 	fjson_parse(&json, json_buf, json_buf_len);
-	assert(root_parser.magic == _ROOT_PARSER_MAGIC);
+	fbr_smagic_check(root_parser, _ROOT_PARSER_MAGIC);
 
 	if (json.error) {
 		root_parser.root_version = 0;

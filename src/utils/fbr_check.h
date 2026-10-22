@@ -21,11 +21,15 @@
 {								\
 	(obj)->magic = 0;					\
 }
+#define fbr_smagic_check(obj, value)				\
+	assert((obj).magic == (value))
 #define fbr_object_empty(obj)					\
 	fbr_magic_check(obj, 0)
 #define fbr_object_is_empty(obj)				\
 	((obj) && !((obj)->magic))
 #define fbr_object_is_valid(obj, value)				\
 	((obj) && (obj)->magic == (value))
+#define fbr_object_is_svalid(obj, value)			\
+	((obj).magic == (value))
 
 #endif /* _FBR_CHECK_H_INCLUDED_ */

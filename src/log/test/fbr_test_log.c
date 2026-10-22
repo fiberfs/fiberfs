@@ -263,7 +263,7 @@ fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_log_tag tag;
 	tag.value = fbr_log_tag_gen(0, FBR_LOG_TAG_EOF, FBR_LOG_TAG_EOF_DATA, 0);
-	assert(tag.parts.magic == FBR_LOG_TAG_MAGIC);
+	fbr_smagic_check(tag.parts, FBR_LOG_TAG_MAGIC);
 	assert_zero(tag.parts.sequence);
 	assert(tag.parts.class == FBR_LOG_TAG_EOF);
 	assert(tag.parts.class_data == FBR_LOG_TAG_EOF_DATA);
@@ -273,7 +273,7 @@ fbr_cmd_test_log_assert(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("FBR_LOG_TAG_EOF_DATA='%.2s'", (char*)&tag.parts.class_data);
 
 	tag.value = fbr_log_tag_gen(UCHAR_MAX, FBR_LOG_TAG_WRAP, FBR_LOG_TAG_WRAP_DATA, USHRT_MAX);
-	assert(tag.parts.magic == FBR_LOG_TAG_MAGIC);
+	fbr_smagic_check(tag.parts, FBR_LOG_TAG_MAGIC);
 	assert(tag.parts.sequence == UCHAR_MAX);
 	assert(tag.parts.class == FBR_LOG_TAG_WRAP);
 	assert(tag.parts.class_data == FBR_LOG_TAG_WRAP_DATA);
@@ -610,7 +610,7 @@ fbr_cmd_test_log_rlog(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int ret = fbr_log_reader_init(&reader, fuse_ctx->path);
 	assert(ret);
 
-	assert(reader.magic == FBR_LOG_READER_MAGIC);
+	fbr_smagic_check(reader, FBR_LOG_READER_MAGIC);
 	fbr_log_ok(&reader.log);
 	fbr_log_header_ok(reader.log.header);
 	fbr_memory_sync();

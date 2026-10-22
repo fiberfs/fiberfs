@@ -975,7 +975,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	assert_zero(close(fd));
 
 	fjson_parse(&json, output->buffer, output->buffer_pos);
-	assert(parser.magic == FBR_INDEX_PARSER_MAGIC);
+	fbr_smagic_check(parser, FBR_INDEX_PARSER_MAGIC);
 
 	int errors = 0;
 
