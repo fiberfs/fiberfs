@@ -127,7 +127,7 @@ _fuse_err_lookup(struct fbr_request *request, fuse_ino_t parent, const char *nam
 		_ERR_STATE = (name[len - 2] - '0') * 10;
 		_ERR_STATE += name[len - 1] - '0';
 
-		fbr_bprintf(_ERR_FILENAME, "%s", name);
+		fbr_strbcpy(_ERR_FILENAME, name);
 
 		fbr_test_logs("** LOOKUP file _ERR_STATE: %d", _ERR_STATE);
 		fbr_test_logs("** LOOKUP filename: '%s'", _ERR_FILENAME);

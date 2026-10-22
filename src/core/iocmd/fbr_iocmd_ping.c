@@ -25,19 +25,20 @@ fbr_iocmd_ping(const char *path)
 		return 0;
 	}
 
-	struct fbr_iocmd_ping io_ping;
-	static_ASSERT(sizeof(io_ping.version) >= sizeof(FIBERFS_VERSION));
-	fbr_zero(&io_ping);
-	io_ping.magic = FBR_IOCMD_PING_MAGIC;
-	io_ping.ping = 1;
-	fbr_bprintf(io_ping.version, "%s", FIBERFS_VERSION);
+	struct fbr_iocmd_ping _io_ping;
+	struct fbr_iocmd_ping *io_ping = &_io_ping;
+	static_ASSERT(sizeof(_io_ping.version) >= sizeof(FIBERFS_VERSION));
+	fbr_zero(io_ping);
+	io_ping->magic = FBR_IOCMD_PING_MAGIC;
+	io_ping->ping = 1;
+	fbr_strbcpy(io_ping->version, FIBERFS_VERSION);
 
-	int ret = ioctl(fd, FBR_IOCMD_PING_REQ, &io_ping);
+	int ret = ioctl(fd, FBR_IOCMD_PING_REQ, io_ping);
 
 	int close_err = close(fd);
 	assert_zero_dev(close_err);
 
-	if (!ret && io_ping.magic == FBR_IOCMD_PING_MAGIC && io_ping.pong) {
+	if (!ret && fbr_object_is_valid(io_ping, FBR_IOCMD_PING_MAGIC) && io_ping->pong) {
 		return 1;
 	}
 
@@ -59,7 +60,7 @@ fbr_iocmd_pong(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 
 	fbr_rlog(FBR_LOG_IOCMD_PING, "received PING");
 
-	if (io_ping->magic != FBR_IOCMD_PING_MAGIC) {
+	if (!fbr_object_is_valid(io_ping, FBR_IOCMD_PING_MAGIC)) {
 		fbr_rlog(FBR_LOG_IOCMD_PING, "ERROR magic");
 		return EINVAL;
 	} else if (io_ping->ping != 1 || io_ping->pong) {

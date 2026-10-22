@@ -17,24 +17,6 @@ typedef unsigned long fbr_inode_t;
 
 #include "utils/fbr_assert.h"
 #include "utils/fbr_utils.h"
-
-#define fbr_magic_check(obj, value)				\
-{								\
-	assert(obj);						\
-	assert((obj)->magic == (value));			\
-}
-#define fbr_magic_check_dev(obj, value)				\
-{								\
-	assert_dev(obj);					\
-	assert_dev((obj)->magic == (value));			\
-}
-#define fbr_zero_magic(obj)					\
-{								\
-	(obj)->magic = 0;					\
-}
-#define fbr_object_empty(obj)					\
-	fbr_magic_check(obj, 0)
-#define fbr_object_is_empty(obj)				\
-	((obj) && !((obj)->magic))
+#include "utils/fbr_check.h"
 
 #endif /* _FIBERFS_H_INCLUDED_ */

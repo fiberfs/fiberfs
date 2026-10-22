@@ -250,7 +250,7 @@ fbr_test_cstore_reload(struct fbr_test_context *ctx, struct fbr_fs *fs)
 	fbr_cstore_ok(cstore);
 
 	char root[FBR_PATH_MAX];
-	fbr_bprintf(root, "%s", cstore->root);
+	fbr_strbcpy(root, cstore->root);
 
 	_test_cstore_free(ctx);
 
@@ -312,7 +312,7 @@ _cstore_debug_meta(const char *filename, struct fbr_cstore_metadata *metadata)
 
 	struct fbr_cstore_hashpath hashpath;
 	hashpath.magic = FBR_CSTORE_HASHPATH_MAGIC;
-	hashpath.length = fbr_bprintf(hashpath.value, "%s", filename);
+	hashpath.length = fbr_strbcpy(hashpath.value, filename);
 
 	size_t len = hashpath.length;
 	size_t data_len = sizeof(FBR_CSTORE_DATA_DIR) - 1;

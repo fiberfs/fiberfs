@@ -12,6 +12,8 @@
 #include <errno.h>
 #include <pthread.h>
 
+#include "fiberfs.h"
+
 #define FBR_FUSE_MOUNT_LOOP_MS			25
 
 enum fbr_fuse_state {
@@ -69,6 +71,7 @@ void fbr_fuse_running(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 void fbr_fuse_unmount(struct fbr_fuse_context *ctx);
 void fbr_fuse_unmount_signal(void);
 
+struct fbr_fs;
 struct fbr_file;
 
 void fbr_fuse_LOCK(struct fbr_fuse_context *fuse_ctx, pthread_mutex_t *lock);

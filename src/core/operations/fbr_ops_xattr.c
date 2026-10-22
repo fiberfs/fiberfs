@@ -93,7 +93,7 @@ fbr_ops_xattr_get(struct fbr_request *request, fuse_ino_t ino, const char *name,
 	assert(xattr_size <= sizeof(buffer));
 	assert(xattr_value);
 
-	size_t buffer_len = fbr_bprintf(buffer, "%s", xattr_value);
+	size_t buffer_len = fbr_strbcpy(buffer, xattr_value);
 	buffer_len++;
 	assert(buffer_len == xattr_size);
 

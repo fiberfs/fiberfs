@@ -292,9 +292,9 @@ chttp_test_cmd_server_init(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 
 	if (cmd->param_count >= 1) {
 		fbr_test_ERROR_string(cmd->params[0].value);
-		fbr_bprintf(server->ip_str, "%s", cmd->params[0].value);
+		fbr_strbcpy(server->ip_str, cmd->params[0].value);
 	} else {
-		fbr_bprintf(server->ip_str, "%s", _SERVER_IP_DEFAULT);
+		fbr_strbcpy(server->ip_str, _SERVER_IP_DEFAULT);
 	}
 	fbr_test_ERROR_string(server->ip_str);
 
