@@ -32,11 +32,16 @@ fbr_iocmd_ping(const char *path)
 	io_ping.ping = 1;
 	fbr_strbcpy(io_ping.version, FIBERFS_VERSION);
 
+	double time_start = fbr_get_time();
+
 	int ret = ioctl(fd, FBR_IOCMD_PING_REQ, &io_ping);
+
+	double time_diff = fbr_get_time() - time_start;
 
 	assert_zero_dev(close(fd));
 
 	if (!ret && fbr_object_is_svalid(io_ping, FBR_IOCMD_PING_MAGIC) && io_ping.pong) {
+		fbr_rlog(FBR_LOG_IOCMD_PING, "PERF time: %f", time_diff);
 		return 1;
 	}
 
