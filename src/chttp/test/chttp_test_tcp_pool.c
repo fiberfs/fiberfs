@@ -30,8 +30,7 @@ _tcp_pool_finish(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 	chttp_test_context_ok(ctx->chttp_test);
-	assert(ctx->chttp_test->tcp_pool);
-	assert(ctx->chttp_test->tcp_pool->magic == _TCP_POOL_MAGIC);
+	fbr_magic_check(ctx->chttp_test->tcp_pool, _TCP_POOL_MAGIC);
 
 	fbr_zero(ctx->chttp_test->tcp_pool);
 	free(ctx->chttp_test->tcp_pool);
@@ -56,7 +55,7 @@ _tcp_pool_init(struct fbr_test_context *ctx)
 		fbr_test_log(ctx, FBR_LOG_VERBOSE, "tcp pool initialized");
 	}
 
-	assert(ctx->chttp_test->tcp_pool->magic == _TCP_POOL_MAGIC);
+	fbr_magic_check(ctx->chttp_test->tcp_pool, _TCP_POOL_MAGIC);
 }
 
 void

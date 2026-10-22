@@ -71,9 +71,7 @@ void chttp_tcp_pool_close(void);
 RB_PROTOTYPE(chttp_tcp_pool_tree, chttp_tcp_pool_entry, tree_entry, _tcp_pool_cmp)
 
 #define chttp_tcp_pool_ok()						\
-{									\
-	assert(_TCP_POOL.magic == CHTTP_TCP_POOL_MAGIC);		\
-}
+	fbr_smagic_check(_TCP_POOL, CHTTP_TCP_POOL_MAGIC)
 #define chttp_pool_entry_ok(pool_entry)					\
 	fbr_magic_check(pool_entry, CHTTP_TCP_POOL_ENTRY_MAGIC)
 

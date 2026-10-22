@@ -28,8 +28,7 @@ _dns_finish(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);
 	chttp_test_context_ok(ctx->chttp_test);
-	assert(ctx->chttp_test->dns);
-	assert(ctx->chttp_test->dns->magic == _DNS_MAGIC);
+	fbr_magic_check(ctx->chttp_test->dns, _DNS_MAGIC);
 
 	fbr_zero(ctx->chttp_test->dns);
 	free(ctx->chttp_test->dns);
@@ -52,7 +51,7 @@ _dns_init(struct fbr_test_context *ctx)
 		fbr_test_register_finish(ctx, "dns", _dns_finish);
 	}
 
-	assert(ctx->chttp_test->dns->magic == _DNS_MAGIC);
+	fbr_magic_check(ctx->chttp_test->dns, _DNS_MAGIC);
 }
 
 void

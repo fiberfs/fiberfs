@@ -55,7 +55,7 @@ struct chttp_openssl_ctx _OPENSSL_SERVER_CTX = {
 
 #define chttp_openssl_ctx_ok(ctx)				\
 {								\
-	assert((ctx)->magic == CHTTP_OPENSSL_CTX_MAGIC);	\
+	fbr_magic_check(ctx, CHTTP_OPENSSL_CTX_MAGIC);		\
 	assert((ctx)->type > CHTTP_OPENSSL_NONE);		\
 }
 #define chttp_openssl_connected(addr, ssl_ctx)			\

@@ -107,8 +107,7 @@ _server_WAIT(struct chttp_test_server *server)
 static void
 _server_cmdentry_free(struct _server_cmdentry *cmdentry)
 {
-	assert(cmdentry);
-	assert(cmdentry->magic == _SERVER_CMDENTRY);
+	fbr_magic_check(cmdentry, _SERVER_CMDENTRY);
 
 	free((char*)cmdentry->cmd.name);
 
@@ -196,7 +195,7 @@ _server_finish(struct fbr_test_context *ctx)
 	size_t finished = 0;
 
 	TAILQ_FOREACH_SAFE(cmdentry, &server->cmd_list, entry, temp) {
-		assert(cmdentry->magic == _SERVER_CMDENTRY);
+		fbr_magic_check(cmdentry, _SERVER_CMDENTRY);
 
 		TAILQ_REMOVE(&server->cmd_list, cmdentry, entry);
 
@@ -1340,8 +1339,7 @@ static void
 _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 {
 	_server_ok(server);
-	assert(cmdentry);
-	assert(cmdentry->magic == _SERVER_CMDENTRY);
+	fbr_magic_check(cmdentry, _SERVER_CMDENTRY);
 	assert(cmdentry->cmd.async);
 	assert(cmdentry->cmd.func);
 
@@ -1377,8 +1375,7 @@ _server_thread(void *arg)
 		// Grab work
 		assert(!TAILQ_EMPTY(&server->cmd_list));
 		struct _server_cmdentry *cmdentry = TAILQ_FIRST(&server->cmd_list);
-		assert(cmdentry);
-		assert(cmdentry->magic == _SERVER_CMDENTRY);
+		fbr_magic_check(cmdentry, _SERVER_CMDENTRY);
 		TAILQ_REMOVE(&server->cmd_list, cmdentry, entry);
 
 		_server_UNLOCK(server);
