@@ -5,6 +5,7 @@
  */
 
 #include <fcntl.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -57,6 +58,7 @@ fbr_iocmd_pong(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	assert(command == FBR_IOCMD_PING_REQ);
 	assert(input);
 	assert(output);
+	assert(fbr_request_get());
 
 	const struct fbr_iocmd_ping *io_ping = input;
 	struct fbr_iocmd_ping *io_pong = output;

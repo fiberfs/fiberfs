@@ -12,10 +12,13 @@
 static struct {
 	unsigned long			command;
 	fbr_iocmd_f			*callback;
-} _FBR_IOCMD_ROUTES[1] = {
+} _FBR_IOCMD_ROUTES[2] = {
 	{
 		FBR_IOCMD_PING_REQ,
 		fbr_iocmd_pong
+	},{
+		FBR_IOCMD_IMPORT_REQ,
+		fbr_iocmd_import_request
 	}
 };
 

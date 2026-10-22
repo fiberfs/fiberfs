@@ -7,3 +7,4 @@
 #include "test/fbr_test_cmd_declare.h"
 
 FBR_TEST_CMD(iocmd_ping)
+FBR_TEST_CMD(iocmd_import)

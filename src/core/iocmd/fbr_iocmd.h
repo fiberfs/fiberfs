@@ -13,6 +13,7 @@
 #include "core/fs/fbr_path.h"
 
 #define FBR_IOCMD_PING_REQ			_IOWR('P', 1, struct fbr_iocmd_ping)
+#define FBR_IOCMD_IMPORT_REQ			_IOW('I', 1, struct fbr_iocmd_import)
 
 struct fbr_iocmd_ping {
 	unsigned int				magic;
@@ -24,11 +25,22 @@ struct fbr_iocmd_ping {
 	char					version[64];
 };
 
+struct fbr_iocmd_import {
+	unsigned int				magic;
+#define FBR_IOCMD_IMPORT_MAGIC			0xB9AB7DFD
+
+	struct fbr_fullpath_name		filename;
+};
+
 typedef int (fbr_iocmd_f)(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	const void *input, void *output);
 
 int fbr_iocmd_ping(const char *path);
 int fbr_iocmd_pong(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
+	const void *input, void *output);
+
+int fbr_iocmd_import(const char *path);
+int fbr_iocmd_import_request(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	const void *input, void *output);
 
 #endif /* _FBR_OPERATIONS_H_INCLUDED_ */

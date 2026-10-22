@@ -23,11 +23,18 @@ sleep_ms 10
 
 print "### UPLOAD"
 
-cstore_s3_upload file 1234
+set filename "abcfile"
+set filepath $sys_tmpdir "/" $filename
+
+cstore_s3_upload $filename 1234
 
 print $cstore_s3_md5
 
 equal $cstore_stat_chunks_fullfile:1 1
+
+print "### IMPORT"
+
+iocmd_import $filepath
 
 print "### DONE"
 
