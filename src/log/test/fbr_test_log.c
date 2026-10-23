@@ -166,7 +166,13 @@ fbr_test_log_printer_init(struct fbr_test_context *test_ctx, const char *logname
 			fbr_ABORT("Duplicate printer prefix detected: %s", prefix);
 		} else if (!strcmp(logname, printer->logname) && printer->thread_running &&
 		    !printer->thread_exited) {
-			fbr_ABORT("Duplicate printer name detected: %s", logname);
+			int loops = 20;
+			while (loops > 0 && !printer->thread_exited) {
+				loops--;
+				fbr_test_sleep_ms(100);
+			}
+			fbr_ASSERT(printer->thread_exited, "Duplicate printer name detected: %s",
+				logname);
 		}
 
 		printer = printer->next;
