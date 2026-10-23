@@ -42,8 +42,10 @@ fbr_cmd_ping(const char *path)
 
 	assert_zero_dev(close(fd));
 
+	fbr_rlog(FBR_LOG_IOCMD_PING, "return: %d", ret);
+	fbr_rlog(FBR_LOG_IOCMD_PING, "PERF time: %f", time_diff);
+
 	if (!ret && fbr_object_is_svalid(io_ping, FBR_IOCMD_PING_MAGIC) && io_ping.pong) {
-		fbr_rlog(FBR_LOG_IOCMD_PING, "PERF time: %f", time_diff);
 		return 1;
 	}
 

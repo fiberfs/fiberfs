@@ -161,7 +161,6 @@ fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, s
 	fbr_file_ok(file);
 	assert(id);
 	assert(path);
-	assert(length);
 
 	if (fbr_has_alias_path(file)) {
 		_cstore_path_chunk_alias(file, id, offset, length, fullfile, path);
@@ -182,6 +181,8 @@ fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, s
 			FBR_FIBERFS_CHUNKID_NAME,
 			chunk_id, offset, length);
 	} else {
+		assert(length);
+
 		path->length = fbr_bprintf(path->value, "%s%s.%s.%zu",
 			filepath.path.name,
 			FBR_FIBERFS_CHUNK_NAME,
@@ -502,6 +503,21 @@ fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file, struct
 	struct fbr_cstore_path path;
 	fbr_cstore_path_chunk(file, chunk->id, chunk->offset, chunk->length, chunk->fullfile,
 		&path);
+
+	fbr_cstore_s3_url(cstore, &path, url);
+}
+
+void
+fbr_cstore_s3_fullfile_url(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
+    struct fbr_cstore_url *url)
+{
+	fbr_cstore_ok(cstore);
+	fbr_file_ok(file);
+	assert(id);
+	assert(url);
+
+	struct fbr_cstore_path path;
+	fbr_cstore_path_chunk(file, id, 0, 0, 1, &path);
 
 	fbr_cstore_s3_url(cstore, &path, url);
 }

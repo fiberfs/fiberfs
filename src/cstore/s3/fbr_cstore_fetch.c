@@ -1241,3 +1241,76 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 
 	return version;
 }
+
+int
+fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, size_t *size)
+{
+	fbr_fs_ok(fs);
+	assert(url);
+	assert(size);
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
+
+	*size = 0;
+
+	if (!fbr_cstore_backend_enabled(cstore)) {
+		return 1;
+	}
+
+	char chttp_stack[FBR_CSTORE_CHTTP_SIZE];
+	struct chttp_context *http = chttp_context_init_buf(chttp_stack, sizeof(chttp_stack));
+	chttp_context_ok(http);
+
+	struct fbr_cstore_fetch_context fetch;
+	_fetch_init(&fetch, cstore, http);
+
+	fetch.hash_callback = fbr_cstore_s3_hash_none;
+	fetch.attempts = 0;
+	fetch.orig_route = FBR_CSTORE_ROUTE_S3;
+
+	_s3_get_route(&fetch);
+	assert_dev(fetch.route);
+
+	_s3_request_url(&fetch, "HEAD", url);
+
+	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, 0, fetch.route,
+		fetch.attempts - 1, 0);
+	fbr_cstore_backend_ok(backend);
+
+	int ret = _s3_connection(&fetch, backend);
+	if (ret) {
+		chttp_context_free(http);
+		return 500;
+	}
+
+	chttp_send(http);
+	if (http->error) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp send: %s", chttp_error_msg(http));
+		chttp_context_free(http);
+		return 500;
+	}
+
+	chttp_receive(http);
+
+	fbr_cstore_http_log(http);
+
+	fbr_rlog(FBR_LOG_CS_S3, "S3 HEAD %d", http->status);
+
+	if (http->error || !fbr_cstore_http_success(http->status)) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp: %d %d", http->error, http->status);
+
+		int error = http->status ? http->status : 500;
+		assert_dev(error > 0);
+
+		chttp_context_free(http);
+
+		return error;
+	}
+
+	// TODO validate response, get size
+
+	chttp_context_free(http);
+
+	return 0;
+}

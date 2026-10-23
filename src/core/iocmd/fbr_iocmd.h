@@ -29,6 +29,8 @@ struct fbr_iocmd_import {
 	unsigned int				magic;
 #define FBR_IOCMD_IMPORT_MAGIC			0xB9AB7DFD
 
+	fbr_bitflag_t				overwrite:1;
+
 	struct fbr_fullpath_name		filename;
 };
 

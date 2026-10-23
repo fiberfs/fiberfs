@@ -8,6 +8,6 @@
 #define _FBR_CMD_H_INCLUDED_
 
 int fbr_cmd_ping(const char *path);
-int fbr_cmd_import(const char *path);
+int fbr_cmd_import(const char *path, int overwrite);
 
 #endif /* _FBR_CMD_H_INCLUDED_ */

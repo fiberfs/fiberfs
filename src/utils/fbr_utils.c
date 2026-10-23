@@ -509,13 +509,13 @@ fbr_check_name(const struct fbr_path_name *dirpath, const struct fbr_path_name *
 	assert(dirpath);
 
 	if (!filename->length || dirpath->length + 1 + filename->length >= PATH_MAX) {
-		return EINVAL;
+		return ENAMETOOLONG;
 	}
 
 	if (strcasestr(filename->name, FBR_FIBERFS_NAME)) {
 		return EINVAL;
 	} else if (!strcmp(filename->name, ".") || !strcmp(filename->name, "..")) {
-		return 0;
+		return EINVAL;
 	}
 
 	return 0;

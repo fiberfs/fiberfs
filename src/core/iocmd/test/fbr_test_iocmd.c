@@ -29,11 +29,21 @@ void
 fbr_cmd_iocmd_import(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
-	fbr_test_ERROR_param_count(cmd, 1);
+	fbr_test_cmd_ok(cmd);
+	assert(cmd->param_count >= 1 && cmd->param_count <= 2);
+	fbr_test_ERROR_string(cmd->params[0].value);
 
 	const char *path = cmd->params[0].value;
+	int overwrite = 0;
 
-	int ret = fbr_cmd_import(path);
+	if (cmd->param_count > 1) {
+		long value = fbr_test_parse_long(cmd->params[1].value);
+		if (value > 0) {
+			overwrite = 1;
+		}
+	}
+
+	int ret = fbr_cmd_import(path, overwrite);
 	fbr_ASSERT(ret, "fbr_iocmd_import() failed: %d", ret);
 
 	fbr_test_logs("iocmd_import done: %s", path);
