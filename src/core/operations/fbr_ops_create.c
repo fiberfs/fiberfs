@@ -48,7 +48,6 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	assert(file->parent_inode == directory->inode);
 	assert(file->state == FBR_FILE_INIT);
 	assert_zero_dev(file->size);
-	assert_zero_dev(file->generation);
 
 	fbr_inode_add(fs, file);
 

@@ -1243,7 +1243,7 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 }
 
 int
-fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, size_t *size)
+fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, unsigned long *size)
 {
 	fbr_fs_ok(fs);
 	assert(url);
@@ -1281,14 +1281,14 @@ fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, size_
 	int ret = _s3_connection(&fetch, backend);
 	if (ret) {
 		chttp_context_free(http);
-		return 500;
+		return ECONNREFUSED;
 	}
 
 	chttp_send(http);
 	if (http->error) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp send: %s", chttp_error_msg(http));
 		chttp_context_free(http);
-		return 500;
+		return ECONNREFUSED;
 	}
 
 	chttp_receive(http);
@@ -1297,7 +1297,8 @@ fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, size_
 
 	fbr_rlog(FBR_LOG_CS_S3, "S3 HEAD %d", http->status);
 
-	if (http->error || !fbr_cstore_http_success(http->status)) {
+	if (http->error || !fbr_cstore_http_success(http->status) ||
+	    http->state != CHTTP_STATE_IDLE) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp: %d %d", http->error, http->status);
 
 		int error = http->status ? http->status : 500;
@@ -1308,9 +1309,25 @@ fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, size_
 		return error;
 	}
 
-	// TODO validate response, get size
+	const char *content_type = chttp_header_get(http, "Content-Type");
+	if (content_type && strstr(content_type, "fiberfs")) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR fiberfs detected");
+		chttp_context_free(http);
+		return EINVAL;
+	}
+
+	int error = 0;
+	const char *content_length = chttp_header_get(http, "Content-Length");
+	if (content_length) {
+		*size = fbr_parse_ulong(content_length, strlen(content_length), &error);
+	}
 
 	chttp_context_free(http);
+
+	if (!*size || error) {
+		fbr_rlog(FBR_LOG_CS_S3, "ERROR no length");
+		return EINVAL;
+	}
 
 	return 0;
 }

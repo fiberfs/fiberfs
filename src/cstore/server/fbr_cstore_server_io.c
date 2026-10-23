@@ -208,24 +208,19 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	const char *etag_match = chttp_header_get(http, "If-Match");
 
+	int fullfile;
 	size_t ff_offset;
 	size_t ff_length;
-	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &ff_offset,
-		&ff_length);
+	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &fullfile,
+		&ff_offset, &ff_length);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
 	}
 
-	int fullfile = 0;
-
 	switch (file_type) {
 		case FBR_CSTORE_FILE_CHUNK:
-			if (ff_length) {
-				fullfile = 1;
-			}
-			/* Fallthru */
 		case FBR_CSTORE_FILE_INDEX:
 			if (!unique || etag_match) {
 				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER,
@@ -510,7 +505,7 @@ _cstore_url_entry_release(struct fbr_cstore *cstore, struct fbr_cstore_entry *en
 }
 
 void
-fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http)
+fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http, int is_head)
 {
 	fbr_cstore_worker_ok(worker);
 	chttp_context_ok(http);
@@ -549,17 +544,15 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	assert(host);
 	size_t host_len = strlen(host);
 
-	int fullfile = 0;
+	int fullfile;
 	size_t ff_offset;
 	size_t ff_length;
-	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &ff_offset,
-		&ff_length);
+	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &fullfile,
+		&ff_offset, &ff_length);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
-	} else if (file_type == FBR_CSTORE_FILE_CHUNK && ff_length) {
-		fullfile = 1;
 	}
 
 	size_t range_start = 0;
@@ -582,6 +575,18 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	if (!backend && fullfile) {
 		url_len = fbr_cstore_s3_url_trim(url, url_len);
 		assert_dev(url_len);
+	}
+
+	if (is_head) {
+		if (backend) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR head internal");
+			fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+			return;
+		} else if (!fullfile || range || ff_offset || ff_length) {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR head fullfile");
+			fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+			return;
+		}
 	}
 
 	fbr_hash_t hash = fbr_cstore_hash_url(host, host_len, url, url_len);
@@ -862,6 +867,10 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		_cstore_url_entry_release(cstore, entry, file_type, 0);
 		assert_zero_dev(close(fd));
 		return;
+	} else if (is_head) {
+		_cstore_url_entry_release(cstore, entry, file_type, 0);
+		assert_zero_dev(close(fd));
+		return;
 	}
 
 	size_t bytes = fbr_cstore_s3_splice_out(cstore, &http->addr, fd, size);
@@ -928,11 +937,11 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 
 	const char *etag_match = chttp_header_get(http, "If-Match");
 
-	int fullfile = 0;
+	int fullfile;
 	size_t ff_offset;
 	size_t ff_length;
-	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &ff_offset,
-		&ff_length);
+	enum fbr_cstore_file_type file_type = fbr_cstore_s3_url_parse(url, url_len, &fullfile,
+		&ff_offset, &ff_length);
 	if (file_type == FBR_CSTORE_FILE_NONE) {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR url");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
@@ -941,8 +950,6 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR no etag match");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
-	} else if (file_type == FBR_CSTORE_FILE_CHUNK && ff_length) {
-		fullfile = 1;
 	}
 
 	int backend = fbr_cstore_backend_enabled(cstore);

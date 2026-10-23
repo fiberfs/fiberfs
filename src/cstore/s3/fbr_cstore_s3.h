@@ -152,7 +152,7 @@ int fbr_cstore_s3_root_put(struct fbr_cstore *cstore, struct fbr_writer *root_js
 fbr_id_t fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 	struct fbr_cstore_path *root_path, struct fbr_etag *etag, enum fbr_cstore_route route,
 	struct fbr_cstore_entry_ref *entry_ref, int *http_error, int write_sync);
-int fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, size_t *size);
+int fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, unsigned long *size);
 
 size_t fbr_cstore_s3_hash_none(void *priv, void *hash, size_t hash_len);
 void fbr_cstore_s3_autosign(struct fbr_cstore *cstore, struct chttp_context *http,

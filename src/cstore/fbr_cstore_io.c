@@ -256,15 +256,10 @@ fbr_cstore_io_delete_url(struct fbr_cstore *cstore, const struct fbr_cstore_url 
 		size_t url_decoded_len = fbr_urldecode(url->value, url->length, url_decoded,
 			sizeof(url_decoded));
 
-		size_t length;
+		int fullfile;
 		enum fbr_cstore_file_type url_type = fbr_cstore_s3_url_parse(url_decoded,
-			url_decoded_len, NULL, &length);
+			url_decoded_len, &fullfile, NULL, NULL);
 		assert_dev(url_type == type);
-
-		int fullfile = 0;
-		if (length) {
-			fullfile = 1;
-		}
 
 		fbr_hash_t hash;
 		if (backend) {

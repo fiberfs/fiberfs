@@ -615,12 +615,17 @@ fbr_cstore_s3_url_trim(char *url, size_t url_len)
 }
 
 enum fbr_cstore_file_type
-fbr_cstore_s3_url_parse(const char *url, size_t url_len, size_t *ff_offset, size_t *ff_length)
+fbr_cstore_s3_url_parse(const char *url, size_t url_len, int *fullfile, size_t *ff_offset,
+    size_t *ff_length)
 {
 	assert(url);
 	assert(url_len);
 
+	int _fullfile;
 	size_t _offset, _length;
+	if (!fullfile) {
+		fullfile = &_fullfile;
+	}
 	if (!ff_offset) {
 		ff_offset = &_offset;
 	}
@@ -628,6 +633,7 @@ fbr_cstore_s3_url_parse(const char *url, size_t url_len, size_t *ff_offset, size
 		ff_length = &_length;
 	}
 
+	*fullfile = 0;
 	*ff_offset = 0;
 	*ff_length = 0;
 
@@ -688,6 +694,7 @@ fbr_cstore_s3_url_parse(const char *url, size_t url_len, size_t *ff_offset, size
 				}
 
 				if (i == url_len) {
+					*fullfile = 1;
 					return FBR_CSTORE_FILE_CHUNK;
 				}
 			}

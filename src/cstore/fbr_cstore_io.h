@@ -168,7 +168,7 @@ void fbr_cstore_io_root_touch(struct fbr_cstore *cstore, struct fbr_cstore_entry
 int fbr_cstore_io_root_remove(struct fbr_fs *fs, struct fbr_directory *directory);
 
 void fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *http);
-void fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http);
+void fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http, int is_head);
 void fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *http);
 
 #define fbr_cstore_op_ok(op)			fbr_magic_check(op, FBR_CSTORE_OP_MAGIC)

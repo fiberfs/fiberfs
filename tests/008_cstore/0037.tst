@@ -45,7 +45,7 @@ fs_test_stats
 cstore_wait 0
 cstore_debug 1
 
-#equal $cstore_stat_http_400:1 0
+equal $cstore_stat_http_400:1 0
 equal $cstore_stat_http_500:1 0
 
 equal $fs_test_stat_directories 0

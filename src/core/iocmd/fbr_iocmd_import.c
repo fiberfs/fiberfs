@@ -139,8 +139,6 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	assert(import_file->parent_inode == directory->inode);
 	assert(import_file->state == FBR_FILE_INIT);
-	assert_zero_dev(import_file->size);
-	assert_zero_dev(import_file->generation);
 
 	fbr_inode_add(fs, import_file);
 
@@ -169,18 +167,19 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	error = fbr_cstore_s3_head_fullfile(fs, &url, &size);
 
-	fbr_inode_release(fs, &import_file);
+	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "S3 response: %d size: %zu", error, size);
 
-	/*
-	if (error) {
-		if (error < 100) {
+	if (error || !size) {
+		fbr_inode_release(fs, &import_file);
+
+		if (error < 300) {
 			return EINVAL;
 		}
 
 		return error;
 	}
-	*/
-	(void)error;
+
+	fbr_inode_release(fs, &import_file);
 
 	return 0;
 }

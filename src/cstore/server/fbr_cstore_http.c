@@ -243,7 +243,9 @@ fbr_cstore_proc_http(struct fbr_cstore_task_worker *task_worker)
 	assert(method);
 
 	if (!strcmp(method, "GET") && http->state == CHTTP_STATE_IDLE) {
-		fbr_cstore_url_read(worker, http);
+		fbr_cstore_url_read(worker, http, 0);
+	} else if (!strcmp(method, "HEAD") && http->state == CHTTP_STATE_IDLE) {
+		fbr_cstore_url_read(worker, http, 1);
 	} else if (!strcmp(method, "PUT") && http->state == CHTTP_STATE_BODY) {
 		fbr_cstore_url_write(worker, http);
 	} else if (!strcmp(method, "DELETE") && http->state == CHTTP_STATE_IDLE) {
