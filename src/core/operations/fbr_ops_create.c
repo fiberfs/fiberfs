@@ -32,6 +32,8 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		return;
 	}
 
+	// TODO we need to check the directory name + filename length
+
 	struct fbr_path_name filename;
 	fbr_path_name_init(&filename, name);
 

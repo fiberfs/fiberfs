@@ -221,10 +221,9 @@ const char *
 fbr_path_get_full(const struct fbr_path *path, struct fbr_fullpath_name *result)
 {
 	assert(path);
+	assert(result);
 
-	result->path.length = 0;
-	result->path.name = result->data;
-	result->data[0] = '\0';
+	fbr_fullpath_init(result);
 
 	switch (path->layout.value) {
 		case FBR_PATH_NULL:
@@ -320,6 +319,54 @@ fbr_path_cmp_file(const struct fbr_path *file1, const struct fbr_path *file2)
 	assert(filename1.name && filename2.name);
 
 	return strncmp(filename1.name, filename2.name, filename1.length);
+}
+
+void
+fbr_fullpath_init(struct fbr_fullpath_name *fullpath)
+{
+	assert(fullpath);
+
+	fullpath->data[0] = '\0';
+	fullpath->path.length = 0;
+	fullpath->path.name = fullpath->data;
+}
+
+char *
+fbr_fullpath_split(const char *fullpath, struct fbr_fullpath_name *dirpath)
+{
+	assert(fullpath);
+	assert(dirpath);
+
+	int absolute = 0;
+	if (fullpath[0] == '/') {
+		absolute = 1;
+	}
+
+	char *filename = NULL;
+
+	fbr_fullpath_init(dirpath);
+	size_t fullpath_len = fbr_strbcpy(dirpath->data, fullpath);
+	dirpath->path.length = fullpath_len;
+
+	fbr_path_name_parent(&dirpath->path, &dirpath->path);
+
+	if (!dirpath->path.length && absolute) {
+		memmove(dirpath->data + 1, dirpath->data, fullpath_len + 1);
+		dirpath->path.length = fbr_strbcpy(dirpath->data, "/");
+		filename = dirpath->data + 2;
+	} else if (!dirpath->path.length) {
+		memmove(dirpath->data + 2, dirpath->data, fullpath_len + 1);
+		dirpath->path.length = fbr_strbcpy(dirpath->data, ".");
+		filename = dirpath->data + 2;
+	} else {
+		dirpath->data[dirpath->path.length] = '\0';
+		filename = dirpath->data + dirpath->path.length + 1;
+		if (dirpath->path.length + 1 >= fullpath_len) {
+			filename--;
+		}
+	}
+
+	return filename;
 }
 
 struct fbr_path_name *

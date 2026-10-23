@@ -6,3 +6,7 @@ fs_test_path
 fs_test_path "one" "two" "three" "four"
 fs_test_path 12345678901234567890 1234567890 1234567890
 fs_test_path 12345678901234 x
+
+sleep_ms 50
+
+fs_test_fullpath_test

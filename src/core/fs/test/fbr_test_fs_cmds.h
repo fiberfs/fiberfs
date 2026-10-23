@@ -67,6 +67,7 @@ FBR_TEST_VAR(fs_test_stat_flush_memory)
 
 FBR_TEST_CMD(fs_test_path_assert)
 FBR_TEST_CMD(fs_test_path)
+FBR_TEST_CMD(fs_test_fullpath_test)
 
 FBR_TEST_CMD(fs_test_body)
 FBR_TEST_CMD(fs_test_body_fio)

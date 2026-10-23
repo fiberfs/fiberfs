@@ -105,7 +105,8 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, const
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s layout: %d", name, path->layout.value);
 
 	struct fbr_path_name dirname, fullparent;
-	struct fbr_fullpath_name fullpath;
+	struct fbr_fullpath_name fullpath, splitpath;
+	const char *splitname;
 
 	fbr_path_get_dir(path, &dirname);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s dirname: '%.*s':%zu", name,
@@ -115,16 +116,25 @@ _test_path_print_path(struct fbr_test_context *ctx, struct fbr_path *path, const
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s filename: '%s'", name, filename);
 
 	const char *sfullpath = fbr_path_get_full(path, &fullpath);
-	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullpath: '%s'", name, sfullpath);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullpath: '%s':%zu", name, sfullpath,
+		fullpath.path.length);
 
 	fbr_path_name_parent(&fullpath.path, &fullparent);
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s fullparent: '%.*s':%zu", name,
 		(int)fullparent.length, fullparent.name, fullparent.length);
 
+	splitname = fbr_fullpath_split(fullpath.path.name, &splitpath);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s splitpath: '%s':%zu", name,
+		splitpath.path.name, splitpath.path.length);
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "%s splitname: '%s'", name, splitname);
+
 	fbr_test_ASSERT(path->layout.value == layout, "layout isnt %d", layout);
 	fbr_test_ERROR(fbr_path_name_str_cmp(&dirname, d_check), "dirname isnt '%s'", d_check);
 	fbr_test_ERROR(strcmp(filename, f_check), "filename isnt '%s'", f_check);
 	fbr_test_ERROR(strcmp(sfullpath, fp_check), "fullpath isnt '%s'", fp_check);
+	fbr_test_ERROR(strcmp(splitname, filename), "splitname doesnt match filename");
+	fbr_test_ERROR(strncmp(fullparent.name, splitpath.path.name, fullparent.length),
+		"splitpath doesnt match fullparent");
 }
 
 void
@@ -144,7 +154,6 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_file_ok(file);
 
 	enum fbr_path_layout layout = FBR_PATH_EMBED_DIR;
-
 
 	_test_path_print_path(ctx, &file->path, "file", layout, "", "", "");
 	_test_path_print_dir(ctx, directory, "");
@@ -289,4 +298,50 @@ fbr_cmd_fs_test_path(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR(fs->stats.directories, "Directories detected");
 
 	fbr_fs_free(fs);
+}
+
+static void
+_test_fullpath(const char *fullpath, const char *dirmatch, const char *filematch)
+{
+	assert(fullpath);
+	assert(filematch);
+	assert(dirmatch);
+
+	struct fbr_fullpath_name dirname;
+	const char *filename = fbr_fullpath_split(fullpath, &dirname);
+
+	fbr_test_logs("fullpath: '%s' dirpath: '%s' filename: '%s'", fullpath, dirname.path.name,
+		filename);
+
+	fbr_test_ERROR(strcmp(dirname.path.name, dirmatch), "dirname expected: '%s'", dirmatch);
+	fbr_test_ERROR(strcmp(filename, filematch), "filename expected: '%s'", filematch);
+}
+
+void
+fbr_cmd_fs_test_fullpath_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 0);
+
+	_test_fullpath("123/abc.txt", "123", "abc.txt");
+	_test_fullpath("/", "/", "");
+	_test_fullpath("/a", "/", "a");
+	_test_fullpath("/abc", "/", "abc");
+	_test_fullpath("/abc/", "/abc", "");
+	_test_fullpath("/abc/345/", "/abc/345", "");
+	_test_fullpath("/abc/345/a", "/abc/345", "a");
+	_test_fullpath("", ".", "");
+	_test_fullpath("1", ".", "1");
+	_test_fullpath("1/", "1", "");
+	_test_fullpath("1//", "1/", "");
+	_test_fullpath("1///", "1//", "");
+	_test_fullpath("test", ".", "test");
+	_test_fullpath("..", ".", "..");
+	_test_fullpath("dir/1", "dir", "1");
+	_test_fullpath("dir/2/3", "dir/2", "3");
+	_test_fullpath("dir/2/3/", "dir/2/3", "");
+	_test_fullpath("dir/2/3//", "dir/2/3/", "");
+	_test_fullpath("//", "/", "");
+	_test_fullpath("///", "//", "");
+	_test_fullpath(".", ".", ".");
 }

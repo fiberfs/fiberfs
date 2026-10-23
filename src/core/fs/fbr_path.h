@@ -100,6 +100,9 @@ const char *fbr_path_get_full(const struct fbr_path *path, struct fbr_fullpath_n
 int fbr_path_cmp_dir(const struct fbr_path *dir1, const struct fbr_path *dir2);
 int fbr_path_cmp_file(const struct fbr_path *file1, const struct fbr_path *file2);
 
+void fbr_fullpath_init(struct fbr_fullpath_name *fullpath);
+char *fbr_fullpath_split(const char *fullpath, struct fbr_fullpath_name *dirpath);
+
 struct fbr_path_name *fbr_path_name_init(struct fbr_path_name *name, const char *str);
 int fbr_path_name_str_cmp(const struct fbr_path_name *name, const char *str);
 int fbr_path_name_cmp(const struct fbr_path_name *name1, const struct fbr_path_name *name2);
