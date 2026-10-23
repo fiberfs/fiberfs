@@ -34,10 +34,6 @@ fbr_cmd_import(const char *path)
 		return 0;
 	}
 
-	if (!strcmp(filename.name, ".") || !strcmp(filename.name, "..")) {
-		return 0;
-	}
-
 	int ret = fbr_cmd_ping(dirpath.path.name);
 	if (!ret) {
 		return 0;

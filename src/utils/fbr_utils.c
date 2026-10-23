@@ -514,6 +514,8 @@ fbr_check_name(const struct fbr_path_name *dirpath, const struct fbr_path_name *
 
 	if (strcasestr(filename->name, FBR_FIBERFS_NAME)) {
 		return EINVAL;
+	} else if (!strcmp(filename->name, ".") || !strcmp(filename->name, "..")) {
+		return 0;
 	}
 
 	return 0;
