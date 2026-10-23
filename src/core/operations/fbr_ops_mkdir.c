@@ -21,22 +21,26 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 	fbr_rlog(FBR_LOG_OP, "MKDIR req: %lu parent: %lu name: %s mode: %u", request->id, parent,
 		name, mode);
 
-	int error = fbr_check_name(name);
-	if (error) {
-		fbr_fuse_reply_err(request, error);
-		return;
-	}
-
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent);
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOTDIR);
 		return;
 	}
 
+	struct fbr_path_name dirpath;
+	fbr_path_shared_name(directory->path, &dirpath);
+
 	struct fbr_path_name dirname;
 	fbr_path_name_init(&dirname, name);
 
-	struct fbr_file *duplicate = fbr_directory_find_file(directory, dirname.name, dirname.length);
+	int error = fbr_check_name(&dirpath, &dirname);
+	if (error) {
+		fbr_fuse_reply_err(request, error);
+		return;
+	}
+
+	struct fbr_file *duplicate = fbr_directory_find_file(directory, dirname.name,
+		dirname.length);
 	if (duplicate) {
 		fbr_fuse_reply_err(request, EEXIST);
 		fbr_dindex_release(fs, &directory);
@@ -62,12 +66,12 @@ fbr_ops_mkdir(struct fbr_request *request, fuse_ino_t parent, const char *name, 
 
 	struct fbr_fullpath_name fullpath;
 	fbr_path_get_full(&file->path, &fullpath);
-	dirname = fullpath.path;
+
 	fbr_rlog(FBR_LOG_OP_MKDIR, "new directory: inode: %lu path: '%s'", file->inode,
-		dirname.name);
+		fullpath.path.name);
 
 	// Create a new root
-	struct fbr_directory *new_directory = fbr_directory_make(fs, &dirname, file->inode);
+	struct fbr_directory *new_directory = fbr_directory_make(fs, &fullpath.path, file->inode);
 	if (!new_directory) {
 		fbr_fuse_reply_err(request, EEXIST);
 

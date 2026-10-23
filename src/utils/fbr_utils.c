@@ -17,6 +17,7 @@
 
 #include "fiberfs.h"
 #include "fbr_xxhash.h"
+#include "core/fs/fbr_path.h"
 #include "cstore/fbr_cstore_path.h"
 
 #define FBR_SLEEP_FLAG_MAX_MS			25
@@ -502,16 +503,16 @@ fbr_thread_name(const char *name)
 }
 
 int
-fbr_check_name(const char *name)
+fbr_check_name(const struct fbr_path_name *dirpath, const struct fbr_path_name *filename)
 {
-	assert(name);
+	assert(filename);
+	assert(dirpath);
 
-	size_t name_len = strlen(name);
-	if (!name_len || name_len >= PATH_MAX) {
+	if (!filename->length || dirpath->length + 1 + filename->length >= PATH_MAX) {
 		return EINVAL;
 	}
 
-	if (strcasestr(name, FBR_FIBERFS_NAME)) {
+	if (strcasestr(filename->name, FBR_FIBERFS_NAME)) {
 		return EINVAL;
 	}
 

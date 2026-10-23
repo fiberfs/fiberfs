@@ -31,15 +31,21 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		return;
 	}
 
-	int error = fbr_check_name(newname);
-	if (error) {
-		fbr_fuse_reply_err(request, error);
-		return;
-	}
-
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent);
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOTDIR);
+		return;
+	}
+
+	struct fbr_path_name dirpath;
+	fbr_path_shared_name(directory->path, &dirpath);
+
+	struct fbr_path_name newfilename;
+	fbr_path_name_init(&newfilename, newname);
+
+	int error = fbr_check_name(&dirpath, &newfilename);
+	if (error) {
+		fbr_fuse_reply_err(request, error);
 		return;
 	}
 
@@ -55,8 +61,8 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		return;
 	}
 
-	size_t newname_len = strlen(newname);
-	struct fbr_file *newfile = fbr_directory_find_file(directory, newname, newname_len);
+	struct fbr_file *newfile = fbr_directory_find_file(directory, newfilename.name,
+		newfilename.length);
 	if (newfile && fbr_file_is_dir(newfile)) {
 		fbr_fuse_reply_err(request, EISDIR);
 		fbr_dindex_release(fs, &directory);

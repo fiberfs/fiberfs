@@ -26,6 +26,8 @@ typedef unsigned long fbr_inode_t;
 typedef unsigned long fbr_stats_t;
 typedef uint64_t fbr_hash_t;
 
+struct fbr_path_name;
+
 void fbr_sleep_ms(double ms);
 void fbr_stat_add_count(fbr_stats_t *stat, fbr_stats_t value);
 void fbr_stat_sub_count(fbr_stats_t *stat, fbr_stats_t value);
@@ -50,7 +52,7 @@ size_t fbr_hex2bin(const char *input, size_t input_len, void* output, size_t out
 size_t fbr_urlencode(const char *input, size_t input_len, char *output, size_t output_len);
 size_t fbr_urldecode(const char *input, size_t input_len, char *output, size_t output_len);
 void fbr_thread_name(const char *name);
-int fbr_check_name(const char *name);
+int fbr_check_name(const struct fbr_path_name *dirpath, const struct fbr_path_name *filename);
 int fbr_is_false(const char *string);
 int fbr_is_true(const char *string);
 unsigned long fbr_ulong2octal(unsigned long value);

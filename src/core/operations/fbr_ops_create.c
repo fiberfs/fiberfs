@@ -20,22 +20,23 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	fbr_rlog(FBR_LOG_OP, "CREATE req: %lu parent: %lu name: '%s' mode: %d flags: %u",
 		request->id, parent, name, mode, fi->flags);
 
-	int error = fbr_check_name(name);
-	if (error) {
-		fbr_fuse_reply_err(request, error);
-		return;
-	}
-
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent);
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOTDIR);
 		return;
 	}
 
-	// TODO we need to check the directory name + filename length
+	struct fbr_path_name dirpath;
+	fbr_path_shared_name(directory->path, &dirpath);
 
 	struct fbr_path_name filename;
 	fbr_path_name_init(&filename, name);
+
+	int error = fbr_check_name(&dirpath, &filename);
+	if (error) {
+		fbr_fuse_reply_err(request, error);
+		return;
+	}
 
 	struct fbr_file *file = fbr_file_alloc_new(fs, directory, &filename);
 

@@ -19,20 +19,25 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 
 	fbr_rlog(FBR_LOG_OP, "LOOKUP req: %lu parent: %lu name: '%s'", request->id, parent, name);
 
-	int error = fbr_check_name(name);
-	if (error) {
-		fbr_fuse_reply_err(request, error);
-		return;
-	}
-
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent);
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOTDIR);
 		return;
 	}
 
-	size_t name_len = strlen(name);
-	struct fbr_file *file = fbr_directory_find_file(directory, name, name_len);
+	struct fbr_path_name dirpath;
+	fbr_path_shared_name(directory->path, &dirpath);
+
+	struct fbr_path_name filename;
+	fbr_path_name_init(&filename, name);
+
+	int error = fbr_check_name(&dirpath, &filename);
+	if (error) {
+		fbr_fuse_reply_err(request, error);
+		return;
+	}
+
+	struct fbr_file *file = fbr_directory_find_file(directory, filename.name, filename.length);
 	if (!file) {
 		fbr_fuse_reply_err(request, ENOENT);
 		fbr_dindex_release(fs, &directory);
@@ -52,10 +57,10 @@ fbr_ops_lookup(struct fbr_request *request, fuse_ino_t parent, const char *name)
 	fbr_rlog(FBR_LOG_OP_LOOKUP, "found file: '%s' (inode: %lu)", fullname, file->inode);
 
 	if (fbr_is_dev()) {
-		struct fbr_path_name filename;
-		fbr_path_get_file(&file->path, &filename);
-		assert(name_len == filename.length);
-		assert_zero(strcmp(name, filename.name));
+		struct fbr_path_name _filename;
+		fbr_path_get_file(&file->path, &_filename);
+		assert(_filename.length == filename.length);
+		assert_zero(strcmp(name, _filename.name));
 	}
 
 	struct fuse_entry_param entry;

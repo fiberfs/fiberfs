@@ -22,17 +22,19 @@ fbr_cmd_import(const char *path)
 	assert(path);
 	assert_zero(fbr_request_get());
 
-	int error = fbr_check_name(path);
+	struct fbr_fullpath_name dirpath;
+	const char *name = fbr_fullpath_split(path, &dirpath);
+	assert(name);
+
+	struct fbr_path_name filename;
+	fbr_path_name_init(&filename, name);
+
+	int error = fbr_check_name(&dirpath.path, &filename);
 	if (error) {
 		return 0;
 	}
 
-	struct fbr_fullpath_name dirpath;
-	const char *filename = fbr_fullpath_split(path, &dirpath);
-	assert(filename);
-
-	size_t filename_len = strlen(filename);
-	if (!filename_len || !strcmp(filename, ".") || !strcmp(filename, "..")) {
+	if (!strcmp(filename.name, ".") || !strcmp(filename.name, "..")) {
 		return 0;
 	}
 
@@ -41,7 +43,7 @@ fbr_cmd_import(const char *path)
 		return 0;
 	}
 
-	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "dir: '%s' file: '%s'", dirpath.path.name, filename);
+	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "dir: '%s' file: '%s'", dirpath.path.name, filename.name);
 
 	int fd = open(dirpath.path.name, O_RDONLY | O_DIRECTORY);
 	if (fd < 0) {
@@ -52,7 +54,7 @@ fbr_cmd_import(const char *path)
 	fbr_zero(&io_import);
 	io_import.magic = FBR_IOCMD_IMPORT_MAGIC;
 	fbr_fullpath_init(&io_import.filename);
-	io_import.filename.path.length = fbr_strbcpy(io_import.filename.data, filename);
+	io_import.filename.path.length = fbr_strbcpy(io_import.filename.data, filename.name);
 
 	error = ioctl(fd, FBR_IOCMD_IMPORT_REQ, &io_import);
 
