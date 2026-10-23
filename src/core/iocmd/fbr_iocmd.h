@@ -4,8 +4,8 @@
  *
  */
 
-#ifndef _FBR_IO_CMD_H_INCLUDED_
-#define _FBR_IO_CMD_H_INCLUDED_
+#ifndef _FBR_IOCMD_H_INCLUDED_
+#define _FBR_IOCMD_H_INCLUDED_
 
 #include <sys/ioctl.h>
 
@@ -35,12 +35,9 @@ struct fbr_iocmd_import {
 typedef int (fbr_iocmd_f)(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	const void *input, void *output);
 
-int fbr_iocmd_ping(const char *path);
 int fbr_iocmd_pong(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	const void *input, void *output);
-
-int fbr_iocmd_import(const char *path);
-int fbr_iocmd_import_request(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
+int fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	const void *input, void *output);
 
-#endif /* _FBR_OPERATIONS_H_INCLUDED_ */
+#endif /* _FBR_IOCMD_H_INCLUDED_ */

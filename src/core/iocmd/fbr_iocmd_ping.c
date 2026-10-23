@@ -17,7 +17,7 @@
 #include "core/request/fbr_rlog.h"
 
 int
-fbr_iocmd_ping(const char *path)
+fbr_cmd_ping(const char *path)
 {
 	assert(path);
 	assert_zero(fbr_request_get());
@@ -59,7 +59,6 @@ fbr_iocmd_pong(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	assert(command == FBR_IOCMD_PING_REQ);
 	assert(input);
 	assert(output);
-	assert(fbr_request_get());
 
 	const struct fbr_iocmd_ping *io_ping = input;
 	struct fbr_iocmd_ping *io_pong = output;

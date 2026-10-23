@@ -18,7 +18,7 @@ static struct {
 		fbr_iocmd_pong
 	},{
 		FBR_IOCMD_IMPORT_REQ,
-		fbr_iocmd_import_request
+		fbr_iocmd_import
 	}
 };
 

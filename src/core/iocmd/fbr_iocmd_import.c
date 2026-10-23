@@ -11,12 +11,13 @@
 #include <unistd.h>
 
 #include "fiberfs.h"
-#include "core/iocmd/fbr_iocmd.h"
+#include "fbr_cmd.h"
+#include "fbr_iocmd.h"
 #include "core/fs/fbr_fs.h"
 #include "core/request/fbr_rlog.h"
 
 int
-fbr_iocmd_import(const char *path)
+fbr_cmd_import(const char *path)
 {
 	assert(path);
 	assert_zero(fbr_request_get());
@@ -35,7 +36,7 @@ fbr_iocmd_import(const char *path)
 		return 0;
 	}
 
-	int ret = fbr_iocmd_ping(dirpath.path.name);
+	int ret = fbr_cmd_ping(dirpath.path.name);
 	if (!ret) {
 		return 0;
 	}
@@ -65,7 +66,7 @@ fbr_iocmd_import(const char *path)
 }
 
 int
-fbr_iocmd_import_request(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
+fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
    const void *input, void *output)
 {
 	fbr_fs_ok(fs);
@@ -73,7 +74,6 @@ fbr_iocmd_import_request(struct fbr_fs *fs, struct fbr_file *file, unsigned long
 	assert(command == FBR_IOCMD_IMPORT_REQ);
 	assert(input);
 	assert_zero(output);
-	assert(fbr_request_get());
 
 	const struct fbr_iocmd_import *io_import = input;
 

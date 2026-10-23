@@ -7,7 +7,7 @@
 #define FBR_TEST_FILE
 
 #include "fiberfs.h"
-#include "core/iocmd/fbr_iocmd.h"
+#include "core/iocmd/fbr_cmd.h"
 
 #include "test/fbr_test.h"
 
@@ -19,7 +19,7 @@ fbr_cmd_iocmd_ping(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	const char *path = cmd->params[0].value;
 
-	int ret = fbr_iocmd_ping(path);
+	int ret = fbr_cmd_ping(path);
 	fbr_ASSERT(ret, "fbr_iocmd_ping() failed: %d", ret);
 
 	fbr_test_logs("iocmd_ping done: %s", path);
@@ -33,7 +33,7 @@ fbr_cmd_iocmd_import(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	const char *path = cmd->params[0].value;
 
-	int ret = fbr_iocmd_import(path);
+	int ret = fbr_cmd_import(path);
 	fbr_ASSERT(ret, "fbr_iocmd_import() failed: %d", ret);
 
 	fbr_test_logs("iocmd_import done: %s", path);
