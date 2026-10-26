@@ -8,3 +8,4 @@
 
 FBR_TEST_CMD(iocmd_ping)
 FBR_TEST_CMD(iocmd_import)
+FBR_TEST_CMD(iocmd_import_error)

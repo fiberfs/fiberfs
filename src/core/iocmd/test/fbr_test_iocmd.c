@@ -48,3 +48,17 @@ fbr_cmd_iocmd_import(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_test_logs("iocmd_import done: %s", path);
 }
+
+void
+fbr_cmd_iocmd_import_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	const char *path = cmd->params[0].value;
+
+	int ret = fbr_cmd_import(path, 0);
+	fbr_test_ERROR(ret, "fbr_iocmd_import() did not fail");
+
+	fbr_test_logs("iocmd_import_error done: %s %d", path, ret);
+}

@@ -150,6 +150,7 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	assert(fctx);
 
 	// TODO figure out default mode
+	// TODO make sure writer has permissions
 
 	import_file->uid = fctx->uid;
 	import_file->gid = fctx->gid;
