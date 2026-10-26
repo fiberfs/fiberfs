@@ -358,6 +358,11 @@ fbr_fuse_unmount(struct fbr_fuse_context *ctx)
 
 	ctx->state = FBR_FUSE_NONE;
 
+	if (ctx->error) {
+		assert(ctx->fs);
+		ctx->fs->error = 1;
+	}
+
 	fbr_rlog(FBR_LOG_FUSE, "umount complete");
 
 	pt_assert(pthread_mutex_unlock(&ctx->mount_lock));

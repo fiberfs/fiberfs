@@ -131,18 +131,16 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	}
 
 	struct fbr_file *import_file = fbr_file_alloc_new(fs, directory, filename);
+	assert(import_file->parent_inode == directory->inode);
+	assert(import_file->state == FBR_FILE_INIT);
+
+	fbr_inode_add(fs, import_file);
+	fbr_dindex_release(fs, &directory);
 
 	const char *import_filename = fbr_path_get_file(&import_file->path, NULL);
 	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "new file: inode: %lu filename: '%s'", import_file->inode,
 		import_filename);
 	assert_zero_dev(strcmp(import_filename, filename->name));
-
-	assert(import_file->parent_inode == directory->inode);
-	assert(import_file->state == FBR_FILE_INIT);
-
-	fbr_inode_add(fs, import_file);
-
-	fbr_dindex_release(fs, &directory);
 
 	struct fbr_request *request = fbr_request_get();
 	fbr_request_ok(request);
@@ -155,8 +153,9 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	import_file->uid = fctx->uid;
 	import_file->gid = fctx->gid;
-	import_file->mode = fbr_ulong2octal(644);
+	import_file->mode = fbr_ulong2octal(644) | S_IFREG;
 	import_file->local_only = 1;
+	import_file->silent_import = 1;
 
 	fbr_id_t id = fbr_id_gen();
 	size_t size;
@@ -167,7 +166,7 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	error = fbr_cstore_s3_head_fullfile(fs, &url, &size);
 
-	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "S3 response: %d size: %zu", error, size);
+	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "S3 ret: %d size: %zu", error, size);
 
 	if (error || !size) {
 		fbr_inode_release(fs, &import_file);
@@ -178,6 +177,57 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 		return error;
 	}
+
+	assert_zero(import_file->size);
+
+	size_t chunk_count = 0;
+	size_t offset = 0;
+
+	while (import_file->size < size) {
+		size_t length = fbr_fs_chunk_size(offset);
+		if (offset + length > size) {
+			assert_dev(size > offset);
+			length = size - offset;
+		}
+
+		struct fbr_chunk *chunk = fbr_body_chunk_add(fs, import_file, id, offset, length);
+		assert(chunk);
+		assert_dev(chunk->length == length);
+		assert_dev(chunk->id = id);
+
+		chunk->fullfile = 1;
+		chunk->external = 1;
+
+		assert(import_file->size > offset);
+
+		offset = import_file->size;
+		chunk_count++;
+	}
+
+	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "chunks: %zu file->size: %zu", chunk_count,
+		import_file->size);
+
+	assert_dev(import_file->size == size);
+
+	import_file->silent_import = 0;
+
+	enum fbr_flush_flags flags = FBR_FLUSH_IMPORT | FBR_FLUSH_IMPORT_UNIQUE;
+	if (io_import->overwrite) {
+		flags = FBR_FLUSH_IMPORT;
+	}
+
+	struct fbr_flush_data flush_data;
+	fbr_flush_data_init(&flush_data, import_file, NULL, NULL, NULL, flags, NULL);
+
+	int ret = fbr_fs_flush(fs, &flush_data);
+	if (ret) {
+		fbr_inode_release(fs, &import_file);
+		return ret;
+	}
+
+	fbr_file_ok(import_file);
+	assert(import_file->state >= FBR_FILE_OK);
+	assert_zero(import_file->local_only);
 
 	fbr_inode_release(fs, &import_file);
 

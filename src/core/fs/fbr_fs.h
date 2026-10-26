@@ -182,6 +182,7 @@ struct fbr_file {
 	fbr_bitflag_t				local_only:1;
 	fbr_bitflag_t				remote:1;
 	fbr_bitflag_t				has_alias_file:1;
+	fbr_bitflag_t				silent_import:1;
 
 	struct {
 		struct fbr_file_ptr		ptrs[FBR_FILE_DEFAULT_PTRS];
@@ -281,7 +282,9 @@ enum fbr_flush_flags {
 	FBR_FLUSH_RMDIR = (1 << 11),
 	FBR_FLUSH_RENAME = (1 << 12),
 	FBR_FLUSH_RENAME_UNIQUE = (1 << 13),
-	FBR_FLUSH_DELETE = (1 << 14)
+	FBR_FLUSH_DELETE = (1 << 14),
+	FBR_FLUSH_IMPORT = (1 << 15),
+	FBR_FLUSH_IMPORT_UNIQUE = (1 << 16),
 };
 
 enum fbr_wbuffer_state {
@@ -445,6 +448,7 @@ struct fbr_fs {
 	fbr_bitflag_t				cstore_managed:1;
 	fbr_bitflag_t				writeback_enabled:1;
 	fbr_bitflag_t				wbuffer_pre_sync:1;
+	fbr_bitflag_t				error:1;
 };
 
 struct fbr_fs_timeout {

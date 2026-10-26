@@ -282,7 +282,9 @@ fbr_file_extend(struct fbr_file *file, size_t size)
 		return;
 	}
 
-	fbr_rlog(FBR_LOG_BODY, "new file->size: %zu (was: %zu)", size, file->size);
+	if (!file->silent_import) {
+		fbr_rlog(FBR_LOG_BODY, "new file->size: %zu (was: %zu)", size, file->size);
+	}
 
 	file->size = size;
 }

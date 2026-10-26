@@ -511,6 +511,9 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RENAME)) {
 		fbr_file_ok(file);
 		assert_zero_dev(wbuffers);
+	} else if (fbr_is_flag(flags, FBR_FLUSH_IMPORT)) {
+		fbr_file_ok(file);
+		assert_zero_dev(wbuffers);
 	} else {
 		assert(flags == FBR_FLUSH_NONE);
 		assert_zero_dev(wbuffers);

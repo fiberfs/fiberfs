@@ -222,7 +222,7 @@ fbr_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 			continue;
 		}
 
-		size_t name_len = strlen(dentry->d_name) + 7;
+		size_t name_len = strlen(dentry->d_name) + 8;
 		char *name = malloc(name_len);
 		assert(name);
 

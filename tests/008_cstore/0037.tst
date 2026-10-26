@@ -36,6 +36,21 @@ print "### IMPORT"
 
 iocmd_import $filepath
 
+print "### VERIFY (MEMORY)"
+
+sys_ls $sys_tmpdir "..:dir .:dir abcfile:file"
+sys_stat_size $filepath 1234
+sys_cat_md5 $filepath $cstore_s3_md5
+
+print "### VERIFY (CSTORE)"
+
+fs_test_release_all_wait
+sleep_ms 20
+
+sys_ls $sys_tmpdir "..:dir .:dir abcfile:file"
+sys_stat_size $filepath 1234
+sys_cat_md5 $filepath $cstore_s3_md5
+
 print "### DONE"
 
 fs_test_release_all_wait 1

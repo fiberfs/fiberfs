@@ -19,7 +19,7 @@ fbr_flush_data_init(struct fbr_flush_data *flush_data, struct fbr_file *file, st
 	fbr_file_ok(file);
 	assert(fbr_is_flag(flags, FBR_FLUSH_WBUFFER | FBR_FLUSH_MKDIR | FBR_FLUSH_ATTR |
 		FBR_FLUSH_RESIZE | FBR_FLUSH_NEW_FILE | FBR_FLUSH_UNLINK | FBR_FLUSH_RMDIR |
-		FBR_FLUSH_RENAME | FBR_FLUSH_DELETE));
+		FBR_FLUSH_RENAME | FBR_FLUSH_DELETE | FBR_FLUSH_IMPORT));
 
 	int do_free = 0;
 
@@ -211,9 +211,9 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_file_LOCK(fs, file);
 	}
 
-	int file_new = 0;
+	int new_file = 0;
 	if (file->state == FBR_FILE_INIT || file->local_only) {
-		file_new = 1;
+		new_file = 1;
 	}
 
 	struct fbr_path_name filename;
@@ -260,7 +260,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 				latest = NULL;
 				latest_modified = 0;
-				file_new = 1;
+				new_file = 1;
 			}
 		}
 
@@ -347,7 +347,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 			latest = clone;
 			latest_modified = 0;
-		} else if (!latest && file_new) {
+		} else if (!latest && new_file) {
 			fbr_rlog(FBR_LOG_FLUSH, "ADDING file");
 			fbr_directory_add_file(fs, directory, file);
 		} else if (!latest) {
@@ -434,6 +434,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_NEW_FILE");
 
 		if (!latest) {
+			fbr_rlog(FBR_LOG_FLUSH, "ADDING file");
 			fbr_directory_add_file(fs, directory, file);
 		} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_NEW_EXCLUSIVE)) {
 			fbr_rlog(FBR_LOG_FLUSH, "EEXIST detected (want exclusive)");
@@ -584,6 +585,37 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_DELETE)) {
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_DELETE");
 		assert_zero_dev(latest);
+	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_IMPORT)) {
+		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_IMPORT");
+		assert_dev(flush_data->flags == FBR_FLUSH_IMPORT ||
+			flush_data->flags == (FBR_FLUSH_IMPORT | FBR_FLUSH_IMPORT_UNIQUE));
+
+		if (latest && fbr_is_flag(flush_data->flags, FBR_FLUSH_IMPORT_UNIQUE)) {
+			fbr_rlog(FBR_LOG_FLUSH, "import EEXIST detected (latest)");
+			return EEXIST;
+		} else if (latest && fbr_file_is_dir(latest)) {
+			fbr_rlog(FBR_LOG_FLUSH, "import EISDIR detected (latest)");
+			return EISDIR;
+		} else if (latest) {
+			assert(latest_modified);
+
+			fbr_rlog(FBR_LOG_FLUSH, "DELETE latest '%s' inode: %lu gen: %lu",
+				filename.name, latest->inode, latest->generation);
+
+			struct fbr_flush_data *flush_rm = fbr_flush_data_init(NULL, latest, NULL,
+				NULL, NULL, FBR_FLUSH_DELETE, flush_data);
+
+			flush_rm->skip_lock = 1;
+			flush_rm->skip_latest = 1;
+
+			fbr_directory_remove_file(fs, directory, &latest);
+		}
+
+		fbr_rlog(FBR_LOG_FLUSH, "ADDING file");
+
+		assert_dev(new_file);
+
+		fbr_directory_add_file(fs, directory, file);
 	}
 
 	if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RESIZE)) {

@@ -14,6 +14,7 @@
 #include "chttp.h"
 #include "core/fs/fbr_fs.h"
 #include "core/store/fbr_store.h"
+#include "cstore/fbr_cstore_io.h"
 
 #define FBR_CSTORE_IO_SIZE			(1024 * 16)
 #define FBR_CSTORE_CHTTP_SIZE			4096

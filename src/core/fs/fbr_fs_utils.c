@@ -38,18 +38,18 @@ fbr_fs_chunk_size(size_t offset)
 	 * offset range     chunk size
 	 *   0KB - 256KB  :   64KB
 	 * 256KB -   1MB  :  256KB
-	 *   1MB -   4MB  :  512KB
-	 *   4MB -  10MB  :    1MB
-	 *  10MB -     *  :    2MB
+	 *   1MB -   8MB  :  512KB
+	 *   8MB -  20MB  :    1MB
+	 *  20MB -     *  :    2MB
 	 */
 
 	if (offset <= 1024 * 256) {
 		return 1024 * 64;
 	} else if (offset <= 1024 * 1024) {
 		return 1024 * 256;
-	} else if (offset <= 1024 * 1024 * 4) {
+	} else if (offset <= 1024 * 1024 * 8) {
 		return 1024 * 512;
-	} else if (offset <= 1024 * 1024 * 10) {
+	} else if (offset <= 1024 * 1024 * 20) {
 		return 1024 * 1024;
 	}
 
