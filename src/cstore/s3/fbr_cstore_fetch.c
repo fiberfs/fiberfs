@@ -157,7 +157,7 @@ _s3_get_route(struct fbr_cstore_fetch_context *fetch)
 	size_t has_cluster = fetch->cstore->cluster.size;
 	size_t has_cdn = fetch->cstore->cdn.size;
 
-	if (retries > max_retries) {
+	if (retries > max_retries || fetch->cstore->exit) {
 		return 0;
 	} else if (retries) {
 		fbr_stat_add(&fetch->cstore->stats.retries);

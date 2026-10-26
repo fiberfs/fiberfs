@@ -422,6 +422,7 @@ struct fbr_fs_config {
 	unsigned long				rlog_size;
 
 	unsigned long				debug_wbuffer_size;
+	unsigned long				debug_import_chunk_size;
 	unsigned long				fullfile_wbuffer_size;
 };
 

@@ -688,6 +688,9 @@ void
 fbr_cstore_free(struct fbr_cstore *cstore)
 {
 	fbr_cstore_ok(cstore);
+	assert_zero(cstore->exit);
+
+	cstore->exit = 1;
 
 	fbr_cstore_tasks_free(cstore);
 	fbr_cstore_servers_free(cstore);

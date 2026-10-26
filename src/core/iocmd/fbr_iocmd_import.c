@@ -179,12 +179,24 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	}
 
 	assert_zero(import_file->size);
+	assert_zero(import_file->body.chunks);
+	assert_zero_dev(import_file->body.chunk_last);
 
+	size_t debug_chunk_size = fs->config.debug_import_chunk_size;
 	size_t chunk_count = 0;
 	size_t offset = 0;
 
+	if (debug_chunk_size) {
+		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "DEBUG import_chunk_size: %lu", debug_chunk_size);
+	}
+
 	while (import_file->size < size) {
 		size_t length = fbr_fs_chunk_size(offset);
+		if (debug_chunk_size && debug_chunk_size < length) {
+			length = debug_chunk_size;
+			debug_chunk_size *= 2;
+		}
+
 		if (offset + length > size) {
 			assert_dev(size > offset);
 			length = size - offset;

@@ -148,6 +148,13 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 	size_t offset_end = offset + size;
 
 	for (size_t i = 0; i < chunks->length; i++) {
+		fbr_fs_ok(fs);
+		if (fs->fuse_ctx) {
+			fbr_fuse_mounted(fs->fuse_ctx);
+		}
+
+		pthread_testcancel();
+
 		struct fbr_chunk *chunk = chunks->list[i];
 		fbr_chunk_ok(chunk);
 		assert(chunk->length);
@@ -180,7 +187,24 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 			break;
 		}
 
-		pt_assert(pthread_cond_wait(&file->update, &file->lock));
+		fbr_fs_ok(fs);
+		if (fs->fuse_ctx) {
+			fbr_fuse_mounted(fs->fuse_ctx);
+		}
+
+		pthread_testcancel();
+
+		struct timespec ts;
+		ts.tv_sec = 0;
+		ts.tv_nsec = 1000 * 1000 * 200;
+		fbr_timespec_add_clock(&ts);
+
+		int ret = pthread_cond_timedwait(&file->update, &file->lock, &ts);
+		if (ret == ETIMEDOUT) {
+			continue;
+		}
+
+		pt_assert(ret);
 	}
 
 	return chunks;

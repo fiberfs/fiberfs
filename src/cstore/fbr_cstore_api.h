@@ -151,6 +151,7 @@ struct fbr_cstore {
 	fbr_bitflag_t				cant_splice_out:1;
 	fbr_bitflag_t				debug_allow_loop:1;
 	fbr_bitflag_t				deep_tree:1;
+	fbr_bitflag_t				exit:1;
 
 	struct fbr_cstore_head			heads[FBR_CSTORE_HEAD_COUNT];
 

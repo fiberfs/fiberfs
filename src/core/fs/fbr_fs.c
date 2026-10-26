@@ -58,6 +58,7 @@ fbr_fs_config_load(struct fbr_fs *fs)
 	fs->config.fullfile = fbr_conf_get_bool("FULLFILE", FBR_CONFIG_TRUE);
 	fs->config.fullfile_wbuffer_size = fbr_conf_get_ulong("FULLFILE_BUFFER_SIZE", 0);
 	fs->config.debug_wbuffer_size = fbr_conf_get_ulong("DEBUG_FS_WBUFFER_ALLOC_SIZE", 0);
+	fs->config.debug_import_chunk_size = fbr_conf_get_ulong("DEBUG_FS_IMPORT_CHUNK_SIZE", 0);
 
 	fbr_config_reader_ready(reader);
 }

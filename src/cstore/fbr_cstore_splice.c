@@ -18,15 +18,16 @@
 
 size_t
 fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *addr, int fd_in,
-    size_t size)
+    off_t offset, size_t size)
 {
 	fbr_cstore_ok(cstore);
 	chttp_addr_connected(addr)
 	assert(fd_in >= 0);
+	assert(offset >= 0);
 	assert(size);
 
 	size_t bytes = 0;
-	off_t offset = 0;
+	off_t send_offset = offset;
 	int error = 0;
 	int fallback_rw = 0;
 	if (cstore->cant_splice_out || addr->tls) {
@@ -34,7 +35,7 @@ fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *addr, int
 	}
 
 	while (!fallback_rw && bytes < size) {
-		ssize_t ret = sendfile(addr->sock, fd_in, &offset, size - bytes);
+		ssize_t ret = sendfile(addr->sock, fd_in, &send_offset, size - bytes);
 		if (ret <= 0) {
 			if (!ret) {
 				break;
@@ -52,6 +53,16 @@ fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *addr, int
 	}
 
 	while (fallback_rw && bytes < size) {
+		if (bytes == 0) {
+			send_offset = lseek(fd_in, offset, SEEK_SET);
+			if (send_offset != offset) {
+				if (send_offset < 0) {
+					error = errno;
+				}
+				break;
+			}
+		}
+
 		char buffer[FBR_CSTORE_IO_SIZE];
 		ssize_t ret = read(fd_in, buffer, sizeof(buffer));
 		if (ret <= 0) {
@@ -71,7 +82,7 @@ fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *addr, int
 	}
 
 	fbr_rlog(FBR_LOG_CS_S3, "SPLICE_OUT wrote %zu bytes (%s) error: %d", bytes,
-		fallback_rw ? "read/write" : "sendfile", error);
+		(fallback_rw ? "read/write" : "sendfile"), error);
 
 	// Caller will cleanup since it knows the expected byte count
 
