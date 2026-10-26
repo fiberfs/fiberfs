@@ -259,6 +259,7 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 		fbr_chunk_ok(chunk);
 
 		if (chunk->external) {
+			fbr_rlog(FBR_LOG_BODY, "PRUNE skipping external chunk from deletion");
 			continue;
 		}
 
