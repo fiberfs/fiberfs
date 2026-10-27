@@ -75,6 +75,7 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
    const void *input, void *output)
 {
 	fbr_fs_ok(fs);
+	assert_dev(fs->store);
 	fbr_file_ok(directory_file);
 	assert(command == FBR_IOCMD_IMPORT_REQ);
 	assert(input);
@@ -159,13 +160,17 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	import_file->silent_import = 1;
 
 	fbr_id_t id = fbr_id_gen();
-	size_t size;
+	size_t size = 0;
 
 	struct fbr_cstore_url url;
 	fbr_cstore_ok(fs->cstore);
 	fbr_cstore_s3_fullfile_url(fs->cstore, import_file, id, &url);
 
-	error = fbr_cstore_s3_head_fullfile(fs, &url, &size);
+	error = EOPNOTSUPP;
+
+	if (fs->store->external_file_size) {
+		error = fs->store->external_file_size(fs, &url, &size);
+	}
 
 	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "S3 ret: %d size: %zu", error, size);
 

@@ -9,6 +9,7 @@
 
 #include "compress/fbr_gzip.h"
 #include "core/fs/fbr_fs.h"
+#include "cstore/fbr_cstore_path.h"
 
 #define FBR_JSON_HEADER				"fiberfs"
 #define FBR_JSON_VERSION			1
@@ -149,6 +150,8 @@ struct fbr_store_callbacks {
 	int (*index_read_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 	int (*index_delete_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 	fbr_id_t (*root_read_f)(struct fbr_fs *fs, struct fbr_directory *directory, int route_s3);
+	int (*external_file_size)(struct fbr_fs *fs, struct fbr_cstore_url *url,
+		unsigned long *size);
 
 	struct {
 		int (*directory_flush_f)(struct fbr_fs *fs, struct fbr_flush_data *flush_data_cmds);

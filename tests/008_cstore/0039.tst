@@ -1,5 +1,7 @@
 fiber_test "cstore s3 import errors"
 
+# TODO subdirectory
+
 # config
 
 config_add FUSE_WRITEBACK_CACHE false
