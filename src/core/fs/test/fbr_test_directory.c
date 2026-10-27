@@ -735,14 +735,12 @@ _directory_load_ttl(struct fbr_test_context *ctx)
 	fbr_test_cstore_debug(cstore_proxy);
 	assert_zero(cstore_proxy->stats.http_400);
 	assert_zero(cstore_proxy->stats.http_500);
-	assert_zero(cstore_proxy->stats.http_other);
 
 	fbr_test_logs("CSTORE_DEBUG cstore_s3");
 	fbr_test_cstore_debug(cstore_s3);
 	assert(cstore_s3->entries == 2);
 	assert_zero(cstore_s3->stats.http_400);
 	assert_zero(cstore_s3->stats.http_500);
-	assert_zero(cstore_s3->stats.http_other);
 
 	if (!_LOAD_TTL_MODE_RANDOM) {
 		assert(cstore_proxy->stats.http_200 >= _LOAD_TTL_GEN_STOP * 2);

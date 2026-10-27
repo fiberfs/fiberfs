@@ -58,6 +58,8 @@ sys_cat_md5 $filepath $cstore_s3_md5
 print "### VERIFY (CSTORE)"
 
 fs_test_release_all_wait
+cstore_clear 1
+equal $cstore_entries:1 0
 sleep_ms 20
 
 sys_ls $sys_tmpdir "..:dir .:dir bigfile.bin:file"

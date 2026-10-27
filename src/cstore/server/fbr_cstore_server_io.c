@@ -567,7 +567,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		if (ret || !fullfile || range_start != ff_offset || range_end != ff_end ||
 		    range_end < range_start || is_head) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR range");
-			fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+			fbr_cstore_http_respond(cstore, http, 416, "Bad Range");
 			return;
 		}
 
@@ -840,22 +840,38 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		resp_status = 206;
 		resp_reason = "Partial Content";
 
-		size_t range_size = size;
+		int range_error = 0;
 
 		if (!backend) {
 			splice_offset = range_start;
 			splice_size = range_length;
 			assert_dev(splice_size);
+
+			if (splice_offset + splice_size > size) {
+				range_error = 1;
+			}
+
+			fbr_bprintf(resp_range, "Content-Range: bytes %zu-%zu/%zu\r\n", range_start,
+				range_end, size);
 		} else {
-			assert_dev(range_length == size);
-			range_size = range_end + 1;
+			if (range_length != size) {
+				range_error = 1;
+			}
+
+			fbr_bprintf(resp_range, "Content-Range: bytes %zu-%zu/*\r\n", range_start,
+				range_end);
 		}
 
-		// TODO we dont actually know the complete size here if we arent S3
-		// For a correct Content-Range, we need the size via the FILEID params
+		if (range_error) {
+			fbr_rlog(FBR_LOG_CS_ROOT, "ERROR range_error");
 
-		fbr_bprintf(resp_range, "Content-Range: bytes %zu-%zu/%zu\r\n", range_start,
-			range_end, range_size);
+			_cstore_url_entry_release(cstore, entry, file_type, 0);
+			assert_zero_dev(close(fd));
+
+			fbr_cstore_http_respond(cstore, http, 416, "Bad Range");
+
+			return;
+		}
 	}
 
 	char fiber_rid[32];
@@ -891,7 +907,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR send() headers");
 		_cstore_url_entry_release(cstore, entry, file_type, 0);
 		assert_zero_dev(close(fd));
-		fbr_stat_add(&cstore->stats.http_other);
+		fbr_stat_add(&cstore->stats.http_500);
 		return;
 	} else if (is_head) {
 		_cstore_url_entry_release(cstore, entry, file_type, 0);
@@ -908,7 +924,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR splice_out");
 		_cstore_url_entry_release(cstore, entry, file_type, 0);
 		chttp_error(http, CHTTP_ERR_NETWORK);
-		fbr_stat_add(&cstore->stats.http_other);
+		fbr_stat_add(&cstore->stats.http_500);
 		return;
 	}
 

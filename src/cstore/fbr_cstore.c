@@ -636,6 +636,7 @@ fbr_cstore_release(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_re
 	_cstore_release(cstore, entry_ref, 0);
 }
 
+// TODO if we have a successful release next (concurrent), we still get removed
 void
 fbr_cstore_remove(struct fbr_cstore *cstore, struct fbr_cstore_entry **entry_ref)
 {

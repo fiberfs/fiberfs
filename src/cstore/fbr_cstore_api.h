@@ -197,7 +197,6 @@ struct fbr_cstore {
 		fbr_stats_t			http_304;
 		fbr_stats_t			http_400;
 		fbr_stats_t			http_500;
-		fbr_stats_t			http_other;
 	} stats;
 	};
 

@@ -380,27 +380,32 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 					assert(strstr(metadata.path, FBR_FIBERFS_CHUNK_NAME));
 				}
 
-				fbr_test_logs("CSTORE_DEBUG file: %s\n\t(CHUNK %s offset: %lu "
-					"size: %lu%s)",
-					filename, path.value, ff_offset, metadata.size,
-					(fullfile ? " fullfile" : ""));
+				fbr_test_logs("CSTORE_DEBUG CHUNK %s offset: %lu size: %lu%s"
+					" (file: %s)", path.value, ff_offset, metadata.size,
+					(fullfile ? " fullfile" : ""), filename);
+
 				fbr_cstore_is_path(metadata.path);
 				assert(strstr(metadata.path, FBR_FIBERFS_NAME));
 				assert((unsigned long)stat->st_size == metadata.size);
+
 				break;
 			case FBR_CSTORE_FILE_INDEX:
-				fbr_test_logs("CSTORE_DEBUG file: %s\n\t(INDEX %s compress: %d)",
-					filename, metadata.path, metadata.compress);
+				fbr_test_logs("CSTORE_DEBUG INDEX %s compress: %d (file: %s)",
+					metadata.path, metadata.compress, filename);
+
 				fbr_cstore_is_path(metadata.path);
 				assert(strstr(metadata.path, FBR_FIBERFS_INDEX_NAME));
+
 				break;
 			case FBR_CSTORE_FILE_ROOT:
-				fbr_test_logs("CSTORE_DEBUG file: %s\n\t(ROOT %s etag: %s:%u)",
-					filename, metadata.path, metadata.etag.value,
-					metadata.etag.length);
+				fbr_test_logs("CSTORE_DEBUG ROOT %s etag: %s:%u (file: %s)",
+					metadata.path, metadata.etag.value,
+					metadata.etag.length, filename);
+
 				fbr_cstore_is_path(metadata.path);
 				assert(strstr(metadata.path, FBR_FIBERFS_ROOT_NAME));
 				assert_zero(metadata.compress);
+
 				break;
 			default:
 				fbr_ABORT("CSTORE_DEBUG file: %s (BAD metadata error: %d)",
@@ -453,7 +458,6 @@ fbr_test_cstore_debug(struct fbr_cstore *cstore)
 	fbr_test_logs("CSTORE_DEBUG http_304: %lu", cstore->stats.http_304);
 	fbr_test_logs("CSTORE_DEBUG http_400: %lu", cstore->stats.http_400);
 	fbr_test_logs("CSTORE_DEBUG http_500: %lu", cstore->stats.http_500);
-	fbr_test_logs("CSTORE_DEBUG http_other: %lu", cstore->stats.http_other);
 
 	struct fbr_cstore_hashpath hashpath;
 	fbr_cstore_hashpath_data(cstore, 0, &hashpath);
