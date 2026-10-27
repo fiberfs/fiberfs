@@ -840,12 +840,22 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		resp_status = 206;
 		resp_reason = "Partial Content";
 
-		splice_offset = range_start;
-		splice_size = range_length;
-		assert_dev(splice_size);
+		size_t range_size = size;
+
+		if (!backend) {
+			splice_offset = range_start;
+			splice_size = range_length;
+			assert_dev(splice_size);
+		} else {
+			assert_dev(range_length == size);
+			range_size = range_end + 1;
+		}
+
+		// TODO we dont actually know the complete size here if we arent S3
+		// For a correct Content-Range, we need the size via the FILEID params
 
 		fbr_bprintf(resp_range, "Content-Range: bytes %zu-%zu/%zu\r\n", range_start,
-			range_end, size);
+			range_end, range_size);
 	}
 
 	char fiber_rid[32];

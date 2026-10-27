@@ -230,6 +230,10 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 		return;
 	}
 
+	size_t removed = 0;
+	size_t deleted = 0;
+	size_t external = 0;
+
 	struct fbr_chunk *chunk = file->body.chunks;
 	struct fbr_chunk *prev = NULL;
 
@@ -244,6 +248,7 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 			}
 
 			chunk = chunk->next;
+			removed++;
 
 			continue;
 		}
@@ -259,14 +264,18 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 		fbr_chunk_ok(chunk);
 
 		if (chunk->external) {
-			fbr_rlog(FBR_LOG_BODY, "PRUNE skipping external chunk from deletion");
+			external++;
 			continue;
 		}
 
 		if (fs->store->chunk_delete_f) {
+			deleted++;
 			fs->store->chunk_delete_f(fs, file, chunk);
 		}
 	}
+
+	fbr_rlog(FBR_LOG_BODY, "PRUNE removed: %zu deleted: %zu external: %zu", removed, deleted,
+		external);
 }
 
 // Note: must have file->lock

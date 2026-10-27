@@ -56,7 +56,7 @@ fbr_cmd_cstore_s3_upload(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	url.length += fbr_snaprintf(url.value, sizeof(url.value), url.length,
 		"?%s=%d&b=%d&l=%ld",
-		FBR_FIBERFS_CHUNKID_NAME, 420, 0, size);
+		FBR_FIBERFS_FULLFILE_NAME, 420, 0, size);
 
 	chttp_set_method(http, "PUT");
 	chttp_set_url(http, url.value);

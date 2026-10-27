@@ -42,7 +42,7 @@ print "### WRITE"
 server_read_request
 server_method_match PUT
 server_url_submatch "test.txt"
-server_url_submatch ".fiberfschunk"
+server_url_submatch ".fiberfs"
 server_header_exists "Content-Length"
 server_header_submatch "Authorization" "AWS4-HMAC-SHA256"
 server_body_match "content_here"

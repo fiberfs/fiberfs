@@ -375,23 +375,27 @@ _cstore_debug_cb(const char *filename, const struct stat *stat, int flag, struct
 				if (fullfile) {
 					path.length = fbr_cstore_s3_url_trim(path.value,
 						path.length);
+					assert(strstr(metadata.path, FBR_FIBERFS_FULLFILE_NAME));
+				} else {
+					assert(strstr(metadata.path, FBR_FIBERFS_CHUNK_NAME));
 				}
 
-				fbr_test_logs("CSTORE_DEBUG file: %s (CHUNK %s size: %lu%s)",
-					filename, path.value, metadata.size,
+				fbr_test_logs("CSTORE_DEBUG file: %s\n\t(CHUNK %s offset: %lu "
+					"size: %lu%s)",
+					filename, path.value, ff_offset, metadata.size,
 					(fullfile ? " fullfile" : ""));
 				fbr_cstore_is_path(metadata.path);
-				assert(strstr(metadata.path, FBR_FIBERFS_CHUNK_NAME));
+				assert(strstr(metadata.path, FBR_FIBERFS_NAME));
 				assert((unsigned long)stat->st_size == metadata.size);
 				break;
 			case FBR_CSTORE_FILE_INDEX:
-				fbr_test_logs("CSTORE_DEBUG file: %s (INDEX %s compress: %d)",
+				fbr_test_logs("CSTORE_DEBUG file: %s\n\t(INDEX %s compress: %d)",
 					filename, metadata.path, metadata.compress);
 				fbr_cstore_is_path(metadata.path);
 				assert(strstr(metadata.path, FBR_FIBERFS_INDEX_NAME));
 				break;
 			case FBR_CSTORE_FILE_ROOT:
-				fbr_test_logs("CSTORE_DEBUG file: %s (ROOT %s etag: %s:%u)",
+				fbr_test_logs("CSTORE_DEBUG file: %s\n\t(ROOT %s etag: %s:%u)",
 					filename, metadata.path, metadata.etag.value,
 					metadata.etag.length);
 				fbr_cstore_is_path(metadata.path);

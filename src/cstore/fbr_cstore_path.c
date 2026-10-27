@@ -139,7 +139,7 @@ _cstore_path_chunk_alias(const struct fbr_file *file, fbr_id_t id, size_t offset
 			dirpath.name,
 			root_sep,
 			file->alias.path->value.name,
-			FBR_FIBERFS_CHUNKID_NAME,
+			FBR_FIBERFS_FULLFILE_NAME,
 			chunk_id, offset, length);
 	} else {
 		path->length = fbr_bprintf(path->value, "%s%s%s%s.%s.%zu",
@@ -178,7 +178,7 @@ fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offset, s
 	if (fullfile) {
 		path->length = fbr_bprintf(path->value, "%s?%s=%s&b=%zu&l=%zu",
 			filepath.path.name,
-			FBR_FIBERFS_CHUNKID_NAME,
+			FBR_FIBERFS_FULLFILE_NAME,
 			chunk_id, offset, length);
 	} else {
 		assert(length);
@@ -643,9 +643,9 @@ fbr_cstore_s3_url_parse(const char *url, size_t url_len, int *fullfile, size_t *
 
 	for (size_t i = 0; i < url_len; i++) {
 		if (url[i] == '?') {
-			if (!strncmp(&url[i + 1], FBR_FIBERFS_CHUNKID_NAME "=",
-			    sizeof(FBR_FIBERFS_CHUNKID_NAME))) {
-				i += sizeof(FBR_FIBERFS_CHUNKID_NAME) + 1;
+			if (!strncmp(&url[i + 1], FBR_FIBERFS_FULLFILE_NAME "=",
+			    sizeof(FBR_FIBERFS_FULLFILE_NAME))) {
+				i += sizeof(FBR_FIBERFS_FULLFILE_NAME) + 1;
 
 				if (url[i] < '0' || url[i] > '9') {
 					return FBR_CSTORE_FILE_NONE;
