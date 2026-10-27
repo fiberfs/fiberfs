@@ -176,11 +176,6 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	if (error || !size) {
 		fbr_inode_release(fs, &import_file);
-
-		if (error < 300) {
-			return EINVAL;
-		}
-
 		return error;
 	}
 

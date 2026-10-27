@@ -1255,7 +1255,7 @@ fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, unsig
 	*size = 0;
 
 	if (!fbr_cstore_backend_enabled(cstore)) {
-		return 1;
+		return EOPNOTSUPP;
 	}
 
 	char chttp_stack[FBR_CSTORE_CHTTP_SIZE];
@@ -1301,7 +1301,7 @@ fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, unsig
 	    http->state != CHTTP_STATE_IDLE) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp: %d %d", http->error, http->status);
 
-		int error = http->status ? http->status : 500;
+		int error = http->status >= 400 ? http->status : 500;
 		assert_dev(error > 0);
 
 		chttp_context_free(http);
