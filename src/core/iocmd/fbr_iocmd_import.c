@@ -85,6 +85,13 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	const struct fbr_iocmd_import *io_import = input;
 
+	struct fbr_request *request = fbr_request_get();
+	fbr_request_ok(request);
+
+	struct fuse_ctx fusectx;
+	const struct fuse_ctx *fctx = fbr_fuse_req_ctx(request, &fusectx);
+	assert(fctx);
+
 	if (!fbr_object_is_valid(io_import, FBR_IOCMD_IMPORT_MAGIC)) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR magic");
 		return EIO;
@@ -97,6 +104,9 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	} else if (!fbr_file_is_dir(directory_file)) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR directory_file");
 		return ENOTDIR;
+	} else if (!fbr_fuse_check_access(fctx, directory_file, W_OK | X_OK)) {
+		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR access");
+		return EPERM;
 	}
 
 	const struct fbr_path_name *filename = &io_import->filename.path;
@@ -145,19 +155,9 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 		import_filename);
 	assert_zero_dev(strcmp(import_filename, filename->name));
 
-	struct fbr_request *request = fbr_request_get();
-	fbr_request_ok(request);
-
-	struct fuse_ctx fusectx;
-	const struct fuse_ctx *fctx = fbr_fuse_req_ctx(request, &fusectx);
-	assert(fctx);
-
-	// TODO figure out default mode
-	// TODO make sure writer has permissions
-
 	import_file->uid = fctx->uid;
 	import_file->gid = fctx->gid;
-	import_file->mode = fbr_ulong2octal(644) | S_IFREG;
+	import_file->mode = (fbr_ulong2octal(666) & ~(fctx->umask)) | S_IFREG;
 	import_file->local_only = 1;
 	import_file->silent_import = 1;
 

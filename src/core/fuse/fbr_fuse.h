@@ -73,11 +73,13 @@ void fbr_fuse_unmount_signal(void);
 
 struct fbr_fs;
 struct fbr_file;
+struct fuse_ctx;
 
 void fbr_fuse_LOCK(struct fbr_fuse_context *fuse_ctx, pthread_mutex_t *lock);
 void fbr_fuse_invalidate_dentry(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_fuse_invalidate_inode(struct fbr_fs *fs, struct fbr_file *file);
 void fbr_fuse_delete_dentry(struct fbr_fs *fs, struct fbr_file *file);
+int fbr_fuse_check_access(const struct fuse_ctx *fctx, const struct fbr_file *file, int access);
 
 #define fbr_fuse_context_ok(ctx)					\
 	fbr_magic_check(ctx, FBR_FUSE_CTX_MAGIC)

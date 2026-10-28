@@ -4,6 +4,7 @@
  *
  */
 
+#include <fcntl.h>
 #include <pthread.h>
 #include <time.h>
 
@@ -109,4 +110,40 @@ fbr_fuse_delete_dentry(struct fbr_fs *fs, struct fbr_file *file)
 			file->inode, filename.name, filename.length);
 		assert_dev(ret != -ENOSYS);
 	}
+}
+
+int
+fbr_fuse_check_access(const struct fuse_ctx *fctx, const struct fbr_file *file, int access)
+{
+	assert(fctx);
+	fbr_file_ok(file);
+
+	int file_mask = R_OK | W_OK | X_OK;
+	assert(fbr_is_flag(access, file_mask));
+
+	if (!fctx->uid) {
+		return 1;
+	}
+
+	mode_t bits = 0;
+
+	if (fctx->uid == file->uid) {
+		bits = (file->mode >> 6) & file_mask;
+	} else if (fctx->gid == file->gid) {
+		bits = (file->mode >> 3) & file_mask;
+	} else {
+		bits = file->mode & file_mask;
+	}
+
+	if ((access & R_OK) && !(bits & R_OK)) {
+		return 0;
+	}
+	if ((access & W_OK) && !(bits & W_OK)) {
+		return 0;
+	}
+	if ((access & X_OK) && !(bits & X_OK)) {
+		return 0;
+	}
+
+	return 1;
 }

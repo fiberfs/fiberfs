@@ -6,6 +6,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
@@ -219,6 +221,7 @@ fbr_fuse_req_ctx(struct fbr_request *request, struct fuse_ctx *fctx)
 	fctx->uid = getuid();
 	fctx->gid = getgid();
 	fctx->pid = getpid();
+	fctx->umask = fbr_ulong2octal(22);
 
 	return fctx;
 }
