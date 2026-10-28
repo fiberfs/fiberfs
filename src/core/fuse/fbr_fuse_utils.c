@@ -117,33 +117,7 @@ fbr_fuse_check_access(const struct fuse_ctx *fctx, const struct fbr_file *file, 
 {
 	assert(fctx);
 	fbr_file_ok(file);
+	assert(access);
 
-	int file_mask = R_OK | W_OK | X_OK;
-	assert(fbr_is_flag(access, file_mask));
-
-	if (!fctx->uid) {
-		return 1;
-	}
-
-	mode_t bits = 0;
-
-	if (fctx->uid == file->uid) {
-		bits = (file->mode >> 6) & file_mask;
-	} else if (fctx->gid == file->gid) {
-		bits = (file->mode >> 3) & file_mask;
-	} else {
-		bits = file->mode & file_mask;
-	}
-
-	if ((access & R_OK) && !(bits & R_OK)) {
-		return 0;
-	}
-	if ((access & W_OK) && !(bits & W_OK)) {
-		return 0;
-	}
-	if ((access & X_OK) && !(bits & X_OK)) {
-		return 0;
-	}
-
-	return 1;
+	return fbr_fs_check_access(fctx->uid, fctx->gid, file, access);
 }

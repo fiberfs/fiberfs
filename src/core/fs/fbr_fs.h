@@ -477,6 +477,7 @@ unsigned long fbr_fs_param_value(unsigned long param);
 size_t fbr_fs_chunk_size(size_t offset);
 void fbr_fs_timeout_init(struct fbr_fs_timeout *timeout);
 int fbr_fs_is_timeout(struct fbr_fs *fs, struct fbr_fs_timeout *timeout);
+int fbr_fs_check_access(uid_t uid, gid_t gid, const struct fbr_file *file, int access);
 
 void fbr_inodes_alloc(struct fbr_fs *fs);
 fbr_inode_t fbr_inode_gen(struct fbr_fs *fs);

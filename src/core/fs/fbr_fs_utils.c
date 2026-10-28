@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <sys/stat.h>
 
 #include "fiberfs.h"
 #include "fbr_fs.h"
@@ -98,4 +99,39 @@ fbr_fs_is_timeout(struct fbr_fs *fs, struct fbr_fs_timeout *timeout)
 	}
 
 	return 0;
+}
+
+int
+fbr_fs_check_access(uid_t uid, gid_t gid, const struct fbr_file *file, int access)
+{
+	fbr_file_ok(file);
+
+	int file_mask = R_OK | W_OK | X_OK;
+	assert(fbr_is_flag(access, file_mask));
+
+	if (!uid) {
+		return 1;
+	}
+
+	mode_t perm = 0;
+
+	if (uid == file->uid) {
+		perm = (file->mode >> 6) & file_mask;
+	} else if (gid == file->gid) {
+		perm = (file->mode >> 3) & file_mask;
+	} else {
+		perm = file->mode & file_mask;
+	}
+
+	if ((access & R_OK) && !(perm & R_OK)) {
+		return 0;
+	}
+	if ((access & W_OK) && !(perm & W_OK)) {
+		return 0;
+	}
+	if ((access & X_OK) && !(perm & X_OK)) {
+		return 0;
+	}
+
+	return 1;
 }
