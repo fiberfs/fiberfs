@@ -118,6 +118,7 @@ _writer_init(struct fbr_writer *writer)
 
 	fbr_zero(writer);
 	writer->magic = FBR_WRITER_MAGIC;
+	writer->time_start = fbr_get_time();
 }
 
 void
@@ -556,12 +557,15 @@ void
 fbr_writer_debug(struct fbr_writer *writer)
 {
 	fbr_writer_ok(writer);
+	assert_dev(writer->time_start);
+
+	double time_diff = fbr_get_time() - writer->time_start;
 
 	fbr_buffer_debug(writer->buffer, "buffer");
 	fbr_buffer_debug(writer->output, "output");
 
 	fbr_rlog(FBR_LOG_DEBUG, "WRITER workspace: %s want_compress: %d",
 		writer->workspace ? "true" : "false", writer->want_compress);
-	fbr_rlog(FBR_LOG_WRITER, "WRITER raw_bytes: %zu bytes: %zu is_compress: %d",
-		writer->raw_bytes, writer->bytes, writer->is_compress);
+	fbr_rlog(FBR_LOG_WRITER, "WRITER raw_bytes: %zu bytes: %zu is_compress: %d time: %f",
+		writer->raw_bytes, writer->bytes, writer->is_compress, time_diff);
 }

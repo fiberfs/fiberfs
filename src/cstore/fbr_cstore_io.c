@@ -890,6 +890,8 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_request *request = fbr_request_get();
 
+	double time_start = fbr_get_time();
+
 	struct fbr_reader reader;
 	fbr_reader_init(fs, &reader, request, metadata.compress);
 	struct fbr_buffer *output = reader.output;
@@ -972,6 +974,8 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fjson_parse(&json, output->buffer, output->buffer_pos);
 	fbr_smagic_check(parser, FBR_INDEX_PARSER_MAGIC);
 
+	double time_diff = fbr_get_time() - time_start;
+
 	int errors = 0;
 
 	if (metadata.compress) {
@@ -988,7 +992,8 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	fbr_index_parser_free(&parser);
 	fbr_reader_free(fs, &reader);
 
-	fbr_rlog(FBR_LOG_CS_INDEX, "READ bytes in: %zu out: %zu", bytes_in, bytes_out);
+	fbr_rlog(FBR_LOG_CS_INDEX, "READ bytes in: %zu out: %zu time: %f", bytes_in, bytes_out,
+		time_diff);
 
 	fbr_cstore_release(cstore, &entry);
 

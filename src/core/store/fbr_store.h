@@ -57,6 +57,8 @@ struct fbr_writer {
 	size_t					raw_bytes;
 	size_t					bytes;
 
+	double					time_start;
+
 	fbr_bitflag_t				error:1;
 	fbr_bitflag_t				do_free:1;
 };
