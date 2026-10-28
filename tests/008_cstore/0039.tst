@@ -1,10 +1,9 @@
 fiber_test "cstore s3 import errors"
 
-# TODO subdirectory
-
 # config
 
 config_add FUSE_WRITEBACK_CACHE false
+config_add LOG_SIZE 200000
 
 # Init cstores (0: local 1: s3)
 
@@ -89,6 +88,40 @@ sleep_ms 20
 sys_ls $sys_tmpdir "..:dir .:dir"
 
 equal $cstore_stat_chunks_fullfile:1 1
+equal $cstore_stat_chunks:1 1
+
+sleep_ms 100
+
+print "### SUBDIR FILE2"
+
+set file2 "dirx/test2_file"
+set path2 $sys_tmpdir "/" $file2
+set dirpath $sys_tmpdir "/dirx"
+
+cstore_s3_upload $file2 781
+
+equal $cstore_stat_chunks_fullfile:1 2
+
+sleep_ms 20
+
+print "### IMPORT FILE2"
+
+iocmd_import_error $path2
+
+sys_mkdir $dirpath
+
+iocmd_import $path2
+
+sleep_ms 100
+print "### FILE DIR FILE3"
+
+set file3 "dirZ/test3_file"
+set path3 $sys_tmpdir "/" $file3
+set dirpath3 $sys_tmpdir "/dirZ"
+
+sys_write $dirpath3 ""
+
+iocmd_import_error $path3
 
 print "### DONE"
 
@@ -101,6 +134,11 @@ cstore_debug 1
 
 equal $cstore_stat_http_400:1 0
 equal $cstore_stat_http_500:1 0
+
+equal $cstore_stat_chunks_fullfile:1 2
+equal $cstore_stat_chunks:1 2
+equal $cstore_stat_indexes:1 2
+equal $cstore_stat_roots:1 2
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0

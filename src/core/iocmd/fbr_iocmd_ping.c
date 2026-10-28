@@ -24,6 +24,7 @@ fbr_cmd_ping(const char *path)
 
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
+		fbr_rlog(FBR_LOG_IOCMD_PING, "open(%s) failed: %d", path, fd);
 		return 0;
 	}
 

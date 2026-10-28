@@ -20,6 +20,7 @@
 #include "cstore/fbr_cstore_api.h"
 #include "cstore/s3/fbr_cstore_s3.h"
 
+// TODO we need to return better errors, 0 should be success
 int
 fbr_cmd_import(const char *path, int overwrite)
 {
@@ -47,6 +48,7 @@ fbr_cmd_import(const char *path, int overwrite)
 
 	int fd = open(dirpath.path.name, O_RDONLY | O_DIRECTORY);
 	if (fd < 0) {
+		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "open(%s) failed: %d", dirpath.path.name, fd);
 		return 0;
 	}
 
