@@ -56,7 +56,7 @@ fbr_ops_ioctl(struct fbr_request *request, fuse_ino_t ino, unsigned int cmd, voi
 		memset(out_buf, 0, out_bufsz);
 	}
 
-	int error = EINVAL;
+	int error = EIO;
 
 	size_t i;
 	for (i = 0; i < fbr_array_len(_FBR_IOCMD_ROUTES); i++) {

@@ -20,7 +20,7 @@ fbr_cmd_iocmd_ping(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	const char *path = cmd->params[0].value;
 
 	int ret = fbr_cmd_ping(path);
-	fbr_ASSERT(ret, "fbr_iocmd_ping() failed: %d", ret);
+	fbr_test_ERROR(ret, "fbr_iocmd_ping() failed: %d", ret);
 
 	fbr_test_logs("iocmd_ping done: %s", path);
 }
@@ -44,7 +44,7 @@ fbr_cmd_iocmd_import(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	}
 
 	int ret = fbr_cmd_import(path, overwrite);
-	fbr_ASSERT(ret, "fbr_iocmd_import() failed: %d", ret);
+	fbr_test_ERROR(ret, "fbr_iocmd_import() failed: %d", ret);
 
 	fbr_test_logs("iocmd_import done: %s", path);
 }
@@ -58,7 +58,7 @@ fbr_cmd_iocmd_import_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 	const char *path = cmd->params[0].value;
 
 	int ret = fbr_cmd_import(path, 0);
-	fbr_test_ERROR(ret, "fbr_iocmd_import() did not fail");
+	fbr_test_ASSERT(ret, "fbr_iocmd_import() did not fail");
 
-	fbr_test_logs("iocmd_import_error done: %s %d", path, ret);
+	fbr_test_logs("iocmd_import_error done: %s %d %s", path, ret, strerror(ret));
 }

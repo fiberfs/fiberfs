@@ -4,6 +4,7 @@
  *
  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -25,7 +26,7 @@ fbr_cmd_ping(const char *path)
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_IOCMD_PING, "open(%s) failed: %d", path, fd);
-		return 0;
+		return errno ? errno : EIO;
 	}
 
 	struct fbr_iocmd_ping io_ping;
@@ -47,10 +48,12 @@ fbr_cmd_ping(const char *path)
 	fbr_rlog(FBR_LOG_IOCMD_PING, "PERF time: %f", time_diff);
 
 	if (!ret && fbr_object_is_svalid(io_ping, FBR_IOCMD_PING_MAGIC) && io_ping.pong) {
-		return 1;
+		return 0;
+	} else if (!ret) {
+		ret = EIO;
 	}
 
-	return 0;
+	return ret;
 }
 
 int
@@ -70,13 +73,13 @@ fbr_iocmd_pong(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 
 	if (!fbr_object_is_valid(io_ping, FBR_IOCMD_PING_MAGIC)) {
 		fbr_rlog(FBR_LOG_IOCMD_PING, "ERROR magic");
-		return EINVAL;
+		return EIO;
 	} else if (io_ping->ping != 1 || io_ping->pong) {
 		fbr_rlog(FBR_LOG_IOCMD_PING, "ERROR ping");
-		return EINVAL;
+		return EIO;
 	} else if (strcmp(io_ping->version, FIBERFS_VERSION)) {
 		fbr_rlog(FBR_LOG_IOCMD_PING, "ERROR version");
-		return EINVAL;
+		return EACCES;
 	}
 
 	memcpy(io_pong, io_ping, sizeof(*io_ping));

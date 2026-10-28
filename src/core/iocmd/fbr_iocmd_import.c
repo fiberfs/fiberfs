@@ -4,6 +4,7 @@
  *
  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <string.h>
 #include <sys/types.h>
@@ -20,7 +21,6 @@
 #include "cstore/fbr_cstore_api.h"
 #include "cstore/s3/fbr_cstore_s3.h"
 
-// TODO we need to return better errors, 0 should be success
 int
 fbr_cmd_import(const char *path, int overwrite)
 {
@@ -36,12 +36,12 @@ fbr_cmd_import(const char *path, int overwrite)
 
 	int error = fbr_check_name(&dirpath.path, &filename);
 	if (error) {
-		return 0;
+		return error;
 	}
 
 	int ret = fbr_cmd_ping(dirpath.path.name);
-	if (!ret) {
-		return 0;
+	if (ret) {
+		return ret;
 	}
 
 	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "dir: '%s' file: '%s'", dirpath.path.name, filename.name);
@@ -49,7 +49,7 @@ fbr_cmd_import(const char *path, int overwrite)
 	int fd = open(dirpath.path.name, O_RDONLY | O_DIRECTORY);
 	if (fd < 0) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "open(%s) failed: %d", dirpath.path.name, fd);
-		return 0;
+		return errno ? errno : EIO;
 	}
 
 	struct fbr_iocmd_import io_import;
@@ -66,10 +66,10 @@ fbr_cmd_import(const char *path, int overwrite)
 	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "return: %d", error);
 
 	if (error) {
-		return 0;
+		return error;
 	}
 
-	return 1;
+	return 0;
 }
 
 int
@@ -87,16 +87,16 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	if (!fbr_object_is_valid(io_import, FBR_IOCMD_IMPORT_MAGIC)) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR magic");
-		return EINVAL;
+		return EIO;
 	} else if (!io_import->filename.path.length) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR length");
 		return EINVAL;
 	} else if (!fs->cstore) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR cstore");
-		return EINVAL;
+		return EIO;
 	} else if (!fbr_file_is_dir(directory_file)) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR directory_file");
-		return EINVAL;
+		return ENOTDIR;
 	}
 
 	const struct fbr_path_name *filename = &io_import->filename.path;
@@ -178,7 +178,7 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	if (error || !size) {
 		fbr_inode_release(fs, &import_file);
-		return error;
+		return error ? error : EIO;
 	}
 
 	assert_zero(import_file->size);
