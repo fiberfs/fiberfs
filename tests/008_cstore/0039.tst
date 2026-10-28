@@ -1,5 +1,7 @@
 fiber_test "cstore s3 import errors"
 
+skip_if $is_valgrind
+
 # config
 
 config_add FUSE_WRITEBACK_CACHE false

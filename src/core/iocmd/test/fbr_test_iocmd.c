@@ -54,6 +54,7 @@ fbr_cmd_iocmd_import_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cm
 {
 	fbr_test_context_ok(ctx);
 	fbr_test_ERROR_param_count(cmd, 1);
+	assert_zero(fbr_test_is_valgrind());
 
 	const char *path = cmd->params[0].value;
 
