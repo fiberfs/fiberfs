@@ -5,38 +5,15 @@
  */
 
 #include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 #include "fiberfs.h"
+#include "fbr_main.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fuse/fbr_fuse.h"
 #include "core/request/fbr_request.h"
 #include "cstore/fbr_cstore_api.h"
 #include "log/fbr_log.h"
 #include "utils/fbr_sys.h"
-
-static void _mount_fuse_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn);
-
-static int _STOP;
-
-static void
-_mount_signal_stop(int signal, siginfo_t *info, void *ucontext)
-{
-	(void)info;
-	(void)ucontext;
-
-	printf("Caught signal: %s (%d)\n", strsignal(signal), signal);
-
-	_STOP = 1;
-}
-
-static void
-_usage(void)
-{
-	printf("Usage: fiberfs CONFIG MOUNT_PATH\n");
-}
 
 static void
 _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
@@ -108,29 +85,25 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 
 	fbr_dindex_release(fuse_ctx->fs, &root);
 	fbr_request_free(request);
-
 }
 
-static int
-_fiberfs_setup_mount(const char *fiberfs_conf, const char *mount_path)
+int
+fiberfs_mount(const char *fiberfs_conf, const char *mount_path)
 {
-	assert_dev(fiberfs_conf);
-	assert_dev(mount_path);
+	assert(fiberfs_conf);
+	assert(mount_path);
 
 	printf("FiberFS %s\n", FIBERFS_VERSION);
 
 	if (!fbr_sys_isfile(fiberfs_conf)) {
-		_usage();
+		fbr_usage();
 		fprintf(stderr, "ERROR: config not found '%s'\n", fiberfs_conf);
 		return 1;
 	} else if (!fbr_sys_isdir(mount_path)) {
-		_usage();
+		fbr_usage();
 		fprintf(stderr, "ERROR: mount not found '%s'\n", mount_path);
 		return 1;
 	}
-
-	fbr_setup_crash_signals();
-	fbr_setup_stop_signals(_mount_signal_stop);
 
 	fbr_conf_parse(fiberfs_conf);
 	assert_zero(_CONFIG->stats.errors);
@@ -156,10 +129,10 @@ _fiberfs_setup_mount(const char *fiberfs_conf, const char *mount_path)
 		return 2;
 	}
 
-	while (!_STOP) {
+	while (!FBR_MAIN_STOP) {
 		fbr_fuse_mounted(fuse_ctx);
 		assert_zero(fuse_ctx->detached);
-		fbr_sleep_ms(FBR_FUSE_MOUNT_LOOP_MS);
+		fbr_sleep_ms(FBR_MOUNT_LOOP_MS);
 	}
 
 	fbr_fuse_unmount(fuse_ctx);
@@ -170,15 +143,4 @@ _fiberfs_setup_mount(const char *fiberfs_conf, const char *mount_path)
 	printf("Exiting\n");
 
 	return 0;
-}
-
-int
-main(int argc, char **argv)
-{
-	if (argc != 3) {
-		_usage();
-		return 1;
-	}
-
-	return _fiberfs_setup_mount(argv[1], argv[2]);
 }
