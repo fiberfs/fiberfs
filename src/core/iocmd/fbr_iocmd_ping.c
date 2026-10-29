@@ -18,14 +18,13 @@
 #include "core/request/fbr_rlog.h"
 
 int
-fbr_cmd_ping(const char *path)
+fbr_cmd_ping(const char *path, double *timing)
 {
 	assert(path);
 	assert_zero(fbr_request_get());
 
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
-		fbr_rlog(FBR_LOG_IOCMD_PING, "open(%s) failed: %d", path, fd);
 		return errno ? errno : EIO;
 	}
 
@@ -40,12 +39,11 @@ fbr_cmd_ping(const char *path)
 
 	int ret = ioctl(fd, FBR_IOCMD_PING_REQ, &io_ping);
 
-	double time_diff = fbr_get_time() - time_start;
+	if (timing) {
+		*timing = fbr_get_time() - time_start;
+	}
 
 	assert_zero_dev(close(fd));
-
-	fbr_rlog(FBR_LOG_IOCMD_PING, "return: %d", ret);
-	fbr_rlog(FBR_LOG_IOCMD_PING, "PERF time: %f", time_diff);
 
 	if (!ret && fbr_object_is_svalid(io_ping, FBR_IOCMD_PING_MAGIC) && io_ping.pong) {
 		return 0;

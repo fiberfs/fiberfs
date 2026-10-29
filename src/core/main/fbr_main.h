@@ -11,12 +11,13 @@
 
 struct fbr_main_params {
 	struct {
-		int			import;
-		int			force;
+		fbr_bitflag_t		ping;
+		fbr_bitflag_t		import;
+		fbr_bitflag_t		force;
+
 		size_t			count;
 	} commands;
 
-	int				arg_index;
 	int				arg_count;
 	char				**args;
 };

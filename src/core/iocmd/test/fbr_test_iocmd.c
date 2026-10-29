@@ -25,11 +25,12 @@ fbr_cmd_iocmd_ping(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_ERROR_param_count(cmd, 1);
 
 	const char *path = cmd->params[0].value;
+	double timing;
 
-	int ret = fbr_cmd_ping(path);
+	int ret = fbr_cmd_ping(path, &timing);
 	fbr_test_ERROR(ret, "fbr_iocmd_ping() failed: %d", ret);
 
-	fbr_test_logs("iocmd_ping done: %s", path);
+	fbr_test_logs("iocmd_ping done: %s timing: %f", path, timing);
 }
 
 void

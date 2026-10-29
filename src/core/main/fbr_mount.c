@@ -91,16 +91,17 @@ int
 fiberfs_mount(struct fbr_main_params *main_params)
 {
 	assert(main_params);
+	assert_zero(main_params->commands.count);
 
-	if (main_params->arg_count - main_params->arg_index != 2) {
+	if (main_params->arg_count != 2) {
 		fbr_main_usage();
 		return 1;
 	}
 
 	printf("FiberFS %s\n", FIBERFS_VERSION);
 
-	const char *fiberfs_conf = main_params->args[main_params->arg_index];
-	const char *mount_path = main_params->args[main_params->arg_index + 1];
+	const char *fiberfs_conf = main_params->args[0];
+	const char *mount_path = main_params->args[1];
 
 	if (!fbr_sys_isfile(fiberfs_conf)) {
 		fprintf(stderr, "ERROR: config not found '%s'\n", fiberfs_conf);

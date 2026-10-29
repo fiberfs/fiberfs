@@ -39,16 +39,13 @@ fbr_cmd_import(const char *path, int overwrite)
 		return error;
 	}
 
-	int ret = fbr_cmd_ping(dirpath.path.name);
+	int ret = fbr_cmd_ping(dirpath.path.name, NULL);
 	if (ret) {
 		return ret;
 	}
 
-	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "dir: '%s' file: '%s'", dirpath.path.name, filename.name);
-
 	int fd = open(dirpath.path.name, O_RDONLY | O_DIRECTORY);
 	if (fd < 0) {
-		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "open(%s) failed: %d", dirpath.path.name, fd);
 		return errno ? errno : EIO;
 	}
 
@@ -62,8 +59,6 @@ fbr_cmd_import(const char *path, int overwrite)
 	error = ioctl(fd, FBR_IOCMD_IMPORT_REQ, &io_import);
 
 	assert_zero_dev(close(fd));
-
-	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "return: %d", error);
 
 	if (error) {
 		return error;
