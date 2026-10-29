@@ -50,7 +50,6 @@ main(int argc, char **argv)
 	struct fbr_main_params main_params;
 	fbr_zero(&main_params);
 
-	int opt;
 	static struct option fbr_options[] = {
 		{"ping", no_argument, NULL, 'p'},
 		{"import", no_argument, NULL, 'i'},
@@ -58,6 +57,7 @@ main(int argc, char **argv)
 		{NULL, 0, NULL, 0}
 	};
 
+	int opt;
 	while ((opt = getopt_long(argc, argv, "pif", fbr_options, NULL)) != -1) {
 		main_params.commands.count++;
 		switch (opt) {
@@ -77,7 +77,6 @@ main(int argc, char **argv)
 	}
 
 	assert(argc >= optind);
-
 	main_params.arg_count = argc - optind;
 	main_params.args = &argv[optind];
 

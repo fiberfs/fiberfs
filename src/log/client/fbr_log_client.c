@@ -40,15 +40,14 @@ main(int argc, char **argv)
 	fbr_setup_crash_signals();
 	fbr_setup_stop_signals(_log_signal_stop);
 
-	const char *mount_path = NULL;
 	int dump_history = 0;
 
-	int opt;
 	static struct option log_options[] = {
 		{"dump-history", no_argument, NULL, 'd'},
 		{NULL, 0, NULL, 0}
 	};
 
+	int opt;
 	while ((opt = getopt_long(argc, argv, "d", log_options, NULL)) != -1) {
 		switch (opt) {
 			case 'd':
@@ -60,18 +59,16 @@ main(int argc, char **argv)
 		}
 	}
 
-	for (int i = optind; i < argc; i++) {
-		if (!mount_path) {
-			mount_path = argv[i];
-		} else {
-			_usage();
-			return 1;
-		}
-	}
-	if (!mount_path) {
+	assert(argc >= optind);
+	int arg_count = argc - optind;
+	char **args = &argv[optind];
+
+	if (arg_count != 1) {
 		_usage();
 		return 1;
 	}
+
+	const char *mount_path = args[0];
 
 	struct fbr_log_reader _reader;
 	struct fbr_log_reader *reader = &_reader;
