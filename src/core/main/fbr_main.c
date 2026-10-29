@@ -19,7 +19,7 @@ _main_stop_signal(int signal, siginfo_t *info, void *ucontext)
 	(void)info;
 	(void)ucontext;
 
-	printf("Caught signal: %s (%d)\n", strsignal(signal), signal);
+	fprintf(stderr, "Caught signal: %s (%d)\n", strsignal(signal), signal);
 
 	FBR_MAIN_STOP = 1;
 }
@@ -27,7 +27,18 @@ _main_stop_signal(int signal, siginfo_t *info, void *ucontext)
 void
 fbr_main_usage(void)
 {
-	printf("Usage: fiberfs CONFIG MOUNT_PATH\n");
+	fprintf(stderr, "Usage:\n");
+	fprintf(stderr, "  Mount a filesystem:\n");
+	fprintf(stderr, "    fiberfs <config> <mount_point>\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  Import files:\n");
+	fprintf(stderr, "    fiberfs -i [-f] <path>...\n");
+	fprintf(stderr, "      -i, --import    Import path(s).\n");
+	fprintf(stderr, "      -f, --force     Overwrite if path exists (optional).\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  Ping:\n");
+	fprintf(stderr, "    fiberfs -p <path>\n");
+	fprintf(stderr, "      -p, --ping      Ping backend via path.\n");
 }
 
 int
@@ -70,7 +81,10 @@ main(int argc, char **argv)
 	main_params.arg_count = argc - optind;
 	main_params.args = &argv[optind];
 
-	if (main_params.commands.count) {
+	if (!main_params.arg_count) {
+		fbr_main_usage();
+		return 1;
+	} else if (main_params.commands.count) {
 		return fbr_main_command(&main_params);
 	}
 

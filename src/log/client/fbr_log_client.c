@@ -28,7 +28,9 @@ _log_signal_stop(int signal, siginfo_t *info, void *ucontext)
 static void
 _usage(void)
 {
-	fprintf(stderr, "Usage: fiberfs_log [-d] MOUNT_PATH\n");
+	fprintf(stderr, "Usage:\n");
+	fprintf(stderr, "  fiberfs_log [-d] <mount_point>\n");
+	fprintf(stderr, "    -d, --dump-history    Dump log history and exit (optional).\n");
 }
 
 int

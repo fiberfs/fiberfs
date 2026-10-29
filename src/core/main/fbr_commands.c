@@ -17,7 +17,7 @@ _main_ping(struct fbr_main_params *main_params)
 	assert_dev(main_params);
 
 	if (main_params->arg_count != 1) {
-		printf("Incorrect ping usage\n");
+		fprintf(stderr, "Incorrect ping usage\n");
 		fbr_main_usage();
 		return 1;
 	}
@@ -26,10 +26,10 @@ _main_ping(struct fbr_main_params *main_params)
 	int ret = fbr_cmd_ping(main_params->args[0], &timing);
 
 	if (ret < 0) {
-		printf("Ping ERROR: FiberFS not detected (%d)\n", ret);
+		fprintf(stderr, "Ping ERROR: FiberFS not detected (%d)\n", ret);
 		return ret;
 	} else if (ret) {
-		printf("Ping ERROR: %s (%d)\n", strerror(ret), ret);
+		fprintf(stderr, "Ping ERROR: %s (%d)\n", strerror(ret), ret);
 		return ret;
 	}
 
@@ -44,7 +44,7 @@ _main_import(struct fbr_main_params *main_params)
 	assert_dev(main_params);
 
 	if (!main_params->arg_count) {
-		printf("Incorrect import usage\n");
+		fprintf(stderr, "Incorrect import usage\n");
 		fbr_main_usage();
 		return 1;
 	}
@@ -63,11 +63,11 @@ fbr_main_command(struct fbr_main_params *main_params)
 	assert(main_params->commands.count);
 
 	if (main_params->commands.ping + main_params->commands.import != 1) {
-		printf("Incorrect switch usage\n");
+		fprintf(stderr, "Incorrect switch usage\n");
 		fbr_main_usage();
 		return 1;
 	} else if (main_params->commands.force && !main_params->commands.import) {
-		printf("Incorrect force usage\n");
+		fprintf(stderr, "Incorrect force usage\n");
 		fbr_main_usage();
 		return 1;
 	}
