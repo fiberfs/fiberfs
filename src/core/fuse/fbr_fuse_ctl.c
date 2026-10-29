@@ -17,6 +17,7 @@
 #include "config/fbr_config.h"
 #include "core/fs/fbr_fs.h"
 #include "log/fbr_log.h"
+#include "utils/fbr_sys.h"
 
 struct fbr_fuse_context *_FUSE_CTX;
 
@@ -107,6 +108,11 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	fbr_fuse_context_ok(ctx);
 	assert(ctx->state == FBR_FUSE_NONE);
 	assert_zero(ctx->detached);
+
+	if (fbr_sys_is_fiberfs(path) || !fbr_sys_isdir(path)) {
+		_fuse_error(ctx);
+		return 1;
+	}
 
 	pt_assert(pthread_mutex_lock(&ctx->mount_lock));
 

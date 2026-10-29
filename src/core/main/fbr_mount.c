@@ -109,6 +109,9 @@ fiberfs_mount(struct fbr_main_params *main_params)
 	} else if (!fbr_sys_isdir(mount_path)) {
 		fprintf(stderr, "ERROR: mount not found '%s'\n", mount_path);
 		return 1;
+	} else if (fbr_sys_is_fiberfs(mount_path)) {
+		fprintf(stderr, "ERROR: mount already in use '%s'\n", mount_path);
+		return 1;
 	}
 
 	fbr_conf_parse(fiberfs_conf);
