@@ -38,7 +38,7 @@ fbr_ops_ioctl(struct fbr_request *request, fuse_ino_t ino, unsigned int cmd, voi
 
 	struct fbr_file *file = fbr_inode_take_alias(fs, ino);
 	if (!file) {
-		fbr_fuse_reply_err(request, ENOTTY);
+		fbr_fuse_reply_err(request, ENOENT);
 		return;
 	}
 
