@@ -20,6 +20,12 @@ fbr_cmd_ping(const char *path, double *timing)
 {
 	assert(path);
 
+	if (timing) {
+		*timing = 0;
+	}
+
+	double time_start = fbr_get_time();
+
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
 		return errno ? errno : EIO;
@@ -32,15 +38,13 @@ fbr_cmd_ping(const char *path, double *timing)
 	io_ping.ping = 1;
 	fbr_strbcpy(io_ping.version, FIBERFS_VERSION);
 
-	double time_start = fbr_get_time();
-
 	int ret = ioctl(fd, FBR_IOCMD_PING_REQ, &io_ping);
+
+	assert_zero_dev(close(fd));
 
 	if (timing) {
 		*timing = fbr_get_time() - time_start;
 	}
-
-	assert_zero_dev(close(fd));
 
 	if (!ret && fbr_object_is_svalid(io_ping, FBR_IOCMD_PING_MAGIC) && io_ping.pong) {
 		return 0;
