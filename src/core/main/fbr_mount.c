@@ -88,19 +88,24 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 }
 
 int
-fiberfs_mount(const char *fiberfs_conf, const char *mount_path)
+fiberfs_mount(struct fbr_main_params *main_params)
 {
-	assert(fiberfs_conf);
-	assert(mount_path);
+	assert(main_params);
+
+	if (main_params->arg_count - main_params->arg_index != 2) {
+		fbr_main_usage();
+		return 1;
+	}
 
 	printf("FiberFS %s\n", FIBERFS_VERSION);
 
+	const char *fiberfs_conf = main_params->args[main_params->arg_index];
+	const char *mount_path = main_params->args[main_params->arg_index + 1];
+
 	if (!fbr_sys_isfile(fiberfs_conf)) {
-		fbr_usage();
 		fprintf(stderr, "ERROR: config not found '%s'\n", fiberfs_conf);
 		return 1;
 	} else if (!fbr_sys_isdir(mount_path)) {
-		fbr_usage();
 		fprintf(stderr, "ERROR: mount not found '%s'\n", mount_path);
 		return 1;
 	}

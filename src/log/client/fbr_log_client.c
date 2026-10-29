@@ -41,12 +41,12 @@ main(int argc, char **argv)
 	int dump_history = 0;
 
 	int opt;
-	static struct option options[] = {
+	static struct option log_options[] = {
 		{"dump-history", no_argument, NULL, 'd'},
 		{NULL, 0, NULL, 0}
 	};
 
-	while ((opt = getopt_long(argc, argv, "d", options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "d", log_options, NULL)) != -1) {
 		switch (opt) {
 			case 'd':
 				dump_history = 1;
