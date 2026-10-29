@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "log/fbr_log.h"
 
@@ -78,7 +79,7 @@ main(int argc, char **argv)
 
 	int ret = fbr_log_reader_init(reader, mount_path);
 	if (!ret) {
-		fprintf(stderr, "Cannot open log for %s (errno %d)\n", mount_path, errno);
+		fprintf(stderr, "Cannot open log for %s (%s)\n", mount_path, strerror(errno));
 		return 1;
 	}
 
