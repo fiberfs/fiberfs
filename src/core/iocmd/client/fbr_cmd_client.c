@@ -17,8 +17,6 @@ struct _cmd_params {
 		fbr_bitflag_t		ping;
 		fbr_bitflag_t		import;
 		fbr_bitflag_t		force;
-
-		size_t			count;
 	} commands;
 
 	int				arg_count;
@@ -103,7 +101,6 @@ main(int argc, char **argv)
 
 	int opt;
 	while ((opt = getopt_long(argc, argv, "pif", fbr_options, NULL)) != -1) {
-		cmd_params.commands.count++;
 		switch (opt) {
 			case 'p':
 				cmd_params.commands.ping = 1;
