@@ -5,14 +5,9 @@
  */
 
 #include <errno.h>
-#include <fcntl.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "fiberfs.h"
-#include "fbr_cmd.h"
 #include "fbr_iocmd.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
@@ -20,52 +15,6 @@
 #include "core/request/fbr_rlog.h"
 #include "cstore/fbr_cstore_api.h"
 #include "cstore/s3/fbr_cstore_s3.h"
-
-int
-fbr_cmd_import(const char *path, int overwrite)
-{
-	assert(path);
-	assert_zero(fbr_request_get());
-
-	struct fbr_fullpath_name dirpath;
-	const char *name = fbr_fullpath_split(path, &dirpath);
-	assert(name);
-
-	struct fbr_path_name filename;
-	fbr_path_name_init(&filename, name);
-
-	int error = fbr_check_name(&dirpath.path, &filename);
-	if (error) {
-		return error;
-	}
-
-	int ret = fbr_cmd_ping(dirpath.path.name, NULL);
-	if (ret) {
-		return ret;
-	}
-
-	int fd = open(dirpath.path.name, O_RDONLY | O_DIRECTORY);
-	if (fd < 0) {
-		return errno ? errno : EIO;
-	}
-
-	struct fbr_iocmd_import io_import;
-	fbr_zero(&io_import);
-	io_import.magic = FBR_IOCMD_IMPORT_MAGIC;
-	fbr_fullpath_init(&io_import.filename);
-	io_import.filename.path.length = fbr_strbcpy(io_import.filename.data, filename.name);
-	io_import.overwrite = overwrite > 0 ? 1 : 0;
-
-	error = ioctl(fd, FBR_IOCMD_IMPORT_REQ, &io_import);
-
-	assert_zero_dev(close(fd));
-
-	if (error) {
-		return error;
-	}
-
-	return 0;
-}
 
 int
 fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned long command,

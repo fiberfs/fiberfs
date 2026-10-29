@@ -5,54 +5,12 @@
  */
 
 #include <errno.h>
-#include <fcntl.h>
 #include <string.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include "fiberfs.h"
-#include "core/iocmd/fbr_iocmd.h"
+#include "fbr_iocmd.h"
 #include "core/fs/fbr_fs.h"
 #include "core/request/fbr_rlog.h"
-
-int
-fbr_cmd_ping(const char *path, double *timing)
-{
-	assert(path);
-	assert_zero(fbr_request_get());
-
-	int fd = open(path, O_RDONLY);
-	if (fd < 0) {
-		return errno ? errno : EIO;
-	}
-
-	struct fbr_iocmd_ping io_ping;
-	static_ASSERT(sizeof(io_ping.version) >= sizeof(FIBERFS_VERSION));
-	fbr_zero(&io_ping);
-	io_ping.magic = FBR_IOCMD_PING_MAGIC;
-	io_ping.ping = 1;
-	fbr_strbcpy(io_ping.version, FIBERFS_VERSION);
-
-	double time_start = fbr_get_time();
-
-	int ret = ioctl(fd, FBR_IOCMD_PING_REQ, &io_ping);
-
-	if (timing) {
-		*timing = fbr_get_time() - time_start;
-	}
-
-	assert_zero_dev(close(fd));
-
-	if (!ret && fbr_object_is_svalid(io_ping, FBR_IOCMD_PING_MAGIC) && io_ping.pong) {
-		return 0;
-	} else if (!ret) {
-		ret = EIO;
-	}
-
-	return ret;
-}
 
 int
 fbr_iocmd_pong(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,

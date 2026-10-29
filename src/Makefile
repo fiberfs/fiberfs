@@ -41,9 +41,14 @@ LOG_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(LOG_CLIENT)))
 LOG_SRC:=$(wildcard log/fbr_log.c)
 LOG_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(LOG_SRC)))
 
+CMD_CLIENT:=$(wildcard core/iocmd/client/*.c)
+CMD_CLIENT_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(CMD_CLIENT)))
+CMD_SRC:=$(wildcard core/iocmd/fbr_cmd.c core/fs/fbr_path.c)
+CMD_OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(CMD_SRC)))
+
 ALL_SOURCE:=$(shell find * -type f -name '*.c')
 SOURCE:=$(filter-out $(TEST_SRC) $(CHTTP_CLIENT) $(CHTTP_SRC) $(FJSON_CLIENT) $(FJSON_SRC) \
-	$(CSTORE_SRC) $(UTILS_SRC) $(LOG_CLIENT), $(ALL_SOURCE))
+	$(CSTORE_SRC) $(UTILS_SRC) $(LOG_CLIENT) $(CMD_CLIENT), $(ALL_SOURCE))
 OBJS:=$(patsubst %,$(BUILD)/%.o,$(basename $(SOURCE)))
 DEPS:=$(patsubst %,$(BUILD)/%.d,$(basename $(ALL_SOURCE)))
 BUILD_DIRS:=$(sort $(dir $(DEPS)))
@@ -185,7 +190,7 @@ endif
 
 .PHONY:		all clean gcov gcovclean afl
 
-all:		fiberfs_test fiberfs fiberfs_log
+all:		fiberfs_test fiberfs fiberfs_log fiberfs_cmd
 
 chttp_fuzz:	libchttp.a libfiberutil.a $(CHTTP_CLIENT_OBJS)
 		$(CC) -o $@ $(CHTTP_CLIENT_OBJS) libchttp.a libfiberutil.a $(LIBFLAGS)
@@ -201,6 +206,9 @@ fiberfs:	libfiberfs.a libchttp.a libfjson.a libcstore.a libfiberutil.a
 
 fiberfs_log:	$(LOG_OBJS) $(LOG_CLIENT_OBJS) libfiberutil.a
 		$(CC) -o $@ $(LOG_CLIENT_OBJS) $(LOG_OBJS) libfiberutil.a $(LIBFLAGS)
+
+fiberfs_cmd:	$(CMD_OBJS) $(CMD_CLIENT_OBJS) libfiberutil.a
+		$(CC) -o $@ $(CMD_CLIENT_OBJS) $(CMD_OBJS) libfiberutil.a $(LIBFLAGS)
 
 libfiberfs.a:	$(OBJS)
 		$(RM) $@

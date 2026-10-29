@@ -30,15 +30,6 @@ fbr_main_usage(void)
 	fprintf(stderr, "Usage:\n");
 	fprintf(stderr, "  Mount a filesystem:\n");
 	fprintf(stderr, "    fiberfs <config> <mount_point>\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "  Import files:\n");
-	fprintf(stderr, "    fiberfs -i [-f] <path>...\n");
-	fprintf(stderr, "      -i, --import    Import path(s).\n");
-	fprintf(stderr, "      -f, --force     Overwrite if path exists (optional).\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "  Ping:\n");
-	fprintf(stderr, "    fiberfs -p <path>\n");
-	fprintf(stderr, "      -p, --ping      Ping backend via path.\n");
 }
 
 int
@@ -47,29 +38,13 @@ main(int argc, char **argv)
 	fbr_setup_crash_signals();
 	fbr_setup_stop_signals(_main_stop_signal);
 
-	struct fbr_main_params main_params;
-	fbr_zero(&main_params);
-
 	static struct option fbr_options[] = {
-		{"ping", no_argument, NULL, 'p'},
-		{"import", no_argument, NULL, 'i'},
-		{"force", no_argument, NULL, 'f'},
 		{NULL, 0, NULL, 0}
 	};
 
 	int opt;
-	while ((opt = getopt_long(argc, argv, "pif", fbr_options, NULL)) != -1) {
-		main_params.commands.count++;
+	while ((opt = getopt_long(argc, argv, "", fbr_options, NULL)) != -1) {
 		switch (opt) {
-			case 'p':
-				main_params.commands.ping = 1;
-				break;
-			case 'i':
-				main_params.commands.import = 1;
-				break;
-			case 'f':
-				main_params.commands.force = 1;
-				break;
 			default:
 				fbr_main_usage();
 				return 1;
@@ -77,15 +52,13 @@ main(int argc, char **argv)
 	}
 
 	assert(argc >= optind);
-	main_params.arg_count = argc - optind;
-	main_params.args = &argv[optind];
+	int arg_count = argc - optind;
+	char **args = &argv[optind];
 
-	if (!main_params.arg_count) {
+	if (arg_count != 2) {
 		fbr_main_usage();
 		return 1;
-	} else if (main_params.commands.count) {
-		return fbr_main_command(&main_params);
 	}
 
-	return fiberfs_mount(&main_params);
+	return fiberfs_mount(args[0], args[1]);
 }
