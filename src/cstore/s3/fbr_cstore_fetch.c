@@ -1248,7 +1248,8 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 }
 
 int
-fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, unsigned long *size)
+fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, unsigned long *size,
+    int external_only)
 {
 	fbr_fs_ok(fs);
 	assert(url);
@@ -1315,7 +1316,7 @@ fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, unsig
 	}
 
 	const char *content_type = chttp_header_get(http, "Content-Type");
-	if (content_type && strstr(content_type, "fiberfs")) {
+	if (external_only && content_type && strstr(content_type, "fiberfs")) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR fiberfs detected");
 		chttp_context_free(http);
 		return EINVAL;

@@ -28,12 +28,16 @@ sys_write $file "Test1Test2Test3"
 sys_append $file " Test4Test5"
 
 equal $cstore_stat_chunks:1 2
+equal $cstore_stat_chunks_fullfile:1 1
 
 sleep_ms 20
 
 print "### MERGE"
 
-#iocmd_merge $file
+iocmd_merge $file
+
+equal $cstore_stat_chunks:1 1
+equal $cstore_stat_chunks_fullfile:1 1
 
 print "### VERIFY (MEMORY)"
 
@@ -61,6 +65,9 @@ cstore_debug 1
 
 equal $cstore_stat_http_400:1 0
 equal $cstore_stat_http_500:1 0
+
+equal $cstore_stat_chunks:1 1
+equal $cstore_stat_chunks_fullfile:1 1
 
 equal $fs_test_stat_directories 0
 equal $fs_test_stat_directories_dindex 0

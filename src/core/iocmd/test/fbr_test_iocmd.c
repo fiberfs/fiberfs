@@ -95,11 +95,12 @@ fbr_cmd_iocmd_merge(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 #define _TEST_IMPORT_FILE_SIZE		(10L * 1024 * 1024 * 1024)
 
 static int
-_test_import_size(struct fbr_fs *fs, struct fbr_cstore_url *url, unsigned long *size)
+_test_import_size(struct fbr_fs *fs, struct fbr_cstore_url *url, unsigned long *size, int external)
 {
 	fbr_fs_ok(fs);
 	assert(url);
 	assert(size);
+	assert(external);
 
 	fbr_test_logs("** url: '%s'", url->value);
 
@@ -119,9 +120,9 @@ _test_import_file(struct fbr_fs *fs, unsigned int count)
 	fbr_file_ok(root_file);
 
 	struct fbr_iocmd_import io_import;
-	fbr_zero(&io_import);
-	io_import.magic = FBR_IOCMD_IMPORT_MAGIC;
+	fbr_iocmd_import_init(&io_import);
 	io_import.filename.path.length = fbr_bprintf(io_import.filename.data, "file_%d", count);
+	io_import.external = 1;
 
 	int error = fbr_iocmd_import(fs, root_file, FBR_IOCMD_IMPORT_REQ, &io_import, NULL);
 	assert_zero(error);

@@ -31,6 +31,8 @@ struct fbr_iocmd_import {
 #define FBR_IOCMD_IMPORT_MAGIC			0xB9AB7DFD
 
 	fbr_bitflag_t				overwrite:1;
+	fbr_bitflag_t				external:1;
+	fbr_bitflag_t				merged:1;
 
 	struct fbr_fullpath_name		filename;
 };
@@ -45,7 +47,8 @@ typedef int (fbr_iocmd_f)(struct fbr_fs *fs, struct fbr_file *file, unsigned lon
 
 int fbr_iocmd_pong(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	const void *input, void *output);
-int fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
+void fbr_iocmd_import_init(struct fbr_iocmd_import *io_import);
+int fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned long command,
 	const void *input, void *output);
 int fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	const void *input, void *output);

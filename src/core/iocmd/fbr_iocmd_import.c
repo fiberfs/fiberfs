@@ -58,8 +58,8 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	assert_dev(filename.length == io_import->filename.path.length);
 	assert_zero_dev(io_import->filename.path.name);
 
-	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "request: '%s' overwrite: %d", filename.name,
-		io_import->overwrite);
+	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "request: '%s' overwrite: %d external: %d merged: %d",
+		filename.name, io_import->overwrite, io_import->external, io_import->merged);
 
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, directory_file->inode);
 	if (!directory) {
@@ -118,7 +118,7 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	error = EOPNOTSUPP;
 
 	if (fs->store->external_file_size_f) {
-		error = fs->store->external_file_size_f(fs, &url, &size);
+		error = fs->store->external_file_size_f(fs, &url, &size, io_import->external);
 	}
 
 	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "S3 ret: %d size: %zu", error, size);
@@ -163,7 +163,10 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 		assert_dev(chunk->id = id);
 
 		chunk->fullfile = 1;
-		chunk->external = 1;
+
+		if (!io_import->merged) {
+			chunk->external = 1;
+		}
 
 		assert(import_file->size > offset);
 

@@ -283,8 +283,9 @@ enum fbr_flush_flags {
 	FBR_FLUSH_RENAME = (1 << 12),
 	FBR_FLUSH_RENAME_UNIQUE = (1 << 13),
 	FBR_FLUSH_DELETE = (1 << 14),
-	FBR_FLUSH_IMPORT = (1 << 15),
-	FBR_FLUSH_IMPORT_UNIQUE = (1 << 16),
+	FBR_FLUSH_DELETE_CHUNK = (1 << 15),
+	FBR_FLUSH_IMPORT = (1 << 16),
+	FBR_FLUSH_IMPORT_UNIQUE = (1 << 17)
 };
 
 enum fbr_wbuffer_state {
@@ -545,7 +546,7 @@ struct fbr_chunk *fbr_body_chunk_append(struct fbr_fs *fs, struct fbr_file *file
 struct fbr_chunk *fbr_body_chunk_clone(struct fbr_fs *fs, struct fbr_body *body,
 	struct fbr_chunk *chunk);
 void fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file,
-	struct fbr_chunk_list *removed);
+	struct fbr_chunk_list *removed, int delete_only, int delete_chunks_only);
 struct fbr_chunk_list *fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
 	struct fbr_chunk_list **removed, struct fbr_wbuffer *wbuffers);
 struct fbr_chunk_list *fbr_body_chunk_all(struct fbr_file *file, int include_wbuffers);

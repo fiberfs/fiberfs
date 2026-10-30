@@ -294,6 +294,9 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 			if (entry) {
 				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE overwrite");
 				fbr_cstore_reset_loading(entry);
+
+				fbr_stat_sub(&cstore->stats.wr_chunks);
+				fbr_stat_sub(&cstore->stats.wr_chunks_fullfile);
 			}
 		}
 		if (!entry) {

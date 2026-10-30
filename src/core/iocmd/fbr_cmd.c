@@ -56,6 +56,15 @@ fbr_cmd_ping(const char *path, double *timing)
 	return ret;
 }
 
+void
+fbr_iocmd_import_init(struct fbr_iocmd_import *io_import)
+{
+	assert(io_import);
+
+	fbr_zero(io_import);
+	io_import->magic = FBR_IOCMD_IMPORT_MAGIC;
+}
+
 int
 fbr_cmd_import(const char *path, int overwrite)
 {
@@ -84,10 +93,10 @@ fbr_cmd_import(const char *path, int overwrite)
 	}
 
 	struct fbr_iocmd_import io_import;
-	fbr_zero(&io_import);
-	io_import.magic = FBR_IOCMD_IMPORT_MAGIC;
+	fbr_iocmd_import_init(&io_import);
 	io_import.filename.path.length = fbr_strbcpy(io_import.filename.data, filename.name);
 	io_import.overwrite = overwrite > 0 ? 1 : 0;
+	io_import.external = 1;
 
 	ret = ioctl(fd, FBR_IOCMD_IMPORT_REQ, &io_import);
 

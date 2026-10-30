@@ -219,7 +219,8 @@ fbr_body_chunk_clone(struct fbr_fs *fs, struct fbr_body *body, struct fbr_chunk 
 
 // Note: must have file->lock
 void
-fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_list *remove)
+fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_list *remove,
+    int delete_only, int delete_chunks_only)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -233,37 +234,43 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 	size_t removed = 0;
 	size_t deleted = 0;
 	size_t external = 0;
+	size_t skipped = 0;
 
-	struct fbr_chunk *chunk = file->body.chunks;
-	struct fbr_chunk *prev = NULL;
+	if (!delete_only) {
+		struct fbr_chunk *chunk = file->body.chunks;
+		struct fbr_chunk *prev = NULL;
 
-	while (chunk) {
-		fbr_chunk_ok(chunk);
+		while (chunk) {
+			fbr_chunk_ok(chunk);
 
-		if (fbr_chunk_list_contains(remove, chunk)) {
-			if (prev) {
-				prev->next = chunk->next;
-			} else {
-				file->body.chunks = chunk->next;
+			if (fbr_chunk_list_contains(remove, chunk)) {
+				if (prev) {
+					prev->next = chunk->next;
+				} else {
+					file->body.chunks = chunk->next;
+				}
+
+				chunk = chunk->next;
+				removed++;
+
+				continue;
 			}
 
+			prev = chunk;
 			chunk = chunk->next;
-			removed++;
-
-			continue;
 		}
 
-		prev = chunk;
-		chunk = chunk->next;
+		file->body.chunk_last = prev;
 	}
-
-	file->body.chunk_last = prev;
 
 	for (size_t i = 0; i < remove->length; i++) {
 		struct fbr_chunk *chunk = remove->list[i];
 		fbr_chunk_ok(chunk);
 
-		if (chunk->external) {
+		if (delete_chunks_only && chunk->fullfile) {
+			skipped++;
+			continue;
+		} else if (chunk->external) {
 			external++;
 			continue;
 		}
@@ -274,8 +281,8 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 		}
 	}
 
-	fbr_rlog(FBR_LOG_BODY, "PRUNE removed: %zu deleted: %zu external: %zu", removed, deleted,
-		external);
+	fbr_rlog(FBR_LOG_BODY, "PRUNE removed: %zu deleted: %zu external: %zu skipped: %zu",
+		removed, deleted, external, skipped);
 }
 
 // Note: must have file->lock

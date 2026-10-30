@@ -153,7 +153,7 @@ struct fbr_store_callbacks {
 	int (*index_delete_f)(struct fbr_fs *fs, struct fbr_directory *directory);
 	fbr_id_t (*root_read_f)(struct fbr_fs *fs, struct fbr_directory *directory, int route_s3);
 	int (*external_file_size_f)(struct fbr_fs *fs, struct fbr_cstore_url *url,
-		unsigned long *size);
+		unsigned long *size, int external_only);
 	int (*merge_file_f)(struct fbr_fs *fs, struct fbr_file *file);
 
 	struct {
