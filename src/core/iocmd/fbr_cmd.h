@@ -9,5 +9,6 @@
 
 int fbr_cmd_ping(const char *path, double *timing);
 int fbr_cmd_import(const char *path, int overwrite);
+int fbr_cmd_merge(const char *path);
 
 #endif /* _FBR_CMD_H_INCLUDED_ */

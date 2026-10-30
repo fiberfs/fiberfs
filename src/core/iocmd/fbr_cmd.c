@@ -14,6 +14,7 @@
 #include "fbr_cmd.h"
 #include "fbr_iocmd.h"
 #include "core/fs/fbr_path.h"
+#include "utils/fbr_sys.h"
 
 int
 fbr_cmd_ping(const char *path, double *timing)
@@ -89,6 +90,40 @@ fbr_cmd_import(const char *path, int overwrite)
 	io_import.overwrite = overwrite > 0 ? 1 : 0;
 
 	ret = ioctl(fd, FBR_IOCMD_IMPORT_REQ, &io_import);
+
+	assert_zero_dev(close(fd));
+
+	if (ret) {
+		return errno ? errno : EIO;
+	}
+
+	return 0;
+}
+
+int
+fbr_cmd_merge(const char *path)
+{
+	assert(path);
+
+	if (fbr_sys_isdir(path)) {
+		return EISDIR;
+	}
+
+	int ret = fbr_cmd_ping(path, NULL);
+	if (ret) {
+		return ret;
+	}
+
+	int fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		return errno ? errno : EIO;
+	}
+
+	struct fbr_iocmd_merge io_merge;
+	fbr_zero(&io_merge);
+	io_merge.magic = FBR_IOCMD_MERGE_MAGIC;
+
+	ret = ioctl(fd, FBR_IOCMD_MERGE_REQ, &io_merge);
 
 	assert_zero_dev(close(fd));
 
