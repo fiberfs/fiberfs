@@ -148,6 +148,8 @@ _log_restore(struct _log_redirect *redirect)
 	// Prevent abort deadlock
 	if (redirect->thread != pthread_self() && !_FBR_LOG_REDIRECTOR_HAS_FORK) {
 		pt_assert(pthread_join(redirect->thread, NULL));
+	} else {
+		pt_assert(pthread_detach(redirect->thread));
 	}
 }
 
