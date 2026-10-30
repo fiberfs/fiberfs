@@ -220,7 +220,7 @@ fbr_body_chunk_clone(struct fbr_fs *fs, struct fbr_body *body, struct fbr_chunk 
 // Note: must have file->lock
 void
 fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_list *remove,
-    int delete_only, int delete_chunks_only)
+    enum fbr_flush_flags flags)
 {
 	fbr_fs_ok(fs);
 	assert_dev(fs->store);
@@ -230,6 +230,9 @@ fbr_body_chunk_prune(struct fbr_fs *fs, struct fbr_file *file, struct fbr_chunk_
 	if (!remove->length || !file->body.chunks) {
 		return;
 	}
+
+	int delete_only = fbr_is_flag(flags, FBR_FLUSH_UNLINK | FBR_FLUSH_DELETE);
+	int delete_chunks_only = fbr_is_flag(flags, FBR_FLUSH_DELETE_IMPORT);
 
 	size_t removed = 0;
 	size_t deleted = 0;

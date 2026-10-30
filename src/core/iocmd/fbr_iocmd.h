@@ -31,8 +31,7 @@ struct fbr_iocmd_import {
 #define FBR_IOCMD_IMPORT_MAGIC			0xB9AB7DFD
 
 	fbr_bitflag_t				overwrite:1;
-	fbr_bitflag_t				external:1;
-	fbr_bitflag_t				merged:1;
+	fbr_bitflag_t				external_only:1;
 
 	struct fbr_fullpath_name		filename;
 };

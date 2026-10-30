@@ -122,7 +122,7 @@ _test_import_file(struct fbr_fs *fs, unsigned int count)
 	struct fbr_iocmd_import io_import;
 	fbr_iocmd_import_init(&io_import);
 	io_import.filename.path.length = fbr_bprintf(io_import.filename.data, "file_%d", count);
-	io_import.external = 1;
+	io_import.external_only = 1;
 
 	int error = fbr_iocmd_import(fs, root_file, FBR_IOCMD_IMPORT_REQ, &io_import, NULL);
 	assert_zero(error);

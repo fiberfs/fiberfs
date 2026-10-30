@@ -496,15 +496,6 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 
 		index_data->chunks = fbr_body_chunk_range(file, 0, 0, &index_data->removed, NULL);
 		assert_zero_dev(index_data->chunks->length);
-
-		struct fbr_path_name filename;
-		fbr_path_get_file(&file->path, &filename);
-
-		fbr_rlog(FBR_LOG_INDEX, "%s '%s' deleted: %u chunk_only: %d",
-			(fbr_is_flag(flags, FBR_FLUSH_UNLINK) ? "FBR_FLUSH_UNLINK" :
-				"FBR_FLUSH_DELETE"),
-			filename.name, index_data->removed->length,
-			(fbr_is_flag(index_data->flags, FBR_FLUSH_DELETE_CHUNK) ? 1 : 0));
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RMDIR)) {
 		assert_zero_dev(wbuffers);
 	} else if (fbr_is_flag(flags, FBR_FLUSH_RENAME)) {
@@ -633,12 +624,8 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 		}
 
 		if (!ret && index_data->removed) {
-			int delete_only = fbr_is_flag(index_data->flags, FBR_FLUSH_UNLINK |
-				FBR_FLUSH_DELETE);
-			int chunks_only = fbr_is_flag(index_data->flags, FBR_FLUSH_DELETE_CHUNK);
-
 			fbr_body_chunk_prune(fs, index_data->file, index_data->removed,
-				delete_only, chunks_only);
+				index_data->flags);
 		}
 
 		if (!ret && index_data->wbuffers) {

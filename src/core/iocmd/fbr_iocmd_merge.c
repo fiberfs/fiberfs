@@ -111,7 +111,6 @@ fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	fbr_iocmd_import_init(&io_import);
 	io_import.filename.path.length = fbr_strbcpy(io_import.filename.data, filename.name);
 	io_import.overwrite = 1;
-	io_import.merged = 1;
 
 	ret = fbr_iocmd_import(fs, directory->file, FBR_IOCMD_IMPORT_REQ, &io_import, NULL);
 

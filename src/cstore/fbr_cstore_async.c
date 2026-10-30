@@ -374,6 +374,8 @@ _async_url_delete(struct fbr_cstore *cstore, const struct fbr_cstore_url *url,
 	assert_dev(cstore);
 	fbr_cstore_url_ok(url);
 
+	fbr_rlog(FBR_LOG_CS_ASYNC, "DELETE %s %s", fbr_cstore_type_name(type), url->value);
+
 	struct fbr_cstore_url *url_async = malloc(sizeof(*url_async));
 	assert(url_async);
 	fbr_cstore_s3_url_clone(url_async, url);

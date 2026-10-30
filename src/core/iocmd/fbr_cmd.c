@@ -96,7 +96,7 @@ fbr_cmd_import(const char *path, int overwrite)
 	fbr_iocmd_import_init(&io_import);
 	io_import.filename.path.length = fbr_strbcpy(io_import.filename.data, filename.name);
 	io_import.overwrite = overwrite > 0 ? 1 : 0;
-	io_import.external = 1;
+	io_import.external_only = 1;
 
 	ret = ioctl(fd, FBR_IOCMD_IMPORT_REQ, &io_import);
 

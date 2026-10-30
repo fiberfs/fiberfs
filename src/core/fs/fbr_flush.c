@@ -586,8 +586,8 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_DELETE");
 		assert_zero_dev(latest);
 
-		if (fbr_is_flag(flush_data->flags, FBR_FLUSH_DELETE_CHUNK)) {
-			fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_DELETE_CHUNK");
+		if (fbr_is_flag(flush_data->flags, FBR_FLUSH_DELETE_IMPORT)) {
+			fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_DELETE_IMPORT");
 		}
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_IMPORT)) {
 		fbr_rlog(FBR_LOG_FLUSH, "FBR_FLUSH_IMPORT");
@@ -606,7 +606,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 			fbr_rlog(FBR_LOG_FLUSH, "DELETE latest '%s' inode: %lu gen: %lu",
 				filename.name, latest->inode, latest->generation);
 
-			enum fbr_flush_flags rmflag = FBR_FLUSH_DELETE | FBR_FLUSH_DELETE_CHUNK;
+			enum fbr_flush_flags rmflag = FBR_FLUSH_DELETE | FBR_FLUSH_DELETE_IMPORT;
 
 			struct fbr_flush_data *flush_rm = fbr_flush_data_init(NULL, latest, NULL,
 				NULL, NULL, rmflag, flush_data);
