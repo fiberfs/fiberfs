@@ -67,12 +67,12 @@ fbr_cmd_import(const char *path, int overwrite)
 	struct fbr_path_name filename;
 	fbr_path_name_init(&filename, name);
 
-	int error = fbr_check_name(&dirpath.path, &filename);
-	if (error) {
-		return error;
+	int ret = fbr_check_name(&dirpath.path, &filename);
+	if (ret) {
+		return ret;
 	}
 
-	int ret = fbr_cmd_ping(dirpath.path.name, NULL);
+	ret = fbr_cmd_ping(dirpath.path.name, NULL);
 	if (ret) {
 		return ret;
 	}
@@ -88,11 +88,11 @@ fbr_cmd_import(const char *path, int overwrite)
 	io_import.filename.path.length = fbr_strbcpy(io_import.filename.data, filename.name);
 	io_import.overwrite = overwrite > 0 ? 1 : 0;
 
-	error = ioctl(fd, FBR_IOCMD_IMPORT_REQ, &io_import);
+	ret = ioctl(fd, FBR_IOCMD_IMPORT_REQ, &io_import);
 
 	assert_zero_dev(close(fd));
 
-	if (error) {
+	if (ret) {
 		return errno ? errno : EIO;
 	}
 
