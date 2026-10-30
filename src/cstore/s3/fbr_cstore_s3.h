@@ -91,7 +91,7 @@ struct fbr_cstore_fetch_context {
 	size_t				length;
 
 	fbr_bitflag_t			fullfile:1;
-	fbr_bitflag_t			overwrite:1;
+	fbr_bitflag_t			fullfile_overwrite:1;
 
 	fbr_id_t			existing;
 

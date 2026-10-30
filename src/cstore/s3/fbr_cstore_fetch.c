@@ -341,10 +341,10 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 	if (fetch->etag_match.length) {
 		assert_dev(fetch->hash_callback);
 		chttp_header_add(http, "If-Match", fetch->etag_match.value);
-	} else if (fetch->overwrite) {
+	} else if (fetch->fullfile_overwrite) {
 		// TODO we dont track fullfile etags
 		assert_dev(fetch->fullfile);
-		chttp_header_add(http, "fbr-overwrite", "ok");
+		chttp_header_add(http, "fbr-ff-overwrite", "ok");
 	} else {
 		assert_dev(fetch->hash_callback);
 		chttp_header_add(http, "If-None-Match", "*");
@@ -1434,7 +1434,7 @@ fbr_cstore_s3_merge_fullfile(struct fbr_fs *fs, struct fbr_file *file)
 
 	fetch.hash_callback = fbr_cstore_s3_hash_none;
 	fetch.data_callback = _s3_fullfile_data_cb;
-	fetch.overwrite = 1;
+	fetch.fullfile_overwrite = 1;
 
 	struct _s3_fullfile_data _data;
 	fbr_zero(&_data);

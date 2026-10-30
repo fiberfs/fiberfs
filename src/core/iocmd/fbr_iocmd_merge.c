@@ -19,12 +19,17 @@ fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
    const void *input, void *output)
 {
 	fbr_fs_ok(fs);
+	assert(fs->store);
 	fbr_file_ok(file);
 	assert(command == FBR_IOCMD_MERGE_REQ);
 	assert(input);
 	assert_zero(output);
 
 	const struct fbr_iocmd_merge *io_merge = input;
+
+	// TODO
+	// We need to pull the latest directory
+	// and move this into a flush_cmd so we are atomic on upload
 
 	if (!fbr_object_is_valid(io_merge, FBR_IOCMD_MERGE_MAGIC)) {
 		fbr_rlog(FBR_LOG_IOCMD_PING, "ERROR magic");
@@ -47,26 +52,36 @@ fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 
 	size_t file_size = file->size;
 	int has_chunk = 0;
+	int is_external = 0;
 
 	struct fbr_chunk *chunk = file->body.chunks;
 	while (chunk) {
 		fbr_chunk_ok(chunk);
 
-		if (!chunk->fullfile) {
-			has_chunk = 1;
+		if (chunk->external) {
+			is_external = 1;
 			break;
+		} else if (!chunk->fullfile) {
+			has_chunk = 1;
 		}
 
 		chunk = chunk->next;
 	}
 
-	if (!has_chunk || !file_size) {
+	if (is_external) {
+		fbr_rlog(FBR_LOG_IOCMD_MERGE, "External chunk detected");
+		return EIO;
+	} else if (!has_chunk || !file_size) {
 		fbr_rlog(FBR_LOG_IOCMD_MERGE, "No chunks detected");
 		return EIO;
 	}
 
-	// TODO make this a cstore callback
-	int ret = fbr_cstore_s3_merge_fullfile(fs, file);
+	int ret = EOPNOTSUPP;
+
+	if (fs->store->merge_file_f) {
+		ret = fs->store->merge_file_f(fs, file);
+	}
+
 	if (ret) {
 		return ret;
 	}

@@ -142,7 +142,7 @@ fbr_cmd_iocmd_import_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 
 	struct fbr_store_callbacks import_callbacks;
 	memcpy(&import_callbacks, FBR_CSTORE_DEFAULT_CALLBACKS, sizeof(import_callbacks));
-	import_callbacks.external_file_size = _test_import_size;
+	import_callbacks.external_file_size_f = _test_import_size;
 
 	struct fbr_fs *fs = fbr_test_fs_alloc();
 	fbr_fs_ok(fs);

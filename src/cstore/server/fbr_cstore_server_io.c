@@ -221,12 +221,12 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	int backend = fbr_cstore_backend_enabled(cstore);
 
-	int overwrite = 0;
-	const char *overwrite_hdr = chttp_header_get(http, "fbr-overwrite");
+	int ff_overwrite = 0;
+	const char *overwrite_hdr = chttp_header_get(http, "fbr-ff-overwrite");
 	if (overwrite_hdr) {
 		if (!strcmp(overwrite_hdr, "ok") && file_type == FBR_CSTORE_FILE_CHUNK &&
 		    !backend && fullfile && !ff_offset && ff_length) {
-			overwrite = 1;
+			ff_overwrite = 1;
 			unique = 1;
 		} else {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR overwrite");
@@ -285,7 +285,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	struct fbr_cstore_entry *entry = NULL;
 	if (unique) {
 		entry = fbr_cstore_io_get_loading(cstore, hash, cstore_len, &hashpath);
-		if (!entry && overwrite) {
+		if (!entry && ff_overwrite) {
 			assert_dev(file_type == FBR_CSTORE_FILE_CHUNK);
 			assert_dev(fullfile);
 			assert_zero_dev(backend);

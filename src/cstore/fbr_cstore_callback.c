@@ -17,7 +17,8 @@ static const struct fbr_store_callbacks _CSTORE_DEFAULT_CALLBACKS = {
 	.index_read_f = fbr_cstore_index_read,
 	.index_delete_f = fbr_cstore_index_delete,
 	.root_read_f = fbr_cstore_root_read,
-	.external_file_size = fbr_cstore_s3_head_fullfile
+	.external_file_size_f = fbr_cstore_s3_head_fullfile,
+	.merge_file_f = fbr_cstore_s3_merge_fullfile
 };
 
 const struct fbr_store_callbacks *FBR_CSTORE_DEFAULT_CALLBACKS = &_CSTORE_DEFAULT_CALLBACKS;

@@ -117,8 +117,8 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	error = EOPNOTSUPP;
 
-	if (fs->store->external_file_size) {
-		error = fs->store->external_file_size(fs, &url, &size);
+	if (fs->store->external_file_size_f) {
+		error = fs->store->external_file_size_f(fs, &url, &size);
 	}
 
 	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "S3 ret: %d size: %zu", error, size);
