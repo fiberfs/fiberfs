@@ -53,9 +53,11 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 		return EPERM;
 	}
 
-	const struct fbr_path_name *filename = &io_import->filename.path;
+	struct fbr_path_name filename;
+	fbr_path_name_init(&filename, io_import->filename.data);
+	assert_dev(filename.length == io_import->filename.path.length);
 
-	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "request: '%s' overwrite: %d", filename->name,
+	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "request: '%s' overwrite: %d", filename.name,
 		io_import->overwrite);
 
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, directory_file->inode);
@@ -67,15 +69,15 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	struct fbr_path_name dirpath;
 	fbr_path_shared_name(directory->path, &dirpath);
 
-	int error = fbr_check_name(&dirpath, filename);
+	int error = fbr_check_name(&dirpath, &filename);
 	if (error) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR name");
 		fbr_dindex_release(fs, &directory);
 		return error;
 	}
 
-	struct fbr_file *existing_file = fbr_directory_find_file(directory, filename->name,
-		filename->length);
+	struct fbr_file *existing_file = fbr_directory_find_file(directory, filename.name,
+		filename.length);
 
 	if (existing_file && !io_import->overwrite) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR existing_file");
@@ -87,7 +89,7 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 		return EISDIR;
 	}
 
-	struct fbr_file *import_file = fbr_file_alloc_new(fs, directory, filename);
+	struct fbr_file *import_file = fbr_file_alloc_new(fs, directory, &filename);
 	assert(import_file->parent_inode == directory->inode);
 	assert(import_file->state == FBR_FILE_INIT);
 
@@ -97,7 +99,7 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	const char *import_filename = fbr_path_get_file(&import_file->path, NULL);
 	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "new file: inode: %lu filename: '%s'", import_file->inode,
 		import_filename);
-	assert_zero_dev(strcmp(import_filename, filename->name));
+	assert_zero_dev(strcmp(import_filename, filename.name));
 
 	import_file->uid = fctx->uid;
 	import_file->gid = fctx->gid;
@@ -122,7 +124,12 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	if (error || !size) {
 		fbr_inode_release(fs, &import_file);
-		return error ? error : EIO;
+
+		if (error == 404) {
+			return ENOENT;
+		}
+
+		return EIO;
 	}
 
 	assert_zero(import_file->size);

@@ -94,7 +94,7 @@ fbr_cmd_import(const char *path, int overwrite)
 	assert_zero_dev(close(fd));
 
 	if (error) {
-		return error;
+		return errno ? errno : EIO;
 	}
 
 	return 0;

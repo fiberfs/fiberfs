@@ -63,11 +63,26 @@ _main_import(struct _cmd_params *cmd_params)
 		return 1;
 	}
 
+	int error = 0;
+
 	for (int i = 0; i < cmd_params->arg_count; i++) {
-		printf("import: '%s'\n", cmd_params->args[i]);
+		printf("Importing: '%s' ...", cmd_params->args[i]);
+		fflush(stdout);
+
+		int ret = fbr_cmd_import(cmd_params->args[i], cmd_params->commands.force);
+
+		if (ret < 0) {
+			printf(" FAILED: FiberFS not detected (%d)\n", ret);
+			error = 1;
+		} else if (ret) {
+			printf(" FAILED: %s (%d)\n", strerror(ret), ret);
+			error = 1;
+		} else {
+			printf(" SUCCESS\n");
+		}
 	}
 
-	return 1;
+	return error;
 }
 
 static void

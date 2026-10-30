@@ -78,6 +78,16 @@ sys_cat_md5 $filepath $cstore_s3_md5
 
 sleep_ms 50
 
+print "### IMPORT AGAIN"
+
+iocmd_import_error $filepath
+iocmd_import $filepath 1
+
+equal $cstore_stat_chunks_fullfile:1 1
+equal $cstore_stat_chunks:1 1
+
+sleep_ms 50
+
 print "### DELETE"
 
 sys_unlink $filepath
