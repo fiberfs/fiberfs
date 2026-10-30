@@ -1433,7 +1433,6 @@ fbr_cstore_s3_merge_fullfile(struct fbr_fs *fs, struct fbr_file *file)
 	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_CHUNK, &path, NULL, NULL,
 		0, file_size, 1, 0, FBR_CSTORE_ROUTE_S3);
 
-	fetch.hash_callback = fbr_cstore_s3_hash_none;
 	fetch.data_callback = _s3_fullfile_data_cb;
 	fetch.fullfile_overwrite = 1;
 
