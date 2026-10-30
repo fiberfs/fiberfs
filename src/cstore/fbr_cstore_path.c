@@ -509,7 +509,7 @@ fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file, struct
 
 void
 fbr_cstore_s3_fullfile_url(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
-    struct fbr_cstore_url *url)
+    size_t length, struct fbr_cstore_url *url)
 {
 	fbr_cstore_ok(cstore);
 	fbr_file_ok(file);
@@ -517,7 +517,7 @@ fbr_cstore_s3_fullfile_url(struct fbr_cstore *cstore, struct fbr_file *file, fbr
 	assert(url);
 
 	struct fbr_cstore_path path;
-	fbr_cstore_path_chunk(file, id, 0, 0, 1, &path);
+	fbr_cstore_path_chunk(file, id, 0, length, 1, &path);
 
 	fbr_cstore_s3_url(cstore, &path, url);
 }

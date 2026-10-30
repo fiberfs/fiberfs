@@ -92,7 +92,7 @@ void fbr_cstore_s3_url(struct fbr_cstore *cstore, struct fbr_cstore_path *path,
 void fbr_cstore_s3_chunk_url(struct fbr_cstore *cstore, struct fbr_file *file,
 	struct fbr_chunk *chunk, struct fbr_cstore_url *url);
 void fbr_cstore_s3_fullfile_url(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
-	struct fbr_cstore_url *url);
+	size_t length, struct fbr_cstore_url *url);
 void fbr_cstore_s3_index_url(struct fbr_cstore *cstore, struct fbr_directory *directory,
 	struct fbr_cstore_url *url);
 void fbr_cstore_s3_root_url(struct fbr_cstore *cstore, const struct fbr_path_name *dirpath,

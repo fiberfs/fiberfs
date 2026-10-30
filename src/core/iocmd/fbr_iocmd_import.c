@@ -113,7 +113,7 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	struct fbr_cstore_url url;
 	fbr_cstore_ok(fs->cstore);
-	fbr_cstore_s3_fullfile_url(fs->cstore, import_file, id, &url);
+	fbr_cstore_s3_fullfile_url(fs->cstore, import_file, id, 0, &url);
 
 	error = EOPNOTSUPP;
 

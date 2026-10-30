@@ -323,7 +323,6 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 	assert_dev(fetch->file_path);
 	assert_dev(fetch->length);
 	assert_dev(fetch->data_callback);
-	assert_dev(fetch->hash_callback);
 	assert_dev(fetch->route);
 	assert_dev(fetch->attempts);
 	assert_zero_dev(fetch->etag_304.length);
@@ -340,8 +339,14 @@ _s3_send_put(struct fbr_cstore_fetch_context *fetch)
 	chttp_header_add(http, "Content-Length", buffer);
 
 	if (fetch->etag_match.length) {
+		assert_dev(fetch->hash_callback);
 		chttp_header_add(http, "If-Match", fetch->etag_match.value);
+	} else if (fetch->overwrite) {
+		// TODO we dont track fullfile etags
+		assert_dev(fetch->fullfile);
+		chttp_header_add(http, "fbr-overwrite", "ok");
 	} else {
+		assert_dev(fetch->hash_callback);
 		chttp_header_add(http, "If-None-Match", "*");
 	}
 
@@ -1327,6 +1332,122 @@ fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, unsig
 	if (!*size || error) {
 		fbr_rlog(FBR_LOG_CS_S3, "ERROR no length");
 		return EINVAL;
+	}
+
+	return 0;
+}
+
+struct _s3_fullfile_data {
+	struct fbr_fs		*fs;
+	struct fbr_file		*file;
+	size_t			file_size;
+};
+
+static void
+_s3_fullfile_data_cb(struct chttp_context *http, void *arg)
+{
+	chttp_context_ok(http);
+	assert(arg);
+
+	struct _s3_fullfile_data *_data = arg;
+
+	struct fbr_fs *fs = _data->fs;
+	fbr_fs_ok(fs);
+	struct fbr_file *file = _data->file;
+	fbr_file_ok(file);
+	size_t file_size = _data->file_size;
+	assert(file_size);
+
+	struct fbr_fio *fio = fbr_fio_alloc(fs, file, 1);
+	fbr_fio_ok(fio);
+
+	size_t writes = 0;
+	size_t write_bytes = 0;
+	size_t read_offset = 0;
+	size_t read_size = fbr_fs_chunk_size(read_offset);
+	assert_dev(read_size);
+
+	while (read_offset < file_size && !http->error) {
+		struct fbr_chunk_vector *vector = fbr_fio_vector_gen(fs, fio, read_offset,
+			read_size);
+		if (!vector) {
+			break;
+		}
+		assert(vector->bufvec);
+
+		for (size_t i = 0; i < vector->bufvec->count; i++) {
+			struct fuse_buf *buf = &vector->bufvec->buf[i];
+			chttp_body_send(http, buf->mem, buf->size);
+			if (http->error) {
+				break;
+			}
+		}
+
+		write_bytes += vector->size;
+		writes++;
+
+		fbr_fio_vector_free(fs, fio, vector);
+
+		read_offset += read_size;
+		size_t read_size = fbr_fs_chunk_size(read_offset);
+		assert_dev(read_size);
+	}
+
+	fbr_fio_release(fs, fio);
+
+	if (http->error) {
+		return;
+	} else if (http->length) {
+		chttp_error(http, CHTTP_ERR_REQ_BODY);
+		return;
+	}
+
+	fbr_rlog(FBR_LOG_IOCMD_MERGE, "writes: %zu bytes: %zu", writes, write_bytes);
+}
+
+int
+fbr_cstore_s3_merge_fullfile(struct fbr_fs *fs, struct fbr_file *file)
+{
+	fbr_fs_ok(fs);
+	fbr_file_ok(file);
+
+	struct fbr_cstore *cstore = fs->cstore;
+	fbr_cstore_ok(cstore);
+
+	if (!fbr_cstore_backend_enabled(cstore)) {
+		return EOPNOTSUPP;
+	}
+
+	char chttp_stack[FBR_CSTORE_CHTTP_SIZE];
+	struct chttp_context *http = chttp_context_init_buf(chttp_stack, sizeof(chttp_stack));
+	chttp_context_ok(http);
+
+	size_t file_size = file->size;
+	fbr_id_t id = fbr_id_gen();
+
+	struct fbr_cstore_path path;
+	fbr_cstore_path_chunk(file, id, 0, file_size, 1, &path);
+
+	struct fbr_cstore_fetch_context fetch;
+	fbr_cstore_fetch_init(&fetch, cstore, http, FBR_CSTORE_FILE_CHUNK, &path, NULL, NULL,
+		0, file_size, 1, 0, FBR_CSTORE_ROUTE_S3);
+
+	fetch.hash_callback = fbr_cstore_s3_hash_none;
+	fetch.data_callback = _s3_fullfile_data_cb;
+	fetch.overwrite = 1;
+
+	struct _s3_fullfile_data _data;
+	fbr_zero(&_data);
+	_data.fs = fs;
+	_data.file = file;
+	_data.file_size = file_size;
+	fetch.data_arg = &_data;
+
+	fbr_s3_send_put(&fetch);
+
+	int error = fbr_cstore_s3_send_finish(cstore, NULL, http, 0);
+	if (error) {
+		return EIO;
 	}
 
 	return 0;

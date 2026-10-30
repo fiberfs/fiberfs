@@ -44,13 +44,13 @@ fbr_fs_chunk_size(size_t offset)
 	 *  20MB -     *  :    2MB
 	 */
 
-	if (offset <= 1024 * 256) {
+	if (offset < 1024 * 256) {
 		return 1024 * 64;
-	} else if (offset <= 1024 * 1024) {
+	} else if (offset < 1024 * 1024) {
 		return 1024 * 256;
-	} else if (offset <= 1024 * 1024 * 8) {
+	} else if (offset < 1024 * 1024 * 8) {
 		return 1024 * 512;
-	} else if (offset <= 1024 * 1024 * 20) {
+	} else if (offset < 1024 * 1024 * 20) {
 		return 1024 * 1024;
 	}
 

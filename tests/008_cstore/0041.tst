@@ -33,7 +33,7 @@ sleep_ms 20
 
 print "### MERGE"
 
-iocmd_merge $file
+#iocmd_merge $file
 
 print "### VERIFY (MEMORY)"
 

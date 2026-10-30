@@ -219,6 +219,22 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		return;
 	}
 
+	int backend = fbr_cstore_backend_enabled(cstore);
+
+	int overwrite = 0;
+	const char *overwrite_hdr = chttp_header_get(http, "fbr-overwrite");
+	if (overwrite_hdr) {
+		if (!strcmp(overwrite_hdr, "ok") && file_type == FBR_CSTORE_FILE_CHUNK &&
+		    !backend && fullfile && !ff_offset && ff_length) {
+			overwrite = 1;
+			unique = 1;
+		} else {
+			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR overwrite");
+			fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+			return;
+		}
+	}
+
 	switch (file_type) {
 		case FBR_CSTORE_FILE_CHUNK:
 		case FBR_CSTORE_FILE_INDEX:
@@ -243,8 +259,6 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 			fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 			return;
 	}
-
-	int backend = fbr_cstore_backend_enabled(cstore);
 
 	// root files put first then write
 	if (backend && file_type == FBR_CSTORE_FILE_ROOT) {
@@ -271,6 +285,17 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	struct fbr_cstore_entry *entry = NULL;
 	if (unique) {
 		entry = fbr_cstore_io_get_loading(cstore, hash, cstore_len, &hashpath);
+		if (!entry && overwrite) {
+			assert_dev(file_type == FBR_CSTORE_FILE_CHUNK);
+			assert_dev(fullfile);
+			assert_zero_dev(backend);
+
+			entry = fbr_cstore_get(cstore, hash);
+			if (entry) {
+				fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE overwrite");
+				fbr_cstore_reset_loading(entry);
+			}
+		}
 		if (!entry) {
 			fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR loading state");
 
