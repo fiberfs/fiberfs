@@ -56,6 +56,7 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	struct fbr_path_name filename;
 	fbr_path_name_init(&filename, io_import->filename.data);
 	assert_dev(filename.length == io_import->filename.path.length);
+	assert_zero_dev(io_import->filename.path.name);
 
 	fbr_rlog(FBR_LOG_IOCMD_IMPORT, "request: '%s' overwrite: %d", filename.name,
 		io_import->overwrite);

@@ -85,7 +85,6 @@ fbr_cmd_import(const char *path, int overwrite)
 	struct fbr_iocmd_import io_import;
 	fbr_zero(&io_import);
 	io_import.magic = FBR_IOCMD_IMPORT_MAGIC;
-	fbr_fullpath_init(&io_import.filename);
 	io_import.filename.path.length = fbr_strbcpy(io_import.filename.data, filename.name);
 	io_import.overwrite = overwrite > 0 ? 1 : 0;
 

@@ -102,7 +102,6 @@ _test_import_file(struct fbr_fs *fs, unsigned int count)
 	struct fbr_iocmd_import io_import;
 	fbr_zero(&io_import);
 	io_import.magic = FBR_IOCMD_IMPORT_MAGIC;
-	fbr_fullpath_init(&io_import.filename);
 	io_import.filename.path.length = fbr_bprintf(io_import.filename.data, "file_%d", count);
 
 	int error = fbr_iocmd_import(fs, root_file, FBR_IOCMD_IMPORT_REQ, &io_import, NULL);
