@@ -1,4 +1,4 @@
-fiber_test "fiberfs_cmd ping"
+fiber_test "fiberfs_cmd --ping"
 
 # Mount
 
@@ -7,6 +7,7 @@ fs_test_rw_mount $sys_tmpdir
 
 # PING PONG
 
+shell ../src/fiberfs_cmd >/dev/null 2>&1 || true
 shell ../src/fiberfs_cmd -p $sys_tmpdir >/dev/null 2>&1
 
 # Unmount
