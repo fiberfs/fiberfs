@@ -18,6 +18,8 @@ struct _cmd_params {
 		fbr_bitflag_t		import;
 		fbr_bitflag_t		force;
 		fbr_bitflag_t		merge;
+
+		fbr_bitflag_t		force_ok;
 	} commands;
 
 	int				arg_count;
@@ -95,6 +97,10 @@ _main_merge(struct _cmd_params *cmd_params)
 		fprintf(stderr, "Incorrect merge usage\n");
 		_cmd_usage();
 		return 1;
+	} else if (!cmd_params->commands.force) {
+		fprintf(stderr, "Warning, force switch required on S3\n");
+		_cmd_usage();
+		return 1;
 	}
 
 	int ret = fbr_cmd_merge(cmd_params->args[0]);
@@ -119,7 +125,7 @@ _cmd_usage(void)
 	fprintf(stderr, "  Import files:\n");
 	fprintf(stderr, "    fiberfs -i [-f] <file>...\n");
 	fprintf(stderr, "      -i, --import    Import file(s).\n");
-	fprintf(stderr, "      -f, --force     Overwrite if local file exists (optional).\n");
+	fprintf(stderr, "      -f, --force     Overwrite if file exists (optional).\n");
 	fprintf(stderr, "  Merge chunks:\n");
 	fprintf(stderr, "    fiberfs -m <file>\n");
 	fprintf(stderr, "      -m, --merge     Merge file chunks.\n");
@@ -153,12 +159,15 @@ main(int argc, char **argv)
 				break;
 			case 'i':
 				cmd_params.commands.import = 1;
+				cmd_params.commands.force_ok = 1;
 				break;
 			case 'f':
 				cmd_params.commands.force = 1;
 				break;
 			case 'm':
 				cmd_params.commands.merge = 1;
+				// TODO temporary
+				cmd_params.commands.force_ok = 1;
 				break;
 			default:
 				_cmd_usage();
@@ -175,7 +184,7 @@ main(int argc, char **argv)
 		fprintf(stderr, "Incorrect switch usage\n");
 		_cmd_usage();
 		return 1;
-	} else if (cmd_params.commands.force && !cmd_params.commands.import) {
+	} else if (cmd_params.commands.force && !cmd_params.commands.force_ok) {
 		fprintf(stderr, "Incorrect force usage\n");
 		_cmd_usage();
 		return 1;
