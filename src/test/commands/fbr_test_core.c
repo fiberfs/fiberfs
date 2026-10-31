@@ -244,6 +244,18 @@ fbr_cmd_set_timeout_sec(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 }
 
 const char *
+fbr_var_is_dev(struct fbr_test_context *ctx)
+{
+	fbr_test_context_ok(ctx);
+
+	if (fbr_is_dev()) {
+		return "1";
+	}
+
+	return "0";
+}
+
+const char *
 fbr_var_is_valgrind(struct fbr_test_context *ctx)
 {
 	fbr_test_context_ok(ctx);

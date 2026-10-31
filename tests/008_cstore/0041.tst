@@ -1,5 +1,7 @@
 fiber_test "cstore s3 merge"
 
+# TODO fullfile needs to exist in cache for merge to work
+
 # Init cstores (0: local 1: s3)
 
 cstore_init 0

@@ -91,6 +91,25 @@ fbr_cmd_iocmd_merge(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_test_logs("iocmd_merge done: %s", path);
 }
 
+void
+fbr_cmd_iocmd_merge_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *path = cmd->params[0].value;
+
+	int ret = fbr_cmd_merge(path);
+	fbr_test_ASSERT(ret, "fbr_cmd_merge() did not fail");
+
+	fbr_test_logs("iocmd_merge done: %s %d %s", path, ret, strerror(ret));
+}
+
 #define _TEST_IMPORT_FILES		25
 #define _TEST_IMPORT_FILE_SIZE		(10L * 1024 * 1024 * 1024)
 

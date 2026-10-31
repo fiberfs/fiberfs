@@ -21,6 +21,7 @@ FBR_TEST_CMD(skip_if)
 FBR_TEST_CMD(skip_if_not)
 FBR_TEST_CMD(print)
 FBR_TEST_CMD(set_timeout_sec)
+FBR_TEST_VAR(is_dev)
 FBR_TEST_VAR(is_valgrind)
 
 FBR_TEST_CMD(random_range)

@@ -25,8 +25,8 @@ fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	assert(input);
 	assert_zero(output);
 
-	// TODO move this into a flush_cmd (post operation) so we are atomic on upload
-	// We also need etags on imported and merged fullfiles
+	// TODO we read the same fullfile we are writing, this breaks cstore S3 emulation
+	// TODO we need etags on fullfiles so we are atomic on upload
 
 	const struct fbr_iocmd_merge *io_merge = input;
 
@@ -40,6 +40,9 @@ fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
+
+	fbr_rlog(FBR_LOG_IOCMD_MERGE, "file: '%s' inode: %lu gen: %lu", filename.name, file->inode,
+		file->generation);
 
 	struct fbr_path_name dirpath;
 	fbr_path_get_dir(&file->path, &dirpath);
@@ -65,9 +68,6 @@ fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	struct fbr_cstore *cstore = fs->cstore;
 	fbr_cstore_ok(cstore);
 
-	fbr_rlog(FBR_LOG_IOCMD_MERGE, "file: '%s' inode: %lu gen: %lu", filename.name, file->inode,
-		file->generation);
-
 	size_t file_size = file->size;
 	int has_chunk = 0;
 	int is_external = 0;
@@ -87,11 +87,11 @@ fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	}
 
 	if (is_external) {
-		fbr_rlog(FBR_LOG_IOCMD_MERGE, "External chunk detected");
+		fbr_rlog(FBR_LOG_IOCMD_MERGE, "external chunk detected");
 		fbr_dindex_release(fs, &directory);
 		return EIO;
 	} else if (!has_chunk || !file_size) {
-		fbr_rlog(FBR_LOG_IOCMD_MERGE, "No chunks detected");
+		fbr_rlog(FBR_LOG_IOCMD_MERGE, "no chunks detected");
 		fbr_dindex_release(fs, &directory);
 		return EIO;
 	}
