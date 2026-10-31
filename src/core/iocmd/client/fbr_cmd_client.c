@@ -20,6 +20,8 @@ struct _cmd_params {
 
 		fbr_bitflag_t		force;
 		fbr_bitflag_t		force_ok;
+		fbr_bitflag_t		experimental;
+		fbr_bitflag_t		experimental_ok;
 
 		size_t			count;
 	} commands;
@@ -99,7 +101,11 @@ _main_merge(struct _cmd_params *cmd_params)
 		fprintf(stderr, "Incorrect merge usage\n");
 		_cmd_usage();
 		return 1;
+	} else if (!fbr_is_dev() || !cmd_params->commands.experimental) {
+		fprintf(stderr, "Merge is development experimental only\n");
+		return 1;
 	}
+
 	int ret = fbr_cmd_merge(cmd_params->args[0]);
 
 	if (ret < 0) {
@@ -123,9 +129,11 @@ _cmd_usage(void)
 	fprintf(stderr, "    fiberfs -i [-f] <file>...\n");
 	fprintf(stderr, "      -i, --import    Import file(s).\n");
 	fprintf(stderr, "      -f, --force     Overwrite existing local file (optional).\n");
-	fprintf(stderr, "  Merge chunks:\n");
-	fprintf(stderr, "    fiberfs -m <file>\n");
-	fprintf(stderr, "      -m, --merge     Merge file chunks.\n");
+	if (fbr_is_dev()) {
+		fprintf(stderr, "  Merge chunks:\n");
+		fprintf(stderr, "    fiberfs -m <file>\n");
+		fprintf(stderr, "      -m, --merge     Merge file chunks.\n");
+	}
 	fprintf(stderr, "  Ping:\n");
 	fprintf(stderr, "    fiberfs -p <path>\n");
 	fprintf(stderr, "      -p, --ping      Ping backend via path.\n");
@@ -143,13 +151,14 @@ main(int argc, char **argv)
 	static struct option fbr_options[] = {
 		{"ping", no_argument, NULL, 'p'},
 		{"import", no_argument, NULL, 'i'},
-		{"force", no_argument, NULL, 'f'},
 		{"merge", no_argument, NULL, 'm'},
+		{"force", no_argument, NULL, 'f'},
+		{"experimental", no_argument, NULL, 'x'},
 		{NULL, 0, NULL, 0}
 	};
 
 	int opt;
-	while ((opt = getopt_long(argc, argv, "pifm", fbr_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "pimfx", fbr_options, NULL)) != -1) {
 		switch (opt) {
 			case 'p':
 				cmd_params.commands.ping = 1;
@@ -160,12 +169,16 @@ main(int argc, char **argv)
 				cmd_params.commands.force_ok = 1;
 				cmd_params.commands.count++;
 				break;
+			case 'm':
+				cmd_params.commands.merge = 1;
+				cmd_params.commands.experimental_ok = 1;
+				cmd_params.commands.count++;
+				break;
 			case 'f':
 				cmd_params.commands.force = 1;
 				break;
-			case 'm':
-				cmd_params.commands.merge = 1;
-				cmd_params.commands.count++;
+			case 'x':
+				cmd_params.commands.experimental = 1;
 				break;
 			default:
 				_cmd_usage();
@@ -183,6 +196,10 @@ main(int argc, char **argv)
 		return 1;
 	} else if (cmd_params.commands.force && !cmd_params.commands.force_ok) {
 		fprintf(stderr, "Incorrect force usage\n");
+		_cmd_usage();
+		return 1;
+	} else if (cmd_params.commands.experimental && !cmd_params.commands.experimental_ok) {
+		fprintf(stderr, "Incorrect experimental usage\n");
 		_cmd_usage();
 		return 1;
 	}

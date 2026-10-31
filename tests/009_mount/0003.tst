@@ -19,6 +19,8 @@ shell ../src/fiberfs_cmd -i >/dev/null 2>&1 || true
 shell ../src/fiberfs_cmd -x >/dev/null 2>&1 || true
 shell ../src/fiberfs_cmd -p _unknown_file.error_ >/dev/null 2>&1 || true
 shell ../src/fiberfs_cmd -i _unknown_file.error_ >/dev/null 2>&1 || true
+shell ../src/fiberfs_cmd -m _unknown_file.error_ >/dev/null 2>&1 || true
+shell ../src/fiberfs_cmd -mx _unknown_file.error_ >/dev/null 2>&1 || true
 
 # Unmount
 

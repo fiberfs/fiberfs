@@ -1,6 +1,7 @@
 fiber_test "cstore s3 merge errors"
 
 # TODO fullfile needs to exist in cache for merge to work
+skip_if_not $is_dev
 
 # Config
 
