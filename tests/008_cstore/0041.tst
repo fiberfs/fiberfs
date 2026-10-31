@@ -3,6 +3,8 @@ fiber_test "cstore s3 merge"
 # TODO fullfile needs to exist in cache for merge to work
 skip_if_not $is_dev
 
+config_add FUSE_WRITEBACK_CACHE false
+
 # Init cstores (0: local 1: s3)
 
 cstore_init 0
