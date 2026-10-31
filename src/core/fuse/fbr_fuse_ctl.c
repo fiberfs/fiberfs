@@ -238,6 +238,7 @@ fbr_fuse_setup(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	conn->want |= FUSE_CAP_ATOMIC_O_TRUNC;
 	conn->want |= FUSE_CAP_SPLICE_WRITE;
 	conn->want |= FUSE_CAP_SPLICE_MOVE;
+	conn->want |= FUSE_CAP_IOCTL_DIR;
 	conn->want |= FUSE_CAP_ASYNC_DIO;
 	conn->want |= FUSE_CAP_PARALLEL_DIROPS;
 
