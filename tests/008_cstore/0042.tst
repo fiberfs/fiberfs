@@ -5,6 +5,7 @@ skip_if_not $is_dev
 
 # Config
 
+config_add LOG_SIZE 300000
 config_add CSTORE_ASYNC_WRITE false
 config_add CSTORE_SERVER true
 config_add CSTORE_SERVER_ADDRESS "127.0.0.1"
