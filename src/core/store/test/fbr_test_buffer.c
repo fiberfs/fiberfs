@@ -81,7 +81,8 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		int ret = _test_memcmp(output->buffer, output->buffer_pos, _ONE_BUFFER,
 			sizeof(_ONE_BUFFER));
 		fbr_test_ERROR(ret, "memcmp failed");
-		fbr_test_logs("writer.output.%zu passed", i);
+		fbr_test_logs("writer.output.%zu passed (%zu/%zu)", i, output->buffer_pos,
+			output->buffer_len);
 		i++;
 		output = output->next;
 	}
@@ -118,7 +119,8 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 		int ret = _test_memcmp(output->buffer, output->buffer_pos, _ONE_BUFFER,
 			sizeof(_ONE_BUFFER));
 		fbr_test_ERROR(ret, "memcmp failed");
-		fbr_test_logs("writer.output.%zu passed", i);
+		fbr_test_logs("writer.output.%zu passed (%zu/%zu)", i, output->buffer_pos,
+			output->buffer_len);
 		i++;
 		output = output->next;
 	}
