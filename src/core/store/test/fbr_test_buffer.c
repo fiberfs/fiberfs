@@ -99,6 +99,9 @@ fbr_cmd_writer_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_request *r1 = fbr_test_request_mock();
 	fbr_request_ok(r1);
+	fbr_workspace_ok(r1->workspace);
+
+	fbr_rlog(FBR_LOG_TEST, "writer2 (workspace size: %zu)", r1->workspace->size);
 
 	struct fbr_writer writer2;
 	fbr_writer_init(fs, &writer2, r1, 0);
