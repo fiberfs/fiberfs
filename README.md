@@ -32,6 +32,12 @@ After FiberFS is up and running, you can view the internal logs with:
 ./fiberfs_log [mount_point]
 ```
 
+And to import existing S3 files into FiberFS:
+
+```
+./fiberfs_cmd -i [file_path]
+```
+
 For more information, please visit [Building and Running FiberFS](https://fiberfs.io/content/building_and_running_fiberfs).
 
 ## Testing and Safety
