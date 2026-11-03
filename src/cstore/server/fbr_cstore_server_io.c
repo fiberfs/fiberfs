@@ -140,7 +140,6 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	fbr_cstore_worker_ok(worker);
 	chttp_context_ok(http);
 	assert(http->state == CHTTP_STATE_BODY);
-	assert_zero(http->chunked);
 	chttp_addr_connected(&http->addr);
 
 	struct fbr_cstore *cstore = worker->cstore;
