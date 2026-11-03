@@ -87,6 +87,7 @@ fbr_ops_xattr_get(struct fbr_request *request, fuse_ino_t ino, const char *name,
 		return;
 	} else if (size < xattr_size) {
 		fbr_fuse_reply_err(request, ERANGE);
+		return;
 	}
 
 	char buffer[256];
