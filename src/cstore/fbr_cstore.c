@@ -333,7 +333,6 @@ _cstore_insert_entry(struct fbr_cstore *cstore, struct fbr_cstore_head *head, fb
 		if (cstore->do_lru) {
 			_cstore_lru_prune(cstore, head, bytes);
 		} else if (_cstore_full(cstore, bytes)) {
-			pt_assert(pthread_mutex_unlock(&head->lock));
 			return NULL;
 		}
 	}
