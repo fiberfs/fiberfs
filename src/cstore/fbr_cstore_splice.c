@@ -64,7 +64,13 @@ fbr_cstore_s3_splice_out(struct fbr_cstore *cstore, struct chttp_addr *addr, int
 		}
 
 		char buffer[FBR_CSTORE_IO_SIZE];
-		ssize_t ret = read(fd_in, buffer, sizeof(buffer));
+
+		size_t remaining = size - bytes;
+		if (remaining > sizeof(buffer)) {
+			remaining = sizeof(buffer);
+		}
+
+		ssize_t ret = read(fd_in, buffer, remaining);
 		if (ret <= 0) {
 			if (ret < 0) {
 				error = errno;
