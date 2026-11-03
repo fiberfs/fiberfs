@@ -47,6 +47,7 @@ typedef int (fbr_iocmd_f)(struct fbr_fs *fs, struct fbr_file *file, unsigned lon
 int fbr_iocmd_pong(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	const void *input, void *output);
 void fbr_iocmd_import_init(struct fbr_iocmd_import *io_import);
+int fbr_iocmd_import_valid(const struct fbr_iocmd_import *io_import);
 int fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned long command,
 	const void *input, void *output);
 int fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,

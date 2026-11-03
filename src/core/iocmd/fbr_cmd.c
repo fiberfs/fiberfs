@@ -66,6 +66,24 @@ fbr_iocmd_import_init(struct fbr_iocmd_import *io_import)
 }
 
 int
+fbr_iocmd_import_valid(const struct fbr_iocmd_import *io_import)
+{
+	assert(io_import);
+
+	if (!fbr_object_is_valid(io_import, FBR_IOCMD_IMPORT_MAGIC)) {
+		return 0;
+	} else if (!io_import->filename.path.length) {
+		return 0;
+	} else if (io_import->filename.path.length >= sizeof(io_import->filename.data)) {
+		return 0;
+	} else if (io_import->filename.data[io_import->filename.path.length]) {
+		return 0;
+	}
+
+	return 1;
+}
+
+int
 fbr_cmd_import(const char *path, int overwrite)
 {
 	assert(path);

@@ -36,14 +36,9 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	const struct fuse_ctx *fctx = fbr_fuse_req_ctx(request, &fusectx);
 	assert(fctx);
 
-	if (!fbr_object_is_valid(io_import, FBR_IOCMD_IMPORT_MAGIC)) {
-		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR magic");
+	if (!fbr_iocmd_import_valid(io_import)) {
+		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR io_import");
 		return EIO;
-	} else if (!io_import->filename.path.length ||
-	    io_import->filename.path.length >= sizeof(io_import->filename.data) ||
-	    io_import->filename.data[io_import->filename.path.length]) {
-		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR length");
-		return EINVAL;
 	} else if (!fs->cstore) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR cstore");
 		return EIO;
