@@ -319,7 +319,9 @@ void
 fbr_inodes_free_all(struct fbr_fs *fs)
 {
 	struct fbr_inodes *inodes = _inodes_fs_get(fs);
-	assert(fs->shutdown);
+	assert(fs->shutdown == FBR_FS_SHUTDOWN);
+
+	fs->shutdown = FBR_FS_SHUTDOWN_INODES;
 
 	for (size_t i = 0; i < _INODES_HEAD_COUNT; i++) {
 		struct fbr_inodes_head *head = &inodes->heads[i];

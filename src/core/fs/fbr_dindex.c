@@ -686,7 +686,7 @@ _dindex_lru_purger(void *arg)
 		fbr_stat_add(&fs->stats.lru_loops);
 
 		unsigned long sleep_ms = fs->config.lru_sleep_ms;
-		fbr_sleep_flag(sleep_ms, &fs->shutdown, &dindex->dirfree_len);
+		fbr_sleep_flag(sleep_ms, (int*)(&fs->shutdown), &dindex->dirfree_len);
 	}
 
 	return NULL;
@@ -727,7 +727,7 @@ void
 fbr_dindex_free_all(struct fbr_fs *fs)
 {
 	struct fbr_dindex *dindex = _dindex_fs_get(fs);
-	assert(fs->shutdown);
+	assert(fs->shutdown == FBR_FS_SHUTDOWN);
 
 	pt_assert(pthread_join(dindex->lru_thread, NULL));
 

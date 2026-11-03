@@ -427,11 +427,17 @@ struct fbr_fs_config {
 	unsigned long				fullfile_wbuffer_size;
 };
 
+enum fbr_fs_shutdown {
+	FBR_FS_SHUTDOWN_NONE = 0,
+	FBR_FS_SHUTDOWN,
+	FBR_FS_SHUTDOWN_INODES
+};
+
 struct fbr_fs {
 	unsigned int				magic;
 #define FBR_FS_MAGIC				0x150CC3D2
 
-	int					shutdown;
+	enum fbr_fs_shutdown			shutdown;
 
 	struct fbr_inodes			*inodes;
 	struct fbr_dindex			*dindex;

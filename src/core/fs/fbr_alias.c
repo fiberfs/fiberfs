@@ -99,8 +99,12 @@ fbr_alias_file_free(struct fbr_fs *fs, struct fbr_file *file)
 
 	file->has_alias_file = 0;
 
-	fbr_inode_release(fs, &file->alias.file);
-	assert_zero_dev(file->alias.file);
+	if (fs->shutdown == FBR_FS_SHUTDOWN_INODES) {
+		file->alias.file = NULL;
+	} else {
+		fbr_inode_release(fs, &file->alias.file);
+		assert_zero_dev(file->alias.file);
+	}
 }
 
 struct fbr_file *

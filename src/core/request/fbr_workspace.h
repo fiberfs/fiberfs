@@ -10,6 +10,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "fiberfs.h"
+
 #define FBR_WORKSPACE_MIN_SIZE			(4096 + 256)
 #define FBR_WORKSPACE_OVERFLOW_MAX		(1024 * 64)
 

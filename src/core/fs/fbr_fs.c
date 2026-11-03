@@ -144,7 +144,7 @@ fbr_fs_free(struct fbr_fs *fs)
 {
 	fbr_fs_ok(fs);
 
-	fs->shutdown = 1;
+	fs->shutdown = FBR_FS_SHUTDOWN;
 
 	if (fs->root_file) {
 		fbr_inode_release(fs, &fs->root_file);
