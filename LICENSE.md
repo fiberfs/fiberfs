@@ -1,4 +1,4 @@
-# FiberFS Community License v0.9
+# FiberFS Community License v1.0
 
 Copyright (c) 2026 FiberFS LLC
 
@@ -34,15 +34,15 @@ https://fiberfs.io/license/
 "System" means:
 
 1) a physical computer, server, appliance, workstation, or device; or
-2) a virtual machine that is assigned dedicated operating-system resources and executes Covered Software independently of another virtual machine.
+2) a virtual machine that is assigned dedicated operating system resources and executes Covered Software independently of another virtual machine.
 
-Containers, pods, processes, threads, and similar execution environments running on the same operating-system instance do not constitute separate Systems.
+Containers, pods, processes, threads, and similar execution environments running on the same operating system instance do not constitute separate Systems.
 
 For purposes of this License:
 
 * one physical host counts as one System;
 * each virtual machine counts as one System;
-* multiple containers running on the same operating-system instance count as one System; and
+* multiple containers running on the same operating system instance count as one System; and
 * a System shall be counted only once regardless of the number of copies, instances, processes, services, mounts, volumes, filesystems, namespaces, tenants, users, applications, containers, or workloads utilizing Covered Software on that System.
 
 ### 1.6 Entity
@@ -64,8 +64,6 @@ Subject to this License, Covered Software may be:
 Source-code disclosure is not required.
 
 Private modifications are permitted.
-
-Commercial use is permitted.
 
 ## 3. License Continuity
 
@@ -89,9 +87,7 @@ regardless of any change in name, branding, product designation, packaging, owne
 
 ## 4. Deployment Threshold
 
-Covered Software may be operated on up to thirty-two (32) Systems per Entity without additional authorization.
-
-Operation of Covered Software on more than thirty-two (32) Systems is not authorized by this License.
+Covered Software may be operated on up to thirty-two (32) Systems per Entity without additional authorization. Operation of Covered Software on more than thirty-two (32) Systems is not authorized by this License.
 
 Before operating Covered Software on more than thirty-two (32) Systems, the Entity must enter into a separate written agreement with Licensor.
 
@@ -99,13 +95,11 @@ More information is available at:
 
 https://fiberfs.io/license/
 
-## 5. License Scope
+## 5. Contributions
 
-The rights granted by this License extend only to deployments of thirty-two (32) Systems or fewer.
+By contributing to FiberFS (a "Contribution"), you grant Licensor a perpetual, irrevocable, worldwide, nonexclusive, royalty-free, transferable license to use, reproduce, modify, prepare derivative works of, publicly display, publicly perform, distribute, and sublicense the Contribution, in whole or in part, under any terms Licensor chooses. This grant is independent of the restrictions in this License and survives its termination.
 
-Any operation of Covered Software in excess of that limit without a separate written agreement from Licensor constitutes use outside the scope of this License and is an infringement of the Licensor's rights.
-
-## 6. Copyright Notice
+## 6. Copyright Notice and Trademarks
 
 This License grants no rights to use the name "FiberFS", the FiberFS logo, any FiberFS trademarks, service marks, trade dress, branding, or other identifying marks, except for accurate attribution and preservation of notices required by this License.
 
@@ -115,11 +109,11 @@ Except with the prior written permission of Licensor, no person may:
 2) represent that a product, service, fork, modification, or derivative work is endorsed by, sponsored by, affiliated with, certified by, or approved by Licensor; or
 3) use any FiberFS trademark, logo, or branding in a manner likely to cause confusion regarding the origin of a product or service.
 
-Forks, modifications, and derivative works must use a name and branding that are clearly distinct from FiberFS.
+Public forks, modifications, and derivative works must use a name and branding that are clearly distinct from FiberFS.
 
-All distributions of Covered Software shall retain all copyright notices, license notices, and attribution notices present in the original FiberFS distribution.
+All distributions of Covered Software shall retain all copyright notices, license notices, and attribution notices present in the original FiberFS distribution. No person may remove or alter such notices.
 
-No person may remove or alter such notices.
+This License does not transfer ownership of any copyright.
 
 ## 7. Termination
 
