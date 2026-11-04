@@ -7,7 +7,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 #include "fiberfs.h"
@@ -68,8 +67,6 @@ fbr_iocmd_import_init(struct fbr_iocmd_import *io_import)
 int
 fbr_iocmd_import_valid(const struct fbr_iocmd_import *io_import)
 {
-	assert(io_import);
-
 	if (!fbr_object_is_valid(io_import, FBR_IOCMD_IMPORT_MAGIC)) {
 		return 0;
 	} else if (!io_import->filename.path.length) {

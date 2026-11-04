@@ -4,7 +4,6 @@
  *
  */
 
-#include <limits.h>
 #include <pthread.h>
 #include <sys/stat.h>
 #include <stdio.h>
