@@ -57,6 +57,10 @@ Note: all Makefile commands support parallelism, ex: `make test -j8`.
 * The entire test suite can be run thru valgrind for a complete safety and leak report: `make valgrind` `-j4`
 * To build with ASAN: `make ASAN=true` `-j4`
 
+## Contributing
+
+Please review and agree to Section 5 (Contributions) of the FiberFS Community License v1.0.
+
 ## Releases
 
 ### FiberFS 0.9.3 (2026-10-13)
