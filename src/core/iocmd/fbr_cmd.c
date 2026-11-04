@@ -75,6 +75,13 @@ fbr_iocmd_import_valid(const struct fbr_iocmd_import *io_import)
 		return 0;
 	} else if (io_import->filename.data[io_import->filename.path.length]) {
 		return 0;
+	} else if (io_import->filename.path.name) {
+		return 0;
+	}
+
+	size_t length = strlen(io_import->filename.data);
+	if (length != io_import->filename.path.length) {
+		return 0;
 	}
 
 	return 1;
