@@ -1,6 +1,6 @@
 # FiberFS
 
-FiberFS is a high performance POSIX filesystem built on S3 compatible storage.
+FiberFS is a high performance distributed POSIX filesystem built on S3 compatible storage.
 
 For more information, please visit [fiberfs.io](https://fiberfs.io/).
 
