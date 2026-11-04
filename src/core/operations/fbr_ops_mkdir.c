@@ -4,7 +4,6 @@
  *
  */
 
-#include <limits.h>
 #include <sys/stat.h>
 
 #include "fiberfs.h"

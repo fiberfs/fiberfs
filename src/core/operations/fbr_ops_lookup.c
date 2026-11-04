@@ -4,8 +4,6 @@
  *
  */
 
-#include <limits.h>
-
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"

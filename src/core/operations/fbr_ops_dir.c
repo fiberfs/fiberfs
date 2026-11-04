@@ -4,8 +4,6 @@
  *
  */
 
-#include <limits.h>
-
 #include "fiberfs.h"
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
@@ -69,13 +67,14 @@ fbr_ops_readdir(struct fbr_request *request, fuse_ino_t ino, size_t size, off_t 
 
 	struct fbr_dreader *reader = fbr_fh_dreader(fi->fh);
 
-	if (reader->end) {
+	if (reader->offset != off || !off) {
+		reader->offset = off;
+		reader->file_pos = NULL;
+		reader->end = 0;
+	} else if (reader->end) {
 		fbr_rlog(FBR_LOG_OP_DIR, "read return: end");
 		fbr_fuse_reply_buf(request, NULL, 0);
 		return;
-	} else if (reader->offset != off || !off) {
-		reader->offset = off;
-		reader->file_pos = NULL;
 	}
 
 	struct fbr_directory *directory = reader->directory;
