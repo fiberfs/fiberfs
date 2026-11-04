@@ -790,7 +790,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 
 	struct fbr_cstore_metadata metadata;
 	struct fbr_cstore_entry *entry;
-	int fd;
+	int fd = -1;
 	int retry = 0;
 
 	struct fbr_cstore_entry_ref entry_ref;
@@ -872,12 +872,14 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	}
 
 	assert_zero(fbr_cstore_entry_has_ref(&entry_ref));
+	assert_dev(fd >= 0);
 
 	struct fbr_gzip gzip;
 	if (metadata.compress == FBR_COMPRESS_GZIP) {
 		if (!fbr_gzip_enabled()) {
 			fbr_rlog(FBR_LOG_CS_INDEX, "ERROR no gzip support");
 			fbr_cstore_release(cstore, &entry);
+			assert_zero_dev(close(fd));
 			return EIO;
 		}
 		fbr_gzip_inflate_init(&gzip);
@@ -885,6 +887,7 @@ fbr_cstore_io_index_read(struct fbr_fs *fs, struct fbr_directory *directory)
 	} else if (metadata.compress) {
 		fbr_rlog(FBR_LOG_CS_INDEX, "ERROR bad compression value: %d", metadata.compress);
 		fbr_cstore_release(cstore, &entry);
+		assert_zero_dev(close(fd));
 		return EIO;
 	}
 
