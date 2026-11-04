@@ -46,6 +46,7 @@ fbr_ops_rename(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	int error = fbr_check_name(&dirpath, &newfilename);
 	if (error) {
 		fbr_fuse_reply_err(request, error);
+		fbr_dindex_release(fs, &directory);
 		return;
 	}
 
