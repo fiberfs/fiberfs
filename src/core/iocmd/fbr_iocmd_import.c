@@ -77,14 +77,22 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	struct fbr_file *existing_file = fbr_directory_find_file(directory, filename.name,
 		filename.length);
 
-	if (existing_file && !io_import->overwrite) {
-		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR existing_file");
-		fbr_dindex_release(fs, &directory);
-		return EEXIST;
-	} else if (existing_file && fbr_file_is_dir(existing_file)) {
-		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR existing_file is directory");
-		fbr_dindex_release(fs, &directory);
-		return EISDIR;
+	if (existing_file) {
+		fbr_file_ok(existing_file);
+
+		if (!io_import->overwrite) {
+			fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR existing_file");
+			fbr_dindex_release(fs, &directory);
+			return EEXIST;
+		} else if (fbr_file_is_dir(existing_file)) {
+			fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR existing_file is directory");
+			fbr_dindex_release(fs, &directory);
+			return EISDIR;
+		} else if (!fbr_fuse_check_access(fctx, existing_file, W_OK)) {
+			fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR existing_file access");
+			fbr_dindex_release(fs, &directory);
+			return EPERM;
+		}
 	}
 
 	struct fbr_file *import_file = fbr_file_alloc_new(fs, directory, &filename);
@@ -101,9 +109,14 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 
 	import_file->uid = fctx->uid;
 	import_file->gid = fctx->gid;
-	import_file->mode = (fbr_ulong2octal(666) & ~(fctx->umask)) | S_IFREG;
 	import_file->local_only = 1;
 	import_file->silent_import = 1;
+
+	if (existing_file) {
+		import_file->mode = existing_file->mode;
+	} else {
+		import_file->mode = (fbr_ulong2octal(666) & ~(fctx->umask)) | S_IFREG;
+	}
 
 	fbr_id_t id = fbr_id_gen();
 	size_t size = 0;

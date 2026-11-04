@@ -38,6 +38,13 @@ fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 		return EIO;
 	}
 
+	struct fbr_request *request = fbr_request_get();
+	fbr_request_ok(request);
+
+	struct fuse_ctx fusectx;
+	const struct fuse_ctx *fctx = fbr_fuse_req_ctx(request, &fusectx);
+	assert(fctx);
+
 	struct fbr_path_name filename;
 	fbr_path_get_file(&file->path, &filename);
 
@@ -51,6 +58,9 @@ fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	if (!directory) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR directory");
 		return ENOENT;
+	} else if (!fbr_fuse_check_access(fctx, directory->file, W_OK | X_OK)) {
+		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR access");
+		return EPERM;
 	}
 
 	file = fbr_directory_find_file(directory, filename.name, filename.length);
