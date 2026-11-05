@@ -24,7 +24,7 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 		fbr_fuse_mounted(fs->fuse_ctx);
 		if (fs->fuse_ctx->read_only) {
 			fbr_fuse_reply_err(request, EROFS);
-			return ;
+			return;
 		}
 	}
 

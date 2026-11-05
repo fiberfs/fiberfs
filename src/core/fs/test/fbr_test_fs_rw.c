@@ -48,14 +48,6 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 		fbr_cstore_autoinit(ctx->fs->cstore);
 	}
 
-	//ctx->log->always_flush = 1;
-
-	// TODO these
-	//conn->max_readahead
-	//conn->max_background
-	//FUSE_CAP_POSIX_ACL
-	//FUSE_CAP_HANDLE_KILLPRIV
-
 	fbr_fuse_setup(ctx, conn);
 
 	struct fbr_request *request = fbr_request_alloc(NULL, __func__);
