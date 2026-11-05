@@ -95,7 +95,8 @@ main(int argc, char **argv)
 				break;
 			} else if (reader->cursor.status == FBR_LOG_CURSOR_OVERRUN) {
 				fprintf(stderr, "ERROR overrun, "
-					"cannot read or print fast enough\n");
+					"cannot read or print fast enough. "
+					"Try increasing LOG_SIZE.\n");
 				break;
 			}
 
