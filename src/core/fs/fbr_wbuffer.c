@@ -952,10 +952,6 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 	fbr_fio_ok(fio);
 	fbr_file_ok(fio->file);
 
-	pt_assert(pthread_mutex_destroy(&fio->wbuffer_lock));
-	pt_assert(pthread_mutex_destroy(&fio->wbuffer_update_lock));
-	pt_assert(pthread_cond_destroy(&fio->wbuffer_update));
-
 	if (fio->wbuffers) {
 		fbr_rlog(FBR_LOG_WBUFFER, "WARNING unflushed wbuffers exist");
 
@@ -967,6 +963,10 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 
 		// TODO dump wbuffers onto disk
 	}
+
+	pt_assert(pthread_mutex_destroy(&fio->wbuffer_lock));
+	pt_assert(pthread_mutex_destroy(&fio->wbuffer_update_lock));
+	pt_assert(pthread_cond_destroy(&fio->wbuffer_update));
 
 	fbr_wbuffers_reset(fs, fio);
 }
