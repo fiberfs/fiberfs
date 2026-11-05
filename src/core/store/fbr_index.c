@@ -425,6 +425,10 @@ fbr_index_data_init(struct fbr_fs *fs, struct fbr_index_data *index_data,
 			assert(wbuffers);
 
 			index_data->size = fbr_body_length(file, NULL);
+			if (file->size > index_data->size) {
+				index_data->size = file->size;
+			}
+
 			index_data->chunks = fbr_body_chunk_range(file, 0, index_data->size,
 				&index_data->removed, NULL);
 
