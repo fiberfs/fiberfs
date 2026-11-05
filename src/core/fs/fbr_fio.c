@@ -195,7 +195,7 @@ _fio_fetch_chunks(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, size_t 
 		pthread_testcancel();
 
 		struct timespec ts;
-		ts.tv_sec = 0;
+		fbr_zero(&ts);
 		ts.tv_nsec = 1000 * 1000 * 200;
 		fbr_timespec_add_clock(&ts);
 

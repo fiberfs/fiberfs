@@ -649,7 +649,7 @@ fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, enum fb
 		pthread_testcancel();
 
 		struct timespec ts;
-		ts.tv_sec = 0;
+		fbr_zero(&ts);
 		ts.tv_nsec = 1000 * 1000 * 200;
 		fbr_timespec_add_clock(&ts);
 
