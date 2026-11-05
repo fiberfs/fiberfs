@@ -39,6 +39,14 @@ fbr_ops_open(struct fbr_request *request, fuse_ino_t ino, struct fuse_file_info 
 		fbr_rlog(FBR_LOG_OP_OPEN, "flags: read only");
 	}
 
+	if (fs->fuse_ctx) {
+		fbr_fuse_mounted(fs->fuse_ctx);
+		if (!read_only && fs->fuse_ctx->read_only) {
+			fbr_fuse_reply_err(request, EROFS);
+			return ;
+		}
+	}
+
 	struct fbr_fio *fio = fbr_fio_alloc(fs, file, read_only);
 	fbr_fio_ok(fio);
 

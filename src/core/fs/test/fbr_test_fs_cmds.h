@@ -22,6 +22,7 @@ void fbr_test_fs_root_alloc(struct fbr_fs *fs);
 void fbr_test_fs_write_index(struct fbr_fs *fs, struct fbr_directory *directory);
 size_t fbr_test_fs_read(struct fbr_fs *fs, struct fbr_file *file, size_t offset, char *buffer,
 	size_t buffer_len);
+void fbr_test_fs_remote_root_alloc(void);
 
 size_t fbr_test_fs_count_chunks(struct fbr_file *file);
 struct fbr_chunk *fbr_test_fs_get_chunk(struct fbr_file *file, size_t position);

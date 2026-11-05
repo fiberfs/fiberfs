@@ -40,6 +40,11 @@ fbr_fio_alloc(struct fbr_fs *fs, struct fbr_file *file, int read_only)
 	if (read_only) {
 		fio->read_only = 1;
 	} else {
+		if (fs->fuse_ctx) {
+			fbr_fuse_mounted(fs->fuse_ctx);
+			assert_zero(fs->fuse_ctx->read_only);
+		}
+
 		fio->write = 1;
 		fbr_file_ref_wbuffer(fs, fio->file);
 	}

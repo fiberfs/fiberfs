@@ -1,10 +1,10 @@
 fiber_test "Read only mount test"
 
-# TODO we need to mount as rw, init, then remount ro
-
-# Init
+# Config
 
 config_add READ_ONLY true
+
+# Mount
 
 sys_mkdir_tmp
 fs_test_rw_mount $sys_tmpdir

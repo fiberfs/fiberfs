@@ -10,10 +10,12 @@
 #include "core/fs/fbr_fs.h"
 #include "core/fs/fbr_fs_inline.h"
 #include "core/fuse/fbr_fuse.h"
+#include "cstore/fbr_cstore_api.h"
 
 #include "test/fbr_test.h"
 #include "fbr_test_fs_cmds.h"
 #include "core/fuse/test/fbr_test_fuse_cmds.h"
+#include "cstore/test/fbr_test_cstore_cmds.h"
 
 void
 fbr_cmd_fs_test_release_all(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
@@ -410,4 +412,20 @@ fbr_test_fs_read(struct fbr_fs *fs, struct fbr_file *file, size_t offset, char *
 	fbr_fio_release(fs, fio);
 
 	return bytes;
+}
+
+void
+fbr_test_fs_remote_root_alloc(void)
+{
+	struct fbr_test_context *test_ctx = fbr_test_get_ctx();
+	fbr_test_context_ok(test_ctx);
+
+	struct fbr_fs *fs = fbr_test_fs_alloc();
+	fbr_fs_ok(fs);
+	fbr_test_cstore_bind(fs, 0);
+	fbr_fs_set_store(fs, FBR_CSTORE_DEFAULT_CALLBACKS);
+
+	fbr_test_fs_root_alloc(fs);
+
+	fbr_fs_free(fs);
 }

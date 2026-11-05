@@ -62,13 +62,28 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 	fbr_request_ok(request);
 	assert_zero(request->not_fuse);
 
-	fbr_test_fs_root_alloc(ctx->fs);
+	struct fbr_directory *root = NULL;
 
-	struct fbr_directory *root = fbr_dindex_take(ctx->fs, FBR_DIRNAME_ROOT, 0);
+	if (ctx->read_only) {
+		fbr_rlog(FBR_LOG_TEST, "INIT read only detected, writing remote root");
+		fbr_test_fs_remote_root_alloc();
+
+		fbr_rlog(FBR_LOG_TEST, "INIT loading root");
+		root = fbr_directory_load(ctx->fs, FBR_DIRNAME_ROOT, FBR_INODE_ROOT, 0);
+	} else {
+		fbr_rlog(FBR_LOG_TEST, "INIT writing local root");
+		fbr_test_fs_root_alloc(ctx->fs);
+
+		fbr_rlog(FBR_LOG_TEST, "INIT taking dindex");
+		root = fbr_dindex_take(ctx->fs, FBR_DIRNAME_ROOT, 0);
+	}
+
 	fbr_directory_ok(root);
 	assert(root->state == FBR_DIRSTATE_OK);
 
 	fbr_test_cstore_wait(ctx->fs->cstore);
+
+	fbr_rlog(FBR_LOG_TEST, "INIT validating root");
 
 	struct fbr_directory *root_new = fbr_directory_alloc(ctx->fs, FBR_DIRNAME_ROOT,
 		FBR_INODE_ROOT);
@@ -77,7 +92,9 @@ _test_fs_rw_init(struct fbr_fuse_context *ctx, struct fuse_conn_info *conn)
 
 	fbr_id_t root_id = fbr_cstore_root_read(ctx->fs, root_new, 0);
 
+	fbr_rlog(FBR_LOG_TEST, "INIT fbr_cstore_root_read(): %lu", root_id);
 	fbr_test_logs("INIT fbr_cstore_root_read(): %lu", root_id);
+
 	fbr_ASSERT(root_id == root->version, "root version mismatch, found %lu, expected %lu",
 		root_id, root->version);
 	fbr_ASSERT(root->etag.length == root_new->etag.length &&

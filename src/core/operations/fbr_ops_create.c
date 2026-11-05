@@ -20,6 +20,14 @@ fbr_ops_create(struct fbr_request *request, fuse_ino_t parent, const char *name,
 	fbr_rlog(FBR_LOG_OP, "CREATE req: %lu parent: %lu name: '%s' mode: %d flags: %u",
 		request->id, parent, name, mode, fi->flags);
 
+	if (fs->fuse_ctx) {
+		fbr_fuse_mounted(fs->fuse_ctx);
+		if (fs->fuse_ctx->read_only) {
+			fbr_fuse_reply_err(request, EROFS);
+			return ;
+		}
+	}
+
 	struct fbr_directory *directory = fbr_directory_from_inode(fs, parent);
 	if (!directory) {
 		fbr_fuse_reply_err(request, ENOTDIR);
