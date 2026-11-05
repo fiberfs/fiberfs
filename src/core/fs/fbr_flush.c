@@ -543,6 +543,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 		}
 
 		fbr_file_merge(fs, latest, dest);
+		dest->size = latest->size;
 
 		if (!fbr_has_alias_path(dest)) {
 			fbr_alias_path_alloc(fs, dest, &filename);
