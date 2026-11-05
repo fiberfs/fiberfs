@@ -314,7 +314,6 @@ struct fbr_wbuffer {
 	struct fbr_wbuffer			*next;
 
 	fbr_bitflag_t				free_buffer:1;
-	fbr_bitflag_t				split:1;
 	fbr_bitflag_t				fullfile:1;
 };
 

@@ -78,9 +78,10 @@ _wbuffer_alloc_buffer(struct fbr_fs *fs, struct fbr_fio *fio, size_t offset, siz
 	wbuffer->size = wsize;
 	wbuffer->end = size;
 
-	wbuffer->free_buffer = 1;
 	wbuffer->buffer = malloc(wsize);
 	assert(wbuffer->buffer);
+
+	wbuffer->free_buffer = 1;
 
 	return wbuffer;
 }
@@ -132,9 +133,10 @@ _wbuffer_find(struct fbr_fs *fs, struct fbr_fio *fio, struct fbr_wbuffer **head,
 			wbuffer->end = wbuffer->size;
 		}
 
-		wbuffer->buffer = prev->buffer + wbuffer_offset;
-		wbuffer->split = 1;
-		assert_zero_dev(wbuffer->free_buffer);
+		wbuffer->buffer = malloc(wbuffer->size);
+		assert(wbuffer->buffer);
+
+		wbuffer->free_buffer = 1;
 
 		prev->size = wbuffer_offset;
 
@@ -918,7 +920,6 @@ fbr_wbuffers_reset(struct fbr_fs *fs, struct fbr_fio *fio)
 		if (wbuffer->free_buffer) {
 			assert_dev(wbuffer->buffer);
 			assert_zero_dev(wbuffer->chunk);
-			assert_zero_dev(wbuffer->split);
 			free(wbuffer->buffer);
 		} else if (wbuffer->chunk) {
 			fbr_chunk_release(wbuffer->chunk);

@@ -515,7 +515,6 @@ fbr_cmd_fs_test_body_hole(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 	int ret = fbr_wbuffer_flush_fio(fs, fio);
 	assert(ret);
 
-	size_t count = 0;
 	size_t allocs = 0;
 
 	struct fbr_wbuffer *wbuffer = fio->wbuffers;
@@ -525,10 +524,7 @@ fbr_cmd_fs_test_body_hole(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 		assert(wbuffer->end == 1000);
 		assert(wbuffer->size >= wbuffer->end);
 
-		count++;
-		if (!wbuffer->split) {
-			allocs++;
-		}
+		allocs++;
 
 		int ret = memcmp(wbuffer->buffer, buffer, wbuffer->end);
 		assert_zero(ret);
@@ -536,11 +532,9 @@ fbr_cmd_fs_test_body_hole(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd
 		wbuffer = wbuffer->next;
 	}
 
-	fbr_test_logs("HOLE count: %zu", count);
 	fbr_test_logs("HOLE allocs: %zu", allocs);
 
-	assert(count == 64);
-	assert(allocs == 3);
+	assert(allocs == 64);
 
 	fbr_wbuffers_reset_lock(fs, fio);
 
