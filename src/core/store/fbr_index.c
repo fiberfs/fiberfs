@@ -550,6 +550,17 @@ fbr_index_write(struct fbr_fs *fs, struct fbr_index_data *index_data_cmds)
 	assert_dev(directory->version);
 	assert_dev(directory->generation);
 
+	// TODO
+	/*
+	if (fs->fuse_ctx) {
+		fbr_fuse_mounted(fs->fuse_ctx);
+		if (fs->fuse_ctx->read_only) {
+			fbr_rlog(FBR_LOG_INDEX, "ERROR read only");
+			return EROFS;
+		}
+	}
+	*/
+
 	if (fbr_is_flag(index_data_cmds->flags, FBR_FLUSH_MEM_ONLY)) {
 		assert_zero_dev(index_data_cmds->wbuffers);
 		assert_zero_dev(index_data_cmds->chunks);

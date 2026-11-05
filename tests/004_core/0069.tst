@@ -1,5 +1,7 @@
 fiber_test "Read only mount test"
 
+# TODO we need to mount as rw, init, then remount ro
+
 # Init
 
 config_add READ_ONLY true
