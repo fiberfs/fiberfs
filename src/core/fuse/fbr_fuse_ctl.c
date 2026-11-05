@@ -136,32 +136,33 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 		fbr_log_redirect_stderr();
 	}
 
+	int read_only = fbr_conf_get_bool("READ_ONLY", FBR_CONFIG_FALSE);
 	int allow_other = fbr_conf_get_bool("FUSE_ALLOW_OTHER", FBR_CONFIG_FALSE);
-	if (allow_other) {
-		allow_other = 2;
-	}
 
-	char *argv[8];
+	char *argv[10];
 	struct fuse_args fargs;
+	fbr_zero(&fargs);
 	fargs.argv = argv;
-	fargs.argv[0] = "fiberfs";
-	fargs.argv[1] = "-o";
-	fargs.argv[2] = "fsname=fiberfs";
-	fargs.argv[3] = "-o";
-	fargs.argv[4] = "default_permissions";
-	if (allow_other) {
-		fargs.argv[5] = "-o";
-		fargs.argv[6] = "allow_other";
-	}
-	fargs.argv[5 + allow_other] = "-d";
-	fargs.argc = fbr_array_len(argv) - 2 + allow_other;
-	assert(fargs.argc == 6 + allow_other);
-	fargs.allocated = 0;
 
-	if (!ctx->debug) {
-		assert(fargs.argc);
-		fargs.argc--;
+	fargs.argv[fargs.argc++] = "fiberfs";
+	fargs.argv[fargs.argc++] = "-o";
+	fargs.argv[fargs.argc++] = "fsname=fiberfs";
+	fargs.argv[fargs.argc++] = "-o";
+	fargs.argv[fargs.argc++] = "default_permissions";
+
+	if (read_only) {
+		fargs.argv[fargs.argc++] = "-o";
+		fargs.argv[fargs.argc++] = "ro";
 	}
+	if (allow_other) {
+		fargs.argv[fargs.argc++] = "-o";
+		fargs.argv[fargs.argc++] = "allow_other";
+	}
+	if (ctx->debug) {
+		fargs.argv[fargs.argc++] = "-d";
+	}
+
+	assert((unsigned int)fargs.argc <= fbr_array_len(argv));
 
 	ctx->session = fuse_session_new(&fargs, FBR_FUSE_OPS, sizeof(*FBR_FUSE_OPS), ctx);
 

@@ -16,6 +16,26 @@
 #include "test/fbr_test.h"
 
 void
+fbr_cmd_open_write_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
+{
+	fbr_test_context_ok(ctx);
+	fbr_test_ERROR_param_count(cmd, 1);
+
+	if (fbr_test_can_vfork(ctx)) {
+		fbr_test_fork(ctx, cmd);
+		return;
+	}
+
+	const char *filename = cmd->params[0].value;
+
+	int fd = open(filename, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	fbr_test_ASSERT(fd < 0, "open_write_error open() didnt fail");
+
+	fbr_test_log(ctx, FBR_LOG_VERBOSE, "open_write_error passed %s (%d %s)",
+		filename, fd, strerror(errno));
+}
+
+void
 fbr_cmd_open_exclusive_error(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 {
 	fbr_test_context_ok(ctx);
