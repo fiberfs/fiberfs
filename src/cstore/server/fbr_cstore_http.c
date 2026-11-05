@@ -168,6 +168,10 @@ fbr_cstore_http_log(struct chttp_context *http)
 			http->perf.request, http->perf.req_body, http->perf.response);
 	}
 
+	if (http->error) {
+		return;
+	}
+
 	int first = 1;
 	struct chttp_dpage *dpage = http->dpage;
 	while (dpage) {
