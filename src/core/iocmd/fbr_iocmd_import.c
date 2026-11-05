@@ -74,6 +74,7 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 		return error;
 	}
 
+	mode_t existing_mode = 0;
 	struct fbr_file *existing_file = fbr_directory_find_file(directory, filename.name,
 		filename.length);
 
@@ -93,6 +94,8 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 			fbr_dindex_release(fs, &directory);
 			return EPERM;
 		}
+
+		existing_mode = existing_file->mode;
 	}
 
 	struct fbr_file *import_file = fbr_file_alloc_new(fs, directory, &filename);
@@ -112,8 +115,8 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	import_file->local_only = 1;
 	import_file->silent_import = 1;
 
-	if (existing_file) {
-		import_file->mode = existing_file->mode;
+	if (existing_mode) {
+		import_file->mode = existing_mode;
 	} else {
 		import_file->mode = (fbr_ulong2octal(666) & ~(fctx->umask)) | S_IFREG;
 	}
