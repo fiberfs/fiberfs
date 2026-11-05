@@ -473,6 +473,7 @@ _flush_merge(struct fbr_fs *fs, struct fbr_directory *directory, struct fbr_flus
 
 		fbr_directory_remove_file(fs, directory, &latest);
 
+		// TODO chunks are immediately deleted, EIO can surface
 		// TODO need special alias to keep further writes within the file->inode
 	} else if (fbr_is_flag(flush_data->flags, FBR_FLUSH_RMDIR)) {
 		assert_dev(flush_data->flags == FBR_FLUSH_RMDIR);
