@@ -31,11 +31,17 @@ fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 	const struct fbr_iocmd_merge *io_merge = input;
 
 	if (!fbr_object_is_valid(io_merge, FBR_IOCMD_MERGE_MAGIC)) {
-		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR magic");
+		fbr_rlog(FBR_LOG_IOCMD_MERGE, "ERROR magic");
 		return EIO;
 	} else if (!fs->cstore || !fbr_cstore_backend_enabled(fs->cstore)) {
-		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR cstore");
+		fbr_rlog(FBR_LOG_IOCMD_MERGE, "ERROR cstore");
 		return EIO;
+	} else if (fs->fuse_ctx) {
+		fbr_fuse_mounted(fs->fuse_ctx);
+		if (fs->fuse_ctx->read_only) {
+			fbr_rlog(FBR_LOG_IOCMD_MERGE, "ERROR read only");
+			return EROFS;
+		}
 	}
 
 	struct fbr_request *request = fbr_request_get();
@@ -56,21 +62,21 @@ fbr_iocmd_merge(struct fbr_fs *fs, struct fbr_file *file, unsigned long command,
 
 	struct fbr_directory *directory = fbr_directory_get(fs, &dirpath, file->parent_inode, 0, 1);
 	if (!directory) {
-		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR directory");
+		fbr_rlog(FBR_LOG_IOCMD_MERGE, "ERROR directory");
 		return ENOENT;
 	} else if (!fbr_fuse_check_access(fctx, directory->file, W_OK | X_OK)) {
-		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR access");
+		fbr_rlog(FBR_LOG_IOCMD_MERGE, "ERROR access");
 		return EPERM;
 	}
 
 	file = fbr_directory_find_file(directory, filename.name, filename.length);
 
 	if (!file) {
-		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR no file");
+		fbr_rlog(FBR_LOG_IOCMD_MERGE, "ERROR no file");
 		fbr_dindex_release(fs, &directory);
 		return EINVAL;
 	} else if (!fbr_file_is_file(file)) {
-		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR not file");
+		fbr_rlog(FBR_LOG_IOCMD_MERGE, "ERROR not file");
 		fbr_dindex_release(fs, &directory);
 		return EINVAL;
 	}

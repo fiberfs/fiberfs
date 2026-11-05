@@ -45,6 +45,7 @@ struct fbr_fuse_context {
 	fbr_bitflag_t				debug:1;
 	fbr_bitflag_t				signals:1;
 	fbr_bitflag_t				detached:1;
+	fbr_bitflag_t				read_only:1;
 
 	volatile int				running;
 	volatile int				exited;

@@ -153,6 +153,8 @@ fbr_fuse_mount(struct fbr_fuse_context *ctx, const char *path)
 	if (read_only) {
 		fargs.argv[fargs.argc++] = "-o";
 		fargs.argv[fargs.argc++] = "ro";
+
+		ctx->read_only = 1;
 	}
 	if (allow_other) {
 		fargs.argv[fargs.argc++] = "-o";

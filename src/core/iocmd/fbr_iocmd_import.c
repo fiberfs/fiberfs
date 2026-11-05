@@ -48,6 +48,12 @@ fbr_iocmd_import(struct fbr_fs *fs, struct fbr_file *directory_file, unsigned lo
 	} else if (!fbr_fuse_check_access(fctx, directory_file, W_OK | X_OK)) {
 		fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR access");
 		return EPERM;
+	} else if (fs->fuse_ctx) {
+		fbr_fuse_mounted(fs->fuse_ctx);
+		if (fs->fuse_ctx->read_only) {
+			fbr_rlog(FBR_LOG_IOCMD_IMPORT, "ERROR read only");
+			return EROFS;
+		}
 	}
 
 	struct fbr_path_name filename;
