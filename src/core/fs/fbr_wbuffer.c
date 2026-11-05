@@ -641,7 +641,25 @@ fbr_wbuffer_flush_ready(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers, enum fb
 			break;
 		}
 
-		pt_assert(pthread_cond_wait(&fio->wbuffer_update, &fio->wbuffer_update_lock));
+		fbr_fs_ok(fs);
+		if (fs->fuse_ctx) {
+			fbr_fuse_mounted(fs->fuse_ctx);
+		}
+
+		pthread_testcancel();
+
+		struct timespec ts;
+		ts.tv_sec = 0;
+		ts.tv_nsec = 1000 * 1000 * 200;
+		fbr_timespec_add_clock(&ts);
+
+		int ret = pthread_cond_timedwait(&fio->wbuffer_update, &fio->wbuffer_update_lock,
+			&ts);
+		if (ret == ETIMEDOUT) {
+			continue;
+		}
+
+		pt_assert(ret);
 	}
 
 	pt_assert(pthread_mutex_unlock(&fio->wbuffer_update_lock));
@@ -940,11 +958,14 @@ fbr_wbuffer_free(struct fbr_fs *fs, struct fbr_fio *fio)
 
 	if (fio->wbuffers) {
 		fbr_rlog(FBR_LOG_WBUFFER, "WARNING unflushed wbuffers exist");
-	}
 
-	// TODO
-	if (fbr_is_test()) {
-		assert_zero(fio->wbuffers);
+		if (fbr_is_test()) {
+			fbr_ABORT("unflushed wbuffers");
+		}
+
+		fbr_wbuffer_flush_ready(fs, fio->wbuffers, 0);
+
+		// TODO dump wbuffers onto disk
 	}
 
 	fbr_wbuffers_reset(fs, fio);
