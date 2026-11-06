@@ -72,6 +72,8 @@ fbr_cmd_cstore_s3_upload(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	fbr_cstore_s3_autosign(cstore, http, NULL, NULL);
 
+	http->new_conn = 1;
+
 	chttp_connect(http, s3_backend->host, s3_backend->host_len, s3_backend->port,
 		s3_backend->tls);
 	chttp_addr_resolved(&http->addr);

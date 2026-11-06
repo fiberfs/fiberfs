@@ -197,6 +197,7 @@ fbr_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	int want_result = 0;
 	if (cmd->param_count > 1) {
 		want_result = 1;
+		fbr_test_unescape(&cmd->params[1]);
 	}
 
 	DIR *dir = opendir(filename);
@@ -271,7 +272,6 @@ fbr_cmd_sys_ls(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	if (str_len) {
 		result[str_len - 1] = '\0';
 	}
-
 
 	fbr_test_log(ctx, FBR_LOG_VERBOSE, "sys_ls result '%s'", result);
 	fbr_test_ERROR(strcmp(result, cmd->params[1].value), "Expected result string failed");

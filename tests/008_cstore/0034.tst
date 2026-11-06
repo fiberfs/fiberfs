@@ -3,6 +3,7 @@ fiber_test "cstore server json chars"
 config_add S3_SKIP_CONTENT_HASH false
 config_add CSTORE_VALIDATE_CONTENT_HASH true
 config_add CACHE_FORCE_CHUNK_WRITE true
+config_add LOG_SIZE 250000
 
 cstore_init 0
 

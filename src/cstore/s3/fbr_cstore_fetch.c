@@ -1275,33 +1275,39 @@ fbr_cstore_s3_head_fullfile(struct fbr_fs *fs, struct fbr_cstore_url *url, unsig
 	fetch.attempts = 0;
 	fetch.orig_route = FBR_CSTORE_ROUTE_S3;
 
-	_s3_get_route(&fetch);
-	assert_dev(fetch.route);
+	while (_s3_get_route(&fetch)) {
+		assert_dev(fetch.route == FBR_CSTORE_ROUTE_S3);
 
-	_s3_request_url(&fetch, "HEAD", url);
+		_s3_request_url(&fetch, "HEAD", url);
 
-	struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, 0, fetch.route,
-		fetch.attempts - 1, 0);
-	fbr_cstore_backend_ok(backend);
+		struct fbr_cstore_backend *backend = fbr_cstore_backend_get(cstore, 0, fetch.route,
+			fetch.attempts - 1, 0);
+		fbr_cstore_backend_ok(backend);
 
-	int ret = _s3_connection(&fetch, backend);
-	if (ret) {
-		chttp_context_free(http);
-		return ECONNREFUSED;
+		int ret = _s3_connection(&fetch, backend);
+		if (ret) {
+			fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp connect: %s", chttp_error_msg(http));
+			continue;
+		}
+
+		chttp_send(http);
+		if (http->error) {
+			fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp send: %s", chttp_error_msg(http));
+			continue;
+		}
+
+		chttp_receive(http);
+
+		fbr_cstore_http_log(http);
+
+		fbr_rlog(FBR_LOG_CS_S3, "S3 HEAD %d", http->status);
+
+		if (_s3_retry(&fetch)) {
+			continue;
+		}
+
+		break;
 	}
-
-	chttp_send(http);
-	if (http->error) {
-		fbr_rlog(FBR_LOG_CS_S3, "ERROR chttp send: %s", chttp_error_msg(http));
-		chttp_context_free(http);
-		return ECONNREFUSED;
-	}
-
-	chttp_receive(http);
-
-	fbr_cstore_http_log(http);
-
-	fbr_rlog(FBR_LOG_CS_S3, "S3 HEAD %d", http->status);
 
 	if (http->error || !fbr_cstore_http_success(http->status) ||
 	    http->state != CHTTP_STATE_IDLE) {
