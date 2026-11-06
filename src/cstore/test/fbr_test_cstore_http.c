@@ -362,7 +362,7 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 
 	struct fbr_cstore *cstore = fbr_test_cstore_init(ctx);
 	fbr_cstore_ok(cstore);
-	fbr_cstore_s3_init(cstore, "127.0.0.1", 80, 0, "some$pfx!_/fs/", "r", "k", "s");
+	fbr_cstore_s3_init(cstore, "127.0.0.1", 80, 0, "some$pfx!_/fs ?/", "r", "k", "s");
 	fbr_cstore_backend_ok(cstore->s3.backend);
 	assert(fbr_cstore_backend_enabled(cstore));
 	assert(cstore->s3.prefix);
@@ -370,7 +370,11 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	_path_init(&path, "path/\"123\"/xyz?abc?.fiberfsfile=123");
 	fbr_cstore_s3_url(cstore, &path, &url);
 	assert_zero(strcmp(url.value,
-		"/some%24pfx%21_/fs/path/%22123%22/xyz%3Fabc?.fiberfsfile=123"));
+		"/some%24pfx%21_/fs%20%3F/path/%22123%22/xyz%3Fabc?.fiberfsfile=123"));
+
+	struct fbr_cstore_path path2;
+	fbr_cstore_path_url(cstore, url.value, &path2);
+	assert_zero(strcmp(path.value, path2.value));
 
 	cstore = NULL;
 

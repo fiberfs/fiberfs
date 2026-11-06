@@ -242,18 +242,19 @@ fbr_cstore_path_root(const struct fbr_path_name *dirpath, struct fbr_cstore_path
 
 
 void
-fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url, struct fbr_cstore_path *path)
+fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url_encoded,
+    struct fbr_cstore_path *path)
 {
 	fbr_cstore_ok(cstore);
-	assert(url[0] == '/');
+	assert(url_encoded[0] == '/');
 	assert(path);
 
-	size_t url_len = strlen(url);
+	size_t url_len = strlen(url_encoded);
 	assert_dev(url_len > 1);
 
 	if (!cstore->s3.prefix_len) {
 		path->magic = FBR_CSTORE_PATH_MAGIC;
-		path->length = fbr_urldecode(url + 1, url_len - 1, path->value,
+		path->length = fbr_urldecode(url_encoded + 1, url_len - 1, path->value,
 			sizeof(path->value));
 
 		fbr_cstore_path_ok(path);
@@ -264,15 +265,21 @@ fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url, struct fbr_cstor
 
 	assert_dev(cstore->s3.prefix);
 
-	if (!strncmp(url, cstore->s3.prefix, cstore->s3.prefix_len)) {
-		assert(url_len > cstore->s3.prefix_len + 1);
-		url += cstore->s3.prefix_len;
-		url_len -= cstore->s3.prefix_len;
-		assert(url[0] == '/');
+	char prefix_encoded[FBR_CSTORE_S3_PREFIX_MAX * 3];
+	size_t prefix_len = fbr_urlencode(cstore->s3.prefix, cstore->s3.prefix_len, prefix_encoded,
+		sizeof(prefix_encoded));
+	assert(prefix_len);
+
+	if (!strncmp(url_encoded, prefix_encoded, prefix_len)) {
+		assert(url_len > prefix_len + 1);
+		url_encoded += prefix_len;
+		url_len -= prefix_len;
+		assert(url_encoded[0] == '/');
 	}
 
 	path->magic = FBR_CSTORE_PATH_MAGIC;
-	path->length = fbr_urldecode(url + 1, url_len - 1, path->value, sizeof(path->value));
+	path->length = fbr_urldecode(url_encoded + 1, url_len - 1, path->value,
+		sizeof(path->value));
 
 	fbr_cstore_path_ok(path);
 	assert(path->length);

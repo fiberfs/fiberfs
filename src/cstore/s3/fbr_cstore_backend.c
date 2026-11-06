@@ -102,6 +102,7 @@ fbr_cstore_s3_init(struct fbr_cstore *cstore, const char *host, int port, int tl
 
 	if (prefix && *prefix) {
 		s3->prefix_len = strlen(prefix);
+		assert(s3->prefix_len < FBR_CSTORE_S3_PREFIX_MAX);
 		if (prefix[0] != '/') {
 			s3->prefix_len++;
 			s3->prefix = malloc(s3->prefix_len + 1);

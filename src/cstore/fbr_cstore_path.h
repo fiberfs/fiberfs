@@ -78,7 +78,8 @@ void fbr_cstore_path_chunk(const struct fbr_file *file, fbr_id_t id, size_t offs
 	int fullfile, struct fbr_cstore_path *path);
 void fbr_cstore_path_index(const struct fbr_directory *directory, struct fbr_cstore_path *path);
 void fbr_cstore_path_root(const struct fbr_path_name *dirpath, struct fbr_cstore_path *path);
-void fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url, struct fbr_cstore_path *path);
+void fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url_encoded,
+	struct fbr_cstore_path *path);
 
 fbr_hash_t fbr_cstore_hash_chunk(struct fbr_cstore *cstore, struct fbr_file *file, fbr_id_t id,
 	size_t offset, size_t length, int fullfile, int s3_server);

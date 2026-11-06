@@ -85,12 +85,12 @@ _cstore_entry_hash(void *arg, void *hash, size_t hash_len)
 }
 
 static void
-_cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const char *url,
+_cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const char *url_encoded,
     const char *etag_match)
 {
 	assert_dev(cstore);
 	assert_dev(http);
-	assert_dev(url);
+	assert_dev(url_encoded);
 
 	char root_buffer[FBR_ROOT_JSON_SIZE];
 	size_t bytes = 0;
@@ -116,7 +116,7 @@ _cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const 
 	assert_zero_dev(root_json->error);
 
 	struct fbr_cstore_path root_path;
-	fbr_cstore_path_url(cstore, url, &root_path);
+	fbr_cstore_path_url(cstore, url_encoded, &root_path);
 
 	struct fbr_etag etag;
 	fbr_cstore_etag_init(&etag, NULL);

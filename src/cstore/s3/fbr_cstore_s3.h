@@ -24,6 +24,7 @@
 #define FBR_CSTORE_S3_DEFAULT_PORT		80
 #define FBR_CSTORE_S3_DEFAULT_TLS		"true"
 #define FBR_CSTORE_S3_UNSIGNED			"UNSIGNED-PAYLOAD"
+#define FBR_CSTORE_S3_PREFIX_MAX		256
 
 #define FBR_ENUM_CSTORE_ROUTE						\
 	FBR_ENUM_NAMES(fbr_cstore_route, _cstore_route_string)		\
