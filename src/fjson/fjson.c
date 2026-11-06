@@ -360,7 +360,7 @@ _parse_double(struct fjson_context *ctx, const char *buf, size_t buf_len)
 			_set_error(ctx, FJSON_STATE_ERROR_NULL, "need null terminator");
 			return;
 		}
-	} else if (buf[ctx->pos] == 'x') {
+	} else if (buf[ctx->pos] == 'x' || buf[ctx->pos] == 'X') {
 		_set_error(ctx, FJSON_STATE_ERROR_JSON, "bad number hex");
 		return;
 	}
