@@ -100,6 +100,9 @@ fbr_zlib_flate(struct fbr_zlib *zlib, const unsigned char *input, size_t input_l
 		if (input) {
 			return FBR_GZIP_ERROR;
 		}
+
+		zlib->end = 1;
+
 		return FBR_GZIP_DONE;
 	} else if (zlib->zstate == Z_BUF_ERROR) {
 		if (output_len <= zlib->zs.avail_out && !input) {
