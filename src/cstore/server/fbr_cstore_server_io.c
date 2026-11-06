@@ -158,7 +158,7 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 	const char *url_encoded = chttp_header_get_url(http);
 	assert(url_encoded);
 	size_t url_encoded_len = strlen(url_encoded);
-	if (url_encoded_len >= FBR_URL_MAX) {
+	if (url_encoded_len >= FBR_URL_MAX || url_encoded[0] != '/') {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR url_encoded_len");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
@@ -546,7 +546,7 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	const char *url_encoded = chttp_header_get_url(http);
 	assert(url_encoded);
 	size_t url_encoded_len = strlen(url_encoded);
-	if (url_encoded_len >= FBR_URL_MAX) {
+	if (url_encoded_len >= FBR_URL_MAX || url_encoded[0] != '/') {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_READ ERROR url_encoded_len");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
@@ -984,7 +984,7 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 	const char *url_encoded = chttp_header_get_url(http);
 	assert(url_encoded);
 	size_t url_encoded_len = strlen(url_encoded);
-	if (url_encoded_len >= FBR_URL_MAX) {
+	if (url_encoded_len >= FBR_URL_MAX || url_encoded[0] != '/') {
 		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_DELETE ERROR url_encoded_len");
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
