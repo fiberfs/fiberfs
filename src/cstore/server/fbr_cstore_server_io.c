@@ -171,7 +171,6 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
 	}
-	assert(url[0] == '/');
 
 	int ret = fbr_cstore_s3_validate(cstore, http);
 	if (ret) {
@@ -189,7 +188,9 @@ fbr_cstore_url_write(struct fbr_cstore_worker *worker, struct chttp_context *htt
 
 	const char *host = chttp_header_get(http, "Host");
 	if (!host) {
-		host = "";
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR host");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
 	}
 	size_t host_len = strlen(host);
 
@@ -558,7 +559,6 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
 	}
-	assert(url[0] == '/');
 
 	int ret = fbr_cstore_s3_validate(cstore, http);
 	if (ret) {
@@ -568,7 +568,11 @@ fbr_cstore_url_read(struct fbr_cstore_worker *worker, struct chttp_context *http
 	}
 
 	const char *host = chttp_header_get(http, "Host");
-	assert(host);
+	if (!host) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR host");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
+	}
 	size_t host_len = strlen(host);
 
 	int fullfile;
@@ -993,7 +997,6 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
 		return;
 	}
-	assert(url[0] == '/');
 
 	int ret = fbr_cstore_s3_validate(cstore, http);
 	if (ret) {
@@ -1003,7 +1006,11 @@ fbr_cstore_url_delete(struct fbr_cstore_worker *worker, struct chttp_context *ht
 	}
 
 	const char *host = chttp_header_get(http, "Host");
-	assert(host);
+	if (!host) {
+		fbr_rdlog(worker->rlog, FBR_LOG_CS_WORKER, "URL_WRITE ERROR host");
+		fbr_cstore_http_respond(cstore, http, 400, "Bad Request");
+		return;
+	}
 	size_t host_len = strlen(host);
 
 	const char *etag_match = chttp_header_get(http, "If-Match");
