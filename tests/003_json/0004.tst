@@ -16,6 +16,7 @@ json_test '123e-1'
 json_test '123e+1'
 json_test '0.0'
 json_test '-0'
+json_test '0'
 json_test 6
 json_test '"test string"'
 json_test '"test \\\"quoted\\\" here"'
