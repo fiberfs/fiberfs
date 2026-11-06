@@ -270,11 +270,11 @@ fbr_cstore_path_url(struct fbr_cstore *cstore, const char *url_encoded,
 		sizeof(prefix_encoded));
 	assert(prefix_len);
 
-	if (!strncmp(url_encoded, prefix_encoded, prefix_len)) {
+	if (!strncmp(url_encoded, prefix_encoded, prefix_len) && url_encoded[prefix_len] == '/') {
 		assert(url_len > prefix_len + 1);
 		url_encoded += prefix_len;
 		url_len -= prefix_len;
-		assert(url_encoded[0] == '/');
+		assert_dev(url_encoded[0] == '/');
 	}
 
 	path->magic = FBR_CSTORE_PATH_MAGIC;
