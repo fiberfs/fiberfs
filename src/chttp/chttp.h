@@ -122,6 +122,7 @@ struct chttp_context {
 
 	struct {
 		double			start;
+		double			end;
 		unsigned short		lookup;
 		unsigned short		connect;
 		unsigned short		request;

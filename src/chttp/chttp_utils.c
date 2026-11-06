@@ -33,10 +33,11 @@ chttp_context_debug(struct chttp_context *ctx)
 		fbr_get_time() - ctx->addr.time_start);
 
 	if (ctx->perf.start) {
-		printf("\tPERF lookup: %d connect: %d (reuse: %d) request: %d  req_body: %d"
-			" response: %d\n",
+		printf("\tPERF lookup: %d connect: %d (reuse: %d) req: %d  req_body: %d"
+			" resp: %d total: %f\n",
 			ctx->perf.lookup, ctx->perf.connect, ctx->addr.reused,
-			ctx->perf.request, ctx->perf.req_body, ctx->perf.response);
+			ctx->perf.request, ctx->perf.req_body, ctx->perf.response,
+			ctx->perf.end - ctx->perf.start);
 	}
 
 	chttp_dpage_debug(ctx->dpage);
@@ -172,8 +173,8 @@ chttp_perf_split(struct chttp_context *ctx)
 		return 0;
 	}
 
-	double now = fbr_get_time();
-	unsigned long split_time = (now - ctx->perf.start) * 1000;
+	ctx->perf.end = fbr_get_time();
+	unsigned long split_time = (ctx->perf.end - ctx->perf.start) * 1000;
 
 	split_time -= ctx->perf.lookup + ctx->perf.connect + ctx->perf.request +
 		ctx->perf.req_body + ctx->perf.response;
