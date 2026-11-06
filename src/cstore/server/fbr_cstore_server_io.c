@@ -106,7 +106,7 @@ _cstore_root_proxy(struct fbr_cstore *cstore, struct chttp_context *http, const 
 
 	if (http->error || bytes == sizeof(root_buffer) || http->state < CHTTP_STATE_IDLE) {
 		fbr_rlog(FBR_LOG_CS_WORKER, "ERROR S3 root_body");
-		chttp_context_free(http);
+		http->close = 1;
 		return;
 	}
 
