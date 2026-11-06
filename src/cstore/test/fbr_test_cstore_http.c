@@ -64,6 +64,15 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	type = _url_parse("/.fiberfsroot/abc");
 	assert(type == FBR_CSTORE_FILE_NONE);
 
+	type = _url_parse("/abc/123?.fiberfsfile");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/abc/123?.fiberfsfile=");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
+	type = _url_parse("/abc/.fiberfs/123");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
 	type = _url_parse("/abc/.fiberfsroot");
 	assert(type == FBR_CSTORE_FILE_ROOT);
 
@@ -71,7 +80,7 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(type == FBR_CSTORE_FILE_ROOT);
 
 	type = _url_parse("/ab?q=/.fiberfsroot");
-	assert(type == FBR_CSTORE_FILE_NONE);
+	assert(type == FBR_CSTORE_FILE_ROOT);
 
 	type = _url_parse("/.fiberfsindex");
 	assert(type == FBR_CSTORE_FILE_NONE);
@@ -151,6 +160,18 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	type = _url_parse("/abc/file.abc.txt.fiberfschunk.123.123456");
 	assert(type == FBR_CSTORE_FILE_CHUNK);
 
+	type = _url_parse("/abc/file?abc.txt.fiberfschunk.123.123456");
+	assert(type == FBR_CSTORE_FILE_CHUNK);
+
+	type = _url_parse("/abc/file??abc???txt.fiberfschunk.123.123456");
+	assert(type == FBR_CSTORE_FILE_CHUNK);
+
+	type = _url_parse("/abc/file.abc.txt?.fiberfschunk.123.123456");
+	assert(type == FBR_CSTORE_FILE_CHUNK);
+
+	type = _url_parse("/abc/file.abc.txt.fiberfschunk.123.123456?");
+	assert(type == FBR_CSTORE_FILE_NONE);
+
 	type = _url_parse_ff("/abc/file.abc.123.fiberfschunk.456.0", &fullfile, &offset, &length);
 	assert(type == FBR_CSTORE_FILE_CHUNK);
 	assert_zero(fullfile);
@@ -182,6 +203,18 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fullfile);
 	assert(offset == 6);
 	assert(length == 4);
+
+	type = _url_parse_ff("/123/456?.fiberfsfile==0&b=6&l=4", &fullfile, &offset, &length);
+	assert(type == FBR_CSTORE_FILE_NONE);
+	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
+
+	type = _url_parse_ff("/123/456?.fiberfs=0&b=6&l=4", &fullfile, &offset, &length);
+	assert(type == FBR_CSTORE_FILE_NONE);
+	assert_zero(fullfile);
+	assert_zero(offset);
+	assert_zero(length);
 
 	type = _url_parse_ff("/123/456?.fiberfsfile=0", &fullfile, &offset, &length);
 	assert(type == FBR_CSTORE_FILE_NONE);
@@ -252,6 +285,20 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(type == FBR_CSTORE_FILE_NONE);
 	assert_zero(fullfile);
 
+	type = _url_parse_ff("/123?/456??xyx??.fiberfsfile=123&b=654&l=4890", &fullfile, &offset,
+		&length);
+	assert(type == FBR_CSTORE_FILE_CHUNK);
+	assert(fullfile);
+	assert(offset == 654);
+	assert(length == 4890);
+
+	type = _url_parse_ff("/123/?.fiberf/456?.fiberfsfile=0&b=6&l=4", &fullfile, &offset,
+		&length);
+	assert(type == FBR_CSTORE_FILE_CHUNK);
+	assert(fullfile);
+	assert(offset == 6);
+	assert(length == 4);
+
 	struct fbr_cstore_path path;
 	struct fbr_cstore_url url;
 
@@ -263,9 +310,17 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	fbr_cstore_s3_url(NULL, &path, &url);
 	assert_zero(strcmp(url.value, "/path/%22123%22/xyz%3Fabc"));
 
-	_path_init(&path, "path/\"123\"/xyz?abc?.fiberfsid=123");
+	_path_init(&path, "path/\"123\"/xyz?abc?.fiberfsid.123");
 	fbr_cstore_s3_url(NULL, &path, &url);
-	assert_zero(strcmp(url.value, "/path/%22123%22/xyz%3Fabc?.fiberfsid=123"));
+	assert_zero(strcmp(url.value, "/path/%22123%22/xyz%3Fabc%3F.fiberfsid.123"));
+
+	_path_init(&path, "path/\"123\"/xyz?abc?.fiberfsfile=123");
+	fbr_cstore_s3_url(NULL, &path, &url);
+	assert_zero(strcmp(url.value, "/path/%22123%22/xyz%3Fabc?.fiberfsfile=123"));
+
+	_path_init(&path, "path/\"123\"/xyz?abc??.fiberfsfile=123");
+	fbr_cstore_s3_url(NULL, &path, &url);
+	assert_zero(strcmp(url.value, "/path/%22123%22/xyz%3Fabc%3F?.fiberfsfile=123"));
 
 	// RANGE
 
@@ -312,10 +367,10 @@ fbr_cmd_cstore_url_test(struct fbr_test_context *ctx, struct fbr_test_cmd *cmd)
 	assert(fbr_cstore_backend_enabled(cstore));
 	assert(cstore->s3.prefix);
 
-	_path_init(&path, "path/\"123\"/xyz?abc?.fiberfsid=123");
+	_path_init(&path, "path/\"123\"/xyz?abc?.fiberfsfile=123");
 	fbr_cstore_s3_url(cstore, &path, &url);
 	assert_zero(strcmp(url.value,
-		"/some%24pfx%21_/fs/path/%22123%22/xyz%3Fabc?.fiberfsid=123"));
+		"/some%24pfx%21_/fs/path/%22123%22/xyz%3Fabc?.fiberfsfile=123"));
 
 	cstore = NULL;
 

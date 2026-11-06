@@ -11,10 +11,13 @@ fs_test_rw_mount $sys_tmpdir
 set file $sys_tmpdir "/\"test\".txt"
 sys_write $file "test quoted."
 
+set file2 $sys_tmpdir "/url???.txt?"
+sys_write $file2 "test url"
+
 sleep_ms 10
 fs_test_release_all_wait
 
-sys_ls $sys_tmpdir '"test".txt:file ..:dir .:dir'
+sys_ls $sys_tmpdir '"test".txt:file ..:dir .:dir url???.txt?:file'
 sys_cat $file "test quoted."
 
 # Cleanup
@@ -34,7 +37,7 @@ equal $fs_test_stat_directory_refs 0
 equal $fs_test_stat_files 0
 equal $fs_test_stat_files_inodes 0
 equal $fs_test_stat_file_refs 0
-equal $cstore_stat_chunks:0 1
-equal $cstore_stat_chunks_fullfile:0 1
+equal $cstore_stat_chunks:0 2
+equal $cstore_stat_chunks_fullfile:0 2
 
 fuse_test_unmount
