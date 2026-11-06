@@ -98,17 +98,17 @@ char *fbr_strerror(int errnum, char *buf, size_t buflen);
 	fbr_strerror(err, buf, sizeof(buf))
 
 #define FBR_TRIM_STR_LEFT(s, len)					\
-	while ((len) > 0 && (s)[0] <= ' ') {				\
+	while ((len) > 0 && (unsigned char)((s)[0]) <= ' ') {		\
 		(s)++;							\
 		(len)--;						\
 	}
 #define FBR_TRIM_STR_RIGHT(s, len)					\
-	while ((len) > 0 && (s)[(len) - 1] <= ' ') {			\
+	while ((len) > 0 && (unsigned char)((s)[(len) - 1]) <= ' ') {	\
 		(len)--;						\
 		(s)[(len)] = '\0';					\
 	}
 #define FBR_TRIM_STR_RIGHT_RO(s, len)					\
-	while ((len) > 0 && (s)[(len) - 1] <= ' ') {			\
+	while ((len) > 0 && (unsigned char)((s)[(len) - 1]) <= ' ') {	\
 		(len)--;						\
 	}
 #define	FBR_TRIM_STR(s, len)						\
