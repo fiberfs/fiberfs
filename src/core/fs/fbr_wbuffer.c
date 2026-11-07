@@ -561,7 +561,7 @@ fbr_wbuffers_error_reset(struct fbr_fs *fs, struct fbr_wbuffer *wbuffers,
 	struct fbr_wbuffer *wbuffer = wbuffers;
 	while (wbuffer) {
 		fbr_wbuffer_ok(wbuffer);
-		assert_dev(wbuffer->state >= FBR_WBUFFER_NONE);
+		assert_dev(wbuffer->state > FBR_WBUFFER_NONE);
 		assert_dev(wbuffer->state != FBR_WBUFFER_SYNC);
 
 		if (wbuffer->state == FBR_WBUFFER_ERROR || wbuffer->state == FBR_WBUFFER_READY) {
