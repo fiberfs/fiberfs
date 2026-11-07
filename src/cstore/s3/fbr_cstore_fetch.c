@@ -14,6 +14,7 @@
 #include "chttp.h"
 #include "cstore/fbr_cstore_api.h"
 #include "core/fs/fbr_fs.h"
+#include "core/request/fbr_request.h"
 #include "core/store/fbr_store.h"
 #include "utils/fbr_chash.h"
 #include "utils/fbr_sys.h"
@@ -1187,6 +1188,11 @@ fbr_cstore_s3_root_get(struct fbr_fs *fs, struct fbr_cstore *cstore,
 
 		if (http_error && !fbr_cstore_http_success(http->status)) {
 			*http_error = http->status;
+		}
+
+		struct fbr_request *request = fbr_request_get();
+		if (request) {
+			request->error = http->status ? http->status : (int)http->error;
 		}
 
 		chttp_context_free(http);

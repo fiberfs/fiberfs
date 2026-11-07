@@ -53,7 +53,7 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 	// Init fs
 	fbr_directory_root_inode_init(fuse_ctx->fs);
 
-	// TODO we need the status from fbr_index_read()
+	request->error = 0;
 
 	// Try and read the root index
 	struct fbr_directory *root = fbr_directory_from_inode(fuse_ctx->fs, FBR_INODE_ROOT);
@@ -64,6 +64,16 @@ _mount_fuse_init(struct fbr_fuse_context *fuse_ctx, struct fuse_conn_info *conn)
 		fbr_rlog(FBR_LOG_MOUNT, "root loaded OK");
 
 		fbr_dindex_release(fuse_ctx->fs, &root);
+		fbr_request_free(request);
+
+		return;
+	}
+
+	if (fuse_ctx->read_only || request->error != 404) {
+		fbr_rlog(FBR_LOG_MOUNT, "root not found ERROR");
+
+		fuse_ctx->error = 1;
+
 		fbr_request_free(request);
 
 		return;
