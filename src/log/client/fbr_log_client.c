@@ -30,7 +30,8 @@ static void
 _usage(void)
 {
 	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  fiberfs_log [-d] <mount_point>\n");
+	fprintf(stderr, "  fiberfs_log [-w] [-d] <mount_point>\n");
+	fprintf(stderr, "    -w, --wait            Wait for FiberFS to mount (optional).\n");
 	fprintf(stderr, "    -d, --dump-history    Dump log history and exit (optional).\n");
 }
 
@@ -40,16 +41,21 @@ main(int argc, char **argv)
 	fbr_setup_crash_signals();
 	fbr_setup_stop_signals(_log_signal_stop);
 
+	int wait = 0;
 	int dump_history = 0;
 
 	static struct option log_options[] = {
+		{"wait", no_argument, NULL, 'w'},
 		{"dump-history", no_argument, NULL, 'd'},
 		{NULL, 0, NULL, 0}
 	};
 
 	int opt;
-	while ((opt = getopt_long(argc, argv, "d", log_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "wd", log_options, NULL)) != -1) {
 		switch (opt) {
+			case 'w':
+				wait = 1;
+				break;
 			case 'd':
 				dump_history = 1;
 				break;
@@ -74,8 +80,16 @@ main(int argc, char **argv)
 	struct fbr_log_reader *reader = &_reader;
 	unsigned long sleep_ms = 0;
 
-	int ret = fbr_log_reader_init(reader, mount_path);
-	if (!ret) {
+	int reader_init = 0;
+
+	do {
+		reader_init = fbr_log_reader_init(reader, mount_path);
+		if (!reader_init && wait) {
+			fbr_sleep_ms(1.5);
+		}
+	} while (!reader_init && wait && !_STOP);
+
+	if (!reader_init) {
 		fprintf(stderr, "Cannot open log for %s (%s)\n", mount_path, strerror(errno));
 		return 1;
 	}

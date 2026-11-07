@@ -294,7 +294,6 @@ fbr_body_chunk_range(struct fbr_file *file, size_t offset, size_t size,
     struct fbr_chunk_list **removed, struct fbr_wbuffer *wbuffers)
 {
 	fbr_file_ok(file);
-	assert_dev(size <= file->size);
 
 	struct fbr_chunk_list *chunks = fbr_chunk_list_alloc();
 	int completed = 0;
