@@ -1,6 +1,6 @@
 chttp_test "DNS TTL test"
 
-config_add DNS_CACHE_TTL 1
+config_add DNS_CACHE_TTL_SEC 1
 
 dns_lookup 127.0.0.1
 dns_lookup 127.0.0.1

@@ -27,6 +27,5 @@ void chttp_dns_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port)
 int chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest,
 	int port, unsigned int flags);
 void chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_src);
-extern long CHTTP_DNS_CACHE_TTL;
 
 #endif /* _CHTTP_DNS_H_INCLUDED_ */
