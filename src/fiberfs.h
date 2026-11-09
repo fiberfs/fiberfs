@@ -9,7 +9,7 @@
 #ifndef _FIBERFS_H_INCLUDED_
 #define _FIBERFS_H_INCLUDED_
 
-#define FIBERFS_VERSION				"1.0.0"
+#define FIBERFS_VERSION				"1.0.1-dev"
 
 #include "utils/fbr_assert.h"
 #include "utils/fbr_check.h"
