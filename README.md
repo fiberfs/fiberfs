@@ -63,6 +63,10 @@ Please review and agree to Section 5 (Contributions) of the FiberFS Community Li
 
 ## Releases
 
+### FiberFS 1.0.0 (2026-11-09)
+
+* Full file support, fiberfs_cmd and importing, read only mounts.
+
 ### FiberFS 0.9.3 (2026-10-13)
 
 * Atomic rename, full inode isolation mode, fiberfs_log history.
