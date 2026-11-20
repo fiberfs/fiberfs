@@ -82,7 +82,9 @@ sys_write $file "content_here"
 
 sleep_ms 20
 
+fs_test_release_all_wait
 cstore_debug
 equal $cstore_entries:0 4
+equal $fs_test_stat_files_inodes 1
 
 fuse_test_unmount
